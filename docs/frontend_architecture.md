@@ -1,0 +1,123 @@
+# Frontend Architecture
+
+How FiniexViewer runs, how it talks to the FiniexTestingIDE backend, and why the pieces are split the way they are.
+
+---
+
+## Goals
+
+- **Clean separation** of frontend and backend concerns: different language, different runtime, different deployment lifecycle.
+- **Modern container architecture**: two services, one network, service discovery via container DNS — the same shape a production deployment would take.
+- **Low-friction development**: one `docker compose up` brings everything needed for local work.
+
+## Two-Container Topology
+
+FiniexViewer runs in its own container. The FiniexTestingIDE backend (Python + FastAPI) runs in another. They share a Docker network and reach each other by service name.
+
+```
+┌─────────────────────────── docker compose (host machine) ────────────────────────────┐
+│                                                                                       │
+│   ┌──────────────────────────┐        network: default         ┌─────────────────┐   │
+│   │  Service: finiex-dev     │ ◄──────────────────────────────► │ finiex-viewer   │   │
+│   │                          │    http://finiex-dev:8000        │                 │   │
+│   │  image: python:3.12-slim │                                  │ image: node:20  │   │
+│   │  mounts:                 │                                  │ mounts:         │   │
+│   │   - FiniexTestingIDE     │                                  │  - FiniexViewer │   │
+│   │     :/app                │                                  │    :/app        │   │
+│   │   - FiniexViewer (RW)    │                                  │                 │   │
+│   │     :/viewer             │                                  │                 │   │
+│   │  ports:                  │                                  │ ports:          │   │
+│   │   - 8000:8000 (FastAPI)  │                                  │  - 5173:5173    │   │
+│   └──────────────────────────┘                                  └─────────────────┘   │
+│                                                                                       │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+         ▲                                                                 ▲
+         │ Browser: http://localhost:8000/docs  (OpenAPI UI)               │
+         │                                                                 │
+         └─────── Browser: http://localhost:5173 (Vue Dev Server) ─────────┘
+```
+
+### Why both folders mount into `finiex-dev`
+
+The backend container is the development host — it carries the editor tooling and the primary shell session. Mounting the Viewer folder into it (`/viewer`) lets contributors edit both codebases in a single environment without a second attached shell.
+
+### Why the Viewer has its own container
+
+Python and Node have very different tooling footprints. A combined image grows large and slow, and mixing package managers is a source of silent bugs. A dedicated Node container is the standard answer.
+
+### Service-to-service communication
+
+Inside the compose network, services resolve each other by service name:
+
+- The Vite dev proxy targets `http://finiex-dev:8000` — the environment variable `VITE_API_BASE_URL` sets this.
+- No ports need to be bound to the host for inter-container traffic. Host-exposed ports (`8000`, `5173`) are for the developer's browser only.
+
+## Development Phases
+
+The compose override is built around three conceptual phases. Moving between them is a configuration change, not a code change.
+
+### Phase 1 — Backend-only work
+
+```
+docker compose up -d
+```
+
+Starts `finiex-dev` with the Viewer folder mounted but without a running Vite server. Used for API work (FiniexTestingIDE issues #297, #298) before the frontend scaffold exists.
+
+### Phase 2 — Joint development
+
+```
+docker compose --profile viewer up -d
+```
+
+Starts both services. The Viewer container runs `npm install && npm run dev` on start. Both the OpenAPI UI (`:8000/docs`) and the Vue dev server (`:5173`) are reachable from the browser.
+
+Use this once the Viewer scaffold exists (after FiniexViewer issue #2).
+
+### Phase 3 — Public / Production (deferred)
+
+A production image for the Viewer (static build served by a lightweight HTTP server) and a standalone `docker-compose.yml` inside the FiniexViewer repo are planned for FiniexViewer issue #5. The design choice here — static hosting versus embedding the Vue build into the FastAPI app — is deferred until we have a working Phase 2 setup to learn from.
+
+## Network Flow (Request Example)
+
+Loading a candle chart for `mt5/EURUSD M30`:
+
+1. Browser calls `http://localhost:5173/viewer`.
+2. Vite serves the Vue SPA.
+3. The SPA calls `GET /api/v1/brokers/mt5/symbols/EURUSD/bars?timeframe=M30&from=...&to=...`.
+4. The Vite dev server proxies that call to `http://finiex-dev:8000/api/v1/brokers/...` (Docker network resolution).
+5. FastAPI reads from the existing `BarIndexManager`, returns OHLC data.
+6. The SPA pipes the response into Lightweight Charts, the chart renders.
+
+No shared filesystem, no direct imports across repositories. The HTTP contract is the only coupling.
+
+## Why Not One Container
+
+- Mixed tooling (Python + Node) produces large, slow images.
+- Separate restart lifecycles matter during development — a Vite crash should not take the API with it.
+- Separate container boundaries enforce the HTTP contract. A single container is tempting to circumvent with "just import the Python model directly".
+- A two-service compose file is the shape of real production deployments.
+
+## Why Not More Containers
+
+- A dedicated database or cache service would be over-engineering at this scope. The existing Parquet file layout on disk is the data store. If a runtime database joins the picture later, it is added as a third service then.
+- No Nginx / reverse proxy in development. Host-exposed ports are sufficient for localhost work.
+
+## CORS
+
+During development, the Vite dev server serves the frontend at `:5173`, but XHR/fetch calls target `:8000`. This is cross-origin. Two ways to avoid CORS headaches:
+
+- **Vite proxy** (preferred during dev): configure Vite to proxy `/api` to the backend, so the browser only ever sees `:5173`.
+- **FastAPI CORS middleware**: permissive localhost origins in the API server foundation (FiniexTestingIDE #297).
+
+Both are in place. The proxy path is primary; the CORS middleware is the safety net.
+
+## Related Files
+
+- [../../docker-compose.override.yml](../../docker-compose.override.yml) — lives in the FiniexTestingIDE repo, provides the dev integration (gitignored, local-only).
+- [../HANDOFF_INITIAL_SETUP.md](../HANDOFF_INITIAL_SETUP.md) — bootstrap context for this repo.
+- [../ISSUE_1_vision_roadmap.md](../ISSUE_1_vision_roadmap.md) — long-term direction and non-goals.
+
+---
+
+**This document describes the target architecture, not current implementation state. The Viewer scaffold itself is built under FiniexViewer issue #2. Until then, only Phase 1 is active.**
