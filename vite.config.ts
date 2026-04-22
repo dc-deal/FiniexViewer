@@ -10,6 +10,13 @@ export default defineConfig({
     }
   },
   server: {
+    watch: {
+      usePolling: true,  // required on Windows/WSL2 — inotify events don't reach the Docker container
+      interval: 100
+    },
+    hmr: {
+      clientPort: 5173  // tells the browser to connect HMR WebSocket to localhost:5173, not the internal Docker address
+    },
     proxy: {
       '/api': {
         // Forwards all /api/* requests to the backend.
