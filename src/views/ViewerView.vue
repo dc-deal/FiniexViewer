@@ -50,19 +50,19 @@ onMounted(async () => {
 <style scoped>
 .viewer {
   font-family: monospace;
-  padding: 2rem;
+  padding: var(--space-xl);
 }
 
 h1 {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-lg);
 }
 
 .status {
-  color: #888;
+  color: var(--color-text-secondary);
 }
 
 .status.error {
-  color: #e05;
+  color: var(--color-error);
 }
 
 .broker-tree {
@@ -71,38 +71,38 @@ h1 {
 }
 
 .broker-node {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-md);
 }
 
 .broker-label {
   font-weight: bold;
-  font-size: 1rem;
-  color: #4af;
+  font-size: var(--font-size-md);
+  color: var(--color-accent);
 }
 
 .symbol-list {
   list-style: none;
   padding-left: 1.2rem;
-  margin-top: 0.25rem;
+  margin-top: var(--space-xs);
 }
 
 .symbol-node {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-sm);
   line-height: 1.6;
 }
 
 .tree-char {
-  color: #555;
+  color: var(--color-tree-connector);
   user-select: none;
 }
 
 .symbol-name {
-  color: #eee;
+  color: var(--color-text-primary);
 }
 
 .market-type {
-  color: #777;
-  font-size: 0.85em;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 </style>
