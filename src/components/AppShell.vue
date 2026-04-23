@@ -41,6 +41,7 @@ function onBrokerChange(b: string): void {
         <Pane :min-size="12" :max-size="30" :size="16" class="sidebar">
           <nav class="sidebar-nav">
             <RouterLink to="/viewer" class="nav-link">Viewer</RouterLink>
+            <RouterLink to="/about" class="nav-link">About</RouterLink>
           </nav>
           <div class="sidebar-selectors">
             <label class="selector-label">Broker</label>
@@ -121,16 +122,21 @@ function onBrokerChange(b: string): void {
 }
 
 .sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
   margin-bottom: var(--space-lg);
   padding-bottom: var(--space-md);
   border-bottom: 1px solid var(--color-border);
 }
 
 .nav-link {
+  display: block;
   color: var(--color-text-secondary);
   text-decoration: none;
   font-family: monospace;
   font-size: var(--font-size-sm);
+  padding: var(--space-xs) 0;
 }
 
 .nav-link.router-link-active {
@@ -156,6 +162,6 @@ function onBrokerChange(b: string): void {
 
 .main-pane {
   background-color: var(--color-bg-base);
-  overflow: auto;
+  overflow: hidden;
 }
 </style>
