@@ -1,7 +1,7 @@
 # FiniexViewer
 
-> **Version:** v0.2 Pre-Alpha Showcase
-> **Status:** v0.2 — candle chart, selector, shareable links, unit test coverage, CI pipeline.
+> **Version:** v0.2.1 Pre-Alpha Showcase
+> **Status:** v0.2.1 — candle chart, selector, shareable links, unit test coverage, CI pipeline.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
