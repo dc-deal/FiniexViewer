@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ChartPlaceholderView from '@/views/ChartPlaceholderView.vue'
+import ChartView from '@/views/ChartView.vue'
+import AboutView from '@/views/AboutView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,7 +12,12 @@ const router = createRouter({
     {
       path: '/viewer',
       name: 'viewer',
-      component: ChartPlaceholderView
+      component: ChartView
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: AboutView
     }
   ]
 })
