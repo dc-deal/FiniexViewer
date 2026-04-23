@@ -116,8 +116,38 @@ Both are in place. The proxy path is primary; the CORS middleware is the safety 
 
 - [../../docker-compose.override.yml](../../docker-compose.override.yml) — lives in the FiniexTestingIDE repo, provides the dev integration (gitignored, local-only).
 - [../HANDOFF_INITIAL_SETUP.md](../HANDOFF_INITIAL_SETUP.md) — bootstrap context for this repo.
-- [../ISSUE_1_vision_roadmap.md](../ISSUE_1_vision_roadmap.md) — long-term direction and non-goals.
 
 ---
 
-**This document describes the target architecture, not current implementation state. The Viewer scaffold itself is built under FiniexViewer issue #2. Until then, only Phase 1 is active.**
+## Tech Decisions
+
+### Theming — CSS Custom Properties
+
+All colors, spacing, and type scale are defined as CSS custom properties in `src/styles/tokens.css`. Dark mode is the default; light mode overrides the same variables under `[data-theme='light']`. The active theme is controlled by a `data-theme` attribute on `<html>`, toggled by the `use_theme` composable and persisted to `localStorage`.
+
+This avoids a CSS-in-JS dependency, works natively in every browser, and is trivially inspectable in DevTools. Reka UI (headless component layer) is deferred — no concrete accessibility need has surfaced yet.
+
+### URL Query State — `use_query_sync`
+
+Selection state (broker / symbol / timeframe) is stored in the URL as query params (`?broker=...&symbol=...&timeframe=...`). This makes every chart view a shareable link and survives page reload.
+
+Priority on load: **URL params > localStorage > null**. The composable (`src/composables/use_query_sync.ts`) waits for `router.isReady()` before reading params to avoid a race with the initial navigation, then watches the selection store and calls `router.replace` on every change. localStorage is a write-through cache.
+
+### Chart Engine — Lightweight Charts (TradingView)
+
+[Lightweight Charts](https://github.com/tradingview/lightweight-charts) is a purpose-built OHLCV charting library: small bundle, good performance, minimal API surface. It handles candle rendering, time axis, crosshair, and resize natively.
+
+**Alternatives considered:**
+- **ECharts** — general-purpose, heavier, more configuration overhead for financial data.
+- **Recharts / Chart.js** — not optimised for candlestick OHLCV; significant custom work needed.
+- **Custom WebGL/Canvas** — full control but months of work with no financial primitives.
+
+Lightweight Charts becomes limiting if we need complex multi-pane indicator layouts or a professional trading UI. For v0.1–v0.2 scope (read-only candle display), it is the right choice.
+
+### Testing Strategy
+
+Unit tests: **Vitest** + **Vue Test Utils**. Vitest runs in the same Vite context as the app — zero extra configuration. Vue Test Utils mounts components and stores in isolation.
+
+Priority targets: `selection_store` cascade logic, `use_query_sync` URL-priority behavior, `bars_store` coverage validation, `api_client` request construction. See issue #13.
+
+E2E tests (Cypress / Playwright): deferred until CI infrastructure is established. These require a running API server and are only valuable once the test environment is stable.
