@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { RouterView } from 'vue-router'
 import { useTheme } from '@/composables/use_theme'
+import AppShell from '@/components/AppShell.vue'
 
 const { theme } = useTheme()
 
@@ -11,5 +11,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <RouterView />
+  <AppShell>
+    <RouterView />
+  </AppShell>
 </template>
