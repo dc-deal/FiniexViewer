@@ -1,10 +1,16 @@
 import axios from 'axios'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
+import type { TimeframeList } from '@/types/api/timeframe_types'
 
 const http = axios.create({
   baseURL: '/api/v1'
 })
+
+export async function getTimeframes(): Promise<TimeframeList> {
+  const response = await http.get<{ timeframes: TimeframeList }>('/timeframes')
+  return response.data.timeframes
+}
 
 export async function getBrokers(): Promise<BrokerList> {
   const response = await http.get<{ brokers: BrokerList }>('/brokers')

@@ -84,10 +84,11 @@ Loading a candle chart for `mt5/EURUSD M30`:
 
 1. Browser calls `http://localhost:5173/viewer`.
 2. Vite serves the Vue SPA.
-3. The SPA calls `GET /api/v1/brokers/mt5/symbols/EURUSD/bars?timeframe=M30&from=...&to=...`.
-4. The Vite dev server proxies that call to `http://finiex-dev:8000/api/v1/brokers/...` (Docker network resolution).
-5. FastAPI reads from the existing `BarIndexManager`, returns OHLC data.
-6. The SPA pipes the response into Lightweight Charts, the chart renders.
+3. On mount, the SPA calls `GET /api/v1/timeframes` once to populate the timeframe selector (result cached in `timeframe_store`, never re-fetched).
+4. After the user selects broker, symbol, and timeframe, the SPA calls `GET /api/v1/brokers/mt5/symbols/EURUSD/bars?timeframe=M30&from=...&to=...`.
+5. The Vite dev server proxies all `/api` calls to `http://finiex-dev:8000` (Docker network resolution).
+6. FastAPI reads from the existing `BarIndexManager`, returns OHLC data.
+7. The SPA pipes the response into Lightweight Charts, the chart renders.
 
 No shared filesystem, no direct imports across repositories. The HTTP contract is the only coupling.
 
@@ -146,8 +147,8 @@ Lightweight Charts becomes limiting if we need complex multi-pane indicator layo
 
 ### Testing Strategy
 
-Unit tests: **Vitest** + **Vue Test Utils**. Vitest runs in the same Vite context as the app — zero extra configuration. Vue Test Utils mounts components and stores in isolation.
+Unit tests: **Vitest** + **Vue Test Utils**. Vitest runs in the same Vite context as the app — zero extra configuration. Vue Test Utils mounts components and stores in isolation. CI runs on every push and pull request via GitHub Actions.
 
-Priority targets: `selection_store` cascade logic, `use_query_sync` URL-priority behavior, `bars_store` coverage validation, `api_client` request construction. See issue #13.
+Priority targets: `selection_store` cascade logic, `timeframe_store` load-once cache and `minutesFor` lookup, `bars_store` coverage validation and window calculation, `use_query_sync` URL-priority behavior, `api_client` request construction. See issue #13.
 
 E2E tests (Cypress / Playwright): deferred until CI infrastructure is established. These require a running API server and are only valuable once the test environment is stable.

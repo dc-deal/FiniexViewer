@@ -1,16 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { useSelectionStore } from '@/stores/selection_store'
+import { useTimeframeStore } from '@/stores/timeframe_store'
 import { getCoverage, getBars } from '@/api/api_client'
 import type { ChartBar } from '@/types/api/bar_types'
 
-const DEFAULT_WINDOW_SECONDS: Record<string, number> = {
-  'M1':  4  * 60 * 60,
-  'M5':  24 * 60 * 60,
-  'M15': 3  * 24 * 60 * 60,
-  'M30': 7  * 24 * 60 * 60,
-  'H1':  14 * 24 * 60 * 60,
-}
+// Number of candles to show by default — applies to all timeframes uniformly.
+// Window = TARGET_BARS * minutes_per_bar * 60 seconds.
+const TARGET_BARS = 300
 
 function parseUtcDate(iso: string): Date {
   // append Z if no timezone suffix present to ensure UTC parsing
@@ -24,6 +21,7 @@ export const useBarsStore = defineStore('bars', () => {
   const error = ref<string | null>(null)
 
   const selectionStore = useSelectionStore()
+  const timeframeStore = useTimeframeStore()
 
   async function fetchBars(): Promise<void> {
     const { broker, symbol, timeframe } = selectionStore
@@ -42,7 +40,8 @@ export const useBarsStore = defineStore('bars', () => {
       }
 
       const endDate = parseUtcDate(coverage.end)
-      const windowMs = (DEFAULT_WINDOW_SECONDS[timeframe] ?? 24 * 60 * 60) * 1000
+      const minutes = timeframeStore.minutesFor(timeframe) ?? 60
+      const windowMs = TARGET_BARS * minutes * 60 * 1000
       const fromDate = new Date(endDate.getTime() - windowMs)
 
       const bars = await getBars(broker, symbol, timeframe, fromDate.toISOString(), endDate.toISOString())
