@@ -1,30 +1,90 @@
 # FiniexViewer
 
-> **Version:** 0.1.0 (Alpha — Pre-Release)
-> **Status:** Initial scaffold. No runnable code yet — see issues for the build-out plan.
+> **Version:** 0.1.0 (Alpha)
+> **Status:** v0.1 feature complete — candle chart, selector, shareable links.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
-The initial scope is intentionally narrow: a read-only candle chart that loads historical tick and bar data from a running FiniexTestingIDE API server. It is the first concrete step toward the UX layer planned on the FiniexTestingIDE long-term roadmap.
+Read-only candle chart that loads historical bar data from a running FiniexTestingIDE API server. Pick a broker, a symbol, a timeframe — the chart loads. The URL is shareable and survives page reload.
+
+![FiniexViewer — dark mode chart view](docs/images/viewer_chart_dark.png)
 
 ---
 
 ## What This Is
 
-- A **separate repository** that talks to FiniexTestingIDE over HTTP.
-- A **Vue 3 + TypeScript + Pinia + Vite** single-page application.
-- A **candle viewer** — pick a broker, a symbol, a timeframe, a date range, look at the chart.
+- A **separate repository** that talks to FiniexTestingIDE over HTTP — no shared filesystem.
+- A **Vue 3 / TypeScript / Vite** single-page application, dark mode by default.
+- A **read-only candle viewer** — no trade execution, no scenario control.
 
-## What This Is Not (Yet)
+## What This Is Not
 
-- Not a trade execution UI.
-- Not a strategy runner — no live simulation control from the viewer.
-- No authentication, no user accounts, no personal workspace.
-- Not a replacement for the FiniexTestingIDE CLI — the CLI remains the primary interface for data management, scenario execution, and test runs.
+- Not a trading platform or execution UI.
+- Not a strategy runner — no simulation control from the browser.
+- No authentication, no user accounts, no multi-user setup.
+- Not a replacement for the FiniexTestingIDE CLI.
 
-## Relationship to FiniexTestingIDE
+---
 
-FiniexViewer consumes the REST API provided by FiniexTestingIDE (introduced in parallel under the `api/` module of the main repo). Without a running FiniexTestingIDE API server, the viewer has nothing to display.
+## Getting Started
+
+### Prerequisites
+
+- **FiniexTestingIDE** cloned and its API server running — FiniexViewer has no data of its own.
+- **Node.js 18+** and **npm**.
+
+### Setup
+
+```bash
+git clone https://github.com/dc-deal/FiniexViewer.git
+cd FiniexViewer
+npm install
+```
+
+Create `.env.local` to point at your API server (default is `http://localhost:8000` — skip if that matches):
+
+```bash
+echo "VITE_API_BASE_URL=http://localhost:8000" > .env.local
+```
+
+### Run
+
+```bash
+# Start the FiniexTestingIDE API server first:
+python python/cli/api_server_cli.py --reload   # inside FiniexTestingIDE
+
+# Then start the Vite dev server:
+npm run dev
+```
+
+Open **[http://localhost:5173/viewer](http://localhost:5173/viewer)**.
+
+### Docker Compose (dual-repo setup)
+
+If you use the FiniexTestingIDE devcontainer, the dual-container setup is documented in [FiniexTestingIDE — FiniexViewer Setup Guide](../FiniexTestingIDE/docs/user_guides/finiexviewer_setup.md).
+
+---
+
+## Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Build tool | **Vite 6** |
+| Framework | **Vue 3** — Composition API, `<script setup>` |
+| Language | **TypeScript** |
+| State | **Pinia** |
+| Routing | **Vue Router 4** |
+| Charts | **Lightweight Charts** (TradingView) |
+| HTTP client | **axios** |
+| Layout | **splitpanes** |
+| Theme | CSS Custom Properties token system, dark/light mode |
+| Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` |
+
+Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_architecture.md)
+
+---
+
+## Architecture
 
 ```
 ┌─────────────────────────┐        HTTP / REST        ┌──────────────────────────┐
@@ -32,51 +92,24 @@ FiniexViewer consumes the REST API provided by FiniexTestingIDE (introduced in p
 │  (Vue 3, TypeScript)    │     /api/v1/brokers/...    │   (Python, FastAPI)      │
 │                         │                            │                          │
 │  - Broker/Symbol picker │                            │  - Parquet tick reader   │
-│  - Date range filter    │                            │  - Bar index manager     │
-│  - Lightweight Charts   │                            │  - Scenario engine       │
+│  - Candle chart         │                            │  - Bar index manager     │
+│  - Shareable URL state  │                            │  - Scenario engine       │
 └─────────────────────────┘                            └──────────────────────────┘
 ```
 
-Details on the two-container setup, dev phases, and request flow: see [docs/frontend_architecture.md](docs/frontend_architecture.md).
+Two-container topology and request flow: [docs/frontend_architecture.md](docs/frontend_architecture.md)
 
-## Tech Stack
+---
 
-| Layer | Choice | Why |
-|---|---|---|
-| Build tool | **Vite** | Fast dev server, minimal config |
-| Framework | **Vue 3** (Composition API, `<script setup>`) | Modern, small footprint |
-| Language | **TypeScript** | Type-safe API contracts |
-| State | **Pinia** | Standard Vue 3 state management |
-| Routing | **Vue Router** | Standard SPA routing |
-| Charts | **Lightweight Charts** (TradingView) | Purpose-built for financial candles |
-| HTTP client | **axios** (or native `fetch`) | Decided in #2 |
-
-## Status & Roadmap
-
-See the issue tracker. The v0.1 milestone is broken into five work items:
-
-| # | Issue | Purpose |
-|---|---|---|
-| 1 | Vision & Roadmap | Long-term direction and non-goals |
-| 2 | Project Foundation & API Client | Scaffold, Pinia stores, first API call |
-| 3 | UI Shell & Selectors | Layout, navigation, broker/symbol pickers |
-| 4 | Candle Viewer | Chart integration, date range, timeframe selector |
-| 5 | Public Polish | README screenshots, dev setup, cleanup |
-
-See [HANDOFF_INITIAL_SETUP.md](HANDOFF_INITIAL_SETUP.md) for architectural context before starting work.
-
-## Development (Planned)
-
-Once scaffolded (see issue #2), the standard commands will apply:
+## Development Commands
 
 ```bash
-npm install
-npm run dev      # start dev server
-npm run build    # production build
-npm run type-check
+npm run dev          # start Vite dev server
+npm run build        # production build
+npm run type-check   # TypeScript check without emit
 ```
 
-The dev server expects the FiniexTestingIDE API server to be running locally on its configured port. API base URL is read from `.env.local`.
+---
 
 ## License
 
@@ -84,4 +117,4 @@ MIT — see [LICENSE](LICENSE).
 
 ## Disclaimer
 
-This is a pre-release alpha project under active development. Features, APIs, and architecture may change without notice. It is provided as-is for research and educational purposes. Nothing in this project constitutes financial advice.
+Pre-release alpha under active development. Features, APIs, and architecture may change without notice. Provided as-is for research and educational purposes. Nothing in this project constitutes financial advice.
