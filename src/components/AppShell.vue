@@ -5,6 +5,7 @@ import { Splitpanes, Pane } from 'splitpanes'
 import { useBrokerStore } from '@/stores/broker_store'
 import { useSymbolStore } from '@/stores/symbol_store'
 import { useSelectionStore } from '@/stores/selection_store'
+import { useQuerySync } from '@/composables/use_query_sync'
 import AppSelect from '@/components/base/AppSelect.vue'
 
 const TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1']
@@ -20,6 +21,8 @@ const { broker, symbol, timeframe } = storeToRefs(selectionStore)
 const currentSymbols = computed(() =>
   broker.value ? (symbolsByBroker.value[broker.value] ?? []) : []
 )
+
+useQuerySync()
 
 onMounted(async () => {
   await brokerStore.loadBrokers()
