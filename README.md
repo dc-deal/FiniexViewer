@@ -1,6 +1,6 @@
 # FiniexViewer
 
-> **Version:** 0.1.0 (Alpha)
+> **Version:** v0.1 Pre-Alpha Showcase
 > **Status:** v0.1 feature complete — candle chart, selector, shareable links.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
