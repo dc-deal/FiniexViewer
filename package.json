@@ -9,7 +9,9 @@
     "type-check": "vue-tsc --noEmit",
     "preview": "vite preview",
     "lint": "eslint . --fix",
-    "lint:check": "eslint ."
+    "lint:check": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "axios": "^1.7.9",
@@ -22,11 +24,15 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vitest/coverage-v8": "^3.1.0",
     "@vue/eslint-config-typescript": "^14.0.0",
+    "@vue/test-utils": "^2.4.6",
     "eslint": "^9.0.0",
     "eslint-plugin-vue": "^9.0.0",
+    "jsdom": "^26.0.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.7",
+    "vitest": "^3.1.0",
     "vue-tsc": "^2.2.0"
   }
 }
