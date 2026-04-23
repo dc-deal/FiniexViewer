@@ -5,18 +5,19 @@ import { Splitpanes, Pane } from 'splitpanes'
 import { useBrokerStore } from '@/stores/broker_store'
 import { useSymbolStore } from '@/stores/symbol_store'
 import { useSelectionStore } from '@/stores/selection_store'
+import { useTimeframeStore } from '@/stores/timeframe_store'
 import { useQuerySync } from '@/composables/use_query_sync'
 import AppSelect from '@/components/base/AppSelect.vue'
-
-const TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1']
 
 const brokerStore = useBrokerStore()
 const symbolStore = useSymbolStore()
 const selectionStore = useSelectionStore()
+const timeframeStore = useTimeframeStore()
 
 const { brokers, loading: brokersLoading } = storeToRefs(brokerStore)
 const { symbolsByBroker, loading: symbolsLoading } = storeToRefs(symbolStore)
 const { broker, symbol, timeframe } = storeToRefs(selectionStore)
+const { timeframes } = storeToRefs(timeframeStore)
 
 const currentSymbols = computed(() =>
   broker.value ? (symbolsByBroker.value[broker.value] ?? []) : []
@@ -26,6 +27,7 @@ useQuerySync()
 
 onMounted(async () => {
   await brokerStore.loadBrokers()
+  timeframeStore.loadTimeframes()
 })
 
 function onBrokerChange(b: string): void {
@@ -66,7 +68,7 @@ function onBrokerChange(b: string): void {
             <label class="selector-label">Timeframe</label>
             <AppSelect
               :model-value="timeframe"
-              :options="TIMEFRAMES.map(tf => ({ value: tf, label: tf }))"
+              :options="timeframes.map(tf => ({ value: tf, label: tf }))"
               placeholder="Select timeframe"
               :disabled="symbol === null"
               @update:model-value="selectionStore.setTimeframe"

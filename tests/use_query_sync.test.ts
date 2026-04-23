@@ -8,10 +8,11 @@ import { useSelectionStore } from '@/stores/selection_store'
 
 // symbolStore.loadSymbols calls getSymbols — mock to avoid real HTTP
 vi.mock('@/api/api_client', () => ({
-  getBrokers:  vi.fn().mockResolvedValue([]),
-  getSymbols:  vi.fn().mockResolvedValue([]),
-  getCoverage: vi.fn().mockResolvedValue({ start: '', end: '', timeframes: [] }),
-  getBars:     vi.fn().mockResolvedValue([]),
+  getTimeframes: vi.fn().mockResolvedValue([]),
+  getBrokers:    vi.fn().mockResolvedValue([]),
+  getSymbols:    vi.fn().mockResolvedValue([]),
+  getCoverage:   vi.fn().mockResolvedValue({ start: '', end: '', timeframes: [] }),
+  getBars:       vi.fn().mockResolvedValue([]),
 }))
 
 // Minimal component that activates the composable

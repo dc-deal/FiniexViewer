@@ -43,6 +43,7 @@ npx vitest
 ```
 tests/
   selection_store.test.ts   — cascade logic, localStorage persistence, resetTimeframe, isReady
+  timeframe_store.test.ts   — load-once cache, minutesFor lookup, error handling, loading flag
   bars_store.test.ts        — coverage validation, window calculation, timeframe mismatch, error handling
   use_query_sync.test.ts    — URL-first priority, localStorage fallback, _ready guard, URL write-back
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping
@@ -58,9 +59,20 @@ All HTTP calls are intercepted via `vi.mock('@/api/api_client', ...)`. The mock 
 
 ```ts
 vi.mock('@/api/api_client', () => ({
+  getTimeframes: vi.fn(),
   getCoverage: vi.fn(),
   getBars: vi.fn(),
 }))
+```
+
+Test files that use `bars_store` must pre-load the `timeframe_store` in `beforeEach` because `bars_store` calls `timeframeStore.minutesFor()` during `fetchBars`:
+
+```ts
+beforeEach(async () => {
+  setActivePinia(createPinia())
+  vi.mocked(apiClient.getTimeframes).mockResolvedValue(TF_INFOS)
+  await useTimeframeStore().loadTimeframes()
+})
 ```
 
 ### axios (api_client tests only)

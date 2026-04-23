@@ -9,11 +9,20 @@ vi.mock('axios', () => ({
   },
 }))
 
-import { getBrokers, getSymbols, getCoverage, getBars } from '@/api/api_client'
+import { getTimeframes, getBrokers, getSymbols, getCoverage, getBars } from '@/api/api_client'
 
 describe('api_client', () => {
   beforeEach(() => {
     mockGet.mockReset()
+  })
+
+  describe('getTimeframes', () => {
+    it('calls /timeframes and returns timeframe list', async () => {
+      mockGet.mockResolvedValue({ data: { timeframes: ['M1', 'M5', 'H1', 'D1'] } })
+      const result = await getTimeframes()
+      expect(result).toEqual(['M1', 'M5', 'H1', 'D1'])
+      expect(mockGet).toHaveBeenCalledWith('/timeframes')
+    })
   })
 
   describe('getBrokers', () => {
