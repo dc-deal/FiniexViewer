@@ -1,7 +1,7 @@
 # FiniexViewer
 
-> **Version:** v0.1 Pre-Alpha Showcase
-> **Status:** v0.1 feature complete — candle chart, selector, shareable links.
+> **Version:** v0.2 Pre-Alpha Showcase
+> **Status:** v0.2 — candle chart, selector, shareable links, unit test coverage, CI pipeline.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
@@ -79,6 +79,8 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | Layout | **splitpanes** |
 | Theme | CSS Custom Properties token system, dark/light mode |
 | Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` |
+| Testing | **Vitest** + **Vue Test Utils** — unit tests, jsdom environment |
+| CI | **GitHub Actions** — type-check + tests on every PR and push to master |
 
 Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_architecture.md)
 
@@ -107,6 +109,8 @@ Two-container topology and request flow: [docs/frontend_architecture.md](docs/fr
 npm run dev          # start Vite dev server
 npm run build        # production build
 npm run type-check   # TypeScript check without emit
+npm run test         # run unit tests (Vitest)
+npm run test:coverage  # run tests with coverage report
 ```
 
 ---
