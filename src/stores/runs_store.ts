@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getRuns, getRunSummary } from '@/api/api_client'
 import type { RunInfo, RunSummary } from '@/types/api/report_types'
+import { t } from '@/translate'
 
 /** Distinct values in encounter order — the index arrives newest first and that order is kept. */
 function unique(values: string[]): string[] {
@@ -51,7 +52,7 @@ export const useRunsStore = defineStore('runs', () => {
       // the index row carries run_id + group + name, so the cascade needs no request per run
       runs.value = await getRuns()
     } catch (e) {
-      error.value = describeFailure(e, 'Could not load the run index')
+      error.value = describeFailure(e, t('Could not load the run index'))
     } finally {
       loadingRuns.value = false
     }
@@ -88,7 +89,7 @@ export const useRunsStore = defineStore('runs', () => {
       summary.value = result
       summaryMissing.value = result === null
     } catch (e) {
-      error.value = describeFailure(e, 'Could not load the run summary')
+      error.value = describeFailure(e, t('Could not load the run summary'))
     } finally {
       loadingSummary.value = false
     }

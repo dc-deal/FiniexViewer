@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getTimeframes } from '@/api/api_client'
 import type { TimeframeInfo } from '@/types/api/timeframe_types'
+import { t } from '@/translate'
 
 export const useTimeframeStore = defineStore('timeframe', () => {
   const _infos = ref<TimeframeInfo[]>([])
@@ -21,7 +22,7 @@ export const useTimeframeStore = defineStore('timeframe', () => {
     try {
       _infos.value = await getTimeframes()
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load timeframes'
+      error.value = e instanceof Error ? e.message : t('Failed to load timeframes')
     } finally {
       loading.value = false
     }

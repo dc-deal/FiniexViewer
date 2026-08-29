@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
 import AppSelect from '@/components/base/AppSelect.vue'
+import { t } from '@/translate'
 
 const runsStore = useRunsStore()
 const { groups, names, runsInSelection, selectedGroup, selectedName, selectedRunId, loadingRuns } =
@@ -25,31 +26,31 @@ const runOptions = computed(() =>
 <template>
   <div class="run-picker">
     <div class="picker-field">
-      <label class="picker-label">Group</label>
+      <label class="picker-label">{{ t('Group') }}</label>
       <AppSelect
         :model-value="selectedGroup"
         :options="groupOptions"
-        :placeholder="groups.length ? 'Select group' : 'No runs available'"
+        :placeholder="groups.length ? t('Select group') : t('No runs available')"
         :disabled="loadingRuns || groups.length === 0"
         @update:model-value="runsStore.setGroup"
       />
     </div>
     <div class="picker-field wide">
-      <label class="picker-label">Scenario / Profile</label>
+      <label class="picker-label">{{ t('Scenario / Profile') }}</label>
       <AppSelect
         :model-value="selectedName"
         :options="nameOptions"
-        placeholder="Select scenario"
+        :placeholder="t('Select scenario')"
         :disabled="selectedGroup === null"
         @update:model-value="runsStore.setName"
       />
     </div>
     <div class="picker-field">
-      <label class="picker-label">Run</label>
+      <label class="picker-label">{{ t('Run') }}</label>
       <AppSelect
         :model-value="selectedRunId"
         :options="runOptions"
-        placeholder="Select run"
+        :placeholder="t('Select run')"
         :disabled="selectedName === null"
         @update:model-value="runsStore.selectRun"
       />

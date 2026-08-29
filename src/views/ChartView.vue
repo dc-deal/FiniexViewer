@@ -4,6 +4,7 @@ import { useSelectionStore } from '@/stores/selection_store'
 import { useBarsStore } from '@/stores/bars_store'
 import CandleChart from '@/components/CandleChart.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
+import { t } from '@/translate'
 
 const { isReady } = storeToRefs(useSelectionStore())
 const { chartData, loading, error } = storeToRefs(useBarsStore())
@@ -12,7 +13,7 @@ const { chartData, loading, error } = storeToRefs(useBarsStore())
 <template>
   <div class="chart-view">
     <div v-if="!isReady" class="state-overlay">
-      <span class="hint">Select broker, symbol and timeframe to continue</span>
+      <span class="hint">{{ t('Select broker, symbol and timeframe to continue') }}</span>
     </div>
     <div v-else-if="loading" class="state-overlay">
       <AppSpinner />
@@ -22,7 +23,7 @@ const { chartData, loading, error } = storeToRefs(useBarsStore())
     </div>
     <CandleChart v-else-if="chartData.length" :data="chartData" />
     <div v-else class="state-overlay">
-      <span class="hint">No data available for this range</span>
+      <span class="hint">{{ t('No data available for this range') }}</span>
     </div>
   </div>
 </template>

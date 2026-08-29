@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RunSummary } from '@/types/api/report_types'
+import { t } from '@/translate'
 
 defineProps<{
   summary: RunSummary
@@ -24,7 +25,7 @@ function percent(ratio: number): string {
 
 /** Plain decimal, or n/a when the backend says the value is undefined rather than zero. */
 function numberOrNa(value: number | null): string {
-  return value === null ? 'n/a' : value.toFixed(2)
+  return value === null ? t('n/a') : value.toFixed(2)
 }
 
 /**
@@ -33,7 +34,7 @@ function numberOrNa(value: number | null): string {
  * would still print a mean nobody measured.
  */
 function rValue(value: number | null, count: number): string {
-  if (count === 0 || value === null) return 'n/a'
+  if (count === 0 || value === null) return t('n/a')
   const sign = value >= 0 ? '+' : ''
   return `${sign}${value.toFixed(2)}R`
 }
@@ -49,33 +50,33 @@ function signClass(value: number): string {
 <template>
   <div class="summary-panel">
     <section class="block">
-      <h2 class="block-title">Orders</h2>
+      <h2 class="block-title">{{ t('Orders') }}</h2>
       <div class="counts">
-        <div class="count"><span class="count-label">Sent</span><span class="count-value">{{ summary.orders_sent }}</span></div>
-        <div class="count"><span class="count-label">Executed</span><span class="count-value">{{ summary.orders_executed }}</span></div>
-        <div class="count"><span class="count-label">Rejected</span><span class="count-value">{{ summary.orders_rejected }}</span></div>
-        <div class="count"><span class="count-label">SL/TP</span><span class="count-value">{{ summary.sl_tp_triggered }}</span></div>
-        <div class="count"><span class="count-label">Units</span><span class="count-value">{{ summary.unit_count }}</span></div>
+        <div class="count"><span class="count-label">{{ t('Sent') }}</span><span class="count-value">{{ summary.orders_sent }}</span></div>
+        <div class="count"><span class="count-label">{{ t('Executed') }}</span><span class="count-value">{{ summary.orders_executed }}</span></div>
+        <div class="count"><span class="count-label">{{ t('Rejected') }}</span><span class="count-value">{{ summary.orders_rejected }}</span></div>
+        <div class="count"><span class="count-label">{{ t('SL/TP') }}</span><span class="count-value">{{ summary.sl_tp_triggered }}</span></div>
+        <div class="count"><span class="count-label">{{ t('Units') }}</span><span class="count-value">{{ summary.unit_count }}</span></div>
       </div>
     </section>
 
     <section class="block">
-      <h2 class="block-title">Per Currency</h2>
-      <div v-if="!summary.currencies.length" class="hint">No currency KPIs in this run</div>
+      <h2 class="block-title">{{ t('Per Currency') }}</h2>
+      <div v-if="!summary.currencies.length" class="hint">{{ t('No currency KPIs in this run') }}</div>
       <div v-else class="table-scroll">
         <table class="kpi-table">
           <thead>
             <tr>
-              <th>Currency</th>
-              <th>Net P&amp;L</th>
-              <th>PF</th>
-              <th>Win Rate</th>
-              <th>Trades</th>
-              <th>Expectancy</th>
-              <th>Avg Win R</th>
-              <th>Avg Loss R</th>
-              <th>Max DD</th>
-              <th>Fees</th>
+              <th>{{ t('Currency') }}</th>
+              <th>{{ t('Net P&L') }}</th>
+              <th>{{ t('PF') }}</th>
+              <th>{{ t('Win Rate') }}</th>
+              <th>{{ t('Trades') }}</th>
+              <th>{{ t('Expectancy') }}</th>
+              <th>{{ t('Avg Win R') }}</th>
+              <th>{{ t('Avg Loss R') }}</th>
+              <th>{{ t('Max DD') }}</th>
+              <th>{{ t('Fees') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -97,18 +98,18 @@ function signClass(value: number): string {
     </section>
 
     <section class="block">
-      <h2 class="block-title">Feed</h2>
+      <h2 class="block-title">{{ t('Feed') }}</h2>
       <div class="counts">
         <div class="count">
-          <span class="count-label">Signal freshness</span>
+          <span class="count-label">{{ t('Signal freshness') }}</span>
           <span class="count-value">
-            {{ summary.signal_fresh_ratio === null ? 'no SIGNAL worker' : percent(summary.signal_fresh_ratio) }}
+            {{ summary.signal_fresh_ratio === null ? t('no SIGNAL worker') : percent(summary.signal_fresh_ratio) }}
           </span>
         </div>
-        <div class="count"><span class="count-label">Disturbance episodes</span><span class="count-value">{{ summary.disturbance_episode_count }}</span></div>
-        <div class="count"><span class="count-label">Stale seconds</span><span class="count-value">{{ summary.disturbance_stale_seconds.toFixed(1) }}</span></div>
-        <div class="count"><span class="count-label">Sources affected</span><span class="count-value">{{ summary.disturbance_source_count }}</span></div>
-        <div class="count"><span class="count-label">Stress injected</span><span class="count-value">{{ summary.disturbance_stress_injected }}</span></div>
+        <div class="count"><span class="count-label">{{ t('Disturbance episodes') }}</span><span class="count-value">{{ summary.disturbance_episode_count }}</span></div>
+        <div class="count"><span class="count-label">{{ t('Stale seconds') }}</span><span class="count-value">{{ summary.disturbance_stale_seconds.toFixed(1) }}</span></div>
+        <div class="count"><span class="count-label">{{ t('Sources affected') }}</span><span class="count-value">{{ summary.disturbance_source_count }}</span></div>
+        <div class="count"><span class="count-label">{{ t('Stress injected') }}</span><span class="count-value">{{ summary.disturbance_stress_injected }}</span></div>
       </div>
     </section>
   </div>
