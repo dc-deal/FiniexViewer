@@ -49,3 +49,44 @@ export interface RunSummary {
   disturbance_source_count: number
   disturbance_stress_injected: number
 }
+
+/**
+ * One warning notice. Tier 1 ('major') is validator-produced and belongs in the report; tier 2
+ * ('minor') is whatever sat at WARNING level in the log and is only summarised.
+ */
+export interface WarningRow {
+  tier: string          // 'major' (tier 1, validator) | 'minor' (tier 2, log pot)
+  scope: string         // 'run' (run-wide) | the name of a unit
+  message: string
+}
+
+/** Per-unit error record: the crash, the validation failures and the logged error pot. */
+export interface UnitErrorRow {
+  name: string
+  symbol: string
+  error_type: string          // '' when the unit did not crash
+  error_message: string
+  validation_errors: string[]
+  logged_errors: string[]
+  traceback: string           // '' when there is none
+}
+
+/** Run-level outcome, stamped once by the pipeline — no consumer re-derives a verdict from counts. */
+export interface WarningsErrorsOutcome {
+  // '' on artifacts written before the grading existed — absent, never a state
+  run_outcome: string
+  failed_count: number
+  total_units: number
+  failed_unit_names: string[]
+  first_failure_name: string
+  first_failure_error: string
+  emergency_reason: string    // live villain
+  shutdown_mode: string       // 'normal' | 'emergency'
+}
+
+/** Response type for GET /api/v1/reports/runs/{run_id}/warnings-errors */
+export interface WarningsErrorsReport {
+  warnings: WarningRow[]
+  errors: UnitErrorRow[]
+  outcome: WarningsErrorsOutcome
+}

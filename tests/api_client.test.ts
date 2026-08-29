@@ -19,6 +19,7 @@ import {
   getBars,
   getRuns,
   getRunSummary,
+  getWarningsErrors,
 } from '@/api/api_client'
 
 describe('api_client', () => {
@@ -113,6 +114,24 @@ describe('api_client', () => {
     it('rethrows any other failure', async () => {
       mockGet.mockRejectedValue({ response: { status: 500 } })
       await expect(getRunSummary('20260615_130000')).rejects.toBeDefined()
+    })
+  })
+
+  describe('getWarningsErrors', () => {
+    it('calls the warnings-errors endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: { warnings: [], errors: [], outcome: {} } })
+      await getWarningsErrors('20260615_130000')
+      expect(mockGet).toHaveBeenCalledWith('/reports/runs/20260615_130000/warnings-errors')
+    })
+
+    it('maps 404 to null — a run without the artifact is an absence, not a failure', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404 } })
+      expect(await getWarningsErrors('20260615_130000')).toBeNull()
+    })
+
+    it('rethrows any other failure', async () => {
+      mockGet.mockRejectedValue({ response: { status: 500 } })
+      await expect(getWarningsErrors('20260615_130000')).rejects.toBeDefined()
     })
   })
 })

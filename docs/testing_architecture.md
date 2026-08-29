@@ -49,7 +49,9 @@ tests/
   runs_store.test.ts        — run index loading, group/name/run cascade, missing-artifact flag, error handling
   use_run_query_sync.test.ts — cascade restore from URL, partial cascade, merge with foreign params
   query_param_utils.test.ts — query reading (string-only), param write and delete
-  run_summary_panel.test.ts — KPI rendering: units, n/a for undefined values, per-subset R gating
+  run_panels.test.ts        — KPI rendering (units, n/a, per-subset R gating, SIGNAL absence) and the warnings/errors tiers
+  layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
+  run_reports_store.test.ts — section loading, missing artifact, error text, clearing on run change
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 mapping
 ```
 

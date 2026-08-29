@@ -212,6 +212,24 @@ Priority on load: **URL params > localStorage > null**. Both wait for `router.is
 
 **Both merge, never replace.** `router.replace({ query })` with a freshly built object silently drops every param the other composable owns. `query_param_utils.ts` holds the two functions that make the merge the default: `readQuery` (the current query as plain strings) and `writeParam` (set, or delete when the value is null).
 
+### Panels — a registry, a shell, one persisted layout
+
+The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
+
+- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon, component, the `source` key it reads, which run groups it applies to, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild.
+- **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
+- **`src/stores/layout_store.ts`** — the arrangement, persisted under the single versioned key `layout.v1`.
+
+**A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a live frame later (testingide#379/#380) without being written twice.
+
+**Two stores, two questions.** `runs_store` answers *which* run is selected — the `group → name → run` cascade and the index behind it. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
+
+**A section whose model this run does not carry is skipped, never shown empty.** `PanelColumn` drops a panel whose source is absent, which is how a 404 on a report route reaches the UI: not as an error, as a missing section.
+
+**The stored layout is reconciled against the registry on load, never trusted.** Panel ids the registry no longer knows are dropped; panels added since the layout was stored are appended with their defaults; a corrupt entry falls back to the default workspace. Hidden panels are recorded in an explicit `hidden` list — without it, reconciliation cannot tell a panel the user hid from one that is new, and would resurrect it on every load.
+
+**Pin anchors, lock protects.** Pin moves a panel to the top of the column and opens it once; afterwards open/closed stays free. Lock exempts a panel from *collapse all* (and later from width-driven auto-collapse). Hiding needs no confirmation: the app bar always shows what is hidden, so nothing is lost.
+
 ### Display Strings — a marker, not a translation layer
 
 Every user-facing string goes through `t()` (`src/translate.ts`), which returns its input unchanged. The interface is English-only and there is no language switch.

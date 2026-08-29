@@ -2,7 +2,12 @@ import axios from 'axios'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
-import type { RunInfo, RunListResponse, RunSummary } from '@/types/api/report_types'
+import type {
+  RunInfo,
+  RunListResponse,
+  RunSummary,
+  WarningsErrorsReport,
+} from '@/types/api/report_types'
 
 const http = axios.create({
   baseURL: '/api/v1'
@@ -54,6 +59,19 @@ export async function getRuns(): Promise<RunInfo[]> {
 export async function getRunSummary(runId: string): Promise<RunSummary | null> {
   try {
     const response = await http.get<RunSummary>(`/reports/runs/${runId}/run-summary`)
+    return response.data
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
+/** Warnings and errors of a run. Null when the run carries no such artifact — an absence. */
+export async function getWarningsErrors(runId: string): Promise<WarningsErrorsReport | null> {
+  try {
+    const response = await http.get<WarningsErrorsReport>(
+      `/reports/runs/${runId}/warnings-errors`
+    )
     return response.data
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
