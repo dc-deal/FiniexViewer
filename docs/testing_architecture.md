@@ -46,7 +46,11 @@ tests/
   timeframe_store.test.ts   — load-once cache, minutesFor lookup, error handling, loading flag
   bars_store.test.ts        — coverage validation, window calculation, timeframe mismatch, error handling
   use_query_sync.test.ts    — URL-first priority, localStorage fallback, _ready guard, URL write-back
-  api_client.test.ts        — request construction, endpoint paths, query params, response mapping
+  runs_store.test.ts        — run index loading, group/name/run cascade, missing-artifact flag, error handling
+  use_run_query_sync.test.ts — cascade restore from URL, partial cascade, merge with foreign params
+  query_param_utils.test.ts — query reading (string-only), param write and delete
+  run_summary_panel.test.ts — KPI rendering: units, n/a for undefined values, per-subset R gating
+  api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 mapping
 ```
 
 ---

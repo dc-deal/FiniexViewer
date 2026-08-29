@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ChartView from '@/views/ChartView.vue'
+import RunsView from '@/views/RunsView.vue'
 import AboutView from '@/views/AboutView.vue'
 
 const router = createRouter({
@@ -13,6 +14,11 @@ const router = createRouter({
       path: '/viewer',
       name: 'viewer',
       component: ChartView
+    },
+    {
+      path: '/runs',
+      name: 'runs',
+      component: RunsView
     },
     {
       path: '/about',

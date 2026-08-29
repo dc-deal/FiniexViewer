@@ -46,6 +46,7 @@ function onBrokerChange(b: string): void {
         <Pane :min-size="12" :max-size="30" :size="16" class="sidebar">
           <nav class="sidebar-nav">
             <RouterLink to="/viewer" class="nav-link">Viewer</RouterLink>
+            <RouterLink to="/runs" class="nav-link">Runs</RouterLink>
             <RouterLink to="/about" class="nav-link">About</RouterLink>
           </nav>
           <div class="sidebar-selectors">

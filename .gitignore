@@ -51,7 +51,13 @@ Thumbs.db
 # Claude / AI assistant runtime (never commit)
 .claude/
 CLAUDE.md
+.mcp.json
 
 # GitHub issues export (local reference only)
 github_issues/
 export_github_issues.sh
+
+# Internal working docs (private — may reference user_algos / private bots)
+INTERNAL_*.md
+ISSUE_*.md
+SESSION_*.md

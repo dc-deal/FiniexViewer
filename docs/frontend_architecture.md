@@ -76,7 +76,7 @@ Use this once the Viewer scaffold exists (after FiniexViewer issue #2).
 
 ### Phase 3 — Public / Production (deferred)
 
-A production image for the Viewer (static build served by a lightweight HTTP server) and a standalone `docker-compose.yml` inside the FiniexViewer repo are planned for FiniexViewer issue #5. The design choice here — static hosting versus embedding the Vue build into the FastAPI app — is deferred until we have a working Phase 2 setup to learn from.
+A production image for the Viewer (static build served by a lightweight HTTP server) and a standalone `docker-compose.yml` inside the FiniexViewer repo are planned, but no issue carries them yet — the roadmap lists production delivery under known directions. The design choice — static hosting versus embedding the built bundle into the FastAPI app — is open. Everything documented above is a development setup.
 
 ## Network Flow (Request Example)
 
@@ -91,6 +91,79 @@ Loading a candle chart for `mt5/EURUSD M30`:
 7. The SPA pipes the response into Lightweight Charts, the chart renders.
 
 No shared filesystem, no direct imports across repositories. The HTTP contract is the only coupling.
+
+## Consumed API Surface
+
+The backend exposes two planes. The viewer consumes both, and treats them differently only in what they describe.
+
+**Data plane** — the market data behind the candle chart:
+
+```
+GET /api/v1/health
+GET /api/v1/timeframes
+GET /api/v1/brokers
+GET /api/v1/brokers/{broker}/symbols
+GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage
+GET /api/v1/brokers/{broker}/symbols/{symbol}/bars
+```
+
+**Report plane** — read-only access to persisted run artifacts, addressed by `run_id`:
+
+```
+GET /api/v1/reports/runs                              run index — the only route that yields a run_id
+GET /api/v1/reports/runs/{run_id}/run-summary         cross-section KPIs (consumed by the runs view)
+GET /api/v1/reports/runs/{run_id}/...                 13 further per-section reports (not yet consumed)
+```
+
+The report plane is model-fed on the backend: one canonical model per section, derived once and rendered identically to console, CSV and API. The API is the same object serialized, not a separate projection that can drift.
+
+Two consequences the frontend is built around:
+
+- **The index row carries `run_id`, `group` and `name`**, so the run cascade (group → scenario/profile → run) is built from one request. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here.
+- **A 404 on a report section is an absence, not a failure.** A run can exist without carrying a given artifact. `getRunSummary` maps that to `null`, and the view says the artifact is missing instead of showing an error.
+
+**Not every report route answers for every run.** `group` decides:
+
+| Route | Answers for |
+|---|---|
+| `scenario-details`, `profiling` | simulation runs only — 404 for an `autotrader` run |
+| `aggregated-portfolio` | simulation in practice: a single-unit live session has no cross-unit aggregate |
+| the remaining eleven | both groups |
+
+Gate a panel on that rule rather than on a failed request.
+
+### Units and undefined values
+
+The models carry numbers, not units. These are contract, confirmed by the backend, and the conversion happens at the render edge:
+
+- `win_rate` is a **ratio 0..1** — multiply for display.
+- `max_drawdown` is a **positive magnitude** in account currency. The sign is a display choice, not data.
+- `expectancy` is mean R, meaningful only when `r_trade_count > 0`.
+- `profit_factor` is `null` when it is **undefined** (a run without a losing trade), never 0.
+- `avg_win_r` / `avg_loss_r` are `null` when their subset is empty. Gate each on **its own** count (`r_win_count` / `r_loss_count`): a run can have R-defined trades with no winner among them, so `r_trade_count` alone would still print a mean nobody measured.
+- `signal_fresh_ratio` is `null` when no SIGNAL worker was involved — deliberately not 1.0, which would claim a perfect feed.
+
+The rule behind all of them: **a value that means "not measured" must never render as a number.** It renders as `n/a`.
+
+### The printout never computes
+
+The backend derives every figure once, off the hot loop, and its renderers only format. The viewer follows the same rule: no KPI is re-derived here. If a figure a panel needs is not on a model, it is requested as a model field rather than calculated locally — a second calculation drifts from the first, which is exactly the defect the backend removed from its own console (`execution_rate_pct` and `max_dd_pct` were divisions inside a renderer and are now fields).
+
+### Canonical section order
+
+The order both backend pipelines render, and the order panels should follow:
+
+```
+header → scenario details (sim) → portfolio: per-unit, then aggregated →
+trade history: per-unit, then aggregated → broker → signal → feed stability →
+performance: per-unit, aggregated, bottleneck → profiling (sim) →
+worker/decision breakdown → warmup (sim) → warnings & errors →
+closing: executive (sim) / session summary (live)
+```
+
+Aggregated blocks appear only for a multi-unit run, and a section whose model is absent is skipped rather than shown empty.
+
+Response shapes are mirrored by hand in `src/types/api/report_types.ts`. No generated client, no shared code — the HTTP contract is the only coupling.
 
 ## Why Not One Container
 
@@ -128,11 +201,16 @@ All colors, spacing, and type scale are defined as CSS custom properties in `src
 
 This avoids a CSS-in-JS dependency, works natively in every browser, and is trivially inspectable in DevTools. Reka UI (headless component layer) is deferred — no concrete accessibility need has surfaced yet.
 
-### URL Query State — `use_query_sync`
+### URL Query State — `use_query_sync` / `use_run_query_sync`
 
-Selection state (broker / symbol / timeframe) is stored in the URL as query params (`?broker=...&symbol=...&timeframe=...`). This makes every chart view a shareable link and survives page reload.
+Every user-selectable option on a page is stored in the URL as a query param, so any view is a shareable link that survives reload. Two composables own disjoint sets of params:
 
-Priority on load: **URL params > localStorage > null**. The composable (`src/composables/use_query_sync.ts`) waits for `router.isReady()` before reading params to avoid a race with the initial navigation, then watches the selection store and calls `router.replace` on every change. localStorage is a write-through cache.
+- `use_query_sync.ts` — the chart selection (`?broker=...&symbol=...&timeframe=...`), activated in `AppShell`.
+- `use_run_query_sync.ts` — the run cascade (`?group=...&name=...&run=...`), activated in `RunsView`.
+
+Priority on load: **URL params > localStorage > null**. Both wait for `router.isReady()` before reading params, to avoid a race with the initial navigation, then watch their store and call `router.replace` on every change. For the chart selection, localStorage is a write-through cache; the run cascade has no cache, because the run index is live data.
+
+**Both merge, never replace.** `router.replace({ query })` with a freshly built object silently drops every param the other composable owns. `query_param_utils.ts` holds the two functions that make the merge the default: `readQuery` (the current query as plain strings) and `writeParam` (set, or delete when the value is null).
 
 ### Chart Engine — Lightweight Charts (TradingView)
 

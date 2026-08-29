@@ -6,10 +6,20 @@ const mockGet = vi.hoisted(() => vi.fn())
 vi.mock('axios', () => ({
   default: {
     create: vi.fn(() => ({ get: mockGet })),
+    isAxiosError: (error: unknown): boolean =>
+      typeof error === 'object' && error !== null && 'response' in error,
   },
 }))
 
-import { getTimeframes, getBrokers, getSymbols, getCoverage, getBars } from '@/api/api_client'
+import {
+  getTimeframes,
+  getBrokers,
+  getSymbols,
+  getCoverage,
+  getBars,
+  getRuns,
+  getRunSummary,
+} from '@/api/api_client'
 
 describe('api_client', () => {
   beforeEach(() => {
@@ -74,6 +84,35 @@ describe('api_client', () => {
       mockGet.mockResolvedValue({ data: bars })
       const result = await getBars('kraken_spot', 'BTCUSD', 'H1', '2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z')
       expect(result).toEqual(bars)
+    })
+  })
+
+  describe('getRuns', () => {
+    it('calls /reports/runs and returns the run list', async () => {
+      const runs = [{ run_id: '20260615_130000', group: 'autotrader', name: 'my_profile' }]
+      mockGet.mockResolvedValue({ data: { runs, count: 1 } })
+      const result = await getRuns()
+      expect(result).toEqual(runs)
+      expect(mockGet).toHaveBeenCalledWith('/reports/runs')
+    })
+  })
+
+  describe('getRunSummary', () => {
+    it('calls the run-summary endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: { currencies: [] } })
+      await getRunSummary('20260615_130000')
+      expect(mockGet).toHaveBeenCalledWith('/reports/runs/20260615_130000/run-summary')
+    })
+
+    it('maps 404 to null — a run without the artifact is an absence, not a failure', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404 } })
+      const result = await getRunSummary('20260615_130000')
+      expect(result).toBeNull()
+    })
+
+    it('rethrows any other failure', async () => {
+      mockGet.mockRejectedValue({ response: { status: 500 } })
+      await expect(getRunSummary('20260615_130000')).rejects.toBeDefined()
     })
   })
 })
