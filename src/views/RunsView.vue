@@ -12,8 +12,10 @@ import { t } from '@/translate'
 
 const runsStore = useRunsStore()
 const reportsStore = useRunReportsStore()
-const { selectedRunId, selectedRun, summary, summaryMissing, loadingRuns, loadingSummary, error } =
-  storeToRefs(runsStore)
+const {
+  runs, selectedRunId, selectedRun, summary, summaryMissing, unknownRunId,
+  loadingRuns, loadingSummary, error,
+} = storeToRefs(runsStore)
 const { warningsErrors, portfolio } = storeToRefs(reportsStore)
 
 // loads the run index and restores the cascade from the URL
@@ -54,6 +56,14 @@ const showPanels = computed(() =>
       </div>
       <div v-else-if="error" class="state-overlay">
         <span class="error-msg">{{ error }}</span>
+      </div>
+      <div v-else-if="!runs.length" class="state-overlay">
+        <span class="hint">{{ t('The backend reports no runs — its run index is empty') }}</span>
+      </div>
+      <div v-else-if="unknownRunId" class="state-overlay">
+        <span class="hint">
+          {{ t('This link names a run that is no longer in the index') }}: {{ unknownRunId }}
+        </span>
       </div>
       <div v-else-if="!selectedRun" class="state-overlay">
         <span class="hint">{{ t('Select group, scenario and run to continue') }}</span>

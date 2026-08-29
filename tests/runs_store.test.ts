@@ -170,11 +170,57 @@ describe('useRunsStore', () => {
     })
 
     it('surfaces a summary failure as an error message', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
       vi.mocked(apiClient.getRunSummary).mockRejectedValue(new Error('boom'))
       const store = useRunsStore()
+      await store.loadRuns()
       await store.selectRun('20260615_130000')
       expect(store.error).toBe('Could not load the run summary: boom')
       expect(store.loadingSummary).toBe(false)
+    })
+
+    it('never requests a run the index does not contain', async () => {
+      // a link or a reloaded URL can name a run whose artifacts were removed since — asking for
+      // it produces one 404 per section, which is not something the view can show
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260829_200849')
+      expect(apiClient.getRunSummary).not.toHaveBeenCalled()
+      expect(store.unknownRunId).toBe('20260829_200849')
+      expect(store.selectedRunId).toBeNull()
+      expect(store.error).toBeNull()
+    })
+
+    it('never requests anything while the index is empty', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue([])
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260615_130000')
+      expect(apiClient.getRunSummary).not.toHaveBeenCalled()
+      expect(store.unknownRunId).toBe('20260615_130000')
+    })
+
+    it('drops the unknown-run flag as soon as a real selection is made', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260829_200849')
+      expect(store.unknownRunId).not.toBeNull()
+
+      await store.selectRun('20260615_130000')
+      expect(store.unknownRunId).toBeNull()
+      expect(store.selectedRunId).toBe('20260615_130000')
+    })
+
+    it('drops the unknown-run flag when the group changes', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260829_200849')
+      store.setGroup('autotrader')
+      expect(store.unknownRunId).toBeNull()
     })
   })
 })

@@ -26,6 +26,8 @@ export const useRunsStore = defineStore('runs', () => {
   const error = ref<string | null>(null)
   // the selected run exists but carries no run-summary artifact (backend 404)
   const summaryMissing = ref(false)
+  // a run id the index does not contain — a link or a reloaded URL naming a run that is gone
+  const unknownRunId = ref<string | null>(null)
 
   // group -> name -> run, all three derived from the one index request
   const groups = computed(() => unique(runs.value.map(run => run.group)))
@@ -62,6 +64,7 @@ export const useRunsStore = defineStore('runs', () => {
     selectedRunId.value = null
     summary.value = null
     summaryMissing.value = false
+    unknownRunId.value = null
   }
 
   function setGroup(group: string): void {
@@ -95,7 +98,18 @@ export const useRunsStore = defineStore('runs', () => {
     }
   }
 
+  /**
+   * Selects a run, but only one the index actually contains. A URL, a bookmark or a shared link
+   * can name a run whose artifacts have been removed since; requesting it produces one 404 per
+   * section, which is not an answer the view can show. The index is the authority — the same
+   * rule the layout store applies to stored panel ids.
+   */
   async function selectRun(runId: string): Promise<void> {
+    clearRun()
+    if (!runs.value.some(run => run.run_id === runId)) {
+      unknownRunId.value = runId
+      return
+    }
     selectedRunId.value = runId
     await loadSummary()
   }
@@ -111,6 +125,7 @@ export const useRunsStore = defineStore('runs', () => {
     selectedRun,
     summary,
     summaryMissing,
+    unknownRunId,
     loadingRuns,
     loadingSummary,
     error,

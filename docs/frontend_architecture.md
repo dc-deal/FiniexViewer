@@ -123,6 +123,7 @@ Two consequences the frontend is built around:
 
 - **The index row carries `run_id`, `group` and `name`**, so the run cascade (group → scenario/profile → run) is built from one request. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here.
 - **A 404 on a report section is an absence, not a failure.** A run can exist without carrying a given artifact. `getRunSummary` maps that to `null`, and the view says the artifact is missing instead of showing an error.
+- **The index is the authority on which runs exist, and it is never bypassed.** A URL, a bookmark or a shared link can name a run whose artifacts were removed since. `selectRun` refuses an id the index does not contain, so a stale link produces no request at all rather than one 404 per section — the same rule the layout store applies to stored panel ids. An empty index is its own state (`{"runs": [], "count": 0}` is a normal 200), and the view says so instead of offering empty pickers with no explanation.
 
 **Not every report route answers for every run.** `group` decides:
 
