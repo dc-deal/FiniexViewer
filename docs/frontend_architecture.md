@@ -111,8 +111,10 @@ GET /api/v1/brokers/{broker}/symbols/{symbol}/bars
 
 ```
 GET /api/v1/reports/runs                              run index — the only route that yields a run_id
-GET /api/v1/reports/runs/{run_id}/run-summary         cross-section KPIs (consumed by the runs view)
-GET /api/v1/reports/runs/{run_id}/...                 13 further per-section reports (not yet consumed)
+GET /api/v1/reports/runs/{run_id}/run-summary         cross-section KPIs, summed over all units
+GET /api/v1/reports/runs/{run_id}/warnings-errors     tiered warnings, per-unit errors, run outcome
+GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down per unit
+GET /api/v1/reports/runs/{run_id}/...                 11 further per-section reports (not yet consumed)
 ```
 
 The report plane is model-fed on the backend: one canonical model per section, derived once and rendered identically to console, CSV and API. The API is the same object serialized, not a separate projection that can drift.
@@ -142,8 +144,9 @@ The models carry numbers, not units. These are contract, confirmed by the backen
 - `profit_factor` is `null` when it is **undefined** (a run without a losing trade), never 0.
 - `avg_win_r` / `avg_loss_r` are `null` when their subset is empty. Gate each on **its own** count (`r_win_count` / `r_loss_count`): a run can have R-defined trades with no winner among them, so `r_trade_count` alone would still print a mean nobody measured.
 - `signal_fresh_ratio` is `null` when no SIGNAL worker was involved — deliberately not 1.0, which would claim a perfect feed.
+- **`portfolio` does not use `null` for this.** An untraded unit arrives with `win_rate: 0.0` and `profit_factor: 0.0`, so the gate there is `total_trades`, not the value. The distinction matters in both directions: a unit with one losing trade and no winner has a profit factor that really *is* 0, and printing `n/a` for it would hide a measured result.
 
-The rule behind all of them: **a value that means "not measured" must never render as a number.** It renders as `n/a`.
+The rule behind all of them: **a value that means "not measured" must never render as a number.** It renders as `n/a`. Which field says "not measured" differs per section — check the model, do not assume `null`.
 
 ### The printout never computes
 
@@ -230,6 +233,8 @@ The viewer shows many small panels around one chart rather than one view per pag
 
 **Pin anchors, lock protects.** Pin moves a panel to the top of the column and opens it once; afterwards open/closed stays free. Lock exempts a panel from *collapse all* (and later from width-driven auto-collapse). Hiding needs no confirmation: the app bar always shows what is hidden, so nothing is lost.
 
+**From a report row into the chart.** The portfolio panel links a unit's symbol to `/viewer?broker=<data_source>&symbol=<symbol>` — the two views share one query namespace (see `query_param_utils`), so the link is a normal `RouterLink` and needs no store to carry the hand-over. It works because `data_source` holds the same broker keys `GET /brokers` returns (`mt5`). Live runs leave `data_source` empty and get plain text instead: `broker_name` is a display name (`Kraken`) and is not addressable, and guessing the key from it would invent a mapping the backend owns. The timeframe is deliberately not passed — the chart keeps whichever one the user last chose.
+
 ### Display Strings — a marker, not a translation layer
 
 Every user-facing string goes through `t()` (`src/translate.ts`), which returns its input unchanged. The interface is English-only and there is no language switch.
@@ -258,3 +263,24 @@ Unit tests: **Vitest** + **Vue Test Utils**. Vitest runs in the same Vite contex
 Priority targets: `selection_store` cascade logic, `timeframe_store` load-once cache and `minutesFor` lookup, `bars_store` coverage validation and window calculation, `use_query_sync` URL-priority behavior, `api_client` request construction. See issue #13.
 
 E2E tests (Cypress / Playwright): deferred until CI infrastructure is established. These require a running API server and are only valuable once the test environment is stable.
+
+### Quality Tooling — two tiers
+
+| Tier | Command | Tool | Enforced by |
+|---|---|---|---|
+| Gate | `npm run type-check` | `vue-tsc --noEmit` | CI, every push and pull request |
+| Gate | `npm run test` | Vitest | CI, every push and pull request |
+| Hygiene | `npm run lint:check` / `lint` | ESLint 9 + `eslint-plugin-vue` + `@stylistic` | measured, cleaned as a unit is touched |
+| Hygiene | `npm run knip` | knip | measured, cleaned as a unit is touched |
+
+**Why the split.** A gate that is red on day one gets switched off, and it would take the type-check beside it out of use. The two gates are the ones that fail on genuinely broken code; the hygiene tier reports drift that a human decides when to clean.
+
+**`@stylistic/quotes`** carries the single-quote convention. Double quotes stay legal only where they avoid escaping an apostrophe (`avoidEscape`); a template literal without interpolation is an error. HTML attribute quoting inside a `<template>` is a different rule and is deliberately untouched — the framework convention there is double quotes.
+
+**knip** reports files, exports and dependencies nothing references — the dead-code check TypeScript cannot make, because an unused export is valid code. `knip.json` sets `ignoreExportsUsedInFile` for `interface` and `type` only. The reason is a real distinction, not a silencer: an interface that is a field type of an exported interface stays reachable through the composite (`WarningsErrorsReport['warnings'][number]`) whether or not it is exported, so removing the `export` shrinks nothing and only makes the type unnameable at the call site. A value has no such back door — an exported `const` or function with no importer is genuinely surplus surface, and stays reported.
+
+Both hygiene commands need the container's `node_modules`:
+
+```bash
+docker exec finiex-viewer sh -lc 'cd /app && npm run knip'
+```

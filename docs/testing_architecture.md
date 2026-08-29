@@ -49,9 +49,9 @@ tests/
   runs_store.test.ts        — run index loading, group/name/run cascade, missing-artifact flag, error handling
   use_run_query_sync.test.ts — cascade restore from URL, partial cascade, merge with foreign params
   query_param_utils.test.ts — query reading (string-only), param write and delete
-  run_panels.test.ts        — KPI rendering (units, n/a, per-subset R gating, SIGNAL absence) and the warnings/errors tiers
+  run_panels.test.ts        — KPI rendering (units, n/a, per-subset R gating, SIGNAL absence), the warnings/errors tiers, and the portfolio breakdown incl. the chart link
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
-  run_reports_store.test.ts — section loading, missing artifact, error text, clearing on run change
+  run_reports_store.test.ts — section loading (warnings/errors, portfolio), missing artifact, error text, clearing on run change, shared error slot across concurrent sections
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 mapping
 ```
 
@@ -130,4 +130,5 @@ Stores that trigger async work on reactive changes (e.g., `bars_store` watches t
 2. Mock any API calls with `vi.mock('@/api/api_client', ...)`.
 3. Use `setActivePinia(createPinia())` in `beforeEach` for store-based tests.
 4. Use `flushPromises()` after triggering reactive changes that cause async side effects.
-5. No server, no network — tests run offline.
+5. Mount a component that links to another view with `global: { stubs: { RouterLink: RouterLinkStub } }` — the stub's `to` prop is what the test asserts, so no router instance is needed.
+6. No server, no network — tests run offline.

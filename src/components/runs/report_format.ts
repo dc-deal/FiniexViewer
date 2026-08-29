@@ -17,9 +17,19 @@ export function percent(ratio: number): string {
   return `${(ratio * 100).toFixed(1)}%`
 }
 
-/** Plain decimal, or n/a when the backend says the value is undefined rather than zero. */
-export function numberOrNa(value: number | null): string {
-  return value === null ? t('n/a') : value.toFixed(2)
+/**
+ * Plain decimal, or n/a when the value is undefined rather than zero. Pass the size of the
+ * subset it was measured over wherever one exists: not every section sends null for an absent
+ * value — an untraded portfolio unit arrives with 0.0, and 0.00 would claim a measurement.
+ */
+export function numberOrNa(value: number | null, count?: number): string {
+  if (value === null || count === 0) return t('n/a')
+  return value.toFixed(2)
+}
+
+/** Percentage of a 0..1 ratio, gated on the subset it was measured over — see numberOrNa. */
+export function percentOrNa(ratio: number, count: number): string {
+  return count === 0 ? t('n/a') : percent(ratio)
 }
 
 /**

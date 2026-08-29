@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, RouterLinkStub } from '@vue/test-utils'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
+import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import type {
+  PortfolioAggregateRow,
+  PortfolioReport,
+  PortfolioUnitRow,
   RunSummary,
   RunSummaryCurrency,
   WarningsErrorsReport,
@@ -200,5 +204,141 @@ describe('FeedHealthPanel', () => {
       props: { model: { ...summaryWith(MEASURED), signal_fresh_ratio: 1.0 } },
     })
     expect(perfect.text()).toContain('100.0%')
+  })
+})
+
+function unit(overrides: Partial<PortfolioUnitRow> = {}): PortfolioUnitRow {
+  return {
+    name: 'USDJPY_blocks_01',
+    symbol: 'USDJPY',
+    currency: 'USD',
+    total_trades: 2,
+    winning_trades: 1,
+    losing_trades: 1,
+    win_rate: 0.5,
+    profit_factor: 0.3524,
+    total_profit: 6.9,
+    total_loss: 19.57,
+    net_profit: -12.68,
+    max_drawdown: 19.57,
+    max_dd_pct: 0.19,
+    total_fees: 2.16,
+    data_source: 'mt5',
+    sentiment_source: '',
+    broker_name: 'Vantage International Group Limited',
+    spot_mode: false,
+    has_error: false,
+    total_long_trades: 1,
+    total_short_trades: 1,
+    max_equity: 10006.9,
+    current_balance: 9987.32,
+    initial_balance: 10000,
+    conversion_rate: 147.63,
+    base_currency: '',
+    quote_currency: '',
+    balances: { USD: 9987.32 },
+    initial_balances: { USD: 10000 },
+    last_price: 147.63,
+    spot_est_current: 0,
+    spot_est_initial: 0,
+    spot_est_pnl: 0,
+    spot_est_pnl_pct: 0,
+    total_spread_cost: 2.16,
+    total_commission: 0,
+    total_swap: 0,
+    maker_fee: 0,
+    taker_fee: 0,
+    ...overrides,
+  }
+}
+
+function aggregate(overrides: Partial<PortfolioAggregateRow> = {}): PortfolioAggregateRow {
+  return {
+    currency: 'USD',
+    unit_count: 1,
+    total_trades: 2,
+    winning_trades: 1,
+    losing_trades: 1,
+    win_rate: 0.5,
+    profit_factor: 0.3524,
+    total_profit: 6.9,
+    total_loss: 19.57,
+    net_profit: -12.68,
+    max_drawdown: 19.57,
+    total_fees: 2.16,
+    ...overrides,
+  }
+}
+
+function mountPortfolio(model: PortfolioReport) {
+  return mount(PortfolioPanel, {
+    props: { model },
+    global: { stubs: { RouterLink: RouterLinkStub } },
+  })
+}
+
+describe('PortfolioPanel', () => {
+  it('renders one row per unit with a totals row behind it', () => {
+    const wrapper = mountPortfolio({
+      units: [unit(), unit({ name: 'USDJPY_blocks_02', net_profit: 4.2 })],
+      aggregates: [aggregate({ unit_count: 2 })],
+    })
+    expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+    const totals = wrapper.findAll('tfoot td').map(cell => cell.text())
+    expect(totals[0]).toBe('All units (2) · USD')
+    expect(totals[1]).toBe('-12.68 USD')
+  })
+
+  it('links a unit into the chart via its data source', () => {
+    const wrapper = mountPortfolio({ units: [unit()], aggregates: [] })
+    const link = wrapper.findComponent(RouterLinkStub)
+    expect(link.props('to')).toEqual({
+      name: 'viewer',
+      query: { broker: 'mt5', symbol: 'USDJPY' },
+    })
+    expect(link.text()).toContain('USDJPY')
+  })
+
+  it('offers no link when the unit names no data source', () => {
+    // live runs leave data_source empty — a link would land nowhere
+    const wrapper = mountPortfolio({
+      units: [unit({ data_source: '', broker_name: 'Kraken', spot_mode: true })],
+      aggregates: [],
+    })
+    expect(wrapper.findComponent(RouterLinkStub).exists()).toBe(false)
+    expect(wrapper.text()).toContain('USDJPY')
+    expect(wrapper.text()).toContain('spot')
+  })
+
+  it('never renders a ratio nobody measured as a number', () => {
+    // an untraded unit arrives with 0.0 rather than null — 0.00 / 0.0% would claim a measurement
+    const wrapper = mountPortfolio({
+      units: [unit({ total_trades: 0, winning_trades: 0, losing_trades: 0, win_rate: 0, profit_factor: 0 })],
+      aggregates: [],
+    })
+    const cells = wrapper.findAll('tbody td').map(cell => cell.text())
+    expect(cells[3]).toBe('n/a')   // profit factor
+    expect(cells[4]).toBe('n/a')   // win rate
+  })
+
+  it('keeps a measured zero as a number', () => {
+    // one losing trade and no winner: the profit factor really is 0, and n/a would hide that
+    const wrapper = mountPortfolio({
+      units: [unit({ total_trades: 1, winning_trades: 0, losing_trades: 1, win_rate: 0, profit_factor: 0 })],
+      aggregates: [],
+    })
+    const cells = wrapper.findAll('tbody td').map(cell => cell.text())
+    expect(cells[3]).toBe('0.00')
+    expect(cells[4]).toBe('0.0%')
+  })
+
+  it('marks a unit that reported an error', () => {
+    const wrapper = mountPortfolio({ units: [unit({ has_error: true })], aggregates: [] })
+    expect(wrapper.find('.unit-error').exists()).toBe(true)
+  })
+
+  it('says so when a run carries no units', () => {
+    const wrapper = mountPortfolio({ units: [], aggregates: [] })
+    expect(wrapper.text()).toContain('No units in this run')
   })
 })

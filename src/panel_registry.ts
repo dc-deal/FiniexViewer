@@ -1,5 +1,6 @@
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
+import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
 import OrderCountsPanel from '@/components/runs/OrderCountsPanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import type { PanelDescriptor } from '@/types/panel_types'
@@ -11,7 +12,7 @@ import type { PanelDescriptor } from '@/types/panel_types'
  * then explicit and cannot depend on which module happened to load first. The app bar renders
  * from this list, so a new panel is an entry here, not a rebuild.
  */
-export const PANELS: PanelDescriptor[] = [
+const PANELS: PanelDescriptor[] = [
   {
     id: 'executive',
     title: 'Executive Summary',
@@ -29,6 +30,16 @@ export const PANELS: PanelDescriptor[] = [
     icon: '⚠️',
     component: WarningsErrorsPanel,
     source: 'warningsErrors',
+    groups: 'both',
+    defaultOpen: true,
+  },
+  {
+    // The breakdown run-summary cannot give: its currency rows are already summed over the units
+    id: 'portfolio',
+    title: 'Portfolio',
+    icon: '💼',
+    component: PortfolioPanel,
+    source: 'portfolio',
     groups: 'both',
     defaultOpen: true,
   },

@@ -90,3 +90,78 @@ export interface WarningsErrorsReport {
   errors: UnitErrorRow[]
   outcome: WarningsErrorsOutcome
 }
+
+/**
+ * One unit inside a run — a scenario in a simulation, the single profile in a live run. This is
+ * the breakdown `run-summary` cannot show: its currency rows are already summed over all units.
+ */
+export interface PortfolioUnitRow {
+  name: string
+  symbol: string
+  currency: string
+  total_trades: number
+  winning_trades: number
+  losing_trades: number
+  // Both are 0.0 on an untraded unit rather than null, so the render edge gates on total_trades
+  win_rate: number              // ratio 0..1, not a percentage
+  profit_factor: number | null
+  total_profit: number
+  total_loss: number            // positive magnitude
+  net_profit: number
+  max_drawdown: number          // positive magnitude
+  max_dd_pct: number
+  total_fees: number
+  // Provenance. data_source carries the same broker keys GET /brokers returns ('mt5'), which is
+  // what makes the jump into the chart possible; broker_name is a display name ('Kraken') and
+  // is not addressable. Empty data_source on live runs — see viewer#21.
+  data_source: string
+  sentiment_source: string
+  broker_name: string
+  spot_mode: boolean
+  has_error: boolean
+  total_long_trades: number
+  total_short_trades: number
+  // Balances, per asset for spot units
+  max_equity: number
+  current_balance: number
+  initial_balance: number
+  conversion_rate: number | null
+  base_currency: string
+  quote_currency: string
+  balances: Record<string, number>
+  initial_balances: Record<string, number>
+  last_price: number
+  // Quote-denominated estimate of a spot base holding
+  spot_est_current: number
+  spot_est_initial: number
+  spot_est_pnl: number
+  spot_est_pnl_pct: number
+  // Cost breakdown behind total_fees
+  total_spread_cost: number
+  total_commission: number
+  total_swap: number
+  maker_fee: number
+  taker_fee: number
+}
+
+/** Run totals for one account currency — the units above, summed. */
+export interface PortfolioAggregateRow {
+  currency: string
+  unit_count: number
+  total_trades: number
+  winning_trades: number
+  losing_trades: number
+  win_rate: number
+  profit_factor: number | null
+  total_profit: number
+  total_loss: number
+  net_profit: number
+  max_drawdown: number
+  total_fees: number
+}
+
+/** Response type for GET /api/v1/reports/runs/{run_id}/portfolio */
+export interface PortfolioReport {
+  units: PortfolioUnitRow[]
+  aggregates: PortfolioAggregateRow[]
+}

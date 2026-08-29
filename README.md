@@ -78,7 +78,8 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | HTTP client | **axios** |
 | Layout | **splitpanes** |
 | Theme | CSS Custom Properties token system, dark/light mode |
-| Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` |
+| Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` + `@stylistic` |
+| Dead code | **knip** — unreferenced files, exports and dependencies |
 | Testing | **Vitest** + **Vue Test Utils** — unit tests, jsdom environment |
 | CI | **GitHub Actions** — type-check + tests on every PR and push to master |
 
@@ -109,6 +110,8 @@ Two-container topology and request flow: [docs/frontend_architecture.md](docs/fr
 npm run dev          # start Vite dev server
 npm run build        # production build
 npm run type-check   # TypeScript check without emit
+npm run lint         # ESLint with autofix (lint:check to only report)
+npm run knip         # report unreferenced files, exports and dependencies
 npm run test         # run unit tests (Vitest)
 npm run test:coverage  # run tests with coverage report
 ```

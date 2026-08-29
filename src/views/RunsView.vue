@@ -14,7 +14,7 @@ const runsStore = useRunsStore()
 const reportsStore = useRunReportsStore()
 const { selectedRunId, selectedRun, summary, summaryMissing, loadingRuns, loadingSummary, error } =
   storeToRefs(runsStore)
-const { warningsErrors } = storeToRefs(reportsStore)
+const { warningsErrors, portfolio } = storeToRefs(reportsStore)
 
 // loads the run index and restores the cascade from the URL
 useRunQuerySync()
@@ -23,13 +23,16 @@ useRunQuerySync()
 // enough sections to justify the plumbing — see viewer#21.
 watch(selectedRunId, runId => {
   reportsStore.clear()
-  if (runId) reportsStore.loadWarningsErrors(runId)
+  if (!runId) return
+  reportsStore.loadWarningsErrors(runId)
+  reportsStore.loadPortfolio(runId)
 }, { immediate: true })
 
 // the models the panels render, keyed by the source each descriptor declares
 const sources = computed(() => ({
   runSummary: summary.value,
   warningsErrors: warningsErrors.value,
+  portfolio: portfolio.value,
 }))
 
 const showPanels = computed(() =>

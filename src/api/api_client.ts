@@ -3,6 +3,7 @@ import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
+  PortfolioReport,
   RunInfo,
   RunListResponse,
   RunSummary,
@@ -72,6 +73,17 @@ export async function getWarningsErrors(runId: string): Promise<WarningsErrorsRe
     const response = await http.get<WarningsErrorsReport>(
       `/reports/runs/${runId}/warnings-errors`
     )
+    return response.data
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
+/** Per-unit portfolio breakdown of a run. Null when the run carries no such artifact. */
+export async function getPortfolio(runId: string): Promise<PortfolioReport | null> {
+  try {
+    const response = await http.get<PortfolioReport>(`/reports/runs/${runId}/portfolio`)
     return response.data
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) return null

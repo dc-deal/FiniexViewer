@@ -20,6 +20,7 @@ import {
   getRuns,
   getRunSummary,
   getWarningsErrors,
+  getPortfolio,
 } from '@/api/api_client'
 
 describe('api_client', () => {
@@ -132,6 +133,24 @@ describe('api_client', () => {
     it('rethrows any other failure', async () => {
       mockGet.mockRejectedValue({ response: { status: 500 } })
       await expect(getWarningsErrors('20260615_130000')).rejects.toBeDefined()
+    })
+  })
+
+  describe('getPortfolio', () => {
+    it('calls the portfolio endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: { units: [], aggregates: [] } })
+      await getPortfolio('20260615_130000')
+      expect(mockGet).toHaveBeenCalledWith('/reports/runs/20260615_130000/portfolio')
+    })
+
+    it('maps 404 to null — a run without the artifact is an absence, not a failure', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404 } })
+      expect(await getPortfolio('20260615_130000')).toBeNull()
+    })
+
+    it('rethrows any other failure', async () => {
+      mockGet.mockRejectedValue({ response: { status: 500 } })
+      await expect(getPortfolio('20260615_130000')).rejects.toBeDefined()
     })
   })
 })
