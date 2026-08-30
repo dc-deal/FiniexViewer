@@ -1,7 +1,12 @@
 /** Single run entry from GET /api/v1/reports/runs — identity only, no report content */
 export interface RunInfo {
   run_id: string
-  group: string       // 'scenario_sets' (simulation) | 'autotrader' (live)
+  // The run's category: 'single_runs' (a standalone simulation) | 'autotrader' (a live session) |
+  // 'sweeps' (one combination of a parameter sweep). The index lists all three.
+  group: string
+  // False means the run exists as LOGS ONLY — every report route answers 404 for it. A normal
+  // state, not a fault: a test session writes logs and no artifacts.
+  has_reports: boolean
   name: string        // scenario-set name (simulation) | profile name (live)
 }
 
@@ -60,6 +65,21 @@ export interface WarningRow {
   message: string
 }
 
+/**
+ * One buffered log record, as it was recorded rather than as it was rendered. The two times are
+ * different questions: `observed_at` is wall-clock and answers how long OUR machine took;
+ * `event_time` is the run's own clock — simulated market time in a backtest, the live clock in a
+ * session — and is null for entries that predate it. Never substitute one for the other: sorting
+ * by observed_at looks right and is wrong.
+ */
+export interface LogEntryRow {
+  level: string
+  observed_at: string           // ISO-8601 with explicit timezone
+  scope: string                 // the unit that logged it, '' when run-wide
+  message: string
+  event_time: string | null
+}
+
 /** Per-unit error record: the crash, the validation failures and the logged error pot. */
 export interface UnitErrorRow {
   name: string
@@ -67,7 +87,7 @@ export interface UnitErrorRow {
   error_type: string          // '' when the unit did not crash
   error_message: string
   validation_errors: string[]
-  logged_errors: string[]
+  logged_errors: LogEntryRow[]
   traceback: string           // '' when there is none
 }
 

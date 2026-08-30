@@ -20,6 +20,7 @@ function workspaceWith(panelIds: string[]): WorkspaceState {
           width: 1,
           panels: panelIds.map(id => ({ id, open: true, pinned: false, locked: false })),
         }],
+        hidden: [],
       },
     },
   }

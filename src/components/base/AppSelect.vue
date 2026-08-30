@@ -2,6 +2,8 @@
 interface Option {
   value: string
   label: string
+  /** Shown but not selectable — an entry that exists and has nothing behind it. */
+  disabled?: boolean
 }
 
 defineProps<{
@@ -30,7 +32,7 @@ function onChange(event: Event): void {
     <option v-if="placeholder" value="" disabled :selected="modelValue === null">
       {{ placeholder }}
     </option>
-    <option v-for="opt in options" :key="opt.value" :value="opt.value">
+    <option v-for="opt in options" :key="opt.value" :value="opt.value" :disabled="opt.disabled">
       {{ opt.label }}
     </option>
   </select>

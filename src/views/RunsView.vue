@@ -16,7 +16,7 @@ const {
   runs, selectedRunId, selectedRun, summary, summaryMissing, unknownRunId,
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
-const { warningsErrors, portfolio } = storeToRefs(reportsStore)
+const { warningsErrors, portfolio, unreadable } = storeToRefs(reportsStore)
 
 // loads the run index and restores the cascade from the URL
 useRunQuerySync()
@@ -25,7 +25,8 @@ useRunQuerySync()
 // enough sections to justify the plumbing — see viewer#21.
 watch(selectedRunId, runId => {
   reportsStore.clear()
-  if (!runId) return
+  // a logs-only run is skipped here for the same reason the store skips the summary
+  if (!runId || !selectedRun.value?.has_reports) return
   reportsStore.loadWarningsErrors(runId)
   reportsStore.loadPortfolio(runId)
 }, { immediate: true })
@@ -68,10 +69,17 @@ const showPanels = computed(() =>
       <div v-else-if="!selectedRun" class="state-overlay">
         <span class="hint">{{ t('Select group, scenario and run to continue') }}</span>
       </div>
+      <div v-else-if="!selectedRun.has_reports" class="state-overlay">
+        <span class="hint">{{ t('This run exists as logs only — it carries no report artifacts') }}</span>
+      </div>
       <div v-else-if="summaryMissing" class="state-overlay">
         <span class="hint">{{ t('This run carries no run-summary artifact') }}</span>
       </div>
-      <PanelColumn v-else-if="showPanels" :sources="sources" />
+      <template v-else-if="showPanels">
+        <!-- one unreadable section does not hide the readable ones -->
+        <p v-if="unreadable" class="notice">{{ unreadable }}</p>
+        <PanelColumn :sources="sources" />
+      </template>
     </div>
   </div>
 </template>
@@ -117,6 +125,17 @@ const showPanels = computed(() =>
 
 .error-msg {
   color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
+.notice {
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+  font-family: monospace;
   font-size: var(--font-size-sm);
 }
 </style>

@@ -19,7 +19,7 @@ const PANELS: PanelDescriptor[] = [
     icon: '📊',
     component: ExecutivePanel,
     source: 'runSummary',
-    groups: 'both',
+    groups: 'all',
     defaultOpen: true,
   },
   {
@@ -30,7 +30,7 @@ const PANELS: PanelDescriptor[] = [
     icon: '⚠️',
     component: WarningsErrorsPanel,
     source: 'warningsErrors',
-    groups: 'both',
+    groups: 'all',
     defaultOpen: true,
   },
   {
@@ -40,7 +40,7 @@ const PANELS: PanelDescriptor[] = [
     icon: '💼',
     component: PortfolioPanel,
     source: 'portfolio',
-    groups: 'both',
+    groups: 'all',
     defaultOpen: true,
   },
   {
@@ -49,7 +49,7 @@ const PANELS: PanelDescriptor[] = [
     icon: '🧾',
     component: OrderCountsPanel,
     source: 'runSummary',
-    groups: 'both',
+    groups: 'all',
     defaultOpen: true,
   },
   {
@@ -58,7 +58,7 @@ const PANELS: PanelDescriptor[] = [
     icon: '📡',
     component: FeedHealthPanel,
     source: 'runSummary',
-    groups: 'both',
+    groups: 'all',
     defaultOpen: false,
   },
 ]

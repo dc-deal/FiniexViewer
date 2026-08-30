@@ -22,6 +22,7 @@ import {
   getWarningsErrors,
   getPortfolio,
 } from '@/api/api_client'
+import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 
 describe('api_client', () => {
   beforeEach(() => {
@@ -91,7 +92,7 @@ describe('api_client', () => {
 
   describe('getRuns', () => {
     it('calls /reports/runs and returns the run list', async () => {
-      const runs = [{ run_id: '20260615_130000', group: 'autotrader', name: 'my_profile' }]
+      const runs = [{ run_id: '20260615_130000', group: 'autotrader', name: 'my_profile', has_reports: true }]
       mockGet.mockResolvedValue({ data: { runs, count: 1 } })
       const result = await getRuns()
       expect(result).toEqual(runs)
@@ -128,6 +129,22 @@ describe('api_client', () => {
     it('maps 404 to null — a run without the artifact is an absence, not a failure', async () => {
       mockGet.mockRejectedValue({ response: { status: 404 } })
       expect(await getWarningsErrors('20260615_130000')).toBeNull()
+    })
+
+    it('raises a typed error on 409 — the artifact is there but predates the schema', async () => {
+      mockGet.mockRejectedValue({
+        response: { status: 409, data: { error: 'artifact_unreadable', detail: 'Re-run to regenerate it.' } },
+      })
+      await expect(getWarningsErrors('20260615_130000'))
+        .rejects.toBeInstanceOf(ArtifactUnreadableError)
+    })
+
+    it('carries the backend detail as the message — it is the text the user reads', async () => {
+      mockGet.mockRejectedValue({
+        response: { status: 409, data: { detail: 'Written by an older schema. Re-run to regenerate it.' } },
+      })
+      await expect(getWarningsErrors('20260615_130000'))
+        .rejects.toThrow('Written by an older schema. Re-run to regenerate it.')
     })
 
     it('rethrows any other failure', async () => {

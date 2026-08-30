@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
@@ -67,7 +68,11 @@ export async function getRunSummary(runId: string): Promise<RunSummary | null> {
   }
 }
 
-/** Warnings and errors of a run. Null when the run carries no such artifact — an absence. */
+/**
+ * Warnings and errors of a run. Null when the run carries no such artifact — an absence. Raises
+ * ArtifactUnreadableError on 409, which the backend answers for an artifact written by an older
+ * schema: it is there, it cannot be parsed, and the run has to be repeated.
+ */
 export async function getWarningsErrors(runId: string): Promise<WarningsErrorsReport | null> {
   try {
     const response = await http.get<WarningsErrorsReport>(
@@ -75,7 +80,12 @@ export async function getWarningsErrors(runId: string): Promise<WarningsErrorsRe
     )
     return response.data
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    if (!axios.isAxiosError(error)) throw error
+    if (error.response?.status === 404) return null
+    if (error.response?.status === 409) {
+      const body = error.response.data as { detail?: string } | undefined
+      throw new ArtifactUnreadableError(body?.detail ?? 'The artifact could not be read')
+    }
     throw error
   }
 }

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getPortfolio, getWarningsErrors } from '@/api/api_client'
+import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import type { PortfolioReport, WarningsErrorsReport } from '@/types/api/report_types'
 import { t } from '@/translate'
 
@@ -15,12 +16,15 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const loadingWarningsErrors = ref(false)
   const loadingPortfolio = ref(false)
   const error = ref<string | null>(null)
+  // the artifact exists but predates the current schema — not an absence and not an outage
+  const unreadable = ref<string | null>(null)
 
   /** Clears every section — the previous run's numbers must never survive a selection change. */
   function clear(): void {
     warningsErrors.value = null
     portfolio.value = null
     error.value = null
+    unreadable.value = null
   }
 
   // The sections load concurrently and share one error slot, so a loader must not reset it on
@@ -32,8 +36,13 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       // null means the run carries no such artifact — the panel is then simply not shown
       warningsErrors.value = await getWarningsErrors(runId)
     } catch (e) {
-      const detail = e instanceof Error ? e.message : String(e)
-      error.value = `${t('Could not load warnings and errors')}: ${detail}`
+      // an artifact from an older schema is a state of the run, not a failure of the request
+      if (e instanceof ArtifactUnreadableError) {
+        unreadable.value = e.message
+      } else {
+        const detail = e instanceof Error ? e.message : String(e)
+        error.value = `${t('Could not load warnings and errors')}: ${detail}`
+      }
     } finally {
       loadingWarningsErrors.value = false
     }
@@ -58,6 +67,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingWarningsErrors,
     loadingPortfolio,
     error,
+    unreadable,
     clear,
     loadWarningsErrors,
     loadPortfolio,

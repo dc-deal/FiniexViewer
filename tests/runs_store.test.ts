@@ -10,10 +10,12 @@ vi.mock('@/api/api_client', () => ({
 }))
 
 const RUNS: RunInfo[] = [
-  { run_id: '20260615_130000', group: 'autotrader',    name: 'my_profile' },
-  { run_id: '20260615_125000', group: 'autotrader',    name: 'my_profile' },
-  { run_id: '20260615_124000', group: 'autotrader',    name: 'other_profile' },
-  { run_id: '20260615_120000', group: 'scenario_sets', name: 'my_set'     },
+  { run_id: '20260615_130000', group: 'autotrader',  name: 'my_profile',    has_reports: true  },
+  { run_id: '20260615_125000', group: 'autotrader',  name: 'my_profile',    has_reports: true  },
+  { run_id: '20260615_124000', group: 'autotrader',  name: 'other_profile', has_reports: true  },
+  // exists as logs only — every report route answers 404 for it
+  { run_id: '20260615_123000', group: 'autotrader',  name: 'other_profile', has_reports: false },
+  { run_id: '20260615_120000', group: 'single_runs', name: 'my_set',        has_reports: true  },
 ]
 
 const SUMMARY: RunSummary = {
@@ -90,14 +92,14 @@ describe('useRunsStore', () => {
 
     it('derives the group list from the index, without duplicates', async () => {
       const store = await loadedStore()
-      expect(store.groups).toEqual(['autotrader', 'scenario_sets'])
+      expect(store.groups).toEqual(['autotrader', 'single_runs'])
     })
 
     it('narrows names to the selected group', async () => {
       const store = await loadedStore()
       store.setGroup('autotrader')
       expect(store.names).toEqual(['my_profile', 'other_profile'])
-      store.setGroup('scenario_sets')
+      store.setGroup('single_runs')
       expect(store.names).toEqual(['my_set'])
     })
 
@@ -116,7 +118,7 @@ describe('useRunsStore', () => {
       store.setName('my_profile')
       await store.selectRun('20260615_130000')
 
-      store.setGroup('scenario_sets')
+      store.setGroup('single_runs')
       expect(store.selectedName).toBeNull()
       expect(store.selectedRunId).toBeNull()
       expect(store.summary).toBeNull()
@@ -154,7 +156,7 @@ describe('useRunsStore', () => {
       const store = useRunsStore()
       await store.loadRuns()
       await store.selectRun('20260615_120000')
-      expect(store.selectedRun).toEqual(RUNS[3])
+      expect(store.selectedRun).toEqual(RUNS.find(run => run.run_id === '20260615_120000'))
       expect(apiClient.getRuns).toHaveBeenCalledTimes(1)
     })
 
@@ -212,6 +214,21 @@ describe('useRunsStore', () => {
       await store.selectRun('20260615_130000')
       expect(store.unknownRunId).toBeNull()
       expect(store.selectedRunId).toBe('20260615_130000')
+    })
+
+    it('never requests a run the index marks as logs only', async () => {
+      // has_reports false means every report route answers 404 — the index already said so
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260615_123000')
+      expect(apiClient.getRunSummary).not.toHaveBeenCalled()
+      expect(store.selectedRunId).toBe('20260615_123000')
+      expect(store.selectedRun?.has_reports).toBe(false)
+      // it is a known run, so it is not the unknown-run case
+      expect(store.unknownRunId).toBeNull()
+      expect(store.error).toBeNull()
+      expect(store.summaryMissing).toBe(false)
     })
 
     it('drops the unknown-run flag when the group changes', async () => {

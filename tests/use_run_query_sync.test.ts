@@ -8,8 +8,8 @@ import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
 
 const RUNS: RunInfo[] = [
-  { run_id: '20260615_130000', group: 'autotrader',    name: 'my_profile' },
-  { run_id: '20260615_120000', group: 'scenario_sets', name: 'my_set'     },
+  { run_id: '20260615_130000', group: 'autotrader',  name: 'my_profile', has_reports: true },
+  { run_id: '20260615_120000', group: 'single_runs', name: 'my_set',     has_reports: true },
 ]
 
 vi.mock('@/api/api_client', () => ({
@@ -67,13 +67,13 @@ describe('useRunQuerySync', () => {
   })
 
   it('applies a partial cascade without inventing the levels below', async () => {
-    const router = makeRouter({ group: 'scenario_sets' })
+    const router = makeRouter({ group: 'single_runs' })
     await router.isReady()
     mount(TestComponent, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     const store = useRunsStore()
-    expect(store.selectedGroup).toBe('scenario_sets')
+    expect(store.selectedGroup).toBe('single_runs')
     expect(store.selectedName).toBeNull()
     expect(store.selectedRunId).toBeNull()
     expect(apiClient.getRunSummary).not.toHaveBeenCalled()
@@ -120,11 +120,11 @@ describe('useRunQuerySync', () => {
 
     const replaceSpy = vi.spyOn(router, 'replace')
     // switching the group clears the name below it — the param must go with it
-    useRunsStore().setGroup('scenario_sets')
+    useRunsStore().setGroup('single_runs')
     await flushPromises()
 
     const lastCall = replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }
-    expect(lastCall.query['group']).toBe('scenario_sets')
+    expect(lastCall.query['group']).toBe('single_runs')
     expect(lastCall.query['name']).toBeUndefined()
   })
 })

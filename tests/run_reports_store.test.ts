@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import type { PortfolioReport, WarningsErrorsReport } from '@/types/api/report_types'
 import * as apiClient from '@/api/api_client'
+import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 
 vi.mock('@/api/api_client', () => ({
   getWarningsErrors: vi.fn(),
@@ -73,6 +74,25 @@ describe('useRunReportsStore', () => {
     await store.loadWarningsErrors('20260615_130000')
     expect(store.error).toBe('Could not load warnings and errors: boom')
     expect(store.loadingWarningsErrors).toBe(false)
+  })
+
+  it('treats an unreadable artifact as a state of the run, not as a failed request', async () => {
+    vi.mocked(apiClient.getWarningsErrors)
+      .mockRejectedValue(new ArtifactUnreadableError('Re-run to regenerate it.'))
+    const store = useRunReportsStore()
+    await store.loadWarningsErrors('20260615_130000')
+    expect(store.unreadable).toBe('Re-run to regenerate it.')
+    expect(store.error).toBeNull()
+    expect(store.warningsErrors).toBeNull()
+  })
+
+  it('clears the unreadable state with the rest of the run', async () => {
+    vi.mocked(apiClient.getWarningsErrors)
+      .mockRejectedValue(new ArtifactUnreadableError('old schema'))
+    const store = useRunReportsStore()
+    await store.loadWarningsErrors('20260615_130000')
+    store.clear()
+    expect(store.unreadable).toBeNull()
   })
 
   it('clear drops the previous run — its numbers must never survive a selection change', async () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { WarningsErrorsReport } from '@/types/api/report_types'
+import type { UnitErrorRow, WarningsErrorsReport } from '@/types/api/report_types'
+import { utcInstant } from '@/components/runs/report_format'
 import { t } from '@/translate'
 
 const props = defineProps<{
@@ -23,7 +24,7 @@ const outcomeMark = computed(() => {
   return ''
 })
 
-function hasDetail(row: { traceback: string, validation_errors: string[], logged_errors: string[] }): boolean {
+function hasDetail(row: UnitErrorRow): boolean {
   return row.traceback !== '' || row.validation_errors.length > 0 || row.logged_errors.length > 0
 }
 </script>
@@ -62,7 +63,14 @@ function hasDetail(row: { traceback: string, validation_errors: string[], logged
         <details v-if="hasDetail(row)" class="entry-detail">
           <summary>{{ t('details') }}</summary>
           <p v-for="(line, i) in row.validation_errors" :key="'v' + i" class="detail-line">{{ line }}</p>
-          <p v-for="(line, i) in row.logged_errors" :key="'l' + i" class="detail-line">{{ line }}</p>
+          <!-- the log pot arrives as records, so level and scope are shown rather than discarded;
+               the time is the run's own clock and is simply absent for a startup entry -->
+          <p v-for="(entry, i) in row.logged_errors" :key="'l' + i" class="detail-line">
+            <span class="log-level">{{ entry.level }}</span>
+            <span v-if="entry.event_time" class="log-time">{{ utcInstant(entry.event_time) }}</span>
+            <span v-if="entry.scope" class="log-scope">{{ entry.scope }}</span>
+            <span class="log-message">{{ entry.message }}</span>
+          </p>
           <pre v-if="row.traceback" class="detail-trace">{{ row.traceback }}</pre>
         </details>
       </div>
@@ -193,6 +201,17 @@ function hasDetail(row: { traceback: string, validation_errors: string[], logged
 .entry-detail summary,
 .minor summary {
   cursor: pointer;
+}
+
+.log-level,
+.log-time,
+.log-scope {
+  color: var(--color-text-secondary);
+  margin-right: var(--space-sm);
+}
+
+.log-level {
+  font-weight: bold;
 }
 
 .detail-line {

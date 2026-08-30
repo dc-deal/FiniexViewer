@@ -52,7 +52,7 @@ tests/
   run_panels.test.ts        — KPI rendering (units, n/a, per-subset R gating, SIGNAL absence), the warnings/errors tiers, and the portfolio breakdown incl. the chart link
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
   run_reports_store.test.ts — section loading (warnings/errors, portfolio), missing artifact, error text, clearing on run change, shared error slot across concurrent sections
-  api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 mapping
+  api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 and 409 mapping
 ```
 
 ---

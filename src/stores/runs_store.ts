@@ -106,11 +106,14 @@ export const useRunsStore = defineStore('runs', () => {
    */
   async function selectRun(runId: string): Promise<void> {
     clearRun()
-    if (!runs.value.some(run => run.run_id === runId)) {
+    const run = runs.value.find(entry => entry.run_id === runId)
+    if (!run) {
       unknownRunId.value = runId
       return
     }
     selectedRunId.value = runId
+    // the index already says this run carries no artifacts — asking anyway is one 404 per section
+    if (!run.has_reports) return
     await loadSummary()
   }
 

@@ -1,7 +1,7 @@
 import type { Component } from 'vue'
 
-/** Which run groups a panel can render for. 'both' = unified across simulation and live. */
-export type PanelGroupScope = 'both' | 'scenario_sets' | 'autotrader'
+/** Which run categories a panel can render for. 'all' = unified across the three the index lists. */
+export type PanelGroupScope = 'all' | 'single_runs' | 'autotrader' | 'sweeps'
 
 /**
  * What a panel declares about itself. A panel is presentation only: it receives its model as a

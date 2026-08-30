@@ -18,8 +18,14 @@ const nameOptions = computed(() =>
   names.value.map(name => ({ value: name, label: name }))
 )
 
+// A run without report artifacts stays visible but cannot be picked: it exists, so hiding it
+// would raise the question where it went, and selecting it would only produce 404s.
 const runOptions = computed(() =>
-  runsInSelection.value.map(run => ({ value: run.run_id, label: run.run_id }))
+  runsInSelection.value.map(run => ({
+    value: run.run_id,
+    label: run.has_reports ? run.run_id : `${run.run_id} — ${t('logs only')}`,
+    disabled: !run.has_reports,
+  }))
 )
 </script>
 

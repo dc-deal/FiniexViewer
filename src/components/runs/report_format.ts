@@ -43,6 +43,24 @@ export function rValue(value: number | null, count: number): string {
   return `${sign}${value.toFixed(2)}R`
 }
 
+// UTC on purpose, and not the viewer's zone. A log entry's event_time is the RUN's own clock —
+// simulated market time in a backtest — so relabelling it in a local zone would present a
+// simulated moment as a real one.
+const utcClock = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'UTC',
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit',
+  hour12: false,
+})
+
+/** ISO-8601 instant rendered as UTC. Empty for null — an absent time stays a hole. */
+export function utcInstant(iso: string | null): string {
+  if (iso === null) return ''
+  const part: Record<string, string> = {}
+  for (const piece of utcClock.formatToParts(new Date(iso))) part[piece.type] = piece.value
+  return `${part['year']}-${part['month']}-${part['day']} ${part['hour']}:${part['minute']}:${part['second']}Z`
+}
+
 /** Sign class for P&L-denominated cells. Empty for zero — no colour claim on a flat result. */
 export function signClass(value: number): string {
   if (value > 0) return 'positive'

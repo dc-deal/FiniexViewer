@@ -179,6 +179,51 @@ describe('WarningsErrorsPanel', () => {
     expect(wrapper.text()).toContain('bad config')
   })
 
+  it('renders the logged-error pot behind the disclosure', () => {
+    // The one fixture that populates logged_errors. Without it the field's shape could change
+    // under a green suite — testingide#479 turns these strings into objects, and this test is
+    // what makes that land as a failure instead of as '[object Object]' in the panel.
+    const model = report({
+      errors: [{
+        name: 'unit', symbol: 'BTCUSD', error_type: '', error_message: 'boom',
+        validation_errors: [],
+        logged_errors: [
+          {
+            level: 'ERROR',
+            observed_at: '2026-08-30T11:36:23.412000Z',
+            scope: 'BTCUSD_blocks_03',
+            message: 'Broker rejected order',
+            event_time: '2026-01-26T16:12:41.263000Z',
+          },
+          // a startup entry: it predates the run's own clock, so event_time stays null
+          {
+            level: 'ERROR',
+            observed_at: '2026-08-30T11:36:24.000000Z',
+            scope: '',
+            message: 'Retry limit reached',
+            event_time: null,
+          },
+        ],
+        traceback: '',
+      }],
+    })
+    const wrapper = mount(WarningsErrorsPanel, { props: { model } })
+    expect(wrapper.find('.entry-detail').exists()).toBe(true)
+    const lines = wrapper.findAll('.detail-line')
+    expect(lines).toHaveLength(2)
+
+    expect(lines[0].find('.log-level').text()).toBe('ERROR')
+    expect(lines[0].find('.log-scope').text()).toBe('BTCUSD_blocks_03')
+    expect(lines[0].find('.log-message').text()).toBe('Broker rejected order')
+    // the run's own clock, rendered as UTC — never the viewer's zone, it is simulated time
+    expect(lines[0].find('.log-time').text()).toBe('2026-01-26 16:12:41Z')
+
+    // a startup entry predates that clock: no time is shown rather than wall-clock substituted
+    expect(lines[1].find('.log-time').exists()).toBe(false)
+    expect(lines[1].find('.log-scope').exists()).toBe(false)
+    expect(lines[1].find('.log-message').text()).toBe('Retry limit reached')
+  })
+
   it('lists tier-1 warnings but only summarises the log pot', () => {
     const model = report({
       warnings: [

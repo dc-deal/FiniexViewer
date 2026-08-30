@@ -119,19 +119,31 @@ GET /api/v1/reports/runs/{run_id}/...                 11 further per-section rep
 
 The report plane is model-fed on the backend: one canonical model per section, derived once and rendered identically to console, CSV and API. The API is the same object serialized, not a separate projection that can drift.
 
-Two consequences the frontend is built around:
+Five consequences the frontend is built around:
 
-- **The index row carries `run_id`, `group` and `name`**, so the run cascade (group → scenario/profile → run) is built from one request. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here.
+- **The index row carries `run_id`, `group`, `name` and `has_reports`**, so the run cascade (group → scenario/profile → run) is built from one request. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here.
 - **A 404 on a report section is an absence, not a failure.** A run can exist without carrying a given artifact. `getRunSummary` maps that to `null`, and the view says the artifact is missing instead of showing an error.
+- **A 409 is a third thing again: the artifact is there and cannot be parsed**, because it was written by an older schema and the run has to be repeated. `getWarningsErrors` raises `ArtifactUnreadableError` carrying the backend's own detail text, and the view shows it as a notice *beside* the panels rather than instead of them — one unreadable section must not hide the readable ones. Three distinct answers, three distinct states: 404 absent, 409 stale, anything else an outage.
 - **The index is the authority on which runs exist, and it is never bypassed.** A URL, a bookmark or a shared link can name a run whose artifacts were removed since. `selectRun` refuses an id the index does not contain, so a stale link produces no request at all rather than one 404 per section — the same rule the layout store applies to stored panel ids. An empty index is its own state (`{"runs": [], "count": 0}` is a normal 200), and the view says so instead of offering empty pickers with no explanation.
+- **`has_reports` on the index row decides whether a run is worth asking about.** `false` means the run exists as logs only and every report route answers 404 — a normal state, because a test session writes logs and no artifacts. It is neither a failure nor a reason to hide the run: the picker shows it, marked `logs only` and not selectable, and neither the store nor the view issues a request for it. Hiding it instead would raise the question where the run went; asking anyway would be the 404 storm the rule above exists to prevent.
+
+**Three run categories, and `group` carries the category rather than the pipeline:**
+
+| `group` | What it is |
+|---|---|
+| `single_runs` | a standalone simulation run |
+| `autotrader` | a live session |
+| `sweeps` | one combination of a parameter sweep — the optimizer runs a scenario set once per point in a parameter grid |
+
+A **sweep combination is structurally an ordinary run**: measured against a standalone run, all fourteen report routes answer with identical field sets, so the existing panels render one without a change. What a sweep adds is not a report shape but a level above it — the ranking of its combinations by the objective it declared, and the parameters that were varied. Those live on `GET /api/v1/sweeps` and `GET /api/v1/sweeps/{sweep_id}`, which are known and not yet consumed.
 
 **Not every report route answers for every run.** `group` decides:
 
 | Route | Answers for |
 |---|---|
-| `scenario-details`, `profiling` | simulation runs only — 404 for an `autotrader` run |
+| `scenario-details`, `profiling` | simulation only — 404 for an `autotrader` run; a `sweeps` combination is a simulation and does answer |
 | `aggregated-portfolio` | simulation in practice: a single-unit live session has no cross-unit aggregate |
-| the remaining eleven | both groups |
+| the remaining eleven | every category |
 
 Gate a panel on that rule rather than on a failed request.
 
@@ -269,12 +281,14 @@ E2E tests (Cypress / Playwright): deferred until CI infrastructure is establishe
 
 | Tier | Command | Tool | Enforced by |
 |---|---|---|---|
-| Gate | `npm run type-check` | `vue-tsc --noEmit` | CI, every push and pull request |
+| Gate | `npm run type-check` | `vue-tsc --build --force` | CI, every push and pull request |
 | Gate | `npm run test` | Vitest | CI, every push and pull request |
 | Hygiene | `npm run lint:check` / `lint` | ESLint 9 + `eslint-plugin-vue` + `@stylistic` | measured, cleaned as a unit is touched |
 | Hygiene | `npm run knip` | knip | measured, cleaned as a unit is touched |
 
 **Why the split.** A gate that is red on day one gets switched off, and it would take the type-check beside it out of use. The two gates are the ones that fail on genuinely broken code; the hygiene tier reports drift that a human decides when to clean.
+
+**`--build --force`, not `--noEmit`, and the reason is worth keeping.** The root `tsconfig.json` holds `"files": []` and nothing but `references`. Outside build mode `tsc` ignores project references, so `vue-tsc --noEmit` against that file checked **nothing at all** — it exited 0 with a deliberate `const x: number = 'string'` sitting in `src/`. A gate that cannot fail is worse than no gate, because it is believed. Build mode walks the three referenced projects (`app`, `tests`, `node`) and actually type-checks them. `--force` rather than plain `--build` so a stale `.tsbuildinfo` can never mask an error. Every referenced project needs `noEmit: true` in its own options — `tsconfig.node.json` lacked it and build mode wrote `vite.config.d.ts` and `vite.config.js` into the repo root on the first run.
 
 **`@stylistic/quotes`** carries the single-quote convention. Double quotes stay legal only where they avoid escaping an apostrophe (`avoidEscape`); a template literal without interpolation is an error. HTML attribute quoting inside a `<template>` is a different rule and is deliberately untouched — the framework convention there is double quotes.
 
