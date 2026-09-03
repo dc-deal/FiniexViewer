@@ -1,13 +1,38 @@
 /** Single run entry from GET /api/v1/reports/runs — identity only, no report content */
 export interface RunInfo {
   run_id: string
-  // The run's category: 'single_runs' (a standalone simulation) | 'autotrader' (a live session) |
-  // 'sweeps' (one combination of a parameter sweep). The index lists all three.
+  // The PIPELINE that produced the run: 'simulation' | 'live'. Nesting is not in here — it is
+  // parent_id. The two axes were briefly one field ('single_runs' | 'sweeps' | 'autotrader') and
+  // that could not express a nested live run, which is what split them.
   group: string
-  // False means the run exists as LOGS ONLY — every report route answers 404 for it. A normal
-  // state, not a fault: a test session writes logs and no artifacts.
+  /**
+   * The artifact files this run carries. The set VARIES, and not only between the pipelines: live
+   * omits scenario_details / profiling / run_meta / aggregated_portfolio, and a simulation writes
+   * extra sections only when it has something to say (robustness, block splitting). So never
+   * assume a set from the pipeline or from a count observed in one archive — read this list. It
+   * says which sections exist and costs no request: it rides on the index row.
+   */
+  artifacts: string[]
+  // Derived from `artifacts` being non-empty, so the two cannot disagree. False means the run
+  // exists as LOGS ONLY and every report route answers 404 — a normal state, not a fault.
   has_reports: boolean
   name: string        // scenario-set name (simulation) | profile name (live)
+  start_time: string  // ISO-8601 UTC, from the run header
+  /**
+   * The family this run belongs to, or null for a top-level run in either pipeline. One field,
+   * TWO kinds of parent, and they must not be presented alike — `group` says which:
+   *
+   *   simulation + parent_id   a COMBINATION of a parameter sweep. The siblings are alternatives,
+   *                            contemporaneous and comparable, so ranking them is the point.
+   *   live + parent_id         a FRAGMENT of a session. The siblings are a sequence of sealed
+   *                            slices of one continuous run, ordered by start_time; ranking them
+   *                            would be meaningless.
+   */
+  parent_id: string | null
+  // Provenance, straight from the header
+  app_version: string
+  git_commit: string
+  config_snapshot: string
 }
 
 /** Response type for GET /api/v1/reports/runs */
@@ -40,6 +65,7 @@ export interface RunSummaryCurrency {
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/run-summary */
 export interface RunSummary {
+  run_id: string                  // the run this body was built from — assert it, never assume it
   currencies: RunSummaryCurrency[]
   orders_sent: number
   orders_executed: number
@@ -106,6 +132,7 @@ export interface WarningsErrorsOutcome {
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/warnings-errors */
 export interface WarningsErrorsReport {
+  run_id: string
   warnings: WarningRow[]
   errors: UnitErrorRow[]
   outcome: WarningsErrorsOutcome
@@ -182,6 +209,7 @@ export interface PortfolioAggregateRow {
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/portfolio */
 export interface PortfolioReport {
+  run_id: string
   units: PortfolioUnitRow[]
   aggregates: PortfolioAggregateRow[]
 }

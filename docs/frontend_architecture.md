@@ -119,33 +119,33 @@ GET /api/v1/reports/runs/{run_id}/...                 11 further per-section rep
 
 The report plane is model-fed on the backend: one canonical model per section, derived once and rendered identically to console, CSV and API. The API is the same object serialized, not a separate projection that can drift.
 
-Five consequences the frontend is built around:
+Six consequences the frontend is built around:
 
-- **The index row carries `run_id`, `group`, `name` and `has_reports`**, so the run cascade (group → scenario/profile → run) is built from one request. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here.
+- **The index row carries the whole run header**, so the run cascade (group → scenario/profile → run) is built from one request: `run_id`, `group`, `name`, `has_reports`, `start_time`, `parent_id` and the provenance triple `app_version` / `git_commit` / `config_snapshot`. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here, and the Run Header panel needs no request at all because its model IS this row.
 - **A 404 on a report section is an absence, not a failure.** A run can exist without carrying a given artifact. `getRunSummary` maps that to `null`, and the view says the artifact is missing instead of showing an error.
+- **Every report body names the run it was built from**, and `api_client` asserts it against what was requested (`RunIdMismatchError`). This is the only defence a client has against an ambiguous id: a duplicate passes every membership check, the route resolves it to whichever run it finds first, and nothing else in the payload would give that away. It has happened — three runs once shared one id here.
 - **A 409 is a third thing again: the artifact is there and cannot be parsed**, because it was written by an older schema and the run has to be repeated. `getWarningsErrors` raises `ArtifactUnreadableError` carrying the backend's own detail text, and the view shows it as a notice *beside* the panels rather than instead of them — one unreadable section must not hide the readable ones. Three distinct answers, three distinct states: 404 absent, 409 stale, anything else an outage.
 - **The index is the authority on which runs exist, and it is never bypassed.** A URL, a bookmark or a shared link can name a run whose artifacts were removed since. `selectRun` refuses an id the index does not contain, so a stale link produces no request at all rather than one 404 per section — the same rule the layout store applies to stored panel ids. An empty index is its own state (`{"runs": [], "count": 0}` is a normal 200), and the view says so instead of offering empty pickers with no explanation.
 - **`has_reports` on the index row decides whether a run is worth asking about.** `false` means the run exists as logs only and every report route answers 404 — a normal state, because a test session writes logs and no artifacts. It is neither a failure nor a reason to hide the run: the picker shows it, marked `logs only` and not selectable, and neither the store nor the view issues a request for it. Hiding it instead would raise the question where the run went; asking anyway would be the 404 storm the rule above exists to prevent.
 
-**Three run categories, and `group` carries the category rather than the pipeline:**
+**`run_id` is opaque, and stays that way.** It is minted as `<date>_<time>_<8 hex>` and the backend pins the character class to `[0-9a-f_]` with a test, so interpolating it into a URL path unencoded is safe by assertion rather than by hope. Nothing here parses it: no split, no date extracted for display, no sort. Ordering comes from the index, which is newest-first by contract.
 
-| `group` | What it is |
-|---|---|
-| `single_runs` | a standalone simulation run |
-| `autotrader` | a live session |
-| `sweeps` | one combination of a parameter sweep — the optimizer runs a scenario set once per point in a parameter grid |
+**Two axes, two fields.** `group` is the PIPELINE, `parent_id` is the NESTING. They were briefly one field (`single_runs` | `sweeps` | `autotrader`), which mixed a shape with a pipeline and could not express a nested live run:
+
+| `group` | `parent_id` | What it is | What its siblings want |
+|---|---|---|---|
+| `simulation` | `null` | a standalone simulation run | — |
+| `simulation` | set | a **combination** of a parameter sweep | a **ranking** by the sweep's declared objective |
+| `live` | `null` | a live session | — |
+| `live` | set | a **fragment** of a session | a **timeline**, ordered by `start_time` |
+
+The distinction is not cosmetic. A sweep's children are **alternatives** — contemporaneous answers to "what if the parameters were these", so ranking them is the whole point. A session's children are a **sequence** — consecutive sealed slices of one continuous run, where a ranking would be meaningless. And the parents differ too: a sweep is not a run at all (no header, *defined* by the runs naming it as parent), while a session is a run, present in the index from its first second and usually still going while its fragments accumulate.
 
 A **sweep combination is structurally an ordinary run**: measured against a standalone run, all fourteen report routes answer with identical field sets, so the existing panels render one without a change. What a sweep adds is not a report shape but a level above it — the ranking of its combinations by the objective it declared, and the parameters that were varied. Those live on `GET /api/v1/sweeps` and `GET /api/v1/sweeps/{sweep_id}`, which are known and not yet consumed.
 
 **Not every report route answers for every run.** `group` decides:
 
-| Route | Answers for |
-|---|---|
-| `scenario-details`, `profiling` | simulation only — 404 for an `autotrader` run; a `sweeps` combination is a simulation and does answer |
-| `aggregated-portfolio` | simulation in practice: a single-unit live session has no cross-unit aggregate |
-| the remaining eleven | every category |
-
-Gate a panel on that rule rather than on a failed request.
+**Do not gate a panel on `group` — gate it on `artifacts`.** The index row lists the files the run actually carries, and **the set is not fixed, not even within one pipeline.** Live writes fewer sections than simulation (no `scenario_details` / `profiling` / `run_meta` / `aggregated_portfolio`), and a simulation run writes more when it has more to say — `robustness.json` only with robustness mode enabled, `block_splitting.json` only for a profile run. Counting the files in any one archive gives a number, not the contract: measured 2026-08-30, simulation ran 18 or 19 depending on the run. A client that assumes a set earns a 404 for the difference; reading the list costs no request because it rides on the row. `has_reports` is derived from that list being non-empty, so the two cannot disagree.
 
 ### Units and undefined values
 

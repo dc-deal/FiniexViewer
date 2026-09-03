@@ -1,3 +1,4 @@
+import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
@@ -13,6 +14,17 @@ import type { PanelDescriptor } from '@/types/panel_types'
  * from this list, so a new panel is an entry here, not a rebuild.
  */
 const PANELS: PanelDescriptor[] = [
+  {
+    // Identity and provenance, from the run index row the store already holds — no request of
+    // its own, and the one section that answers for a run carrying no report artifacts at all.
+    id: 'run-header',
+    title: 'Run Header',
+    icon: '🏷',
+    component: RunHeaderPanel,
+    source: 'runInfo',
+    groups: 'all',
+    defaultOpen: true,
+  },
   {
     id: 'executive',
     title: 'Executive Summary',

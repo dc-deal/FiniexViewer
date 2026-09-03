@@ -33,14 +33,18 @@ watch(selectedRunId, runId => {
 
 // the models the panels render, keyed by the source each descriptor declares
 const sources = computed(() => ({
+  runInfo: selectedRun.value,
   runSummary: summary.value,
   warningsErrors: warningsErrors.value,
   portfolio: portfolio.value,
 }))
 
+// Once a run is chosen there is always something to show: the header panel reads the index row.
+// PanelColumn drops every panel whose model is absent, so a run without artifacts simply renders
+// fewer sections rather than nothing at all.
 const showPanels = computed(() =>
-  !loadingRuns.value && !loadingSummary.value && !error.value && !summaryMissing.value
-  && selectedRun.value !== null && summary.value !== null
+  !loadingRuns.value && !loadingSummary.value && !error.value
+  && !unknownRunId.value && selectedRun.value !== null
 )
 </script>
 
@@ -69,14 +73,14 @@ const showPanels = computed(() =>
       <div v-else-if="!selectedRun" class="state-overlay">
         <span class="hint">{{ t('Select group, scenario and run to continue') }}</span>
       </div>
-      <div v-else-if="!selectedRun.has_reports" class="state-overlay">
-        <span class="hint">{{ t('This run exists as logs only — it carries no report artifacts') }}</span>
-      </div>
-      <div v-else-if="summaryMissing" class="state-overlay">
-        <span class="hint">{{ t('This run carries no run-summary artifact') }}</span>
-      </div>
-      <template v-else-if="showPanels">
-        <!-- one unreadable section does not hide the readable ones -->
+      <template v-else>
+        <!-- a missing or unreadable section does not hide the ones that are there -->
+        <p v-if="!selectedRun.has_reports" class="notice">
+          {{ t('This run exists as logs only — it carries no report artifacts') }}
+        </p>
+        <p v-else-if="summaryMissing" class="notice">
+          {{ t('This run carries no run-summary artifact') }}
+        </p>
         <p v-if="unreadable" class="notice">{{ unreadable }}</p>
         <PanelColumn :sources="sources" />
       </template>

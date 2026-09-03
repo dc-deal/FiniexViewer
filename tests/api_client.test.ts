@@ -23,6 +23,7 @@ import {
   getPortfolio,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
+import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 
 describe('api_client', () => {
   beforeEach(() => {
@@ -92,7 +93,7 @@ describe('api_client', () => {
 
   describe('getRuns', () => {
     it('calls /reports/runs and returns the run list', async () => {
-      const runs = [{ run_id: '20260615_130000', group: 'autotrader', name: 'my_profile', has_reports: true }]
+      const runs = [{ run_id: '20260615_130000', group: 'live', name: 'my_profile', has_reports: true }]
       mockGet.mockResolvedValue({ data: { runs, count: 1 } })
       const result = await getRuns()
       expect(result).toEqual(runs)
@@ -102,7 +103,7 @@ describe('api_client', () => {
 
   describe('getRunSummary', () => {
     it('calls the run-summary endpoint with the run id in the path', async () => {
-      mockGet.mockResolvedValue({ data: { currencies: [] } })
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_130000', currencies: [] } })
       await getRunSummary('20260615_130000')
       expect(mockGet).toHaveBeenCalledWith('/reports/runs/20260615_130000/run-summary')
     })
@@ -121,7 +122,7 @@ describe('api_client', () => {
 
   describe('getWarningsErrors', () => {
     it('calls the warnings-errors endpoint with the run id in the path', async () => {
-      mockGet.mockResolvedValue({ data: { warnings: [], errors: [], outcome: {} } })
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_130000', warnings: [], errors: [], outcome: {} } })
       await getWarningsErrors('20260615_130000')
       expect(mockGet).toHaveBeenCalledWith('/reports/runs/20260615_130000/warnings-errors')
     })
@@ -153,9 +154,29 @@ describe('api_client', () => {
     })
   })
 
+  describe('the report body names its own run', () => {
+    // a duplicated run_id passes every membership check the client can make; the only thing that
+    // catches it is the body saying which run it was built from
+    it('raises when the summary belongs to a different run', async () => {
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_999999', currencies: [] } })
+      await expect(getRunSummary('20260615_130000')).rejects.toBeInstanceOf(RunIdMismatchError)
+    })
+
+    it('names both ids, so the mismatch can be traced', async () => {
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_999999', warnings: [], errors: [], outcome: {} } })
+      await expect(getWarningsErrors('20260615_130000'))
+        .rejects.toThrow('Requested run 20260615_130000 but the report belongs to 20260615_999999')
+    })
+
+    it('raises on the portfolio too — every section is checked, not just the first', async () => {
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_999999', units: [], aggregates: [] } })
+      await expect(getPortfolio('20260615_130000')).rejects.toBeInstanceOf(RunIdMismatchError)
+    })
+  })
+
   describe('getPortfolio', () => {
     it('calls the portfolio endpoint with the run id in the path', async () => {
-      mockGet.mockResolvedValue({ data: { units: [], aggregates: [] } })
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_130000', units: [], aggregates: [] } })
       await getPortfolio('20260615_130000')
       expect(mockGet).toHaveBeenCalledWith('/reports/runs/20260615_130000/portfolio')
     })

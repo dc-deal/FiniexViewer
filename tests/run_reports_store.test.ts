@@ -11,6 +11,7 @@ vi.mock('@/api/api_client', () => ({
 }))
 
 const REPORT: WarningsErrorsReport = {
+  run_id: '20260615_130000',
   warnings: [{ tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' }],
   errors: [],
   outcome: {
@@ -26,6 +27,7 @@ const REPORT: WarningsErrorsReport = {
 }
 
 const PORTFOLIO: PortfolioReport = {
+  run_id: '20260615_130000',
   units: [],
   aggregates: [{
     currency: 'USD',

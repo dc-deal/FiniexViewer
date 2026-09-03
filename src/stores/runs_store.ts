@@ -111,6 +111,11 @@ export const useRunsStore = defineStore('runs', () => {
       unknownRunId.value = runId
       return
     }
+    // The row is the authority for the cascade above it too, which is what makes a saved link
+    // survive a renaming of the group values: the link carries the run, and the run says where it
+    // belongs. Assigned directly rather than through setGroup/setName, which clear what is below.
+    selectedGroup.value = run.group
+    selectedName.value = run.name
     selectedRunId.value = runId
     // the index already says this run carries no artifacts — asking anyway is one 404 per section
     if (!run.has_reports) return

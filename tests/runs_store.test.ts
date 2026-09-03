@@ -9,16 +9,31 @@ vi.mock('@/api/api_client', () => ({
   getRunSummary: vi.fn(),
 }))
 
+/** An index row with the header fields filled in — only what a test cares about is overridden. */
+function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' | 'name'>): RunInfo {
+  return {
+    artifacts: ['run_summary.json'],
+    has_reports: true,
+    start_time: '2026-06-15T12:00:00+00:00',
+    parent_id: null,
+    app_version: '1.4.0',
+    git_commit: 'abc1234',
+    config_snapshot: 'config.json',
+    ...overrides,
+  }
+}
+
 const RUNS: RunInfo[] = [
-  { run_id: '20260615_130000', group: 'autotrader',  name: 'my_profile',    has_reports: true  },
-  { run_id: '20260615_125000', group: 'autotrader',  name: 'my_profile',    has_reports: true  },
-  { run_id: '20260615_124000', group: 'autotrader',  name: 'other_profile', has_reports: true  },
+  runRow({ run_id: '20260615_130000', group: 'live',        name: 'my_profile' }),
+  runRow({ run_id: '20260615_125000', group: 'live',        name: 'my_profile' }),
+  runRow({ run_id: '20260615_124000', group: 'live',        name: 'other_profile' }),
   // exists as logs only — every report route answers 404 for it
-  { run_id: '20260615_123000', group: 'autotrader',  name: 'other_profile', has_reports: false },
-  { run_id: '20260615_120000', group: 'single_runs', name: 'my_set',        has_reports: true  },
+  runRow({ run_id: '20260615_123000', group: 'live',        name: 'other_profile', has_reports: false }),
+  runRow({ run_id: '20260615_120000', group: 'simulation', name: 'my_set' }),
 ]
 
 const SUMMARY: RunSummary = {
+  run_id: '20260615_130000',
   currencies: [{
     currency: 'USD',
     net_pnl: 125.5,
@@ -92,20 +107,20 @@ describe('useRunsStore', () => {
 
     it('derives the group list from the index, without duplicates', async () => {
       const store = await loadedStore()
-      expect(store.groups).toEqual(['autotrader', 'single_runs'])
+      expect(store.groups).toEqual(['live', 'simulation'])
     })
 
     it('narrows names to the selected group', async () => {
       const store = await loadedStore()
-      store.setGroup('autotrader')
+      store.setGroup('live')
       expect(store.names).toEqual(['my_profile', 'other_profile'])
-      store.setGroup('single_runs')
+      store.setGroup('simulation')
       expect(store.names).toEqual(['my_set'])
     })
 
     it('narrows runs to the selected group and name', async () => {
       const store = await loadedStore()
-      store.setGroup('autotrader')
+      store.setGroup('live')
       store.setName('my_profile')
       expect(store.runsInSelection.map(run => run.run_id))
         .toEqual(['20260615_130000', '20260615_125000'])
@@ -114,11 +129,11 @@ describe('useRunsStore', () => {
     it('setGroup clears the name and the run below it', async () => {
       vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
       const store = await loadedStore()
-      store.setGroup('autotrader')
+      store.setGroup('live')
       store.setName('my_profile')
       await store.selectRun('20260615_130000')
 
-      store.setGroup('single_runs')
+      store.setGroup('simulation')
       expect(store.selectedName).toBeNull()
       expect(store.selectedRunId).toBeNull()
       expect(store.summary).toBeNull()
@@ -127,12 +142,12 @@ describe('useRunsStore', () => {
     it('setName clears the run but keeps the group', async () => {
       vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
       const store = await loadedStore()
-      store.setGroup('autotrader')
+      store.setGroup('live')
       store.setName('my_profile')
       await store.selectRun('20260615_130000')
 
       store.setName('other_profile')
-      expect(store.selectedGroup).toBe('autotrader')
+      expect(store.selectedGroup).toBe('live')
       expect(store.selectedRunId).toBeNull()
       expect(store.summary).toBeNull()
     })
@@ -236,7 +251,7 @@ describe('useRunsStore', () => {
       const store = useRunsStore()
       await store.loadRuns()
       await store.selectRun('20260829_200849')
-      store.setGroup('autotrader')
+      store.setGroup('live')
       expect(store.unknownRunId).toBeNull()
     })
   })

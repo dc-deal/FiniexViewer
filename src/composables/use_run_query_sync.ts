@@ -23,10 +23,16 @@ export function useRunQuerySync(): void {
     await runsStore.loadRuns()
 
     const params = readQuery(route.query)
-    // applied in cascade order — setGroup clears the name, setName clears the run
-    if (params['group']) runsStore.setGroup(params['group'])
-    if (params['name']) runsStore.setName(params['name'])
-    if (params['run']) await runsStore.selectRun(params['run'])
+    if (params['run']) {
+      // The run alone is enough: its index row carries group and name, so a link keeps working
+      // even after the backend renames a group value. The stale params are simply not consulted,
+      // and the watch below writes the corrected ones back into the URL.
+      await runsStore.selectRun(params['run'])
+    } else {
+      // applied in cascade order — setGroup clears the name, setName clears the run
+      if (params['group']) runsStore.setGroup(params['group'])
+      if (params['name']) runsStore.setName(params['name'])
+    }
 
     _ready = true
   })

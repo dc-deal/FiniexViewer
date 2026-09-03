@@ -3,9 +3,11 @@ import { mount, RouterLinkStub } from '@vue/test-utils'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
+import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import type {
   PortfolioAggregateRow,
+  RunInfo,
   PortfolioReport,
   PortfolioUnitRow,
   RunSummary,
@@ -44,6 +46,7 @@ const UNDEFINED_VALUES: RunSummaryCurrency = {
 
 function summaryWith(row: RunSummaryCurrency): RunSummary {
   return {
+    run_id: '20260615_130000',
     currencies: [row],
     orders_sent: 1,
     orders_executed: 1,
@@ -109,6 +112,7 @@ describe('ExecutivePanel', () => {
 
 function report(overrides: Partial<WarningsErrorsReport> = {}): WarningsErrorsReport {
   return {
+    run_id: '20260615_130000',
     warnings: [],
     errors: [],
     outcome: {
@@ -325,6 +329,7 @@ function mountPortfolio(model: PortfolioReport) {
 describe('PortfolioPanel', () => {
   it('renders one row per unit with a totals row behind it', () => {
     const wrapper = mountPortfolio({
+      run_id: '20260615_130000',
       units: [unit(), unit({ name: 'USDJPY_blocks_02', net_profit: 4.2 })],
       aggregates: [aggregate({ unit_count: 2 })],
     })
@@ -335,7 +340,7 @@ describe('PortfolioPanel', () => {
   })
 
   it('links a unit into the chart via its data source', () => {
-    const wrapper = mountPortfolio({ units: [unit()], aggregates: [] })
+    const wrapper = mountPortfolio({ run_id: '20260615_130000', units: [unit()], aggregates: [] })
     const link = wrapper.findComponent(RouterLinkStub)
     expect(link.props('to')).toEqual({
       name: 'viewer',
@@ -347,6 +352,7 @@ describe('PortfolioPanel', () => {
   it('offers no link when the unit names no data source', () => {
     // live runs leave data_source empty — a link would land nowhere
     const wrapper = mountPortfolio({
+      run_id: '20260615_130000',
       units: [unit({ data_source: '', broker_name: 'Kraken', spot_mode: true })],
       aggregates: [],
     })
@@ -358,6 +364,7 @@ describe('PortfolioPanel', () => {
   it('never renders a ratio nobody measured as a number', () => {
     // an untraded unit arrives with 0.0 rather than null — 0.00 / 0.0% would claim a measurement
     const wrapper = mountPortfolio({
+      run_id: '20260615_130000',
       units: [unit({ total_trades: 0, winning_trades: 0, losing_trades: 0, win_rate: 0, profit_factor: 0 })],
       aggregates: [],
     })
@@ -369,6 +376,7 @@ describe('PortfolioPanel', () => {
   it('keeps a measured zero as a number', () => {
     // one losing trade and no winner: the profit factor really is 0, and n/a would hide that
     const wrapper = mountPortfolio({
+      run_id: '20260615_130000',
       units: [unit({ total_trades: 1, winning_trades: 0, losing_trades: 1, win_rate: 0, profit_factor: 0 })],
       aggregates: [],
     })
@@ -378,12 +386,71 @@ describe('PortfolioPanel', () => {
   })
 
   it('marks a unit that reported an error', () => {
-    const wrapper = mountPortfolio({ units: [unit({ has_error: true })], aggregates: [] })
+    const wrapper = mountPortfolio({ run_id: '20260615_130000', units: [unit({ has_error: true })], aggregates: [] })
     expect(wrapper.find('.unit-error').exists()).toBe(true)
   })
 
   it('says so when a run carries no units', () => {
-    const wrapper = mountPortfolio({ units: [], aggregates: [] })
+    const wrapper = mountPortfolio({ run_id: '20260615_130000', units: [], aggregates: [] })
     expect(wrapper.text()).toContain('No units in this run')
+  })
+})
+
+function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
+  return {
+    run_id: '20260830_145819_af372b28',
+    group: 'simulation',
+    artifacts: ['run_summary.json', 'portfolio.json'],
+    name: 'multi_position_test',
+    has_reports: true,
+    start_time: '2026-08-30T14:58:19.182635+00:00',
+    parent_id: null,
+    app_version: '1.4.0',
+    git_commit: '56b2677',
+    config_snapshot: 'autotrader_config.json',
+    ...overrides,
+  }
+}
+
+describe('RunHeaderPanel', () => {
+  it('renders identity, start time and provenance from the index row', () => {
+    const wrapper = mount(RunHeaderPanel, { props: { model: runInfo() } })
+    const text = wrapper.text()
+    expect(text).toContain('20260830_145819_af372b28')
+    // UTC, never the viewer's zone — the run's own clock is what this timestamp means
+    expect(text).toContain('2026-08-30 14:58:19Z')
+    expect(text).toContain('1.4.0')
+    expect(text).toContain('56b2677')
+  })
+
+  it('says nothing about a family when the run stands alone', () => {
+    const wrapper = mount(RunHeaderPanel, { props: { model: runInfo() } })
+    expect(wrapper.text()).not.toContain('sweep')
+    expect(wrapper.text()).not.toContain('Fragment')
+  })
+
+  it('names a sweep combination for what it is — an alternative among alternatives', () => {
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: runInfo({
+        group: 'simulation',
+        name: 'btcusd_mini_set__sweep_20260830_154907_c001',
+        parent_id: 'sweep_20260830_154907',
+      }) },
+    })
+    expect(wrapper.text()).toContain('Combination in sweep')
+    expect(wrapper.text()).toContain('sweep_20260830_154907')
+  })
+
+  it('names a live fragment for what it is — a slice of one continuous session', () => {
+    // same field, different meaning: ranking fragments would be meaningless, they are a sequence
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: runInfo({
+        group: 'live',
+        name: 'mock_session_test',
+        parent_id: '20260830_145414_82da9d0d',
+      }) },
+    })
+    expect(wrapper.text()).toContain('Fragment of session')
+    expect(wrapper.text()).not.toContain('Combination in sweep')
   })
 })

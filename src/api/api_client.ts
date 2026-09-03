@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
+import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
@@ -49,6 +50,16 @@ export async function getBars(
   return response.data
 }
 
+/**
+ * Confirms a report body belongs to the run that was asked for. Cheap, and the only thing that
+ * catches a duplicated run_id: the index says the id exists, the route resolves it to whichever
+ * run it finds first, and nothing else in the payload would give that away.
+ */
+function assertBelongsTo<T extends { run_id: string }>(requested: string, body: T): T {
+  if (body.run_id !== requested) throw new RunIdMismatchError(requested, body.run_id)
+  return body
+}
+
 export async function getRuns(): Promise<RunInfo[]> {
   const response = await http.get<RunListResponse>('/reports/runs')
   return response.data.runs
@@ -61,7 +72,7 @@ export async function getRuns(): Promise<RunInfo[]> {
 export async function getRunSummary(runId: string): Promise<RunSummary | null> {
   try {
     const response = await http.get<RunSummary>(`/reports/runs/${runId}/run-summary`)
-    return response.data
+    return assertBelongsTo(runId, response.data)
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
     throw error
@@ -78,7 +89,7 @@ export async function getWarningsErrors(runId: string): Promise<WarningsErrorsRe
     const response = await http.get<WarningsErrorsReport>(
       `/reports/runs/${runId}/warnings-errors`
     )
-    return response.data
+    return assertBelongsTo(runId, response.data)
   } catch (error) {
     if (!axios.isAxiosError(error)) throw error
     if (error.response?.status === 404) return null
@@ -94,7 +105,7 @@ export async function getWarningsErrors(runId: string): Promise<WarningsErrorsRe
 export async function getPortfolio(runId: string): Promise<PortfolioReport | null> {
   try {
     const response = await http.get<PortfolioReport>(`/reports/runs/${runId}/portfolio`)
-    return response.data
+    return assertBelongsTo(runId, response.data)
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
     throw error
