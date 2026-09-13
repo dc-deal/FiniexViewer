@@ -21,7 +21,7 @@ Read-only candle chart that loads historical bar data from a running FiniexTesti
 
 - Not a trading platform or execution UI.
 - Not a strategy runner — no simulation control from the browser.
-- No authentication, no user accounts, no multi-user setup.
+- No login, no user accounts, no multi-user setup.
 - Not a replacement for the FiniexTestingIDE CLI.
 
 ---
@@ -46,6 +46,17 @@ Create `.env.local` to point at your API server (default is `http://localhost:80
 ```bash
 echo "VITE_API_BASE_URL=http://localhost:8000" > .env.local
 ```
+
+If the API requires a bearer token, put it in the same file:
+
+```bash
+echo "FINIEX_API_TOKEN=<your token>" >> .env.local
+```
+
+**Note the missing `VITE_` prefix, and do not add one.** A `VITE_*` variable is inlined into the
+browser bundle at build time, which would publish the token to anyone who opens the page. This one
+is read by the dev proxy and attached to the outgoing request, so the browser never receives it.
+Leave it unset and no `Authorization` header is sent.
 
 ### Run
 

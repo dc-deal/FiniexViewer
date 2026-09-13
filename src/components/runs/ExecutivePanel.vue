@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RunSummary } from '@/types/api/report_types'
-import { amount, percent, numberOrNa, rValue, signClass } from '@/components/runs/report_format'
+import { amount, percentOrNa, numberOrNa, rValue, signClass } from '@/components/runs/report_format'
 import { t } from '@/translate'
 
 defineProps<{
@@ -30,8 +30,8 @@ defineProps<{
         <tr v-for="row in model.currencies" :key="row.currency">
           <td>{{ row.currency }}</td>
           <td :class="signClass(row.net_pnl)">{{ amount(row.net_pnl, row.currency) }}</td>
-          <td>{{ numberOrNa(row.profit_factor) }}</td>
-          <td>{{ percent(row.win_rate) }}</td>
+          <td>{{ numberOrNa(row.profit_factor, row.total_trades) }}</td>
+          <td>{{ percentOrNa(row.win_rate, row.total_trades) }}</td>
           <td>{{ row.total_trades }} ({{ row.winning_trades }}W/{{ row.losing_trades }}L)</td>
           <td>{{ rValue(row.expectancy, row.r_trade_count) }}</td>
           <td>{{ rValue(row.avg_win_r, row.r_win_count) }}</td>

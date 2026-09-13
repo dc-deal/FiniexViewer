@@ -127,7 +127,13 @@ export interface WarningsErrorsOutcome {
   first_failure_name: string
   first_failure_error: string
   emergency_reason: string    // live villain
+  // Live-only. '' on a simulation run means NOT APPLICABLE rather than unknown. It is DETAIL and
+  // never a verdict: 'emergency' is alarming only when run_outcome is 'failed', because an
+  // operator stopping a healthy session with Ctrl+C produces the same value.
   shutdown_mode: string       // 'normal' | 'emergency'
+  // Resolves that ambiguity — but it is newer than most artifacts, which default it to false, so
+  // it cannot be trusted on an older one. Mirrored, deliberately not rendered.
+  operator_interrupted: boolean
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/warnings-errors */
@@ -160,7 +166,7 @@ export interface PortfolioUnitRow {
   total_fees: number
   // Provenance. data_source carries the same broker keys GET /brokers returns ('mt5'), which is
   // what makes the jump into the chart possible; broker_name is a display name ('Kraken') and
-  // is not addressable. Empty data_source on live runs — see viewer#21.
+  // is not addressable. Filled on both pipelines since the live path threads it through.
   data_source: string
   sentiment_source: string
   broker_name: string

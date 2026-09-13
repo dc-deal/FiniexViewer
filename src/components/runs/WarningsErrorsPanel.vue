@@ -24,6 +24,17 @@ const outcomeMark = computed(() => {
   return ''
 })
 
+/**
+ * The shutdown mode, which is DETAIL and never a verdict. An operator stopping a healthy live
+ * session with Ctrl+C produces the same 'emergency' as a crash, so it is only alarming where the
+ * run was graded failed. Absent on a simulation run, where it means not applicable.
+ */
+const shutdown = computed(() => {
+  const mode = props.model.outcome.shutdown_mode
+  if (!mode) return null
+  return { mode, alarming: props.model.outcome.run_outcome === 'failed' }
+})
+
 function hasDetail(row: UnitErrorRow): boolean {
   return row.traceback !== '' || row.validation_errors.length > 0 || row.logged_errors.length > 0
 }
@@ -41,6 +52,9 @@ function hasDetail(row: UnitErrorRow): boolean {
       </span>
       <span v-if="model.outcome.first_failure_name" class="outcome-first">
         {{ t('first failure:') }} {{ model.outcome.first_failure_name }}
+      </span>
+      <span v-if="shutdown" class="outcome-shutdown" :class="{ alarming: shutdown.alarming }">
+        {{ t('shutdown:') }} {{ shutdown.mode }}
       </span>
     </div>
 
@@ -223,6 +237,14 @@ function hasDetail(row: UnitErrorRow): boolean {
   white-space: pre-wrap;
   overflow-x: auto;
   font-size: var(--font-size-sm);
+}
+
+.outcome-shutdown {
+  color: var(--color-text-secondary);
+}
+
+.outcome-shutdown.alarming {
+  color: var(--color-error);
 }
 
 .hint {

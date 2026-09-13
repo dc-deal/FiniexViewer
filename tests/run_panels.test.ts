@@ -103,6 +103,27 @@ describe('ExecutivePanel', () => {
     expect(avgLoss).toBe('-0.90R')
   })
 
+  it('never renders a ratio nobody measured — an untraded run has no win rate', () => {
+    // the backend sends 0.0 rather than null for both, so the gate is the trade count
+    const untraded: RunSummaryCurrency = {
+      ...MEASURED, total_trades: 0, winning_trades: 0, losing_trades: 0,
+      win_rate: 0, profit_factor: 0,
+    }
+    const [, , profitFactor, winRate] = cells(untraded)
+    expect(profitFactor).toBe('n/a')
+    expect(winRate).toBe('n/a')
+  })
+
+  it('keeps a measured zero — one losing trade really is a win rate of zero', () => {
+    const onlyLosses: RunSummaryCurrency = {
+      ...MEASURED, total_trades: 1, winning_trades: 0, losing_trades: 1,
+      win_rate: 0, profit_factor: 0,
+    }
+    const [, , profitFactor, winRate] = cells(onlyLosses)
+    expect(profitFactor).toBe('0.00')
+    expect(winRate).toBe('0.0%')
+  })
+
   it('says so when a run carries no currency rows', () => {
     const empty = { ...summaryWith(MEASURED), currencies: [] }
     const wrapper = mount(ExecutivePanel, { props: { model: empty } })
@@ -124,6 +145,7 @@ function report(overrides: Partial<WarningsErrorsReport> = {}): WarningsErrorsRe
       first_failure_error: '',
       emergency_reason: '',
       shutdown_mode: 'normal',
+      operator_interrupted: false,
     },
     ...overrides,
   }
@@ -226,6 +248,30 @@ describe('WarningsErrorsPanel', () => {
     expect(lines[1].find('.log-time').exists()).toBe(false)
     expect(lines[1].find('.log-scope').exists()).toBe(false)
     expect(lines[1].find('.log-message').text()).toBe('Retry limit reached')
+  })
+
+  it('shows the shutdown mode as detail, and only alarms where the run failed', () => {
+    // an operator stopping a healthy live session with Ctrl+C produces the same 'emergency'
+    const stopped = report()
+    stopped.outcome.run_outcome = 'success'
+    stopped.outcome.shutdown_mode = 'emergency'
+    const calm = mount(WarningsErrorsPanel, { props: { model: stopped } })
+    expect(calm.find('.outcome-shutdown').text()).toContain('emergency')
+    expect(calm.find('.outcome-shutdown').classes()).not.toContain('alarming')
+
+    const crashed = report()
+    crashed.outcome.run_outcome = 'failed'
+    crashed.outcome.shutdown_mode = 'emergency'
+    const loud = mount(WarningsErrorsPanel, { props: { model: crashed } })
+    expect(loud.find('.outcome-shutdown').classes()).toContain('alarming')
+  })
+
+  it('says nothing about a shutdown mode a simulation run does not have', () => {
+    // '' means NOT APPLICABLE on a sim run, not unknown — absent rather than rendered
+    const sim = report()
+    sim.outcome.shutdown_mode = ''
+    const wrapper = mount(WarningsErrorsPanel, { props: { model: sim } })
+    expect(wrapper.find('.outcome-shutdown').exists()).toBe(false)
   })
 
   it('lists tier-1 warnings but only summarises the log pot', () => {

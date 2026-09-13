@@ -23,6 +23,7 @@ const REPORT: WarningsErrorsReport = {
     first_failure_error: '',
     emergency_reason: '',
     shutdown_mode: 'normal',
+    operator_interrupted: false,
   },
 }
 

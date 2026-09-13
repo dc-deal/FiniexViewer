@@ -16,7 +16,7 @@ const {
   runs, selectedRunId, selectedRun, summary, summaryMissing, unknownRunId,
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
-const { warningsErrors, portfolio, unreadable } = storeToRefs(reportsStore)
+const { warningsErrors, portfolio, unreadable, error: sectionError } = storeToRefs(reportsStore)
 
 // loads the run index and restores the cascade from the URL
 useRunQuerySync()
@@ -82,6 +82,8 @@ const showPanels = computed(() =>
           {{ t('This run carries no run-summary artifact') }}
         </p>
         <p v-if="unreadable" class="notice">{{ unreadable }}</p>
+        <!-- a section that failed to load says so; the sections that did load stay visible -->
+        <p v-if="sectionError" class="notice failed">{{ sectionError }}</p>
         <PanelColumn :sources="sources" />
       </template>
     </div>
@@ -130,6 +132,11 @@ const showPanels = computed(() =>
 .error-msg {
   color: var(--color-error);
   font-size: var(--font-size-sm);
+}
+
+.notice.failed {
+  border-left-color: var(--color-error);
+  color: var(--color-error);
 }
 
 .notice {

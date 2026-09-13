@@ -49,7 +49,7 @@ tests/
   runs_store.test.ts        — run index loading, group/name/run cascade, missing-artifact flag, error handling
   use_run_query_sync.test.ts — cascade restore from URL, partial cascade, merge with foreign params
   query_param_utils.test.ts — query reading (string-only), param write and delete
-  run_panels.test.ts        — KPI rendering (units, n/a, per-subset R gating, SIGNAL absence), the warnings/errors tiers, the portfolio breakdown incl. the chart link, and the run header incl. the two kinds of parent
+  run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the portfolio breakdown incl. the chart link, and the run header incl. the two kinds of parent
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
   run_reports_store.test.ts — section loading (warnings/errors, portfolio), missing artifact, error text, clearing on run change, shared error slot across concurrent sections
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 and 409 mapping
