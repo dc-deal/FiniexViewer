@@ -99,13 +99,18 @@ The backend exposes two planes. The viewer consumes both, and treats them differ
 **Data plane** — the market data behind the candle chart:
 
 ```
-GET /api/v1/health
-GET /api/v1/timeframes
-GET /api/v1/brokers
+GET /api/v1/health                                    open, no token
+GET /api/v1/timeframes                                open, no token
+GET /api/v1/brokers                                   token, no grant
 GET /api/v1/brokers/{broker}/symbols
 GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage
 GET /api/v1/brokers/{broker}/symbols/{symbol}/bars
 ```
+
+The two open routes are open by decision, not by omission: `/health` is the liveness check, and
+`/timeframes` is the app's own static configuration rather than data about a venue or a run. Useful
+as a diagnostic once the gate is on — if the timeframe selector fills while everything else answers
+401, the transport is fine and the credential is not.
 
 **Report plane** — read-only access to persisted run artifacts, addressed by `run_id`:
 
@@ -210,6 +215,57 @@ Both are in place. The proxy path is primary; the CORS middleware is the safety 
 ---
 
 ## Tech Decisions
+
+### API Token — the dev proxy holds it, the browser never does
+
+The backend is gaining bearer authentication. Every route except `/api/v1/health` and
+`/api/v1/timeframes` will require `Authorization: Bearer <token>`.
+
+Access is by **grant**, spelled `<surface>:<name>`, and this viewer's token holds
+`brokers:*` · `bars:*` · `reports:*` · `sweeps:*` — the four surfaces its routes sit on. A grant is
+mandatory: a token without one is refused at boot rather than defaulting to everything.
+
+**The `reports` grant is conditional and the condition is not a formality.** It reaches the run
+artifacts of a private trading strategy, and it was granted to a browser only because the API is
+published to loopback, so the page and the API share one machine and the token's reader is its
+owner. That decision is re-taken before the viewer is served from anywhere else — if Phase 3 above
+gets a date, it is raised with the backend first.
+
+**A browser client cannot hold a secret.** A value a browser transmits is a value its user
+possesses — readable from the bundle or from the network panel. There is no build setting that
+changes this, which is why the token is **not** a `VITE_` variable: anything with that prefix is
+inlined into the client bundle at build time, and that would publish the credential to anyone who
+opens the page.
+
+Instead the dev server's `/api` proxy attaches it, in the Node process:
+
+```
+browser ──/api/v1/…──▶  Vite dev proxy  ──Authorization: Bearer …──▶  backend
+                        (holds FINIEX_API_TOKEN)
+```
+
+This is the backend-for-frontend pattern, and it is what the IETF draft on browser-based apps
+recommends. Three properties, all measured rather than assumed:
+
+- **Inert until a token exists.** With `FINIEX_API_TOKEN` unset no header is sent at all — the
+  previous behaviour, byte for byte.
+- **The browser never receives it.** Verified against a request-capturing stand-in: the request to
+  `:5173` carries no `Authorization`, the request that reaches the target does.
+- **A real environment variable wins over a `.env` file.** Vite's `loadEnv` prioritises
+  `process.env`, so Compose keeps deciding `VITE_API_BASE_URL` while the token can come from
+  `.env.local`, which Compose does not set.
+
+**The production case is unsolved and deliberately not faked.** A statically served bundle has no
+proxy, so there is nowhere to put a token that the user does not also get. The same proxy is the
+answer there too — the human signs in to it and it holds the service token — but that is user
+management, which neither this repo nor the backend's auth package covers today.
+
+One browser-shaped consequence worth knowing when the gate goes on: a cross-origin `401` reaches
+JavaScript with its status, but `WWW-Authenticate` and `Retry-After` stay hidden unless the server
+lists them in `expose_headers`. Neither is CORS-safelisted.
+
+**`vite.config.ts` exports an object, not a config function.** `vitest.config.ts` merges this file,
+and `mergeConfig` cannot merge a function — the env is therefore loaded at module scope.
 
 ### Theming — CSS Custom Properties
 
