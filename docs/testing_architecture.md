@@ -56,6 +56,7 @@ tests/
   api_contract.test.ts      — the captured fixtures against the contract they were taken under, and each list's declared row key
   deployments_store.test.ts — ledger listing, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state
   booking_period_panels.test.ts — the three-state reconciliation incl. "not checked", the completeness wording, the magnitude drawdown, and the timeline (tracks, polarity, no extent, unreadable timestamps)
+  trade_history.test.ts     — the magnitude excursion, the gated expectancy, the VISIBLE row cap, and what the card carries that the row cannot
   json_tree.test.ts         — key naming, quoted strings, array indices, null, fold depth
   run_config.test.ts        — the two configuration shapes, override PRESENCE without resolution, the worker join, and the guarantee that no top-level key is unreachable
   hover_card.test.ts        — portalled out of the page, opens on focus, carries the caller's figures and their polarity

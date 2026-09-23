@@ -9,6 +9,7 @@ import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
   BookingPeriodsReport,
   RunConfigReport,
+  TradeHistoryReport,
   PortfolioReport,
   RunInfo,
   RunListResponse,
@@ -225,5 +226,17 @@ export async function getRunConfig(runId: string): Promise<RunConfigReport | nul
     const body = error.response.data as { error?: string } | undefined
     if (body?.error === 'run_not_found') throw new RunNotFoundError(runId)
     return null
+  }
+}
+
+/** Every closed position of a run, with its excursion statistics. Null when the run has none. */
+export async function getTradeHistory(runId: string): Promise<TradeHistoryReport | null> {
+  try {
+    const response = await http.get<TradeHistoryReport>(`/reports/runs/${runId}/trade-history`)
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    raiseIfForbidden(error, 'reports')
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
   }
 }

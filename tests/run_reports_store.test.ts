@@ -9,6 +9,7 @@ import type {
 import bookingPeriodsFixture from './fixtures/run_booking_periods.json'
 import portfolioFixture from './fixtures/portfolio.json'
 import runConfigFixture from './fixtures/run_config_live.json'
+import tradeHistoryFixture from './fixtures/trade_history.json'
 import * as apiClient from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
@@ -18,6 +19,7 @@ vi.mock('@/api/api_client', () => ({
   getPortfolio: vi.fn(),
   getBookingPeriods: vi.fn(),
   getRunConfig: vi.fn(),
+  getTradeHistory: vi.fn(),
 }))
 
 const REPORT: WarningsErrorsReport = {
@@ -250,6 +252,31 @@ describe('useRunReportsStore — portfolio section', () => {
       await store.loadConfig(runConfigFixture.run_id)
       store.clear()
       expect(store.config).toBeNull()
+    })
+  })
+
+  describe('trade history', () => {
+    it('holds the trades under their own slot', async () => {
+      vi.mocked(apiClient.getTradeHistory).mockResolvedValue(tradeHistoryFixture)
+      const store = useRunReportsStore()
+      await store.loadTradeHistory(tradeHistoryFixture.run_id)
+      expect(store.tradeHistory?.trades.length).toBeGreaterThan(0)
+    })
+
+    it('keeps null where the run closed no position — the panel is then not shown', async () => {
+      vi.mocked(apiClient.getTradeHistory).mockResolvedValue(null)
+      const store = useRunReportsStore()
+      await store.loadTradeHistory('20260615_130000')
+      expect(store.tradeHistory).toBeNull()
+      expect(store.error).toBeNull()
+    })
+
+    it('is cleared with every other section when the selection changes', async () => {
+      vi.mocked(apiClient.getTradeHistory).mockResolvedValue(tradeHistoryFixture)
+      const store = useRunReportsStore()
+      await store.loadTradeHistory(tradeHistoryFixture.run_id)
+      store.clear()
+      expect(store.tradeHistory).toBeNull()
     })
   })
 })

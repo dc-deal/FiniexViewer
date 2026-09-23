@@ -26,6 +26,7 @@ import {
   getDeployment,
   getDeploymentBookingPeriods,
   getRunConfig,
+  getTradeHistory,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
@@ -39,6 +40,7 @@ import deploymentsFixture from './fixtures/deployments_list.json'
 import deploymentDetailFixture from './fixtures/deployment_detail.json'
 import deploymentPeriodsFixture from './fixtures/deployment_booking_periods.json'
 import runConfigFixture from './fixtures/run_config_live.json'
+import tradeHistoryFixture from './fixtures/trade_history.json'
 
 describe('api_client', () => {
   beforeEach(() => {
@@ -330,6 +332,27 @@ describe('api_client', () => {
     it('checks the body names the run that was asked for', async () => {
       mockGet.mockResolvedValue({ data: { ...runConfigFixture, run_id: '20260615_999999' } })
       await expect(getRunConfig('20260615_130000')).rejects.toBeInstanceOf(RunIdMismatchError)
+    })
+  })
+
+  describe('getTradeHistory', () => {
+    it('calls the trade-history endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: tradeHistoryFixture })
+      const result = await getTradeHistory(tradeHistoryFixture.run_id)
+      expect(mockGet).toHaveBeenCalledWith(
+        `/reports/runs/${tradeHistoryFixture.run_id}/trade-history`
+      )
+      expect(result?.trades.length).toBeGreaterThan(0)
+    })
+
+    it('maps 404 to null — a run that closed no position carries no section', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404 } })
+      expect(await getTradeHistory('20260615_130000')).toBeNull()
+    })
+
+    it('checks the body names the run that was asked for', async () => {
+      mockGet.mockResolvedValue({ data: { ...tradeHistoryFixture, run_id: '20260615_999999' } })
+      await expect(getTradeHistory('20260615_130000')).rejects.toBeInstanceOf(RunIdMismatchError)
     })
   })
 })

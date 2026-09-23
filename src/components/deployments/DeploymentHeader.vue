@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  amount, drawdown, duration, percentFigure, signClass, utcInstant,
+  amount, magnitude, duration, percentFigure, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { DeploymentRow } from '@/types/api/deployment_types'
 import { t } from '@/translate'
@@ -24,7 +24,7 @@ defineProps<{
       </span>
       <span class="label">{{ t('max drawdown') }}</span>
       <span class="figure">
-        {{ drawdown(row.max_drawdown, row.currency) }} ({{ percentFigure(row.max_drawdown_pct) }})
+        {{ magnitude(row.max_drawdown, row.currency) }} ({{ percentFigure(row.max_drawdown_pct) }})
       </span>
       <span class="label">{{ row.sessions }} {{ t('sessions') }}</span>
     </div>

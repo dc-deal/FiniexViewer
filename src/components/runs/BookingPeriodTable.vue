@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { rowKey } from '@/api/list_key'
 import {
-  amount, drawdown, numberOrNa, percentOrNa, signClass, utcInstant,
+  amount, magnitude, numberOrNa, percentOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { BookingPeriodRow } from '@/types/api/report_types'
 import { t } from '@/translate'
@@ -62,7 +62,7 @@ defineProps<{
           <td :class="signClass(period.net_pnl)">{{ amount(period.net_pnl, period.currency) }}</td>
           <td>{{ percentOrNa(period.win_rate, period.trade_count) }}</td>
           <td>{{ numberOrNa(period.profit_factor, period.trade_count) }}</td>
-          <td>{{ drawdown(period.max_drawdown, period.currency) }}</td>
+          <td>{{ magnitude(period.max_drawdown, period.currency) }}</td>
           <td>{{ amount(period.total_fees, period.currency) }}</td>
         </tr>
       </tbody>

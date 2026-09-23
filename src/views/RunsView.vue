@@ -17,7 +17,8 @@ const {
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
 const {
-  warningsErrors, portfolio, bookingPeriods, config, unreadable, error: sectionError,
+  warningsErrors, portfolio, bookingPeriods, config, tradeHistory,
+  unreadable, error: sectionError,
 } = storeToRefs(reportsStore)
 
 // loads the run index and restores the cascade from the URL
@@ -33,6 +34,7 @@ watch(selectedRunId, runId => {
   reportsStore.loadPortfolio(runId)
   reportsStore.loadBookingPeriods(runId)
   reportsStore.loadConfig(runId)
+  reportsStore.loadTradeHistory(runId)
 }, { immediate: true })
 
 // the models the panels render, keyed by the source each descriptor declares
@@ -44,6 +46,7 @@ const sources = computed(() => ({
   portfolio: portfolio.value,
   bookingPeriods: bookingPeriods.value,
   config: config.value,
+  tradeHistory: tradeHistory.value,
 }))
 
 // Once a run is chosen there is always something to show: the header panel reads the index row.

@@ -4,6 +4,7 @@ import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
 import ConfigPanel from '@/components/runs/ConfigPanel.vue'
+import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
 import OrderCountsPanel from '@/components/runs/OrderCountsPanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import type { PanelDescriptor } from '@/types/panel_types'
@@ -79,6 +80,17 @@ const PANELS: PanelDescriptor[] = [
     source: 'bookingPeriods',
     groups: 'all',
     defaultOpen: true,
+  },
+  {
+    // The only place the individual trades exist — every other section is already summed over
+    // them. Absent on a run that closed no position.
+    id: 'trade-history',
+    title: 'Trade History',
+    icon: '📒',
+    component: TradeHistoryPanel,
+    source: 'tradeHistory',
+    groups: 'all',
+    defaultOpen: false,
   },
   {
     id: 'order-counts',

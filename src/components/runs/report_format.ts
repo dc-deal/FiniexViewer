@@ -84,12 +84,16 @@ export function signClass(value: number): string {
 }
 
 /**
- * A decline, always rendered as a magnitude. The sign is NOT reliable across the archive: the
- * backend aligned booking periods to a magnitude, but stored artifacts written before that keep
- * the negative form and nothing in the payload distinguishes them. A decline has only one
- * direction, so dropping the sign loses no information and is correct under both conventions.
+ * A quantity that has only ONE direction by definition — a drawdown, an adverse excursion —
+ * rendered as a magnitude whatever sign arrived.
+ *
+ * The sign is not reliable, and measurably so. A stored booking-period artifact keeps the negative
+ * form the backend has since aligned to a magnitude, with nothing in the payload to tell the eras
+ * apart. And within ONE trade-history response, `mae_pnl` is signed (−18,399.05) while
+ * `largest_mae` is the magnitude of that same number (+18,399.05). Since the direction is already
+ * carried by the NAME, dropping the sign loses nothing and is correct under both conventions.
  */
-export function drawdown(value: number, currency: string): string {
+export function magnitude(value: number, currency: string): string {
   return amount(Math.abs(value), currency)
 }
 

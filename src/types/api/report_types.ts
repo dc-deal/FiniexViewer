@@ -394,3 +394,121 @@ export interface RunConfigReport {
   config_id: string
   config: Record<string, unknown>
 }
+
+/** One fill behind a trade's entry or exit — a position can be opened in several pieces. */
+export interface TradeExecution {
+  trade_id: string
+  side: string
+  volume: number
+  price: number
+  fee: number
+  fee_currency: string
+  liquidity: string        // 'maker' | 'taker'
+  timestamp: string
+}
+
+/**
+ * One closed position, as it happened. The only place individual trades exist — every other
+ * section of a run is already summed over them.
+ *
+ * MAE and MFE are the worst and best the position ever stood at while it was open, which is a
+ * different question from how it ended: a trade closed at −17 that stood at −104 on the way was
+ * a different trade from one that never moved. Each is given three ways — as a PRICE, as the
+ * unrealised P&L at that price, and as a distance in `price_unit`.
+ */
+export interface TradeRow {
+  position_id: string
+  symbol: string
+  direction: string        // 'long' | 'short'
+  lots: number
+  entry_price: number
+  entry_time: string
+  exit_price: number
+  exit_time: string
+  duration_s: number
+  // '' where the close was not attributed — an absence, never rendered as a state
+  close_reason: string
+  gross_pnl: number
+  total_fees: number
+  net_pnl: number
+  currency: string
+  // the three halves of total_fees
+  swap_cost: number
+  commission_cost: number
+  spread_cost: number
+  /**
+   * Maximum ADVERSE excursion. `mae_pnl` arrives signed while the analytics block's `largest_mae`
+   * carries the magnitude of the same number — so the sign says nothing the name has not already
+   * said, and the render edge drops it.
+   */
+  mae_price: number
+  mfe_price: number
+  mae_pnl: number
+  mfe_pnl: number
+  mae_distance: number
+  mfe_distance: number
+  // what mae_distance / mfe_distance are counted in: 'pip' | 'tick' | …
+  price_unit: string
+  // null where no stop was set, so the trade has no R to be a multiple of
+  r_multiple: number | null
+  scenario_name: string
+  entry_tick_index: number
+  exit_tick_index: number
+  entry_type: string
+  stop_loss: number | null
+  take_profit: number | null
+  entry_side: string
+  exit_side: string
+  entry_executions: TradeExecution[]
+  exit_executions: TradeExecution[]
+  entry_slippage: number
+  exit_slippage: number
+  entry_slippage_pct: number
+  exit_slippage_pct: number
+}
+
+/** Run-wide trade statistics for one account currency. */
+export interface TradeAnalytics {
+  currency: string
+  trade_count: number
+  expectancy: number
+  // null when no trade carried a stop, so nothing is denominated in R
+  avg_win_r: number | null
+  avg_loss_r: number | null
+  r_trade_count: number
+  r_win_count: number
+  r_loss_count: number
+  // Excursion means. `largest_mae` is a MAGNITUDE while `avg_mae_losers` is signed — see TradeRow.
+  avg_mae_winners: number
+  avg_mae_losers: number
+  avg_mfe_losers: number
+  largest_mae: number
+  largest_mfe: number
+  gross_pnl: number
+  net_pnl: number
+  total_fees: number
+  avg_trade_duration_s: number
+  max_consecutive_wins: number
+  max_consecutive_losses: number
+}
+
+/** Per-scenario totals — the same trades grouped by the unit that produced them. */
+export interface ScenarioTotals {
+  scenario_name: string
+  currency: string
+  trade_count: number
+  gross_pnl: number
+  net_pnl: number
+  total_fees: number
+  total_swap: number
+}
+
+/** Response type for GET /api/v1/reports/runs/{run_id}/trade-history */
+export interface TradeHistoryReport {
+  run_id: string
+  trades: TradeRow[]
+  count: number
+  symbols: string[]
+  analytics: TradeAnalytics[]
+  scenario_totals: ScenarioTotals[]
+}

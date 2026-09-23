@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getBookingPeriods, getPortfolio, getRunConfig, getWarningsErrors,
+  getBookingPeriods, getPortfolio, getRunConfig, getTradeHistory, getWarningsErrors,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import type {
   BookingPeriodsReport,
   RunConfigReport,
+  TradeHistoryReport,
   PortfolioReport,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
@@ -22,10 +23,12 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const portfolio = ref<PortfolioReport | null>(null)
   const bookingPeriods = ref<BookingPeriodsReport | null>(null)
   const config = ref<RunConfigReport | null>(null)
+  const tradeHistory = ref<TradeHistoryReport | null>(null)
   const loadingWarningsErrors = ref(false)
   const loadingPortfolio = ref(false)
   const loadingBookingPeriods = ref(false)
   const loadingConfig = ref(false)
+  const loadingTradeHistory = ref(false)
   const error = ref<string | null>(null)
   // the artifact exists but predates the current schema — not an absence and not an outage
   const unreadable = ref<string | null>(null)
@@ -36,6 +39,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     portfolio.value = null
     bookingPeriods.value = null
     config.value = null
+    tradeHistory.value = null
     error.value = null
     unreadable.value = null
   }
@@ -111,15 +115,31 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     }
   }
 
+  /** Every closed position of the run. Null where it closed none — the panel is then not shown. */
+  async function loadTradeHistory(runId: string): Promise<void> {
+    loadingTradeHistory.value = true
+    tradeHistory.value = null
+    try {
+      tradeHistory.value = await getTradeHistory(runId)
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      error.value = `${t('Could not load the trade history')}: ${detail}`
+    } finally {
+      loadingTradeHistory.value = false
+    }
+  }
+
   return {
     warningsErrors,
     portfolio,
     bookingPeriods,
     config,
+    tradeHistory,
     loadingWarningsErrors,
     loadingPortfolio,
     loadingBookingPeriods,
     loadingConfig,
+    loadingTradeHistory,
     error,
     unreadable,
     clear,
@@ -127,5 +147,6 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadPortfolio,
     loadBookingPeriods,
     loadConfig,
+    loadTradeHistory,
   }
 })

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
-import { amount, drawdown } from '@/components/runs/report_format'
+import { amount, magnitude } from '@/components/runs/report_format'
 import type { BookingPeriodsReport } from '@/types/api/report_types'
 import { t } from '@/translate'
 
@@ -86,7 +86,7 @@ const otherCurrencies = computed(() =>
     </template>
 
     <p class="footnote">
-      {{ t('Deepest period drawdown') }}: {{ drawdown(model.deepest_period_drawdown, model.currency) }} ·
+      {{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }} ·
       {{ t('Final equity') }}: {{ amount(model.final_equity, model.currency) }}
       <template v-if="otherCurrencies.length">
         &nbsp;|&nbsp; {{ t('Other account currencies') }}: {{ otherCurrencies.join(', ') }}

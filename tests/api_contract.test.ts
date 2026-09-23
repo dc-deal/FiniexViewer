@@ -10,6 +10,7 @@ import portfolio from './fixtures/portfolio.json'
 import warningsErrors from './fixtures/warnings_errors.json'
 import configLive from './fixtures/run_config_live.json'
 import configSimulation from './fixtures/run_config_simulation.json'
+import tradeHistory from './fixtures/trade_history.json'
 import manifest from './fixtures/capture_manifest.json'
 
 import type {
@@ -18,6 +19,7 @@ import type {
   RunListResponse,
   RunConfigReport,
   RunSummary,
+  TradeHistoryReport,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
 import type {
@@ -141,6 +143,16 @@ describe('api contract', () => {
     expect(live.config['global']).toBeUndefined()
     expect(simulation.config['global']).toBeDefined()
     expect(simulation.config['scenarios']).toBeDefined()
+  })
+
+  it('the trade history still satisfies the mirrored shape', () => {
+    const typed: TradeHistoryReport = tradeHistory
+    expect(typed.trades.length).toBeGreaterThan(0)
+    expect(typed.analytics.length).toBeGreaterThan(0)
+    // the two sign conventions for one quantity, held here because it is a property of the CONTRACT
+    const worst = typed.trades.reduce((low, row) => Math.min(low, row.mae_pnl), 0)
+    expect(worst).toBeLessThan(0)
+    expect(typed.analytics[0]?.largest_mae).toBeGreaterThan(0)
   })
 
   /**

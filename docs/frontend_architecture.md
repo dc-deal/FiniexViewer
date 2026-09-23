@@ -121,6 +121,7 @@ GET /api/v1/reports/runs/{run_id}/warnings-errors     tiered warnings, per-unit 
 GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down per unit
 GET /api/v1/reports/runs/{run_id}/booking-periods     the bookkeeping stretches, plus a completeness check
 GET /api/v1/reports/runs/{run_id}/config              what the run was commissioned with
+GET /api/v1/reports/runs/{run_id}/trade-history       every closed position, with its excursions
 GET /api/v1/reports/runs/{run_id}/...                 10 further per-section reports (not yet consumed)
 ```
 
@@ -429,6 +430,31 @@ rendered as loudly as `false`. A tick there would claim evidence that does not e
 valid and carry nothing on it. `SurfaceForbiddenError` separates that from an absence and from an
 outage, and the view says which surface is missing — not the backend's own text, which lists every
 grant the token holds.
+
+### Trade History — the only place a single trade exists
+
+`runs/TradeHistoryPanel.vue`. Every other section of a run is already summed over these rows, so
+this is the one that answers *which* trade, not *how much*.
+
+**The table carries nine columns and the hover card carries all thirty-eight.** That split is what
+the card was built for: a trade has more to say than a row has width, and truncating the row would
+decide for the reader which fields matter.
+
+**An adverse excursion is rendered as a magnitude.** Measured in one response: `mae_pnl` is signed
+(−18,399.05) while the analytics block's `largest_mae` is the magnitude of that same number
+(+18,399.05). The direction is already in the name, so rendering both as they arrive would put one
+quantity on screen twice with opposite signs. `magnitude()` — the same formatter the drawdowns use,
+renamed from `drawdown()` once a second quantity needed it.
+
+**MAE and MFE are given three ways** — as a price, as the unrealised P&L at that price, and as a
+distance in `price_unit` — and the card shows all three, because which one answers a question
+depends on the question.
+
+**The row cap is visible.** A thirty-day session produces thousands of trades and drawing them all
+would stall the page, so the panel draws 500 and SAYS how many of how many it drew. A silent
+truncation reads as "that was all", which for a trade list is the most misleading thing it could
+say. Virtualisation replaces the cap the day a run exceeds it — `@tanstack/vue-virtual` is already
+in the tree through reka-ui, though it would have to become a direct dependency.
 
 ### Configuration — shown, never resolved
 

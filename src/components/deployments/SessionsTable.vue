@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { rowKey } from '@/api/list_key'
-import { amount, drawdown, duration, signClass, utcInstant } from '@/components/runs/report_format'
+import { amount, magnitude, duration, signClass, utcInstant } from '@/components/runs/report_format'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import { t } from '@/translate'
 
@@ -75,7 +75,7 @@ function gap(session: DeploymentSessionRow): string {
             <td :class="signClass(session.net_pnl)">
               {{ amount(session.net_pnl, session.currency) }}
             </td>
-            <td>{{ drawdown(session.max_drawdown, session.currency) }}</td>
+            <td>{{ magnitude(session.max_drawdown, session.currency) }}</td>
           </tr>
         </template>
       </tbody>

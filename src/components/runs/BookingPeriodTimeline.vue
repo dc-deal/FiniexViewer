@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import TimelineChart from '@/components/base/TimelineChart.vue'
 import { rowKey } from '@/api/list_key'
 import {
-  amount, drawdown, duration, numberOrNa, percentOrNa, signClass, utcInstant,
+  amount, magnitude, duration, numberOrNa, percentOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { BookingPeriodRow } from '@/types/api/report_types'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
@@ -86,7 +86,7 @@ function details(period: PeriodRow): { label: string, value: string, tone?: stri
     { label: t('Win Rate'), value: percentOrNa(period.win_rate, period.trade_count) },
     { label: t('PF'), value: numberOrNa(period.profit_factor, period.trade_count) },
     { label: t('Fees'), value: amount(period.total_fees, period.currency) },
-    { label: t('Max DD'), value: drawdown(period.max_drawdown, period.currency) },
+    { label: t('Max DD'), value: magnitude(period.max_drawdown, period.currency) },
     {
       label: t('Equity band'),
       value: `${amount(period.min_equity, period.currency)} … ${amount(period.max_equity, period.currency)}`,
