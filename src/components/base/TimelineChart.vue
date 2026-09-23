@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import HoverCard from '@/components/base/HoverCard.vue'
 import type { TimelineLane } from '@/types/timeline_types'
 
 /**
@@ -32,6 +33,12 @@ const props = withDefaults(defineProps<{
   collapseGapsLongerThan?: number
   /** Renders the length of a removed stretch — the caller owns what the scale's units mean. */
   formatGap?: (length: number) => string
+  /**
+   * Renders a kept piece as ONE label spanning it. A piece's two edges can sit closer together
+   * than a single label is wide, and two labels then overprint into a smear; one range says the
+   * same thing in the space that is actually there. Falls back to two formatted ends.
+   */
+  formatRange?: (from: number, to: number) => string
   ticks?: number
   /** Width of the lane-label column, in rem. */
   labelWidth?: number
@@ -42,6 +49,7 @@ const props = withDefaults(defineProps<{
   markers: () => [],
   collapseGapsLongerThan: 0,
   formatGap: (length: number) => String(length),
+  formatRange: undefined,
 })
 
 interface Segment {
@@ -158,10 +166,15 @@ const axisTicks = computed<Tick[]>(() => {
       return { at: (i / (count - 1)) * 100, label: props.format(value), edge: 'mid' }
     })
   }
-  return axis.value.segments.flatMap(segment => [
-    { at: segment.at, label: props.format(segment.from), edge: 'start' },
-    { at: segment.at + segment.width, label: props.format(segment.to), edge: 'end' },
-  ])
+  // one label per kept piece, centred on it: its two edges are what a reader wants, and they fit
+  // in the width the piece actually has only when they share a label
+  return axis.value.segments.map(segment => ({
+    at: segment.at + segment.width / 2,
+    label: props.formatRange
+      ? props.formatRange(segment.from, segment.to)
+      : `${props.format(segment.from)} → ${props.format(segment.to)}`,
+    edge: 'mid',
+  }))
 })
 
 /**
@@ -175,18 +188,27 @@ const axisTicks = computed<Tick[]>(() => {
  */
 const MIN_TICK_GAP = 14
 
+/**
+ * Labels are STAGGERED onto a second line rather than dropped or shrunk. A timestamp is wide and
+ * the marks it belongs to can be close: shrinking the text makes the axis unreadable, dropping a
+ * label loses a moment the reader needs. Two rows double the room, and a pointer under each label
+ * says which mark it belongs to — which is the thing a staggered axis otherwise leaves ambiguous.
+ */
 const placedTicks = computed(() => {
-  const all = axisTicks.value
-  if (!axis.value.breaks.length) {
-    return all.map((tick, index) => ({
-      ...tick,
-      edge: index === 0 ? 'start' : (index === all.length - 1 ? 'end' : 'mid'),
-    }))
-  }
-  return all.filter((tick, index) => {
-    if (tick.edge !== 'end' || index === all.length - 1) return true
-    const opening = all[index - 1]
-    return !opening || tick.at - opening.at >= MIN_TICK_GAP
+  const all = axis.value.breaks.length
+    ? axisTicks.value.filter((tick, index) => {
+        if (tick.edge !== 'end' || index === axisTicks.value.length - 1) return true
+        const opening = axisTicks.value[index - 1]
+        return !opening || tick.at - opening.at >= MIN_TICK_GAP
+      })
+    : axisTicks.value
+
+  const lastOnRow = [-Infinity, -Infinity]
+  return all.map(tick => {
+    // the top row unless its neighbour there is too close, in which case the row below
+    const row = tick.at - lastOnRow[0]! >= MIN_TICK_GAP ? 0 : 1
+    lastOnRow[row] = tick.at
+    return { ...tick, row }
   })
 })
 
@@ -208,14 +230,23 @@ const drawn = computed(() =>
   <div v-if="drawn.length" class="timeline" :style="{ '--label-width': `${labelWidth}rem` }">
     <div class="axis-row">
       <span class="axis-spacer" />
-      <div class="axis">
+      <div class="axis" :title="scaleNote">
         <span
           v-for="tick in placedTicks"
           :key="`tick-${tick.at}`"
           class="tick"
-          :class="tick.edge"
+          :class="[tick.edge, `row-${tick.row}`]"
           :style="{ left: `${tick.at}%` }"
         >{{ tick.label }}</span>
+        <!-- the pointer belongs to the MARK, not to the label, so it is placed and centred
+             independently — a staggered label otherwise leaves the reader guessing which one -->
+        <span
+          v-for="tick in placedTicks"
+          :key="`stem-${tick.at}`"
+          class="stem"
+          :class="`row-${tick.row}`"
+          :style="{ left: `${tick.at}%` }"
+        />
         <!-- the removal is NAMED, which is the only thing that makes a broken axis honest -->
         <span
           v-for="gap in axis.breaks"
@@ -250,25 +281,30 @@ const drawn = computed(() =>
           class="rule"
           :style="{ left: `${rule.at}%` }"
         />
-        <div
+        <HoverCard
           v-for="bar in lane.bars"
           :key="bar.id"
-          class="span"
-          :class="bar.tone"
-          :style="{ left: `${bar.left}%`, width: `${bar.width}%` }"
           :title="bar.title"
+          :details="bar.details"
         >
-          <span class="span-label">{{ bar.label }}</span>
-        </div>
+          <div
+            class="span"
+            :class="bar.tone"
+            :style="{ left: `${bar.left}%`, width: `${bar.width}%` }"
+            tabindex="0"
+          >
+            <span class="span-label">{{ bar.label }}</span>
+          </div>
+        </HoverCard>
       </div>
     </div>
 
-    <p v-if="scaleNote" class="scale-note">{{ scaleNote }}</p>
   </div>
 </template>
 
 <style scoped>
 .timeline {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -299,8 +335,8 @@ const drawn = computed(() =>
 .axis {
   position: relative;
   flex: 1;
-  /* two lines: the scale on top, the removals beneath it, so neither overprints the other */
-  height: 2.3rem;
+  /* three lines: two staggered rows of labels, then the removals, so none overprints another */
+  height: 3.4rem;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -320,6 +356,18 @@ const drawn = computed(() =>
 .tick.start { transform: none; }
 .tick.end { transform: translateX(-100%); }
 .tick.mid { transform: translateX(-50%); }
+
+.tick.row-1 { top: 1.05rem; }
+
+/* the pointer from a label down to the mark it names */
+.stem {
+  position: absolute;
+  width: 1px;
+  background-color: var(--color-border);
+}
+
+.stem.row-0 { top: 0.95rem; height: 1.3rem; }
+.stem.row-1 { top: 2rem; height: 0.25rem; }
 
 .lane-link {
   color: var(--color-accent);
@@ -400,11 +448,84 @@ const drawn = computed(() =>
   white-space: nowrap;
 }
 
-.scale-note {
-  margin: 0 0 0 calc(var(--label-width) + var(--space-sm));
+.rule {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  z-index: 1;
+  background-color: var(--color-text-primary);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.span {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  min-width: 3px;
+  border-radius: 4px;
+  /* a 2px surface ring, so two adjacent spans never read as one */
+  outline: 2px solid var(--color-bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.span.positive { background-color: var(--color-positive); }
+.span.negative { background-color: var(--color-negative); }
+.span.flat     { background-color: var(--color-text-secondary); }
+
+/* the label wears ink, never the span colour */
+.span-label {
   font-family: monospace;
   font-size: var(--font-size-sm);
-  font-style: italic;
+  color: var(--color-bg-base);
+  padding: 0 var(--space-xs);
+  white-space: nowrap;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 5;
+  transform: translateX(-50%);
+  min-width: 15rem;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-bg-surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+  pointer-events: none;
+}
+
+.tooltip-title {
+  margin: 0 0 var(--space-xs);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.tooltip-rows {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0 var(--space-md);
+  margin: 0;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.tooltip-rows dt {
   color: var(--color-text-secondary);
 }
+
+.tooltip-rows dd {
+  margin: 0;
+  text-align: right;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.tooltip-rows dd.positive { color: var(--color-positive); }
+.tooltip-rows dd.negative { color: var(--color-negative); }
 </style>

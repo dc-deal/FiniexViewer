@@ -12,8 +12,14 @@ export interface TimelineSpan {
   label: string
   /** Polarity, never rank: 'positive' | 'negative' | 'flat'. */
   tone: string
-  /** Everything the span says, for the hover layer. */
+  /** One line naming the span, shown as the tooltip's heading. */
   title: string
+  /**
+   * The span's figures, for the hover layer. Label and value are already rendered by the caller —
+   * the chart formats nothing, because it does not know what any of these mean. `tone` colours the
+   * value ('positive' | 'negative'), and is left empty where a figure has no polarity.
+   */
+  details?: { label: string, value: string, tone?: string }[]
 }
 
 /** One horizontal lane. What a lane MEANS is the caller's decision, never the chart's. */

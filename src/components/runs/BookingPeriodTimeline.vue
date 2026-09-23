@@ -2,7 +2,9 @@
 import { computed } from 'vue'
 import TimelineChart from '@/components/base/TimelineChart.vue'
 import { rowKey } from '@/api/list_key'
-import { amount, duration, utcInstant } from '@/components/runs/report_format'
+import {
+  amount, drawdown, duration, numberOrNa, percentOrNa, signClass, utcInstant,
+} from '@/components/runs/report_format'
 import type { BookingPeriodRow } from '@/types/api/report_types'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { TimelineLane, TimelineSpan } from '@/types/timeline_types'
@@ -62,13 +64,37 @@ function tone(netPnl: number): string {
   return 'flat'
 }
 
-function describe(period: PeriodRow): string {
-  return [
-    `${period.unit_name} · ${t('segment')} ${period.segment_no}`,
-    `${utcInstant(period.opened_at)} → ${utcInstant(period.closed_at)}`,
-    `${t('closed')}: ${period.reason}`,
-    `${period.trade_count} ${t('trades')} · ${amount(period.net_pnl, period.currency)}`,
-  ].join('\n')
+/**
+ * Everything the row below says about this period, for the hover layer — including the EQUITY
+ * BAND, which the table leaves out for width. The band is what keeps a booked result readable: a
+ * trade belongs to the period it CLOSED in, so a position opened on one day and closed the next
+ * puts its whole result on the second. The booked figure and the account movement then differ by
+ * exactly the unrealised movement across the boundary, and a reader without the band concludes
+ * that something is broken.
+ */
+function details(period: PeriodRow): { label: string, value: string, tone?: string }[] {
+  const rows = [
+    { label: t('Opened'), value: utcInstant(period.opened_at) },
+    { label: t('Closed'), value: utcInstant(period.closed_at) },
+    { label: t('Reason'), value: period.reason },
+    { label: t('Trades'), value: String(period.trade_count) },
+    {
+      label: t('Net P&L'),
+      value: amount(period.net_pnl, period.currency),
+      tone: signClass(period.net_pnl),
+    },
+    { label: t('Win Rate'), value: percentOrNa(period.win_rate, period.trade_count) },
+    { label: t('PF'), value: numberOrNa(period.profit_factor, period.trade_count) },
+    { label: t('Fees'), value: amount(period.total_fees, period.currency) },
+    { label: t('Max DD'), value: drawdown(period.max_drawdown, period.currency) },
+    {
+      label: t('Equity band'),
+      value: `${amount(period.min_equity, period.currency)} … ${amount(period.max_equity, period.currency)}`,
+    },
+    { label: t('Final equity'), value: amount(period.final_equity, period.currency) },
+  ]
+  if (period.run_id) rows.unshift({ label: t('Run'), value: period.run_id })
+  return rows
 }
 
 function span(period: PeriodRow, from: number, to: number): TimelineSpan {
@@ -80,7 +106,8 @@ function span(period: PeriodRow, from: number, to: number): TimelineSpan {
     // is read as one number
     label: `${t('seg')} ${period.segment_no}`,
     tone: tone(period.net_pnl),
-    title: describe(period),
+    title: `${period.unit_name} · ${t('segment')} ${period.segment_no}`,
+    details: details(period),
   }
 }
 
@@ -177,6 +204,26 @@ const longestSpan = computed(() => {
 function gapLabel(millis: number): string {
   return `${duration(millis / HOUR_MS)} ${t('idle')}`
 }
+
+/**
+ * A kept piece of the axis as ONE label. Two timestamps side by side are wider than a short piece
+ * of the plot, so they overprint; a range says the same in the room that is there. The shared
+ * leading part is dropped, because repeating it is what made the pair too wide to begin with.
+ */
+function rangeLabel(from: number, to: number): string {
+  const start = utcInstant(new Date(from).toISOString())
+  const end = utcInstant(new Date(to).toISOString())
+  if (start === end) return start
+  const [startDay = '', startClock = ''] = start.split(' ')
+  const [endDay = '', endClock = ''] = end.split(' ')
+  // same day: name it once and let the two clocks carry the difference
+  if (startDay === endDay) return `${startDay} ${startClock} → ${endClock}`
+  // same year: the year is the same four characters on both sides and says nothing
+  if (startDay.slice(0, 4) === endDay.slice(0, 4)) {
+    return `${startDay.slice(5)} ${startClock} → ${endDay.slice(5)} ${endClock}`
+  }
+  return `${start} → ${end}`
+}
 </script>
 
 <template>
@@ -190,6 +237,7 @@ function gapLabel(millis: number): string {
     :markers="closings"
     :collapse-gaps-longer-than="longestSpan"
     :format-gap="gapLabel"
+    :format-range="rangeLabel"
     :ticks="4"
   />
 </template>

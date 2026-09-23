@@ -237,8 +237,9 @@ describe('BookingPeriodTimeline — what a lane is', () => {
       },
     })
     // the ledger window is 2026-09-22; the periods are 2026-01-24/25 and the axis follows them
-    expect(wrapper.find('.scale-note').text()).toContain('2026-01-24')
-    expect(wrapper.find('.scale-note').text()).not.toContain('23:1')
+    const note = wrapper.find('.axis').attributes('title') ?? ''
+    expect(note).toContain('2026-01-24')
+    expect(note).not.toContain('23:1')
   })
 
   // A booking close is a boundary every lane shares — the trading-day anchor. Distinct instants
@@ -256,6 +257,36 @@ describe('BookingPeriodTimeline — what a lane is', () => {
     expect(perLane).toHaveLength(1)
   })
 
+  /**
+   * The label of a kept piece drops what both of its ends repeat. Repeating the date is exactly
+   * what made two timestamps too wide to sit side by side, so eliding it is not decoration — it is
+   * the reason the label fits at all.
+   */
+  it('names a piece once and drops what both its ends repeat', () => {
+    const periods = [
+      { ...period({ unit_name: 'bot', segment_no: 1 }), run_id: 'run_a',
+        opened_at: '2026-02-01T18:00:00+00:00', closed_at: '2026-02-02T00:00:00+00:00' },
+      { ...period({ unit_name: 'bot', segment_no: 2 }), run_id: 'run_b',
+        opened_at: '2026-02-08T18:00:00+00:00', closed_at: '2026-02-09T00:00:00+00:00' },
+    ]
+    const wrapper = mount(BookingPeriodTimeline, {
+      props: {
+        periods,
+        keyFields: ['run_id', 'unit_name', 'segment_no'],
+        sessions: [
+          { run_id: 'run_a', started: '2026-02-01T18:00:00Z', ended: '2026-02-02T00:00:00Z' },
+          { run_id: 'run_b', started: '2026-02-08T18:00:00Z', ended: '2026-02-09T00:00:00Z' },
+        ] as DeploymentSessionRow[],
+      },
+    })
+    const ticks = wrapper.findAll('.tick').map(node => node.text())
+    // a week apart, so the axis breaks and each piece carries its own range
+    expect(ticks).toHaveLength(2)
+    // the year is the same on both ends of a piece and says nothing, so it goes
+    expect(ticks[0]).toBe('02-01 18:00:00Z → 02-02 00:00:00Z')
+    expect(wrapper.find('.gap-label').text()).toContain('idle')
+  })
+
   it('says which clock the axis carries, and it differs per scope', () => {
     const run = mountTimeline([period()])
     const deployment = mount(BookingPeriodTimeline, {
@@ -265,9 +296,9 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         sessions: ledger(),
       },
     })
-    expect(run.text()).toContain("the run's own clock")
+    expect(run.find('.axis').attributes('title')).toContain("the run's own clock")
     // both scopes now carry the run's clock; only the deployment note explains the look-alike lanes
-    expect(deployment.text()).toContain('replayed one window')
+    expect(deployment.find('.axis').attributes('title')).toContain('replayed one window')
   })
 
   // '#' is the session number in the table beside the chart; one glyph for two counters reads as
