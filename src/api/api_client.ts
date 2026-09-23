@@ -1,12 +1,14 @@
 import axios from 'axios'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
+import { RunNotFoundError } from '@/api/run_not_found_error'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
   BookingPeriodsReport,
+  RunConfigReport,
   PortfolioReport,
   RunInfo,
   RunListResponse,
@@ -195,5 +197,33 @@ export async function getDeploymentBookingPeriods(
     raiseIfForbidden(error, 'deployments')
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
     throw error
+  }
+}
+
+/**
+ * The configuration a run was commissioned with, resolved from the run-config store.
+ *
+ * The route answers 404 for two different things and they are not interchangeable:
+ *
+ *   config_snapshot_missing   the run exists and predates the store, so it carries no id to
+ *                             resolve through — an absence, mapped to null like any other
+ *                             section a run does not have
+ *   run_not_found             the backend does not know this run AT ALL, although our index just
+ *                             named it. That is the two indexes disagreeing, and swallowing it as
+ *                             "no section" would hide it behind a blank panel
+ *
+ * The distinction is only in the body, so it is read there rather than inferred from the status.
+ */
+export async function getRunConfig(runId: string): Promise<RunConfigReport | null> {
+  try {
+    const response = await http.get<RunConfigReport>(`/reports/runs/${runId}/config`)
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    raiseIfForbidden(error, 'reports')
+    if (!axios.isAxiosError(error)) throw error
+    if (error.response?.status !== 404) throw error
+    const body = error.response.data as { error?: string } | undefined
+    if (body?.error === 'run_not_found') throw new RunNotFoundError(runId)
+    return null
   }
 }

@@ -42,6 +42,26 @@ export const useRunsStore = defineStore('runs', () => {
     )
   )
 
+  /**
+   * The feed-health model, or null where the run has nothing to report about its feed.
+   *
+   * Two different things sit in that panel and only ONE is about SIGNAL. `signal_fresh_ratio` is
+   * null when no SIGNAL worker ran. The four disturbance figures come from the feed-stability
+   * report and describe the DATA SOURCES — a market feed can stall with no SIGNAL worker anywhere,
+   * so they are not vacuous just because the first one is.
+   *
+   * Worth showing when either half speaks: a measured freshness, or at least one episode. The
+   * backend's own console draws the same line — `format_disturbance_line` returns an empty string
+   * at zero episodes rather than printing four zeros.
+   */
+  const feedHealth = computed(() => {
+    const current = summary.value
+    if (!current) return null
+    const measured = current.signal_fresh_ratio !== null
+    const disturbed = current.disturbance_episode_count > 0
+    return measured || disturbed ? current : null
+  })
+
   const selectedRun = computed(() =>
     runs.value.find(run => run.run_id === selectedRunId.value) ?? null
   )
@@ -132,6 +152,7 @@ export const useRunsStore = defineStore('runs', () => {
     selectedRunId,
     selectedRun,
     summary,
+    feedHealth,
     summaryMissing,
     unknownRunId,
     loadingRuns,

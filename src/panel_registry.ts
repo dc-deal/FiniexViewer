@@ -3,6 +3,7 @@ import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
+import ConfigPanel from '@/components/runs/ConfigPanel.vue'
 import OrderCountsPanel from '@/components/runs/OrderCountsPanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import type { PanelDescriptor } from '@/types/panel_types'
@@ -25,6 +26,17 @@ const PANELS: PanelDescriptor[] = [
     source: 'runInfo',
     groups: 'all',
     defaultOpen: true,
+  },
+  {
+    // Provenance, beside the header: what the run was COMMISSIONED with, resolved from the
+    // run-config store. Closed by default — reference material rather than a headline.
+    id: 'config',
+    title: 'Configuration',
+    icon: '⚙',
+    component: ConfigPanel,
+    source: 'config',
+    groups: 'all',
+    defaultOpen: false,
   },
   {
     id: 'executive',
@@ -82,7 +94,9 @@ const PANELS: PanelDescriptor[] = [
     title: 'Feed Health',
     icon: '📡',
     component: FeedHealthPanel,
-    source: 'runSummary',
+    // its own source, not the shared summary: the store answers null where neither half of this
+    // panel has anything to say, and PanelColumn then drops it like any absent section
+    source: 'feedHealth',
     groups: 'all',
     defaultOpen: false,
   },

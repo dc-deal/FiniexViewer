@@ -353,3 +353,44 @@ export interface BookingPeriodsReport {
   deepest_period_drawdown: number
   final_equity: number
 }
+
+/**
+ * The strategy a run was commissioned with. Mirrored as an interface — unlike the configuration
+ * around it — because these four keys are the FRAMEWORK's own composition model rather than
+ * something an operator writes: `worker_factory.py` reads `worker_instances` and `workers` by
+ * exactly these names, and both pipelines carry the same four.
+ *
+ * What hangs UNDER them stays open. `decision_logic_config` holds whatever the chosen logic
+ * declares — RSI and Bollinger thresholds in one run, a scripted trade sequence in another — and
+ * a worker's parameters belong to that worker. Mirror what the framework guarantees; leave open
+ * what the operator authors.
+ */
+export interface StrategyConfig {
+  decision_logic_type: string
+  decision_logic_config: Record<string, unknown>
+  /** Instance name -> worker type, e.g. `rsi_fast` -> `CORE/rsi`. */
+  worker_instances: Record<string, string>
+  /** Instance name -> that instance's parameters. Same keys as `worker_instances`. */
+  workers: Record<string, Record<string, unknown>>
+}
+
+/**
+ * Response type for GET /api/v1/reports/runs/{run_id}/config — the configuration a run was
+ * commissioned with, resolved from the run-config store through the run's `config_id`.
+ *
+ * `config` is deliberately NOT mirrored, and that is a considered exception to the typing rule
+ * rather than a lapse: this document is written by the OPERATOR, its shape differs between the two
+ * pipelines (an autotrader profile against a scenario set), and it grows a new branch whenever
+ * someone writes a new strategy. An interface for it would be a claim the type-checker then
+ * enforces against reality.
+ *
+ * `config_snapshot` is the SOURCE file name, not a file inside the run directory — the per-run
+ * copy was retired once the store existed. The content arrives parsed and NORMALISED (sorted
+ * keys), so the order here is not the order its author wrote.
+ */
+export interface RunConfigReport {
+  run_id: string
+  config_snapshot: string
+  config_id: string
+  config: Record<string, unknown>
+}

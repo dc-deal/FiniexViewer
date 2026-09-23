@@ -120,6 +120,7 @@ GET /api/v1/reports/runs/{run_id}/run-summary         cross-section KPIs, summed
 GET /api/v1/reports/runs/{run_id}/warnings-errors     tiered warnings, per-unit errors, run outcome
 GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down per unit
 GET /api/v1/reports/runs/{run_id}/booking-periods     the bookkeeping stretches, plus a completeness check
+GET /api/v1/reports/runs/{run_id}/config              what the run was commissioned with
 GET /api/v1/reports/runs/{run_id}/...                 10 further per-section reports (not yet consumed)
 ```
 
@@ -329,6 +330,8 @@ The viewer shows many small panels around one chart rather than one view per pag
 
 **A section whose model this run does not carry is skipped, never shown empty.** `PanelColumn` drops a panel whose source is absent, which is how a 404 on a report route reaches the UI: not as an error, as a missing section.
 
+**The same mechanism also carries "nothing to report".** Feed Health reads its own source rather than the shared run summary, and `runs_store` answers null where neither half of that panel speaks. Only `signal_fresh_ratio` is about SIGNAL — it is null when no SIGNAL worker ran; the four disturbance figures come from the feed-stability report and describe the DATA SOURCES, so a market feed can stall with no SIGNAL worker anywhere. The panel appears when a freshness was measured OR at least one episode occurred, and is dropped when neither is true. The backend's console draws the same line: `format_disturbance_line` returns an empty string at zero episodes rather than printing four zeros. Deciding this in the store rather than in the panel keeps the judgement out of the template and reuses the absent-source rule instead of inventing a second one.
+
 **The stored layout is reconciled against the registry on load, never trusted.** Panel ids the registry no longer knows are dropped; panels added since the layout was stored are appended with their defaults; a corrupt entry falls back to the default workspace. Hidden panels are recorded in an explicit `hidden` list — without it, reconciliation cannot tell a panel the user hid from one that is new, and would resurrect it on every load.
 
 **Pin anchors, lock protects.** Pin moves a panel to the top of the column and opens it once; afterwards open/closed stays free. Lock exempts a panel from *collapse all* (and later from width-driven auto-collapse). Hiding needs no confirmation: the app bar always shows what is hidden, so nothing is lost.
@@ -426,6 +429,47 @@ rendered as loudly as `false`. A tick there would claim evidence that does not e
 valid and carry nothing on it. `SurfaceForbiddenError` separates that from an absence and from an
 outage, and the view says which surface is missing — not the backend's own text, which lists every
 grant the token holds.
+
+### Configuration — shown, never resolved
+
+`GET /reports/runs/{run_id}/config` serves the configuration a run was commissioned with, resolved
+from the backend's run-config store through the run's `config_id`. Rendered by
+`runs/ConfigPanel.vue` with `runs/config_shape.ts` beside it and `base/JsonTree.vue` underneath.
+
+**The cascade belongs to the backend and is not rebuilt here.** It is documented there as two
+levels for `strategy_config` and `stress_test_config` (global → scenario) and three for
+`execution_config` and `trade_simulator_config` (app config → global → scenario), its merge depth
+is not visible in what we receive, and for the three-level blocks the base layer lives in the
+backend's own app configuration and is not in this document at all. Computing an effective value
+would be a second implementation of someone else's rule, drifting silently the moment they change
+it — the same failure as a hand-written mock of a response.
+
+**So the panel reports presence, not resolution.** That a scenario carries its own block is
+readable from the document; what that override resolves to is not. The notice therefore names the
+scenarios and the blocks they carry, and says the block above is the base rather than what those
+scenarios ran with. Same construction as the backend's own `advisory` on a deployment: it says a
+blanket reading is invalid instead of computing a new figure.
+
+**One route, two shapes.** An autotrader profile carries `strategy_config` at the top; a scenario
+set carries `global.strategy_config` plus a `scenarios` list. That difference is contained in
+`config_shape.ts` rather than travelling through the components as a union.
+
+**`config` is deliberately not mirrored as a type**, and that is a considered exception to the
+typing rule: the document is written by the OPERATOR, its shape differs per pipeline, and it grows
+a branch whenever someone writes a new strategy. `StrategyConfig` IS mirrored, because its four
+keys are the framework's own composition model — `worker_factory.py` reads `worker_instances` and
+`workers` by exactly those names. Mirror what the framework guarantees; leave open what the
+operator authors.
+
+**The JSON tree is the floor, and its completeness is asserted.** Whatever the named views do not
+show stays reachable there, and a test holds that every top-level key of both captured shapes is
+present in the render. Without it, choosing what to highlight would quietly hide the rest —
+including a key that does not exist yet.
+
+**Two 404s, two meanings.** `config_snapshot_missing` is the ordinary absence of a section, mapped
+to null. `run_not_found` says the backend does not know a run our own index just named — a
+disagreement between two indexes, raised as `RunNotFoundError` rather than swallowed behind a blank
+panel. They are told apart by the response body, since the status cannot say which.
 
 ### Display Strings — a marker, not a translation layer
 

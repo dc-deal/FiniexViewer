@@ -53,7 +53,18 @@ export const useDeploymentsStore = defineStore('deployments', () => {
     unknownDeploymentId.value = null
   }
 
-  async function loadDeployments(): Promise<void> {
+  /**
+   * The ledger listing. Fetched once per store lifetime rather than on every mount of the view:
+   * it does not change while a deployment is open, and the backend measured this route at ~100 ms
+   * of which 74 % is stat-ing every index fragment to prove the index still valid. Navigating away
+   * and back therefore costs nothing. A browser reload gets a fresh list; `refresh` forces one.
+   *
+   * Deliberately NOT time-based. A validity window is a staleness decision, and the backend is
+   * taking that one on its own side for every store index it has — inventing a different answer
+   * here would just be a second opinion nobody asked for.
+   */
+  async function loadDeployments(refresh = false): Promise<void> {
+    if (!refresh && deployments.value.length) return
     loadingList.value = true
     error.value = null
     forbiddenSurface.value = null

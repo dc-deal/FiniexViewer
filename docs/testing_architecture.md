@@ -56,6 +56,10 @@ tests/
   api_contract.test.ts      — the captured fixtures against the contract they were taken under, and each list's declared row key
   deployments_store.test.ts — ledger listing, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state
   booking_period_panels.test.ts — the three-state reconciliation incl. "not checked", the completeness wording, the magnitude drawdown, and the timeline (tracks, polarity, no extent, unreadable timestamps)
+  json_tree.test.ts         — key naming, quoted strings, array indices, null, fold depth
+  run_config.test.ts        — the two configuration shapes, override PRESENCE without resolution, the worker join, and the guarantee that no top-level key is unreachable
+  hover_card.test.ts        — portalled out of the page, opens on focus, carries the caller's figures and their polarity
+  timeline_chart.test.ts    — scale and clamping, the broken axis and its length-preserving property, staggered labels, marker rules
   deployment_panels.test.ts — the change marks between rows (against the produced four-session history), the absent idle stretch, the upper-bound gap, the missing totals row, the identity that does not move, the advisory wording
 
 tests/fixtures/            — responses captured from the running backend, plus the contract manifest
@@ -74,6 +78,12 @@ and the second is the one that matters:
 - The fixtures are **assigned to our own interfaces inside the test file**, so the type-checker
   performs a structural comparison. A field the backend drops makes the fixture stop satisfying the
   mirror and the BUILD fails — which is a CI gate, not merely a red test.
+
+`tests/setup.ts` supplies browser interfaces jsdom lacks (`ResizeObserver`, pointer capture). Those
+stand in for MISSING APIs and never replace behaviour under test — a stub that answered differently
+from a browser would make the suite agree with itself rather than with reality. One consequence is
+honest and worth knowing: reka-ui's pointer path cannot be triggered in jsdom, so hovering is a
+browser-only behaviour and the focus path is what the suite exercises.
 
 Both halves are falsifiable and were proven so when written: raising the manifest number fails the
 contract test, and removing `parent_kind` from the runs fixture fails `vue-tsc`. It has since caught

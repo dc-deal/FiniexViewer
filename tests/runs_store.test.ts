@@ -263,4 +263,55 @@ describe('useRunsStore', () => {
       expect(store.unknownRunId).toBeNull()
     })
   })
+
+  /**
+   * The panel holds two different things and only one is about SIGNAL: freshness comes from the
+   * signal report, the four disturbance figures from the feed-stability report and describe the
+   * DATA SOURCES. So "no SIGNAL worker" alone does not make the panel vacuous — a market feed can
+   * stall with no SIGNAL worker anywhere. It is vacuous only when NEITHER half speaks, and the
+   * backend's console draws the same line: it prints nothing at zero episodes.
+   */
+  describe('feed health', () => {
+    function summaryWith(fields: Partial<RunSummary>): RunSummary {
+      return { ...SUMMARY, ...fields }
+    }
+
+    async function selectWith(fields: Partial<RunSummary>) {
+      vi.mocked(apiClient.getRuns).mockResolvedValue([runRow({
+        run_id: '20260615_130000', group: 'live', name: 'p',
+      })])
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(summaryWith(fields))
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260615_130000')
+      return store
+    }
+
+    it('says nothing where no SIGNAL worker ran and nothing was disturbed', async () => {
+      const store = await selectWith({ signal_fresh_ratio: null, disturbance_episode_count: 0 })
+      expect(store.feedHealth).toBeNull()
+    })
+
+    it('speaks where a freshness was actually measured', async () => {
+      const store = await selectWith({ signal_fresh_ratio: 0.98, disturbance_episode_count: 0 })
+      expect(store.feedHealth).not.toBeNull()
+    })
+
+    // the half that has nothing to do with SIGNAL
+    it('speaks where the feed was disturbed, SIGNAL worker or not', async () => {
+      const store = await selectWith({ signal_fresh_ratio: null, disturbance_episode_count: 3 })
+      expect(store.feedHealth).not.toBeNull()
+    })
+
+    it('says nothing at all where the run carries no summary', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue([runRow({
+        run_id: '20260615_130000', group: 'live', name: 'p',
+      })])
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(null)
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260615_130000')
+      expect(store.feedHealth).toBeNull()
+    })
+  })
 })

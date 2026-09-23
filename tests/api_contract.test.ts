@@ -8,12 +8,15 @@ import runBookingPeriods from './fixtures/run_booking_periods.json'
 import runSummary from './fixtures/run_summary.json'
 import portfolio from './fixtures/portfolio.json'
 import warningsErrors from './fixtures/warnings_errors.json'
+import configLive from './fixtures/run_config_live.json'
+import configSimulation from './fixtures/run_config_simulation.json'
 import manifest from './fixtures/capture_manifest.json'
 
 import type {
   BookingPeriodsReport,
   PortfolioReport,
   RunListResponse,
+  RunConfigReport,
   RunSummary,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
@@ -32,7 +35,7 @@ import type {
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 2
+const EXPECTED_CONTRACT = 3
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -124,6 +127,20 @@ describe('api contract', () => {
     const equity = currency?.max_equity ?? 1
     // the percentage equals the magnitude over the peak, times 100 — not the bare ratio
     expect(currency?.account_max_dd_pct).toBeCloseTo((drawdown / equity) * 100, 2)
+  })
+
+  /**
+   * Both configuration shapes, because one route serves two of them: an autotrader profile carries
+   * its strategy at the top, a scenario set carries `global` plus a list of scenarios. A fixture of
+   * only one would let the other rot unnoticed.
+   */
+  it('serves two different configuration shapes under one route', () => {
+    const live: RunConfigReport = configLive
+    const simulation: RunConfigReport = configSimulation
+    expect(live.config['strategy_config']).toBeDefined()
+    expect(live.config['global']).toBeUndefined()
+    expect(simulation.config['global']).toBeDefined()
+    expect(simulation.config['scenarios']).toBeDefined()
   })
 
   /**

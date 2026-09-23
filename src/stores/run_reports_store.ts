@@ -1,9 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getBookingPeriods, getPortfolio, getWarningsErrors } from '@/api/api_client'
+import {
+  getBookingPeriods, getPortfolio, getRunConfig, getWarningsErrors,
+} from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import type {
   BookingPeriodsReport,
+  RunConfigReport,
   PortfolioReport,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
@@ -18,9 +21,11 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const warningsErrors = ref<WarningsErrorsReport | null>(null)
   const portfolio = ref<PortfolioReport | null>(null)
   const bookingPeriods = ref<BookingPeriodsReport | null>(null)
+  const config = ref<RunConfigReport | null>(null)
   const loadingWarningsErrors = ref(false)
   const loadingPortfolio = ref(false)
   const loadingBookingPeriods = ref(false)
+  const loadingConfig = ref(false)
   const error = ref<string | null>(null)
   // the artifact exists but predates the current schema — not an absence and not an outage
   const unreadable = ref<string | null>(null)
@@ -30,6 +35,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     warningsErrors.value = null
     portfolio.value = null
     bookingPeriods.value = null
+    config.value = null
     error.value = null
     unreadable.value = null
   }
@@ -86,18 +92,40 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     }
   }
 
+  /**
+   * The configuration a run was commissioned with. A run that predates the config store answers
+   * with an absence and the panel is simply not shown — but a run the backend does not know at all
+   * is a DISAGREEMENT between its index and ours, and that must reach the reader rather than look
+   * like a missing section.
+   */
+  async function loadConfig(runId: string): Promise<void> {
+    loadingConfig.value = true
+    config.value = null
+    try {
+      config.value = await getRunConfig(runId)
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      error.value = `${t('Could not load the configuration')}: ${detail}`
+    } finally {
+      loadingConfig.value = false
+    }
+  }
+
   return {
     warningsErrors,
     portfolio,
     bookingPeriods,
+    config,
     loadingWarningsErrors,
     loadingPortfolio,
     loadingBookingPeriods,
+    loadingConfig,
     error,
     unreadable,
     clear,
     loadWarningsErrors,
     loadPortfolio,
     loadBookingPeriods,
+    loadConfig,
   }
 })

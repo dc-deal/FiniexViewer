@@ -8,13 +8,16 @@ import type {
 } from '@/types/api/report_types'
 import bookingPeriodsFixture from './fixtures/run_booking_periods.json'
 import portfolioFixture from './fixtures/portfolio.json'
+import runConfigFixture from './fixtures/run_config_live.json'
 import * as apiClient from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
+import { RunNotFoundError } from '@/api/run_not_found_error'
 
 vi.mock('@/api/api_client', () => ({
   getWarningsErrors: vi.fn(),
   getPortfolio: vi.fn(),
   getBookingPeriods: vi.fn(),
+  getRunConfig: vi.fn(),
 }))
 
 const REPORT: WarningsErrorsReport = {
@@ -212,6 +215,41 @@ describe('useRunReportsStore — portfolio section', () => {
       await store.loadBookingPeriods('20260922_134726_7cbebb0c')
       store.clear()
       expect(store.bookingPeriods).toBeNull()
+    })
+  })
+
+  describe('configuration', () => {
+    it('holds the configuration under its own slot', async () => {
+      vi.mocked(apiClient.getRunConfig).mockResolvedValue(runConfigFixture)
+      const store = useRunReportsStore()
+      await store.loadConfig(runConfigFixture.run_id)
+      expect(store.config?.config_snapshot).toBe('autotrader_config.json')
+    })
+
+    it('keeps null for a run older than the store — the panel is then not shown', async () => {
+      vi.mocked(apiClient.getRunConfig).mockResolvedValue(null)
+      const store = useRunReportsStore()
+      await store.loadConfig('20260101_000000_aaaaaaaa')
+      expect(store.config).toBeNull()
+      expect(store.error).toBeNull()
+    })
+
+    // a disagreement between the two indexes must reach the reader rather than look like a
+    // section the run happens not to have
+    it('surfaces a run the backend does not know as an error', async () => {
+      vi.mocked(apiClient.getRunConfig).mockRejectedValue(new RunNotFoundError('20260101_000000_x'))
+      const store = useRunReportsStore()
+      await store.loadConfig('20260101_000000_x')
+      expect(store.error).toContain('does not know run')
+      expect(store.config).toBeNull()
+    })
+
+    it('is cleared with every other section when the selection changes', async () => {
+      vi.mocked(apiClient.getRunConfig).mockResolvedValue(runConfigFixture)
+      const store = useRunReportsStore()
+      await store.loadConfig(runConfigFixture.run_id)
+      store.clear()
+      expect(store.config).toBeNull()
     })
   })
 })

@@ -25,10 +25,12 @@ import {
   getDeployments,
   getDeployment,
   getDeploymentBookingPeriods,
+  getRunConfig,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
+import { RunNotFoundError } from '@/api/run_not_found_error'
 
 // Captured from the running backend rather than hand-written: a mock built by hand becomes a
 // second mirror of the contract, and the two drift apart without anything saying so.
@@ -36,6 +38,7 @@ import runBookingPeriodsFixture from './fixtures/run_booking_periods.json'
 import deploymentsFixture from './fixtures/deployments_list.json'
 import deploymentDetailFixture from './fixtures/deployment_detail.json'
 import deploymentPeriodsFixture from './fixtures/deployment_booking_periods.json'
+import runConfigFixture from './fixtures/run_config_live.json'
 
 describe('api_client', () => {
   beforeEach(() => {
@@ -286,6 +289,47 @@ describe('api_client', () => {
       })
       await expect(getDeployments()).rejects.toThrow(/deployments/)
       await expect(getDeployments()).rejects.not.toThrow(/bars:\*/)
+    })
+  })
+
+  /**
+   * One status, two meanings, and they must not be collapsed. `config_snapshot_missing` is the
+   * ordinary absence of a section. `run_not_found` says the backend does not know a run our own
+   * index just named — a disagreement between two indexes, which behind a blank panel would look
+   * like a run that simply has no configuration.
+   */
+  describe('getRunConfig', () => {
+    it('calls the config endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: runConfigFixture })
+      const result = await getRunConfig(runConfigFixture.run_id)
+      expect(mockGet).toHaveBeenCalledWith(`/reports/runs/${runConfigFixture.run_id}/config`)
+      expect(result?.config_snapshot).toBe('autotrader_config.json')
+    })
+
+    it('maps a run older than the config store to null — an absence', async () => {
+      mockGet.mockRejectedValue({
+        response: { status: 404, data: { error: 'config_snapshot_missing' } },
+      })
+      expect(await getRunConfig('20260101_000000_aaaaaaaa')).toBeNull()
+    })
+
+    it('raises when the backend does not know the run our index named', async () => {
+      mockGet.mockRejectedValue({
+        response: { status: 404, data: { error: 'run_not_found' } },
+      })
+      await expect(getRunConfig('20260101_000000_aaaaaaaa'))
+        .rejects.toBeInstanceOf(RunNotFoundError)
+    })
+
+    // the two are told apart by the BODY, so a 404 without one is treated as the safe case
+    it('treats an unlabelled 404 as an absence rather than as a disagreement', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: {} } })
+      expect(await getRunConfig('20260101_000000_aaaaaaaa')).toBeNull()
+    })
+
+    it('checks the body names the run that was asked for', async () => {
+      mockGet.mockResolvedValue({ data: { ...runConfigFixture, run_id: '20260615_999999' } })
+      await expect(getRunConfig('20260615_130000')).rejects.toBeInstanceOf(RunIdMismatchError)
     })
   })
 })

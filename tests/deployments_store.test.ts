@@ -76,6 +76,39 @@ describe('deployments_store', () => {
     expect(new Set(demo.map(row => row.deployment_id)).size).toBe(demo.length)
   })
 
+  /**
+   * The route costs ~100 ms on the backend, three quarters of it proving an index still valid, and
+   * it cannot change while a deployment is open. Navigating away and back should not pay it again.
+   */
+  describe('fetching the listing', () => {
+    it('asks once and keeps the answer across a return to the view', async () => {
+      resolveAll()
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      await store.loadDeployments()
+      expect(apiClient.getDeployments).toHaveBeenCalledTimes(1)
+    })
+
+    it('asks again when explicitly refreshed', async () => {
+      resolveAll()
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      await store.loadDeployments(true)
+      expect(apiClient.getDeployments).toHaveBeenCalledTimes(2)
+    })
+
+    // an empty ledger is not a cached answer — it has to stay askable
+    it('asks again while the ledger has told us nothing', async () => {
+      vi.mocked(apiClient.getDeployments).mockResolvedValue({
+        ...deploymentsFixture, deployments: [],
+      })
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      await store.loadDeployments()
+      expect(apiClient.getDeployments).toHaveBeenCalledTimes(2)
+    })
+  })
+
   describe('selecting a deployment', () => {
     it('loads the sessions and the periods together', async () => {
       resolveAll()

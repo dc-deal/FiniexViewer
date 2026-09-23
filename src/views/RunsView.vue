@@ -13,11 +13,11 @@ import { t } from '@/translate'
 const runsStore = useRunsStore()
 const reportsStore = useRunReportsStore()
 const {
-  runs, selectedRunId, selectedRun, summary, summaryMissing, unknownRunId,
+  runs, selectedRunId, selectedRun, summary, feedHealth, summaryMissing, unknownRunId,
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
 const {
-  warningsErrors, portfolio, bookingPeriods, unreadable, error: sectionError,
+  warningsErrors, portfolio, bookingPeriods, config, unreadable, error: sectionError,
 } = storeToRefs(reportsStore)
 
 // loads the run index and restores the cascade from the URL
@@ -32,15 +32,18 @@ watch(selectedRunId, runId => {
   reportsStore.loadWarningsErrors(runId)
   reportsStore.loadPortfolio(runId)
   reportsStore.loadBookingPeriods(runId)
+  reportsStore.loadConfig(runId)
 }, { immediate: true })
 
 // the models the panels render, keyed by the source each descriptor declares
 const sources = computed(() => ({
   runInfo: selectedRun.value,
   runSummary: summary.value,
+  feedHealth: feedHealth.value,
   warningsErrors: warningsErrors.value,
   portfolio: portfolio.value,
   bookingPeriods: bookingPeriods.value,
+  config: config.value,
 }))
 
 // Once a run is chosen there is always something to show: the header panel reads the index row.
