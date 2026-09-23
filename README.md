@@ -15,7 +15,7 @@ Read-only candle chart that loads historical bar data from a running FiniexTesti
 
 - A **separate repository** that talks to FiniexTestingIDE over HTTP — no shared filesystem.
 - A **Vue 3 / TypeScript / Vite** single-page application, dark mode by default.
-- A **read-only candle viewer** — no trade execution, no scenario control.
+- A **read-only viewer** — candle chart, run reports, and a live bot's history across its restarts. No trade execution, no scenario control.
 
 ## What This Is Not
 
@@ -107,7 +107,9 @@ Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_a
 │                         │                            │                          │
 │  - Broker/Symbol picker │                            │  - Parquet tick reader   │
 │  - Candle chart         │                            │  - Bar index manager     │
-│  - Shareable URL state  │                            │  - Scenario engine       │
+│  - Run report panels    │                            │  - Scenario engine       │
+│  - Deployment history   │                            │  - Run-results ledger    │
+│  - Shareable URL state  │                            │                          │
 └─────────────────────────┘                            └──────────────────────────┘
 ```
 

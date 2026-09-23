@@ -16,7 +16,9 @@ const {
   runs, selectedRunId, selectedRun, summary, summaryMissing, unknownRunId,
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
-const { warningsErrors, portfolio, unreadable, error: sectionError } = storeToRefs(reportsStore)
+const {
+  warningsErrors, portfolio, bookingPeriods, unreadable, error: sectionError,
+} = storeToRefs(reportsStore)
 
 // loads the run index and restores the cascade from the URL
 useRunQuerySync()
@@ -29,6 +31,7 @@ watch(selectedRunId, runId => {
   if (!runId || !selectedRun.value?.has_reports) return
   reportsStore.loadWarningsErrors(runId)
   reportsStore.loadPortfolio(runId)
+  reportsStore.loadBookingPeriods(runId)
 }, { immediate: true })
 
 // the models the panels render, keyed by the source each descriptor declares
@@ -37,6 +40,7 @@ const sources = computed(() => ({
   runSummary: summary.value,
   warningsErrors: warningsErrors.value,
   portfolio: portfolio.value,
+  bookingPeriods: bookingPeriods.value,
 }))
 
 // Once a run is chosen there is always something to show: the header panel reads the index row.
@@ -143,7 +147,7 @@ const showPanels = computed(() =>
   margin: 0 0 var(--space-sm);
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-accent);
+  border-left: 3px solid var(--color-text-secondary);
   border-radius: 4px;
   color: var(--color-text-secondary);
   font-family: monospace;

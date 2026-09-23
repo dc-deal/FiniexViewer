@@ -27,7 +27,13 @@ export default defineConfig({
   server: {
     watch: {
       usePolling: true,  // required on Windows/WSL2 — inotify events don't reach the Docker container
-      interval: 100
+      // Polling walks whatever it is pointed at, so what it is pointed at decides the cost.
+      // Measured 2026-09-23: watching the whole tree (14,762 files in node_modules against 61 in
+      // src) held the container at 56 % CPU idle and starved the event loop — a request that does
+      // no work at all took 1.7 s, and the index page 6.5 s. Only `src` can change under an
+      // editor, so only `src` is worth ten looks a second.
+      ignored: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/github_issues/**'],
+      interval: 300
     },
     hmr: {
       clientPort: 5173  // tells the browser to connect HMR WebSocket to localhost:5173, not the internal Docker address

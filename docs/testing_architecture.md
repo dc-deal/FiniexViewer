@@ -52,7 +52,46 @@ tests/
   run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the portfolio breakdown incl. the chart link, and the run header incl. the two kinds of parent
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
   run_reports_store.test.ts — section loading (warnings/errors, portfolio), missing artifact, error text, clearing on run change, shared error slot across concurrent sections
-  api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 and 409 mapping
+  api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 / 409 / 403 mapping
+  api_contract.test.ts      — the captured fixtures against the contract they were taken under, and each list's declared row key
+  deployments_store.test.ts — ledger listing, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state
+  booking_period_panels.test.ts — the three-state reconciliation incl. "not checked", the completeness wording, the magnitude drawdown, and the timeline (tracks, polarity, no extent, unreadable timestamps)
+  deployment_panels.test.ts — the change marks between rows (against the produced four-session history), the absent idle stretch, the upper-bound gap, the missing totals row, the identity that does not move, the advisory wording
+
+tests/fixtures/            — responses captured from the running backend, plus the contract manifest
+```
+
+---
+
+## Fixtures — captured, not hand-written
+
+`tests/fixtures/` holds real responses taken from the running backend through the dev proxy, with
+`capture_manifest.json` recording the `X-Api-Contract` number they were captured under. Two reasons,
+and the second is the one that matters:
+
+- A mock written by hand becomes a **second mirror of the HTTP contract**, and the two drift apart
+  without anything saying so.
+- The fixtures are **assigned to our own interfaces inside the test file**, so the type-checker
+  performs a structural comparison. A field the backend drops makes the fixture stop satisfying the
+  mirror and the BUILD fails — which is a CI gate, not merely a red test.
+
+Both halves are falsifiable and were proven so when written: raising the manifest number fails the
+contract test, and removing `parent_kind` from the runs fixture fails `vue-tsc`. It has since caught
+two mirror errors that review did not — `advisory` typed as a string when it is an object, and
+`longest_gap_hours` typed as non-null when a one-session deployment has no gap at all.
+
+One guard belongs to the fixtures themselves: a test asserts that the captured deployment still
+carries the hard cases (a non-null advisory, a non-zero `unfinished`, both change marks).
+Re-capturing against a quiet deployment would otherwise leave every test green and testing nothing
+— the same failure as a gate with no files in scope, one level up.
+
+Refresh them only deliberately, and read `GET /api/v1/contract` when you do — its `changes` list
+says what moved. Then raise `EXPECTED_CONTRACT` in `api_contract.test.ts` in the same change:
+
+```bash
+P=http://localhost:5173/api/v1
+curl -s "$P/deployments" -o tests/fixtures/deployments_list.json
+curl -s -D - -o /dev/null "$P/reports/runs" | grep -i '^x-api-contract:'
 ```
 
 ---

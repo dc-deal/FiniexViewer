@@ -1,16 +1,23 @@
 import axios from 'axios'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
+import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
+  BookingPeriodsReport,
   PortfolioReport,
   RunInfo,
   RunListResponse,
   RunSummary,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
+import type {
+  DeploymentBookingPeriodsReport,
+  DeploymentDetail,
+  DeploymentListResponse,
+} from '@/types/api/deployment_types'
 
 const http = axios.create({
   baseURL: '/api/v1'
@@ -107,6 +114,85 @@ export async function getPortfolio(runId: string): Promise<PortfolioReport | nul
     const response = await http.get<PortfolioReport>(`/reports/runs/${runId}/portfolio`)
     return assertBelongsTo(runId, response.data)
   } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
+/**
+ * Maps a refusal that is about ACCESS rather than about the resource. A 403 means the token is
+ * valid and carries nothing on this surface — neither an absence nor an outage, and repeating the
+ * request will not help. The backend's own text names every grant the token holds, so the surface
+ * is passed instead of that text.
+ */
+function raiseIfForbidden(error: unknown, surface: string): void {
+  if (!axios.isAxiosError(error)) return
+  if (error.response?.status === 403) throw new SurfaceForbiddenError(surface)
+}
+
+/**
+ * Booking periods of one run — the bookkeeping stretches it was divided into. Null when the run
+ * carries no such artifact, which is every run from before the journal existed: nothing is
+ * back-filled. Raises ArtifactUnreadableError on 409, like every other stored artifact.
+ */
+export async function getBookingPeriods(runId: string): Promise<BookingPeriodsReport | null> {
+  try {
+    const response = await http.get<BookingPeriodsReport>(
+      `/reports/runs/${runId}/booking-periods`
+    )
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    raiseIfForbidden(error, 'reports')
+    if (!axios.isAxiosError(error)) throw error
+    if (error.response?.status === 404) return null
+    if (error.response?.status === 409) {
+      const body = error.response.data as { detail?: string } | undefined
+      throw new ArtifactUnreadableError(body?.detail ?? 'The artifact could not be read')
+    }
+    throw error
+  }
+}
+
+/** Every deployment the ledger knows, one row per (deployment x account currency). */
+export async function getDeployments(): Promise<DeploymentListResponse> {
+  try {
+    const response = await http.get<DeploymentListResponse>('/deployments')
+    return response.data
+  } catch (error) {
+    raiseIfForbidden(error, 'deployments')
+    throw error
+  }
+}
+
+/**
+ * The sessions of one deployment, oldest first. Null when the ledger does not know the id — the
+ * same absence a removed run produces, not a failure.
+ */
+export async function getDeployment(deploymentId: string): Promise<DeploymentDetail | null> {
+  try {
+    const response = await http.get<DeploymentDetail>(`/deployments/${deploymentId}`)
+    return response.data
+  } catch (error) {
+    raiseIfForbidden(error, 'deployments')
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
+/**
+ * Every booking period of every session of one deployment, in one call rather than one request
+ * per session. Deliberately carries no reconciliation figures — that check is run-scoped.
+ */
+export async function getDeploymentBookingPeriods(
+  deploymentId: string
+): Promise<DeploymentBookingPeriodsReport | null> {
+  try {
+    const response = await http.get<DeploymentBookingPeriodsReport>(
+      `/deployments/${deploymentId}/booking-periods`
+    )
+    return response.data
+  } catch (error) {
+    raiseIfForbidden(error, 'deployments')
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
     throw error
   }

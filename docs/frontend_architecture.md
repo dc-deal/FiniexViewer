@@ -119,8 +119,38 @@ GET /api/v1/reports/runs                              run index — the only rou
 GET /api/v1/reports/runs/{run_id}/run-summary         cross-section KPIs, summed over all units
 GET /api/v1/reports/runs/{run_id}/warnings-errors     tiered warnings, per-unit errors, run outcome
 GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down per unit
-GET /api/v1/reports/runs/{run_id}/...                 11 further per-section reports (not yet consumed)
+GET /api/v1/reports/runs/{run_id}/booking-periods     the bookkeeping stretches, plus a completeness check
+GET /api/v1/reports/runs/{run_id}/...                 10 further per-section reports (not yet consumed)
 ```
+
+**Ledger plane** — a live bot's life across its restarts, on its own grant surface `deployments`:
+
+```
+GET /api/v1/deployments                               one row per (deployment x account currency)
+GET /api/v1/deployments/{deployment_id}               the sessions, oldest first
+GET /api/v1/deployments/{deployment_id}/booking-periods   every period of every session, in one call
+```
+
+A **deployment is not a run**: no header, no directory, no artifacts of its own. It is an identity
+that a series of runs name, and its rows live in the run-results ledger — so it cannot be opened
+through a report route. The hinge runs the other way: each session carries its `run_id`, which is
+what every report route takes. It also runs backwards, because a live run's index row carries
+`parent_id` with `parent_kind: "deployment"`, so a run knows its deployment without a lookup.
+
+**Contract version and row keys.** Two mechanisms the backend added after the models changed four
+times in one day, and both are used here:
+
+```
+GET /api/v1/contract      open, like /health   ->  {"contract": 2, "app_version": "...", "changes": [...]}
+X-Api-Contract: 2         on EVERY response, refusals included
+{ "key": ["deployment_id", "currency"], "deployments": [ ... ] }
+```
+
+`key` states what makes one row of a list unique, and in three of the five lists the obvious field
+is the wrong one. The viewer READS it at the render edge — a shared component builds its row
+identity from the declared tuple, which is what lets one table serve two routes — and ASSERTS it in
+the suite. The contract number is asserted against captured fixtures, so re-capturing them against
+a newer backend fails locally instead of a field quietly turning `null` in production.
 
 The report plane is model-fed on the backend: one canonical model per section, derived once and rendered identically to console, CSV and API. The API is the same object serialized, not a separate projection that can drift.
 
@@ -135,16 +165,15 @@ Six consequences the frontend is built around:
 
 **`run_id` is opaque, and stays that way.** It is minted as `<date>_<time>_<8 hex>` and the backend pins the character class to `[0-9a-f_]` with a test, so interpolating it into a URL path unencoded is safe by assertion rather than by hope. Nothing here parses it: no split, no date extracted for display, no sort. Ordering comes from the index, which is newest-first by contract.
 
-**Two axes, two fields.** `group` is the PIPELINE, `parent_id` is the NESTING. They were briefly one field (`single_runs` | `sweeps` | `autotrader`), which mixed a shape with a pipeline and could not express a nested live run:
+**Two axes, two fields.** `group` is the PIPELINE, `parent_id` is the NESTING. They were briefly one field (`single_runs` | `sweeps` | `autotrader`), which mixed a shape with a pipeline and could not express a nested live run. A third field, `parent_kind`, now SAYS which kind of family `parent_id` names, so nothing derives it from `group` any more:
 
-| `group` | `parent_id` | What it is | What its siblings want |
-|---|---|---|---|
-| `simulation` | `null` | a standalone simulation run | — |
-| `simulation` | set | a **combination** of a parameter sweep | a **ranking** by the sweep's declared objective |
-| `live` | `null` | a live session | — |
-| `live` | set | a **fragment** of a session | a **timeline**, ordered by `start_time` |
+| `parent_kind` | What `parent_id` names | What its siblings want |
+|---|---|---|
+| `null` | nothing — the run stands alone | — |
+| `sweep` | a **combination** of a parameter sweep | a **ranking** by the sweep's declared objective |
+| `deployment` | a **session** of a live deployment | a **timeline**, ordered by `start_time` |
 
-The distinction is not cosmetic. A sweep's children are **alternatives** — contemporaneous answers to "what if the parameters were these", so ranking them is the whole point. A session's children are a **sequence** — consecutive sealed slices of one continuous run, where a ranking would be meaningless. And the parents differ too: a sweep is not a run at all (no header, *defined* by the runs naming it as parent), while a session is a run, present in the index from its first second and usually still going while its fragments accumulate.
+The distinction is not cosmetic. A sweep's children are **alternatives** — contemporaneous answers to "what if the parameters were these", so ranking them is the whole point. A deployment's children are a **sequence** — consecutive sessions of one bot's life across its restarts, where a ranking would be meaningless. And the parents differ too: neither is a run, but a sweep is *defined* by the runs naming it, while a deployment has its own rows in the ledger and its own routes.
 
 A **sweep combination is structurally an ordinary run**: measured against a standalone run, all fourteen report routes answer with identical field sets, so the existing panels render one without a change. What a sweep adds is not a report shape but a level above it — the ranking of its combinations by the objective it declared, and the parameters that were varied. Those live on `GET /api/v1/sweeps` and `GET /api/v1/sweeps/{sweep_id}`, which are known and not yet consumed.
 
@@ -305,6 +334,98 @@ The viewer shows many small panels around one chart rather than one view per pag
 **Pin anchors, lock protects.** Pin moves a panel to the top of the column and opens it once; afterwards open/closed stays free. Lock exempts a panel from *collapse all* (and later from width-driven auto-collapse). Hiding needs no confirmation: the app bar always shows what is hidden, so nothing is lost.
 
 **From a report row into the chart.** The portfolio panel links a unit's symbol to `/viewer?broker=<data_source>&symbol=<symbol>` — the two views share one query namespace (see `query_param_utils`), so the link is a normal `RouterLink` and needs no store to carry the hand-over. It works because `data_source` holds the same broker keys `GET /brokers` returns (`mt5`). Live runs leave `data_source` empty and get plain text instead: `broker_name` is a display name (`Kraken`) and is not addressable, and guessing the key from it would invent a mapping the backend owns. The timeframe is deliberately not passed — the chart keeps whichever one the user last chose.
+
+### Deployments — a second view, deliberately not a panel workspace
+
+A backtest is read one run at a time; a bot that runs for thirty days is not. There the object of
+interest is the **deployment** — the identity a series of runs share — and the question is what
+happened across the restarts. That is a different shape from the run workspace, and it is built as
+a plain view rather than as panels:
+
+- **`src/views/DeploymentsView.vue`** with `src/components/deployments/` (`DeploymentPicker`,
+  `DeploymentHeader`, `SessionsTable`, `AdvisoryNotice`) and `src/stores/deployments_store.ts`.
+- Route `/deployments`, selection carried in the URL as `?deployment=<id>` through
+  `use_deployment_query_sync`, merging with the query rather than replacing it.
+
+**Why not panels.** The registry and the layout store are global: one `layout.v1`, and `AppBar`
+renders `allPanels()` unfiltered. Deployment panels in that registry would put their toggles into
+the run view, where they can never render. Scoping the registry per view is foundation work that a
+list and a table do not need.
+
+**One row per (deployment x account currency), and the store keeps all of them.** A P&L added over
+two currencies is not a number, so the ledger splits the rows and the view shows one header block
+and one sessions table per currency. `deployment_id` alone is therefore NOT a key — picking the
+first match would drop a whole currency's figures, silently.
+
+**Nothing is re-aggregated client-side.** `net_pnl` is a sum over the sessions, `max_drawdown` is
+their **maximum** — each session carries the running decline against the peak reached so far, so
+adding the column counts one decline once per session that was still inside it. The sessions table
+therefore has no totals row at all; the figures above it are the ledger's own, already reduced.
+
+**Three renderings that are decisions rather than styling**, each taken because the alternative
+misreports something:
+
+- `advisory` sits ABOVE the table. By the time a reader reaches a change mark in the third row they
+  have already added up the column above it. It arrives as COUNTS (`strategy_stands`,
+  `operation_stands`), and the sentence is built in `AdvisoryNotice` — wording belongs to the
+  component, so it stays reachable for the display-string marker and can change without the
+  contract changing.
+- `strategy_changed` / `operation_changed` render as a line BETWEEN two rows. A badge at the end of
+  a row reads as a property of that session, which is the wrong reading — the flag marks a boundary.
+- `unfinished` is shown even when zero. Those runs are absent from `sessions` by construction (the
+  ledger row is written last), and a bare session count is a number the reader has no reason to doubt.
+
+**A drawdown is rendered as a magnitude, whatever sign arrived.** The backend aligned the booking
+period column to a magnitude, but stored artifacts written before that keep the negative form and
+nothing in the payload distinguishes them. A decline has one direction, so `drawdown()` drops the
+sign and loses nothing.
+
+**The booking-period components are shared by both views.** `BookingPeriodTable` takes rows and
+the declared key tuple as props, so the run panel and the deployment view are two callers of one
+table rather than two implementations of it. The timeline is split in two on purpose:
+`base/TimelineChart.vue` places numbers on a scale and knows nothing about runs, periods or time,
+while `runs/BookingPeriodTimeline.vue` holds every domain decision — what a lane is, which clock
+the axis carries, how a period becomes a coloured span. No package was added for it: a Gantt
+library would be a dependency for one view, and a proportional bar on a linear scale is a hundred
+lines that stay themeable through the existing tokens.
+
+**One lane is a UNIT inside a run and a SESSION across a deployment.** `unit_name` is the profile
+name and identical in every session of a deployment, so laning by it stacks every session's
+periods into one row — measured: eight periods rendered as two visible bars, six hidden behind
+the others.
+
+**The stamps are never rescaled, and this is the sharp edge.** A deployment carries TWO time bases
+that differ by a factor of thousands: the ledger's session stamps are wall clock (four sessions of
+26 s each, 7 s apart) while a booking period is stamped on the market clock the session replayed
+(the same ~27 h window in all four). No single axis can carry both. An earlier attempt squeezed
+each session's periods into its wall-clock window to produce a staircase, and that drew a session
+that does not exist. The axis therefore follows the period stamps, unscaled: sessions that
+replayed one window look ALIKE, which is the finding — those runs are comparable because they
+covered the same stretch. In a real forward-running deployment the two clocks coincide and the
+staircase appears on its own. The wall-clock sequence lives in the sessions table, in `started`,
+`ran_hours` and `gap_hours`.
+
+**A vertical rule marks each distinct booking close** — the trading-day anchor every lane shares.
+Distinct instants only, so four sessions closing at one anchor draw one line rather than four.
+
+**`index` on a session row is not rendered.** It rides on the row and is NOT in the declared key
+(`["run_id", "currency"]`), so presenting it as the session's number invents a counter the ledger
+does not keep — and it repeats as soon as a deployment books in two currencies. The general rule:
+`key` says what identifies a row, and a field outside it may be shown as data but never as the
+row's identity or its number.
+
+**The reconciliation is a COMPLETENESS check and the panel says so.** `total_*` are summed over the
+periods and `run_*` are the run's own counters, but both descend from a single value handed to two
+carriers three lines apart. A disagreement therefore means a record was lost on the way — evicted
+by a history cap, falling in no period's window — and can never mean the P&L is wrong: an
+arithmetic defect moves both figures together and the check stays green. `reconciles` is
+three-state, and `null` (the run reports no figure in this currency, so nothing was compared) is
+rendered as loudly as `false`. A tick there would claim evidence that does not exist.
+
+**A 403 is a third kind of refusal.** `deployments` is its own grant surface, so a token can be
+valid and carry nothing on it. `SurfaceForbiddenError` separates that from an absence and from an
+outage, and the view says which surface is missing — not the backend's own text, which lists every
+grant the token holds.
 
 ### Display Strings — a marker, not a translation layer
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import type { RunInfo } from '@/types/api/report_types'
 import { utcInstant } from '@/components/runs/report_format'
 import { t } from '@/translate'
@@ -8,18 +9,34 @@ const props = defineProps<{
   model: RunInfo
 }>()
 
+interface Membership {
+  label: string
+  id: string
+  /** Where the family can be opened, or null where nothing addresses it yet. */
+  target: RouteLocationRaw | null
+}
+
 /**
  * What the run belongs to, named for what that membership MEANS. `parent_id` carries two kinds of
- * parent and `group` says which: a sweep's children are alternatives that get ranked, a live
- * session's are consecutive sealed slices of one run. Calling both "parent" on screen would
- * flatten the difference that decides how the siblings should be ordered.
+ * parent — a sweep's children are alternatives that get ranked, a deployment's are consecutive
+ * sessions of one bot's life — and `parent_kind` now SAYS which, so nothing here infers it from
+ * `group` any more. A deployment id addresses a route, which turns the membership into a way in.
  */
-const belongsTo = computed(() => {
-  if (props.model.parent_id === null) return null
-  const label = props.model.group === 'live'
-    ? t('Fragment of session')
-    : t('Combination in sweep')
-  return { label, id: props.model.parent_id }
+const belongsTo = computed<Membership | null>(() => {
+  const parentId = props.model.parent_id
+  if (parentId === null) return null
+  if (props.model.parent_kind === 'deployment') {
+    return {
+      label: t('Session of deployment'),
+      id: parentId,
+      target: { name: 'deployments', query: { deployment: parentId } },
+    }
+  }
+  if (props.model.parent_kind === 'sweep') {
+    return { label: t('Combination in sweep'), id: parentId, target: null }
+  }
+  // a kind we do not know is still a membership — shown without claiming what it means
+  return { label: t('Belongs to'), id: parentId, target: null }
 })
 </script>
 
@@ -39,7 +56,15 @@ const belongsTo = computed(() => {
 
     <template v-if="belongsTo">
       <dt>{{ belongsTo.label }}</dt>
-      <dd class="mono">{{ belongsTo.id }}</dd>
+      <dd class="mono">
+        <RouterLink
+          v-if="belongsTo.target"
+          class="parent-link"
+          :to="belongsTo.target"
+          :title="t('Open the deployment history')"
+        >{{ belongsTo.id }} ↗</RouterLink>
+        <template v-else>{{ belongsTo.id }}</template>
+      </dd>
     </template>
 
     <dt>{{ t('Build') }}</dt>
@@ -53,6 +78,15 @@ const belongsTo = computed(() => {
 </template>
 
 <style scoped>
+.parent-link {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.parent-link:hover {
+  text-decoration: underline;
+}
+
 .meta {
   display: grid;
   grid-template-columns: max-content 1fr;

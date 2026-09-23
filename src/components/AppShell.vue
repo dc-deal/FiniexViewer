@@ -48,6 +48,7 @@ function onBrokerChange(b: string): void {
           <nav class="sidebar-nav">
             <RouterLink to="/viewer" class="nav-link">{{ t('Viewer') }}</RouterLink>
             <RouterLink to="/runs" class="nav-link">{{ t('Runs') }}</RouterLink>
+            <RouterLink to="/deployments" class="nav-link">{{ t('Deployments') }}</RouterLink>
             <RouterLink to="/about" class="nav-link">{{ t('About') }}</RouterLink>
           </nav>
           <div class="sidebar-selectors">

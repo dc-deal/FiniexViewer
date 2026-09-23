@@ -55,7 +55,7 @@ function chartTarget(unit: PortfolioUnitRow): RouteLocationRaw {
           <td>{{ numberOrNa(unit.profit_factor, unit.total_trades) }}</td>
           <td>{{ percentOrNa(unit.win_rate, unit.total_trades) }}</td>
           <td>{{ unit.total_trades }} ({{ unit.winning_trades }}W/{{ unit.losing_trades }}L)</td>
-          <td>{{ amount(unit.max_drawdown, unit.currency) }}</td>
+          <td>{{ amount(unit.account_max_drawdown, unit.currency) }}</td>
           <td>{{ amount(unit.total_fees, unit.currency) }}</td>
         </tr>
       </tbody>
@@ -66,7 +66,7 @@ function chartTarget(unit: PortfolioUnitRow): RouteLocationRaw {
           <td>{{ numberOrNa(total.profit_factor, total.total_trades) }}</td>
           <td>{{ percentOrNa(total.win_rate, total.total_trades) }}</td>
           <td>{{ total.total_trades }} ({{ total.winning_trades }}W/{{ total.losing_trades }}L)</td>
-          <td>{{ amount(total.max_drawdown, total.currency) }}</td>
+          <td>{{ amount(total.account_max_drawdown, total.currency) }}</td>
           <td>{{ amount(total.total_fees, total.currency) }}</td>
         </tr>
       </tfoot>

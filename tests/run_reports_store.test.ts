@@ -1,13 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useRunReportsStore } from '@/stores/run_reports_store'
-import type { PortfolioReport, WarningsErrorsReport } from '@/types/api/report_types'
+import type {
+  PortfolioAggregateRow,
+  PortfolioReport,
+  WarningsErrorsReport,
+} from '@/types/api/report_types'
+import bookingPeriodsFixture from './fixtures/run_booking_periods.json'
+import portfolioFixture from './fixtures/portfolio.json'
 import * as apiClient from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 
 vi.mock('@/api/api_client', () => ({
   getWarningsErrors: vi.fn(),
   getPortfolio: vi.fn(),
+  getBookingPeriods: vi.fn(),
 }))
 
 const REPORT: WarningsErrorsReport = {
@@ -31,6 +38,7 @@ const PORTFOLIO: PortfolioReport = {
   run_id: '20260615_130000',
   units: [],
   aggregates: [{
+    ...(portfolioFixture.aggregates[0] as PortfolioAggregateRow),
     currency: 'USD',
     unit_count: 2,
     total_trades: 4,
@@ -41,7 +49,7 @@ const PORTFOLIO: PortfolioReport = {
     total_profit: 12,
     total_loss: 10,
     net_profit: 2,
-    max_drawdown: 5,
+    account_max_drawdown: 5,
     total_fees: 1,
   }],
 }
@@ -172,5 +180,38 @@ describe('useRunReportsStore — portfolio section', () => {
     await store.loadPortfolio('20260615_130000')
     expect(store.error).toBe('Could not load warnings and errors: gone')
     expect(store.portfolio).toEqual(PORTFOLIO)
+  })
+
+  describe('booking periods', () => {
+    it('loads the section and holds it under its own slot', async () => {
+      vi.mocked(apiClient.getBookingPeriods).mockResolvedValue(bookingPeriodsFixture)
+      const store = useRunReportsStore()
+      await store.loadBookingPeriods('20260922_134726_7cbebb0c')
+      expect(store.bookingPeriods?.periods.length).toBeGreaterThan(0)
+    })
+
+    it('keeps null when the run carries no journal — the panel is then not shown', async () => {
+      vi.mocked(apiClient.getBookingPeriods).mockResolvedValue(null)
+      const store = useRunReportsStore()
+      await store.loadBookingPeriods('20260615_130000')
+      expect(store.bookingPeriods).toBeNull()
+    })
+
+    it('reports a stale artifact as unreadable rather than as a failed request', async () => {
+      vi.mocked(apiClient.getBookingPeriods)
+        .mockRejectedValue(new ArtifactUnreadableError('Written by an older schema.'))
+      const store = useRunReportsStore()
+      await store.loadBookingPeriods('20260615_130000')
+      expect(store.unreadable).toContain('older schema')
+      expect(store.error).toBeNull()
+    })
+
+    it('is cleared with every other section when the selection changes', async () => {
+      vi.mocked(apiClient.getBookingPeriods).mockResolvedValue(bookingPeriodsFixture)
+      const store = useRunReportsStore()
+      await store.loadBookingPeriods('20260922_134726_7cbebb0c')
+      store.clear()
+      expect(store.bookingPeriods).toBeNull()
+    })
   })
 })

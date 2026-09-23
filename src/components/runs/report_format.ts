@@ -18,6 +18,21 @@ export function percent(ratio: number): string {
 }
 
 /**
+ * A figure that is ALREADY a percentage and must not be scaled again.
+ *
+ * `_pct` IS a rule — the backend swept every field carrying it and found no counterexample, so a
+ * `_pct` field is always multiplied. `_rate` and `_ratio` are NOT a rule and must be read per
+ * field: `win_rate` is 0..1, `conversion_rate` is an FX price, and `open_at_boundary_ratio` is a
+ * percentage despite the name. Confirmed by the backend 2026-09-23.
+ *
+ * Passing one to the other formatter is out by a factor of 100 and still looks like a percentage.
+ * Measured: `max_drawdown_pct: 3.4737` is 3.47 %, which we once rendered as 347.4 %.
+ */
+export function percentFigure(value: number): string {
+  return `${value.toFixed(2)}%`
+}
+
+/**
  * Plain decimal, or n/a when the value is undefined rather than zero. Pass the size of the
  * subset it was measured over wherever one exists: not every section sends null for an absent
  * value — an untraded portfolio unit arrives with 0.0, and 0.00 would claim a measurement.
@@ -66,4 +81,26 @@ export function signClass(value: number): string {
   if (value > 0) return 'positive'
   if (value < 0) return 'negative'
   return ''
+}
+
+/**
+ * A decline, always rendered as a magnitude. The sign is NOT reliable across the archive: the
+ * backend aligned booking periods to a magnitude, but stored artifacts written before that keep
+ * the negative form and nothing in the payload distinguishes them. A decline has only one
+ * direction, so dropping the sign loses no information and is correct under both conventions.
+ */
+export function drawdown(value: number, currency: string): string {
+  return amount(Math.abs(value), currency)
+}
+
+/**
+ * A stretch of time in the unit that keeps it truthful. Seconds below a minute on purpose: a
+ * session that ran 22 seconds rounds to "0 min", which reads as one that never ran at all.
+ */
+export function duration(hours: number): string {
+  const seconds = hours * 3600
+  if (seconds < 60) return `${seconds.toFixed(0)} s`
+  if (hours < 1) return `${(hours * 60).toFixed(0)} min`
+  if (hours < 48) return `${hours.toFixed(1)} h`
+  return `${(hours / 24).toFixed(1)} d`
 }

@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
-import type { RunInfo, RunSummary } from '@/types/api/report_types'
+import type { RunInfo, RunSummary, RunSummaryCurrency } from '@/types/api/report_types'
 import * as apiClient from '@/api/api_client'
+
+// the captured shape as the base — see the note in run_panels.test.ts
+import runSummaryFixture from './fixtures/run_summary.json'
 
 vi.mock('@/api/api_client', () => ({
   getRuns: vi.fn(),
@@ -16,6 +19,10 @@ function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
     has_reports: true,
     start_time: '2026-06-15T12:00:00+00:00',
     parent_id: null,
+    parent_kind: null,
+    config_id: '',
+    reporting: 'expected',
+    size_bytes: 0,
     app_version: '1.4.0',
     git_commit: 'abc1234',
     config_snapshot: 'config.json',
@@ -35,11 +42,12 @@ const RUNS: RunInfo[] = [
 const SUMMARY: RunSummary = {
   run_id: '20260615_130000',
   currencies: [{
+    ...(runSummaryFixture.currencies[0] as RunSummaryCurrency),
     currency: 'USD',
     net_pnl: 125.5,
     profit_factor: 1.8,
     win_rate: 0.62,
-    max_drawdown: -40.25,
+    account_max_drawdown: 40.25,
     total_fees: 3.1,
     total_trades: 21,
     winning_trades: 13,

@@ -15,12 +15,19 @@ import type {
   WarningsErrorsReport,
 } from '@/types/api/report_types'
 
+// Captured shapes as the BASE, chosen numbers on top. Hand-writing a full row makes the test a
+// second mirror of the contract, and a field the backend renames then stays green here while the
+// page renders NaN — which is exactly what happened to the drawdown columns in contract 2.
+import runSummaryFixture from './fixtures/run_summary.json'
+import portfolioFixture from './fixtures/portfolio.json'
+
 const MEASURED: RunSummaryCurrency = {
+  ...(runSummaryFixture.currencies[0] as RunSummaryCurrency),
   currency: 'USD',
   net_pnl: -50.6,
   profit_factor: 0.567,
   win_rate: 0.5833,
-  max_drawdown: 54.9,
+  account_max_drawdown: 54.9,
   total_fees: 15.9,
   total_trades: 12,
   winning_trades: 7,
@@ -304,6 +311,7 @@ describe('FeedHealthPanel', () => {
 
 function unit(overrides: Partial<PortfolioUnitRow> = {}): PortfolioUnitRow {
   return {
+    ...(portfolioFixture.units[0] as PortfolioUnitRow),
     name: 'USDJPY_blocks_01',
     symbol: 'USDJPY',
     currency: 'USD',
@@ -315,8 +323,8 @@ function unit(overrides: Partial<PortfolioUnitRow> = {}): PortfolioUnitRow {
     total_profit: 6.9,
     total_loss: 19.57,
     net_profit: -12.68,
-    max_drawdown: 19.57,
-    max_dd_pct: 0.19,
+    account_max_drawdown: 19.57,
+    account_max_dd_pct: 0.19,
     total_fees: 2.16,
     data_source: 'mt5',
     sentiment_source: '',
@@ -349,6 +357,7 @@ function unit(overrides: Partial<PortfolioUnitRow> = {}): PortfolioUnitRow {
 
 function aggregate(overrides: Partial<PortfolioAggregateRow> = {}): PortfolioAggregateRow {
   return {
+    ...(portfolioFixture.aggregates[0] as PortfolioAggregateRow),
     currency: 'USD',
     unit_count: 1,
     total_trades: 2,
@@ -359,7 +368,7 @@ function aggregate(overrides: Partial<PortfolioAggregateRow> = {}): PortfolioAgg
     total_profit: 6.9,
     total_loss: 19.57,
     net_profit: -12.68,
-    max_drawdown: 19.57,
+    account_max_drawdown: 19.57,
     total_fees: 2.16,
     ...overrides,
   }
@@ -451,6 +460,10 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     has_reports: true,
     start_time: '2026-08-30T14:58:19.182635+00:00',
     parent_id: null,
+    parent_kind: null,
+    config_id: '',
+    reporting: 'expected',
+    size_bytes: 0,
     app_version: '1.4.0',
     git_commit: '56b2677',
     config_snapshot: 'autotrader_config.json',
@@ -460,7 +473,10 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
 
 describe('RunHeaderPanel', () => {
   it('renders identity, start time and provenance from the index row', () => {
-    const wrapper = mount(RunHeaderPanel, { props: { model: runInfo() } })
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: runInfo() },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
     const text = wrapper.text()
     expect(text).toContain('20260830_145819_af372b28')
     // UTC, never the viewer's zone — the run's own clock is what this timestamp means
@@ -470,7 +486,10 @@ describe('RunHeaderPanel', () => {
   })
 
   it('says nothing about a family when the run stands alone', () => {
-    const wrapper = mount(RunHeaderPanel, { props: { model: runInfo() } })
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: runInfo() },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
     expect(wrapper.text()).not.toContain('sweep')
     expect(wrapper.text()).not.toContain('Fragment')
   })
@@ -481,22 +500,53 @@ describe('RunHeaderPanel', () => {
         group: 'simulation',
         name: 'btcusd_mini_set__sweep_20260830_154907_c001',
         parent_id: 'sweep_20260830_154907',
+        parent_kind: 'sweep',
       }) },
+      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(wrapper.text()).toContain('Combination in sweep')
     expect(wrapper.text()).toContain('sweep_20260830_154907')
   })
 
-  it('names a live fragment for what it is — a slice of one continuous session', () => {
-    // same field, different meaning: ranking fragments would be meaningless, they are a sequence
+  it('names a live session for what it is — one slice of a deployment, not an alternative', () => {
+    // same field, different meaning: ranking sessions would be meaningless, they are a sequence.
+    // parent_kind now SAYS which, so nothing is inferred from `group` any more.
     const wrapper = mount(RunHeaderPanel, {
       props: { model: runInfo({
         group: 'live',
-        name: 'mock_session_test',
-        parent_id: '20260830_145414_82da9d0d',
+        name: 'deployment_continuity_test',
+        parent_id: 'deploy_20260922_121648',
+        parent_kind: 'deployment',
       }) },
+      global: { stubs: { RouterLink: RouterLinkStub } },
     })
-    expect(wrapper.text()).toContain('Fragment of session')
+    expect(wrapper.text()).toContain('Session of deployment')
     expect(wrapper.text()).not.toContain('Combination in sweep')
+  })
+
+  it('turns a deployment parent into a way in, because the id addresses a route', () => {
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: runInfo({
+        group: 'live',
+        parent_id: 'deploy_20260922_121648',
+        parent_kind: 'deployment',
+      }) },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    const link = wrapper.findComponent(RouterLinkStub)
+    expect(link.props('to')).toEqual({
+      name: 'deployments',
+      query: { deployment: 'deploy_20260922_121648' },
+    })
+  })
+
+  it('shows a membership of an unknown kind without claiming what it means', () => {
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: runInfo({ parent_id: 'something_new', parent_kind: 'cohort' }) },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    expect(wrapper.text()).toContain('something_new')
+    expect(wrapper.text()).not.toContain('Combination in sweep')
+    expect(wrapper.text()).not.toContain('Session of deployment')
   })
 })

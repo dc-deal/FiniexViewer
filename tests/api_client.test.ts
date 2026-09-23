@@ -21,9 +21,21 @@ import {
   getRunSummary,
   getWarningsErrors,
   getPortfolio,
+  getBookingPeriods,
+  getDeployments,
+  getDeployment,
+  getDeploymentBookingPeriods,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
+import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
+
+// Captured from the running backend rather than hand-written: a mock built by hand becomes a
+// second mirror of the contract, and the two drift apart without anything saying so.
+import runBookingPeriodsFixture from './fixtures/run_booking_periods.json'
+import deploymentsFixture from './fixtures/deployments_list.json'
+import deploymentDetailFixture from './fixtures/deployment_detail.json'
+import deploymentPeriodsFixture from './fixtures/deployment_booking_periods.json'
 
 describe('api_client', () => {
   beforeEach(() => {
@@ -189,6 +201,91 @@ describe('api_client', () => {
     it('rethrows any other failure', async () => {
       mockGet.mockRejectedValue({ response: { status: 500 } })
       await expect(getPortfolio('20260615_130000')).rejects.toBeDefined()
+    })
+  })
+
+  describe('getBookingPeriods', () => {
+    it('calls the booking-periods endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: runBookingPeriodsFixture })
+      const result = await getBookingPeriods('20260922_134726_7cbebb0c')
+      expect(mockGet).toHaveBeenCalledWith(
+        '/reports/runs/20260922_134726_7cbebb0c/booking-periods'
+      )
+      expect(result?.periods.length).toBeGreaterThan(0)
+    })
+
+    it('maps 404 to null — every run from before the journal answers that way', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404 } })
+      expect(await getBookingPeriods('20260615_130000')).toBeNull()
+    })
+
+    it('raises a typed error on 409, like every other stored artifact', async () => {
+      mockGet.mockRejectedValue({
+        response: { status: 409, data: { detail: 'Written by an older schema.' } },
+      })
+      await expect(getBookingPeriods('20260615_130000'))
+        .rejects.toBeInstanceOf(ArtifactUnreadableError)
+    })
+
+    it('checks the body names the run that was asked for', async () => {
+      mockGet.mockResolvedValue({ data: { ...runBookingPeriodsFixture, run_id: '20260615_999999' } })
+      await expect(getBookingPeriods('20260615_130000'))
+        .rejects.toBeInstanceOf(RunIdMismatchError)
+    })
+  })
+
+  describe('deployments', () => {
+    it('reads the ledger listing', async () => {
+      mockGet.mockResolvedValue({ data: deploymentsFixture })
+      const result = await getDeployments()
+      expect(mockGet).toHaveBeenCalledWith('/deployments')
+      expect(result.deployments.length).toBeGreaterThan(0)
+    })
+
+    it('reads one deployment by id', async () => {
+      mockGet.mockResolvedValue({ data: deploymentDetailFixture })
+      const result = await getDeployment('deploy_20260922_121648')
+      expect(mockGet).toHaveBeenCalledWith('/deployments/deploy_20260922_121648')
+      expect(result?.sessions.length).toBeGreaterThan(0)
+    })
+
+    it('reads every period of every session in one call', async () => {
+      mockGet.mockResolvedValue({ data: deploymentPeriodsFixture })
+      const result = await getDeploymentBookingPeriods('deploy_20260922_121648')
+      expect(mockGet).toHaveBeenCalledWith('/deployments/deploy_20260922_121648/booking-periods')
+      expect(result?.periods.length).toBeGreaterThan(0)
+    })
+
+    it('maps 404 to null on the detail — an id the ledger lost is an absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404 } })
+      expect(await getDeployment('deploy_gone')).toBeNull()
+    })
+  })
+
+  // A 403 is a third kind of refusal, next to "no credential" and "no such thing": the token is
+  // valid and carries nothing on this surface. Reported as itself, because repeating the request
+  // cannot help and "could not load" would send the reader looking in the wrong place.
+  describe('a surface the token does not carry', () => {
+    it('raises a typed error on the collection route', async () => {
+      mockGet.mockRejectedValue({ response: { status: 403, data: { error: 'forbidden' } } })
+      await expect(getDeployments()).rejects.toBeInstanceOf(SurfaceForbiddenError)
+    })
+
+    it('raises it on the detail route too, not only on the collection', async () => {
+      mockGet.mockRejectedValue({ response: { status: 403, data: { error: 'forbidden' } } })
+      await expect(getDeployment('deploy_20260922_121648'))
+        .rejects.toBeInstanceOf(SurfaceForbiddenError)
+    })
+
+    it('names the surface and NOT the grants the backend listed', async () => {
+      mockGet.mockRejectedValue({
+        response: {
+          status: 403,
+          data: { detail: "token 'viewer' holds nothing on 'deployments' · holds: bars:*" },
+        },
+      })
+      await expect(getDeployments()).rejects.toThrow(/deployments/)
+      await expect(getDeployments()).rejects.not.toThrow(/bars:\*/)
     })
   })
 })

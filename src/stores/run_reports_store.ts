@@ -1,8 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getPortfolio, getWarningsErrors } from '@/api/api_client'
+import { getBookingPeriods, getPortfolio, getWarningsErrors } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
-import type { PortfolioReport, WarningsErrorsReport } from '@/types/api/report_types'
+import type {
+  BookingPeriodsReport,
+  PortfolioReport,
+  WarningsErrorsReport,
+} from '@/types/api/report_types'
 import { t } from '@/translate'
 
 /**
@@ -13,8 +17,10 @@ import { t } from '@/translate'
 export const useRunReportsStore = defineStore('run_reports', () => {
   const warningsErrors = ref<WarningsErrorsReport | null>(null)
   const portfolio = ref<PortfolioReport | null>(null)
+  const bookingPeriods = ref<BookingPeriodsReport | null>(null)
   const loadingWarningsErrors = ref(false)
   const loadingPortfolio = ref(false)
+  const loadingBookingPeriods = ref(false)
   const error = ref<string | null>(null)
   // the artifact exists but predates the current schema — not an absence and not an outage
   const unreadable = ref<string | null>(null)
@@ -23,6 +29,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   function clear(): void {
     warningsErrors.value = null
     portfolio.value = null
+    bookingPeriods.value = null
     error.value = null
     unreadable.value = null
   }
@@ -61,15 +68,36 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     }
   }
 
+  /** Booking periods carry the same 409 case as any other stored artifact. */
+  async function loadBookingPeriods(runId: string): Promise<void> {
+    loadingBookingPeriods.value = true
+    bookingPeriods.value = null
+    try {
+      bookingPeriods.value = await getBookingPeriods(runId)
+    } catch (e) {
+      if (e instanceof ArtifactUnreadableError) {
+        unreadable.value = e.message
+      } else {
+        const detail = e instanceof Error ? e.message : String(e)
+        error.value = `${t('Could not load the booking periods')}: ${detail}`
+      }
+    } finally {
+      loadingBookingPeriods.value = false
+    }
+  }
+
   return {
     warningsErrors,
     portfolio,
+    bookingPeriods,
     loadingWarningsErrors,
     loadingPortfolio,
+    loadingBookingPeriods,
     error,
     unreadable,
     clear,
     loadWarningsErrors,
     loadPortfolio,
+    loadBookingPeriods,
   }
 })

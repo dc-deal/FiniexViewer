@@ -36,7 +36,7 @@ defineProps<{
           <td>{{ rValue(row.expectancy, row.r_trade_count) }}</td>
           <td>{{ rValue(row.avg_win_r, row.r_win_count) }}</td>
           <td>{{ rValue(row.avg_loss_r, row.r_loss_count) }}</td>
-          <td>{{ amount(row.max_drawdown, row.currency) }}</td>
+          <td>{{ amount(row.account_max_drawdown, row.currency) }}</td>
           <td>{{ amount(row.total_fees, row.currency) }}</td>
         </tr>
       </tbody>

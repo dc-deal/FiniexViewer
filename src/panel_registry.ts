@@ -2,6 +2,7 @@ import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
+import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
 import OrderCountsPanel from '@/components/runs/OrderCountsPanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import type { PanelDescriptor } from '@/types/panel_types'
@@ -52,6 +53,18 @@ const PANELS: PanelDescriptor[] = [
     icon: '💼',
     component: PortfolioPanel,
     source: 'portfolio',
+    groups: 'all',
+    defaultOpen: true,
+  },
+  {
+    // The bookkeeping stretches the run was divided into, and the completeness check over them.
+    // Absent on every run from before the journal existed, which PanelColumn handles by dropping
+    // the panel rather than showing it empty.
+    id: 'booking-periods',
+    title: 'Booking Periods',
+    icon: '📅',
+    component: BookingPeriodsPanel,
+    source: 'bookingPeriods',
     groups: 'all',
     defaultOpen: true,
   },
