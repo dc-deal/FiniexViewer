@@ -512,3 +512,15 @@ export interface TradeHistoryReport {
   analytics: TradeAnalytics[]
   scenario_totals: ScenarioTotals[]
 }
+
+/**
+ * What the trade view renders: the positions that closed, and the order funnel that produced
+ * them. Composed by the host rather than served as one response, because the two live on
+ * different routes — and they belong together, since 544 rejected orders behind 11 closed
+ * positions is a finding that neither half states on its own.
+ */
+export interface TradeView {
+  history: TradeHistoryReport
+  /** The run summary, for its four order counters. Null where the run carries no summary. */
+  summary: RunSummary | null
+}

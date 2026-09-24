@@ -19,3 +19,16 @@ if (!Element.prototype.hasPointerCapture) {
   Element.prototype.setPointerCapture = (): void => {}
   Element.prototype.releasePointerCapture = (): void => {}
 }
+
+// jsdom carries FileReader but not Blob.text(). Read through FileReader rather than returning a
+// canned string: the test then still proves that the file's own bytes reach the importer.
+if (!Blob.prototype.text) {
+  Blob.prototype.text = function text(this: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(reader.error)
+      reader.readAsText(this)
+    })
+  }
+}

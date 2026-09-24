@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import { amount, magnitude } from '@/components/runs/report_format'
+import { orderPeriods } from '@/components/runs/period_order'
+import { useDisplaySettings } from '@/composables/use_display_settings'
+import type { LaneOrder } from '@/types/settings_types'
 import type { BookingPeriodsReport } from '@/types/api/report_types'
 import { t } from '@/translate'
 
@@ -44,6 +47,23 @@ const verdict = computed<Verdict>(() => {
 })
 
 /**
+ * One order for the chart and the table beneath it. Inside a run a lane is the UNIT: a simulation's
+ * scenarios each carry their own period sequence. The default comes from the settings — by start
+ * time out of the box, because that is what turns a scattered set of slices into a diagonal.
+ *
+ * Local afterwards: the toggle above the chart is a look at this run, not a change of preference.
+ * Changing the preference adopts it here, so the setting visibly does something.
+ */
+const display = useDisplaySettings()
+const laneOrder = ref<LaneOrder>(display.value.laneOrder)
+
+watch(() => display.value.laneOrder, order => { laneOrder.value = order })
+
+const orderedPeriods = computed(() =>
+  orderPeriods(props.model.periods, laneOrder.value, row => row.unit_name)
+)
+
+/**
  * The other account currencies this run booked, each served by its own response. `currencies`
  * carries EVERY currency including the one on show (settled 2026-09-23), so the current one is
  * filtered out here — the console does the same before printing. An empty list on an older
@@ -57,7 +77,9 @@ const otherCurrencies = computed(() =>
 <template>
   <div class="booking-periods">
     <!-- The check comes first: it decides whether the rows below may be read as complete. -->
-    <div class="verdict" :class="verdict.tone">
+    <!-- The explanation is on the TITLE, not on the page. What the check proves is a caveat a
+         reader wants once, and three lines of prose on every run is three lines of noise. -->
+    <div class="verdict" :class="verdict.tone" :title="t('This compares completeness, not arithmetic: both figures descend from one value, so a wrong P&L moves them together and the check stays green.')">
       <span class="verdict-mark">{{ verdict.mark }}</span>
       <div class="verdict-body">
         <p class="verdict-text">{{ verdict.text }}</p>
@@ -72,17 +94,17 @@ const otherCurrencies = computed(() =>
           </template>
           <template v-else>{{ t('nothing reported') }}</template>
         </p>
-        <!-- said plainly, because the obvious reading of the check is the wrong one -->
-        <p class="verdict-note">
-          {{ t('This compares completeness, not arithmetic: both figures descend from one value, so a wrong P&L moves them together and the check stays green.') }}
-        </p>
       </div>
     </div>
 
     <div v-if="!model.periods.length" class="hint">{{ t('This run booked no periods') }}</div>
     <template v-else>
-      <BookingPeriodTimeline :periods="model.periods" :key-fields="model.key" />
-      <BookingPeriodTable :periods="model.periods" :key-fields="model.key" />
+      <BookingPeriodTimeline
+        v-model:order="laneOrder"
+        :periods="orderedPeriods"
+        :key-fields="model.key"
+      />
+      <BookingPeriodTable :periods="orderedPeriods" :key-fields="model.key" />
     </template>
 
     <p class="footnote">

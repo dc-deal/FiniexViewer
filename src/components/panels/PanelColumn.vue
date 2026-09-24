@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useLayoutStore } from '@/stores/layout_store'
+import { useSettingsStore } from '@/stores/settings_store'
+import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { panelById } from '@/panel_registry'
 import AccordionPanel from '@/components/panels/AccordionPanel.vue'
 import type { PanelState } from '@/types/panel_types'
@@ -14,6 +16,10 @@ const props = defineProps<{
 
 const layoutStore = useLayoutStore()
 const { visiblePanels } = storeToRefs(layoutStore)
+
+// The host supplies the preferences for every panel it renders. A panel that reached into the store
+// itself would stop being renderable from a different source, which the panel contract forbids.
+provideDisplaySettings(storeToRefs(useSettingsStore()).display)
 
 interface RenderedPanel {
   state: PanelState

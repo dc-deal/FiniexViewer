@@ -51,12 +51,14 @@ tests/
   query_param_utils.test.ts — query reading (string-only), param write and delete
   run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the portfolio breakdown incl. the chart link, and the run header incl. the two kinds of parent
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
+  settings_store.test.ts    — per-field reconciliation (unknown key dropped, missing key defaulted, out-of-range refused), the schema-version discard, setters that ignore rather than clamp, and the display subset handed to panels
+  settings_menu.test.ts     — the settings dialog against the store, the account entry that is present and unusable, and a bad layout file reported rather than swallowed
   run_reports_store.test.ts — section loading (warnings/errors, portfolio), missing artifact, error text, clearing on run change, shared error slot across concurrent sections
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 / 409 / 403 mapping
   api_contract.test.ts      — the captured fixtures against the contract they were taken under, and each list's declared row key
   deployments_store.test.ts — ledger listing, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state
   booking_period_panels.test.ts — the three-state reconciliation incl. "not checked", the completeness wording, the magnitude drawdown, and the timeline (tracks, polarity, no extent, unreadable timestamps)
-  trade_history.test.ts     — the magnitude excursion, the gated expectancy, the VISIBLE row cap, and what the card carries that the row cannot
+  trade_history.test.ts     — the magnitude excursion, the gated expectancy, the VISIBLE row cap, what the card carries that the row cannot, and the scenario threshold (summaries past it, the group row still complete, opening one by pointer and by keyboard)
   json_tree.test.ts         — key naming, quoted strings, array indices, null, fold depth
   run_config.test.ts        — the two configuration shapes, override PRESENCE without resolution, the worker join, and the guarantee that no top-level key is unreachable
   hover_card.test.ts        — portalled out of the page, opens on focus, carries the caller's figures and their polarity
@@ -148,6 +150,10 @@ vi.mock('axios', () => ({
 
 Available natively in the jsdom environment. Cleared in `beforeEach` with `localStorage.clear()` to prevent state leaking between tests.
 
+### Missing browser interfaces (`tests/setup.ts`)
+
+Stubs there stand in for interfaces jsdom does not implement — never for behaviour under test, because a stub that answered differently from a browser would make the suite agree with itself. `ResizeObserver` and the pointer-capture methods exist because reka-ui's floating layer measures its trigger. `Blob.prototype.text` is implemented over `FileReader`, which jsdom does have, so a layout-import test still proves the file's own bytes reach the importer. FileReader resolves on a TASK, so such a test needs one turn of the macrotask queue (`setTimeout(…, 0)`) and not only `flushPromises()`.
+
 ### Vue Router (use_query_sync tests)
 
 A real `createRouter` instance is created per test with `createWebHashHistory()` (no browser navigation needed). The router is passed as a plugin when mounting the test component.
@@ -181,4 +187,6 @@ Stores that trigger async work on reactive changes (e.g., `bars_store` watches t
 3. Use `setActivePinia(createPinia())` in `beforeEach` for store-based tests.
 4. Use `flushPromises()` after triggering reactive changes that cause async side effects.
 5. Mount a component that links to another view with `global: { stubs: { RouterLink: RouterLinkStub } }` — the stub's `to` prop is what the test asserts, so no router instance is needed.
-6. No server, no network — tests run offline.
+6. A panel that reads presentation preferences is mounted under a host component that calls `provideDisplaySettings(...)` — the same way `PanelColumn` supplies them. Mounted without a host it must still work, on the defaults, and that is worth its own case.
+7. Portalled content (reka-ui dialogs, menus, hover cards) is read off `document`, not off the wrapper, and the wrapper is unmounted in `afterEach` rather than the body being wiped — wiping removes the node the teleport still holds.
+8. No server, no network — tests run offline.

@@ -302,7 +302,7 @@ and `mergeConfig` cannot merge a function — the env is therefore loaded at mod
 
 ### Theming — CSS Custom Properties
 
-All colors, spacing, and type scale are defined as CSS custom properties in `src/styles/tokens.css`. Dark mode is the default; light mode overrides the same variables under `[data-theme='light']`. The active theme is controlled by a `data-theme` attribute on `<html>`, toggled by the `use_theme` composable and persisted to `localStorage`.
+All colors, spacing, and type scale are defined as CSS custom properties in `src/styles/tokens.css`. Dark mode is the default; light mode overrides the same variables under `[data-theme='light']`. The active theme is controlled by a `data-theme` attribute on `<html>`, written in exactly one place — `App.vue` watches the settings store and sets the attribute. No panel receives the theme as a prop; it reads the tokens the attribute selects, which is why a theme change needs no re-render anywhere else.
 
 This avoids a CSS-in-JS dependency, works natively in every browser, and is trivially inspectable in DevTools. Reka UI (headless component layer) is deferred — no concrete accessibility need has surfaced yet.
 
@@ -317,6 +317,79 @@ Priority on load: **URL params > localStorage > null**. Both wait for `router.is
 
 **Both merge, never replace.** `router.replace({ query })` with a freshly built object silently drops every param the other composable owns. `query_param_utils.ts` holds the two functions that make the merge the default: `readQuery` (the current query as plain strings) and `writeParam` (set, or delete when the value is null).
 
+### Settings — three kinds of state, and which one needs an account
+
+There are three kinds of state in this application and they do not share a home. Getting the line
+wrong is what makes a shared link meaningless or a preference travel to someone who did not ask
+for it:
+
+| | What it is | Where it lives | Needs an account? |
+|---|---|---|---|
+| **Selection** | which run, scenario, symbol, timeframe, filter | URL query params | never |
+| **Presentation** | panel order, collapsed state, theme, thresholds, caps | `localStorage` | no |
+| **Operation** | writing, triggering a run, changing a configuration | nowhere yet | **yes — and only this** |
+
+Two consequences follow. **A settings menu needs no user system**: everything it holds today is
+presentation, it is per-machine by nature, and putting it behind a login would make the viewer
+worse rather than safer. And **a user system is driven by write, not by settings** — identity earns
+its keep the moment the browser can change something on the other side, which the read-only API
+does not allow (see *API Token* above, and issue #22).
+
+- **`src/stores/settings_store.ts`** — presentation state under the single versioned key
+  `settings.v1`. Reconciled on load field by field and never trusted: the result is built from the
+  defaults and a stored field is adopted only when it passes its own check, so a key this build
+  does not know is never copied and a key the stored value lacks takes its default. The schema
+  version guards what a field check cannot — a field that kept its name and changed its meaning.
+  An out-of-range value is **ignored, not clamped**: a number silently changed to a different one
+  is a wrong answer.
+- **`src/types/settings_types.ts`** — the shape and `DEFAULT_SETTINGS` beside it, because a default
+  that drifts from its type is the defect that placement prevents.
+- **`src/components/TopMenu.vue`** — the application menu in the shell header: settings, theme,
+  layout export/import, and an account entry that **states it is unavailable and stands in for
+  nothing**. A mocked user is a promise the API cannot keep, and the next change would be written
+  against it.
+- **`src/composables/use_display_settings.ts`** — how a preference reaches a panel.
+
+**A panel does not read the store.** `PanelColumn` provides the display subset and a panel injects
+it, with the defaults as the fallback — so a panel mounted on its own, or by a future live host,
+behaves exactly as it did before settings existed. Ambient rather than a prop for the same reason
+the theme is: it applies to every panel, only some care, and passing it to all of them would hang a
+stray attribute on the ones that do not declare it.
+
+**Why one store even though the destination is a server.** These values will eventually be stored
+by FiniexTestingIDE rather than the browser (issue #22). That is not an argument for waiting — it
+is the argument for the store: the expensive part of the later move is not relocating the values,
+it is *finding* them once they have spread across a dozen components. The same bet this project
+makes at the display-string marker, for the same reason.
+
+**The shape of that destination is agreed (2026-09-24), and it decides what this store is.**
+Preferences will be a **generic document per account whose schema this project owns** — the backend
+stores it opaquely. Scenario *configurations* are the opposite: typed and validated by the backend
+against the components' parameter schema, never by the viewer's authority. So the settings store
+stays a **thin cache** whose reconciliation is ours to keep, and it never reconciles a
+configuration — which is the same line the Configuration panel already draws from the other side
+(*show, never resolve*).
+
+**Identity, when it arrives, is two principals.** A token identifies a **client**; an **account**
+identifies a person, and a token is bound to exactly one account. Until a login exists, presenting
+this viewer's token is acting as its account. A `whoami` route is coming and **is not consumed until
+it is announced** — the menu's account entry is a placeholder for it and deliberately mocks nothing.
+The permission verb (`read` / `write` / `execute`) is a separate axis from the surface with **a
+separate token per verb**, so a write path means the dev proxy holds one credential per verb rather
+than one credential with more rights. None of that changes the header the proxy sends today.
+
+**One hazard recorded rather than solved.** Stored settings are discarded whole on a schema-version
+mismatch, which is right for a per-machine file. Once the same document lives on a server and is
+read by two machines, that rule lets an older client discard a newer document and write its own
+back. It needs an answer in the change that moves the backing, not before — there is no shared
+document yet.
+
+**The first real setting is the scenario threshold.** Above that many units a panel makes the
+summary primary and the individual unit secondary — Trade History collapses each unit to its group
+row, which still carries the name, the net, the fees and the trade count. A thirteen-scenario run
+is already hard to read and a forty-scenario run is unreadable; the threshold is what lets the
+presentation know how many units it is dealing with. Nothing is ever hidden silently.
+
 ### Panels — a registry, a shell, one persisted layout
 
 The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
@@ -325,7 +398,7 @@ The viewer shows many small panels around one chart rather than one view per pag
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 - **`src/stores/layout_store.ts`** — the arrangement, persisted under the single versioned key `layout.v1`.
 
-**A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a live frame later (testingide#379/#380) without being written twice.
+**A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a live frame later (testingide#379/#380) without being written twice. The rule is about DATA: presentation preferences reach a panel ambiently instead (see *Settings* above), which ties it to no source.
 
 **Two stores, two questions.** `runs_store` answers *which* run is selected — the `group → name → run` cascade and the index behind it. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
 

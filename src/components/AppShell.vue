@@ -8,6 +8,7 @@ import { useSelectionStore } from '@/stores/selection_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import { useQuerySync } from '@/composables/use_query_sync'
 import AppSelect from '@/components/base/AppSelect.vue'
+import TopMenu from '@/components/TopMenu.vue'
 import { t } from '@/translate'
 
 const brokerStore = useBrokerStore()
@@ -41,6 +42,8 @@ function onBrokerChange(b: string): void {
   <div class="shell">
     <header class="shell-header">
       <span class="shell-title">FiniexViewer</span>
+      <div class="shell-spacer" />
+      <TopMenu />
     </header>
     <div class="shell-body">
       <Splitpanes class="shell-splitpanes">
@@ -109,6 +112,10 @@ function onBrokerChange(b: string): void {
   font-weight: bold;
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
+}
+
+.shell-spacer {
+  flex: 1;
 }
 
 .shell-body {

@@ -22,3 +22,15 @@ body {
 .splitpanes__splitter:hover {
   background-color: var(--color-accent) !important;
 }
+
+/*
+ * Anything that acts on a click says so, once and globally rather than per component — a missing
+ * cursor is a defect nobody notices while writing the component and everybody notices while using
+ * it. Deliberately NOT applied to elements that only reveal a hover card: a pointer there promises
+ * a click that does nothing.
+ */
+button,
+summary,
+[role='button'] {
+  cursor: pointer;
+}

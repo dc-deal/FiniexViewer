@@ -46,7 +46,11 @@ const sources = computed(() => ({
   portfolio: portfolio.value,
   bookingPeriods: bookingPeriods.value,
   config: config.value,
-  tradeHistory: tradeHistory.value,
+  // composed rather than served: the trade view needs the positions AND the order funnel, and
+  // those live on two different routes
+  tradeView: tradeHistory.value
+    ? { history: tradeHistory.value, summary: summary.value }
+    : null,
 }))
 
 // Once a run is chosen there is always something to show: the header panel reads the index row.

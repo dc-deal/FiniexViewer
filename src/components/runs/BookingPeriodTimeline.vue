@@ -7,6 +7,7 @@ import {
 } from '@/components/runs/report_format'
 import type { BookingPeriodRow } from '@/types/api/report_types'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
+import type { LaneOrder } from '@/types/settings_types'
 import type { TimelineLane, TimelineSpan } from '@/types/timeline_types'
 import { t } from '@/translate'
 
@@ -44,7 +45,14 @@ const props = defineProps<{
    * axis to the wall clock; without them the periods are drawn on their own clock.
    */
   sessions?: DeploymentSessionRow[]
+  /**
+   * How the lanes are ordered. Owned by the HOST, because the table under the chart has to follow
+   * the same order — two orders one above the other means the reader finds every row twice.
+   */
+  order: LaneOrder
 }>()
+
+const emit = defineEmits<{ 'update:order': [LaneOrder] }>()
 
 function instant(iso: string): number {
   return new Date(iso).getTime()
@@ -105,6 +113,8 @@ function span(period: PeriodRow, from: number, to: number): TimelineSpan {
     // 'seg' spelled out: '#' is no counter on this page, and one glyph for two different numbers
     // is read as one number
     label: `${t('seg')} ${period.segment_no}`,
+    // what is left when the bar is a sliver: the number alone still identifies it
+    shortLabel: String(period.segment_no),
     tone: tone(period.net_pnl),
     title: `${period.unit_name} · ${t('segment')} ${period.segment_no}`,
     details: details(period),
@@ -152,7 +162,19 @@ const deploymentScope = computed(() => {
   return { lanes, from: Math.min(...stamps), to: Math.max(...stamps) }
 })
 
-const scope = computed(() => (props.sessions?.length ? deploymentScope.value : runScope.value))
+const unsorted = computed(() =>
+  props.sessions?.length ? deploymentScope.value : runScope.value
+)
+
+const scope = computed(() => {
+  const current = unsorted.value
+  if (props.order === 'name') {
+    return { ...current, lanes: [...current.lanes].sort((a, b) => a.label.localeCompare(b.label)) }
+  }
+  const earliest = (lane: typeof current.lanes[number]): number =>
+    Math.min(...lane.spans.map(span => span.from))
+  return { ...current, lanes: [...current.lanes].sort((a, b) => earliest(a) - earliest(b)) }
+})
 
 /**
  * Where a booking closed. Distinct instants only: four sessions that booked at the same trading-day
@@ -205,6 +227,11 @@ function gapLabel(millis: number): string {
   return `${duration(millis / HOUR_MS)} ${t('idle')}`
 }
 
+/** Said once where there are too many removals to name each — summarised, never hidden. */
+function breaksLabel(count: number, total: number): string {
+  return `${count} ${t('breaks')} · ${duration(total / HOUR_MS)} ${t('idle removed')}`
+}
+
 /**
  * A kept piece of the axis as ONE label. Two timestamps side by side are wider than a short piece
  * of the plot, so they overprint; a range says the same in the room that is there. The shared
@@ -227,17 +254,68 @@ function rangeLabel(from: number, to: number): string {
 </script>
 
 <template>
-  <TimelineChart
-    v-if="scope.lanes.length"
-    :lanes="scope.lanes"
-    :from="scope.from"
-    :to="scope.to"
-    :format="axisFormat"
-    :scale-note="scaleNote"
-    :markers="closings"
-    :collapse-gaps-longer-than="longestSpan"
-    :format-gap="gapLabel"
-    :format-range="rangeLabel"
-    :ticks="4"
-  />
+  <div v-if="scope.lanes.length" class="booking-timeline">
+    <!-- only where there is more than one lane to order -->
+    <div v-if="scope.lanes.length > 1" class="order-control">
+      <span class="order-label">{{ t('Order lanes by') }}</span>
+      <button
+        class="order-button"
+        :class="{ active: order === 'time' }"
+        @click="emit('update:order', 'time')"
+      >{{ t('start time') }}</button>
+      <button
+        class="order-button"
+        :class="{ active: order === 'name' }"
+        @click="emit('update:order', 'name')"
+      >{{ t('name') }}</button>
+    </div>
+
+    <TimelineChart
+      :lanes="scope.lanes"
+      :from="scope.from"
+      :to="scope.to"
+      :format="axisFormat"
+      :scale-note="scaleNote"
+      :markers="closings"
+      :collapse-gaps-longer-than="longestSpan"
+      :format-gap="gapLabel"
+      :format-range="rangeLabel"
+      :format-breaks="breaksLabel"
+      :ticks="4"
+    />
+  </div>
 </template>
+
+<style scoped>
+.booking-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.order-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.order-label { color: var(--color-text-secondary); }
+
+.order-button {
+  padding: 1px var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.order-button.active {
+  color: var(--color-text-primary);
+  border-color: var(--color-accent);
+}
+</style>

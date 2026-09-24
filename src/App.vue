@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useTheme } from '@/composables/use_theme'
+import { watchEffect } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useSettingsStore } from '@/stores/settings_store'
 import AppShell from '@/components/AppShell.vue'
 
-const { theme } = useTheme()
+const { settings } = storeToRefs(useSettingsStore())
 
-onMounted(() => {
-  document.documentElement.dataset.theme = theme.value
+// The one place the theme reaches the document. Panels never receive it — they read the tokens the
+// attribute selects, which is why a theme change needs no re-render anywhere else.
+watchEffect(() => {
+  document.documentElement.dataset.theme = settings.value.theme
 })
 </script>
 

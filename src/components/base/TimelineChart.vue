@@ -39,6 +39,13 @@ const props = withDefaults(defineProps<{
    * same thing in the space that is actually there. Falls back to two formatted ends.
    */
   formatRange?: (from: number, to: number) => string
+  /**
+   * Renders the removals as ONE caption instead of labelling each. Above a handful of breaks the
+   * per-gap captions and the per-piece ranges crowd into a smear — measured on a scenario set of
+   13 one-hour slices over five weeks, 98.5 % of the span empty and twelve breaks, which put 25
+   * labels in one width. The geometry stays honest; only the labels stop pretending to be legible.
+   */
+  formatBreaks?: (count: number, total: number) => string
   ticks?: number
   /** Width of the lane-label column, in rem. */
   labelWidth?: number
@@ -50,6 +57,7 @@ const props = withDefaults(defineProps<{
   collapseGapsLongerThan: 0,
   formatGap: (length: number) => String(length),
   formatRange: undefined,
+  formatBreaks: undefined,
 })
 
 interface Segment {
@@ -65,10 +73,27 @@ interface Segment {
 interface Break {
   at: number
   length: number
+  /** Thinner the more of them there are — see BREAK_BUDGET. */
+  width: number
 }
 
-/** Each break costs this share of the plot; the data shares what is left. */
-const BREAK_WIDTH = 5
+/**
+ * What one break costs, and the ceiling on what they cost together.
+ *
+ * A break has to take SOME width — a zero-width one is invisible and the two sides then read as
+ * contiguous, which is the thing the break exists to deny. But at a fixed 5 % each, ten breaks take
+ * half the plot for nothing. So the budget is capped: the removals share it and the data keeps the
+ * rest, which means more breaks make each one thinner rather than eating the chart.
+ */
+const BREAK_WIDTH_MAX = 5
+const BREAK_BUDGET = 20
+
+/** Labels need room. Below these shares of the plot a span falls back, then goes silent. */
+const LABEL_MIN_WIDTH = 6
+const SHORT_LABEL_MIN_WIDTH = 2.5
+
+/** Above this many breaks the labels are summarised rather than drawn one per piece. */
+const MAX_LABELLED_BREAKS = 3
 
 const length = computed(() => props.to - props.from)
 
@@ -115,15 +140,16 @@ const axis = computed(() => {
   }
   kept[kept.length - 1]!.to = Math.max(kept[kept.length - 1]!.to, props.to)
 
-  const dataWidth = 100 - removed.length * BREAK_WIDTH
+  const breakWidth = Math.min(BREAK_WIDTH_MAX, BREAK_BUDGET / removed.length)
+  const dataWidth = 100 - removed.length * breakWidth
   const total = kept.reduce((sum, piece) => sum + (piece.to - piece.from), 0)
   const segments: Segment[] = []
   const breaks: Break[] = []
   let cursor = 0
   kept.forEach((piece, index) => {
     if (index > 0) {
-      breaks.push({ at: cursor, length: removed[index - 1]! })
-      cursor += BREAK_WIDTH
+      breaks.push({ at: cursor, length: removed[index - 1]!, width: breakWidth })
+      cursor += breakWidth
     }
     const width = total > 0 ? ((piece.to - piece.from) / total) * dataWidth : dataWidth
     segments.push({ from: piece.from, to: piece.to, at: cursor, width })
@@ -158,7 +184,17 @@ interface Tick {
   edge: string
 }
 
+/** True where there are so many removals that labelling each would produce a smear. */
+const crowded = computed(() => axis.value.breaks.length > MAX_LABELLED_BREAKS)
+
 const axisTicks = computed<Tick[]>(() => {
+  // too many pieces to label: the two ends of the whole scale, and nothing between them
+  if (crowded.value) {
+    return [
+      { at: 0, label: props.format(props.from), edge: 'start' },
+      { at: 100, label: props.format(props.to), edge: 'end' },
+    ]
+  }
   if (!axis.value.breaks.length) {
     const count = Math.max(2, props.ticks)
     return Array.from({ length: count }, (_, i) => {
@@ -212,6 +248,10 @@ const placedTicks = computed(() => {
   })
 })
 
+const removedTotal = computed(() =>
+  axis.value.breaks.reduce((sum, gap) => sum + gap.length, 0)
+)
+
 const ruled = computed(() => props.markers.map(value => ({ value, at: offset(value) })))
 
 const drawn = computed(() =>
@@ -220,7 +260,12 @@ const drawn = computed(() =>
     bars: lane.spans.map(span => {
       const left = offset(span.from)
       // a span shorter than a pixel still has to be findable, so width has a floor in CSS
-      return { ...span, left, width: Math.max(0, offset(span.to) - left) }
+      const width = Math.max(0, offset(span.to) - left)
+      // a clipped word reads as a fault; a bar with no label reads as a small bar
+      const caption = width >= LABEL_MIN_WIDTH
+        ? span.label
+        : (width >= SHORT_LABEL_MIN_WIDTH ? (span.shortLabel ?? '') : '')
+      return { ...span, left, width, caption }
     }),
   }))
 )
@@ -247,13 +292,22 @@ const drawn = computed(() =>
           :class="`row-${tick.row}`"
           :style="{ left: `${tick.at}%` }"
         />
-        <!-- the removal is NAMED, which is the only thing that makes a broken axis honest -->
-        <span
-          v-for="gap in axis.breaks"
-          :key="`gaplabel-${gap.at}`"
-          class="gap-label"
-          :style="{ left: `${gap.at + BREAK_WIDTH / 2}%` }"
-        >{{ formatGap(gap.length) }}</span>
+        <!-- the removal is NAMED, which is the only thing that makes a broken axis honest. Where
+             there are too many to name individually, one caption says how much was removed in
+             total — summarised, never silently dropped -->
+        <template v-if="!crowded">
+          <span
+            v-for="gap in axis.breaks"
+            :key="`gaplabel-${gap.at}`"
+            class="gap-label"
+            :style="{ left: `${gap.at + gap.width / 2}%` }"
+          >{{ formatGap(gap.length) }}</span>
+        </template>
+        <span v-else class="gap-label summary" :style="{ left: '50%' }">
+          {{ formatBreaks
+            ? formatBreaks(axis.breaks.length, removedTotal)
+            : `${axis.breaks.length} / ${formatGap(removedTotal)}` }}
+        </span>
       </div>
     </div>
 
@@ -270,7 +324,7 @@ const drawn = computed(() =>
           v-for="gap in axis.breaks"
           :key="`gap-${gap.at}`"
           class="gap"
-          :style="{ left: `${gap.at}%`, width: `${BREAK_WIDTH}%` }"
+          :style="{ left: `${gap.at}%`, width: `${gap.width}%` }"
           :title="formatGap(gap.length)"
         />
         <!-- drawn ABOVE the spans: a boundary falls exactly on a span edge, where the 2px surface
@@ -293,7 +347,7 @@ const drawn = computed(() =>
             :style="{ left: `${bar.left}%`, width: `${bar.width}%` }"
             tabindex="0"
           >
-            <span class="span-label">{{ bar.label }}</span>
+            <span v-if="bar.caption" class="span-label">{{ bar.caption }}</span>
           </div>
         </HoverCard>
       </div>

@@ -25,7 +25,14 @@ defineProps<{
 </script>
 
 <template>
-  <div class="table-scroll">
+  <!-- Closed by default, and a native <details> rather than a custom toggle: the chart above is
+       what a reader comes for, the rows are the backup. `details` brings the keyboard and
+       screen-reader semantics with it instead of us re-implementing them. -->
+  <details class="periods">
+    <summary class="periods-summary">
+      {{ periods.length }} {{ t('booking periods') }}
+    </summary>
+    <div class="table-scroll">
     <table class="kpi-table">
       <thead>
         <tr>
@@ -66,11 +73,20 @@ defineProps<{
           <td>{{ amount(period.total_fees, period.currency) }}</td>
         </tr>
       </tbody>
-    </table>
-  </div>
+      </table>
+    </div>
+  </details>
 </template>
 
 <style scoped>
+.periods-summary {
+  cursor: pointer;
+  padding: var(--space-xs) 0;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
 .table-scroll {
   overflow-x: auto;
 }

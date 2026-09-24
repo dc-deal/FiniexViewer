@@ -1,15 +1,41 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import {
-  amount, magnitude, numberOrNa, signClass, utcInstant,
+  amount, magnitude, numberOrNa, percent, signClass, utcInstant,
 } from '@/components/runs/report_format'
-import type { TradeHistoryReport, TradeRow } from '@/types/api/report_types'
+import { useDisplaySettings } from '@/composables/use_display_settings'
+import type { TradeRow, TradeView } from '@/types/api/report_types'
 import { t } from '@/translate'
 
 const props = defineProps<{
-  model: TradeHistoryReport
+  model: TradeView
 }>()
+
+const history = computed(() => props.model.history)
+
+/**
+ * The order funnel, which belongs here rather than in a panel of its own: this view is about
+ * execution, and what was ATTEMPTED is the other half of what was closed. Measured on a real run:
+ * 566 orders sent, 22 executed, 544 rejected — the trade list below shows eleven positions and
+ * says nothing about the 96 % that never became one.
+ */
+const funnel = computed(() => {
+  const summary = props.model.summary
+  if (!summary) return null
+  const rate = summary.orders_sent > 0
+    ? summary.orders_executed / summary.orders_sent
+    : null
+  return {
+    sent: summary.orders_sent,
+    executed: summary.orders_executed,
+    rejected: summary.orders_rejected,
+    slTp: summary.sl_tp_triggered,
+    rate,
+  }
+})
+
+const display = useDisplaySettings()
 
 /**
  * Rows drawn without virtualisation. A backtest of a few hours produces a handful; a thirty-day
@@ -17,10 +43,60 @@ const props = defineProps<{
  * and it is VISIBLE: a silent truncation reads as "that was all", which is the one thing a trade
  * list must never say. Virtualisation replaces this the day a run actually exceeds it.
  */
-const ROW_CAP = 500
+const rowCap = computed(() => display.value.tradeRowCap)
 
-const shown = computed(() => props.model.trades.slice(0, ROW_CAP))
-const hidden = computed(() => Math.max(0, props.model.trades.length - ROW_CAP))
+const shown = computed(() => history.value.trades.slice(0, rowCap.value))
+const hidden = computed(() => Math.max(0, history.value.trades.length - rowCap.value))
+
+/**
+ * The trades grouped under the unit that produced them, each group carrying its own totals.
+ *
+ * A flat list with the totals in a footer put six units' rows one after another with nothing
+ * saying where one ended — and the footer then read as more trades rather than as a summary. A
+ * group header answers both at once: it shows the boundary AND puts the figures beside the rows
+ * they are about. The unit order follows the trade order the backend returned; nothing is re-sorted.
+ */
+const groups = computed(() => {
+  const totals = new Map(history.value.scenario_totals.map(total => [total.scenario_name, total]))
+  const order: string[] = []
+  const byUnit = new Map<string, TradeRow[]>()
+  for (const trade of shown.value) {
+    if (!byUnit.has(trade.scenario_name)) {
+      byUnit.set(trade.scenario_name, [])
+      order.push(trade.scenario_name)
+    }
+    byUnit.get(trade.scenario_name)!.push(trade)
+  }
+  return order.map(name => ({
+    name,
+    trades: byUnit.get(name) ?? [],
+    // absent where a unit traded but reports no total — shown as a count rather than invented
+    total: totals.get(name) ?? null,
+  }))
+})
+
+/**
+ * Past the scenario threshold the individual unit recedes and its summary becomes the primary
+ * thing: the group header still states the name, the net, the fees and the count, and the rows
+ * under it wait to be asked for. A forty-scenario run is otherwise a list nobody reads.
+ *
+ * Nothing is hidden silently — the header says how many trades are behind it, and it is one click.
+ */
+const summarised = computed(() => groups.value.length >= display.value.scenarioThreshold)
+
+/** A unit the reader has opened or closed by hand, which outranks the threshold for that unit. */
+const overrides = ref(new Map<string, boolean>())
+
+// a different run is a different set of units, so a choice made about the old one means nothing
+watch(() => props.model, () => overrides.value.clear())
+
+function isExpanded(name: string): boolean {
+  return overrides.value.get(name) ?? !summarised.value
+}
+
+function toggleGroup(name: string): void {
+  overrides.value.set(name, !isExpanded(name))
+}
 
 /** Seconds as the operator reads a holding period. */
 function held(seconds: number): string {
@@ -91,7 +167,23 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
 
 <template>
   <div class="trade-history">
-    <section v-for="stats in model.analytics" :key="stats.currency" class="analytics">
+    <!-- what was ATTEMPTED, before what was closed: a low execution rate changes how every figure
+         below it reads, so it comes first rather than sitting in a panel of its own -->
+    <p v-if="funnel" class="funnel">
+      <span class="funnel-label">{{ t('Orders') }}</span>
+      <span class="funnel-value">
+        {{ funnel.executed }}/{{ funnel.sent }} {{ t('executed') }}
+        <template v-if="funnel.rate !== null">({{ percent(funnel.rate) }})</template>
+      </span>
+      <span v-if="funnel.rejected" class="funnel-rejected">
+        {{ funnel.rejected }} {{ t('rejected') }}
+      </span>
+      <span v-if="funnel.slTp" class="funnel-label">
+        {{ funnel.slTp }} {{ t('closed by SL/TP') }}
+      </span>
+    </p>
+
+    <section v-for="stats in history.analytics" :key="stats.currency" class="analytics">
       <div class="figure">
         <span class="label">{{ t('Trades') }}</span>
         <span class="value">{{ stats.trade_count }} · {{ stats.currency }}</span>
@@ -129,16 +221,15 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
 
     <p v-if="hidden" class="notice">
       <span class="mark">⚠</span>
-      {{ t('Showing the first') }} {{ ROW_CAP }} {{ t('of') }} {{ model.count }}
+      {{ t('Showing the first') }} {{ rowCap }} {{ t('of') }} {{ history.count }}
       {{ t('trades — the remainder are not drawn, which is not the same as not there') }}
     </p>
 
-    <div v-if="!model.trades.length" class="hint">{{ t('This run closed no positions') }}</div>
+    <div v-if="!history.trades.length" class="hint">{{ t('This run closed no positions') }}</div>
     <div v-else class="table-scroll">
       <table class="kpi-table">
         <thead>
           <tr>
-            <th>{{ t('Unit') }}</th>
             <th>{{ t('Symbol') }}</th>
             <th>{{ t('Dir') }}</th>
             <th>{{ t('Lots') }}</th>
@@ -150,41 +241,75 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
           </tr>
         </thead>
         <tbody>
-          <HoverCard
-            v-for="trade in shown"
-            :key="trade.position_id"
-            :title="`${trade.scenario_name} · ${trade.direction} ${trade.lots}`"
-            :details="details(trade)"
-            side="top"
-          >
-            <tr tabindex="0">
-              <td class="text-cell">{{ trade.scenario_name }}</td>
-              <td class="text-cell">{{ trade.symbol }}</td>
-              <td class="text-cell">{{ trade.direction }}</td>
-              <td>{{ trade.lots }}</td>
-              <td>{{ utcInstant(trade.entry_time) }}</td>
-              <td>{{ held(trade.duration_s) }}</td>
-              <td :class="signClass(trade.net_pnl)">{{ amount(trade.net_pnl, trade.currency) }}</td>
-              <td>{{ magnitude(trade.mae_pnl, trade.currency) }}</td>
-              <td>{{ amount(trade.mfe_pnl, trade.currency) }}</td>
+          <template v-for="group in groups" :key="group.name">
+            <!-- the boundary and the summary in one row: it says where a unit's trades begin AND
+                 what they came to, instead of leaving the second half in a detached footer -->
+            <tr
+              class="group"
+              tabindex="0"
+              @click="toggleGroup(group.name)"
+              @keydown.enter.prevent="toggleGroup(group.name)"
+              @keydown.space.prevent="toggleGroup(group.name)"
+            >
+              <td class="text-cell" colspan="6">
+                <span class="group-marker">{{ isExpanded(group.name) ? '▾' : '▸' }}</span>
+                {{ group.name }}
+              </td>
+              <td v-if="group.total" :class="signClass(group.total.net_pnl)">
+                {{ amount(group.total.net_pnl, group.total.currency) }}
+              </td>
+              <td v-else />
+              <td colspan="2" class="group-meta">
+                {{ group.trades.length }} {{ t('trades') }}
+                <template v-if="group.total">
+                  · {{ t('fees') }} {{ amount(group.total.total_fees, group.total.currency) }}
+                </template>
+              </td>
             </tr>
-          </HoverCard>
+            <HoverCard
+              v-for="trade in (isExpanded(group.name) ? group.trades : [])"
+              :key="trade.position_id"
+              :title="`${trade.scenario_name} · ${trade.direction} ${trade.lots}`"
+              :details="details(trade)"
+              side="top"
+            >
+              <tr tabindex="0">
+                <td class="text-cell indent">{{ trade.symbol }}</td>
+                <td class="text-cell">{{ trade.direction }}</td>
+                <td>{{ trade.lots }}</td>
+                <td>{{ utcInstant(trade.entry_time) }}</td>
+                <td>{{ held(trade.duration_s) }}</td>
+                <td :class="signClass(trade.net_pnl)">
+                  {{ amount(trade.net_pnl, trade.currency) }}
+                </td>
+                <td>{{ magnitude(trade.mae_pnl, trade.currency) }}</td>
+                <td colspan="2">{{ amount(trade.mfe_pnl, trade.currency) }}</td>
+              </tr>
+            </HoverCard>
+          </template>
         </tbody>
-        <!-- only where there is more than one unit: with one, it would repeat the row above it -->
-        <tfoot v-if="model.scenario_totals.length > 1">
-          <tr v-for="total in model.scenario_totals" :key="total.scenario_name">
-            <td class="text-cell" colspan="5">{{ total.scenario_name }}</td>
-            <td>{{ total.trade_count }}</td>
-            <td :class="signClass(total.net_pnl)">{{ amount(total.net_pnl, total.currency) }}</td>
-            <td colspan="2">{{ t('fees') }} {{ amount(total.total_fees, total.currency) }}</td>
-          </tr>
-        </tfoot>
       </table>
     </div>
   </div>
 </template>
 
 <style scoped>
+.funnel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-md);
+  margin: 0 0 var(--space-sm);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.funnel-label { color: var(--color-text-secondary); }
+.funnel-value { color: var(--color-text-primary); }
+
+/* a rejection is not an error of ours — it is a fact about the run that must not be overlooked */
+.funnel-rejected { color: var(--color-warning); }
+
 .analytics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
@@ -243,6 +368,36 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
 }
 
 .text-cell { text-align: left; }
+
+/* the group row carries a unit's name and its totals — separated from the trades under it so it
+   cannot be read as one of them, which is exactly how the old footer went wrong */
+.group td {
+  border-top: 2px solid var(--color-border);
+  padding-top: var(--space-sm);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-elevated);
+}
+
+/* the whole row opens and closes the unit, so it carries the cursor that says so */
+.group {
+  cursor: pointer;
+}
+
+.group:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: -1px;
+}
+
+.group-marker {
+  display: inline-block;
+  width: 1em;
+  color: var(--color-text-secondary);
+}
+
+.group-meta { color: var(--color-text-secondary); }
+
+/* the trades sit under their group rather than beside it */
+.indent { padding-left: var(--space-lg); }
 
 .hint {
   color: var(--color-text-secondary);

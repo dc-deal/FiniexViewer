@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDeploymentsStore } from '@/stores/deployments_store'
+import { useSettingsStore } from '@/stores/settings_store'
 import { useDeploymentQuerySync } from '@/composables/use_deployment_query_sync'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
@@ -10,6 +11,8 @@ import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
+import { orderPeriods } from '@/components/runs/period_order'
+import type { LaneOrder } from '@/types/settings_types'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import { t } from '@/translate'
 
@@ -23,21 +26,24 @@ const {
 useDeploymentQuerySync()
 
 /**
- * The periods grouped by the session they belong to, then by segment.
+ * One order for the chart and the table beneath it. Across a deployment a lane is the SESSION —
+ * `unit_name` is the profile name and identical in every session.
  *
- * The ledger returns them oldest first by opening time — and every session's `anchor` period opens
- * at the same instant, so that order puts all four anchors in a block and leaves the two periods
- * of one session four rows apart. The table then reads as though each session booked once, which
- * is the opposite of what the chart above it shows. Grouping is a presentation decision, stated
- * here rather than taken silently.
+ * Ordering matters here for a second reason: the ledger returns periods oldest-first by opening
+ * time, and every session's `anchor` period opens at the same instant, so that order puts all the
+ * anchors in a block and leaves the two periods of one session far apart. The table then reads as
+ * though each session booked once, which is the opposite of what the chart shows.
+ *
+ * The default is the stored preference; the toggle above the chart stays local to this view.
  */
-const orderedPeriods = computed(() => {
-  const rows = periods.value?.periods ?? []
-  const order = new Map((detail.value?.sessions ?? []).map((s, i) => [s.run_id, i]))
-  return [...rows].sort((a, b) =>
-    (order.get(a.run_id) ?? 0) - (order.get(b.run_id) ?? 0) || a.segment_no - b.segment_no
-  )
-})
+const { settings } = storeToRefs(useSettingsStore())
+const laneOrder = ref<LaneOrder>(settings.value.laneOrder)
+
+watch(() => settings.value.laneOrder, order => { laneOrder.value = order })
+
+const orderedPeriods = computed(() =>
+  orderPeriods(periods.value?.periods ?? [], laneOrder.value, row => row.run_id)
+)
 
 /** Sessions of one account currency — the rows are keyed by (run_id, currency), so they split. */
 function sessionsOf(currency: string): DeploymentSessionRow[] {
@@ -88,12 +94,11 @@ const showDeployment = computed(() =>
         <AdvisoryNotice v-if="detail?.advisory" :advisory="detail.advisory" />
         <p v-if="detail" class="counts">
           {{ detail.count }} {{ t('sessions') }} ·
-          <span :class="{ flagged: detail.unfinished > 0 }">
-            {{ detail.unfinished }} {{ t('unfinished') }}
-          </span>
-          <span v-if="detail.unfinished > 0" class="counts-note">
-            — {{ t('killed before their close, so the ledger holds no row for them') }}
-          </span>
+          <!-- the WHY is on the title: the number is the fact, the explanation is a caveat -->
+          <span
+            :class="{ flagged: detail.unfinished > 0 }"
+            :title="t('Runs that never reached their close, so the ledger holds no row for them')"
+          >{{ detail.unfinished }} {{ t('unfinished') }}</span>
         </p>
 
         <section v-for="row in selectedRows" :key="row.currency" class="currency-block">
@@ -114,7 +119,8 @@ const showDeployment = computed(() =>
           <!-- passing the sessions is what switches the lane to the session and the axis to the
                wall clock — see the note in BookingPeriodTimeline -->
           <BookingPeriodTimeline
-            :periods="periods.periods"
+            v-model:order="laneOrder"
+            :periods="orderedPeriods"
             :key-fields="periods.key"
             :sessions="detail?.sessions ?? []"
           />
@@ -190,10 +196,6 @@ const showDeployment = computed(() =>
 
 .counts .flagged {
   color: var(--color-error);
-}
-
-.counts-note {
-  color: var(--color-text-secondary);
 }
 
 .notice {

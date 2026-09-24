@@ -61,10 +61,14 @@ describe('BookingPeriodsPanel — the reconciliation', () => {
     expect(mountPanel(report({ run_net_pnl: -18373.66 })).text()).toContain('-18,373.66')
   })
 
-  // The obvious reading of the check is the wrong one, so the panel states the right one: both
-  // figures descend from a single value, which makes this a completeness test, not an audit.
-  it('does not let the reader take the check for proof of the arithmetic', () => {
-    expect(mountPanel(report({ reconciles: true })).text()).toContain('completeness, not arithmetic')
+  /**
+   * The explanation is within REACH but not on the page: what the check proves is a caveat a
+   * reader wants once, and three lines of prose on every run is three lines of noise.
+   */
+  it('keeps what the check proves on the verdict, not in the page', () => {
+    const wrapper = mountPanel(report({ reconciles: true }))
+    expect(wrapper.text()).not.toContain('completeness, not arithmetic')
+    expect(wrapper.find('.verdict').attributes('title')).toContain('completeness, not arithmetic')
   })
 
   it('names the other account currencies without repeating the one on show', () => {
@@ -114,7 +118,7 @@ describe('BookingPeriodTable', () => {
 
 describe('BookingPeriodTimeline', () => {
   function mountTimeline(periods: BookingPeriodRow[], keyFields = ['unit_name', 'segment_no']) {
-    return mount(BookingPeriodTimeline, { props: { periods, keyFields } })
+    return mount(BookingPeriodTimeline, { props: { periods, keyFields, order: 'time' } })
   }
 
   it('gives each unit its own track', () => {
@@ -163,7 +167,7 @@ describe('BookingPeriodTimeline', () => {
  */
 describe('BookingPeriodTimeline — what a lane is', () => {
   function mountTimeline(periods: BookingPeriodRow[], keyFields = ['unit_name', 'segment_no']) {
-    return mount(BookingPeriodTimeline, { props: { periods, keyFields } })
+    return mount(BookingPeriodTimeline, { props: { periods, keyFields, order: 'time' } })
   }
 
   const sameWindow = { opened_at: '2026-01-24T14:19:46+00:00', closed_at: '2026-01-25T00:00:00+00:00' }
@@ -187,7 +191,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
 
   it('without sessions it lanes by the unit, which collapses a deployment into one row', () => {
     const wrapper = mount(BookingPeriodTimeline, {
-      props: { periods: sessions(), keyFields: ['run_id', 'unit_name', 'segment_no'] },
+      props: { periods: sessions(), keyFields: ['run_id', 'unit_name', 'segment_no'], order: 'time' },
     })
     // the honest failure the screenshot showed: one lane, and the bars on top of each other
     expect(wrapper.findAll('.lane-row')).toHaveLength(1)
@@ -199,6 +203,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         periods: sessions(),
         keyFields: ['run_id', 'unit_name', 'segment_no'],
         sessions: ledger(),
+        order: 'time',
       },
     })
     // three session lanes plus the axis row
@@ -220,6 +225,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         periods: sessions(),
         keyFields: ['run_id', 'unit_name', 'segment_no'],
         sessions: ledger(),
+        order: 'time',
       },
     })
     const lefts = wrapper.findAll('.span').map(node => node.attributes('style'))
@@ -234,6 +240,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         periods: sessions(),
         keyFields: ['run_id', 'unit_name', 'segment_no'],
         sessions: ledger(),
+        order: 'time',
       },
     })
     // the ledger window is 2026-09-22; the periods are 2026-01-24/25 and the axis follows them
@@ -250,6 +257,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         periods: sessions(),
         keyFields: ['run_id', 'unit_name', 'segment_no'],
         sessions: ledger(),
+        order: 'time',
       },
     })
     // three periods, one shared closing instant -> one rule per lane
@@ -273,6 +281,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
       props: {
         periods,
         keyFields: ['run_id', 'unit_name', 'segment_no'],
+        order: 'time',
         sessions: [
           { run_id: 'run_a', started: '2026-02-01T18:00:00Z', ended: '2026-02-02T00:00:00Z' },
           { run_id: 'run_b', started: '2026-02-08T18:00:00Z', ended: '2026-02-09T00:00:00Z' },
@@ -294,6 +303,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         periods: sessions(),
         keyFields: ['run_id', 'unit_name', 'segment_no'],
         sessions: ledger(),
+        order: 'time',
       },
     })
     expect(run.find('.axis').attributes('title')).toContain("the run's own clock")
@@ -308,4 +318,102 @@ describe('BookingPeriodTimeline — what a lane is', () => {
     expect(wrapper.find('.span-label').text()).toBe('seg 4')
   })
 
+})
+
+/**
+ * A scenario set is often a set of time SLICES. Measured on one: 13 scenarios, each exactly 60
+ * minutes, scattered over 35 days — 13 hours drawn against 830 hours of nothing. The order the
+ * backend returns them in (by name) then scatters the bars and the eye has nothing to follow.
+ */
+describe('BookingPeriodTimeline — many short slices', () => {
+  const HOUR = 3600_000
+
+  /** Three one-hour slices whose NAME order is the reverse of their TIME order. */
+  function slices(): (BookingPeriodRow & { run_id: string })[] {
+    return [
+      {
+        ...period({ unit_name: 'zeta', segment_no: 1 }),
+        run_id: 'r1',
+        opened_at: new Date(0).toISOString(),
+        closed_at: new Date(HOUR).toISOString(),
+      },
+      {
+        ...period({ unit_name: 'mid', segment_no: 1 }),
+        run_id: 'r2',
+        opened_at: new Date(200 * HOUR).toISOString(),
+        closed_at: new Date(201 * HOUR).toISOString(),
+      },
+      {
+        ...period({ unit_name: 'alpha', segment_no: 1 }),
+        run_id: 'r3',
+        opened_at: new Date(400 * HOUR).toISOString(),
+        closed_at: new Date(401 * HOUR).toISOString(),
+      },
+    ]
+  }
+
+  function mountSlices() {
+    return mount(BookingPeriodTimeline, {
+      props: { periods: slices(), keyFields: ['unit_name', 'segment_no'], order: 'time' },
+    })
+  }
+
+  it('orders the lanes by start time, so the bars form a diagonal', () => {
+    const labels = mountSlices().findAll('.lane-label').map(node => node.text())
+    expect(labels).toEqual(['zeta', 'mid', 'alpha'])
+  })
+
+  it('orders them by name when asked to', () => {
+    const wrapper = mount(BookingPeriodTimeline, {
+      props: { periods: slices(), keyFields: ['unit_name', 'segment_no'], order: 'name' },
+    })
+    expect(wrapper.findAll('.lane-label').map(node => node.text()))
+      .toEqual(['alpha', 'mid', 'zeta'])
+  })
+
+  /**
+   * The control reports the choice instead of keeping it: the TABLE under the chart has to follow
+   * the same order, and two orders one above the other means the reader finds every row twice.
+   */
+  it('reports a change of order rather than owning it', async () => {
+    const wrapper = mountSlices()
+    await wrapper.findAll('.order-button')[1]?.trigger('click')
+    expect(wrapper.emitted('update:order')).toEqual([['name']])
+  })
+
+  it('offers no ordering where there is only one lane to order', () => {
+    const wrapper = mount(BookingPeriodTimeline, {
+      props: { periods: [period()], keyFields: ['unit_name', 'segment_no'], order: 'time' },
+    })
+    expect(wrapper.find('.order-control').exists()).toBe(false)
+  })
+
+  /**
+   * Above a handful of removals, a caption per gap plus a range per piece puts 25 labels in one
+   * width. The geometry stays; the labels are summarised — and summarised is not dropped, so the
+   * caption says how many and how much.
+   */
+  it('summarises the removals once there are too many to name', () => {
+    const many = Array.from({ length: 6 }, (_, index) => ({
+      ...period({ unit_name: `unit_${index}`, segment_no: 1 }),
+      run_id: `r${index}`,
+      opened_at: new Date(index * 300 * HOUR).toISOString(),
+      closed_at: new Date(index * 300 * HOUR + HOUR).toISOString(),
+    }))
+    const wrapper = mount(BookingPeriodTimeline, {
+      props: { periods: many, keyFields: ['unit_name', 'segment_no'], order: 'time' },
+    })
+    const summary = wrapper.find('.gap-label.summary')
+    expect(summary.exists()).toBe(true)
+    expect(summary.text()).toContain('breaks')
+    expect(summary.text()).toContain('idle removed')
+    // and only the two ends of the scale remain as ticks
+    expect(wrapper.findAll('.tick')).toHaveLength(2)
+  })
+
+  it('still names each removal where there are few enough to read', () => {
+    const wrapper = mountSlices()
+    expect(wrapper.find('.gap-label.summary').exists()).toBe(false)
+    expect(wrapper.findAll('.gap-label').length).toBeGreaterThan(0)
+  })
 })

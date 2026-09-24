@@ -5,40 +5,25 @@ import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
 import ConfigPanel from '@/components/runs/ConfigPanel.vue'
 import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
-import OrderCountsPanel from '@/components/runs/OrderCountsPanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import type { PanelDescriptor } from '@/types/panel_types'
 
 /**
- * Every panel the workspace can show, in the backend's canonical report order.
+ * Every panel the workspace can show, in the order a reader asks for them.
+ *
+ * The verdict first, then whether it can be trusted, then the breakdown, then the evidence, then
+ * the provenance. That is the sequence a report is read in, and it deliberately replaces the
+ * backend's canonical report order — which is right for a printout and wrong for a screen, where
+ * nothing is read top to bottom.
  *
  * A plain declarative list rather than a register() call: with a static import graph the order is
- * then explicit and cannot depend on which module happened to load first. The app bar renders
- * from this list, so a new panel is an entry here, not a rebuild.
+ * explicit and cannot depend on which module happened to load first. The app bar renders from this
+ * list, so a new panel is an entry here, not a rebuild.
+ *
+ * A STORED layout keeps its own order — reconciliation appends what is new rather than reshuffling
+ * what the user arranged — so this order reaches an existing workspace only through Reset layout.
  */
 const PANELS: PanelDescriptor[] = [
-  {
-    // Identity and provenance, from the run index row the store already holds — no request of
-    // its own, and the one section that answers for a run carrying no report artifacts at all.
-    id: 'run-header',
-    title: 'Run Header',
-    icon: '🏷',
-    component: RunHeaderPanel,
-    source: 'runInfo',
-    groups: 'all',
-    defaultOpen: true,
-  },
-  {
-    // Provenance, beside the header: what the run was COMMISSIONED with, resolved from the
-    // run-config store. Closed by default — reference material rather than a headline.
-    id: 'config',
-    title: 'Configuration',
-    icon: '⚙',
-    component: ConfigPanel,
-    source: 'config',
-    groups: 'all',
-    defaultOpen: false,
-  },
   {
     id: 'executive',
     title: 'Executive Summary',
@@ -70,6 +55,17 @@ const PANELS: PanelDescriptor[] = [
     defaultOpen: true,
   },
   {
+    // The only place the individual trades exist — every other section is already summed over
+    // them. Absent on a run that closed no position.
+    id: 'trade-history',
+    title: 'Trade History',
+    icon: '📒',
+    component: TradeHistoryPanel,
+    source: 'tradeView',
+    groups: 'all',
+    defaultOpen: false,
+  },
+  {
     // The bookkeeping stretches the run was divided into, and the completeness check over them.
     // Absent on every run from before the journal existed, which PanelColumn handles by dropping
     // the panel rather than showing it empty.
@@ -82,24 +78,28 @@ const PANELS: PanelDescriptor[] = [
     defaultOpen: true,
   },
   {
-    // The only place the individual trades exist — every other section is already summed over
-    // them. Absent on a run that closed no position.
-    id: 'trade-history',
-    title: 'Trade History',
-    icon: '📒',
-    component: TradeHistoryPanel,
-    source: 'tradeHistory',
+    // Provenance, beside the header: what the run was COMMISSIONED with, resolved from the
+    // run-config store. Closed by default — reference material rather than a headline.
+    id: 'config',
+    title: 'Configuration',
+    icon: '⚙',
+    component: ConfigPanel,
+    source: 'config',
     groups: 'all',
     defaultOpen: false,
   },
   {
-    id: 'order-counts',
-    title: 'Order Counts',
-    icon: '🧾',
-    component: OrderCountsPanel,
-    source: 'runSummary',
+    // Identity and provenance, from the run index row the store already holds — no request of
+    // its own, and the one section that answers for a run carrying no report artifacts at all.
+    id: 'run-header',
+    title: 'Run Header',
+    icon: '🏷',
+    component: RunHeaderPanel,
+    source: 'runInfo',
     groups: 'all',
-    defaultOpen: true,
+    // Provenance rather than a headline: which artifact am I looking at. Folded by default —
+    // the reader who needs it opens it, and the one who never does hides it from the bar.
+    defaultOpen: false,
   },
   {
     id: 'feed-health',

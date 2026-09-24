@@ -10,6 +10,12 @@ export interface TimelineSpan {
   from: number
   to: number
   label: string
+  /**
+   * What to write on a span too narrow for `label`. A bar can be a sliver of the plot, and a label
+   * clipped mid-word reads as a rendering fault rather than as a small bar. Nothing is lost by
+   * dropping it: the hover card carries every figure either way.
+   */
+  shortLabel?: string
   /** Polarity, never rank: 'positive' | 'negative' | 'flat'. */
   tone: string
   /** One line naming the span, shown as the tooltip's heading. */
