@@ -3,20 +3,33 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import TopMenu from '@/components/TopMenu.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
+import { useCallerStore } from '@/stores/caller_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
+import type { SettingsTab } from '@/types/settings_types'
+import type { CallerIdentity } from '@/types/api/caller_types'
 
 // Held so it can be unmounted: both the menu and the dialog portal their content out of the
 // component, and wiping the body would tear the component down against nothing.
 let mounted: VueWrapper | null = null
+
+const IDENTITY: CallerIdentity = {
+  enforced: true,
+  client: 'viewer',
+  account: 'viewer-op',
+  account_kind: 'person',
+  display_name: 'Viewer-Operator',
+  grants: ['brokers:*', 'reports:*'],
+  note: 'dev proxy holds it',
+}
 
 function mountMenu() {
   mounted = mount(TopMenu, { attachTo: document.body })
   return mounted
 }
 
-function mountDialog() {
-  mounted = mount(SettingsDialog, { attachTo: document.body, props: { open: true } })
+function mountDialog(tab?: SettingsTab) {
+  mounted = mount(SettingsDialog, { attachTo: document.body, props: { open: true, tab } })
   return mounted
 }
 
@@ -37,12 +50,45 @@ function field(id: string): HTMLInputElement | HTMLSelectElement | null {
   return document.querySelector(`#${id}`)
 }
 
-async function setField(id: string, value: string, event: 'change' | 'input'): Promise<void> {
+async function setField(id: string, value: string): Promise<void> {
   const element = field(id)!
   element.value = value
-  element.dispatchEvent(new Event(event, { bubbles: true }))
+  element.dispatchEvent(new Event('change', { bubbles: true }))
   await flushPromises()
 }
+
+/**
+ * The panel on show. The inactive tabs keep their wrapper element and lose their content, so the
+ * first `.tab-panel` in the document is usually an empty shell rather than the one being read.
+ */
+function activePanel(): HTMLElement | null {
+  return document.querySelector('.tab-panel[data-state="active"]')
+}
+
+/** Tab triggers are portalled with the dialog; they are picked by their visible word. */
+async function openTab(word: string): Promise<void> {
+  const trigger = [...document.querySelectorAll<HTMLElement>('.tab-trigger')]
+    .find(entry => entry.textContent?.includes(word))
+  // the primitive switches on pointer-down, not on the click that follows it
+  trigger!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+  trigger!.click()
+  await flushPromises()
+}
+
+async function pickFile(text: string, name = 'layout.json'): Promise<void> {
+  const input = panel('.import-input') as HTMLInputElement
+  const file = new File([text], name, { type: 'application/json' })
+  Object.defineProperty(input, 'files', { value: [file], configurable: true })
+  input.dispatchEvent(new Event('change', { bubbles: true }))
+  await settle()
+  await flushPromises()
+}
+
+const A_LAYOUT = JSON.stringify({
+  version: 1,
+  active: 'report',
+  layouts: { report: { columns: [{ width: 1, panels: [] }], hidden: [] } },
+})
 
 describe('SettingsDialog', () => {
   beforeEach(() => {
@@ -63,60 +109,138 @@ describe('SettingsDialog', () => {
     expect(wrapper.element.contains(dialog)).toBe(false)
   })
 
-  it('shows every setting at the value in force', async () => {
-    const store = useSettingsStore()
-    store.setTheme('light')
-    store.setScenarioThreshold(12)
-    store.setTradeRowCap(250)
-    mountDialog()
+  it('opens on the tab it was asked for', async () => {
+    mountDialog('account')
     await flushPromises()
-    expect(field('setting-theme')?.value).toBe('light')
-    expect(field('setting-threshold')?.value).toBe('12')
-    expect(field('setting-row-cap')?.value).toBe('250')
+    expect(field('setting-theme')).toBeNull()
+    expect(activePanel()?.textContent).not.toContain('Timeline order')
   })
 
-  it('writes a changed theme into the store', async () => {
-    const store = useSettingsStore()
-    mountDialog()
-    await flushPromises()
-    await setField('setting-theme', 'light', 'change')
-    expect(store.settings.theme).toBe('light')
+  describe('the display tab', () => {
+    it('shows every setting at the value in force', async () => {
+      const store = useSettingsStore()
+      store.setTheme('light')
+      store.setScenarioThreshold(12)
+      store.setTradeRowCap(250)
+      mountDialog()
+      await flushPromises()
+      expect(field('setting-theme')?.value).toBe('light')
+      expect(field('setting-threshold')?.value).toBe('12')
+      expect(field('setting-row-cap')?.value).toBe('250')
+    })
+
+    it('writes a changed theme into the store', async () => {
+      const store = useSettingsStore()
+      mountDialog()
+      await flushPromises()
+      await setField('setting-theme', 'light')
+      expect(store.settings.theme).toBe('light')
+    })
+
+    it('writes a changed timeline order into the store', async () => {
+      const store = useSettingsStore()
+      mountDialog()
+      await flushPromises()
+      await setField('setting-lane-order', 'name')
+      expect(store.settings.laneOrder).toBe('name')
+    })
+
+    it('writes a changed threshold into the store', async () => {
+      const store = useSettingsStore()
+      mountDialog()
+      await flushPromises()
+      await setField('setting-threshold', '15')
+      expect(store.settings.scenarioThreshold).toBe(15)
+    })
+
+    // the field is an input, so anything can be typed into it — the store is the guard, not the UI
+    it('leaves the value alone when the typed number is out of range', async () => {
+      const store = useSettingsStore()
+      mountDialog()
+      await flushPromises()
+      await setField('setting-threshold', '4000')
+      expect(store.settings.scenarioThreshold).toBe(DEFAULT_SETTINGS.scenarioThreshold)
+    })
+
+    it('restores the defaults on request', async () => {
+      const store = useSettingsStore()
+      store.setScenarioThreshold(20)
+      store.setTheme('light')
+      mountDialog()
+      await flushPromises()
+      panel('.settings-button')?.click()
+      await flushPromises()
+      expect(store.settings).toEqual(DEFAULT_SETTINGS)
+    })
   })
 
-  it('writes a changed timeline order into the store', async () => {
-    const store = useSettingsStore()
-    mountDialog()
-    await flushPromises()
-    await setField('setting-lane-order', 'name', 'change')
-    expect(store.settings.laneOrder).toBe('name')
+  describe('the layout tab', () => {
+    it('carries the export and import the layout has no other home for', async () => {
+      mountDialog()
+      await flushPromises()
+      await openTab('Layout')
+      expect(activePanel()?.textContent).toContain('Export layout')
+      expect(activePanel()?.textContent).toContain('Import layout')
+    })
+
+    it('reports a file that is not a layout instead of failing silently', async () => {
+      mountDialog('layout')
+      await flushPromises()
+      await pickFile('this is not a layout', 'notes.json')
+      expect(activePanel()?.textContent).toContain('not a layout')
+    })
+
+    it('confirms a layout that imported cleanly', async () => {
+      mountDialog('layout')
+      await flushPromises()
+      await pickFile(A_LAYOUT)
+      expect(activePanel()?.textContent).toContain('Layout replaced')
+    })
   })
 
-  it('writes a changed threshold into the store', async () => {
-    const store = useSettingsStore()
-    mountDialog()
-    await flushPromises()
-    await setField('setting-threshold', '15', 'change')
-    expect(store.settings.scenarioThreshold).toBe(15)
-  })
+  describe('the account tab', () => {
+    it('names the account, the client and the grants the server reported', async () => {
+      const store = useCallerStore()
+      store.identity = IDENTITY
+      store.state = 'ready'
+      store.readAt = new Date()
+      mountDialog('account')
+      await flushPromises()
+      const text = activePanel()?.textContent ?? ''
+      expect(text).toContain('Viewer-Operator')
+      expect(text).toContain('viewer-op')
+      expect(text).toContain('brokers:*')
+      expect(text).toContain('as of')
+    })
 
-  // the field is an input, so anything can be typed into it — the store is the guard, not the UI
-  it('leaves the value alone when the typed number is out of range', async () => {
-    const store = useSettingsStore()
-    mountDialog()
-    await flushPromises()
-    await setField('setting-threshold', '4000', 'change')
-    expect(store.settings.scenarioThreshold).toBe(DEFAULT_SETTINGS.scenarioThreshold)
-  })
+    /**
+     * The failure a 200 disguises: with gating off the server verifies no token, so an answer
+     * arrives for a credential nobody checked. It must never read as a signed-in identity.
+     */
+    it('says plainly when the server verifies no token at all', async () => {
+      const store = useCallerStore()
+      store.state = 'unenforced'
+      mountDialog('account')
+      await flushPromises()
+      const notice = panel('.account-notice')
+      expect(notice?.textContent).toContain('verifies no token')
+      expect(notice?.className).toContain('warn')
+    })
 
-  it('restores the defaults on request', async () => {
-    const store = useSettingsStore()
-    store.setScenarioThreshold(20)
-    store.setTheme('light')
-    mountDialog()
-    await flushPromises()
-    panel('.settings-button')?.click()
-    await flushPromises()
-    expect(store.settings).toEqual(DEFAULT_SETTINGS)
+    // a refused credential and an unreachable server are different problems, shown differently
+    it('separates a refused token from a server that did not answer', async () => {
+      const store = useCallerStore()
+      store.state = 'unauthenticated'
+      mountDialog('account')
+      await flushPromises()
+      expect(panel('.account-notice')?.className).toContain('warn')
+      mounted?.unmount()
+
+      store.state = 'failed'
+      mountDialog('account')
+      await flushPromises()
+      expect(panel('.account-notice')?.className).toContain('bad')
+    })
   })
 })
 
@@ -141,45 +265,48 @@ describe('TopMenu', () => {
     expect(panel('.settings-dialog')).toBeNull()
   })
 
-  /**
-   * The point of the entry: it states that an account is not available and stands in for nothing.
-   * A mocked user is a promise the API cannot keep, and the next change would be written against
-   * it — so the test pins that it is present AND unusable.
-   */
-  it('names an account only to say it is unavailable, and it cannot be chosen', async () => {
+  // the entry names where it goes, so the symbol and the word cannot disagree
+  it('names the theme it would switch TO', async () => {
+    const settings = useSettingsStore()
     const wrapper = mountMenu()
     await wrapper.find('.menu-trigger').trigger('keydown', { key: 'Enter' })
     await flushPromises()
-    const entries = [...document.querySelectorAll('.menu-item')]
-    const account = entries.find(entry => entry.textContent?.includes('Account'))
-    expect(account).toBeDefined()
-    expect(account?.getAttribute('data-disabled')).not.toBeNull()
+    expect(document.querySelector('.menu-content')?.textContent).toContain('Light theme')
+
+    settings.setTheme('light')
+    await flushPromises()
+    expect(document.querySelector('.menu-content')?.textContent).toContain('Dark theme')
   })
 
-  it('reports a file that is not a layout instead of failing silently', async () => {
+  /** The cheap half of identity: the menu says which access this viewer works under. */
+  it('shows the account name once the server has reported one', async () => {
+    const caller = useCallerStore()
+    caller.identity = IDENTITY
+    caller.state = 'ready'
     const wrapper = mountMenu()
-    const input = wrapper.find('.import-input')
-    const file = new File(['this is not a layout'], 'notes.json', { type: 'application/json' })
-    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
-    await input.trigger('change')
-    await settle()
+    await wrapper.find('.menu-trigger').trigger('keydown', { key: 'Enter' })
     await flushPromises()
-    expect(wrapper.find('.menu-notice').text()).toContain('not a layout')
+    expect(document.querySelector('.menu-content')?.textContent).toContain('Viewer-Operator')
   })
 
-  it('says nothing when a layout imports cleanly', async () => {
+  it('stays with the plain word while there is no identity to show', async () => {
     const wrapper = mountMenu()
-    const input = wrapper.find('.import-input')
-    const layout = JSON.stringify({
-      version: 1,
-      active: 'report',
-      layouts: { report: { columns: [{ width: 1, panels: [] }], hidden: [] } },
-    })
-    const file = new File([layout], 'layout.json', { type: 'application/json' })
-    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
-    await input.trigger('change')
-    await settle()
+    await wrapper.find('.menu-trigger').trigger('keydown', { key: 'Enter' })
     await flushPromises()
-    expect(wrapper.find('.menu-notice').exists()).toBe(false)
+    const text = document.querySelector('.menu-content')?.textContent ?? ''
+    expect(text).toContain('Account')
+    expect(text).not.toContain('Viewer-Operator')
+  })
+
+  it('opens the dialog on the account tab from the account entry', async () => {
+    const wrapper = mountMenu()
+    await wrapper.find('.menu-trigger').trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    const account = [...document.querySelectorAll<HTMLElement>('.menu-item')]
+      .find(entry => entry.textContent?.includes('Account'))
+    account!.click()
+    await flushPromises()
+    expect(panel('.settings-dialog')).not.toBeNull()
+    expect(field('setting-theme')).toBeNull()
   })
 })

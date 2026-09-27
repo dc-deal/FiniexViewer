@@ -146,7 +146,13 @@ describe('TradeHistoryPanel', () => {
    * A cap that is not announced reads as "that was all", which for a trade list is the single most
    * misleading thing it could say. So the cap names both numbers.
    */
-  it('says how many trades it is not drawing, and out of how many', () => {
+  /*
+   * Longer budget than the default, and it is the harness that needs it rather than the assertion:
+   * drawing 500 rows costs ~4.8 s in jsdom, measured, because every row is wrapped in its own
+   * floating-layer instance. The assertion below can still fail; only the clock moved. The cost
+   * itself is a finding, not a fact of life — see the note in docs/testing_architecture.md.
+   */
+  it('says how many trades it is not drawing, and out of how many', { timeout: 20_000 }, () => {
     const many = Array.from({ length: 640 }, (_, index) =>
       trade({ position_id: `pos_${index}` }))
     const wrapper = mountPanel(report({ trades: many, count: 640 }))
@@ -318,7 +324,7 @@ describe('TradeHistoryPanel', () => {
   })
 
   // no host, no settings — the panel behaves exactly as it did before there were any
-  it('falls back to the defaults when no host supplied settings', () => {
+  it('falls back to the defaults when no host supplied settings', { timeout: 20_000 }, () => {
     const many = Array.from({ length: 640 }, (_, index) => trade({ position_id: `pos_${index}` }))
     const wrapper = mountPanel(report({ trades: many, count: 640 }))
     expect(tradeRows(wrapper)).toHaveLength(DEFAULT_SETTINGS.tradeRowCap)

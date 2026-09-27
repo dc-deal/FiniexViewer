@@ -101,6 +101,7 @@ The backend exposes two planes. The viewer consumes both, and treats them differ
 ```
 GET /api/v1/health                                    open, no token
 GET /api/v1/timeframes                                open, no token
+GET /api/v1/caller                                    token, no grant — who the server takes us to be
 GET /api/v1/brokers                                   token, no grant
 GET /api/v1/brokers/{broker}/symbols
 GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage
@@ -117,6 +118,7 @@ as a diagnostic once the gate is on — if the timeframe selector fills while ev
 ```
 GET /api/v1/reports/runs                              run index — the only route that yields a run_id
 GET /api/v1/reports/runs/{run_id}/run-summary         cross-section KPIs, summed over all units
+GET /api/v1/reports/runs/{run_id}/scenario-details    the ROSTER — every scenario, produced or not
 GET /api/v1/reports/runs/{run_id}/warnings-errors     tiered warnings, per-unit errors, run outcome
 GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down per unit
 GET /api/v1/reports/runs/{run_id}/booking-periods     the bookkeeping stretches, plus a completeness check
@@ -344,10 +346,13 @@ does not allow (see *API Token* above, and issue #22).
   is a wrong answer.
 - **`src/types/settings_types.ts`** — the shape and `DEFAULT_SETTINGS` beside it, because a default
   that drifts from its type is the defect that placement prevents.
-- **`src/components/TopMenu.vue`** — the application menu in the shell header: settings, theme,
-  layout export/import, and an account entry that **states it is unavailable and stands in for
-  nothing**. A mocked user is a promise the API cannot keep, and the next change would be written
-  against it.
+- **`src/components/TopMenu.vue`** — the application menu in the shell header, behind one burger
+  trigger: settings, a theme entry that names the theme it switches TO, and an account entry that
+  carries the display name once the server has reported one. Both settings entries open the same
+  dialog on the tab they belong to, so there is one surface rather than two.
+- **`src/components/SettingsDialog.vue`** — three tabs: **Display** (the preferences), **Layout**
+  (export and import, which have no other home) and **Account** (the identity below).
+- **`src/stores/caller_store.ts`** — who the server takes this client to be.
 - **`src/composables/use_display_settings.ts`** — how a preference reaches a panel.
 
 **A panel does not read the store.** `PanelColumn` provides the display subset and a panel injects
@@ -370,13 +375,37 @@ stays a **thin cache** whose reconciliation is ours to keep, and it never reconc
 configuration — which is the same line the Configuration panel already draws from the other side
 (*show, never resolve*).
 
-**Identity, when it arrives, is two principals.** A token identifies a **client**; an **account**
-identifies a person, and a token is bound to exactly one account. Until a login exists, presenting
-this viewer's token is acting as its account. A `whoami` route is coming and **is not consumed until
-it is announced** — the menu's account entry is a placeholder for it and deliberately mocks nothing.
-The permission verb (`read` / `write` / `execute`) is a separate axis from the surface with **a
-separate token per verb**, so a write path means the dev proxy holds one credential per verb rather
-than one credential with more rights. None of that changes the header the proxy sends today.
+### Identity — `GET /api/v1/caller`, and the two rules that bound it
+
+**Two principals.** A token identifies a **client**; an **account** identifies a person, and a token
+is bound to exactly one account. Until a login exists, presenting this viewer's token is acting as
+its account. The permission verb (`read` / `write` / `execute`) is a separate axis from the surface
+with **a separate token per verb**, so a write path means the dev proxy holds one credential per
+verb rather than one credential with more rights. None of that changes the header the proxy sends.
+
+`caller_store` reads the route and keeps a STATE rather than a message, so the wording stays in the
+component where the display-string marker reaches it:
+
+| State | What it means |
+|---|---|
+| `ready` | gating is on and the identity is real |
+| `unenforced` | a 200 arrived and **proves nothing** — the server verifies no token, so every identity field is null even for a caller that sent a valid one |
+| `unauthenticated` | 401: the credential was refused |
+| `failed` | the server did not answer — a different problem with a different fix |
+
+**`grants` is INFORMATION, never a capability list.** Settled with the backend on 2026-09-25: the
+list is displayed, every surface stays reachable, and a refusal is the 403 — which names the surface
+and what the token holds. A client that hid a view because the list lacked an entry would be a
+second, weaker copy of a model it does not own, and it would fail in the silent direction: an absent
+view looks like one that never existed. If the rights model ever needs a client to reason from it,
+that arrives as its own announced contract change.
+
+**The answer is never cached, because a restart is invisible from here.** An account or a grant
+takes effect on the backend only across a restart of its process, and no response carries a boot id
+or a start time — confirmed by the backend rather than assumed, and the build version does not move
+either. So `App.vue` re-reads on `visibilitychange`, and the dialog states the identity *as of* the
+instant it was read. That approximation is only safe because of the rule above: the answer decides
+nothing, so a stale one costs a line of text.
 
 **One hazard recorded rather than solved.** Stored settings are discarded whole on a schema-version
 mismatch, which is right for a per-machine file. Once the same document lives on a server and is
@@ -389,6 +418,63 @@ summary primary and the individual unit secondary — Trade History collapses ea
 row, which still carries the name, the net, the fees and the trade count. A thirteen-scenario run
 is already hard to read and a forty-scenario run is unreadable; the threshold is what lets the
 presentation know how many units it is dealing with. Nothing is ever hidden silently.
+
+### Narrowing a list — one facet bar, and what it is not allowed to do
+
+A run of forty scenarios breaks every view built for three. The answer is the arrangement a tracker
+of thousands of rows uses: **a facet bar over a plain list**, nothing cleverer.
+
+- **`src/components/base/facet_filter.ts`** — the whole behaviour as pure functions over rows the
+  caller already has: `applyFacets`, `facetOptions`, `toggleValue`, `sortRows`. Testable without
+  mounting anything.
+- **`src/components/base/FacetBar.vue`** — generic over its row type. It owns no state: the caller
+  holds the selection and applies the same pure functions, so the bar and the list can never
+  disagree about what is shown.
+- **`src/types/facet_types.ts`** — a `FacetDefinition` is the only place that knows what a row looks
+  like, which is what lets one bar serve a scenario roster, a run index and a session list.
+
+Four rules the implementation follows, each of which is a way a filter usually goes wrong:
+
+- **Values within one facet are OR, different facets are AND.** Picking a second value of the same
+  facet widens the question; picking in a second facet narrows it.
+- **A facet counts against the OTHER facets, never against itself.** Counting against its own
+  selection makes every unpicked value read 0 as soon as one is picked, and a reader can then never
+  widen a choice without clearing it first. A picked value stays listed at 0 so it can be taken off.
+- **A row that states no value is never claimed by one.** `market_type` is empty on every run
+  recorded before the backend added it; such a row shows while the facet is open and drops as soon
+  as a value is picked. An empty string is not a category, and a facet with nothing to offer is not
+  drawn at all.
+- **The count is read against the whole list**, not against what survived — a filter that counts
+  only its own result cannot say what it is hiding.
+
+**Nothing here derives anything.** A facet's values come out of the row through the caller's own
+`valuesOf`. Sorting a scenario list by net P&L is deliberately ABSENT: the roster carries no figures
+and the response that does is a shorter list, so the sort would need those two merged into a third
+thing — raised with FiniexTestingIDE on 2026-09-27 and waiting on their answer rather than worked
+around here.
+
+### The scenario roster — the only complete list of a run
+
+`GET …/scenario-details` is the authority for *which scenarios does this run have* (settled with the
+backend 2026-09-25): it is built from the batch ITSELF rather than from results, so a scenario that
+produced nothing is still a row carrying its reason. Every other per-unit response is shorter
+because each answers a different question — **declared · attempted · produced · counted**.
+
+It is **simulation only by construction** — a live run has no scenario grid, a session IS one unit —
+so the route answers `404 artifact_not_produced` there and `PanelColumn` drops the panel, which is
+the same absent-source rule every other section uses.
+
+**Five counters on that row are not carried.** Measured over 370 rows on 2026-09-27: `worker_count`,
+`trades_requested` and the three signal counters read 0 on every row, including the 18 that
+processed ticks and closed positions, while `ticks_processed`, `execution_time_ms` and
+`tick_timespan_seconds` are carried on exactly those 18. Nothing is rendered or sorted from the
+five — a zero nobody reported is not a figure. Reported to the backend and open.
+
+**Where a configuration came from is NOT a property of a run.** `GET /api/v1/directory` carries
+`origin` (`configs` | `user_configs` | `user_algos`) per FILE, and a run's `config_snapshot` is that
+file's name — a deliberate linkage, confirmed by the backend. But it answers *where a file of that
+name lives today*: one moved, deleted or shadowed after the run gives a different answer than the
+run had, and no per-run origin is served. The label therefore describes the file, never the run.
 
 ### Panels — a registry, a shell, one persisted layout
 

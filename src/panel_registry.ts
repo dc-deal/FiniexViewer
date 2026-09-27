@@ -3,6 +3,7 @@ import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
+import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
 import ConfigPanel from '@/components/runs/ConfigPanel.vue'
 import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
@@ -53,6 +54,18 @@ const PANELS: PanelDescriptor[] = [
     source: 'portfolio',
     groups: 'all',
     defaultOpen: true,
+  },
+  {
+    // Ahead of the breakdowns: it is the only COMPLETE list of what the run set out to do, and a
+    // scenario that produced nothing appears in no other section. Simulation only — a live run has
+    // no scenario grid, so the source is absent and the panel is dropped.
+    id: 'scenario-roster',
+    title: 'Scenarios',
+    icon: '🗂️',
+    component: ScenarioRosterPanel,
+    source: 'scenarios',
+    groups: 'simulation',
+    defaultOpen: false,
   },
   {
     // The only place the individual trades exist — every other section is already summed over

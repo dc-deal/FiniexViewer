@@ -1,5 +1,8 @@
 export type ThemeName = 'dark' | 'light'
 
+/** Which section of the settings dialog is on show. */
+export type SettingsTab = 'display' | 'layout' | 'account'
+
 /**
  * How the lanes of a booking-period timeline are ordered — and the same order the table beneath it
  * follows. Lives here rather than beside the sorting function because it is a stored preference:

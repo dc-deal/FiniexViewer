@@ -17,7 +17,7 @@ const {
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
 const {
-  warningsErrors, portfolio, bookingPeriods, config, tradeHistory,
+  warningsErrors, portfolio, bookingPeriods, config, tradeHistory, scenarios,
   unreadable, error: sectionError,
 } = storeToRefs(reportsStore)
 
@@ -35,6 +35,7 @@ watch(selectedRunId, runId => {
   reportsStore.loadBookingPeriods(runId)
   reportsStore.loadConfig(runId)
   reportsStore.loadTradeHistory(runId)
+  reportsStore.loadScenarios(runId)
 }, { immediate: true })
 
 // the models the panels render, keyed by the source each descriptor declares
@@ -46,6 +47,7 @@ const sources = computed(() => ({
   portfolio: portfolio.value,
   bookingPeriods: bookingPeriods.value,
   config: config.value,
+  scenarios: scenarios.value,
   // composed rather than served: the trade view needs the positions AND the order funnel, and
   // those live on two different routes
   tradeView: tradeHistory.value

@@ -5,6 +5,8 @@ import { RunNotFoundError } from '@/api/run_not_found_error'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
+import type { CallerIdentity } from '@/types/api/caller_types'
+import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
   BookingPeriodsReport,
@@ -239,4 +241,35 @@ export async function getTradeHistory(runId: string): Promise<TradeHistoryReport
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
     throw error
   }
+}
+
+/**
+ * The ROSTER of a run — every scenario it declared, including those that produced nothing, each
+ * with its reason. Simulation only: a live run has no scenario grid and the route answers 404,
+ * which is an absence here, not a failure.
+ */
+export async function getScenarioDetails(runId: string): Promise<ScenarioDetailsReport | null> {
+  try {
+    const response = await http.get<ScenarioDetailsReport>(
+      `/reports/runs/${runId}/scenario-details`)
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    raiseIfForbidden(error, 'reports')
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
+/**
+ * Who the server takes this client to be. Needs the bearer while gating is on but no grant, so it
+ * answers for every consumer — and it is the one route whose 200 says nothing on its own: read
+ * `enforced` before any identity field.
+ *
+ * Deliberately NOT cached: an account or a grant changes on the backend only across a restart of
+ * its process, and a restart is invisible from here — no response carries a boot id or a start
+ * time (confirmed by the backend 2026-09-25). The caller re-reads instead.
+ */
+export async function getCaller(): Promise<CallerIdentity> {
+  const response = await http.get<CallerIdentity>('/caller')
+  return response.data
 }

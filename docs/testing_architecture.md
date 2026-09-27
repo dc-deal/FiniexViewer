@@ -52,7 +52,10 @@ tests/
   run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the portfolio breakdown incl. the chart link, and the run header incl. the two kinds of parent
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
   settings_store.test.ts    — per-field reconciliation (unknown key dropped, missing key defaulted, out-of-range refused), the schema-version discard, setters that ignore rather than clamp, and the display subset handed to panels
-  settings_menu.test.ts     — the settings dialog against the store, the account entry that is present and unusable, and a bad layout file reported rather than swallowed
+  settings_menu.test.ts     — the three dialog tabs (display against the store, layout export/import incl. a bad file reported rather than swallowed, account in each of its four states), and the menu: the theme entry naming what it switches TO, the account name once the server reports one
+  caller_store.test.ts      — the four states of GET /api/v1/caller, the display-name fallback, a refused token told apart from an unreachable server, and that nothing is cached
+  facet_filter.test.ts      — OR within a facet and AND across facets, a facet counting against the OTHERS and not itself, a picked value kept listed at zero, a row that states no value never claimed by one, and that nothing is mutated
+  scenario_roster.test.ts   — the complete roster incl. the scenarios that produced nothing and their reason, the notice above the filter, narrowing by facet and by search, the honest count, and a facet dropped where no row states a value
   run_reports_store.test.ts — section loading (warnings/errors, portfolio), missing artifact, error text, clearing on run change, shared error slot across concurrent sections
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 / 409 / 403 mapping
   api_contract.test.ts      — the captured fixtures against the contract they were taken under, and each list's declared row key
@@ -150,6 +153,17 @@ vi.mock('axios', () => ({
 
 Available natively in the jsdom environment. Cleared in `beforeEach` with `localStorage.clear()` to prevent state leaking between tests.
 
+### Two tests carry a longer clock, and it is a finding rather than a fact
+
+The two cases that draw the full default trade-row cap take **~4.8 s in jsdom**, measured on their
+own rather than under load, because each of the 500 rows is wrapped in its own floating-layer
+instance. They declare `timeout: 20_000` so the default 5 s does not turn a slow render into a
+failure that says nothing — the assertions are untouched and can still go red.
+
+The cost itself should not stay. `HoverCard` mounts one tooltip PROVIDER per instance, where the
+primitive expects a single provider high in the tree and one root per item. Lifting it is a change
+to a shared base component used in four places, so it is recorded here rather than done on the way.
+
 ### Missing browser interfaces (`tests/setup.ts`)
 
 Stubs there stand in for interfaces jsdom does not implement — never for behaviour under test, because a stub that answered differently from a browser would make the suite agree with itself. `ResizeObserver` and the pointer-capture methods exist because reka-ui's floating layer measures its trigger. `Blob.prototype.text` is implemented over `FileReader`, which jsdom does have, so a layout-import test still proves the file's own bytes reach the importer. FileReader resolves on a TASK, so such a test needs one turn of the macrotask queue (`setTimeout(…, 0)`) and not only `flushPromises()`.
@@ -189,4 +203,5 @@ Stores that trigger async work on reactive changes (e.g., `bars_store` watches t
 5. Mount a component that links to another view with `global: { stubs: { RouterLink: RouterLinkStub } }` — the stub's `to` prop is what the test asserts, so no router instance is needed.
 6. A panel that reads presentation preferences is mounted under a host component that calls `provideDisplaySettings(...)` — the same way `PanelColumn` supplies them. Mounted without a host it must still work, on the defaults, and that is worth its own case.
 7. Portalled content (reka-ui dialogs, menus, hover cards) is read off `document`, not off the wrapper, and the wrapper is unmounted in `afterEach` rather than the body being wiped — wiping removes the node the teleport still holds.
-8. No server, no network — tests run offline.
+8. **In a tabbed dialog, read the ACTIVE panel** (`.tab-panel[data-state="active"]`). The primitive keeps the inactive panels in the document and empties them, so the first match is usually an empty shell — a test that reads it sees `''` and fails for the wrong reason. Switching a tab by hand needs `mousedown`, not `click`: the primitive acts on pointer-down.
+9. No server, no network — tests run offline.

@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getBookingPeriods, getPortfolio, getRunConfig, getTradeHistory, getWarningsErrors,
+  getBookingPeriods, getPortfolio, getRunConfig, getScenarioDetails, getTradeHistory,
+  getWarningsErrors,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import type {
@@ -11,6 +12,7 @@ import type {
   PortfolioReport,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
+import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import { t } from '@/translate'
 
 /**
@@ -24,11 +26,13 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const bookingPeriods = ref<BookingPeriodsReport | null>(null)
   const config = ref<RunConfigReport | null>(null)
   const tradeHistory = ref<TradeHistoryReport | null>(null)
+  const scenarios = ref<ScenarioDetailsReport | null>(null)
   const loadingWarningsErrors = ref(false)
   const loadingPortfolio = ref(false)
   const loadingBookingPeriods = ref(false)
   const loadingConfig = ref(false)
   const loadingTradeHistory = ref(false)
+  const loadingScenarios = ref(false)
   const error = ref<string | null>(null)
   // the artifact exists but predates the current schema — not an absence and not an outage
   const unreadable = ref<string | null>(null)
@@ -40,6 +44,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     bookingPeriods.value = null
     config.value = null
     tradeHistory.value = null
+    scenarios.value = null
     error.value = null
     unreadable.value = null
   }
@@ -129,8 +134,26 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     }
   }
 
+  /**
+   * The run's ROSTER — every scenario it declared, including those that produced nothing. Null for
+   * a live run, which has no scenario grid at all: the section is then simply not shown.
+   */
+  async function loadScenarios(runId: string): Promise<void> {
+    loadingScenarios.value = true
+    scenarios.value = null
+    try {
+      scenarios.value = await getScenarioDetails(runId)
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      error.value = `${t('Could not load the scenario roster')}: ${detail}`
+    } finally {
+      loadingScenarios.value = false
+    }
+  }
+
   return {
     warningsErrors,
+    scenarios,
     portfolio,
     bookingPeriods,
     config,
@@ -140,6 +163,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingBookingPeriods,
     loadingConfig,
     loadingTradeHistory,
+    loadingScenarios,
     error,
     unreadable,
     clear,
@@ -148,5 +172,6 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadBookingPeriods,
     loadConfig,
     loadTradeHistory,
+    loadScenarios,
   }
 })
