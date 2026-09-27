@@ -181,22 +181,41 @@ describe('useRunsStore', () => {
       vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
       const store = await loadedStore()
       await store.selectRun('20260615_130000')
-      store.setUnit('ETHUSD_blocks_03')
-      expect(store.selectedUnit).toBe('ETHUSD_blocks_03')
+      store.toggleUnit('ETHUSD_blocks_03')
+      expect(store.selectedUnits).toEqual(['ETHUSD_blocks_03'])
 
       await store.selectRun('20260615_120000')
-      expect(store.selectedUnit).toBeNull()
+      expect(store.selectedUnits).toEqual([])
 
-      store.setUnit('ETHUSD_blocks_03')
+      store.toggleUnit('ETHUSD_blocks_03')
       store.setGroup('live')
-      expect(store.selectedUnit).toBeNull()
+      expect(store.selectedUnits).toEqual([])
     })
 
     it('shows the whole run again when the narrowing is cleared', async () => {
       const store = await loadedStore()
-      store.setUnit('ETHUSD_blocks_03')
-      store.setUnit(null)
-      expect(store.selectedUnit).toBeNull()
+      store.toggleUnit('ETHUSD_blocks_03')
+      store.clearUnits()
+      expect(store.selectedUnits).toEqual([])
+    })
+
+    // Several scenarios at once is what makes the roster a comparison rather than a jump.
+    it('narrows to several scenarios, and takes one back out without losing the rest', async () => {
+      const store = await loadedStore()
+      store.toggleUnit('a')
+      store.toggleUnit('b')
+      store.toggleUnit('c')
+      expect(store.selectedUnits).toEqual(['a', 'b', 'c'])
+
+      store.toggleUnit('b')
+      expect(store.selectedUnits).toEqual(['a', 'c'])
+    })
+
+    // A link is written by hand as often as it is copied, and a repeated name is not a selection.
+    it('never lets the same scenario into the narrowing twice', async () => {
+      const store = await loadedStore()
+      store.setUnits(['a', 'b', 'a'])
+      expect(store.selectedUnits).toEqual(['a', 'b'])
     })
   })
 

@@ -20,7 +20,7 @@ defineProps<{
  * compare with the others.
  */
 const narrowing = useScenarioSelection()
-const picked = computed(() => narrowing.unit.value)
+const picked = computed(() => narrowing.units.value)
 
 /**
  * Chart target for a unit. `data_source` carries the broker keys the chart addresses, so the
@@ -53,7 +53,7 @@ function chartTarget(unit: PortfolioUnitRow): RouteLocationRaw {
         <tr
           v-for="unit in model.units"
           :key="unit.name"
-          :class="{ picked: unit.name === picked }"
+          :class="{ picked: picked.includes(unit.name) }"
         >
           <td class="unit-cell">
             <span v-if="unit.has_error" class="unit-error" :title="t('This unit reported an error')">✖</span>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import type { FacetDefinition, FacetSelection, SortDefinition } from '@/types/facet_types'
@@ -90,14 +91,14 @@ const failed = computed(() => props.model.units.filter(row => row.status === 'fa
 
 /**
  * The roster is where a scenario is CHOSEN — it is the only complete list, so it is the only place
- * every scenario can be reached from, the ones that produced nothing included. A second click on
- * the marked row clears the narrowing, which makes the row its own way back out.
+ * every scenario can be reached from, the ones that produced nothing included. A second click on a
+ * marked row takes it out again, which makes the row its own way back out.
  */
 const narrowing = useScenarioSelection()
-const picked = computed(() => narrowing.unit.value)
+const picked = computed(() => narrowing.units.value)
 
-function pick(name: string): void {
-  narrowing.select(picked.value === name ? null : name)
+function isPicked(name: string): boolean {
+  return picked.value.includes(name)
 }
 </script>
 
@@ -110,6 +111,21 @@ function pick(name: string): void {
       {{ failed }} {{ t('of') }} {{ model.units.length }}
       {{ t('scenarios produced nothing — their reason is on the row') }}
     </p>
+
+    <!-- the state where the CLICK happens. It is also said once above the panel column, because it
+         governs every section there — but a reader who just clicked is looking here. -->
+    <p v-if="picked.length" class="roster-picked">
+      <span class="mark" aria-hidden="true">⌖</span>
+      <span>
+        {{ t('Showing only') }} {{ picked.length }} {{ t('of') }}
+        {{ model.units.length }} {{ t('scenarios') }}
+      </span>
+      <button type="button" class="clear-picked" @click="narrowing.clear()">
+        {{ t('Clear') }}
+      </button>
+    </p>
+    <!-- and where nothing is picked, what picking would do -->
+    <HintLine v-else id="scenario-pick" />
 
     <FacetBar
       v-model:selection="selection"
@@ -129,14 +145,14 @@ function pick(name: string): void {
         v-for="row in shown"
         :key="row.name"
         class="roster-row"
-        :class="[row.status, { picked: picked === row.name }]"
+        :class="[row.status, { picked: isPicked(row.name) }]"
       >
         <button
           type="button"
           class="roster-head"
-          :aria-pressed="picked === row.name"
-          :title="t('Narrow every section to this scenario')"
-          @click="pick(row.name)"
+          :aria-pressed="isPicked(row.name)"
+          :title="t('Show only this scenario in every section below')"
+          @click="narrowing.toggle(row.name)"
         >
           <span class="roster-name">{{ row.name }}</span>
           <span class="roster-meta">
@@ -218,8 +234,47 @@ function pick(name: string): void {
   color: var(--color-annotation);
 }
 
+/* the interactive role, because the name IS the control — a row that looks like running text is a
+   control nobody finds, which is exactly how this one went unnoticed */
 .roster-name {
-  color: var(--color-text-primary);
+  color: var(--color-accent);
+}
+
+/* the target reaches the whole row, so the hover says how far it extends */
+.roster-head:hover {
+  background-color: var(--color-bg-elevated);
+}
+
+.roster-head:hover .roster-name {
+  text-decoration: underline;
+}
+
+.roster-picked {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-annotation);
+  border-radius: 4px;
+  color: var(--color-annotation);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.clear-picked {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.clear-picked:hover {
+  text-decoration: underline;
 }
 
 .roster-meta,

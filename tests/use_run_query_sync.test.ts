@@ -119,7 +119,31 @@ describe('useRunQuerySync', () => {
 
     const store = useRunsStore()
     expect(store.selectedRunId).toBe('20260615_120000')
-    expect(store.selectedUnit).toBe('ETHUSD_blocks_03')
+    expect(store.selectedUnits).toEqual(['ETHUSD_blocks_03'])
+  })
+
+  // Several scenarios ride in one param, comma separated. Measured over 58 real names: every one
+  // matches [A-Za-z0-9_-], so nothing in a name collides with the separator.
+  it('restores a narrowing that names several scenarios', async () => {
+    const router = makeRouter({
+      run: '20260615_120000',
+      unit: 'ETHUSD_blocks_03,ETHUSD_blocks_07',
+    })
+    await router.isReady()
+    mount(TestComponent, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    expect(useRunsStore().selectedUnits).toEqual(['ETHUSD_blocks_03', 'ETHUSD_blocks_07'])
+  })
+
+  // A hand-edited link is the normal case for a param like this one.
+  it('survives a narrowing param with blanks and empty entries', async () => {
+    const router = makeRouter({ run: '20260615_120000', unit: ' a , ,b, ' })
+    await router.isReady()
+    mount(TestComponent, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    expect(useRunsStore().selectedUnits).toEqual(['a', 'b'])
   })
 
   // A unit narrows a run's sections; with no run there is nothing for it to narrow.
@@ -129,7 +153,7 @@ describe('useRunQuerySync', () => {
     mount(TestComponent, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
-    expect(useRunsStore().selectedUnit).toBeNull()
+    expect(useRunsStore().selectedUnits).toEqual([])
   })
 
   it('writes the scenario narrowing into the URL, and removes it again', async () => {
@@ -141,12 +165,13 @@ describe('useRunQuerySync', () => {
     const replaceSpy = vi.spyOn(router, 'replace')
     const store = useRunsStore()
 
-    store.setUnit('ETHUSD_blocks_03')
+    store.toggleUnit('ETHUSD_blocks_03')
+    store.toggleUnit('ETHUSD_blocks_07')
     await flushPromises()
     let query = (replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }).query
-    expect(query['unit']).toBe('ETHUSD_blocks_03')
+    expect(query['unit']).toBe('ETHUSD_blocks_03,ETHUSD_blocks_07')
 
-    store.setUnit(null)
+    store.clearUnits()
     await flushPromises()
     query = (replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }).query
     expect(query['unit']).toBeUndefined()

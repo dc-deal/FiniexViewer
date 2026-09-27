@@ -4,7 +4,9 @@ import { setActivePinia, createPinia } from 'pinia'
 import TopMenu from '@/components/TopMenu.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import { useCallerStore } from '@/stores/caller_store'
+import { useHintsStore } from '@/stores/hints_store'
 import { useSettingsStore } from '@/stores/settings_store'
+import { hintIds } from '@/hint_registry'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { SettingsTab } from '@/types/settings_types'
 import type { CallerIdentity } from '@/types/api/caller_types'
@@ -167,15 +169,34 @@ describe('SettingsDialog', () => {
       expect(store.settings.scenarioThreshold).toBe(DEFAULT_SETTINGS.scenarioThreshold)
     })
 
+    // Named rather than taken by position: the tab holds a second button now, and "the first
+    // .settings-button" quietly became the wrong one.
     it('restores the defaults on request', async () => {
       const store = useSettingsStore()
       store.setScenarioThreshold(20)
       store.setTheme('light')
       mountDialog()
       await flushPromises()
-      panel('.settings-button')?.click()
+      panel('.settings-button:not(.hints-reset)')?.click()
       await flushPromises()
       expect(store.settings).toEqual(DEFAULT_SETTINGS)
+    })
+
+    /**
+     * A banned hint has no other way back — the control that banned it disappeared with it, so
+     * without this the reader's only route is clearing site data.
+     */
+    it('brings back a hint that was banned for good', async () => {
+      const hints = useHintsStore()
+      const id = hintIds()[0] as string
+      hints.ban(id)
+      expect(hints.isVisible(id)).toBe(false)
+
+      mountDialog()
+      await flushPromises()
+      panel('.hints-reset')?.click()
+      await flushPromises()
+      expect(hints.isVisible(id)).toBe(true)
     })
   })
 

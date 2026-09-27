@@ -1,16 +1,32 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { RunSummary } from '@/types/api/report_types'
 import { amount, percentOrNa, numberOrNa, rValue, signClass } from '@/components/runs/report_format'
+import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import { t } from '@/translate'
 
 defineProps<{
   model: RunSummary
 }>()
+
+/**
+ * These figures are the RUN's, one row per CURRENCY, and there is no per-scenario version of them
+ * to show — so under a narrowing they are labelled rather than filtered.
+ *
+ * It matters most here of all the panels: this one sits at the top, so a reader who has just
+ * narrowed sees these numbers FIRST and reads them as the chosen scenario's.
+ */
+const narrowing = useScenarioSelection()
+const narrowed = computed(() => narrowing.units.value.length > 0)
 </script>
 
 <template>
   <div v-if="!model.currencies.length" class="hint">{{ t('No currency KPIs in this run') }}</div>
   <div v-else class="table-scroll">
+    <p v-if="narrowed" class="scope-line">
+      <span class="scope">{{ t('whole run') }}</span>
+      {{ t('These figures cover every scenario, not the ones you narrowed to') }}
+    </p>
     <table class="kpi-table">
       <thead>
         <tr>
@@ -47,6 +63,24 @@ defineProps<{
 <style scoped>
 .table-scroll {
   overflow-x: auto;
+}
+
+/* the scope of a figure that cannot be split — marked, never filtered */
+.scope-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  margin: 0 0 var(--space-xs);
+  color: var(--color-annotation);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.scope {
+  flex-shrink: 0;
+  padding: 0 var(--space-xs);
+  border: 1px dashed var(--color-annotation);
+  border-radius: 4px;
 }
 
 .kpi-table {

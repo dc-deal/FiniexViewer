@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount, RouterLinkStub } from '@vue/test-utils'
-import { defineComponent, h, ref } from 'vue'
-import { provideScenarioSelection } from '@/composables/use_scenario_selection'
+import { defineComponent, h } from 'vue'
+import { provideTestSelection } from './scenario_selection_harness'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
@@ -76,6 +76,27 @@ function cells(row: RunSummaryCurrency): string[] {
 }
 
 describe('ExecutivePanel', () => {
+  /**
+   * These are the RUN's figures, one row per currency, with no per-scenario version to show. This
+   * panel sits at the TOP, so a reader who has just narrowed meets them first and reads them as
+   * the chosen scenario's — which is why the label matters more here than anywhere else.
+   */
+  it('says whose figures these are while something is narrowed', () => {
+    const Host = defineComponent({
+      setup() {
+        provideTestSelection(['ETHUSD_blocks_03'])
+        return () => h(ExecutivePanel, { model: summaryWith(MEASURED) })
+      },
+    })
+    const wrapper = mount(Host)
+    expect(wrapper.find('.scope').text()).toBe('whole run')
+    expect(wrapper.find('.scope-line').text()).toContain('every scenario')
+  })
+
+  it('stays quiet about scope where nothing is narrowed', () => {
+    expect(mount(ExecutivePanel, { props: { model: summaryWith(MEASURED) } }).find('.scope').exists()).toBe(false)
+  })
+
   it('renders measured values with their units', () => {
     const [currency, netPnl, profitFactor, winRate, trades, expectancy, avgWin, avgLoss, maxDd] =
       cells(MEASURED)
@@ -145,6 +166,7 @@ function report(overrides: Partial<WarningsErrorsReport> = {}): WarningsErrorsRe
     run_id: '20260615_130000',
     warnings: [],
     errors: [],
+    keys: { errors: ['name'], warnings: [] },
     outcome: {
       run_outcome: 'success',
       failed_count: 0,
@@ -159,6 +181,69 @@ function report(overrides: Partial<WarningsErrorsReport> = {}): WarningsErrorsRe
     ...overrides,
   }
 }
+
+describe('WarningsErrorsPanel — narrowed to a scenario', () => {
+  function unitError(name: string) {
+    return {
+      name,
+      symbol: 'ETHUSD',
+      error_type: 'ValidationError',
+      error_message: `${name} failed validation`,
+      validation_errors: [],
+      logged_errors: [],
+      traceback: '',
+    }
+  }
+
+  const MIXED = report({
+    errors: [unitError('unit_a'), unitError('unit_b')],
+    warnings: [
+      { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' },
+      { tier: 'major', scope: 'unit_a', message: 'warmup thin on unit_a' },
+      { tier: 'major', scope: 'unit_b', message: 'warmup thin on unit_b' },
+    ],
+  })
+
+  function mountNarrowed(units: string[]) {
+    const Host = defineComponent({
+      setup() {
+        provideTestSelection(units)
+        return () => h(WarningsErrorsPanel, { model: MIXED })
+      },
+    })
+    return mount(Host)
+  }
+
+  // An error row IS a unit — the response declares `keys.errors: ["name"]`.
+  it('shows only the chosen unit\'s errors', () => {
+    const text = mountNarrowed(['unit_a']).text()
+    expect(text).toContain('unit_a failed validation')
+    expect(text).not.toContain('unit_b failed validation')
+  })
+
+  /**
+   * A run-scoped warning stays: it is still true of what is on show, and dropping it would hide a
+   * stress-test notice that changes how every figure below it reads.
+   */
+  it('keeps a run-wide warning and drops only another unit\'s', () => {
+    const text = mountNarrowed(['unit_a']).text()
+    expect(text).toContain('STRESS TEST ACTIVE')
+    expect(text).toContain('warmup thin on unit_a')
+    expect(text).not.toContain('warmup thin on unit_b')
+  })
+
+  // The outcome counts every unit the run attempted and has no per-scenario version.
+  it('marks the outcome counts as the run\'s', () => {
+    expect(mountNarrowed(['unit_a']).find('.scope').text()).toBe('whole run')
+    expect(mountNarrowed([]).find('.scope').exists()).toBe(false)
+  })
+
+  it('shows everything again once the narrowing is cleared', () => {
+    const text = mountNarrowed([]).text()
+    expect(text).toContain('unit_a failed validation')
+    expect(text).toContain('unit_b failed validation')
+  })
+})
 
 describe('WarningsErrorsPanel', () => {
   it('says a clean run is clean', () => {
@@ -384,11 +469,10 @@ function mountPortfolio(model: PortfolioReport) {
 }
 
 /** The panel under a host that carries a narrowing, the way RunsView does. */
-function mountPortfolioNarrowed(model: PortfolioReport, unit: string | null) {
-  const selected = ref<string | null>(unit)
+function mountPortfolioNarrowed(model: PortfolioReport, unit: string[]) {
   const Host = defineComponent({
     setup() {
-      provideScenarioSelection({ unit: selected, select: value => { selected.value = value } })
+      provideTestSelection(unit)
       return () => h(PortfolioPanel, { model })
     },
   })
@@ -420,7 +504,7 @@ describe('PortfolioPanel', () => {
       units: [unit(), unit({ name: 'USDJPY_blocks_02', net_profit: 4.2 })],
       aggregates: [aggregate({ unit_count: 2 })],
     }
-    const wrapper = mountPortfolioNarrowed(model, 'USDJPY_blocks_02')
+    const wrapper = mountPortfolioNarrowed(model, ['USDJPY_blocks_02'])
     expect(wrapper.findAll('tbody tr')).toHaveLength(2)
     const picked = wrapper.findAll('tbody tr.picked')
     expect(picked).toHaveLength(1)
@@ -434,7 +518,7 @@ describe('PortfolioPanel', () => {
       units: [unit()],
       aggregates: [],
     }
-    expect(mountPortfolioNarrowed(model, null).findAll('tbody tr.picked')).toHaveLength(0)
+    expect(mountPortfolioNarrowed(model, []).findAll('tbody tr.picked')).toHaveLength(0)
   })
 
   it('links a unit into the chart via its data source', () => {

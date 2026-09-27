@@ -2,18 +2,43 @@
 import { computed } from 'vue'
 import type { UnitErrorRow, WarningsErrorsReport } from '@/types/api/report_types'
 import { utcInstant } from '@/components/runs/report_format'
+import { rowKey } from '@/api/list_key'
+import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { t } from '@/translate'
 
 const props = defineProps<{
   model: WarningsErrorsReport
 }>()
 
+const narrowing = useScenarioSelection()
+const narrowed = computed(() => narrowing.units.value.length > 0)
+
+/** Read from the response rather than assumed — `name` alone, the symbol is not part of it. */
+const errorKey = computed(() => props.model.keys.errors)
+
+/** An error row IS a unit, so the narrowing reaches it directly. */
+const errors = computed(() =>
+  props.model.errors.filter(row => showsUnit(narrowing.units.value, row.name))
+)
+
+/**
+ * A warning is either the RUN's or a unit's — `scope` carries which. Under a narrowing the
+ * run-scoped ones stay, because they are still true of what is on show; only warnings belonging
+ * to a unit nobody chose drop out. Filtering those out too would hide a stress-test notice that
+ * changes how every figure below it reads.
+ */
+const warnings = computed(() =>
+  props.model.warnings.filter(row =>
+    row.scope === 'run' || showsUnit(narrowing.units.value, row.scope)
+  )
+)
+
 // Tier 1 is validator-produced and belongs in the report; tier 2 is the log pot and is only
 // summarised, per the backend's own taxonomy.
-const majorWarnings = computed(() => props.model.warnings.filter(row => row.tier === 'major'))
-const minorWarnings = computed(() => props.model.warnings.filter(row => row.tier !== 'major'))
+const majorWarnings = computed(() => warnings.value.filter(row => row.tier === 'major'))
+const minorWarnings = computed(() => warnings.value.filter(row => row.tier !== 'major'))
 
-const isClean = computed(() => !props.model.errors.length && !props.model.warnings.length)
+const isClean = computed(() => !errors.value.length && !warnings.value.length)
 
 /** '' on artifacts written before the grading existed — an absence, never rendered as a state. */
 const outcomeRecorded = computed(() => props.model.outcome.run_outcome !== '')
@@ -42,7 +67,9 @@ function hasDetail(row: UnitErrorRow): boolean {
 
 <template>
   <div class="warnings-panel">
+    <!-- the outcome counts every unit the run attempted, so it stays the RUN's under a narrowing -->
     <div class="outcome" :class="model.outcome.run_outcome">
+      <span v-if="narrowed" class="scope">{{ t('whole run') }}</span>
       <span v-if="outcomeRecorded" class="outcome-verdict">
         {{ outcomeMark }} {{ model.outcome.run_outcome }}
       </span>
@@ -64,9 +91,9 @@ function hasDetail(row: UnitErrorRow): boolean {
 
     <p v-if="isClean" class="hint">{{ t('No warnings or errors') }}</p>
 
-    <section v-if="model.errors.length" class="block">
-      <h3 class="block-title error-title">{{ t('Errors') }} ({{ model.errors.length }})</h3>
-      <div v-for="row in model.errors" :key="row.name + row.symbol" class="entry">
+    <section v-if="errors.length" class="block">
+      <h3 class="block-title error-title">{{ t('Errors') }} ({{ errors.length }})</h3>
+      <div v-for="row in errors" :key="rowKey(row, errorKey)" class="entry">
         <div class="entry-head">
           <span class="entry-unit">{{ row.name }}</span>
           <span v-if="row.symbol" class="entry-symbol">{{ row.symbol }}</span>
@@ -129,6 +156,15 @@ function hasDetail(row: UnitErrorRow): boolean {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: var(--space-sm) var(--space-md);
+}
+
+/* the scope of a count that cannot be split — marked, never filtered */
+.scope {
+  padding: 0 var(--space-xs);
+  border: 1px dashed var(--color-annotation);
+  border-radius: 4px;
+  color: var(--color-annotation);
+  font-size: var(--font-size-sm);
 }
 
 .outcome.failed {

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { mount, RouterLinkStub } from '@vue/test-utils'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h } from 'vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
-import { provideScenarioSelection } from '@/composables/use_scenario_selection'
+import { provideTestSelection } from './scenario_selection_harness'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
 import type { BookingPeriodRow, BookingPeriodsReport } from '@/types/api/report_types'
@@ -28,11 +28,10 @@ function mountPanel(model: BookingPeriodsReport) {
 }
 
 /** The panel narrowed to one scenario, the way RunsView narrows it. */
-function mountNarrowed(model: BookingPeriodsReport, unit: string | null) {
-  const selected = ref<string | null>(unit)
+function mountNarrowed(model: BookingPeriodsReport, unit: string[]) {
   const Host = defineComponent({
     setup() {
-      provideScenarioSelection({ unit: selected, select: value => { selected.value = value } })
+      provideTestSelection(unit)
       return () => h(BookingPeriodsPanel, { model })
     },
   })
@@ -49,13 +48,13 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
   })
 
   it('draws only the chosen scenario\'s lanes', () => {
-    const wrapper = mountNarrowed(MIXED, 'unit_a')
+    const wrapper = mountNarrowed(MIXED, ['unit_a'])
     const labels = wrapper.findAll('.lane-label').map(node => node.text())
     expect(labels).toEqual(['unit_a'])
   })
 
   it('draws every lane again once the narrowing is cleared', () => {
-    const wrapper = mountNarrowed(MIXED, null)
+    const wrapper = mountNarrowed(MIXED, [])
     const labels = wrapper.findAll('.lane-label').map(node => node.text())
     expect(labels).toHaveLength(2)
   })
@@ -66,19 +65,36 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
    * lane, which is exactly the misreading the narrowing exists to prevent.
    */
   it('keeps the verdict run-wide, and says so', () => {
-    const wrapper = mountNarrowed(MIXED, 'unit_a')
+    const wrapper = mountNarrowed(MIXED, ['unit_a'])
     expect(wrapper.find('.verdict-scope').text()).toContain('whole run')
   })
 
   it('says nothing about scope where nothing is narrowed', () => {
-    const wrapper = mountNarrowed(MIXED, null)
+    const wrapper = mountNarrowed(MIXED, [])
     expect(wrapper.find('.verdict-scope').exists()).toBe(false)
+    expect(wrapper.find('.footnote .scope').exists()).toBe(false)
+  })
+
+  /**
+   * The deepest drawdown is taken across EVERY period and the final equity is the account's, so
+   * neither can be split per scenario. Left unlabelled under a narrowed chart they read as the
+   * chosen scenario's.
+   */
+  it('marks the footnote figures as the run\'s', () => {
+    const wrapper = mountNarrowed(MIXED, ['unit_a'])
+    expect(wrapper.find('.footnote .scope').text()).toBe('whole run')
+  })
+
+  it('draws the lanes of every chosen scenario, not just the first', () => {
+    const wrapper = mountNarrowed(MIXED, ['unit_a', 'unit_b'])
+    const labels = wrapper.findAll('.lane-label').map(node => node.text())
+    expect(labels.sort()).toEqual(['unit_a', 'unit_b'])
   })
 
   // A scenario the run declared but that booked nothing — a statement about it, not a bad match.
-  it('says the scenario booked nothing, rather than the run', () => {
-    const wrapper = mountNarrowed(MIXED, 'unit_c')
-    expect(wrapper.find('.hint').text()).toContain('This scenario booked no periods')
+  it('says the chosen scenarios booked nothing, rather than the run', () => {
+    const wrapper = mountNarrowed(MIXED, ['unit_c'])
+    expect(wrapper.find('.hint').text()).toContain('The chosen scenarios booked no periods')
   })
 })
 

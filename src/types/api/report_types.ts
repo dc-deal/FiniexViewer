@@ -175,11 +175,28 @@ export interface WarningsErrorsOutcome {
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/warnings-errors */
+/**
+ * What identifies a row in each of the two lists this response serves.
+ *
+ * `errors` is `["name"]` — ONE row per unit, so the symbol adds nothing to the identity and a
+ * `name + symbol` key was our invention, dropped on the backend's instruction 2026-09-27.
+ *
+ * `warnings` is an EMPTY tuple, and that is a declaration rather than an omission: a warning has
+ * no identity beyond its position. Nothing folds two identical warnings into one, so a session
+ * that logged the same sentence twice has two rows carrying the same text, and the index is
+ * therefore the right key.
+ */
+export interface WarningsErrorsKeys {
+  errors: string[]
+  warnings: string[]
+}
+
 export interface WarningsErrorsReport {
   run_id: string
   warnings: WarningRow[]
   errors: UnitErrorRow[]
   outcome: WarningsErrorsOutcome
+  keys: WarningsErrorsKeys
 }
 
 /**

@@ -5,7 +5,7 @@ import {
   amount, magnitude, numberOrNa, percent, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import { useDisplaySettings } from '@/composables/use_display_settings'
-import { useScenarioSelection } from '@/composables/use_scenario_selection'
+import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { rowKey } from '@/api/list_key'
 import type { TradeRow, TradeView } from '@/types/api/report_types'
 import { t } from '@/translate'
@@ -55,7 +55,7 @@ const narrowing = useScenarioSelection()
  * a single scenario's trades — a run-wide figure read as a unit's is the silent wrongness this
  * whole selection was built to avoid.
  */
-const narrowed = computed(() => narrowing.unit.value !== null)
+const narrowed = computed(() => narrowing.units.value.length > 0)
 
 /**
  * The narrowing applies to the ROWS, and before the cap. Capping first would take the first N
@@ -67,9 +67,9 @@ const narrowed = computed(() => narrowing.unit.value !== null)
  * "traded nothing", never "failed to match", and the empty state below says exactly that.
  */
 const selected = computed(() => {
-  const unit = narrowing.unit.value
-  if (unit === null) return history.value.trades
-  return history.value.trades.filter(trade => trade.scenario_name === unit)
+  const units = narrowing.units.value
+  if (!units.length) return history.value.trades
+  return history.value.trades.filter(trade => showsUnit(units, trade.scenario_name))
 })
 
 const shown = computed(() => selected.value.slice(0, rowCap.value))
@@ -295,7 +295,7 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
          the run declared is in the roster whether it traded or not -->
     <div v-if="!selected.length" class="hint">
       {{ narrowed
-        ? t('This scenario closed no positions')
+        ? t('The chosen scenarios closed no positions')
         : t('This run closed no positions') }}
     </div>
     <div v-else class="table-scroll">

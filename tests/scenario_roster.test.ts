@@ -1,8 +1,9 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h } from 'vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
-import { provideScenarioSelection } from '@/composables/use_scenario_selection'
+import { setActivePinia, createPinia } from 'pinia'
+import { provideTestSelection } from './scenario_selection_harness'
 import type { ScenarioDetailsReport, ScenarioRow } from '@/types/api/scenario_types'
 
 let mounted: VueWrapper | null = null
@@ -66,8 +67,13 @@ const MIXED = report([
   }),
 ])
 
+/* the hint line reads the store that remembers what a reader dismissed, so a mount needs one */
 function mountPanel(model: ScenarioDetailsReport = MIXED) {
-  mounted = mount(ScenarioRosterPanel, { props: { model }, attachTo: document.body })
+  mounted = mount(ScenarioRosterPanel, {
+    props: { model },
+    attachTo: document.body,
+    global: { plugins: [createPinia()] },
+  })
   return mounted
 }
 
@@ -76,15 +82,15 @@ function rowNames(wrapper: VueWrapper): string[] {
 }
 
 /** The panel under a host that carries the narrowing, the way RunsView does. */
-function mountWithSelection(model: ScenarioDetailsReport = MIXED, initial: string | null = null) {
-  const unit = ref<string | null>(initial)
+function mountWithSelection(model: ScenarioDetailsReport = MIXED, initial: string[] = []) {
+  let unit!: ReturnType<typeof provideTestSelection>
   const Host = defineComponent({
     setup() {
-      provideScenarioSelection({ unit, select: value => { unit.value = value } })
+      unit = provideTestSelection(initial)
       return () => h(ScenarioRosterPanel, { model })
     },
   })
-  mounted = mount(Host, { attachTo: document.body })
+  mounted = mount(Host, { attachTo: document.body, global: { plugins: [createPinia()] } })
   return { wrapper: mounted, unit }
 }
 
@@ -101,6 +107,12 @@ async function openFacet(wrapper: VueWrapper, label: string): Promise<HTMLElemen
 }
 
 describe('ScenarioRosterPanel', () => {
+  // each test gets its own hint store, so a dismissal in one cannot hide the line in the next
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
   afterEach(() => {
     mounted?.unmount()
     mounted = null
@@ -212,25 +224,25 @@ describe('ScenarioRosterPanel', () => {
     it('narrows to the scenario whose row was clicked', async () => {
       const { wrapper, unit } = mountWithSelection()
       await headOf(wrapper, 'eth_b').trigger('click')
-      expect(unit.value).toBe('eth_b')
+      expect(unit.value).toEqual(['eth_b'])
     })
 
     it('clears the narrowing when the chosen row is clicked again', async () => {
-      const { wrapper, unit } = mountWithSelection(MIXED, 'eth_b')
+      const { wrapper, unit } = mountWithSelection(MIXED, ['eth_b'])
       await headOf(wrapper, 'eth_b').trigger('click')
-      expect(unit.value).toBeNull()
+      expect(unit.value).toEqual([])
     })
 
     // A scenario that produced nothing is exactly the one a reader most wants to narrow to.
     it('lets a failed scenario be chosen like any other', async () => {
       const { wrapper, unit } = mountWithSelection()
       await headOf(wrapper, 'eth_broken').trigger('click')
-      expect(unit.value).toBe('eth_broken')
+      expect(unit.value).toEqual(['eth_broken'])
     })
 
     // Marked by a rule AND by aria-pressed — never by colour alone.
     it('marks the chosen row, and only that one', () => {
-      const { wrapper } = mountWithSelection(MIXED, 'eth_b')
+      const { wrapper } = mountWithSelection(MIXED, ['eth_b'])
       const picked = wrapper.findAll('.roster-row.picked')
       expect(picked).toHaveLength(1)
       expect(picked[0]?.text()).toContain('eth_b')
@@ -243,6 +255,37 @@ describe('ScenarioRosterPanel', () => {
       const wrapper = mountPanel()
       await headOf(wrapper, 'eth_b').trigger('click')
       expect(wrapper.findAll('.roster-row.picked')).toHaveLength(0)
+    })
+
+    // Several at once is what turns the roster from a jump into a comparison.
+    it('collects several scenarios, and lets one go without losing the rest', async () => {
+      const { wrapper, unit } = mountWithSelection()
+      await headOf(wrapper, 'eth_a').trigger('click')
+      await headOf(wrapper, 'eth_b').trigger('click')
+      expect(unit.value).toEqual(['eth_a', 'eth_b'])
+      expect(wrapper.findAll('.roster-row.picked')).toHaveLength(2)
+
+      await headOf(wrapper, 'eth_a').trigger('click')
+      expect(unit.value).toEqual(['eth_b'])
+    })
+
+    /**
+     * A control nobody recognises as a control does not exist — this row was built to look like
+     * running text and the first reader to see it could not tell that clicking did anything.
+     */
+    it('says what a click does, while nothing is picked', () => {
+      const { wrapper } = mountWithSelection()
+      expect(wrapper.find('.hint-line').text()).toContain('Click a scenario')
+    })
+
+    it('replaces that with the state once something is picked, and offers the way out', async () => {
+      const { wrapper, unit } = mountWithSelection(MIXED, ['eth_a'])
+      expect(wrapper.find('.hint-line').exists()).toBe(false)
+      const state = wrapper.find('.roster-picked')
+      expect(state.text()).toContain('Showing only 1 of 4')
+
+      await state.find('.clear-picked').trigger('click')
+      expect(unit.value).toEqual([])
     })
   })
 })

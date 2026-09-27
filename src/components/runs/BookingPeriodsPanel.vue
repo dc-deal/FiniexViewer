@@ -5,7 +5,7 @@ import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import { amount, magnitude } from '@/components/runs/report_format'
 import { orderPeriods } from '@/components/runs/period_order'
 import { useDisplaySettings } from '@/composables/use_display_settings'
-import { useScenarioSelection } from '@/composables/use_scenario_selection'
+import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import type { LaneOrder } from '@/types/settings_types'
 import type { BookingPeriodsReport } from '@/types/api/report_types'
 import { t } from '@/translate'
@@ -69,12 +69,12 @@ watch(() => display.value.laneOrder, order => { laneOrder.value = order })
  * `unit_name` is the unit's identity here, the same value the roster calls `name`.
  */
 const narrowing = useScenarioSelection()
-const narrowed = computed(() => narrowing.unit.value !== null)
+const narrowed = computed(() => narrowing.units.value.length > 0)
 
 const selectedPeriods = computed(() => {
-  const unit = narrowing.unit.value
-  if (unit === null) return props.model.periods
-  return props.model.periods.filter(period => period.unit_name === unit)
+  const units = narrowing.units.value
+  if (!units.length) return props.model.periods
+  return props.model.periods.filter(period => showsUnit(units, period.unit_name))
 })
 
 const orderedPeriods = computed(() =>
@@ -113,14 +113,14 @@ const otherCurrencies = computed(() =>
           <template v-else>{{ t('nothing reported') }}</template>
         </p>
         <p v-if="narrowed" class="verdict-scope">
-          {{ t('This check is the whole run — the periods below are one scenario') }}
+          {{ t('This check is the whole run — the periods below are the chosen scenarios') }}
         </p>
       </div>
     </div>
 
     <div v-if="!selectedPeriods.length" class="hint">
       {{ narrowed
-        ? t('This scenario booked no periods')
+        ? t('The chosen scenarios booked no periods')
         : t('This run booked no periods') }}
     </div>
     <template v-else>
@@ -132,7 +132,10 @@ const otherCurrencies = computed(() =>
       <BookingPeriodTable :periods="orderedPeriods" :key-fields="model.key" />
     </template>
 
+    <!-- both figures are the RUN's: the deepest drawdown is taken across every period and the
+         final equity is the account's, so neither has a per-scenario version to show -->
     <p class="footnote">
+      <span v-if="narrowed" class="scope">{{ t('whole run') }}</span>
       {{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }} ·
       {{ t('Final equity') }}: {{ amount(model.final_equity, model.currency) }}
       <template v-if="otherCurrencies.length">
@@ -180,6 +183,15 @@ const otherCurrencies = computed(() =>
   color: var(--color-annotation);
   font-family: monospace;
   font-size: var(--font-size-sm);
+}
+
+/* the scope of a figure that cannot be split — marked, never filtered */
+.scope {
+  margin-right: var(--space-xs);
+  padding: 0 var(--space-xs);
+  border: 1px dashed var(--color-annotation);
+  border-radius: 4px;
+  color: var(--color-annotation);
 }
 
 .verdict-text,

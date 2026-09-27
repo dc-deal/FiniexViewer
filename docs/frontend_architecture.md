@@ -476,20 +476,32 @@ file's name — a deliberate linkage, confirmed by the backend. But it answers *
 name lives today*: one moved, deleted or shadowed after the run gives a different answer than the
 run had, and no per-run origin is served. The label therefore describes the file, never the run.
 
-### Choosing one scenario — `?unit=`, and the three things it must not narrow
+### Choosing scenarios — `?unit=`, and what must not be narrowed with them
 
 A run holds up to forty scenarios, and the facet bar only narrows the ROSTER. The selection is the
-other half: one scenario is chosen, and the sections that are per-unit follow it.
+other half: scenarios are chosen, and the sections that are per-unit follow them.
 
 ```
-?run=20260927_092959_cd1d9b1e&unit=BTCUSD_sentiment_realdata
+?run=20260927_092959_cd1d9b1e&unit=ETHUSD_blocks_06,ETHUSD_blocks_09
 
-  roster            marks the row; a click chooses, a second click clears
+  roster            marks the rows; a click adds, a second click takes one out
   trade history     narrowed
   booking periods   narrowed
+  warnings/errors   narrowed — but a RUN-scoped warning stays, it is still true
   portfolio         MARKED, never narrowed
-  RunsView          one line above the column: "⌖ Narrowed to X … show all"
+  RunsView          the whole column is FRAMED, headed "⌖ Showing only … Show all"
 ```
+
+**Several at once, because the question is usually a comparison.** The names ride in one param,
+comma separated — measured 2026-09-27 over 58 real names from the roster, the run index and the
+portfolio: every one matches `[A-Za-z0-9_-]`, so nothing collides with the separator. A name that
+ever carries a comma would not survive the round trip, and the fix then is repeated params rather
+than an escape scheme. An EMPTY list means the whole run, never "nothing" — `showsUnit` encodes
+exactly that, so no call site branches on it.
+
+**The narrowed column is framed, not merely announced.** A sentence above a list cannot say how far
+a manipulation reaches; an edge can. The frame wears the annotation role — a marked division — and
+is itself the channel that survives for a reader who cannot separate the hues.
 
 **It lives in the URL, because it is SELECTION.** Panel order and collapsed state are presentation
 and stay in `localStorage`; what the reader is looking at belongs in the query, or a shared link
@@ -505,13 +517,37 @@ have to forward a run-specific emit, which is the domain leaking into the part t
 it. `RunsView` supplies it, not `PanelColumn`, which draws a deployment's panels and has no
 scenario to narrow to.
 
-**Three figures are run-wide and cannot be split, so they are LABELLED rather than filtered:** the
-order funnel and the per-currency analytics in Trade History (both from `run-summary`), and the
-reconciliation verdict in Booking Periods. A run-wide number sitting unlabelled over one
-scenario's rows reads as that scenario's — the same class of silent wrongness the narrowing exists
-to remove. Portfolio is the fourth and is handled by marking instead: its footer is an aggregate
-with no per-unit version, and keeping every row also answers the question narrowing raises there,
-namely how the chosen scenario compares with the others.
+**Six figures are run-wide and cannot be split, so they are LABELLED rather than filtered:** the
+executive KPI table (one row per CURRENCY), the order funnel and the per-currency analytics in
+Trade History, the reconciliation verdict and the deepest-drawdown footnote in Booking Periods, and
+the outcome counts in Warnings & Errors. A run-wide number sitting unlabelled over one scenario's
+rows reads as that scenario's — the same class of silent wrongness the narrowing exists to remove.
+The executive table matters most of the six because it sits at the TOP: a reader who has just
+narrowed meets it first. Portfolio is handled by marking instead: its footer is an aggregate with
+no per-unit version, and keeping every row also answers the question narrowing raises there, namely
+how the chosen scenarios compare with the others.
+
+**A control nobody recognises as a control does not exist.** The roster row was built as a plain
+list entry and the first reader to see it could not tell that clicking did anything — the effect
+was real but happened below the fold, and the two panels nearest the click did not react at all.
+Four things fix that class of problem: the scenario name wears the interactive colour and the row
+has a hover surface; the state is repeated IN the roster, beside where the click happens; the
+column is framed; and a `HintLine` says what a click does while nothing is picked.
+
+### Hints — one registry, two levels of "go away"
+
+`hint_registry.ts` holds every explanation in ONE list, an id plus a sentence. Central rather than a
+string per component, for two reasons: the texts are the only place the app explains itself and are
+worth reading as a set, and a guided tour is the same data in a sequence — a step is an element plus
+a sentence, which is exactly a row here. An id is stable across releases because it is what a
+permanent dismissal is remembered by.
+
+`hints_store.ts` keeps two levels apart. **Dismiss** means *not now*: it lasts the session and
+writes nothing, so a reader who closed the line by accident is not punished for it. **Ban** means
+*never again* and is the only one persisted, under one versioned key, reconciled on load like every
+other stored preference — an id the registry no longer contains is dropped, or the list only grows
+and a hint reintroduced under an old id returns already banned. The settings dialog resets both,
+because a banned hint has no other way back: the control that banned it disappeared with it.
 
 **Narrowing happens BEFORE the row cap.** Capped first, the first N trades of the whole run would
 be filtered down, and a scenario that traded late would show nothing while the panel claimed it had

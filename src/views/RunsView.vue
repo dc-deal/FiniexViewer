@@ -14,7 +14,7 @@ import { t } from '@/translate'
 const runsStore = useRunsStore()
 const reportsStore = useRunReportsStore()
 const {
-  runs, selectedRunId, selectedRun, selectedUnit, summary, feedHealth, summaryAbsence,
+  runs, selectedRunId, selectedRun, selectedUnits, summary, feedHealth, summaryAbsence,
   unknownRunId,
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
@@ -30,21 +30,32 @@ useRunQuerySync()
 // The view owns it rather than PanelColumn, which draws a deployment's panels too and has no
 // scenario to narrow to.
 provideScenarioSelection({
-  unit: selectedUnit,
-  select: (unit: string | null) => runsStore.setUnit(unit),
+  units: selectedUnits,
+  toggle: (unit: string) => runsStore.toggleUnit(unit),
+  clear: () => runsStore.clearUnits(),
 })
 
 /**
- * A narrowing that names a scenario this run does not have — an edited link, or one saved before
- * the set was changed. Claimed ONLY where the roster actually arrived: `scenario-details` is built
- * from the batch and is simulation-only by construction, so its absence on a live run says nothing
- * about the name and must not be reported as a bad one.
+ * Names in the narrowing this run does not have — an edited link, or one saved before the set was
+ * changed. Claimed ONLY where the roster actually arrived: `scenario-details` is built from the
+ * batch and is simulation-only by construction, so its absence on a live run says nothing about a
+ * name and must not be reported as a bad one.
  */
-const unknownUnit = computed(() =>
-  selectedUnit.value !== null
-  && scenarios.value !== null
-  && !scenarios.value.units.some(unit => unit.name === selectedUnit.value)
-)
+/**
+ * The narrowing as a heading. Names while they still fit — a reader recognises the scenario they
+ * clicked — and a count past that, because eleven names in one line is not something anyone reads.
+ */
+const narrowingLabel = computed(() => {
+  const units = selectedUnits.value
+  if (units.length <= 3) return units.join(' · ')
+  return `${units.length} ${t('scenarios')}`
+})
+
+const unknownUnits = computed(() => {
+  const roster = scenarios.value
+  if (roster === null) return []
+  return selectedUnits.value.filter(unit => !roster.units.some(row => row.name === unit))
+})
 
 // One request per section per run. Lazy loading on first expand is deferred until there are
 // enough sections to justify the plumbing — see viewer#21.
@@ -159,22 +170,27 @@ const showPanels = computed(() =>
         </p>
         <!-- said ONCE above the column: every section below is narrowed, and a reader who forgot
              would otherwise read a single scenario's figures as the run's -->
-        <p v-if="selectedUnit" class="notice narrowed">
-          <span class="mark">⌖</span>
-          <span>
-            {{ t('Narrowed to') }} <strong>{{ selectedUnit }}</strong>
-            <template v-if="unknownUnit">
-              — {{ t('this run declares no scenario by that name') }}
-            </template>
-          </span>
-          <button type="button" class="show-all" @click="runsStore.setUnit(null)">
-            {{ t('show all') }}
-          </button>
-        </p>
         <p v-if="unreadable" class="notice">{{ unreadable }}</p>
         <!-- a section that failed to load says so; the sections that did load stay visible -->
         <p v-if="sectionError" class="notice failed">{{ sectionError }}</p>
-        <PanelColumn :sources="sources" />
+        <!-- the whole manipulated area is framed, so it can never be mistaken for the whole run.
+             The frame is the second channel beside the colour: a reader who cannot separate the
+             hues still sees an edge that was not there before. -->
+        <div class="panels" :class="{ narrowed: selectedUnits.length > 0 }">
+          <p v-if="selectedUnits.length" class="narrowed-head">
+            <span class="mark" aria-hidden="true">⌖</span>
+            <span>
+              {{ t('Showing only') }} <strong>{{ narrowingLabel }}</strong>
+              <template v-if="unknownUnits.length">
+                — {{ t('not in this run:') }} {{ unknownUnits.join(', ') }}
+              </template>
+            </span>
+            <button type="button" class="show-all" @click="runsStore.clearUnits()">
+              {{ t('Show all') }}
+            </button>
+          </p>
+          <PanelColumn :sources="sources" />
+        </div>
       </template>
     </div>
   </div>
@@ -235,18 +251,31 @@ const showPanels = computed(() =>
   gap: var(--space-xs);
 }
 
-/* a narrowing is the reader's own doing, not a condition of the run — plain role, and the way
-   out sits in the same line as the statement */
-.notice.narrowed {
+/* a narrowed column is FRAMED, not merely announced: the edge says how far the manipulation
+   reaches, which a sentence above it cannot. The colour is the annotation role — a marked
+   division — and the frame itself is the channel that survives without it. */
+.panels.narrowed {
+  border: 1px solid var(--color-annotation);
+  border-radius: 4px;
+  padding: var(--space-sm);
+}
+
+.narrowed-head {
   display: flex;
   align-items: baseline;
   gap: var(--space-xs);
-  border-left-color: var(--color-annotation);
+  margin: 0 0 var(--space-sm);
+  color: var(--color-annotation);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
 }
 
-.notice.narrowed strong {
-  color: var(--color-text-primary);
+.narrowed-head strong {
   font-weight: normal;
+}
+
+.narrowed-head .mark {
+  flex-shrink: 0;
 }
 
 .show-all {

@@ -27,6 +27,7 @@ const REPORT: WarningsErrorsReport = {
   run_id: '20260615_130000',
   warnings: [{ tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' }],
   errors: [],
+  keys: { errors: ['name'], warnings: [] },
   outcome: {
     run_outcome: 'success',
     failed_count: 0,

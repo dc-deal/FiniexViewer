@@ -33,15 +33,16 @@ export const useRunsStore = defineStore('runs', () => {
   // a run id the index does not contain — a link or a reloaded URL naming a run that is gone
   const unknownRunId = ref<string | null>(null)
   /**
-   * The scenario the reader narrowed to, one step below the run in the same cascade — and part of
-   * the SELECTION, so it belongs in the URL rather than in the stored layout.
+   * The scenarios the reader narrowed to, one step below the run in the same cascade — part of the
+   * SELECTION, so it belongs in the URL rather than in the stored layout. EMPTY means the whole
+   * run, never "nothing".
    *
-   * Held as a plain name because that is what the backend declares as the unit's identity, and one
+   * Held as plain names because that is what the backend declares as a unit's identity, and one
    * identity under four field names across four responses: `scenario-details.units[].name`,
    * `portfolio.units[].name`, `trade-history.trades[].scenario_name` and
    * `booking-periods.periods[].unit_name`. Confirmed in their code 2026-09-27, not merely observed.
    */
-  const selectedUnit = ref<string | null>(null)
+  const selectedUnits = ref<string[]>([])
 
   // group -> name -> run, all three derived from the one index request
   const groups = computed(() => unique(runs.value.map(run => run.group)))
@@ -101,12 +102,24 @@ export const useRunsStore = defineStore('runs', () => {
     summaryAbsence.value = null
     unknownRunId.value = null
     // a different run is a different roster, so a narrowing made for the old one means nothing
-    selectedUnit.value = null
+    selectedUnits.value = []
   }
 
-  /** Narrows every section to one scenario, or shows the whole run again with null. */
-  function setUnit(unit: string | null): void {
-    selectedUnit.value = unit
+  /** Adds a scenario to the narrowing, or takes it out again. */
+  function toggleUnit(unit: string): void {
+    selectedUnits.value = selectedUnits.value.includes(unit)
+      ? selectedUnits.value.filter(name => name !== unit)
+      : [...selectedUnits.value, unit]
+  }
+
+  /** Restores a whole narrowing at once — what a link carries. Duplicates are not a selection. */
+  function setUnits(units: string[]): void {
+    selectedUnits.value = [...new Set(units)]
+  }
+
+  /** Back to the whole run. */
+  function clearUnits(): void {
+    selectedUnits.value = []
   }
 
   function setGroup(group: string): void {
@@ -177,7 +190,7 @@ export const useRunsStore = defineStore('runs', () => {
     selectedName,
     selectedRunId,
     selectedRun,
-    selectedUnit,
+    selectedUnits,
     summary,
     feedHealth,
     summaryMissing,
@@ -189,7 +202,9 @@ export const useRunsStore = defineStore('runs', () => {
     loadRuns,
     setGroup,
     setName,
-    setUnit,
+    toggleUnit,
+    setUnits,
+    clearUnits,
     selectRun,
   }
 })
