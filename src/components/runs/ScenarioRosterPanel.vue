@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
+import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import type { FacetDefinition, FacetSelection, SortDefinition } from '@/types/facet_types'
 import type { ScenarioDetailsReport, ScenarioRow } from '@/types/api/scenario_types'
 import { t } from '@/translate'
@@ -86,6 +87,18 @@ const shown = computed(() => sortRows(
 ))
 
 const failed = computed(() => props.model.units.filter(row => row.status === 'failed').length)
+
+/**
+ * The roster is where a scenario is CHOSEN — it is the only complete list, so it is the only place
+ * every scenario can be reached from, the ones that produced nothing included. A second click on
+ * the marked row clears the narrowing, which makes the row its own way back out.
+ */
+const narrowing = useScenarioSelection()
+const picked = computed(() => narrowing.unit.value)
+
+function pick(name: string): void {
+  narrowing.select(picked.value === name ? null : name)
+}
 </script>
 
 <template>
@@ -112,8 +125,19 @@ const failed = computed(() => props.model.units.filter(row => row.status === 'fa
     <p v-if="!shown.length" class="hint">{{ t('No scenario matches') }}</p>
 
     <ul v-else class="roster-list">
-      <li v-for="row in shown" :key="row.name" class="roster-row" :class="row.status">
-        <div class="roster-head">
+      <li
+        v-for="row in shown"
+        :key="row.name"
+        class="roster-row"
+        :class="[row.status, { picked: picked === row.name }]"
+      >
+        <button
+          type="button"
+          class="roster-head"
+          :aria-pressed="picked === row.name"
+          :title="t('Narrow every section to this scenario')"
+          @click="pick(row.name)"
+        >
           <span class="roster-name">{{ row.name }}</span>
           <span class="roster-meta">
             {{ row.symbol }}
@@ -124,7 +148,7 @@ const failed = computed(() => props.model.units.filter(row => row.status === 'fa
           <span class="roster-state" :class="row.status">
             {{ row.status === 'failed' ? '✖' : '✓' }} {{ row.status }}
           </span>
-        </div>
+        </button>
         <p v-if="row.error_message" class="roster-reason">{{ row.error_message }}</p>
         <!-- only the counters that are actually carried: worker_count, the signal counters and
              trades_requested read 0 on every row measured, so printing them would state a zero the
@@ -167,11 +191,31 @@ const failed = computed(() => props.model.units.filter(row => row.status === 'fa
   font-size: var(--font-size-sm);
 }
 
+/* a button, because it is the control that narrows every section below — stripped back to the
+   row it replaced, so nothing moved when it stopped being a plain div */
 .roster-head {
   display: flex;
   align-items: baseline;
   gap: var(--space-sm);
   flex-wrap: wrap;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* the mark sits in the annotation role and is a RULE down the side, so the narrowed row is not
+   told apart by colour alone */
+.roster-row.picked {
+  border-left: 2px solid var(--color-annotation);
+  padding-left: var(--space-xs);
+}
+
+.roster-row.picked .roster-name {
+  color: var(--color-annotation);
 }
 
 .roster-name {

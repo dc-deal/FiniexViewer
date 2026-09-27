@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { mount, RouterLinkStub } from '@vue/test-utils'
+import { defineComponent, h, ref } from 'vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
+import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
 import type { BookingPeriodRow, BookingPeriodsReport } from '@/types/api/report_types'
@@ -24,6 +26,61 @@ function mountPanel(model: BookingPeriodsReport) {
     global: { stubs: { RouterLink: RouterLinkStub } },
   })
 }
+
+/** The panel narrowed to one scenario, the way RunsView narrows it. */
+function mountNarrowed(model: BookingPeriodsReport, unit: string | null) {
+  const selected = ref<string | null>(unit)
+  const Host = defineComponent({
+    setup() {
+      provideScenarioSelection({ unit: selected, select: value => { selected.value = value } })
+      return () => h(BookingPeriodsPanel, { model })
+    },
+  })
+  return mount(Host, { global: { stubs: { RouterLink: RouterLinkStub } } })
+}
+
+describe('BookingPeriodsPanel — narrowed to one scenario', () => {
+  const MIXED = report({
+    periods: [
+      period({ unit_name: 'unit_a', segment_no: 1 }),
+      period({ unit_name: 'unit_b', segment_no: 1 }),
+      period({ unit_name: 'unit_a', segment_no: 2 }),
+    ],
+  })
+
+  it('draws only the chosen scenario\'s lanes', () => {
+    const wrapper = mountNarrowed(MIXED, 'unit_a')
+    const labels = wrapper.findAll('.lane-label').map(node => node.text())
+    expect(labels).toEqual(['unit_a'])
+  })
+
+  it('draws every lane again once the narrowing is cleared', () => {
+    const wrapper = mountNarrowed(MIXED, null)
+    const labels = wrapper.findAll('.lane-label').map(node => node.text())
+    expect(labels).toHaveLength(2)
+  })
+
+  /**
+   * `reconciles` compares the whole run's booked records against the whole run's count — there is
+   * no per-unit version of the check. Left unlabelled above one lane it claims to be about that
+   * lane, which is exactly the misreading the narrowing exists to prevent.
+   */
+  it('keeps the verdict run-wide, and says so', () => {
+    const wrapper = mountNarrowed(MIXED, 'unit_a')
+    expect(wrapper.find('.verdict-scope').text()).toContain('whole run')
+  })
+
+  it('says nothing about scope where nothing is narrowed', () => {
+    const wrapper = mountNarrowed(MIXED, null)
+    expect(wrapper.find('.verdict-scope').exists()).toBe(false)
+  })
+
+  // A scenario the run declared but that booked nothing — a statement about it, not a bad match.
+  it('says the scenario booked nothing, rather than the run', () => {
+    const wrapper = mountNarrowed(MIXED, 'unit_c')
+    expect(wrapper.find('.hint').text()).toContain('This scenario booked no periods')
+  })
+})
 
 describe('BookingPeriodsPanel — the reconciliation', () => {
   it('confirms completeness when the periods account for the run', () => {
@@ -113,6 +170,56 @@ describe('BookingPeriodTable', () => {
   it('withholds a ratio nobody measured', () => {
     const untraded = mountTable([period({ trade_count: 0, win_rate: 0, profit_factor: 0 })])
     expect(untraded.text()).toContain('n/a')
+  })
+
+  /**
+   * The table showed eleven of a period's fifteen fields while the hover card showed all of them,
+   * so the list under the chart carried less than the thing it was supposed to make comparable.
+   * The two serve different questions — one period in detail, versus one field across periods —
+   * and the table only answers its own if it has the fields.
+   */
+  it('carries the equity band and the final equity the card already had', () => {
+    const wrapper = mountTable([period({
+      min_equity: 9_500, max_equity: 10_250, final_equity: 9_875.5,
+    })])
+    const headers = wrapper.findAll('thead tr').at(-1)!.findAll('th').map(th => th.text())
+    expect(headers).toContain('Equity band')
+    expect(headers).toContain('Final equity')
+    const cells = wrapper.findAll('tbody td').map(td => td.text())
+    expect(cells).toContain('9,500.00 … 10,250.00')
+    expect(cells).toContain('9,875.50')
+  })
+
+  it('groups the columns by the question they answer', () => {
+    const groups = mountTable([period()]).findAll('.group-row th').map(th => th.text())
+    expect(groups).toEqual(['', 'Period', 'Result', 'Account'])
+  })
+
+  /**
+   * Four currency codes per row is what pushed this table past the width of its panel, and they
+   * all say the same thing. Stated once above it, the cells carry figures only.
+   */
+  it('states one shared currency once, and drops it from every cell', () => {
+    const wrapper = mountTable([
+      period({ unit_name: 'a', net_pnl: -1.75 }),
+      period({ unit_name: 'b', net_pnl: 4.2 }),
+    ])
+    expect(wrapper.find('.periods-summary').text()).toContain('figures in USD')
+    const cells = wrapper.findAll('tbody td').map(td => td.text())
+    expect(cells).toContain('-1.75')
+    expect(cells.some(cell => cell.includes('USD'))).toBe(false)
+  })
+
+  // The single currency per response is the BACKEND's guarantee, not ours to assume.
+  it('keeps the code in the cell where the rows do not agree on one', () => {
+    const wrapper = mountTable([
+      period({ unit_name: 'a', currency: 'USD', net_pnl: -1.75 }),
+      period({ unit_name: 'b', currency: 'EUR', net_pnl: 4.2 }),
+    ])
+    expect(wrapper.find('.periods-summary').text()).not.toContain('figures in')
+    const cells = wrapper.findAll('tbody td').map(td => td.text())
+    expect(cells).toContain('-1.75 USD')
+    expect(cells).toContain('4.20 EUR')
   })
 })
 
@@ -249,9 +356,12 @@ describe('BookingPeriodTimeline — what a lane is', () => {
     expect(note).not.toContain('23:1')
   })
 
-  // A booking close is a boundary every lane shares — the trading-day anchor. Distinct instants
-  // only, so four sessions closing at one anchor draw one line rather than four.
-  it('rules a line at each distinct booking close, once per instant', () => {
+  /**
+   * A booking close is NOT a boundary the other lanes share. Units of a run book independently, so
+   * a rule drawn across every lane asserted a relationship that does not exist — and on its OWN
+   * lane it only repeated the span's edge. Removed 2026-09-27 after the operator spotted it.
+   */
+  it('draws no rule across the lanes at a booking close', () => {
     const wrapper = mount(BookingPeriodTimeline, {
       props: {
         periods: sessions(),
@@ -260,9 +370,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         order: 'time',
       },
     })
-    // three periods, one shared closing instant -> one rule per lane
-    const perLane = wrapper.findAll('.lane-row')[0]?.findAll('.rule') ?? []
-    expect(perLane).toHaveLength(1)
+    expect(wrapper.findAll('.rule')).toHaveLength(0)
   })
 
   /**

@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getRuns, getRunSummary } from '@/api/api_client'
+import { isAbsent } from '@/types/api/absence_types'
+import type { SectionAbsence } from '@/types/api/absence_types'
 import type { RunInfo, RunSummary } from '@/types/api/report_types'
 import { t } from '@/translate'
 
@@ -26,8 +28,20 @@ export const useRunsStore = defineStore('runs', () => {
   const error = ref<string | null>(null)
   // the selected run exists but carries no run-summary artifact (backend 404)
   const summaryMissing = ref(false)
+  /** Why the summary is not here, where it is not. */
+  const summaryAbsence = ref<SectionAbsence | null>(null)
   // a run id the index does not contain — a link or a reloaded URL naming a run that is gone
   const unknownRunId = ref<string | null>(null)
+  /**
+   * The scenario the reader narrowed to, one step below the run in the same cascade — and part of
+   * the SELECTION, so it belongs in the URL rather than in the stored layout.
+   *
+   * Held as a plain name because that is what the backend declares as the unit's identity, and one
+   * identity under four field names across four responses: `scenario-details.units[].name`,
+   * `portfolio.units[].name`, `trade-history.trades[].scenario_name` and
+   * `booking-periods.periods[].unit_name`. Confirmed in their code 2026-09-27, not merely observed.
+   */
+  const selectedUnit = ref<string | null>(null)
 
   // group -> name -> run, all three derived from the one index request
   const groups = computed(() => unique(runs.value.map(run => run.group)))
@@ -84,7 +98,15 @@ export const useRunsStore = defineStore('runs', () => {
     selectedRunId.value = null
     summary.value = null
     summaryMissing.value = false
+    summaryAbsence.value = null
     unknownRunId.value = null
+    // a different run is a different roster, so a narrowing made for the old one means nothing
+    selectedUnit.value = null
+  }
+
+  /** Narrows every section to one scenario, or shows the whole run again with null. */
+  function setUnit(unit: string | null): void {
+    selectedUnit.value = unit
   }
 
   function setGroup(group: string): void {
@@ -106,11 +128,15 @@ export const useRunsStore = defineStore('runs', () => {
     error.value = null
     summary.value = null
     summaryMissing.value = false
+    summaryAbsence.value = null
 
     try {
       const result = await getRunSummary(runId)
-      summary.value = result
-      summaryMissing.value = result === null
+      // the summary keeps its own flag rather than joining the absence map: the whole run view
+      // gates on whether it arrived, which is a different job from naming a missing section
+      summaryMissing.value = isAbsent(result)
+      summary.value = isAbsent(result) ? null : result
+      summaryAbsence.value = isAbsent(result) ? result : null
     } catch (e) {
       error.value = describeFailure(e, t('Could not load the run summary'))
     } finally {
@@ -151,9 +177,11 @@ export const useRunsStore = defineStore('runs', () => {
     selectedName,
     selectedRunId,
     selectedRun,
+    selectedUnit,
     summary,
     feedHealth,
     summaryMissing,
+    summaryAbsence,
     unknownRunId,
     loadingRuns,
     loadingSummary,
@@ -161,6 +189,7 @@ export const useRunsStore = defineStore('runs', () => {
     loadRuns,
     setGroup,
     setName,
+    setUnit,
     selectRun,
   }
 })

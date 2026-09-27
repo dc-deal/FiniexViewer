@@ -229,11 +229,16 @@ export interface PortfolioUnitRow {
   conversion_rate: number | null
   base_currency: string
   quote_currency: string
-  balances: Record<string, number>
-  initial_balances: Record<string, number>
+  /**
+   * Per-currency maps. The value is optional because the set of keys differs per unit — a spot unit
+   * carries its base currency, a margin one does not — and reading a key that is not there is an
+   * absence, not a zero.
+   */
+  balances: Record<string, number | undefined>
+  initial_balances: Record<string, number | undefined>
   // Funds pledged against open orders, and what is left to trade with
-  committed_funds: Record<string, number>
-  usable_funds: Record<string, number>
+  committed_funds: Record<string, number | undefined>
+  usable_funds: Record<string, number | undefined>
   last_price: number
   /**
    * Open at the close of the run. `final_equity_valued` says whether the valuation succeeded — an
@@ -504,6 +509,12 @@ export interface ScenarioTotals {
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/trade-history */
+export interface TradeHistoryKeys {
+  trades: string[]
+  analytics: string[]
+  scenario_totals: string[]
+}
+
 export interface TradeHistoryReport {
   run_id: string
   trades: TradeRow[]
@@ -511,6 +522,16 @@ export interface TradeHistoryReport {
   symbols: string[]
   analytics: TradeAnalytics[]
   scenario_totals: ScenarioTotals[]
+  /**
+   * What makes one row of each list unique. A response serving SEVERAL lists declares `keys` —
+   * plural, one entry per list — because a single tuple over two row types would name fields one
+   * of them does not have. Contract 9.
+   *
+   * `trades` is the one where guessing would have been wrong: `position_id` alone repeats, because
+   * a partial close books several records of ONE position and two scenarios of a symbol both count
+   * from `pos_<symbol>_1`. Measured here in 3 of 11 runs before it was declared.
+   */
+  keys: TradeHistoryKeys
 }
 
 /**

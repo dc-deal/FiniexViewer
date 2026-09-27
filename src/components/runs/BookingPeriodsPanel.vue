@@ -5,6 +5,7 @@ import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import { amount, magnitude } from '@/components/runs/report_format'
 import { orderPeriods } from '@/components/runs/period_order'
 import { useDisplaySettings } from '@/composables/use_display_settings'
+import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import type { LaneOrder } from '@/types/settings_types'
 import type { BookingPeriodsReport } from '@/types/api/report_types'
 import { t } from '@/translate'
@@ -59,8 +60,25 @@ const laneOrder = ref<LaneOrder>(display.value.laneOrder)
 
 watch(() => display.value.laneOrder, order => { laneOrder.value = order })
 
+/**
+ * The narrowing reaches the PERIODS, never the verdict above them. `reconciles`, `total_net_pnl`
+ * and `total_trades` compare the whole run's booked records against the whole run's count — there
+ * is no per-unit version of that check, and showing it over one lane would claim it was about that
+ * lane. It keeps its figures and says whose they are.
+ *
+ * `unit_name` is the unit's identity here, the same value the roster calls `name`.
+ */
+const narrowing = useScenarioSelection()
+const narrowed = computed(() => narrowing.unit.value !== null)
+
+const selectedPeriods = computed(() => {
+  const unit = narrowing.unit.value
+  if (unit === null) return props.model.periods
+  return props.model.periods.filter(period => period.unit_name === unit)
+})
+
 const orderedPeriods = computed(() =>
-  orderPeriods(props.model.periods, laneOrder.value, row => row.unit_name)
+  orderPeriods(selectedPeriods.value, laneOrder.value, row => row.unit_name)
 )
 
 /**
@@ -94,10 +112,17 @@ const otherCurrencies = computed(() =>
           </template>
           <template v-else>{{ t('nothing reported') }}</template>
         </p>
+        <p v-if="narrowed" class="verdict-scope">
+          {{ t('This check is the whole run — the periods below are one scenario') }}
+        </p>
       </div>
     </div>
 
-    <div v-if="!model.periods.length" class="hint">{{ t('This run booked no periods') }}</div>
+    <div v-if="!selectedPeriods.length" class="hint">
+      {{ narrowed
+        ? t('This scenario booked no periods')
+        : t('This run booked no periods') }}
+    </div>
     <template v-else>
       <BookingPeriodTimeline
         v-model:order="laneOrder"
@@ -146,6 +171,15 @@ const otherCurrencies = computed(() =>
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+}
+
+/* the scope of the check, in the annotation role — it marks the boundary between what the verdict
+   covers and what is drawn below it */
+.verdict-scope {
+  margin: 0;
+  color: var(--color-annotation);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
 }
 
 .verdict-text,

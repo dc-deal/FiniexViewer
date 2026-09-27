@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo, RunSummary, RunSummaryCurrency } from '@/types/api/report_types'
 import * as apiClient from '@/api/api_client'
+import type { SectionAbsence } from '@/types/api/absence_types'
 
 // the captured shape as the base — see the note in run_panels.test.ts
 import runSummaryFixture from './fixtures/run_summary.json'
@@ -69,6 +70,17 @@ const SUMMARY: RunSummary = {
   disturbance_stale_seconds: 0,
   disturbance_source_count: 0,
   disturbance_stress_injected: 0,
+}
+
+
+/**
+ * What the client now answers where a section is not there: the cause and the backend's own
+ * sentence, instead of the bare `null` that made four different situations look identical.
+ */
+const ABSENT: SectionAbsence = {
+  absent: true,
+  cause: 'artifact_not_produced',
+  detail: 'This run does not write that section',
 }
 
 describe('useRunsStore', () => {
@@ -159,6 +171,33 @@ describe('useRunsStore', () => {
       expect(store.selectedRunId).toBeNull()
       expect(store.summary).toBeNull()
     })
+
+    /**
+     * The scenario narrowing is the bottom step of the same cascade. Carried across a run change
+     * it would silently narrow the new run to a name that run may not even have — or, worse, to a
+     * name it does have, which then reads as a deliberate choice nobody made.
+     */
+    it('drops the scenario narrowing whenever the run below it changes', async () => {
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
+      const store = await loadedStore()
+      await store.selectRun('20260615_130000')
+      store.setUnit('ETHUSD_blocks_03')
+      expect(store.selectedUnit).toBe('ETHUSD_blocks_03')
+
+      await store.selectRun('20260615_120000')
+      expect(store.selectedUnit).toBeNull()
+
+      store.setUnit('ETHUSD_blocks_03')
+      store.setGroup('live')
+      expect(store.selectedUnit).toBeNull()
+    })
+
+    it('shows the whole run again when the narrowing is cleared', async () => {
+      const store = await loadedStore()
+      store.setUnit('ETHUSD_blocks_03')
+      store.setUnit(null)
+      expect(store.selectedUnit).toBeNull()
+    })
   })
 
   describe('selectRun', () => {
@@ -185,7 +224,7 @@ describe('useRunsStore', () => {
 
     it('flags a missing artifact instead of raising an error', async () => {
       vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
-      vi.mocked(apiClient.getRunSummary).mockResolvedValue(null)
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(ABSENT)
       const store = useRunsStore()
       await store.loadRuns()
       await store.selectRun('20260615_130000')
@@ -307,7 +346,7 @@ describe('useRunsStore', () => {
       vi.mocked(apiClient.getRuns).mockResolvedValue([runRow({
         run_id: '20260615_130000', group: 'live', name: 'p',
       })])
-      vi.mocked(apiClient.getRunSummary).mockResolvedValue(null)
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(ABSENT)
       const store = useRunsStore()
       await store.loadRuns()
       await store.selectRun('20260615_130000')

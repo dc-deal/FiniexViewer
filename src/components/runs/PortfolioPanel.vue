@@ -1,12 +1,26 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import type { PortfolioReport, PortfolioUnitRow } from '@/types/api/report_types'
 import { amount, numberOrNa, percentOrNa, signClass } from '@/components/runs/report_format'
+import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import { t } from '@/translate'
 
 defineProps<{
   model: PortfolioReport
 }>()
+
+/**
+ * Marked, never filtered — the deliberate exception to the narrowing.
+ *
+ * The footer of this table is an aggregate over the whole run, and it has no per-unit version: a
+ * single unit row sitting under an "All units" total is precisely the silent wrongness the
+ * narrowing exists to remove everywhere else. So the table keeps every row and the chosen one is
+ * marked, which also answers the question the narrowing raises here — how does this scenario
+ * compare with the others.
+ */
+const narrowing = useScenarioSelection()
+const picked = computed(() => narrowing.unit.value)
 
 /**
  * Chart target for a unit. `data_source` carries the broker keys the chart addresses, so the
@@ -36,7 +50,11 @@ function chartTarget(unit: PortfolioUnitRow): RouteLocationRaw {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="unit in model.units" :key="unit.name">
+        <tr
+          v-for="unit in model.units"
+          :key="unit.name"
+          :class="{ picked: unit.name === picked }"
+        >
           <td class="unit-cell">
             <span v-if="unit.has_error" class="unit-error" :title="t('This unit reported an error')">✖</span>
             {{ unit.name }}
@@ -77,6 +95,17 @@ function chartTarget(unit: PortfolioUnitRow): RouteLocationRaw {
 <style scoped>
 .table-scroll {
   overflow-x: auto;
+}
+
+/* the marked row carries a rule and a ▸, never colour alone — the same two channels the roster
+   uses, so the two panels mark the same thing the same way */
+.picked td:first-child {
+  border-left: 2px solid var(--color-annotation);
+}
+
+.picked td:first-child::before {
+  content: '▸ ';
+  color: var(--color-annotation);
 }
 
 .kpi-table {

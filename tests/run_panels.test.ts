@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount, RouterLinkStub } from '@vue/test-utils'
+import { defineComponent, h, ref } from 'vue'
+import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
@@ -381,6 +383,18 @@ function mountPortfolio(model: PortfolioReport) {
   })
 }
 
+/** The panel under a host that carries a narrowing, the way RunsView does. */
+function mountPortfolioNarrowed(model: PortfolioReport, unit: string | null) {
+  const selected = ref<string | null>(unit)
+  const Host = defineComponent({
+    setup() {
+      provideScenarioSelection({ unit: selected, select: value => { selected.value = value } })
+      return () => h(PortfolioPanel, { model })
+    },
+  })
+  return mount(Host, { global: { stubs: { RouterLink: RouterLinkStub } } })
+}
+
 describe('PortfolioPanel', () => {
   it('renders one row per unit with a totals row behind it', () => {
     const wrapper = mountPortfolio({
@@ -392,6 +406,35 @@ describe('PortfolioPanel', () => {
     const totals = wrapper.findAll('tfoot td').map(cell => cell.text())
     expect(totals[0]).toBe('All units (2) · USD')
     expect(totals[1]).toBe('-12.68 USD')
+  })
+
+  /**
+   * The deliberate exception to the narrowing. The footer here is an aggregate over the whole run
+   * with no per-unit version, and a single unit row under an "All units" total is precisely the
+   * misreading the narrowing removes everywhere else. Marking also answers the question narrowing
+   * raises on this panel — how the chosen scenario compares with the others.
+   */
+  it('marks the narrowed unit but keeps every row and the run-wide total', () => {
+    const model: PortfolioReport = {
+      run_id: '20260615_130000',
+      units: [unit(), unit({ name: 'USDJPY_blocks_02', net_profit: 4.2 })],
+      aggregates: [aggregate({ unit_count: 2 })],
+    }
+    const wrapper = mountPortfolioNarrowed(model, 'USDJPY_blocks_02')
+    expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+    const picked = wrapper.findAll('tbody tr.picked')
+    expect(picked).toHaveLength(1)
+    expect(picked[0]?.text()).toContain('USDJPY_blocks_02')
+    expect(wrapper.findAll('tfoot td')[0]?.text()).toBe('All units (2) · USD')
+  })
+
+  it('marks nothing where no narrowing is in force', () => {
+    const model: PortfolioReport = {
+      run_id: '20260615_130000',
+      units: [unit()],
+      aggregates: [],
+    }
+    expect(mountPortfolioNarrowed(model, null).findAll('tbody tr.picked')).toHaveLength(0)
   })
 
   it('links a unit into the chart via its data source', () => {

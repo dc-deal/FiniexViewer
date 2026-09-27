@@ -313,7 +313,7 @@ This avoids a CSS-in-JS dependency, works natively in every browser, and is triv
 Every user-selectable option on a page is stored in the URL as a query param, so any view is a shareable link that survives reload. Two composables own disjoint sets of params:
 
 - `use_query_sync.ts` — the chart selection (`?broker=...&symbol=...&timeframe=...`), activated in `AppShell`.
-- `use_run_query_sync.ts` — the run cascade (`?group=...&name=...&run=...`), activated in `RunsView`.
+- `use_run_query_sync.ts` — the run cascade (`?group=...&name=...&run=...&unit=...`), activated in `RunsView`. `unit` is one step BELOW the run and selecting a run clears it, so it is applied after the run resolves — read first, it is silently dropped and a shared link loses its narrowing.
 
 Priority on load: **URL params > localStorage > null**. Both wait for `router.isReady()` before reading params, to avoid a race with the initial navigation, then watch their store and call `router.replace` on every change. For the chart selection, localStorage is a write-through cache; the run cascade has no cache, because the run index is live data.
 
@@ -476,6 +476,53 @@ file's name — a deliberate linkage, confirmed by the backend. But it answers *
 name lives today*: one moved, deleted or shadowed after the run gives a different answer than the
 run had, and no per-run origin is served. The label therefore describes the file, never the run.
 
+### Choosing one scenario — `?unit=`, and the three things it must not narrow
+
+A run holds up to forty scenarios, and the facet bar only narrows the ROSTER. The selection is the
+other half: one scenario is chosen, and the sections that are per-unit follow it.
+
+```
+?run=20260927_092959_cd1d9b1e&unit=BTCUSD_sentiment_realdata
+
+  roster            marks the row; a click chooses, a second click clears
+  trade history     narrowed
+  booking periods   narrowed
+  portfolio         MARKED, never narrowed
+  RunsView          one line above the column: "⌖ Narrowed to X … show all"
+```
+
+**It lives in the URL, because it is SELECTION.** Panel order and collapsed state are presentation
+and stay in `localStorage`; what the reader is looking at belongs in the query, or a shared link
+means something different for whoever opens it. It is the bottom step of the run cascade and is
+dropped whenever the run above it changes — carried across, it would narrow a new run to a name
+that run may not have, or to one it does, which then reads as a choice nobody made.
+
+**It reaches the panels ambiently** (`use_scenario_selection.ts`), for the same reason the display
+preferences do: it applies to every panel, only four act on it, and a prop on `<component :is>`
+hangs a stray attribute on the ones that do not declare it. The channel carries the SETTER too,
+because the roster changes the selection — routed back as an event, the generic panel shell would
+have to forward a run-specific emit, which is the domain leaking into the part that must not know
+it. `RunsView` supplies it, not `PanelColumn`, which draws a deployment's panels and has no
+scenario to narrow to.
+
+**Three figures are run-wide and cannot be split, so they are LABELLED rather than filtered:** the
+order funnel and the per-currency analytics in Trade History (both from `run-summary`), and the
+reconciliation verdict in Booking Periods. A run-wide number sitting unlabelled over one
+scenario's rows reads as that scenario's — the same class of silent wrongness the narrowing exists
+to remove. Portfolio is the fourth and is handled by marking instead: its footer is an aggregate
+with no per-unit version, and keeping every row also answers the question narrowing raises there,
+namely how the chosen scenario compares with the others.
+
+**Narrowing happens BEFORE the row cap.** Capped first, the first N trades of the whole run would
+be filtered down, and a scenario that traded late would show nothing while the panel claimed it had
+drawn everything.
+
+**An empty result is a statement about the scenario.** Every declared unit is in the roster whether
+it traded or not, so no trades means *this scenario closed no positions*, never *nothing matched* —
+and the empty states say exactly that. A `?unit=` naming a scenario the run does not declare is
+called out in the line above the column, but only where the roster actually arrived: it is
+simulation-only, so its absence on a live run says nothing about the name.
+
 ### Panels — a registry, a shell, one persisted layout
 
 The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
@@ -489,6 +536,10 @@ The viewer shows many small panels around one chart rather than one view per pag
 **Two stores, two questions.** `runs_store` answers *which* run is selected — the `group → name → run` cascade and the index behind it. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
 
 **A section whose model this run does not carry is skipped, never shown empty.** `PanelColumn` drops a panel whose source is absent, which is how a 404 on a report route reaches the UI: not as an error, as a missing section.
+
+**And the absence now says WHY.** Until the backend named the cause (contract 5), every missing section answered `run_not_found` and this client collapsed it to `null` — so a run still going, a run started with `reporting: none`, and a run whose pipeline never writes that section all rendered as the same blank space. `getX` now answers `Report | SectionAbsence`, the store keeps the reason beside the empty slot in `absences`, and `RunsView` says it ONCE above the column, **grouped by cause** — a run that ended early is missing several sections for one reason, and naming it once is the point. The sentence shown is the backend's own `detail`: it is written for a reader and held that way by a test on their side, so replacing it with one of ours would be a second, worse copy.
+
+The two DEPLOYMENT routes deliberately keep `| null`: an unknown deployment id is a stale link rather than a missing section, and `deployments_store` already renders that as its own state.
 
 **The same mechanism also carries "nothing to report".** Feed Health reads its own source rather than the shared run summary, and `runs_store` answers null where neither half of that panel speaks. Only `signal_fresh_ratio` is about SIGNAL — it is null when no SIGNAL worker ran; the four disturbance figures come from the feed-stability report and describe the DATA SOURCES, so a market feed can stall with no SIGNAL worker anywhere. The panel appears when a freshness was measured OR at least one episode occurred, and is dropped when neither is true. The backend's console draws the same line: `format_disturbance_line` returns an empty string at zero episodes rather than printing four zeros. Deciding this in the store rather than in the panel keeps the judgement out of the template and reuses the absent-source rule instead of inventing a second one.
 
@@ -551,6 +602,24 @@ while `runs/BookingPeriodTimeline.vue` holds every domain decision — what a la
 the axis carries, how a period becomes a coloured span. No package was added for it: a Gantt
 library would be a dependency for one view, and a proportional bar on a linear scale is a hundred
 lines that stay themeable through the existing tokens.
+
+**The table under the chart carries EVERY field a period has, and stays a table.** It once showed
+eleven of the fifteen the hover card shows, so the list meant to make periods comparable carried
+less than the thing that describes one. The two answer different questions — *what about this one*
+versus *how do they compare* — and comparison is why it is not a card per period: one column is one
+field, so the eye runs down it, while in cards the same field sits at a different height in every
+one. The width that made the fuller table awkward is bought back honestly: the columns are grouped
+under **Period · Result · Account**, and the currency is stated ONCE above the table instead of four
+times per row. A response is one currency by construction, but that is the backend's guarantee, so
+rows that disagree fall back to the code in the cell.
+
+**A booking close is not a boundary the other lanes share, so nothing is ruled across them.** The
+timeline briefly drew a vertical rule at every distinct closing instant. On the lane that closed it
+only repeated the span's own edge; on every other lane it asserted a relationship that does not
+exist, because the units of a run book independently — where one scenario closes its segment is not
+an event for another. Removed 2026-09-27, with the marker machinery it was the only caller of. The
+spans carry their own boundaries; a cross-lane rule belongs to something the spans do NOT encode,
+and when such a thing appears it gets designed against real data rather than kept in reserve.
 
 **One lane is a UNIT inside a run and a SESSION across a deployment.** `unit_name` is the profile
 name and identical in every session of a deployment, so laning by it stacks every session's

@@ -41,6 +41,7 @@ import deploymentDetailFixture from './fixtures/deployment_detail.json'
 import deploymentPeriodsFixture from './fixtures/deployment_booking_periods.json'
 import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
+import { isAbsent } from '@/types/api/absence_types'
 
 describe('api_client', () => {
   beforeEach(() => {
@@ -125,10 +126,20 @@ describe('api_client', () => {
       expect(mockGet).toHaveBeenCalledWith('/reports/runs/20260615_130000/run-summary')
     })
 
-    it('maps 404 to null — a run without the artifact is an absence, not a failure', async () => {
-      mockGet.mockRejectedValue({ response: { status: 404 } })
+    /**
+     * The 404 used to collapse to `null`, which made four different situations — still running,
+     * reporting switched off, a pipeline that never writes this section, an unknown run — render
+     * as one blank space. The cause and the backend's own sentence now travel with it.
+     */
+    it('carries the cause of a missing section rather than a bare absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it' } } })
       const result = await getRunSummary('20260615_130000')
-      expect(result).toBeNull()
+      expect(result).toEqual({
+        absent: true,
+        cause: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it',
+      })
     })
 
     it('rethrows any other failure', async () => {
@@ -144,9 +155,20 @@ describe('api_client', () => {
       expect(mockGet).toHaveBeenCalledWith('/reports/runs/20260615_130000/warnings-errors')
     })
 
-    it('maps 404 to null — a run without the artifact is an absence, not a failure', async () => {
-      mockGet.mockRejectedValue({ response: { status: 404 } })
-      expect(await getWarningsErrors('20260615_130000')).toBeNull()
+    /**
+     * The 404 used to collapse to `null`, which made four different situations — still running,
+     * reporting switched off, a pipeline that never writes this section, an unknown run — render
+     * as one blank space. The cause and the backend's own sentence now travel with it.
+     */
+    it('carries the cause of a missing section rather than a bare absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it' } } })
+      const result = await getWarningsErrors('20260615_130000')
+      expect(result).toEqual({
+        absent: true,
+        cause: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it',
+      })
     })
 
     it('raises a typed error on 409 — the artifact is there but predates the schema', async () => {
@@ -198,9 +220,20 @@ describe('api_client', () => {
       expect(mockGet).toHaveBeenCalledWith('/reports/runs/20260615_130000/portfolio')
     })
 
-    it('maps 404 to null — a run without the artifact is an absence, not a failure', async () => {
-      mockGet.mockRejectedValue({ response: { status: 404 } })
-      expect(await getPortfolio('20260615_130000')).toBeNull()
+    /**
+     * The 404 used to collapse to `null`, which made four different situations — still running,
+     * reporting switched off, a pipeline that never writes this section, an unknown run — render
+     * as one blank space. The cause and the backend's own sentence now travel with it.
+     */
+    it('carries the cause of a missing section rather than a bare absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it' } } })
+      const result = await getPortfolio('20260615_130000')
+      expect(result).toEqual({
+        absent: true,
+        cause: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it',
+      })
     })
 
     it('rethrows any other failure', async () => {
@@ -212,16 +245,28 @@ describe('api_client', () => {
   describe('getBookingPeriods', () => {
     it('calls the booking-periods endpoint with the run id in the path', async () => {
       mockGet.mockResolvedValue({ data: runBookingPeriodsFixture })
-      const result = await getBookingPeriods('20260922_134726_7cbebb0c')
+      const result = await getBookingPeriods(runBookingPeriodsFixture.run_id)
       expect(mockGet).toHaveBeenCalledWith(
-        '/reports/runs/20260922_134726_7cbebb0c/booking-periods'
+        `/reports/runs/${runBookingPeriodsFixture.run_id}/booking-periods`
       )
-      expect(result?.periods.length).toBeGreaterThan(0)
+      if (isAbsent(result)) throw new Error(`expected a section, got ${result.cause}`)
+      expect(result.periods.length).toBeGreaterThan(0)
     })
 
-    it('maps 404 to null — every run from before the journal answers that way', async () => {
-      mockGet.mockRejectedValue({ response: { status: 404 } })
-      expect(await getBookingPeriods('20260615_130000')).toBeNull()
+    /**
+     * The 404 used to collapse to `null`, which made four different situations — still running,
+     * reporting switched off, a pipeline that never writes this section, an unknown run — render
+     * as one blank space. The cause and the backend's own sentence now travel with it.
+     */
+    it('carries the cause of a missing section rather than a bare absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it' } } })
+      const result = await getBookingPeriods('20260615_130000')
+      expect(result).toEqual({
+        absent: true,
+        cause: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it',
+      })
     })
 
     it('raises a typed error on 409, like every other stored artifact', async () => {
@@ -258,6 +303,7 @@ describe('api_client', () => {
       mockGet.mockResolvedValue({ data: deploymentPeriodsFixture })
       const result = await getDeploymentBookingPeriods('deploy_20260922_121648')
       expect(mockGet).toHaveBeenCalledWith('/deployments/deploy_20260922_121648/booking-periods')
+      // a deployment answer is still `| null`: its absence is a stale link, not a missing section
       expect(result?.periods.length).toBeGreaterThan(0)
     })
 
@@ -305,14 +351,16 @@ describe('api_client', () => {
       mockGet.mockResolvedValue({ data: runConfigFixture })
       const result = await getRunConfig(runConfigFixture.run_id)
       expect(mockGet).toHaveBeenCalledWith(`/reports/runs/${runConfigFixture.run_id}/config`)
-      expect(result?.config_snapshot).toBe('autotrader_config.json')
+      if (isAbsent(result)) throw new Error(`expected a section, got ${result.cause}`)
+      expect(result.config_snapshot).toBe(runConfigFixture.config_snapshot)
     })
 
-    it('maps a run older than the config store to null — an absence', async () => {
+    it('names config_snapshot_missing on a run older than the config store', async () => {
       mockGet.mockRejectedValue({
         response: { status: 404, data: { error: 'config_snapshot_missing' } },
       })
-      expect(await getRunConfig('20260101_000000_aaaaaaaa')).toBeNull()
+      const result = await getRunConfig('20260101_000000_aaaaaaaa')
+      expect(result).toEqual({ absent: true, cause: 'config_snapshot_missing', detail: '' })
     })
 
     it('raises when the backend does not know the run our index named', async () => {
@@ -324,9 +372,11 @@ describe('api_client', () => {
     })
 
     // the two are told apart by the BODY, so a 404 without one is treated as the safe case
+    // an absence with no code is still an absence — never the disagreement run_not_found means
     it('treats an unlabelled 404 as an absence rather than as a disagreement', async () => {
       mockGet.mockRejectedValue({ response: { status: 404, data: {} } })
-      expect(await getRunConfig('20260101_000000_aaaaaaaa')).toBeNull()
+      const result = await getRunConfig('20260101_000000_aaaaaaaa')
+      expect(result).toEqual({ absent: true, cause: 'unknown', detail: '' })
     })
 
     it('checks the body names the run that was asked for', async () => {
@@ -342,12 +392,18 @@ describe('api_client', () => {
       expect(mockGet).toHaveBeenCalledWith(
         `/reports/runs/${tradeHistoryFixture.run_id}/trade-history`
       )
-      expect(result?.trades.length).toBeGreaterThan(0)
+      if (isAbsent(result)) throw new Error(`expected a section, got ${result.cause}`)
+      expect(result.trades.length).toBeGreaterThan(0)
     })
 
-    it('maps 404 to null — a run that closed no position carries no section', async () => {
-      mockGet.mockRejectedValue({ response: { status: 404 } })
-      expect(await getTradeHistory('20260615_130000')).toBeNull()
+    it('carries the cause where a run closed no position', async () => {
+      mockGet.mockRejectedValue({
+        response: { status: 404, data: { error: 'artifact_not_produced', detail: 'nothing to put in it' } },
+      })
+      const result = await getTradeHistory('20260615_130000')
+      expect(result).toEqual({
+        absent: true, cause: 'artifact_not_produced', detail: 'nothing to put in it',
+      })
     })
 
     it('checks the body names the run that was asked for', async () => {

@@ -12,7 +12,7 @@ export function useRunQuerySync(): void {
   const router = useRouter()
   const route = useRoute()
   const runsStore = useRunsStore()
-  const { selectedGroup, selectedName, selectedRunId } = storeToRefs(runsStore)
+  const { selectedGroup, selectedName, selectedRunId, selectedUnit } = storeToRefs(runsStore)
 
   let _ready = false
 
@@ -28,6 +28,9 @@ export function useRunQuerySync(): void {
       // even after the backend renames a group value. The stale params are simply not consulted,
       // and the watch below writes the corrected ones back into the URL.
       await runsStore.selectRun(params['run'])
+      // one step BELOW the run, and selecting a run clears it — so it is applied afterwards, and
+      // only where the run actually resolved. A unit without a run narrows nothing.
+      if (params['unit'] && selectedRunId.value) runsStore.setUnit(params['unit'])
     } else {
       // applied in cascade order — setGroup clears the name, setName clears the run
       if (params['group']) runsStore.setGroup(params['group'])
@@ -38,13 +41,14 @@ export function useRunQuerySync(): void {
   })
 
   // only write URL after init is complete — prevents intermediate states from clobbering params
-  watch([selectedGroup, selectedName, selectedRunId], ([group, name, run]) => {
+  watch([selectedGroup, selectedName, selectedRunId, selectedUnit], ([group, name, run, unit]) => {
     if (!_ready) return
     // merge, never replace — the chart selection owns params in the same query
     const query = readQuery(route.query)
     writeParam(query, 'group', group)
     writeParam(query, 'name', name)
     writeParam(query, 'run', run)
+    writeParam(query, 'unit', unit)
     router.replace({ query })
   })
 }

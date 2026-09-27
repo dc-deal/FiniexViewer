@@ -7,9 +7,18 @@ const decimal = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 })
 
+/**
+ * The bare figure, for a table that states its currency ONCE in the column header. Repeating the
+ * code in every cell is what makes such a table too wide to read without scrolling — and it says
+ * the same thing N times.
+ */
+export function figure(value: number): string {
+  return decimal.format(value)
+}
+
 /** Currency amount. The code is appended as text — quote currencies are not all ISO-4217. */
 export function amount(value: number, currency: string): string {
-  return `${decimal.format(value)} ${currency}`
+  return `${figure(value)} ${currency}`
 }
 
 /** Backend ratios are 0..1 — the percent conversion happens here, at the render edge. */

@@ -18,14 +18,29 @@ const nameOptions = computed(() =>
   names.value.map(name => ({ value: name, label: name }))
 )
 
+/**
+ * When the run started, at the rendering edge and in the reader's own zone — the id encodes the
+ * same instant, but nobody reads `20260925_095227` as a date at a glance.
+ */
+function startedAt(iso: string): string {
+  if (!iso) return ''
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return ''
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(at)
+}
+
 // A run without report artifacts stays visible but cannot be picked: it exists, so hiding it
 // would raise the question where it went, and selecting it would only produce 404s.
 const runOptions = computed(() =>
-  runsInSelection.value.map(run => ({
-    value: run.run_id,
-    label: run.has_reports ? run.run_id : `${run.run_id} — ${t('logs only')}`,
-    disabled: !run.has_reports,
-  }))
+  runsInSelection.value.map(run => {
+    const when = startedAt(run.start_time)
+    const label = when ? `${run.run_id} · ${when}` : run.run_id
+    return {
+      value: run.run_id,
+      label: run.has_reports ? label : `${label} — ${t('logs only')}`,
+      disabled: !run.has_reports,
+    }
+  })
 )
 </script>
 

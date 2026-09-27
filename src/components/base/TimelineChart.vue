@@ -20,8 +20,6 @@ const props = withDefaults(defineProps<{
   format: (value: number) => string
   /** Said out loud under the axis, because a scale whose meaning is implicit gets misread. */
   scaleNote?: string
-  /** Positions on the same scale to rule across every lane — a boundary all lanes share. */
-  markers?: number[]
   /**
    * Remove a stretch where NOTHING is drawn once it exceeds this length, and mark the removal.
    *
@@ -53,7 +51,6 @@ const props = withDefaults(defineProps<{
   ticks: 5,
   labelWidth: 15,
   scaleNote: '',
-  markers: () => [],
   collapseGapsLongerThan: 0,
   formatGap: (length: number) => String(length),
   formatRange: undefined,
@@ -252,8 +249,6 @@ const removedTotal = computed(() =>
   axis.value.breaks.reduce((sum, gap) => sum + gap.length, 0)
 )
 
-const ruled = computed(() => props.markers.map(value => ({ value, at: offset(value) })))
-
 const drawn = computed(() =>
   props.lanes.map(lane => ({
     ...lane,
@@ -326,14 +321,6 @@ const drawn = computed(() =>
           class="gap"
           :style="{ left: `${gap.at}%`, width: `${gap.width}%` }"
           :title="formatGap(gap.length)"
-        />
-        <!-- drawn ABOVE the spans: a boundary falls exactly on a span edge, where the 2px surface
-             gap is the only place it could be seen at all -->
-        <span
-          v-for="rule in ruled"
-          :key="`rule-${rule.value}`"
-          class="rule"
-          :style="{ left: `${rule.at}%` }"
         />
         <HoverCard
           v-for="bar in lane.bars"
@@ -462,55 +449,6 @@ const drawn = computed(() =>
   color: var(--color-annotation);
   white-space: nowrap;
   overflow: visible;
-}
-
-.rule {
-  position: absolute;
-  top: -1px;
-  bottom: -1px;
-  width: 1px;
-  z-index: 1;
-  background-color: var(--color-text-primary);
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.span {
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  min-width: 3px;
-  border-radius: 4px;
-  /* a 2px surface ring, so two adjacent spans never read as one */
-  outline: 2px solid var(--color-bg-elevated);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.span.positive { background-color: var(--color-positive); }
-.span.negative { background-color: var(--color-negative); }
-.span.flat     { background-color: var(--color-text-secondary); }
-
-/* the label wears ink, never the span colour */
-.span-label {
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  color: var(--color-bg-base);
-  padding: 0 var(--space-xs);
-  white-space: nowrap;
-}
-
-.rule {
-  position: absolute;
-  top: -1px;
-  bottom: -1px;
-  width: 1px;
-  z-index: 1;
-  background-color: var(--color-text-primary);
-  opacity: 0.55;
-  pointer-events: none;
 }
 
 .span {

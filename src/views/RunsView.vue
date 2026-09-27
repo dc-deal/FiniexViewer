@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunQuerySync } from '@/composables/use_run_query_sync'
+import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import AppBar from '@/components/panels/AppBar.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
@@ -13,16 +14,37 @@ import { t } from '@/translate'
 const runsStore = useRunsStore()
 const reportsStore = useRunReportsStore()
 const {
-  runs, selectedRunId, selectedRun, summary, feedHealth, summaryMissing, unknownRunId,
+  runs, selectedRunId, selectedRun, selectedUnit, summary, feedHealth, summaryAbsence,
+  unknownRunId,
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
 const {
-  warningsErrors, portfolio, bookingPeriods, config, tradeHistory, scenarios,
+  warningsErrors, portfolio, bookingPeriods, config, tradeHistory, scenarios, absences,
   unreadable, error: sectionError,
 } = storeToRefs(reportsStore)
 
 // loads the run index and restores the cascade from the URL
 useRunQuerySync()
+
+// The narrowing is ambient for the same reason the display preferences are — see the composable.
+// The view owns it rather than PanelColumn, which draws a deployment's panels too and has no
+// scenario to narrow to.
+provideScenarioSelection({
+  unit: selectedUnit,
+  select: (unit: string | null) => runsStore.setUnit(unit),
+})
+
+/**
+ * A narrowing that names a scenario this run does not have — an edited link, or one saved before
+ * the set was changed. Claimed ONLY where the roster actually arrived: `scenario-details` is built
+ * from the batch and is simulation-only by construction, so its absence on a live run says nothing
+ * about the name and must not be reported as a bad one.
+ */
+const unknownUnit = computed(() =>
+  selectedUnit.value !== null
+  && scenarios.value !== null
+  && !scenarios.value.units.some(unit => unit.name === selectedUnit.value)
+)
 
 // One request per section per run. Lazy loading on first expand is deferred until there are
 // enough sections to justify the plumbing — see viewer#21.
@@ -54,6 +76,39 @@ const sources = computed(() => ({
     ? { history: tradeHistory.value, summary: summary.value }
     : null,
 }))
+
+/**
+ * What this run has no section for, said ONCE above the column instead of by eight silent gaps.
+ *
+ * Until the backend named the cause every missing section was the same blank space: a run still
+ * going, a run started with reporting off, and a run whose pipeline never writes that section all
+ * rendered identically. The sentence is the backend's own — written for a reader, and held on
+ * their side by a test — so it is shown as it arrives rather than replaced.
+ *
+ * Grouped by cause, because a run that ended early is missing several sections for ONE reason and
+ * naming it once is the whole point.
+ */
+const SECTION_TITLES: Record<string, string> = {
+  warningsErrors: 'Warnings & Errors',
+  portfolio: 'Portfolio',
+  bookingPeriods: 'Booking Periods',
+  config: 'Configuration',
+  tradeHistory: 'Trade History',
+  scenarios: 'Scenarios',
+}
+
+const missingSections = computed(() => {
+  const all = { ...absences.value }
+  if (summaryAbsence.value) all['runSummary'] = summaryAbsence.value
+  const byCause = new Map<string, { detail: string, sections: string[] }>()
+  for (const [slot, absence] of Object.entries(all)) {
+    const title = slot === 'runSummary' ? t('Executive Summary') : t(SECTION_TITLES[slot] ?? slot)
+    const seen = byCause.get(absence.cause)
+    if (seen) seen.sections.push(title)
+    else byCause.set(absence.cause, { detail: absence.detail, sections: [title] })
+  }
+  return [...byCause.values()]
+})
 
 // Once a run is chosen there is always something to show: the header panel reads the index row.
 // PanelColumn drops every panel whose model is absent, so a run without artifacts simply renders
@@ -94,8 +149,27 @@ const showPanels = computed(() =>
         <p v-if="!selectedRun.has_reports" class="notice">
           {{ t('This run exists as logs only — it carries no report artifacts') }}
         </p>
-        <p v-else-if="summaryMissing" class="notice">
-          {{ t('This run carries no run-summary artifact') }}
+        <!-- one line per REASON, never one per absent section -->
+        <p v-for="missing in missingSections" :key="missing.detail" class="notice absent">
+          <span class="mark">ⓘ</span>
+          <span>
+            <strong>{{ missing.sections.join(' · ') }}</strong>
+            <template v-if="missing.detail"> — {{ missing.detail }}</template>
+          </span>
+        </p>
+        <!-- said ONCE above the column: every section below is narrowed, and a reader who forgot
+             would otherwise read a single scenario's figures as the run's -->
+        <p v-if="selectedUnit" class="notice narrowed">
+          <span class="mark">⌖</span>
+          <span>
+            {{ t('Narrowed to') }} <strong>{{ selectedUnit }}</strong>
+            <template v-if="unknownUnit">
+              — {{ t('this run declares no scenario by that name') }}
+            </template>
+          </span>
+          <button type="button" class="show-all" @click="runsStore.setUnit(null)">
+            {{ t('show all') }}
+          </button>
         </p>
         <p v-if="unreadable" class="notice">{{ unreadable }}</p>
         <!-- a section that failed to load says so; the sections that did load stay visible -->
@@ -153,6 +227,50 @@ const showPanels = computed(() =>
 .notice.failed {
   border-left-color: var(--color-error);
   color: var(--color-error);
+}
+
+/* an absence is not a warning and not an error — it is structure, so it stays in the plain role */
+.notice.absent {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+/* a narrowing is the reader's own doing, not a condition of the run — plain role, and the way
+   out sits in the same line as the statement */
+.notice.narrowed {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  border-left-color: var(--color-annotation);
+}
+
+.notice.narrowed strong {
+  color: var(--color-text-primary);
+  font-weight: normal;
+}
+
+.show-all {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.show-all:hover {
+  text-decoration: underline;
+}
+
+.notice.absent strong {
+  color: var(--color-text-primary);
+  font-weight: normal;
+}
+
+.notice .mark {
+  flex-shrink: 0;
 }
 
 .notice {

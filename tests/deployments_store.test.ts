@@ -15,7 +15,8 @@ vi.mock('@/api/api_client', () => ({
   getDeploymentBookingPeriods: vi.fn(),
 }))
 
-const ID = 'deploy_20260923_074955'
+// read from the capture rather than transcribed, so a re-capture cannot strand it
+const ID = detailFixture.deployment_id
 
 /** The listing as captured, plus the same deployment booking in a second account currency. */
 function twoCurrencyListing(): DeploymentRow[] {
@@ -63,17 +64,22 @@ describe('deployments_store', () => {
     })
   })
 
-  // Two deployments of one bot are the --new-deployment case: deployment_id is minted per
-  // deployment, bot_id is the identity that survives it.
+  /**
+   * Two deployments of one bot are the `--new-deployment` case: `deployment_id` is minted per
+   * deployment, `bot_id` is the identity that survives it.
+   *
+   * Built rather than captured: the backend currently holds a single deployment, and whether it
+   * happens to have been restarted is not what this asserts.
+   */
   it('keeps two histories of one bot apart while still relating them', async () => {
-    resolveAll()
+    const first = deploymentsFixture.deployments[0] as DeploymentRow
+    const second: DeploymentRow = { ...first, deployment_id: `${first.deployment_id}_restarted` }
+    resolveAll([first, second])
     const store = useDeploymentsStore()
     await store.loadDeployments()
-    const demo = store.deployments.filter(row => row.bot_id === 'demo-btcusd-bot')
-    // the count is data and moves as the generator is re-run; the PROPERTY is what is asserted —
-    // one bot_id spanning several deployment_ids, which is what --new-deployment produces
-    expect(demo.length).toBeGreaterThan(1)
-    expect(new Set(demo.map(row => row.deployment_id)).size).toBe(demo.length)
+    const oneBot = store.deployments.filter(row => row.bot_id === first.bot_id)
+    expect(oneBot.length).toBeGreaterThan(1)
+    expect(new Set(oneBot.map(row => row.deployment_id)).size).toBe(oneBot.length)
   })
 
   /**

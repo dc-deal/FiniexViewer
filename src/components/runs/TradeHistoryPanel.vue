@@ -5,6 +5,8 @@ import {
   amount, magnitude, numberOrNa, percent, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import { useDisplaySettings } from '@/composables/use_display_settings'
+import { useScenarioSelection } from '@/composables/use_scenario_selection'
+import { rowKey } from '@/api/list_key'
 import type { TradeRow, TradeView } from '@/types/api/report_types'
 import { t } from '@/translate'
 
@@ -45,8 +47,40 @@ const display = useDisplaySettings()
  */
 const rowCap = computed(() => display.value.tradeRowCap)
 
-const shown = computed(() => history.value.trades.slice(0, rowCap.value))
-const hidden = computed(() => Math.max(0, history.value.trades.length - rowCap.value))
+const narrowing = useScenarioSelection()
+
+/**
+ * True while one scenario is on show. The funnel above the rows comes from `run-summary` and is a
+ * RUN-wide count that cannot be split per unit, so it says so rather than sitting unlabelled over
+ * a single scenario's trades — a run-wide figure read as a unit's is the silent wrongness this
+ * whole selection was built to avoid.
+ */
+const narrowed = computed(() => narrowing.unit.value !== null)
+
+/**
+ * The narrowing applies to the ROWS, and before the cap. Capping first would take the first N
+ * trades of the whole run and filter what is left, so a unit that traded late would show nothing
+ * while the panel claimed it had drawn everything.
+ *
+ * `scenario_name` is the unit's identity here — one value under four field names, confirmed in
+ * the backend's code. A unit that traded nothing is still in the roster, so an empty result means
+ * "traded nothing", never "failed to match", and the empty state below says exactly that.
+ */
+const selected = computed(() => {
+  const unit = narrowing.unit.value
+  if (unit === null) return history.value.trades
+  return history.value.trades.filter(trade => trade.scenario_name === unit)
+})
+
+const shown = computed(() => selected.value.slice(0, rowCap.value))
+const hidden = computed(() => Math.max(0, selected.value.length - rowCap.value))
+
+/**
+ * What the cap is measured against. `count` is the run's own total and can exceed the rows the
+ * response carried, so it stays the figure for the whole run — but under a narrowing it would
+ * name a number the rows below have nothing to do with.
+ */
+const total = computed(() => narrowed.value ? selected.value.length : history.value.count)
 
 /**
  * The trades grouped under the unit that produced them, each group carrying its own totals.
@@ -56,8 +90,33 @@ const hidden = computed(() => Math.max(0, history.value.trades.length - rowCap.v
  * group header answers both at once: it shows the boundary AND puts the figures beside the rows
  * they are about. The unit order follows the trade order the backend returned; nothing is re-sorted.
  */
+/**
+ * What makes one trade unique — READ from the response rather than known, which is the whole point
+ * of the declaration. `position_id` alone repeats in 3 of the 11 runs on this machine
+ * (`pos_usdjpy_1` three times in one): a partial close books several records of ONE position, and
+ * two scenarios of the same symbol both count from `pos_<symbol>_1`.
+ */
+const tradeKey = computed(() => history.value.keys.trades)
+
 const groups = computed(() => {
-  const totals = new Map(history.value.scenario_totals.map(total => [total.scenario_name, total]))
+  /**
+   * Totals are declared unique by (scenario_name, currency), so a scenario that traded in two
+   * currencies has TWO of them. Keying this map on the name alone let the second overwrite the
+   * first in silence. No run does it today — but the declared key says it is possible, and the
+   * group header shows one figure, so a scenario with more than one total gets none and falls back
+   * to its row count rather than being handed an arbitrary half.
+   */
+  const byName = new Map<string, typeof history.value.scenario_totals>()
+  for (const total of history.value.scenario_totals) {
+    const bucket = byName.get(total.scenario_name) ?? []
+    bucket.push(total)
+    byName.set(total.scenario_name, bucket)
+  }
+  const totals = new Map(
+    [...byName.entries()]
+      .filter(([, bucket]) => bucket.length === 1)
+      .map(([name, bucket]) => [name, bucket[0]!])
+  )
   const order: string[] = []
   const byUnit = new Map<string, TradeRow[]>()
   for (const trade of shown.value) {
@@ -181,6 +240,13 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
       <span v-if="funnel.slTp" class="funnel-label">
         {{ funnel.slTp }} {{ t('closed by SL/TP') }}
       </span>
+      <span v-if="narrowed" class="scope">{{ t('whole run') }}</span>
+    </p>
+
+    <!-- the analytics come per CURRENCY, not per unit: there is no per-scenario version of them to
+         show, so under a narrowing they keep their figures and say whose they are -->
+    <p v-if="narrowed && history.analytics.length" class="scope-line">
+      {{ t('The figures below are the whole run — the trade rows beneath them are not') }}
     </p>
 
     <section v-for="stats in history.analytics" :key="stats.currency" class="analytics">
@@ -221,11 +287,17 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
 
     <p v-if="hidden" class="notice">
       <span class="mark">⚠</span>
-      {{ t('Showing the first') }} {{ rowCap }} {{ t('of') }} {{ history.count }}
+      {{ t('Showing the first') }} {{ rowCap }} {{ t('of') }} {{ total }}
       {{ t('trades — the remainder are not drawn, which is not the same as not there') }}
     </p>
 
-    <div v-if="!history.trades.length" class="hint">{{ t('This run closed no positions') }}</div>
+    <!-- an empty narrowed set is a statement about the SCENARIO, not a failed match: every unit
+         the run declared is in the roster whether it traded or not -->
+    <div v-if="!selected.length" class="hint">
+      {{ narrowed
+        ? t('This scenario closed no positions')
+        : t('This run closed no positions') }}
+    </div>
     <div v-else class="table-scroll">
       <table class="kpi-table">
         <thead>
@@ -268,7 +340,7 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
             </tr>
             <HoverCard
               v-for="trade in (isExpanded(group.name) ? group.trades : [])"
-              :key="trade.position_id"
+              :key="rowKey(trade, tradeKey)"
               :title="`${trade.scenario_name} · ${trade.direction} ${trade.lots}`"
               :details="details(trade)"
               side="top"
@@ -309,6 +381,23 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
 
 /* a rejection is not an error of ours — it is a fact about the run that must not be overlooked */
 .funnel-rejected { color: var(--color-warning); }
+
+/* the scope of a figure, in the annotation role: it marks a boundary between what is narrowed and
+   what is not. Not a warning — nothing here is wrong, it is simply about something wider. */
+.scope {
+  margin-left: auto;
+  padding: 0 var(--space-xs);
+  border: 1px dashed var(--color-annotation);
+  border-radius: 4px;
+  color: var(--color-annotation);
+}
+
+.scope-line {
+  margin: 0 0 var(--space-sm);
+  color: var(--color-annotation);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
 
 .analytics {
   display: grid;

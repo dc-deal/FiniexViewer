@@ -16,7 +16,18 @@ const BASE_SESSION = detailFixture.sessions[0] as DeploymentSessionRow
 const BASE_ROW = listFixture.deployments.find(
   row => row.deployment_id === detailFixture.deployment_id
 ) as DeploymentRow
-const ADVISORY = detailFixture.advisory as DeploymentAdvisory
+/**
+ * Built rather than read off the fixture: no deployment on the backend currently carries an
+ * advisory, so the captured response has `advisory: null`. The fixture still proves the FIELD
+ * exists and may be null — the assignment in `api_contract.test.ts` does that — and this constant
+ * supplies the case the panel exists for.
+ */
+const ADVISORY: DeploymentAdvisory = {
+  sessions: 4,
+  strategy_stands: 2,
+  operation_stands: 1,
+  longest_gap_hours: 93.4,
+}
 
 function session(overrides: Partial<DeploymentSessionRow> = {}): DeploymentSessionRow {
   return { ...BASE_SESSION, ...overrides }
@@ -153,11 +164,24 @@ describe('DeploymentHeader', () => {
   })
 })
 
-// The produced history: four sessions, nothing moved into session 2, a strategy change into
-// session 3 and an operational change into session 4.
-describe('SessionsTable against the produced history', () => {
+/**
+ * A history of four sessions: nothing moved into session 2, a strategy change into session 3 and
+ * an operational change into session 4.
+ *
+ * Built rather than captured. The backend currently holds one deployment of ONE session with no
+ * change of either kind, so the capture cannot carry this shape — the contract test records that
+ * gap separately rather than this render losing its cover.
+ */
+describe('SessionsTable across a history that moved', () => {
+  const HISTORY: DeploymentSessionRow[] = [
+    session({ run_id: 'r1', strategy_changed: false, operation_changed: false }),
+    session({ run_id: 'r2', strategy_changed: false, operation_changed: false }),
+    session({ run_id: 'r3', strategy_changed: true, operation_changed: false }),
+    session({ run_id: 'r4', strategy_changed: false, operation_changed: true }),
+  ]
+
   it('draws exactly the two boundaries the ledger reports, each above its session', () => {
-    const wrapper = mountSessions(detailFixture.sessions as DeploymentSessionRow[])
+    const wrapper = mountSessions(HISTORY)
     const boundaries = wrapper.findAll('.boundary')
     expect(boundaries).toHaveLength(2)
     expect(boundaries[0]?.text()).toContain('Strategy changed')
@@ -166,7 +190,7 @@ describe('SessionsTable against the produced history', () => {
     const rows = wrapper.findAll('tbody tr')
     // session 1, session 2, MARK, session 3, MARK, session 4
     expect(rows[2]?.classes()).toContain('boundary')
-    expect(rows[3]?.text()).toContain(detailFixture.sessions[2]?.run_id)
+    expect(rows[3]?.text()).toContain('r3')
   })
 })
 

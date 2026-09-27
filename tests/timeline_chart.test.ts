@@ -79,17 +79,6 @@ describe('TimelineChart', () => {
     expect(wrapper.find('.axis').attributes('title')).toBe('wall clock')
   })
 
-  // A rule marks a boundary every lane shares. It is drawn inside each lane rather than as one
-  // overlay, so it lands in the 2px surface gap between two adjacent spans — the only place a
-  // boundary that falls exactly on a span edge can be seen.
-  it('rules each marker across every lane, at its position on the scale', () => {
-    const wrapper = mountChart(
-      [lane('a', [[0, 50]]), lane('b', [[50, 100]])], 0, 100, { markers: [50] }
-    )
-    const rules = wrapper.findAll('.rule')
-    expect(rules).toHaveLength(2)
-    expect(leftOf(rules[0]?.attributes('style'))).toBeCloseTo(50)
-  })
 
   /**
    * Breaking a TIME axis is honest only because of what is removed: cutting an EMPTY stretch

@@ -6,6 +6,7 @@ import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
 import type { CallerIdentity } from '@/types/api/caller_types'
+import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
@@ -72,6 +73,19 @@ function assertBelongsTo<T extends { run_id: string }>(requested: string, body: 
   return body
 }
 
+/**
+ * Turns a 404 into the ABSENCE it describes, keeping the cause and the backend's own sentence.
+ *
+ * Every section answer used to collapse to `null` here, which threw away the only thing that made
+ * four different situations distinguishable. Anything that is not a 404 is still an error and is
+ * re-thrown by the caller.
+ */
+function absenceFrom(error: unknown): SectionAbsence | null {
+  if (!axios.isAxiosError(error) || error.response?.status !== 404) return null
+  const body = error.response.data as { error?: string, detail?: string } | undefined
+  return { absent: true, cause: body?.error ?? 'unknown', detail: body?.detail ?? '' }
+}
+
 export async function getRuns(): Promise<RunInfo[]> {
   const response = await http.get<RunListResponse>('/reports/runs')
   return response.data.runs
@@ -81,12 +95,13 @@ export async function getRuns(): Promise<RunInfo[]> {
  * Run summary for one run. Returns null when the run carries no run-summary artifact —
  * the backend answers 404 for that case, which is an absence, not a failure.
  */
-export async function getRunSummary(runId: string): Promise<RunSummary | null> {
+export async function getRunSummary(runId: string): Promise<RunSummary | SectionAbsence> {
   try {
     const response = await http.get<RunSummary>(`/reports/runs/${runId}/run-summary`)
     return assertBelongsTo(runId, response.data)
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    const absence = absenceFrom(error)
+    if (absence) return absence
     throw error
   }
 }
@@ -96,7 +111,7 @@ export async function getRunSummary(runId: string): Promise<RunSummary | null> {
  * ArtifactUnreadableError on 409, which the backend answers for an artifact written by an older
  * schema: it is there, it cannot be parsed, and the run has to be repeated.
  */
-export async function getWarningsErrors(runId: string): Promise<WarningsErrorsReport | null> {
+export async function getWarningsErrors(runId: string): Promise<WarningsErrorsReport | SectionAbsence> {
   try {
     const response = await http.get<WarningsErrorsReport>(
       `/reports/runs/${runId}/warnings-errors`
@@ -104,7 +119,8 @@ export async function getWarningsErrors(runId: string): Promise<WarningsErrorsRe
     return assertBelongsTo(runId, response.data)
   } catch (error) {
     if (!axios.isAxiosError(error)) throw error
-    if (error.response?.status === 404) return null
+    const absence = absenceFrom(error)
+    if (absence) return absence
     if (error.response?.status === 409) {
       const body = error.response.data as { detail?: string } | undefined
       throw new ArtifactUnreadableError(body?.detail ?? 'The artifact could not be read')
@@ -114,12 +130,13 @@ export async function getWarningsErrors(runId: string): Promise<WarningsErrorsRe
 }
 
 /** Per-unit portfolio breakdown of a run. Null when the run carries no such artifact. */
-export async function getPortfolio(runId: string): Promise<PortfolioReport | null> {
+export async function getPortfolio(runId: string): Promise<PortfolioReport | SectionAbsence> {
   try {
     const response = await http.get<PortfolioReport>(`/reports/runs/${runId}/portfolio`)
     return assertBelongsTo(runId, response.data)
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    const absence = absenceFrom(error)
+    if (absence) return absence
     throw error
   }
 }
@@ -140,7 +157,7 @@ function raiseIfForbidden(error: unknown, surface: string): void {
  * carries no such artifact, which is every run from before the journal existed: nothing is
  * back-filled. Raises ArtifactUnreadableError on 409, like every other stored artifact.
  */
-export async function getBookingPeriods(runId: string): Promise<BookingPeriodsReport | null> {
+export async function getBookingPeriods(runId: string): Promise<BookingPeriodsReport | SectionAbsence> {
   try {
     const response = await http.get<BookingPeriodsReport>(
       `/reports/runs/${runId}/booking-periods`
@@ -149,7 +166,8 @@ export async function getBookingPeriods(runId: string): Promise<BookingPeriodsRe
   } catch (error) {
     raiseIfForbidden(error, 'reports')
     if (!axios.isAxiosError(error)) throw error
-    if (error.response?.status === 404) return null
+    const absence = absenceFrom(error)
+    if (absence) return absence
     if (error.response?.status === 409) {
       const body = error.response.data as { detail?: string } | undefined
       throw new ArtifactUnreadableError(body?.detail ?? 'The artifact could not be read')
@@ -179,6 +197,9 @@ export async function getDeployment(deploymentId: string): Promise<DeploymentDet
     return response.data
   } catch (error) {
     raiseIfForbidden(error, 'deployments')
+    // A deployment's absence is a different question from a report section's — an unknown id is a
+    // stale link, which `deployments_store` already renders as its own state. Left as null on
+    // purpose rather than folded into the section mechanism.
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
     throw error
   }
@@ -198,6 +219,9 @@ export async function getDeploymentBookingPeriods(
     return response.data
   } catch (error) {
     raiseIfForbidden(error, 'deployments')
+    // A deployment's absence is a different question from a report section's — an unknown id is a
+    // stale link, which `deployments_store` already renders as its own state. Left as null on
+    // purpose rather than folded into the section mechanism.
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
     throw error
   }
@@ -217,7 +241,7 @@ export async function getDeploymentBookingPeriods(
  *
  * The distinction is only in the body, so it is read there rather than inferred from the status.
  */
-export async function getRunConfig(runId: string): Promise<RunConfigReport | null> {
+export async function getRunConfig(runId: string): Promise<RunConfigReport | SectionAbsence> {
   try {
     const response = await http.get<RunConfigReport>(`/reports/runs/${runId}/config`)
     return assertBelongsTo(runId, response.data)
@@ -227,18 +251,19 @@ export async function getRunConfig(runId: string): Promise<RunConfigReport | nul
     if (error.response?.status !== 404) throw error
     const body = error.response.data as { error?: string } | undefined
     if (body?.error === 'run_not_found') throw new RunNotFoundError(runId)
-    return null
+    return absenceFrom(error) ?? { absent: true, cause: 'unknown', detail: '' }
   }
 }
 
 /** Every closed position of a run, with its excursion statistics. Null when the run has none. */
-export async function getTradeHistory(runId: string): Promise<TradeHistoryReport | null> {
+export async function getTradeHistory(runId: string): Promise<TradeHistoryReport | SectionAbsence> {
   try {
     const response = await http.get<TradeHistoryReport>(`/reports/runs/${runId}/trade-history`)
     return assertBelongsTo(runId, response.data)
   } catch (error) {
     raiseIfForbidden(error, 'reports')
-    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    const absence = absenceFrom(error)
+    if (absence) return absence
     throw error
   }
 }
@@ -248,14 +273,15 @@ export async function getTradeHistory(runId: string): Promise<TradeHistoryReport
  * with its reason. Simulation only: a live run has no scenario grid and the route answers 404,
  * which is an absence here, not a failure.
  */
-export async function getScenarioDetails(runId: string): Promise<ScenarioDetailsReport | null> {
+export async function getScenarioDetails(runId: string): Promise<ScenarioDetailsReport | SectionAbsence> {
   try {
     const response = await http.get<ScenarioDetailsReport>(
       `/reports/runs/${runId}/scenario-details`)
     return assertBelongsTo(runId, response.data)
   } catch (error) {
     raiseIfForbidden(error, 'reports')
-    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    const absence = absenceFrom(error)
+    if (absence) return absence
     throw error
   }
 }

@@ -61,3 +61,8 @@ export_github_issues.sh
 INTERNAL_*.md
 ISSUE_*.md
 SESSION_*.md
+
+# A read-only copy of FiniexTestingIDE's documentation, refreshed by sync_ide_docs.sh.
+# Another project's content — never tracked here.
+ide_docs/
+sync_ide_docs.sh

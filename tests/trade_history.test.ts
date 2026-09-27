@@ -4,6 +4,7 @@ import { defineComponent, h, ref } from 'vue'
 import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
+import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings } from '@/types/settings_types'
 import type { RunSummary, TradeHistoryReport, TradeRow, TradeView } from '@/types/api/report_types'
@@ -42,6 +43,31 @@ function mountWithDisplay(
   const Host = defineComponent({
     setup() {
       provideDisplaySettings(display)
+      return () => h(TradeHistoryPanel, { model })
+    },
+  })
+  return mount(Host)
+}
+
+/** The panel narrowed to one scenario, the way RunsView narrows it. */
+function mountNarrowed(
+  history: TradeHistoryReport,
+  unit: string | null,
+  summary: RunSummary | null = null,
+  overrides: Partial<DisplaySettings> = {}
+) {
+  const model: TradeView = { history, summary }
+  const selected = ref<string | null>(unit)
+  const display = ref<DisplaySettings>({
+    scenarioThreshold: DEFAULT_SETTINGS.scenarioThreshold,
+    laneOrder: DEFAULT_SETTINGS.laneOrder,
+    tradeRowCap: DEFAULT_SETTINGS.tradeRowCap,
+    ...overrides,
+  })
+  const Host = defineComponent({
+    setup() {
+      provideDisplaySettings(display)
+      provideScenarioSelection({ unit: selected, select: value => { selected.value = value } })
       return () => h(TradeHistoryPanel, { model })
     },
   })
@@ -214,7 +240,10 @@ describe('TradeHistoryPanel', () => {
   })
 
   it('shows a group even for a single unit, because it carries that unit total', () => {
-    const wrapper = mountPanel(report())
+    const wrapper = mountPanel(report({
+      trades: [trade({ scenario_name: 'only_one', position_id: 'p1' })],
+      count: 1,
+    }))
     expect(wrapper.findAll('tbody tr.group')).toHaveLength(1)
   })
 
@@ -254,6 +283,63 @@ describe('TradeHistoryPanel', () => {
       const wrapper = mountPanel(BASE, { ...SUMMARY, orders_sent: 0, orders_executed: 0 })
       expect(wrapper.find('.funnel').text()).not.toContain('%')
     })
+  })
+
+  /**
+   * What makes a trade unique. Measured on this machine before the fix: `position_id` alone repeats
+   * in 3 of 11 runs — a partial close books several records of ONE position, and two scenarios of
+   * the same symbol both count from `pos_<symbol>_1`. A duplicated `v-for` key is the failure Vue
+   * reports as a warning and pays for by patching the wrong row.
+   */
+  describe('row identity', () => {
+    // the declaration is READ, not known: a response that names a different tuple is obeyed
+    it('keys on the tuple the response declares', () => {
+      const shared = [
+        trade({ position_id: 'p', scenario_name: 'a', exit_tick_index: 1 }),
+        trade({ position_id: 'p', scenario_name: 'a', exit_tick_index: 2 }),
+      ]
+      const wrapper = mountPanel(report({
+        trades: shared,
+        count: 2,
+        keys: {
+          trades: ['exit_tick_index'],
+          analytics: ['currency'],
+          scenario_totals: ['scenario_name', 'currency'],
+        },
+      }))
+      expect(tradeRows(wrapper)).toHaveLength(2)
+    })
+
+    it('draws every record where two share a position id', () => {
+      const wrapper = mountPanel(report({
+        trades: [
+          trade({ position_id: 'pos_ethusd_1', scenario_name: 'unit_a', exit_tick_index: 10 }),
+          trade({ position_id: 'pos_ethusd_1', scenario_name: 'unit_a', exit_tick_index: 44 }),
+          trade({ position_id: 'pos_ethusd_1', scenario_name: 'unit_b', exit_tick_index: 10 }),
+        ],
+        count: 3,
+      }))
+      expect(tradeRows(wrapper)).toHaveLength(3)
+    })
+  })
+
+  /**
+   * Totals are unique by (scenario_name, currency). A scenario that traded in two currencies has
+   * two of them, and handing the group header an arbitrary one would state a figure that covers
+   * half its rows. It gets none instead, and falls back to the count.
+   */
+  it('withholds a unit total where the unit has one per currency', () => {
+    const wrapper = mountPanel(report({
+      trades: [trade({ scenario_name: 'two_ccy', position_id: 'p1' })],
+      scenario_totals: [
+        { ...BASE.scenario_totals[0]!, scenario_name: 'two_ccy', currency: 'USD', net_pnl: 5 },
+        { ...BASE.scenario_totals[0]!, scenario_name: 'two_ccy', currency: 'EUR', net_pnl: 9 },
+      ],
+    }))
+    const group = wrapper.find('tbody tr.group')
+    expect(group.text()).toContain('two_ccy')
+    expect(group.text()).not.toContain('5.00')
+    expect(group.text()).not.toContain('9.00')
   })
 
   /**
@@ -328,5 +414,80 @@ describe('TradeHistoryPanel', () => {
     const many = Array.from({ length: 640 }, (_, index) => trade({ position_id: `pos_${index}` }))
     const wrapper = mountPanel(report({ trades: many, count: 640 }))
     expect(tradeRows(wrapper)).toHaveLength(DEFAULT_SETTINGS.tradeRowCap)
+  })
+
+  describe('narrowed to one scenario', () => {
+    const MIXED = report({
+      trades: [
+        trade({ position_id: 'a1', scenario_name: 'unit_a' }),
+        trade({ position_id: 'b1', scenario_name: 'unit_b' }),
+        trade({ position_id: 'a2', scenario_name: 'unit_a' }),
+      ],
+      count: 3,
+    })
+
+    it('draws only the chosen scenario\'s trades', () => {
+      const wrapper = mountNarrowed(MIXED, 'unit_a')
+      expect(tradeRows(wrapper)).toHaveLength(2)
+      expect(wrapper.text()).not.toContain('unit_b')
+    })
+
+    it('shows every trade again once the narrowing is cleared', () => {
+      const wrapper = mountNarrowed(MIXED, null)
+      expect(tradeRows(wrapper)).toHaveLength(3)
+    })
+
+    /**
+     * The narrowing runs BEFORE the cap. Capped first, the first N trades of the whole run would
+     * be filtered down and a unit that traded late would show nothing while the panel claimed it
+     * had drawn everything it had.
+     */
+    it('narrows before it caps, so a late scenario keeps its trades', () => {
+      const trades = [
+        ...Array.from({ length: 300 }, (_, i) => trade({ position_id: `e${i}`, scenario_name: 'early' })),
+        ...Array.from({ length: 5 }, (_, i) => trade({ position_id: `l${i}`, scenario_name: 'late' })),
+      ]
+      const wrapper = mountNarrowed(report({ trades, count: 305 }), 'late')
+      expect(tradeRows(wrapper)).toHaveLength(5)
+    })
+
+    /**
+     * A unit the run declared is in the roster whether it traded or not, so finding no trades is
+     * a statement about the SCENARIO — never a failed match. The two read very differently.
+     */
+    it('says the scenario traded nothing, rather than showing the run\'s empty state', () => {
+      const wrapper = mountNarrowed(MIXED, 'unit_c')
+      expect(tradeRows(wrapper)).toHaveLength(0)
+      expect(wrapper.find('.hint').text()).toContain('This scenario closed no positions')
+    })
+
+    /**
+     * The funnel and the analytics come from `run-summary` and per CURRENCY — neither has a
+     * per-unit version. Left unlabelled above one scenario's rows they read as that scenario's,
+     * which is the silent wrongness this narrowing exists to remove.
+     */
+    it('marks the run-wide figures as the run\'s, not the scenario\'s', () => {
+      const wrapper = mountNarrowed(MIXED, 'unit_a', SUMMARY)
+      expect(wrapper.find('.funnel .scope').text()).toBe('whole run')
+      expect(wrapper.find('.scope-line').exists()).toBe(true)
+    })
+
+    it('leaves those figures unmarked where nothing is narrowed', () => {
+      const wrapper = mountNarrowed(MIXED, null, SUMMARY)
+      expect(wrapper.find('.funnel .scope').exists()).toBe(false)
+      expect(wrapper.find('.scope-line').exists()).toBe(false)
+    })
+
+    // `count` is the run's own total and can exceed the rows served, so under a narrowing it
+    // names a number the drawn rows have nothing to do with.
+    it('counts the cap against the narrowed set, not the run', () => {
+      const trades = Array.from({ length: 60 }, (_, i) =>
+        trade({ position_id: `p${i}`, scenario_name: i < 40 ? 'unit_a' : 'unit_b' }))
+      const wrapper = mountNarrowed(report({ trades, count: 9999 }), 'unit_a', null,
+        { tradeRowCap: 10 })
+      const notice = wrapper.find('.notice')
+      expect(notice.text()).toContain('40')
+      expect(notice.text()).not.toContain('9999')
+    })
   })
 })

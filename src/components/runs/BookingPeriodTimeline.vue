@@ -176,14 +176,6 @@ const scope = computed(() => {
   return { ...current, lanes: [...current.lanes].sort((a, b) => earliest(a) - earliest(b)) }
 })
 
-/**
- * Where a booking closed. Distinct instants only: four sessions that booked at the same trading-day
- * anchor produce one line, not four on top of each other.
- */
-const closings = computed(() =>
-  [...new Set(usable.value.map(row => instant(row.closed_at)))].sort((a, b) => a - b)
-)
-
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
@@ -276,7 +268,6 @@ function rangeLabel(from: number, to: number): string {
       :to="scope.to"
       :format="axisFormat"
       :scale-note="scaleNote"
-      :markers="closings"
       :collapse-gaps-longer-than="longestSpan"
       :format-gap="gapLabel"
       :format-range="rangeLabel"

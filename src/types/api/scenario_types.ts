@@ -24,7 +24,12 @@ export interface ScenarioRow {
   account_currency: string
   /** False where the currency was inherited rather than named by the scenario. */
   account_currency_explicit: boolean
-  status: ScenarioStatus
+  /**
+   * `success` | `failed` today. Typed as a plain string rather than a closed union: the vocabulary
+   * is the backend's and a third value would arrive as itself, where a union would have made the
+   * mirror silently wrong instead of merely unfamiliar.
+   */
+  status: string
   /**
    * Plural fields that hold a COMMA-JOINED list rather than an array — measured over 370 rows, two
    * of them read `'production,unknown'`. Reported to the backend 2026-09-27; until they are arrays
@@ -40,22 +45,21 @@ export interface ScenarioRow {
   last_tick_time: string
   tick_timespan_seconds: number
   /**
-   * Five counters that are ZERO on every row measured — 370 rows across 14 runs on 2026-09-27,
-   * including the 18 that processed ticks and closed positions. Reported to the backend; until it
-   * is answered nothing is rendered or sorted from them, because a zero nobody reported is not a
-   * figure.
+   * The four decision counters. `null` means NOTHING COUNTED THEM — the decision tracker sits on
+   * the hot path and is off by default in the simulation — and 0 means counted and none. They read
+   * 0 on an artifact written before contract 9, which is the not-back-filled case rather than a
+   * measurement. Nothing is rendered or sorted from them: a zero nobody reported is not a figure.
    */
-  buy_signals: number
-  sell_signals: number
-  flat_signals: number
-  trades_requested: number
+  buy_signals: number | null
+  sell_signals: number | null
+  flat_signals: number | null
+  trades_requested: number | null
+  /** How many workers the scenario DECLARES — read from its configuration, so a refused one has it too. */
   worker_count: number
   /** Both empty on a scenario that ran; both set on one that did not. */
   error_type: string
   error_message: string
 }
-
-export type ScenarioStatus = 'success' | 'failed'
 
 /** One data source the run drew on, and which scenarios used it. */
 export interface ScenarioDataSource {
@@ -66,8 +70,15 @@ export interface ScenarioDataSource {
   price_bases: string
 }
 
+/** What makes one row of each list unique, one entry per list — contract 9. */
+export interface ScenarioDetailsKeys {
+  units: string[]
+  data_sources: string[]
+}
+
 export interface ScenarioDetailsReport {
   run_id: string
   units: ScenarioRow[]
   data_sources: ScenarioDataSource[]
+  keys: ScenarioDetailsKeys
 }

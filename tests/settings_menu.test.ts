@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import TopMenu from '@/components/TopMenu.vue'
@@ -34,11 +34,18 @@ function mountDialog(tab?: SettingsTab) {
 }
 
 /**
- * A turn of the macrotask queue as well as the microtask queue. Reading a file resolves through
- * FileReader, which jsdom schedules as a task — flushing promises alone never reaches it.
+ * Waits for the panel on show to say something, rather than for a fixed number of turns.
+ *
+ * Reading a file resolves through FileReader, which jsdom schedules as a TASK — flushing promises
+ * alone never reaches it. A single `setTimeout(0)` did reach it, until it did not: under a loaded
+ * suite the task landed a turn late and the assertion read the panel before the notice was on it.
+ * A test that is red once and green on the retry is worse than no test, because it teaches the
+ * reader to run it again.
  */
-function settle(): Promise<void> {
-  return new Promise(resolve => { setTimeout(resolve, 0) })
+async function waitForPanelText(fragment: string): Promise<void> {
+  await vi.waitFor(() => {
+    expect(activePanel()?.textContent ?? '').toContain(fragment)
+  }, { timeout: 2000, interval: 10 })
 }
 
 /** Portalled, so it is read off the document rather than off the wrapper. */
@@ -80,8 +87,6 @@ async function pickFile(text: string, name = 'layout.json'): Promise<void> {
   const file = new File([text], name, { type: 'application/json' })
   Object.defineProperty(input, 'files', { value: [file], configurable: true })
   input.dispatchEvent(new Event('change', { bubbles: true }))
-  await settle()
-  await flushPromises()
 }
 
 const A_LAYOUT = JSON.stringify({
@@ -187,14 +192,14 @@ describe('SettingsDialog', () => {
       mountDialog('layout')
       await flushPromises()
       await pickFile('this is not a layout', 'notes.json')
-      expect(activePanel()?.textContent).toContain('not a layout')
+      await waitForPanelText('not a layout')
     })
 
     it('confirms a layout that imported cleanly', async () => {
       mountDialog('layout')
       await flushPromises()
       await pickFile(A_LAYOUT)
-      expect(activePanel()?.textContent).toContain('Layout replaced')
+      await waitForPanelText('Layout replaced')
     })
   })
 

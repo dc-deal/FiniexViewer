@@ -35,6 +35,7 @@ vi.mock('@/api/api_client', () => ({
 }))
 
 import * as apiClient from '@/api/api_client'
+import type { SectionAbsence } from '@/types/api/absence_types'
 
 // Minimal component that activates the composable
 const TestComponent = defineComponent({
@@ -51,6 +52,17 @@ function makeRouter(query: Record<string, string> = {}) {
   return router
 }
 
+
+/**
+ * What the client now answers where a section is not there: the cause and the backend's own
+ * sentence, instead of the bare `null` that made four different situations look identical.
+ */
+const ABSENT: SectionAbsence = {
+  absent: true,
+  cause: 'artifact_not_produced',
+  detail: 'This run does not write that section',
+}
+
 describe('useRunQuerySync', () => {
   let pinia: ReturnType<typeof createPinia>
 
@@ -58,7 +70,7 @@ describe('useRunQuerySync', () => {
     pinia = createPinia()
     setActivePinia(pinia)
     vi.mocked(apiClient.getRuns).mockReset().mockResolvedValue(RUNS)
-    vi.mocked(apiClient.getRunSummary).mockReset().mockResolvedValue(null)
+    vi.mocked(apiClient.getRunSummary).mockReset().mockResolvedValue(ABSENT)
   })
 
   it('loads the run index before applying params', async () => {
@@ -95,6 +107,49 @@ describe('useRunQuerySync', () => {
     expect(store.selectedGroup).toBe('live')
     expect(store.selectedName).toBe('my_profile')
     expect(store.selectedRunId).toBe('20260615_130000')
+  })
+
+  // The scenario is one step BELOW the run in the same cascade, and selecting a run clears it.
+  // Applied in the wrong order the param is silently dropped and a shared link loses its narrowing.
+  it('restores the scenario narrowing, after the run that clears it', async () => {
+    const router = makeRouter({ run: '20260615_120000', unit: 'ETHUSD_blocks_03' })
+    await router.isReady()
+    mount(TestComponent, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    const store = useRunsStore()
+    expect(store.selectedRunId).toBe('20260615_120000')
+    expect(store.selectedUnit).toBe('ETHUSD_blocks_03')
+  })
+
+  // A unit narrows a run's sections; with no run there is nothing for it to narrow.
+  it('ignores a scenario param that names no run', async () => {
+    const router = makeRouter({ unit: 'ETHUSD_blocks_03' })
+    await router.isReady()
+    mount(TestComponent, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    expect(useRunsStore().selectedUnit).toBeNull()
+  })
+
+  it('writes the scenario narrowing into the URL, and removes it again', async () => {
+    const router = makeRouter({ run: '20260615_120000' })
+    await router.isReady()
+    mount(TestComponent, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    const replaceSpy = vi.spyOn(router, 'replace')
+    const store = useRunsStore()
+
+    store.setUnit('ETHUSD_blocks_03')
+    await flushPromises()
+    let query = (replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }).query
+    expect(query['unit']).toBe('ETHUSD_blocks_03')
+
+    store.setUnit(null)
+    await flushPromises()
+    query = (replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }).query
+    expect(query['unit']).toBeUndefined()
   })
 
   it('applies a partial cascade without inventing the levels below', async () => {

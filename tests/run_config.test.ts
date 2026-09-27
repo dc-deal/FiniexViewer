@@ -15,12 +15,20 @@ const SIM: RunConfigReport = simulation
 describe('config_shape', () => {
   // one route, two documents: the profile carries its strategy at the top, the scenario set puts
   // it under `global`. Containing that here is what keeps it out of the components.
+  // asserted against the capture rather than a transcribed value: what this proves is WHERE the
+  // block was found, and a re-capture must not turn that into a wrong literal
   it('finds the strategy in an autotrader profile', () => {
-    expect(strategyOf(LIVE.config)?.decision_logic_type).toBe('CORE/simple_consensus')
+    const declared = (LIVE.config as { strategy_config: { decision_logic_type: string } })
+      .strategy_config.decision_logic_type
+    expect(declared).toBeTruthy()
+    expect(strategyOf(LIVE.config)?.decision_logic_type).toBe(declared)
   })
 
   it('finds it under global in a scenario set', () => {
-    expect(strategyOf(SIM.config)?.decision_logic_type).toContain('backtesting')
+    const declared = (SIM.config as { global: { strategy_config: { decision_logic_type: string } } })
+      .global.strategy_config.decision_logic_type
+    expect(declared).toBeTruthy()
+    expect(strategyOf(SIM.config)?.decision_logic_type).toBe(declared)
   })
 
   it('answers null where neither shape is present, so the tree can speak instead', () => {
@@ -34,8 +42,15 @@ describe('config_shape', () => {
   })
 
   describe('overrides', () => {
+    // built rather than captured: whether the run on the server happens to carry an override is
+    // not what this asserts
     it('reports none where every scenario inherits', () => {
-      expect(scenarioOverrides(SIM.config)).toEqual([])
+      const inherited = { scenarios: [{ name: 'a' }, { name: 'b' }] }
+      expect(scenarioOverrides(inherited)).toEqual([])
+      expect(scenarioCount(inherited)).toBe(2)
+    })
+
+    it('counts the scenarios of a real capture', () => {
       expect(scenarioCount(SIM.config)).toBeGreaterThan(0)
     })
 
@@ -94,14 +109,16 @@ describe('ConfigPanel', () => {
 
   it('names the source file and shortens the id, keeping the whole of it reachable', () => {
     const wrapper = mountPanel(LIVE)
-    expect(wrapper.text()).toContain('autotrader_config.json')
+    expect(wrapper.text()).toContain(LIVE.config_snapshot)
     expect(wrapper.find('.config-id').attributes('title')).toBe(LIVE.config_id)
   })
 
   it('gives the decision logic and its parameters a place of their own', () => {
+    const strategy = strategyOf(LIVE.config)!
     const text = mountPanel(LIVE).text()
-    expect(text).toContain('CORE/simple_consensus')
-    expect(text).toContain('rsi_oversold')
+    expect(text).toContain(strategy.decision_logic_type)
+    expect(Object.keys(strategy.decision_logic_config).length).toBeGreaterThan(0)
+    expect(text).toContain(Object.keys(strategy.decision_logic_config)[0]!)
   })
 
   it('shows each worker instance with its type and its tuning on one row', () => {
@@ -111,7 +128,22 @@ describe('ConfigPanel', () => {
   })
 
   it('stays silent about overrides where there are none', () => {
-    expect(mountPanel(SIM).find('.notice.moved').exists()).toBe(false)
+    const inherited: RunConfigReport = { ...SIM, config: { scenarios: [{ name: 'a' }] } }
+    expect(mountPanel(inherited).find('.notice.moved').exists()).toBe(false)
+  })
+
+  /**
+   * Built, not captured. An earlier version of this asserted that the CAPTURE carried an override
+   * — and the next re-capture had none, which is the dependency every other test here has just
+   * been moved off. Whether the run on the server happens to override is not what this asserts.
+   */
+  it('warns where a scenario set does carry one', () => {
+    const moved: RunConfigReport = {
+      ...SIM,
+      config: { scenarios: [{ name: 'window_1', strategy_config: { min_confidence: 0.7 } }] },
+    }
+    expect(scenarioOverrides(moved.config).length).toBe(1)
+    expect(mountPanel(moved).find('.notice.moved').exists()).toBe(true)
   })
 
   it('warns where scenarios carry their own, and names them', () => {

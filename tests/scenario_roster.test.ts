@@ -1,6 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
+import { defineComponent, h, ref } from 'vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
+import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import type { ScenarioDetailsReport, ScenarioRow } from '@/types/api/scenario_types'
 
 let mounted: VueWrapper | null = null
@@ -46,6 +48,7 @@ function report(units: ScenarioRow[]): ScenarioDetailsReport {
       symbols: ['ETHUSD'],
       price_bases: 'order_driven',
     }],
+    keys: { units: ['name'], data_sources: ['broker_type'] },
   }
 }
 
@@ -70,6 +73,23 @@ function mountPanel(model: ScenarioDetailsReport = MIXED) {
 
 function rowNames(wrapper: VueWrapper): string[] {
   return wrapper.findAll('.roster-name').map(node => node.text())
+}
+
+/** The panel under a host that carries the narrowing, the way RunsView does. */
+function mountWithSelection(model: ScenarioDetailsReport = MIXED, initial: string | null = null) {
+  const unit = ref<string | null>(initial)
+  const Host = defineComponent({
+    setup() {
+      provideScenarioSelection({ unit, select: value => { unit.value = value } })
+      return () => h(ScenarioRosterPanel, { model })
+    },
+  })
+  mounted = mount(Host, { attachTo: document.body })
+  return { wrapper: mounted, unit }
+}
+
+function headOf(wrapper: VueWrapper, name: string) {
+  return wrapper.findAll('.roster-head').find(node => node.text().startsWith(name))!
 }
 
 /** The facet panels are portalled, so a trigger is opened and the options read off the document. */
@@ -181,6 +201,48 @@ describe('ScenarioRosterPanel', () => {
       await wrapper.setProps({ model: report([row({ name: 'fresh_one' })]) })
       await flushPromises()
       expect(rowNames(wrapper)).toEqual(['fresh_one'])
+    })
+  })
+
+  /**
+   * The roster is where a scenario is CHOSEN, because it is the only complete list — the one place
+   * every scenario can be reached from, the ones that produced nothing included.
+   */
+  describe('choosing a scenario', () => {
+    it('narrows to the scenario whose row was clicked', async () => {
+      const { wrapper, unit } = mountWithSelection()
+      await headOf(wrapper, 'eth_b').trigger('click')
+      expect(unit.value).toBe('eth_b')
+    })
+
+    it('clears the narrowing when the chosen row is clicked again', async () => {
+      const { wrapper, unit } = mountWithSelection(MIXED, 'eth_b')
+      await headOf(wrapper, 'eth_b').trigger('click')
+      expect(unit.value).toBeNull()
+    })
+
+    // A scenario that produced nothing is exactly the one a reader most wants to narrow to.
+    it('lets a failed scenario be chosen like any other', async () => {
+      const { wrapper, unit } = mountWithSelection()
+      await headOf(wrapper, 'eth_broken').trigger('click')
+      expect(unit.value).toBe('eth_broken')
+    })
+
+    // Marked by a rule AND by aria-pressed — never by colour alone.
+    it('marks the chosen row, and only that one', () => {
+      const { wrapper } = mountWithSelection(MIXED, 'eth_b')
+      const picked = wrapper.findAll('.roster-row.picked')
+      expect(picked).toHaveLength(1)
+      expect(picked[0]?.text()).toContain('eth_b')
+      expect(headOf(wrapper, 'eth_b').attributes('aria-pressed')).toBe('true')
+      expect(headOf(wrapper, 'eth_a').attributes('aria-pressed')).toBe('false')
+    })
+
+    // A panel mounted with no host behaves as it did before a selection existed.
+    it('stays inert where no host supplied a selection', async () => {
+      const wrapper = mountPanel()
+      await headOf(wrapper, 'eth_b').trigger('click')
+      expect(wrapper.findAll('.roster-row.picked')).toHaveLength(0)
     })
   })
 })

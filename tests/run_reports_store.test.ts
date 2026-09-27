@@ -13,6 +13,7 @@ import tradeHistoryFixture from './fixtures/trade_history.json'
 import * as apiClient from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
+import type { SectionAbsence } from '@/types/api/absence_types'
 
 vi.mock('@/api/api_client', () => ({
   getWarningsErrors: vi.fn(),
@@ -59,6 +60,17 @@ const PORTFOLIO: PortfolioReport = {
   }],
 }
 
+
+/**
+ * What the client now answers where a section is not there: the cause and the backend's own
+ * sentence, instead of the bare `null` that made four different situations look identical.
+ */
+const ABSENT: SectionAbsence = {
+  absent: true,
+  cause: 'artifact_not_produced',
+  detail: 'This run does not write that section',
+}
+
 describe('useRunReportsStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -77,7 +89,7 @@ describe('useRunReportsStore', () => {
   })
 
   it('keeps the section null when the run carries no such artifact', async () => {
-    vi.mocked(apiClient.getWarningsErrors).mockResolvedValue(null)
+    vi.mocked(apiClient.getWarningsErrors).mockResolvedValue(ABSENT)
     const store = useRunReportsStore()
     await store.loadWarningsErrors('20260615_130000')
     expect(store.warningsErrors).toBeNull()
@@ -131,6 +143,65 @@ describe('useRunReportsStore', () => {
   })
 })
 
+/**
+ * The absence is a VALUE now, not a blank.
+ *
+ * Every missing section used to arrive as `null`, so a run still going, a run started with
+ * reporting off and a run whose pipeline never writes that section all reached the view as the
+ * same nothing. The reason is kept beside the empty slot so the view can say it once.
+ */
+describe('useRunReportsStore — what is not here, and why', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.mocked(apiClient.getPortfolio).mockReset()
+    vi.mocked(apiClient.getWarningsErrors).mockReset()
+  })
+
+  it('keeps the slot empty and records the cause beside it', async () => {
+    vi.mocked(apiClient.getPortfolio).mockResolvedValue({
+      absent: true, cause: 'run_not_completed', detail: 'still running, or it ended early',
+    })
+    const store = useRunReportsStore()
+    await store.loadPortfolio('20260615_130000')
+    expect(store.portfolio).toBeNull()
+    expect(store.absences['portfolio']).toEqual({
+      absent: true, cause: 'run_not_completed', detail: 'still running, or it ended early',
+    })
+  })
+
+  // an absence is not a failure: the error slot is what a broken REQUEST writes to
+  it('does not report an absence as an error', async () => {
+    vi.mocked(apiClient.getPortfolio).mockResolvedValue(ABSENT)
+    const store = useRunReportsStore()
+    await store.loadPortfolio('20260615_130000')
+    expect(store.error).toBeNull()
+  })
+
+  it('keeps two sections apart when both are missing for different reasons', async () => {
+    vi.mocked(apiClient.getPortfolio).mockResolvedValue({
+      absent: true, cause: 'artifact_not_produced', detail: 'a',
+    })
+    vi.mocked(apiClient.getWarningsErrors).mockResolvedValue({
+      absent: true, cause: 'reports_not_commissioned', detail: 'b',
+    })
+    const store = useRunReportsStore()
+    await store.loadPortfolio('20260615_130000')
+    await store.loadWarningsErrors('20260615_130000')
+    expect(store.absences['portfolio']?.cause).toBe('artifact_not_produced')
+    expect(store.absences['warningsErrors']?.cause).toBe('reports_not_commissioned')
+  })
+
+  // the previous run's reasons must never survive a selection change, like every other slot
+  it('forgets every reason when the selection changes', async () => {
+    vi.mocked(apiClient.getPortfolio).mockResolvedValue(ABSENT)
+    const store = useRunReportsStore()
+    await store.loadPortfolio('20260615_130000')
+    expect(Object.keys(store.absences)).toHaveLength(1)
+    store.clear()
+    expect(store.absences).toEqual({})
+  })
+})
+
 describe('useRunReportsStore — portfolio section', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -148,7 +219,7 @@ describe('useRunReportsStore — portfolio section', () => {
   })
 
   it('keeps the section null when the run carries no such artifact', async () => {
-    vi.mocked(apiClient.getPortfolio).mockResolvedValue(null)
+    vi.mocked(apiClient.getPortfolio).mockResolvedValue(ABSENT)
     const store = useRunReportsStore()
     await store.loadPortfolio('20260615_130000')
     expect(store.portfolio).toBeNull()
@@ -191,12 +262,12 @@ describe('useRunReportsStore — portfolio section', () => {
     it('loads the section and holds it under its own slot', async () => {
       vi.mocked(apiClient.getBookingPeriods).mockResolvedValue(bookingPeriodsFixture)
       const store = useRunReportsStore()
-      await store.loadBookingPeriods('20260922_134726_7cbebb0c')
+      await store.loadBookingPeriods(bookingPeriodsFixture.run_id)
       expect(store.bookingPeriods?.periods.length).toBeGreaterThan(0)
     })
 
     it('keeps null when the run carries no journal — the panel is then not shown', async () => {
-      vi.mocked(apiClient.getBookingPeriods).mockResolvedValue(null)
+      vi.mocked(apiClient.getBookingPeriods).mockResolvedValue(ABSENT)
       const store = useRunReportsStore()
       await store.loadBookingPeriods('20260615_130000')
       expect(store.bookingPeriods).toBeNull()
@@ -214,7 +285,7 @@ describe('useRunReportsStore — portfolio section', () => {
     it('is cleared with every other section when the selection changes', async () => {
       vi.mocked(apiClient.getBookingPeriods).mockResolvedValue(bookingPeriodsFixture)
       const store = useRunReportsStore()
-      await store.loadBookingPeriods('20260922_134726_7cbebb0c')
+      await store.loadBookingPeriods(bookingPeriodsFixture.run_id)
       store.clear()
       expect(store.bookingPeriods).toBeNull()
     })
@@ -225,11 +296,11 @@ describe('useRunReportsStore — portfolio section', () => {
       vi.mocked(apiClient.getRunConfig).mockResolvedValue(runConfigFixture)
       const store = useRunReportsStore()
       await store.loadConfig(runConfigFixture.run_id)
-      expect(store.config?.config_snapshot).toBe('autotrader_config.json')
+      expect(store.config?.config_snapshot).toBe(runConfigFixture.config_snapshot)
     })
 
     it('keeps null for a run older than the store — the panel is then not shown', async () => {
-      vi.mocked(apiClient.getRunConfig).mockResolvedValue(null)
+      vi.mocked(apiClient.getRunConfig).mockResolvedValue(ABSENT)
       const store = useRunReportsStore()
       await store.loadConfig('20260101_000000_aaaaaaaa')
       expect(store.config).toBeNull()
@@ -264,7 +335,7 @@ describe('useRunReportsStore — portfolio section', () => {
     })
 
     it('keeps null where the run closed no position — the panel is then not shown', async () => {
-      vi.mocked(apiClient.getTradeHistory).mockResolvedValue(null)
+      vi.mocked(apiClient.getTradeHistory).mockResolvedValue(ABSENT)
       const store = useRunReportsStore()
       await store.loadTradeHistory('20260615_130000')
       expect(store.tradeHistory).toBeNull()

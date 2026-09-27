@@ -5,6 +5,8 @@ import {
   getWarningsErrors,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
+import { isAbsent } from '@/types/api/absence_types'
+import type { SectionAbsence } from '@/types/api/absence_types'
 import type {
   BookingPeriodsReport,
   RunConfigReport,
@@ -33,6 +35,14 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const loadingConfig = ref(false)
   const loadingTradeHistory = ref(false)
   const loadingScenarios = ref(false)
+  /**
+   * Why a section is not here, keyed by the slot it would have filled.
+   *
+   * A 404 used to become `null` and the panel simply did not appear — four different situations
+   * rendered as one blank space. The cause and the backend's own sentence are kept so the view can
+   * say it once, above the column, rather than eight panels each saying nothing.
+   */
+  const absences = ref<Record<string, SectionAbsence>>({})
   const error = ref<string | null>(null)
   // the artifact exists but predates the current schema — not an absence and not an outage
   const unreadable = ref<string | null>(null)
@@ -45,6 +55,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     config.value = null
     tradeHistory.value = null
     scenarios.value = null
+    absences.value = {}
     error.value = null
     unreadable.value = null
   }
@@ -56,7 +67,9 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     warningsErrors.value = null
     try {
       // null means the run carries no such artifact — the panel is then simply not shown
-      warningsErrors.value = await getWarningsErrors(runId)
+      const answer = await getWarningsErrors(runId)
+      if (isAbsent(answer)) absences.value['warningsErrors'] = answer
+      else warningsErrors.value = answer
     } catch (e) {
       // an artifact from an older schema is a state of the run, not a failure of the request
       if (e instanceof ArtifactUnreadableError) {
@@ -74,7 +87,9 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingPortfolio.value = true
     portfolio.value = null
     try {
-      portfolio.value = await getPortfolio(runId)
+      const answer = await getPortfolio(runId)
+      if (isAbsent(answer)) absences.value['portfolio'] = answer
+      else portfolio.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
       error.value = `${t('Could not load the portfolio breakdown')}: ${detail}`
@@ -88,7 +103,9 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingBookingPeriods.value = true
     bookingPeriods.value = null
     try {
-      bookingPeriods.value = await getBookingPeriods(runId)
+      const answer = await getBookingPeriods(runId)
+      if (isAbsent(answer)) absences.value['bookingPeriods'] = answer
+      else bookingPeriods.value = answer
     } catch (e) {
       if (e instanceof ArtifactUnreadableError) {
         unreadable.value = e.message
@@ -111,7 +128,9 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingConfig.value = true
     config.value = null
     try {
-      config.value = await getRunConfig(runId)
+      const answer = await getRunConfig(runId)
+      if (isAbsent(answer)) absences.value['config'] = answer
+      else config.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
       error.value = `${t('Could not load the configuration')}: ${detail}`
@@ -125,7 +144,9 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingTradeHistory.value = true
     tradeHistory.value = null
     try {
-      tradeHistory.value = await getTradeHistory(runId)
+      const answer = await getTradeHistory(runId)
+      if (isAbsent(answer)) absences.value['tradeHistory'] = answer
+      else tradeHistory.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
       error.value = `${t('Could not load the trade history')}: ${detail}`
@@ -142,7 +163,9 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingScenarios.value = true
     scenarios.value = null
     try {
-      scenarios.value = await getScenarioDetails(runId)
+      const answer = await getScenarioDetails(runId)
+      if (isAbsent(answer)) absences.value['scenarios'] = answer
+      else scenarios.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
       error.value = `${t('Could not load the scenario roster')}: ${detail}`
@@ -154,6 +177,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   return {
     warningsErrors,
     scenarios,
+    absences,
     portfolio,
     bookingPeriods,
     config,
