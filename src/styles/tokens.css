@@ -18,11 +18,25 @@
  *   text-secondary  structure and neutral annotation: notices that inform rather than warn.
  *
  * Text contrast measured against the panel surface, 2026-09-23: warning 8.2:1 dark, 5.9:1 light.
+ *
+ * SURFACES are not roles — they are lightness steps of one surface, and a control moves through
+ * them as it is pointed at and pressed. `bg-hover` lifts, `bg-active` sinks, in both themes, so
+ * "pressed" reads the same way whichever theme is on. Measured 2026-09-27: text over all three
+ * button surfaces is 12.97:1 or better in both themes.
+ *
+ * The step between them is deliberately small (a luminance ratio of ~1.1), because surface is a
+ * WEAK channel on its own — too weak to carry press feedback. The pressed state therefore also
+ * moves the control down by a pixel, and position works regardless of contrast sensitivity.
+ *
+ * `text-secondary` on a surface is the look of a DISABLED control. Nothing that can be clicked may
+ * wear it — a settings button did, and was read as greyed out by the first person to meet it.
  */
 :root[data-theme='dark'] {
   --color-bg-base:        #0d0d0f;
   --color-bg-surface:     #18181b;
   --color-bg-elevated:    #1e1e23;
+  --color-bg-hover:       #26262c;
+  --color-bg-active:      #16161a;
   --color-text-primary:   #eeeeee;
   --color-text-secondary: #888888;
   --color-accent:         #4aaeff;
@@ -39,6 +53,8 @@
   --color-bg-base:        #f0f0f2;
   --color-bg-surface:     #ffffff;
   --color-bg-elevated:    #f8f8fa;
+  --color-bg-hover:       #ececf0;
+  --color-bg-active:      #e0e0e6;
   --color-text-primary:   #111111;
   --color-text-secondary: #555555;
   --color-accent:         #0066cc;

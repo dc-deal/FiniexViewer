@@ -282,9 +282,12 @@ describe('ScenarioRosterPanel', () => {
       const { wrapper, unit } = mountWithSelection(MIXED, ['eth_a'])
       expect(wrapper.find('.hint-line').exists()).toBe(false)
       const state = wrapper.find('.roster-picked')
-      expect(state.text()).toContain('Showing only 1 of 4')
+      // CHOSEN, not "showing only": the roster still lists all four, and the facet count beside
+      // it already means "how many rows are listed".
+      expect(state.text()).toContain('1 scenario chosen')
+      expect(state.text()).not.toContain('of 4')
 
-      await state.find('.clear-picked').trigger('click')
+      await state.find('.app-button').trigger('click')
       expect(unit.value).toEqual([])
     })
   })

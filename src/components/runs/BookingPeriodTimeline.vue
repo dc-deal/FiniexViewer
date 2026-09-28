@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import AppButton from '@/components/base/AppButton.vue'
 import TimelineChart from '@/components/base/TimelineChart.vue'
 import { rowKey } from '@/api/list_key'
 import {
@@ -250,16 +251,14 @@ function rangeLabel(from: number, to: number): string {
     <!-- only where there is more than one lane to order -->
     <div v-if="scope.lanes.length > 1" class="order-control">
       <span class="order-label">{{ t('Order lanes by') }}</span>
-      <button
-        class="order-button"
-        :class="{ active: order === 'time' }"
+      <AppButton
+        :active="order === 'time'"
         @click="emit('update:order', 'time')"
-      >{{ t('start time') }}</button>
-      <button
-        class="order-button"
-        :class="{ active: order === 'name' }"
+      >{{ t('start time') }}</AppButton>
+      <AppButton
+        :active="order === 'name'"
         @click="emit('update:order', 'name')"
-      >{{ t('name') }}</button>
+      >{{ t('name') }}</AppButton>
     </div>
 
     <TimelineChart
@@ -294,19 +293,8 @@ function rangeLabel(from: number, to: number): string {
 
 .order-label { color: var(--color-text-secondary); }
 
-.order-button {
+/* the lane order is a toggle group — AppButton carries the chosen look */
+.order-control .app-button.solid {
   padding: 1px var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background-color: var(--color-bg-elevated);
-  color: var(--color-text-secondary);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.order-button.active {
-  color: var(--color-text-primary);
-  border-color: var(--color-accent);
 }
 </style>

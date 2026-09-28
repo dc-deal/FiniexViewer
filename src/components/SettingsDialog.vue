@@ -5,6 +5,7 @@ import {
   DialogClose, DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
   TabsContent, TabsList, TabsRoot, TabsTrigger,
 } from 'reka-ui'
+import AppButton from '@/components/base/AppButton.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import { useCallerStore } from '@/stores/caller_store'
@@ -151,17 +152,17 @@ function readAtLabel(at: Date): string {
             <!-- a banned hint has no other way back: the control that banned it is gone with it -->
             <div class="setting">
               <span class="setting-label">{{ t('Hints') }}</span>
-              <button class="settings-button hints-reset" @click="hintsStore.reset()">
+              <AppButton class="hints-reset" @click="hintsStore.reset()">
                 {{ t('Show all hints again') }}
-              </button>
+              </AppButton>
             </div>
             <p class="setting-hint">
               {{ t('Brings back every short explanation you dismissed or turned off.') }}
             </p>
 
-            <button class="settings-button" @click="settingsStore.reset()">
+            <AppButton @click="settingsStore.reset()">
               {{ t('Restore defaults') }}
-            </button>
+            </AppButton>
           </TabsContent>
 
           <TabsContent value="layout" class="tab-panel">
@@ -169,12 +170,12 @@ function readAtLabel(at: Date): string {
               {{ t('The panel arrangement is stored on this machine. A file carries it to another.') }}
             </p>
             <div class="layout-actions">
-              <button class="settings-button" @click="exportLayout()">
+              <AppButton @click="exportLayout()">
                 ⬇️ {{ t('Export layout') }}
-              </button>
-              <button class="settings-button" @click="importInput?.click()">
+              </AppButton>
+              <AppButton @click="importInput?.click()">
                 ⬆️ {{ t('Import layout') }}
-              </button>
+              </AppButton>
             </div>
             <input
               ref="importInput"
@@ -227,7 +228,10 @@ function readAtLabel(at: Date): string {
         </TabsRoot>
 
         <div class="settings-actions">
-          <DialogClose class="settings-button primary">{{ t('Close') }}</DialogClose>
+          <!-- as-child: the primitive keeps the dismiss behaviour, AppButton carries the look -->
+          <DialogClose as-child>
+            <AppButton>{{ t('Close') }}</AppButton>
+          </DialogClose>
         </div>
       </DialogContent>
     </DialogPortal>
@@ -390,24 +394,8 @@ function readAtLabel(at: Date): string {
   gap: var(--space-sm);
 }
 
-.settings-button {
+/* the dialog only places its buttons; how a button looks belongs to AppButton */
+.app-button {
   align-self: flex-start;
-  background-color: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: var(--space-xs) var(--space-md);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.settings-button.primary {
-  color: var(--color-text-primary);
-}
-
-.settings-button:focus-visible {
-  border-color: var(--color-accent);
-  outline: none;
 }
 </style>

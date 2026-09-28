@@ -46,8 +46,8 @@ tests/
   timeframe_store.test.ts   — load-once cache, minutesFor lookup, error handling, loading flag
   bars_store.test.ts        — coverage validation, window calculation, timeframe mismatch, error handling
   use_query_sync.test.ts    — URL-first priority, localStorage fallback, _ready guard, URL write-back
-  runs_store.test.ts        — run index loading, group/name/run cascade, missing-artifact flag, error handling, and the scenario narrowing: several at once, one taken back out, no duplicates, dropped whenever the run below it changes
-  use_run_query_sync.test.ts — cascade restore from URL, partial cascade, merge with foreign params, and the scenario narrowing: restored AFTER the run that clears it, several names comma separated, a hand-edited param with blanks, ignored without a run, written and removed again
+  runs_store.test.ts        — run index loading, the flat index, missing-artifact flag, error handling, and the scenario narrowing: several at once, one taken back out, no duplicates, dropped whenever the run below it changes
+  use_run_query_sync.test.ts — the run restored from the URL, a link saved under the old cascade opened and its dead params cleaned away, merge with foreign params, and the scenario narrowing: restored AFTER the run that clears it, several names comma separated, a hand-edited param with blanks, ignored without a run, written and removed again
   query_param_utils.test.ts — query reading (string-only), param write and delete
   run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the narrowing (a unit's errors, a run-wide warning kept while another unit's drops, the outcome counts marked as the run's), the executive figures marked as the run's, the portfolio breakdown incl. the chart link and the narrowed unit MARKED rather than filtered (the run-wide total stays), and the run header incl. the two kinds of parent
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
@@ -55,7 +55,7 @@ tests/
   settings_menu.test.ts     — the three dialog tabs (display against the store, layout export/import incl. a bad file reported rather than swallowed, account in each of its four states), and the menu: the theme entry naming what it switches TO, the account name once the server reports one
   caller_store.test.ts      — the four states of GET /api/v1/caller, the display-name fallback, a refused token told apart from an unreachable server, and that nothing is cached
   facet_filter.test.ts      — OR within a facet and AND across facets, a facet counting against the OTHERS and not itself, a picked value kept listed at zero, a row that states no value never claimed by one, and that nothing is mutated
-  run_picker.test.ts        — the run's start time beside its id, a damaged or absent stamp shown as no date rather than Invalid Date, and the logs-only marking kept beside it
+  run_picker.test.ts        — the flat list (every run whatever its group), newest first, sorting on the INSTANT rather than the text of the stamp, the start time beside the id, a damaged stamp shown as no date rather than Invalid Date, a logs-only run marked but still selectable, narrowing by facet, and the list collapsing once a run is chosen
   scenario_roster.test.ts   — the complete roster incl. the scenarios that produced nothing and their reason, the notice above the filter, narrowing by facet and by search, the honest count, a facet dropped where no row states a value, and CHOOSING scenarios (click narrows, a second click takes one back out, several collected at once, a failed scenario choosable like any other, inert without a host, the hint that says what a click does and the state that replaces it)
   run_reports_store.test.ts — section loading (warnings/errors, portfolio), error text, clearing on run change, shared error slot across concurrent sections, and the ABSENCE as a value — the cause kept beside the empty slot, two sections missing for different reasons, an absence that is not an error, and every reason forgotten on a selection change
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 / 409 / 403 mapping
@@ -66,6 +66,7 @@ tests/
   hints_store.test.ts       — reconciliation (a retired id dropped, an unknown version discarded, no duplicates), a dismissal that lasts the session and is never written down, a ban that outlives the visit, and the reset that undoes both
   json_tree.test.ts         — key naming, quoted strings, array indices, null, fold depth
   run_config.test.ts        — the two configuration shapes, override PRESENCE without resolution, the worker join, and the guarantee that no top-level key is unreachable
+  app_button.test.ts        — the two shapes, a toggle announced as one ONLY where it is one, a genuinely disabled button rather than one merely styled as it, and that nothing submits a form by accident
   hover_card.test.ts        — portalled out of the page, opens on focus, carries the caller's figures and their polarity
   timeline_chart.test.ts    — scale and clamping, the broken axis and its length-preserving property, staggered labels
   deployment_panels.test.ts — the change marks between rows (against the produced four-session history), the absent idle stretch, the upper-bound gap, the missing totals row, the identity that does not move, the advisory wording

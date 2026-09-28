@@ -155,6 +155,10 @@ function clear(): void {
   border-color: var(--color-accent);
 }
 
+/* A chip row rather than AppButton: two of the three are portalled popover triggers, so unifying
+   them is its own step. The STATES are the same four and use the same tokens — ink at rest (muted
+   ink is what a disabled control wears), the surface lifting under a pointer and sinking under a
+   press, with the press also moving the chip down a pixel because surface alone is too weak. */
 .facet-trigger,
 .facet-sort,
 .facet-clear {
@@ -164,17 +168,41 @@ function clear(): void {
   background-color: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
   border-radius: 4px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   cursor: pointer;
   padding: 2px var(--space-sm);
   font-family: monospace;
   font-size: var(--font-size-sm);
+  transition: background-color 80ms ease, border-color 80ms ease;
+}
+
+.facet-trigger:hover,
+.facet-sort:hover,
+.facet-clear:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-accent);
+}
+
+.facet-trigger:active,
+.facet-sort:active,
+.facet-clear:active {
+  background-color: var(--color-bg-active);
+  transform: translateY(1px);
 }
 
 .facet-trigger.picked,
 .facet-sort.active {
-  color: var(--color-text-primary);
+  color: var(--color-accent);
   border-color: var(--color-accent);
+  background-color: var(--color-bg-active);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .facet-trigger,
+  .facet-sort,
+  .facet-clear {
+    transition: none;
+  }
 }
 
 .facet-trigger:focus-visible,

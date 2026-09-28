@@ -82,31 +82,38 @@ describe('useRunQuerySync', () => {
     expect(useRunsStore().runs).toEqual(RUNS)
   })
 
-  it('restores the whole cascade from the URL', async () => {
-    const router = makeRouter({ group: 'live', name: 'my_profile', run: '20260615_130000' })
+  it('restores the run from the URL', async () => {
+    const router = makeRouter({ run: '20260615_130000' })
     await router.isReady()
     mount(TestComponent, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
-    const store = useRunsStore()
-    expect(store.selectedGroup).toBe('live')
-    expect(store.selectedName).toBe('my_profile')
-    expect(store.selectedRunId).toBe('20260615_130000')
+    expect(useRunsStore().selectedRunId).toBe('20260615_130000')
     expect(apiClient.getRunSummary).toHaveBeenCalledWith('20260615_130000')
   })
 
-  it('takes the cascade from the run, not from the link — a stale group heals itself', async () => {
-    // 'autotrader' was a group value the backend has since renamed. A saved link still carries it,
-    // and the run it names is the authority for where that run belongs.
+  /**
+   * `group` and `name` were levels of a cascade the picker no longer has. A link saved while they
+   * existed must still open the right run — and must not leave two params behind that look like
+   * they still mean something.
+   */
+  it('opens a link saved under the old cascade, and cleans its dead params away', async () => {
     const router = makeRouter({ group: 'autotrader', name: 'stale_name', run: '20260615_130000' })
     await router.isReady()
     mount(TestComponent, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     const store = useRunsStore()
-    expect(store.selectedGroup).toBe('live')
-    expect(store.selectedName).toBe('my_profile')
     expect(store.selectedRunId).toBe('20260615_130000')
+
+    const replaceSpy = vi.spyOn(router, 'replace')
+    store.toggleUnit('some_unit')
+    await flushPromises()
+
+    const query = (replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }).query
+    expect(query['run']).toBe('20260615_130000')
+    expect(query['group']).toBeUndefined()
+    expect(query['name']).toBeUndefined()
   })
 
   // The scenario is one step BELOW the run in the same cascade, and selecting a run clears it.
@@ -177,15 +184,13 @@ describe('useRunQuerySync', () => {
     expect(query['unit']).toBeUndefined()
   })
 
-  it('applies a partial cascade without inventing the levels below', async () => {
+  it('selects nothing where the URL names no run', async () => {
     const router = makeRouter({ group: 'simulation' })
     await router.isReady()
     mount(TestComponent, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     const store = useRunsStore()
-    expect(store.selectedGroup).toBe('simulation')
-    expect(store.selectedName).toBeNull()
     expect(store.selectedRunId).toBeNull()
     expect(apiClient.getRunSummary).not.toHaveBeenCalled()
   })
@@ -197,11 +202,11 @@ describe('useRunQuerySync', () => {
     await flushPromises()
 
     const replaceSpy = vi.spyOn(router, 'replace')
-    useRunsStore().setGroup('live')
+    await useRunsStore().selectRun('20260615_130000')
     await flushPromises()
 
     const lastCall = replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }
-    expect(lastCall.query['group']).toBe('live')
+    expect(lastCall.query['run']).toBe('20260615_130000')
   })
 
   it('merges instead of replacing — params owned by the chart view survive', async () => {
@@ -211,7 +216,7 @@ describe('useRunQuerySync', () => {
     await flushPromises()
 
     const replaceSpy = vi.spyOn(router, 'replace')
-    useRunsStore().setGroup('live')
+    await useRunsStore().selectRun('20260615_130000')
     await flushPromises()
 
     const lastCall = replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }
@@ -219,23 +224,22 @@ describe('useRunQuerySync', () => {
       broker: 'mt5',
       symbol: 'EURUSD',
       timeframe: 'H1',
-      group: 'live',
+      run: '20260615_130000',
     })
   })
 
-  it('drops a param again when its level is cleared', async () => {
-    const router = makeRouter({ group: 'live', name: 'my_profile' })
+  it('drops the run param again when the run is cleared', async () => {
+    const router = makeRouter({ run: '20260615_130000' })
     await router.isReady()
     mount(TestComponent, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     const replaceSpy = vi.spyOn(router, 'replace')
-    // switching the group clears the name below it — the param must go with it
-    useRunsStore().setGroup('simulation')
+    // an unknown id clears the selection — the param must go with it
+    await useRunsStore().selectRun('does_not_exist')
     await flushPromises()
 
     const lastCall = replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }
-    expect(lastCall.query['group']).toBe('simulation')
-    expect(lastCall.query['name']).toBeUndefined()
+    expect(lastCall.query['run']).toBeUndefined()
   })
 })

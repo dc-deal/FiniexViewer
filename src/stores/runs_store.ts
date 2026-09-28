@@ -6,11 +6,6 @@ import type { SectionAbsence } from '@/types/api/absence_types'
 import type { RunInfo, RunSummary } from '@/types/api/report_types'
 import { t } from '@/translate'
 
-/** Distinct values in encounter order — the index arrives newest first and that order is kept. */
-function unique(values: string[]): string[] {
-  return [...new Set(values)]
-}
-
 /** Failure text for the UI: says what failed, keeps the detail, never shows a stack trace. */
 function describeFailure(error: unknown, action: string): string {
   const detail = error instanceof Error ? error.message : String(error)
@@ -19,8 +14,6 @@ function describeFailure(error: unknown, action: string): string {
 
 export const useRunsStore = defineStore('runs', () => {
   const runs = ref<RunInfo[]>([])
-  const selectedGroup = ref<string | null>(null)
-  const selectedName = ref<string | null>(null)
   const selectedRunId = ref<string | null>(null)
   const summary = ref<RunSummary | null>(null)
   const loadingRuns = ref(false)
@@ -43,19 +36,6 @@ export const useRunsStore = defineStore('runs', () => {
    * `booking-periods.periods[].unit_name`. Confirmed in their code 2026-09-27, not merely observed.
    */
   const selectedUnits = ref<string[]>([])
-
-  // group -> name -> run, all three derived from the one index request
-  const groups = computed(() => unique(runs.value.map(run => run.group)))
-
-  const names = computed(() =>
-    unique(runs.value.filter(run => run.group === selectedGroup.value).map(run => run.name))
-  )
-
-  const runsInSelection = computed(() =>
-    runs.value.filter(run =>
-      run.group === selectedGroup.value && run.name === selectedName.value
-    )
-  )
 
   /**
    * The feed-health model, or null where the run has nothing to report about its feed.
@@ -122,17 +102,6 @@ export const useRunsStore = defineStore('runs', () => {
     selectedUnits.value = []
   }
 
-  function setGroup(group: string): void {
-    selectedGroup.value = group
-    selectedName.value = null
-    clearRun()
-  }
-
-  function setName(name: string): void {
-    selectedName.value = name
-    clearRun()
-  }
-
   async function loadSummary(): Promise<void> {
     const runId = selectedRunId.value
     if (!runId) return
@@ -170,11 +139,6 @@ export const useRunsStore = defineStore('runs', () => {
       unknownRunId.value = runId
       return
     }
-    // The row is the authority for the cascade above it too, which is what makes a saved link
-    // survive a renaming of the group values: the link carries the run, and the run says where it
-    // belongs. Assigned directly rather than through setGroup/setName, which clear what is below.
-    selectedGroup.value = run.group
-    selectedName.value = run.name
     selectedRunId.value = runId
     // the index already says this run carries no artifacts — asking anyway is one 404 per section
     if (!run.has_reports) return
@@ -183,11 +147,6 @@ export const useRunsStore = defineStore('runs', () => {
 
   return {
     runs,
-    groups,
-    names,
-    runsInSelection,
-    selectedGroup,
-    selectedName,
     selectedRunId,
     selectedRun,
     selectedUnits,
@@ -200,8 +159,6 @@ export const useRunsStore = defineStore('runs', () => {
     loadingSummary,
     error,
     loadRuns,
-    setGroup,
-    setName,
     toggleUnit,
     setUnits,
     clearUnits,

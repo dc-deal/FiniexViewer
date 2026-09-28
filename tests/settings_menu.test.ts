@@ -177,7 +177,7 @@ describe('SettingsDialog', () => {
       store.setTheme('light')
       mountDialog()
       await flushPromises()
-      panel('.settings-button:not(.hints-reset)')?.click()
+      panel('.app-button:not(.hints-reset)')?.click()
       await flushPromises()
       expect(store.settings).toEqual(DEFAULT_SETTINGS)
     })

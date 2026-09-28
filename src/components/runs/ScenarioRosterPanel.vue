@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import AppButton from '@/components/base/AppButton.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import type { FacetDefinition, FacetSelection, SortDefinition } from '@/types/facet_types'
@@ -100,6 +101,13 @@ const picked = computed(() => narrowing.units.value)
 function isPicked(name: string): boolean {
   return picked.value.includes(name)
 }
+
+/** Two sentences rather than one with a number in it — "1 scenarios" is how that reads otherwise. */
+const chosenLabel = computed(() =>
+  picked.value.length === 1
+    ? t('1 scenario chosen — every section below shows only it')
+    : `${picked.value.length} ${t('scenarios chosen — every section below shows only these')}`
+)
 </script>
 
 <template>
@@ -112,17 +120,18 @@ function isPicked(name: string): boolean {
       {{ t('scenarios produced nothing — their reason is on the row') }}
     </p>
 
-    <!-- the state where the CLICK happens. It is also said once above the panel column, because it
-         governs every section there — but a reader who just clicked is looking here. -->
+    <!-- The state where the CLICK happens. It is also said once above the panel column, because it
+         governs every section there — but a reader who just clicked is looking here.
+
+         It says CHOSEN, not "showing only": this list still shows every scenario, and the facet
+         count beside it already means "how many rows are listed". Two counts over scenarios that
+         contradict each other are worse than one. -->
     <p v-if="picked.length" class="roster-picked">
       <span class="mark" aria-hidden="true">⌖</span>
-      <span>
-        {{ t('Showing only') }} {{ picked.length }} {{ t('of') }}
-        {{ model.units.length }} {{ t('scenarios') }}
-      </span>
-      <button type="button" class="clear-picked" @click="narrowing.clear()">
+      <span>{{ chosenLabel }}</span>
+      <AppButton variant="quiet" @click="narrowing.clear()">
         {{ t('Clear') }}
-      </button>
+      </AppButton>
     </p>
     <!-- and where nothing is picked, what picking would do -->
     <HintLine v-else id="scenario-pick" />
@@ -262,19 +271,8 @@ function isPicked(name: string): boolean {
   font-size: var(--font-size-sm);
 }
 
-.clear-picked {
+.roster-picked .app-button {
   margin-left: auto;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--color-accent);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.clear-picked:hover {
-  text-decoration: underline;
 }
 
 .roster-meta,

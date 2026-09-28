@@ -501,7 +501,7 @@ describe('BookingPeriodTimeline — many short slices', () => {
    */
   it('reports a change of order rather than owning it', async () => {
     const wrapper = mountSlices()
-    await wrapper.findAll('.order-button')[1]?.trigger('click')
+    await wrapper.findAll('.order-control .app-button')[1]?.trigger('click')
     expect(wrapper.emitted('update:order')).toEqual([['name']])
   })
 

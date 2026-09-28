@@ -160,7 +160,7 @@ The report plane is model-fed on the backend: one canonical model per section, d
 
 Six consequences the frontend is built around:
 
-- **The index row carries the whole run header**, so the run cascade (group → scenario/profile → run) is built from one request: `run_id`, `group`, `name`, `has_reports`, `start_time`, `parent_id` and the provenance triple `app_version` / `git_commit` / `config_snapshot`. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here, and the Run Header panel needs no request at all because its model IS this row.
+- **The index row carries the whole run header**, so the picker, its facets and the Run Header panel are all built from one request: `run_id`, `group`, `name`, `has_reports`, `start_time`, `parent_id` and the provenance triple `app_version` / `git_commit` / `config_snapshot`. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here, and the Run Header panel needs no request at all because its model IS this row.
 - **A 404 on a report section is an absence, not a failure.** A run can exist without carrying a given artifact. `getRunSummary` maps that to `null`, and the view says the artifact is missing instead of showing an error.
 - **Every report body names the run it was built from**, and `api_client` asserts it against what was requested (`RunIdMismatchError`). This is the only defence a client has against an ambiguous id: a duplicate passes every membership check, the route resolves it to whichever run it finds first, and nothing else in the payload would give that away. It has happened — three runs once shared one id here.
 - **A 409 is a third thing again: the artifact is there and cannot be parsed**, because it was written by an older schema and the run has to be repeated. `getWarningsErrors` raises `ArtifactUnreadableError` carrying the backend's own detail text, and the view shows it as a notice *beside* the panels rather than instead of them — one unreadable section must not hide the readable ones. Three distinct answers, three distinct states: 404 absent, 409 stale, anything else an outage.
@@ -308,14 +308,48 @@ All colors, spacing, and type scale are defined as CSS custom properties in `src
 
 This avoids a CSS-in-JS dependency, works natively in every browser, and is trivially inspectable in DevTools. Reka UI (headless component layer) is deferred — no concrete accessibility need has surfaced yet.
 
+**Surfaces are not roles.** `bg-hover` and `bg-active` are lightness steps of one surface that a
+control moves through as it is pointed at and pressed — lifting, then sinking, in both themes, so
+"pressed" reads the same way whichever theme is on. They are not measured for hue distinctness the
+way a role colour is; what they were measured for is text contrast, which is 12.97:1 or better over
+all three button surfaces in both themes (2026-09-27).
+
+**`text-secondary` on a surface is the look of a DISABLED control, and nothing clickable may wear
+it.** A settings button did, and the first person to meet it read it as greyed out and unusable
+although it worked. That is not a misreading — it is the correct reading of a wrong style.
+
+### Buttons — `AppButton`, and why the states are the component
+
+`base/AppButton.vue` is every button in two shapes: `solid` has a surface of its own, `quiet` is an
+action inside a line of text and stays flat until pointed at. Before it existed there were two
+bespoke button styles and five one-off text actions, and none of them had a hover or a pressed
+state — a click produced no feedback at the control itself.
+
+**Each state carries two channels, so none depends on one.** Hover lifts the surface *and* takes
+the interactive border; the press sinks the surface *and* moves the control down a pixel. The
+second half matters: the surface step is a luminance ratio of about 1.1, far too weak to carry
+press feedback alone, while position works regardless of contrast sensitivity. Focus draws a ring
+rather than recolouring the border, because a border that only changes colour is invisible against
+a surface of similar lightness — and the keyboard reader is the one who needs it most.
+
+A toggle reuses the pressed look as a lasting state instead of inventing a fifth appearance, and
+`aria-pressed` is emitted only where `active` is actually used: a plain button carrying it claims
+to be a toggle it is not.
+
+**Not everything became an `AppButton`.** The facet chips, the app bar, the accordion header and the
+JSON fold are trigger controls with their own visual language, and several are portalled Reka UI
+primitives whose trigger element the component does not fully own. The facet chips had the same
+defect and were given the same four states with the same tokens; unifying them under `AppButton` is
+its own step.
+
 ### URL Query State — `use_query_sync` / `use_run_query_sync`
 
 Every user-selectable option on a page is stored in the URL as a query param, so any view is a shareable link that survives reload. Two composables own disjoint sets of params:
 
 - `use_query_sync.ts` — the chart selection (`?broker=...&symbol=...&timeframe=...`), activated in `AppShell`.
-- `use_run_query_sync.ts` — the run cascade (`?group=...&name=...&run=...&unit=...`), activated in `RunsView`. `unit` is one step BELOW the run and selecting a run clears it, so it is applied after the run resolves — read first, it is silently dropped and a shared link loses its narrowing.
+- `use_run_query_sync.ts` — the run and the scenarios narrowed to (`?run=...&unit=...`), activated in `RunsView`. `unit` is one step BELOW the run and selecting a run clears it, so it is applied after the run resolves — read first, it is silently dropped and a shared link loses its narrowing. `?group=` and `?name=` were the old cascade's params and are actively REMOVED from a link that still carries them, rather than left to look meaningful.
 
-Priority on load: **URL params > localStorage > null**. Both wait for `router.isReady()` before reading params, to avoid a race with the initial navigation, then watch their store and call `router.replace` on every change. For the chart selection, localStorage is a write-through cache; the run cascade has no cache, because the run index is live data.
+Priority on load: **URL params > localStorage > null**. Both wait for `router.isReady()` before reading params, to avoid a race with the initial navigation, then watch their store and call `router.replace` on every change. For the chart selection, localStorage is a write-through cache; the run selection has no cache, because the run index is live data.
 
 **Both merge, never replace.** `router.replace({ query })` with a freshly built object silently drops every param the other composable owns. `query_param_utils.ts` holds the two functions that make the merge the default: `readQuery` (the current query as plain strings) and `writeParam` (set, or delete when the value is null).
 
@@ -505,7 +539,7 @@ is itself the channel that survives for a reader who cannot separate the hues.
 
 **It lives in the URL, because it is SELECTION.** Panel order and collapsed state are presentation
 and stay in `localStorage`; what the reader is looking at belongs in the query, or a shared link
-means something different for whoever opens it. It is the bottom step of the run cascade and is
+means something different for whoever opens it. It sits one step below the run and is
 dropped whenever the run above it changes — carried across, it would narrow a new run to a name
 that run may not have, or to one it does, which then reads as a choice nobody made.
 
@@ -559,6 +593,36 @@ and the empty states say exactly that. A `?unit=` naming a scenario the run does
 called out in the line above the column, but only where the roster actually arrived: it is
 simulation-only, so its absence on a live run says nothing about the name.
 
+### Choosing a run — a facet bar over a flat index, not a cascade
+
+The picker asked for a group, then a scenario set, then a run. Measured against the real index on
+2026-09-27: **40 runs sit in 29 different (group, set) pairs, the largest set holds six runs, and
+exactly one set holds more than five.** So the last dropdown was choosing between one and six
+things while the one above it held 29 — and the question a reader actually arrives with, *the run
+I did on Thursday*, is navigation by TIME, which a name cascade cannot answer at all.
+
+It is now the same `FacetBar` the scenario roster uses, pointed at `RunInfo`: facets for group,
+set, artifacts, reporting, origin and version, sorted newest-first by default, with a search over
+the run id and the set name. The bar is generic and holds no state, so this cost the facet
+definitions and nothing else.
+
+```
+Search runs by id or set   Group ▾  Set ▾  Artifacts ▾  …        12 of 40
+Sort by  [newest]  oldest  name
+  25 Sep 2026, 11:52   simulation   ETHUSD_blocks_robustness   20260925_095227_d9b8d79d
+```
+
+**Three consequences worth stating.** `runs_store` lost the whole cascade — `groups`, `names`,
+`runsInSelection`, `selectedGroup`, `selectedName`, `setGroup`, `setName` — because nothing else
+ever read them. A **logs-only run became selectable**: it used to be a disabled option, but the run
+view now says what such a run is and the store asks the backend for nothing, so a row that cannot
+be clicked would only look broken. And the list **collapses to one line once a run is chosen**,
+because forty rows above the panels would push every one of them off the screen.
+
+**The picker's own facet state is local, not in the URL** — the same as the scenario roster's. The
+URL carries the SELECTION (`?run=`, `?unit=`), which is what makes a shared link mean something; a
+readable encoding for arbitrary facet state is a separate design and neither list has one yet.
+
 ### Panels — a registry, a shell, one persisted layout
 
 The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
@@ -569,7 +633,7 @@ The viewer shows many small panels around one chart rather than one view per pag
 
 **A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a live frame later (testingide#379/#380) without being written twice. The rule is about DATA: presentation preferences reach a panel ambiently instead (see *Settings* above), which ties it to no source.
 
-**Two stores, two questions.** `runs_store` answers *which* run is selected — the `group → name → run` cascade and the index behind it. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
+**Two stores, two questions.** `runs_store` answers *which* run is selected — the index, the chosen run and the scenarios narrowed to. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
 
 **A section whose model this run does not carry is skipped, never shown empty.** `PanelColumn` drops a panel whose source is absent, which is how a 404 on a report route reaches the UI: not as an error, as a missing section.
 

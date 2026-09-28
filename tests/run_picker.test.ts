@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import { useRunsStore } from '@/stores/runs_store'
@@ -26,19 +26,23 @@ function run(overrides: Partial<RunInfo> = {}): RunInfo {
   return { ...BASE, ...overrides }
 }
 
-/** Seeds the store the way a loaded index would, then picks the cascade down to the run level. */
+/** Seeds the store the way a loaded index would. There is no cascade to descend any more. */
 function mountPicker(rows: RunInfo[]) {
-  const store = useRunsStore()
-  store.runs = rows
-  store.setGroup('simulation')
-  store.setName('ETHUSD_blocks')
-  return mount(RunPicker)
+  useRunsStore().runs = rows
+  return mount(RunPicker, { attachTo: document.body })
 }
 
-function runLabels(wrapper: ReturnType<typeof mountPicker>): string[] {
-  // three selects in the cascade; the run one is last
-  const select = wrapper.findAll('select').at(-1)
-  return select!.findAll('option').map(node => node.text())
+function rowTexts(wrapper: VueWrapper): string[] {
+  return wrapper.findAll('.run-row').map(node => node.text())
+}
+
+function rowFor(wrapper: VueWrapper, id: string) {
+  return wrapper.findAll('.run-row').find(node => node.text().includes(id))!
+}
+
+/** The ids in the order they are drawn — read from their own cell, not out of the running text. */
+function rowIds(wrapper: VueWrapper): string[] {
+  return wrapper.findAll('.run-id').map(node => node.text())
 }
 
 describe('RunPicker', () => {
@@ -52,9 +56,7 @@ describe('RunPicker', () => {
    * and the date is what an operator actually scans a run list by.
    */
   it('puts when the run started beside its id', () => {
-    const labels = runLabels(mountPicker([run()]))
-    const shown = labels.find(label => label.includes('20260925_095227_d9b8d79d'))!
-    expect(shown).not.toBe('20260925_095227_d9b8d79d')
+    const shown = rowFor(mountPicker([run()]), '20260925_095227_d9b8d79d').text()
     expect(shown).toMatch(/2026/)
   })
 
@@ -62,21 +64,92 @@ describe('RunPicker', () => {
   it.each([
     ['an empty stamp', ''],
     ['a stamp that is not a date', 'not-a-date'],
-  ])('shows the id alone for %s', (_label, start_time) => {
-    const labels = runLabels(mountPicker([run({ start_time })]))
-    const shown = labels.find(label => label.includes('20260925_095227_d9b8d79d'))!
-    expect(shown).toBe('20260925_095227_d9b8d79d')
+  ])('says there is no date for %s', (_label, start_time) => {
+    const shown = rowFor(mountPicker([run({ start_time })]), '20260925_095227_d9b8d79d').text()
+    expect(shown).toContain('no date')
     expect(shown).not.toContain('Invalid')
   })
 
   /**
-   * A logs-only run stays listed and unselectable: hiding it would raise the question where it
-   * went, and picking it would only produce 404s. The date rides along either way.
+   * A logs-only run is listed AND selectable. It used to be disabled; the run view now says what
+   * such a run is and the store asks the backend for nothing, so a row that cannot be clicked
+   * would only look broken.
    */
-  it('keeps the logs-only marking beside the date', () => {
-    const rows = [run({ run_id: 'only_logs', has_reports: false, reporting: 'none' })]
-    const shown = runLabels(mountPicker(rows)).find(label => label.includes('only_logs'))!
-    expect(shown).toContain('logs only')
-    expect(shown).toMatch(/2026/)
+  it('marks a logs-only run without putting it out of reach', async () => {
+    const wrapper = mountPicker([run({ run_id: 'only_logs', has_reports: false, reporting: 'none' })])
+    const row = rowFor(wrapper, 'only_logs')
+    expect(row.text()).toContain('logs only')
+
+    await row.trigger('click')
+    await flushPromises()
+    expect(useRunsStore().selectedRunId).toBe('only_logs')
+  })
+
+  /**
+   * The whole reason the cascade went. Measured over the real index: 40 runs in 29 (group, set)
+   * pairs, so a set dropdown held 29 entries while the run dropdown below it held one to six.
+   */
+  it('lists every run flat, whatever group or set it belongs to', () => {
+    const wrapper = mountPicker([
+      run({ run_id: 'a', group: 'live', name: 'profile_one' }),
+      run({ run_id: 'b', group: 'simulation', name: 'set_two' }),
+      run({ run_id: 'c', group: 'simulation', name: 'set_three' }),
+    ])
+    expect(rowTexts(wrapper)).toHaveLength(3)
+  })
+
+  // Newest first by default: the run someone wants is nearly always the one they just made.
+  it('puts the newest run first', () => {
+    const wrapper = mountPicker([
+      run({ run_id: 'older', start_time: '2026-09-20T10:00:00+00:00' }),
+      run({ run_id: 'newest', start_time: '2026-09-25T10:00:00+00:00' }),
+      run({ run_id: 'middle', start_time: '2026-09-22T10:00:00+00:00' }),
+    ])
+    expect(rowIds(wrapper)).toEqual(['newest', 'middle', 'older'])
+  })
+
+  /**
+   * Parsed rather than compared as text: two ISO stamps with different offsets sort in the wrong
+   * order as strings, and an unreadable one must not jump to the top of "newest".
+   */
+  it('sorts on the instant, not on the text of the stamp', () => {
+    const wrapper = mountPicker([
+      run({ run_id: 'broken', start_time: 'not-a-date' }),
+      run({ run_id: 'shifted', start_time: '2026-09-25T11:00:00+02:00' }),
+      run({ run_id: 'utc', start_time: '2026-09-25T10:00:00+00:00' }),
+    ])
+    // 11:00+02:00 is 09:00Z, so the UTC stamp is the later of the two; the broken one sorts last
+    expect(rowIds(wrapper)).toEqual(['utc', 'shifted', 'broken'])
+  })
+
+  it('narrows the list by a facet, and says how many of how many are left', async () => {
+    const wrapper = mountPicker([
+      run({ run_id: 'a', group: 'live' }),
+      run({ run_id: 'b', group: 'simulation' }),
+    ])
+    await wrapper.find('.facet-search').setValue('a')
+    await flushPromises()
+    expect(rowTexts(wrapper)).toHaveLength(1)
+    expect(wrapper.text()).toContain('1 of 2')
+  })
+
+  /**
+   * The list is the way in, so it is open until there is something to look at — forty rows above
+   * the panels would otherwise push every one of them off the screen.
+   */
+  it('collapses to one line once a run is chosen, and reopens on request', async () => {
+    const wrapper = mountPicker([run({ run_id: 'only_logs', has_reports: false })])
+    await rowFor(wrapper, 'only_logs').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.run-list').exists()).toBe(false)
+    expect(wrapper.find('.picker-chosen').text()).toContain('only_logs')
+
+    await wrapper.find('.picker-chosen .app-button').trigger('click')
+    expect(wrapper.find('.run-list').exists()).toBe(true)
+  })
+
+  it('says so plainly where the index is empty', () => {
+    expect(mountPicker([]).find('.picker-hint').text()).toContain('run index is empty')
   })
 })

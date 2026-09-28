@@ -117,7 +117,7 @@ describe('useRunsStore', () => {
     })
   })
 
-  describe('cascade', () => {
+  describe('selection', () => {
     async function loadedStore() {
       vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
       const store = useRunsStore()
@@ -125,51 +125,14 @@ describe('useRunsStore', () => {
       return store
     }
 
-    it('derives the group list from the index, without duplicates', async () => {
+    /**
+     * The group/set/run cascade is gone: the picker is a facet bar over the flat index, so the
+     * store holds a run and nothing above it. What the cascade used to prove — that choosing a
+     * level clears the levels below — has no levels left to clear.
+     */
+    it('holds the whole index, ungrouped', async () => {
       const store = await loadedStore()
-      expect(store.groups).toEqual(['live', 'simulation'])
-    })
-
-    it('narrows names to the selected group', async () => {
-      const store = await loadedStore()
-      store.setGroup('live')
-      expect(store.names).toEqual(['my_profile', 'other_profile'])
-      store.setGroup('simulation')
-      expect(store.names).toEqual(['my_set'])
-    })
-
-    it('narrows runs to the selected group and name', async () => {
-      const store = await loadedStore()
-      store.setGroup('live')
-      store.setName('my_profile')
-      expect(store.runsInSelection.map(run => run.run_id))
-        .toEqual(['20260615_130000', '20260615_125000'])
-    })
-
-    it('setGroup clears the name and the run below it', async () => {
-      vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
-      const store = await loadedStore()
-      store.setGroup('live')
-      store.setName('my_profile')
-      await store.selectRun('20260615_130000')
-
-      store.setGroup('simulation')
-      expect(store.selectedName).toBeNull()
-      expect(store.selectedRunId).toBeNull()
-      expect(store.summary).toBeNull()
-    })
-
-    it('setName clears the run but keeps the group', async () => {
-      vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
-      const store = await loadedStore()
-      store.setGroup('live')
-      store.setName('my_profile')
-      await store.selectRun('20260615_130000')
-
-      store.setName('other_profile')
-      expect(store.selectedGroup).toBe('live')
-      expect(store.selectedRunId).toBeNull()
-      expect(store.summary).toBeNull()
+      expect(store.runs.map(run => run.run_id)).toEqual(RUNS.map(run => run.run_id))
     })
 
     /**
@@ -187,9 +150,6 @@ describe('useRunsStore', () => {
       await store.selectRun('20260615_120000')
       expect(store.selectedUnits).toEqual([])
 
-      store.toggleUnit('ETHUSD_blocks_03')
-      store.setGroup('live')
-      expect(store.selectedUnits).toEqual([])
     })
 
     it('shows the whole run again when the narrowing is cleared', async () => {
@@ -312,12 +272,15 @@ describe('useRunsStore', () => {
       expect(store.summaryMissing).toBe(false)
     })
 
-    it('drops the unknown-run flag when the group changes', async () => {
+    it('drops the unknown-run flag as soon as a real run is chosen', async () => {
       vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
       const store = useRunsStore()
       await store.loadRuns()
       await store.selectRun('20260829_200849')
-      store.setGroup('live')
+      expect(store.unknownRunId).toBe('20260829_200849')
+
+      await store.selectRun('20260615_130000')
       expect(store.unknownRunId).toBeNull()
     })
   })

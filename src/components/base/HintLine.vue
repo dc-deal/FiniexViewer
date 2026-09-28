@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import AppButton from '@/components/base/AppButton.vue'
 import { useHintsStore } from '@/stores/hints_store'
 import { hintById } from '@/hint_registry'
 import { t } from '@/translate'
@@ -27,19 +28,17 @@ const shown = computed(() => hint.value !== null && hints.isVisible(props.id))
   <p v-if="shown && hint" class="hint-line">
     <span class="hint-mark" aria-hidden="true">💡</span>
     <span class="hint-text">{{ hint.text }}</span>
-    <button
-      type="button"
-      class="hint-action"
+    <AppButton
+      variant="quiet"
       :title="t('Do not show this hint again')"
       @click="hints.ban(id)"
-    >{{ t('Never again') }}</button>
-    <button
-      type="button"
-      class="hint-close"
+    >{{ t('Never again') }}</AppButton>
+    <AppButton
+      variant="quiet"
       :aria-label="t('Dismiss this hint')"
       :title="t('Dismiss — it returns next visit')"
       @click="hints.dismiss(id)"
-    >✕</button>
+    >✕</AppButton>
   </p>
 </template>
 
@@ -67,25 +66,14 @@ const shown = computed(() => hint.value !== null && hints.isVisible(props.id))
   flex: 1;
 }
 
-.hint-action,
-.hint-close {
+/* the two dismissals are secondary to the sentence they sit beside, so they wear the quiet ink
+   rather than the link colour — the hint is the message, not its close button */
+.hint-line .app-button.quiet {
   flex-shrink: 0;
-  padding: 0;
-  border: none;
-  background: none;
   color: var(--color-text-secondary);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  cursor: pointer;
 }
 
-.hint-action:hover,
-.hint-close:hover {
+.hint-line .app-button.quiet:hover {
   color: var(--color-text-primary);
-  text-decoration: underline;
-}
-
-.hint-close:hover {
-  text-decoration: none;
 }
 </style>

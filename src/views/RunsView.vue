@@ -8,6 +8,7 @@ import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import AppBar from '@/components/panels/AppBar.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
+import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import { t } from '@/translate'
 
@@ -185,9 +186,9 @@ const showPanels = computed(() =>
                 — {{ t('not in this run:') }} {{ unknownUnits.join(', ') }}
               </template>
             </span>
-            <button type="button" class="show-all" @click="runsStore.clearUnits()">
+            <AppButton variant="quiet" @click="runsStore.clearUnits()">
               {{ t('Show all') }}
-            </button>
+            </AppButton>
           </p>
           <PanelColumn :sources="sources" />
         </div>
@@ -278,19 +279,8 @@ const showPanels = computed(() =>
   flex-shrink: 0;
 }
 
-.show-all {
+.narrowed-head .app-button {
   margin-left: auto;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--color-accent);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.show-all:hover {
-  text-decoration: underline;
 }
 
 .notice.absent strong {
