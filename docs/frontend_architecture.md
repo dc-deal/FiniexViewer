@@ -852,7 +852,7 @@ Unit tests: **Vitest** + **Vue Test Utils**. Vitest runs in the same Vite contex
 
 Priority targets: `selection_store` cascade logic, `timeframe_store` load-once cache and `minutesFor` lookup, `bars_store` coverage validation and window calculation, `use_query_sync` URL-priority behavior, `api_client` request construction. See issue #13.
 
-E2E tests (Cypress / Playwright): deferred until CI infrastructure is established. These require a running API server and are only valuable once the test environment is stable.
+Browser-level verification is Playwright (viewer#23), in `e2e/`, run with `npm run test:e2e` and kept as hygiene rather than a gate. It needs no API server — the responses are replayed from the unit fixtures — and no browser in the container, which is Alpine on musl: the runner drives a browser on the developer's machine over CDP. See `docs/testing_architecture.md`.
 
 ### Quality Tooling — two tiers
 

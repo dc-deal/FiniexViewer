@@ -40,11 +40,26 @@ const input = computed(() => ({
 
 const shownCount = computed(() => applyFacets(input.value).length)
 
-/** Each facet with its options, dropped where it has none to offer. */
+/**
+ * Each facet, dropped where it cannot narrow anything.
+ *
+ * No options at all is the obvious case — an empty dropdown is a control that looks broken. The
+ * second case is a facet offering ONE value that every row already carries: picking it changes
+ * nothing, so it is a control that does nothing, which is worse, because it looks like it works.
+ * Measured 2026-09-28 over the 40 runs on this machine: `reporting` reads `expected` on all forty
+ * and `app_version` reads `1.4.0` on all forty.
+ *
+ * The count matters, and it is why this is not simply `options.length > 1`. One option that only
+ * SOME rows carry still narrows — to exactly those rows — which is how `market_type` behaves while
+ * older artifacts leave it empty. Such a facet stays.
+ */
 const drawn = computed(() =>
   props.facets
     .map(facet => ({ facet, options: facetOptions(input.value, facet.id) }))
     .filter(entry => entry.options.length > 0)
+    .filter(entry =>
+      entry.options.length > 1 || entry.options[0]!.count < props.rows.length
+    )
 )
 
 const narrowed = computed(() => isNarrowed(props.selection, props.search))

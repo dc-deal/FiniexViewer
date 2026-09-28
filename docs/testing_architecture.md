@@ -13,7 +13,24 @@ Unit test setup for FiniexViewer. No API server required — all HTTP calls are 
 | **jsdom** | DOM environment for Node.js (localStorage, window, routing) |
 | **@vitest/coverage-v8** | V8-native coverage reporting, no instrumentation step |
 
-**No Cypress / Playwright.** E2E tests require a running API server and stable CI infrastructure. Deferred — see issue #13.
+**Playwright, for the layer jsdom can only approximate** (viewer#23). The unit suite proves a
+component does what it was written to do; it cannot prove that a real reload of a real URL in a
+real browser puts the reader back where they were. Specs live in `e2e/`, run with
+`npm run test:e2e`, and are **hygiene rather than a gate** — browser tests are slow and flaky under
+load, and a gate that is red on Monday morning gets switched off, taking the type-check beside it
+out of use.
+
+Two properties are deliberate. `retries: 0`, because a test that goes green on the third attempt
+is flaky and we would never see it. And **the mocked responses come from the unit fixtures**
+(`e2e/api_mock.ts` reads the same captures), never hand-written in a spec: a second mirror of the
+HTTP contract goes stale in silence, which has already happened once here.
+
+**The browser is not in the container.** The image is Alpine on musl and Playwright's browsers are
+glibc builds, so the runner connects over CDP to a browser on the developer's machine —
+`e2e/cdp_fixture.ts` documents the one command that needs. `.npmrc` carries
+`playwright_skip_browser_download=1` so a rebuild never spends a gigabyte on a Chromium that
+cannot start. CI is a separate answer (a compose service on the official image) and shares the
+same config.
 
 ---
 

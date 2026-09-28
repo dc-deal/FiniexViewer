@@ -5,6 +5,7 @@ import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunQuerySync } from '@/composables/use_run_query_sync'
 import { provideScenarioSelection } from '@/composables/use_scenario_selection'
+import { hasArtifact } from '@/api/report_artifacts'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import AppBar from '@/components/panels/AppBar.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
@@ -63,13 +64,24 @@ const unknownUnits = computed(() => {
 watch(selectedRunId, runId => {
   reportsStore.clear()
   // a logs-only run is skipped here for the same reason the store skips the summary
-  if (!runId || !selectedRun.value?.has_reports) return
-  reportsStore.loadWarningsErrors(runId)
-  reportsStore.loadPortfolio(runId)
-  reportsStore.loadBookingPeriods(runId)
+  const run = selectedRun.value
+  if (!runId || !run?.has_reports) return
+
+  /**
+   * Only the sections this run actually wrote. The index row lists them, and the two pipelines
+   * write DIFFERENT sets — asking for the difference produced a 404 per live run and a notice
+   * claiming a section was missing, where the truth is that a live session has no scenario grid
+   * to report on. An absence is now only ever a section the run SHOULD have and does not.
+   */
+  const has = (section: string) => hasArtifact(run, section)
+
+  if (has('warningsErrors')) reportsStore.loadWarningsErrors(runId)
+  if (has('portfolio')) reportsStore.loadPortfolio(runId)
+  if (has('bookingPeriods')) reportsStore.loadBookingPeriods(runId)
+  if (has('tradeHistory')) reportsStore.loadTradeHistory(runId)
+  if (has('scenarios')) reportsStore.loadScenarios(runId)
+  // not an artifact of the run but its SOURCE configuration — ungated, with its own two 404s
   reportsStore.loadConfig(runId)
-  reportsStore.loadTradeHistory(runId)
-  reportsStore.loadScenarios(runId)
 }, { immediate: true })
 
 // the models the panels render, keyed by the source each descriptor declares

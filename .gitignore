@@ -66,3 +66,9 @@ SESSION_*.md
 # Another project's content — never tracked here.
 ide_docs/
 sync_ide_docs.sh
+
+# Playwright — reports, traces and screenshots are run output, never source
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

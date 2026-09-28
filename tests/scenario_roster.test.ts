@@ -195,13 +195,39 @@ describe('ScenarioRosterPanel', () => {
      * a dropdown reads as a category of its own, so the facet is dropped rather than offering one.
      */
     it('drops a facet no row states a value for', async () => {
+      // the symbols DIFFER so that facet can still narrow — otherwise it would be dropped too,
+      // by the rule below, and this test would stop proving what it is about
       const wrapper = mountPanel(report([
-        row({ name: 'old_a', market_type: '' }),
-        row({ name: 'old_b', market_type: '' }),
+        row({ name: 'old_a', symbol: 'ETHUSD', market_type: '' }),
+        row({ name: 'old_b', symbol: 'BTCUSD', market_type: '' }),
       ]))
       const labels = wrapper.findAll('.facet-trigger').map(node => node.text())
       expect(labels.some(label => label.includes('Symbol'))).toBe(true)
       expect(labels.some(label => label.includes('Market'))).toBe(false)
+    })
+
+    /**
+     * A control that does nothing is worse than one that is missing, because it looks like it
+     * works. Measured over the 40 runs on this machine: `reporting` reads `expected` on all forty
+     * and `app_version` reads `1.4.0` on all forty — two dropdowns that could never narrow.
+     */
+    it('drops a facet whose single value every row already carries', () => {
+      const wrapper = mountPanel(report([
+        row({ name: 'a', account_currency: 'USD' }),
+        row({ name: 'b', account_currency: 'USD' }),
+      ]))
+      const labels = wrapper.findAll('.facet-trigger').map(node => node.text())
+      expect(labels.some(label => label.includes('Currency'))).toBe(false)
+    })
+
+    // One value that only SOME rows carry still narrows — to exactly those rows.
+    it('keeps a single value that not every row carries', () => {
+      const wrapper = mountPanel(report([
+        row({ name: 'a', market_type: 'crypto' }),
+        row({ name: 'b', market_type: '' }),
+      ]))
+      const labels = wrapper.findAll('.facet-trigger').map(node => node.text())
+      expect(labels.some(label => label.includes('Market'))).toBe(true)
     })
 
     it('forgets a narrowing when a different run is shown', async () => {

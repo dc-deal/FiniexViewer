@@ -48,19 +48,36 @@ export function useRunQuerySync(): void {
     }
 
     _ready = true
+    /**
+     * One write on the way out, so a link repairs itself on ARRIVAL rather than on the reader's
+     * next click. The watch below cannot do it: during init it is held off by `_ready`, and after
+     * init nothing has changed, so it never fires for a URL that was already correct about the run
+     * and wrong about everything else. Found by the browser suite — the unit tests exercise the
+     * watch, and this is the one path that never reaches it.
+     */
+    writeUrl()
   })
 
-  // only write URL after init is complete — prevents intermediate states from clobbering params
-  watch([selectedRunId, selectedUnits], ([run, units]) => {
-    if (!_ready) return
+  /** The selection as query params, merged into whatever else the URL carries. */
+  function writeUrl(): void {
     // merge, never replace — the chart selection owns params in the same query
     const query = readQuery(route.query)
-    writeParam(query, 'run', run)
-    writeParam(query, 'unit', units.length ? units.join(UNIT_SEPARATOR) : null)
+    writeParam(query, 'run', selectedRunId.value)
+    writeParam(
+      query,
+      'unit',
+      selectedUnits.value.length ? selectedUnits.value.join(UNIT_SEPARATOR) : null
+    )
     // `group` and `name` were the cascade's own params and mean nothing now. A saved link may
     // still carry them; they are removed rather than left to look meaningful.
     writeParam(query, 'group', null)
     writeParam(query, 'name', null)
     router.replace({ query })
+  }
+
+  // only write URL after init is complete — prevents intermediate states from clobbering params
+  watch([selectedRunId, selectedUnits], () => {
+    if (!_ready) return
+    writeUrl()
   })
 }

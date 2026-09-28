@@ -13,7 +13,9 @@
     "lint:check": "eslint .",
     "knip": "knip",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "axios": "^1.7.9",
@@ -26,6 +28,7 @@
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.0.0",
     "@vitejs/plugin-vue": "^5.2.1",
