@@ -1,12 +1,12 @@
 import type { Component } from 'vue'
 
 /** Which pipeline a panel can render for. 'all' = unified across both. */
-export type PanelGroupScope = 'all' | 'simulation' | 'live'
+export type PanelGroupScope = 'all' | 'simulation' | 'autotrader'
 
 /**
  * What a panel declares about itself. A panel is presentation only: it receives its model as a
  * prop and knows neither the API nor a store, which is what lets the same component render a run
- * artifact today and a live frame later.
+ * artifact today and a streamed frame later.
  */
 export interface PanelDescriptor {
   id: string

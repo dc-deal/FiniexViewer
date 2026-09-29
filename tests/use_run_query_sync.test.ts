@@ -19,6 +19,10 @@ function header(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
     size_bytes: 0,
     app_version: '1.4.0',
     git_commit: 'abc1234',
+    // null on every run recorded before contract 12 — unknown, never guessed
+    ticks_from: null,
+    orders_to: null,
+    data_windows: null,
     config_snapshot: 'config.json',
     ...overrides,
   }

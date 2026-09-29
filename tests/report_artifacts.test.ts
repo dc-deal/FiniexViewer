@@ -17,19 +17,19 @@ describe('hasArtifact', () => {
 
   /**
    * The two pipelines write DIFFERENT sets, which is the whole reason this exists. Measured over
-   * the captured index: `scenario_details.json` is on 15 of 16 simulation runs and on 0 of 24 live
-   * ones, so asking for it on a live run was a 404 and a notice claiming a section was missing.
+   * the captured index: `scenario_details.json` is on 15 of 16 backtests and on 0 of 24 AutoTrader
+   * sessions, so asking for it on a session was a 404 and a notice claiming a section was missing.
    */
   it('separates the two pipelines as the captured index does', () => {
     const rows = runsFixture.runs as RunInfo[]
-    // a run that wrote NOTHING is the carve-out below, not a pipeline difference — one live run
-    // in this capture is exactly that, and it must not be read as "this pipeline has no scenarios"
+    // a run that wrote NOTHING is the carve-out below, not a pipeline difference — one session in
+    // this capture is exactly that, and it must not be read as "this pipeline has no scenarios"
     const wrote = rows.filter(row => row.artifacts.length > 0)
-    const live = wrote.filter(row => row.group === 'live')
+    const sessions = wrote.filter(row => row.group === 'autotrader')
     const simulation = wrote.filter(row => row.group === 'simulation')
 
-    expect(live.length).toBeGreaterThan(0)
-    expect(live.every(row => !hasArtifact(row, 'scenarios'))).toBe(true)
+    expect(sessions.length).toBeGreaterThan(0)
+    expect(sessions.every(row => !hasArtifact(row, 'scenarios'))).toBe(true)
     expect(simulation.some(row => hasArtifact(row, 'scenarios'))).toBe(true)
     // both pipelines write these, so nothing is suppressed that a reader expects
     expect(wrote.every(row => hasArtifact(row, 'portfolio'))).toBe(true)

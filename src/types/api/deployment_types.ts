@@ -115,7 +115,7 @@ export interface DeploymentDetail {
 
 /**
  * A booking period seen from the deployment, which is the run-scoped row plus the run it came
- * from. Across a deployment `run_id` is the only thing that tells two periods apart: `segment_no`
+ * from. Across a deployment `run_id` is the only thing that tells two periods apart: `period_no`
  * is a per-bot counter and restarts wherever a session wrote no carry-over floor, so two periods
  * of one deployment can both be number 1.
  */

@@ -24,7 +24,7 @@ const picked = computed(() => narrowing.units.value)
 
 /**
  * Chart target for a unit. `data_source` carries the broker keys the chart addresses, so the
- * link exists only where the field is filled — live runs leave it empty and get plain text
+ * link exists only where the field is filled — sessions leave it empty and get plain text
  * rather than a link that lands nowhere. The timeframe is left out on purpose: the chart keeps
  * the one the user last chose.
  */

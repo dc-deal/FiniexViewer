@@ -157,7 +157,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
 
   /**
    * The run's ROSTER — every scenario it declared, including those that produced nothing. Null for
-   * a live run, which has no scenario grid at all: the section is then simply not shown.
+   * an AutoTrader session, which has no scenario grid at all: the section is then not shown.
    */
   async function loadScenarios(runId: string): Promise<void> {
     loadingScenarios.value = true

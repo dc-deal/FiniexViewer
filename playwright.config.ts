@@ -18,6 +18,18 @@ export default defineConfig({
   forbidOnly: !!process.env['CI'],
 
   /**
+   * The performance spec is NOT part of the ordinary run — `npm run test:perf` runs it alone, with
+   * one worker. Measured 2026-09-29: the warm run-list load reads 776 ms serially and 2304 ms while
+   * two other specs hammer the same dev server. That is contention, not a regression, but a budget
+   * that fails depending on how many workers are running is a flaky test — precisely what
+   * `retries: 0` exists to make visible rather than to hide.
+   *
+   * Same shape as the backend's own benchmark suite: excluded from the daily run, executed
+   * deliberately around a release.
+   */
+  testIgnore: process.env['PERF'] ? [] : ['**/performance.spec.ts'],
+
+  /**
    * Zero, deliberately. A test that goes green on the third attempt is flaky and we would never
    * see it — the same reasoning as the quality gates: an instrument that cannot report a problem
    * gets believed.

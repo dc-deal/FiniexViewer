@@ -39,7 +39,7 @@ type PeriodRow = BookingPeriodRow & { run_id?: string }
 
 const props = defineProps<{
   periods: PeriodRow[]
-  /** The key tuple the response declares — a period is not unique by segment_no alone. */
+  /** The key tuple the response declares — a period is not unique by period_no alone. */
   keyFields: string[]
   /**
    * Present only at deployment scope. Supplying them switches the lane to the session and the
@@ -111,13 +111,13 @@ function span(period: PeriodRow, from: number, to: number): TimelineSpan {
     id: rowKey(period, props.keyFields),
     from,
     to,
-    // 'seg' spelled out: '#' is no counter on this page, and one glyph for two different numbers
+    // spelled out: '#' is no counter on this page, and one glyph for two different numbers
     // is read as one number
-    label: `${t('seg')} ${period.segment_no}`,
+    label: `${t('period')} ${period.period_no}`,
     // what is left when the bar is a sliver: the number alone still identifies it
-    shortLabel: String(period.segment_no),
+    shortLabel: String(period.period_no),
     tone: tone(period.net_pnl),
-    title: `${period.unit_name} · ${t('segment')} ${period.segment_no}`,
+    title: `${period.unit_name} · ${t('booking period')} ${period.period_no}`,
     details: details(period),
   }
 }

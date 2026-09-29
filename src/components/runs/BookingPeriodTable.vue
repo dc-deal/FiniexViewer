@@ -89,7 +89,7 @@ const identitySpan = computed(() => (props.showRun ? 3 : 2))
         <tr>
           <th>{{ t('Unit') }}</th>
           <th v-if="showRun">{{ t('Run') }}</th>
-          <th>{{ t('Seg') }}</th>
+          <th>{{ t('No') }}</th>
           <th>{{ t('Opened') }}</th>
           <th>{{ t('Closed') }}</th>
           <th>{{ t('Reason') }}</th>
@@ -114,7 +114,7 @@ const identitySpan = computed(() => (props.showRun ? 3 : 2))
               :title="t('Open this run')"
             >{{ period.run_id }} ↗</RouterLink>
           </td>
-          <td>{{ period.segment_no }}</td>
+          <td>{{ period.period_no }}</td>
           <td>{{ utcInstant(period.opened_at) }}</td>
           <td>{{ utcInstant(period.closed_at) }}</td>
           <td class="text-cell">{{ period.reason }}</td>

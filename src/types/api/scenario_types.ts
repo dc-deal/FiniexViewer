@@ -7,9 +7,9 @@
  * per-unit list is shorter, because each answers a different question — declared, attempted,
  * produced, counted.
  *
- * **Simulation only, by construction.** A live run has no scenario grid: a session IS one unit, and
+ * **Backtests only, by construction.** A session has no scenario grid: a session IS one unit, and
  * the equivalent one level up is a deployment's session list. The route answers
- * `404 artifact_not_produced` for a live run, which the client turns into an absent section.
+ * `404 artifact_not_produced` for an AutoTrader session, which the client turns into an absence.
  */
 export interface ScenarioRow {
   name: string

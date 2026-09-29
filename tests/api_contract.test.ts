@@ -39,12 +39,12 @@ import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 11
+const EXPECTED_CONTRACT = 12
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
  * several of these, so the tuples are asserted rather than assumed — a deployment row is one per
- * (deployment x currency), a booking period's segment_no restarts per bot, and a trade's
+ * (deployment x currency), a booking period's period_no restarts per bot, and a trade's
  * `position_id` repeats because a partial close books several records of ONE position.
  *
  * A response serving SEVERAL lists declares `keys`, one entry per list; one list keeps `key`.
@@ -53,8 +53,8 @@ const EXPECTED_KEYS = {
   runs: ['run_id'],
   deployments: ['deployment_id', 'currency'],
   sessions: ['run_id', 'currency'],
-  deploymentPeriods: ['run_id', 'unit_name', 'segment_no'],
-  runPeriods: ['unit_name', 'segment_no'],
+  deploymentPeriods: ['run_id', 'unit_name', 'period_no'],
+  runPeriods: ['unit_name', 'period_no'],
   trades: ['scenario_name', 'position_id', 'exit_tick_index'],
 }
 
@@ -224,7 +224,7 @@ describe('api contract', () => {
   /**
    * RETIRED as a data check, kept as a key check — and the difference is the point.
    *
-   * It used to assert that `segment_no` REPEATS across a deployment, because it did: the floor was
+   * It used to assert that `period_no` REPEATS across a deployment, because it did: the floor was
    * persisted before the last period was sealed, so a session booking one period never advanced it.
    * The backend fixed that on 2026-09-23, and a capture made since counts 1…8 straight through, so
    * no fresh data can ever satisfy the old assertion again.

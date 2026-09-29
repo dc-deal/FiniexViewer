@@ -37,7 +37,7 @@ function isFilled(value: unknown): boolean {
 }
 
 /**
- * The strategy at the top of the document: the profile's own on a live run, the scenario set's
+ * The strategy at the top of the document: the profile's own on an AutoTrader session, the set's
  * `global` on a simulation. Null where neither is present — an older document, or a shape we do
  * not know, and then only the tree can speak for it.
  */

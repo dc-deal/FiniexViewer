@@ -593,6 +593,10 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     size_bytes: 0,
     app_version: '1.4.0',
     git_commit: '56b2677',
+    // null on every run recorded before contract 12 — unknown, never guessed
+    ticks_from: null,
+    orders_to: null,
+    data_windows: null,
     config_snapshot: 'autotrader_config.json',
     ...overrides,
   }

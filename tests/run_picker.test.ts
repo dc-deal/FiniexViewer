@@ -18,6 +18,10 @@ const BASE: RunInfo = {
   parent_id: null,
   app_version: '1.4.0',
   git_commit: '7faec171',
+  // null on every run recorded before contract 12 — unknown, never guessed
+  ticks_from: null,
+  orders_to: null,
+  data_windows: null,
   size_bytes: 1,
   artifacts: [],
 }

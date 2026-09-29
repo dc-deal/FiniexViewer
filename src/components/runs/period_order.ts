@@ -16,7 +16,7 @@ import type { LaneOrder } from '@/types/settings_types'
 /** The minimum a row needs for either ordering. */
 export interface OrderableRow {
   opened_at: string
-  segment_no: number
+  period_no: number
 }
 
 /**
@@ -53,6 +53,6 @@ export function orderPeriods<T extends OrderableRow>(
       const byName = laneOf(a).localeCompare(laneOf(b))
       if (byName !== 0) return byName
     }
-    return a.segment_no - b.segment_no
+    return a.period_no - b.period_no
   })
 }

@@ -40,7 +40,7 @@ provideScenarioSelection({
 /**
  * Names in the narrowing this run does not have — an edited link, or one saved before the set was
  * changed. Claimed ONLY where the roster actually arrived: `scenario-details` is built from the
- * batch and is simulation-only by construction, so its absence on a live run says nothing about a
+ * batch and is backtest-only by construction, so its absence on a session says nothing about a
  * name and must not be reported as a bad one.
  */
 /**
@@ -69,8 +69,8 @@ watch(selectedRunId, runId => {
 
   /**
    * Only the sections this run actually wrote. The index row lists them, and the two pipelines
-   * write DIFFERENT sets — asking for the difference produced a 404 per live run and a notice
-   * claiming a section was missing, where the truth is that a live session has no scenario grid
+   * write DIFFERENT sets — asking for the difference produced a 404 per session and a notice
+   * claiming a section was missing, where the truth is that a session has no scenario grid
    * to report on. An absence is now only ever a section the run SHOULD have and does not.
    */
   const has = (section: string) => hasArtifact(run, section)

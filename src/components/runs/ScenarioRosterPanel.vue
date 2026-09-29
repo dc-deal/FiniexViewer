@@ -47,7 +47,9 @@ const facets: FacetDefinition<ScenarioRow>[] = [
   { id: 'market', label: 'Market', valuesOf: row => stated(row.market_type) },
   { id: 'currency', label: 'Currency', valuesOf: row => stated(row.account_currency) },
   { id: 'status', label: 'State', valuesOf: row => stated(row.status) },
-  { id: 'source', label: 'Data source', valuesOf: row => stated(row.data_source) },
+  // the glossary's word for this value: 'kraken_spot' is a BROKER entry, not a data origin —
+  // and 'data source' collides with the provenance complex, which is a different thing entirely
+  { id: 'source', label: 'Broker', valuesOf: row => stated(row.data_source) },
 ]
 
 /**

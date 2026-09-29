@@ -50,7 +50,7 @@ const outcomeMark = computed(() => {
 })
 
 /**
- * The shutdown mode, which is DETAIL and never a verdict. An operator stopping a healthy live
+ * The shutdown mode, which is DETAIL and never a verdict. An operator stopping a healthy
  * session with Ctrl+C produces the same 'emergency' as a crash, so it is only alarming where the
  * run was graded failed. Absent on a simulation run, where it means not applicable.
  */

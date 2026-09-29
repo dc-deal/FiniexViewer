@@ -127,7 +127,7 @@ GET /api/v1/reports/runs/{run_id}/trade-history       every closed position, wit
 GET /api/v1/reports/runs/{run_id}/...                 10 further per-section reports (not yet consumed)
 ```
 
-**Ledger plane** — a live bot's life across its restarts, on its own grant surface `deployments`:
+**Ledger plane** — a bot's life across its restarts, on its own grant surface `deployments`:
 
 ```
 GET /api/v1/deployments                               one row per (deployment x account currency)
@@ -138,7 +138,7 @@ GET /api/v1/deployments/{deployment_id}/booking-periods   every period of every 
 A **deployment is not a run**: no header, no directory, no artifacts of its own. It is an identity
 that a series of runs name, and its rows live in the run-results ledger — so it cannot be opened
 through a report route. The hinge runs the other way: each session carries its `run_id`, which is
-what every report route takes. It also runs backwards, because a live run's index row carries
+what every report route takes. It also runs backwards, because a session's index row carries
 `parent_id` with `parent_kind: "deployment"`, so a run knows its deployment without a lookup.
 
 **Contract version and row keys.** Two mechanisms the backend added after the models changed four
@@ -169,13 +169,13 @@ Six consequences the frontend is built around:
 
 **`run_id` is opaque, and stays that way.** It is minted as `<date>_<time>_<8 hex>` and the backend pins the character class to `[0-9a-f_]` with a test, so interpolating it into a URL path unencoded is safe by assertion rather than by hope. Nothing here parses it: no split, no date extracted for display, no sort. Ordering comes from the index, which is newest-first by contract.
 
-**Two axes, two fields.** `group` is the PIPELINE, `parent_id` is the NESTING. They were briefly one field (`single_runs` | `sweeps` | `autotrader`), which mixed a shape with a pipeline and could not express a nested live run. A third field, `parent_kind`, now SAYS which kind of family `parent_id` names, so nothing derives it from `group` any more:
+**Two axes, two fields.** `group` is the PIPELINE, `parent_id` is the NESTING. They were briefly one field (`single_runs` | `sweeps` | `autotrader`), which mixed a shape with a pipeline and could not express a nested session. A third field, `parent_kind`, now SAYS which kind of family `parent_id` names, so nothing derives it from `group` any more:
 
 | `parent_kind` | What `parent_id` names | What its siblings want |
 |---|---|---|
 | `null` | nothing — the run stands alone | — |
 | `sweep` | a **combination** of a parameter sweep | a **ranking** by the sweep's declared objective |
-| `deployment` | a **session** of a live deployment | a **timeline**, ordered by `start_time` |
+| `deployment` | a **session** of a deployment | a **timeline**, ordered by `start_time` |
 
 The distinction is not cosmetic. A sweep's children are **alternatives** — contemporaneous answers to "what if the parameters were these", so ranking them is the whole point. A deployment's children are a **sequence** — consecutive sessions of one bot's life across its restarts, where a ranking would be meaningless. And the parents differ too: neither is a run, but a sweep is *defined* by the runs naming it, while a deployment has its own rows in the ledger and its own routes.
 
@@ -199,7 +199,7 @@ The models carry numbers, not units. These are contract, confirmed by the backen
 
 The rule behind all of them: **a value that means "not measured" must never render as a number.** It renders as `n/a`. Which field says "not measured" differs per section — check the model, do not assume `null`.
 
-Its sibling on the categorical side: **a value that means "not applicable" must never render as a state.** `run_outcome` is `''` on artifacts written before the grading existed, so the panel says "no outcome recorded" rather than showing an empty verdict. `shutdown_mode` is live-only and `''` on a simulation run, so it is absent rather than rendered — and where it *is* present it is detail, never a verdict: an operator stopping a healthy session with Ctrl+C produces the same `emergency` as a crash, so it is shown as alarming only where `run_outcome` is `failed`. `operator_interrupted` would resolve that ambiguity, but it is newer than most artifacts, which default it to `false`; it is mirrored and deliberately not rendered until an artifact can carry a true value.
+Its sibling on the categorical side: **a value that means "not applicable" must never render as a state.** `run_outcome` is `''` on artifacts written before the grading existed, so the panel says "no outcome recorded" rather than showing an empty verdict. `shutdown_mode` is AutoTrader-only and `''` on a backtest, so it is absent rather than rendered — and where it *is* present it is detail, never a verdict: an operator stopping a healthy session with Ctrl+C produces the same `emergency` as a crash, so it is shown as alarming only where `run_outcome` is `failed`. `operator_interrupted` would resolve that ambiguity, but it is newer than most artifacts, which default it to `false`; it is mirrored and deliberately not rendered until an artifact can carry a true value.
 
 ### The printout never computes
 
@@ -214,7 +214,7 @@ header → scenario details (sim) → portfolio: per-unit, then aggregated →
 trade history: per-unit, then aggregated → broker → signal → feed stability →
 performance: per-unit, aggregated, bottleneck → profiling (sim) →
 worker/decision breakdown → warmup (sim) → warnings & errors →
-closing: executive (sim) / session summary (live)
+closing: executive (backtest) / session summary (AutoTrader)
 ```
 
 Aggregated blocks appear only for a multi-unit run, and a section whose model is absent is skipped rather than shown empty.
@@ -494,7 +494,7 @@ backend 2026-09-25): it is built from the batch ITSELF rather than from results,
 produced nothing is still a row carrying its reason. Every other per-unit response is shorter
 because each answers a different question — **declared · attempted · produced · counted**.
 
-It is **simulation only by construction** — a live run has no scenario grid, a session IS one unit —
+It is **backtests only by construction** — an AutoTrader session has no scenario grid, a session IS one unit —
 so the route answers `404 artifact_not_produced` there and `PanelColumn` drops the panel, which is
 the same absent-source rule every other section uses.
 
@@ -591,7 +591,38 @@ drawn everything.
 it traded or not, so no trades means *this scenario closed no positions*, never *nothing matched* —
 and the empty states say exactly that. A `?unit=` naming a scenario the run does not declare is
 called out in the line above the column, but only where the roster actually arrived: it is
-simulation-only, so its absence on a live run says nothing about the name.
+backtest-only, so its absence on a session says nothing about the name.
+
+### The words — the backend's glossary, adopted here
+
+The API's vocabulary is fixed in `ide_docs/glossary.md`, and the four kinds of run in
+`ide_docs/introduction_to_the_ide.md` ("The kinds of run"). Every label on screen uses those words,
+because a word invented here would mean something different from the same word in a report.
+
+| Kind | `group` | `ticks_from` | `orders_to` |
+|---|---|---|---|
+| **Backtest** | `simulation` | `archive` | `simulated` |
+| **Mock session** | `autotrader` | `archive` | `simulated` |
+| **Dry run** | `autotrader` | `venue` | `simulated` |
+| **Real-money session** | `autotrader` | `venue` | `venue` |
+
+- An **AutoTrader session** is any run of that pipeline; the three kinds above are its kinds.
+  *Live trading* means a real-money session and nothing else.
+- A **backtest** is a run of the simulation pipeline. A session is never a backtest — a mock session
+  replays an archive window through the whole AutoTrader stack and is reported like every other
+  session, not like a one-scenario backtest.
+- **Never a bare `live`.** It named a pipeline, an adapter, a cadence and real money at once, which
+  is why the backend retired it: `group` served `live` until contract 12 and serves `autotrader`
+  now, in stored runs too. Where this repo means streamed data rather than a kind of run, it says
+  *streamed*.
+- `continuous` is not a kind of run. It joins sessions into a **deployment**, which `parent_kind`
+  already answers.
+- A **booking period** is what was called a *segment*; the field is `period_no` from contract 12.
+
+**`ticks_from`, `orders_to` and `data_windows` are `null` on every run recorded before contract 12**
+— measured 2026-09-29: null on all 40 runs here. Unknown, never guessed, and nothing may be derived
+from their absence. A facet over them is therefore dropped by itself today, by the rule that a facet
+whose single value every row carries cannot narrow anything.
 
 ### Choosing a run — a facet bar over a flat index, not a cascade
 
@@ -631,7 +662,7 @@ The viewer shows many small panels around one chart rather than one view per pag
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 - **`src/stores/layout_store.ts`** — the arrangement, persisted under the single versioned key `layout.v1`.
 
-**A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a live frame later (testingide#379/#380) without being written twice. The rule is about DATA: presentation preferences reach a panel ambiently instead (see *Settings* above), which ties it to no source.
+**A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a streamed frame later (testingide#379/#380) without being written twice. The rule is about DATA: presentation preferences reach a panel ambiently instead (see *Settings* above), which ties it to no source.
 
 **Two stores, two questions.** `runs_store` answers *which* run is selected — the index, the chosen run and the scenarios narrowed to. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
 
@@ -716,7 +747,7 @@ rows that disagree fall back to the code in the cell.
 **A booking close is not a boundary the other lanes share, so nothing is ruled across them.** The
 timeline briefly drew a vertical rule at every distinct closing instant. On the lane that closed it
 only repeated the span's own edge; on every other lane it asserted a relationship that does not
-exist, because the units of a run book independently — where one scenario closes its segment is not
+exist, because the units of a run book independently — where one scenario closes its booking period is not
 an event for another. Removed 2026-09-27, with the marker machinery it was the only caller of. The
 spans carry their own boundaries; a cross-lane rule belongs to something the spans do NOT encode,
 and when such a thing appears it gets designed against real data rather than kept in reserve.

@@ -35,7 +35,7 @@ function stated(value: string | null): string[] {
 }
 
 const facets: FacetDefinition<RunInfo>[] = [
-  { id: 'group', label: 'Group', valuesOf: row => stated(row.group) },
+  { id: 'group', label: 'Run type', valuesOf: row => stated(row.group) },
   { id: 'set', label: 'Set', valuesOf: row => stated(row.name) },
   // the one facet built rather than read: it is the presence of a field, which has two names
   { id: 'artifacts', label: 'Artifacts', valuesOf: row => [row.has_reports ? 'reports' : 'logs only'] },

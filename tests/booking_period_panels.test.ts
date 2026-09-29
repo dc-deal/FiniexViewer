@@ -41,9 +41,9 @@ function mountNarrowed(model: BookingPeriodsReport, unit: string[]) {
 describe('BookingPeriodsPanel — narrowed to one scenario', () => {
   const MIXED = report({
     periods: [
-      period({ unit_name: 'unit_a', segment_no: 1 }),
-      period({ unit_name: 'unit_b', segment_no: 1 }),
-      period({ unit_name: 'unit_a', segment_no: 2 }),
+      period({ unit_name: 'unit_a', period_no: 1 }),
+      period({ unit_name: 'unit_b', period_no: 1 }),
+      period({ unit_name: 'unit_a', period_no: 2 }),
     ],
   })
 
@@ -160,7 +160,7 @@ describe('BookingPeriodsPanel — the reconciliation', () => {
 describe('BookingPeriodTable', () => {
   function mountTable(periods: BookingPeriodRow[], showRun = false) {
     return mount(BookingPeriodTable, {
-      props: { periods, keyFields: ['unit_name', 'segment_no'], showRun },
+      props: { periods, keyFields: ['unit_name', 'period_no'], showRun },
       global: { stubs: { RouterLink: RouterLinkStub } },
     })
   }
@@ -240,7 +240,7 @@ describe('BookingPeriodTable', () => {
 })
 
 describe('BookingPeriodTimeline', () => {
-  function mountTimeline(periods: BookingPeriodRow[], keyFields = ['unit_name', 'segment_no']) {
+  function mountTimeline(periods: BookingPeriodRow[], keyFields = ['unit_name', 'period_no']) {
     return mount(BookingPeriodTimeline, { props: { periods, keyFields, order: 'time' } })
   }
 
@@ -289,7 +289,7 @@ describe('BookingPeriodTimeline', () => {
  * of each stack stayed visible — eight periods rendered as two.
  */
 describe('BookingPeriodTimeline — what a lane is', () => {
-  function mountTimeline(periods: BookingPeriodRow[], keyFields = ['unit_name', 'segment_no']) {
+  function mountTimeline(periods: BookingPeriodRow[], keyFields = ['unit_name', 'period_no']) {
     return mount(BookingPeriodTimeline, { props: { periods, keyFields, order: 'time' } })
   }
 
@@ -297,9 +297,9 @@ describe('BookingPeriodTimeline — what a lane is', () => {
 
   function sessions(): (BookingPeriodRow & { run_id: string })[] {
     return [
-      { ...period({ unit_name: 'bot', segment_no: 1, ...sameWindow }), run_id: 'run_a' },
-      { ...period({ unit_name: 'bot', segment_no: 2, ...sameWindow }), run_id: 'run_b' },
-      { ...period({ unit_name: 'bot', segment_no: 3, ...sameWindow }), run_id: 'run_c' },
+      { ...period({ unit_name: 'bot', period_no: 1, ...sameWindow }), run_id: 'run_a' },
+      { ...period({ unit_name: 'bot', period_no: 2, ...sameWindow }), run_id: 'run_b' },
+      { ...period({ unit_name: 'bot', period_no: 3, ...sameWindow }), run_id: 'run_c' },
     ]
   }
 
@@ -314,7 +314,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
 
   it('without sessions it lanes by the unit, which collapses a deployment into one row', () => {
     const wrapper = mount(BookingPeriodTimeline, {
-      props: { periods: sessions(), keyFields: ['run_id', 'unit_name', 'segment_no'], order: 'time' },
+      props: { periods: sessions(), keyFields: ['run_id', 'unit_name', 'period_no'], order: 'time' },
     })
     // the honest failure the screenshot showed: one lane, and the bars on top of each other
     expect(wrapper.findAll('.lane-row')).toHaveLength(1)
@@ -324,7 +324,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
     const wrapper = mount(BookingPeriodTimeline, {
       props: {
         periods: sessions(),
-        keyFields: ['run_id', 'unit_name', 'segment_no'],
+        keyFields: ['run_id', 'unit_name', 'period_no'],
         sessions: ledger(),
         order: 'time',
       },
@@ -346,7 +346,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
     const wrapper = mount(BookingPeriodTimeline, {
       props: {
         periods: sessions(),
-        keyFields: ['run_id', 'unit_name', 'segment_no'],
+        keyFields: ['run_id', 'unit_name', 'period_no'],
         sessions: ledger(),
         order: 'time',
       },
@@ -361,7 +361,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
     const wrapper = mount(BookingPeriodTimeline, {
       props: {
         periods: sessions(),
-        keyFields: ['run_id', 'unit_name', 'segment_no'],
+        keyFields: ['run_id', 'unit_name', 'period_no'],
         sessions: ledger(),
         order: 'time',
       },
@@ -381,7 +381,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
     const wrapper = mount(BookingPeriodTimeline, {
       props: {
         periods: sessions(),
-        keyFields: ['run_id', 'unit_name', 'segment_no'],
+        keyFields: ['run_id', 'unit_name', 'period_no'],
         sessions: ledger(),
         order: 'time',
       },
@@ -396,15 +396,15 @@ describe('BookingPeriodTimeline — what a lane is', () => {
    */
   it('names a piece once and drops what both its ends repeat', () => {
     const periods = [
-      { ...period({ unit_name: 'bot', segment_no: 1 }), run_id: 'run_a',
+      { ...period({ unit_name: 'bot', period_no: 1 }), run_id: 'run_a',
         opened_at: '2026-02-01T18:00:00+00:00', closed_at: '2026-02-02T00:00:00+00:00' },
-      { ...period({ unit_name: 'bot', segment_no: 2 }), run_id: 'run_b',
+      { ...period({ unit_name: 'bot', period_no: 2 }), run_id: 'run_b',
         opened_at: '2026-02-08T18:00:00+00:00', closed_at: '2026-02-09T00:00:00+00:00' },
     ]
     const wrapper = mount(BookingPeriodTimeline, {
       props: {
         periods,
-        keyFields: ['run_id', 'unit_name', 'segment_no'],
+        keyFields: ['run_id', 'unit_name', 'period_no'],
         order: 'time',
         sessions: [
           { run_id: 'run_a', started: '2026-02-01T18:00:00Z', ended: '2026-02-02T00:00:00Z' },
@@ -425,7 +425,7 @@ describe('BookingPeriodTimeline — what a lane is', () => {
     const deployment = mount(BookingPeriodTimeline, {
       props: {
         periods: sessions(),
-        keyFields: ['run_id', 'unit_name', 'segment_no'],
+        keyFields: ['run_id', 'unit_name', 'period_no'],
         sessions: ledger(),
         order: 'time',
       },
@@ -437,9 +437,9 @@ describe('BookingPeriodTimeline — what a lane is', () => {
 
   // '#' is the session number in the table beside the chart; one glyph for two counters reads as
   // one counter, which is what made the numbering look broken.
-  it('spells out the segment rather than borrowing the session glyph', () => {
-    const wrapper = mountTimeline([period({ segment_no: 4 })])
-    expect(wrapper.find('.span-label').text()).toBe('seg 4')
+  it('spells out the period rather than borrowing the session glyph', () => {
+    const wrapper = mountTimeline([period({ period_no: 4 })])
+    expect(wrapper.find('.span-label').text()).toBe('period 4')
   })
 
 })
@@ -456,19 +456,19 @@ describe('BookingPeriodTimeline — many short slices', () => {
   function slices(): (BookingPeriodRow & { run_id: string })[] {
     return [
       {
-        ...period({ unit_name: 'zeta', segment_no: 1 }),
+        ...period({ unit_name: 'zeta', period_no: 1 }),
         run_id: 'r1',
         opened_at: new Date(0).toISOString(),
         closed_at: new Date(HOUR).toISOString(),
       },
       {
-        ...period({ unit_name: 'mid', segment_no: 1 }),
+        ...period({ unit_name: 'mid', period_no: 1 }),
         run_id: 'r2',
         opened_at: new Date(200 * HOUR).toISOString(),
         closed_at: new Date(201 * HOUR).toISOString(),
       },
       {
-        ...period({ unit_name: 'alpha', segment_no: 1 }),
+        ...period({ unit_name: 'alpha', period_no: 1 }),
         run_id: 'r3',
         opened_at: new Date(400 * HOUR).toISOString(),
         closed_at: new Date(401 * HOUR).toISOString(),
@@ -478,7 +478,7 @@ describe('BookingPeriodTimeline — many short slices', () => {
 
   function mountSlices() {
     return mount(BookingPeriodTimeline, {
-      props: { periods: slices(), keyFields: ['unit_name', 'segment_no'], order: 'time' },
+      props: { periods: slices(), keyFields: ['unit_name', 'period_no'], order: 'time' },
     })
   }
 
@@ -489,7 +489,7 @@ describe('BookingPeriodTimeline — many short slices', () => {
 
   it('orders them by name when asked to', () => {
     const wrapper = mount(BookingPeriodTimeline, {
-      props: { periods: slices(), keyFields: ['unit_name', 'segment_no'], order: 'name' },
+      props: { periods: slices(), keyFields: ['unit_name', 'period_no'], order: 'name' },
     })
     expect(wrapper.findAll('.lane-label').map(node => node.text()))
       .toEqual(['alpha', 'mid', 'zeta'])
@@ -507,7 +507,7 @@ describe('BookingPeriodTimeline — many short slices', () => {
 
   it('offers no ordering where there is only one lane to order', () => {
     const wrapper = mount(BookingPeriodTimeline, {
-      props: { periods: [period()], keyFields: ['unit_name', 'segment_no'], order: 'time' },
+      props: { periods: [period()], keyFields: ['unit_name', 'period_no'], order: 'time' },
     })
     expect(wrapper.find('.order-control').exists()).toBe(false)
   })
@@ -519,13 +519,13 @@ describe('BookingPeriodTimeline — many short slices', () => {
    */
   it('summarises the removals once there are too many to name', () => {
     const many = Array.from({ length: 6 }, (_, index) => ({
-      ...period({ unit_name: `unit_${index}`, segment_no: 1 }),
+      ...period({ unit_name: `unit_${index}`, period_no: 1 }),
       run_id: `r${index}`,
       opened_at: new Date(index * 300 * HOUR).toISOString(),
       closed_at: new Date(index * 300 * HOUR + HOUR).toISOString(),
     }))
     const wrapper = mount(BookingPeriodTimeline, {
-      props: { periods: many, keyFields: ['unit_name', 'segment_no'], order: 'time' },
+      props: { periods: many, keyFields: ['unit_name', 'period_no'], order: 'time' },
     })
     const summary = wrapper.find('.gap-label.summary')
     expect(summary.exists()).toBe(true)

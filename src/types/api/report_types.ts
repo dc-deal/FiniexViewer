@@ -1,13 +1,61 @@
+/**
+ * The market window a run unit DECLARED, one entry per unit — a backtest has one per scenario, an
+ * AutoTrader session exactly one.
+ *
+ * `end_date: null` means OPEN: a tick-limited scenario, or a session at a venue whose window is
+ * recorded at its start and stays open on the record even after the run finished. When it finished
+ * is the run's completion, not a field here.
+ *
+ * There is deliberately no covered-from / covered-to pair per RUN. We asked for one; the backend
+ * refused it with the better argument, and it is the argument already written into our own rules:
+ * a span across several scenarios covers the gaps between them, so the two edges would describe a
+ * stretch that produced nothing. A run matches a window when ANY of its units overlaps it.
+ */
+export interface DataWindow {
+  unit_name: string
+  start_date: string
+  end_date: string | null
+}
+
 /** Single run entry from GET /api/v1/reports/runs — identity only, no report content */
 export interface RunInfo {
   run_id: string
-  // The PIPELINE that produced the run: 'simulation' | 'live'. Nesting is not in here — it is
-  // parent_id. The two axes were briefly one field ('single_runs' | 'sweeps' | 'autotrader') and
-  // that could not express a nested live run, which is what split them.
+  /**
+   * The PIPELINE that produced the run: `simulation` | `autotrader`. Nesting is not in here — that
+   * is `parent_id`. The two axes were briefly one field (`single_runs` | `sweeps` | `autotrader`)
+   * and could not express a nested session, which is what split them.
+   *
+   * `live` was this field's value until contract 12 and no longer occurs anywhere the API serves,
+   * stored runs included. It is also not a word for a KIND of run: an AutoTrader session is a mock
+   * session, a dry run or a real-money session, and only the last is live trading.
+   */
   group: string
   /**
-   * The artifact files this run carries. The set VARIES, and not only between the pipelines: live
-   * omits scenario_details / profiling / run_meta / aggregated_portfolio, and a simulation writes
+   * WHERE THE TICKS CAME FROM and WHERE THE ORDERS WENT — the two facts that separate the four
+   * kinds of run, recorded at its start from the RESOLVED configuration rather than read back from
+   * a profile file that may have changed since:
+   *
+   *   backtest             simulation   archive   simulated
+   *   mock session         autotrader   archive   simulated
+   *   dry run              autotrader   venue     simulated
+   *   real-money session   autotrader   venue     venue
+   *
+   * `null` on every run recorded before contract 12 — unknown, never guessed. Measured here
+   * 2026-09-29: null on all 40 runs on this machine, so nothing may be derived from their absence.
+   */
+  ticks_from: string | null
+  orders_to: string | null
+  /**
+   * `null` on a run recorded before contract 12 — the same not-yet-recorded case as the two above,
+   * and NOT an empty list. Measured 2026-09-29: null on all 40 runs here. The distinction is the
+   * one this project keeps making: an empty list is a run that declared no window, null is a run
+   * that never recorded the field, and reading one as the other invents a fact.
+   */
+  data_windows: DataWindow[] | null
+  /**
+   * The artifact files this run carries. The set VARIES, and not only between the pipelines: an
+   * AutoTrader session omits scenario_details / profiling / run_meta / aggregated_portfolio and
+   * adds safety, and a backtest writes
    * extra sections only when it has something to say (robustness, block splitting). So never
    * assume a set from the pipeline or from a count observed in one archive — read this list. It
    * says which sections exist and costs no request: it rides on the index row.
@@ -16,7 +64,7 @@ export interface RunInfo {
   // Derived from `artifacts` being non-empty, so the two cannot disagree. False means the run
   // exists as LOGS ONLY and every report route answers 404 — a normal state, not a fault.
   has_reports: boolean
-  name: string        // scenario-set name (simulation) | profile name (live)
+  name: string        // scenario-set name (backtest) | profile name (AutoTrader session)
   start_time: string  // ISO-8601 UTC, from the run header
   /**
    * The family this run belongs to, or null for a top-level run in either pipeline. One field,
@@ -24,7 +72,7 @@ export interface RunInfo {
    *
    *   sweep        a COMBINATION of a parameter sweep. The siblings are alternatives,
    *                contemporaneous and comparable, so ranking them is the point.
-   *   deployment   a SESSION of a live deployment. The siblings are a sequence of sealed slices
+   *   deployment   a SESSION of a deployment. The siblings are a sequence of sealed slices
    *                of one bot's life, ordered by start_time; ranking them would be meaningless.
    *                The id addresses GET /api/v1/deployments/{id} directly.
    */
@@ -109,7 +157,7 @@ export interface RunSummary {
   orders_executed: number
   orders_rejected: number
   sl_tp_triggered: number
-  unit_count: number              // simulation: N scenarios | live: 1
+  unit_count: number              // backtest: N scenarios | AutoTrader session: 1
   // Weakest SIGNAL channel of the run. null = no SIGNAL worker was involved — deliberately
   // not 1.0, which would claim a perfect feed.
   signal_fresh_ratio: number | null
@@ -132,7 +180,7 @@ export interface WarningRow {
 /**
  * One buffered log record, as it was recorded rather than as it was rendered. The two times are
  * different questions: `observed_at` is wall-clock and answers how long OUR machine took;
- * `event_time` is the run's own clock — simulated market time in a backtest, the live clock in a
+ * `event_time` is the run's own clock — simulated market time in a backtest, the wall clock in a
  * session — and is null for entries that predate it. Never substitute one for the other: sorting
  * by observed_at looks right and is wrong.
  */
@@ -164,8 +212,8 @@ export interface WarningsErrorsOutcome {
   failed_unit_names: string[]
   first_failure_name: string
   first_failure_error: string
-  emergency_reason: string    // live villain
-  // Live-only. '' on a simulation run means NOT APPLICABLE rather than unknown. It is DETAIL and
+  emergency_reason: string    // AutoTrader sessions only
+  // AutoTrader sessions only. '' on a backtest means NOT APPLICABLE rather than unknown. DETAIL and
   // never a verdict: 'emergency' is alarming only when run_outcome is 'failed', because an
   // operator stopping a healthy session with Ctrl+C produces the same value.
   shutdown_mode: string       // 'normal' | 'emergency'
@@ -200,7 +248,7 @@ export interface WarningsErrorsReport {
 }
 
 /**
- * One unit inside a run — a scenario in a simulation, the single profile in a live run. This is
+ * One unit inside a run — a scenario in a backtest, the single profile in a session. This is
  * the breakdown `run-summary` cannot show: its currency rows are already summed over all units.
  */
 export interface PortfolioUnitRow {
@@ -221,7 +269,7 @@ export interface PortfolioUnitRow {
   account_max_drawdown: number
   account_max_dd_pct: number
   /**
-   * Where the decline is measured FROM. A live deployment carries its peak across restarts, so
+   * Where the decline is measured FROM. A deployment carries its peak across restarts, so
    * the figure is not about this run alone: `drawdown_restarts` counts how many sessions it has
    * survived, and the two stamps say which stretch it spans.
    */
@@ -231,7 +279,7 @@ export interface PortfolioUnitRow {
   total_fees: number
   // Provenance. data_source carries the same broker keys GET /brokers returns ('mt5'), which is
   // what makes the jump into the chart possible; broker_name is a display name ('Kraken') and
-  // is not addressable. Filled on both pipelines since the live path threads it through.
+  // is not addressable. Filled on both pipelines since the AutoTrader path threads it through.
   data_source: string
   sentiment_source: string
   broker_name: string
@@ -317,7 +365,7 @@ export interface BookingPeriodRow {
   unit_name: string
   // A per-BOT counter, not a per-run one: it restarts wherever a session wrote no carry-over
   // floor, so two periods of one deployment can both be number 1. Never a key on its own.
-  segment_no: number
+  period_no: number
   opened_at: string             // ISO-8601 with explicit timezone
   closed_at: string
   reason: string

@@ -12,7 +12,7 @@ const DISPLAY_SETTINGS: InjectionKey<Ref<DisplaySettings> | ComputedRef<DisplayS
  * Ambient rather than a prop, for the same reason the theme is: it applies to every panel, only
  * some panels care, and passing it to all of them would hang a stray attribute on the ones that do
  * not declare it. A panel still receives its MODEL as a prop — that is the half of the contract
- * that keeps one component usable for a stored run and for a live frame.
+ * that keeps one component usable for a stored run and for a streamed frame later.
  */
 export function provideDisplaySettings(
   source: Ref<DisplaySettings> | ComputedRef<DisplaySettings>

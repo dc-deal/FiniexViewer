@@ -48,7 +48,7 @@ const belongsTo = computed<Membership | null>(() => {
     <dt>{{ t('Started') }}</dt>
     <dd class="mono">{{ utcInstant(model.start_time) }}</dd>
 
-    <dt>{{ t('Category') }}</dt>
+    <dt>{{ t('Run type') }}</dt>
     <dd>{{ model.group }}</dd>
 
     <dt>{{ t('Name') }}</dt>

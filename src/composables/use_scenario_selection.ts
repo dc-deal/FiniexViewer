@@ -19,7 +19,7 @@ const SCENARIO_SELECTION: InjectionKey<ScenarioSelection> = Symbol('scenario-sel
  * Ambient rather than a prop, for the same reason the display preferences are: it applies to every
  * panel, only some act on it, and a prop on `<component :is>` would hang a stray attribute on the
  * ones that do not declare it. A panel still receives its MODEL as a prop — that half of the
- * contract is what keeps one component usable for a stored run and for a live frame.
+ * contract is what keeps one component usable for a stored run and for a streamed frame later.
  *
  * The channel carries the WRITERS too, because the roster changes the selection. Routed back as an
  * event, the generic panel shell would have to forward a run-specific emit, which is the domain

@@ -4,14 +4,14 @@ import type { RunInfo } from '@/types/api/report_types'
  * Which file a report section is served from.
  *
  * The run index lists every artifact a run actually persisted, and **the two pipelines write
- * DIFFERENT sets** — a live session has no `scenario_details`, `profiling`, `run_meta` or
- * `aggregated_portfolio`, while only a live session writes `safety`. The backend states this
+ * DIFFERENT sets** — an AutoTrader session has no `scenario_details`, `profiling`, `run_meta` or
+ * `aggregated_portfolio`, while only a session writes `safety`. The backend states this
  * plainly and tells consumers to read `artifacts` rather than guess; a client that guesses gets a
  * 404 for the difference.
  *
  * Measured here 2026-09-28 over the 40 runs on this machine: `scenario_details.json` is present on
- * 15 of 16 simulation runs and on 0 of 24 live runs. Asking anyway produced one wasted request per
- * live run AND a notice claiming a section was missing, where the truth is that this kind of run
+ * 15 of 16 backtests and on 0 of 24 AutoTrader sessions. Asking anyway produced one wasted request
+ * per session AND a notice claiming a section was missing, where the truth is that this kind of run
  * does not have one.
  *
  * Two sections are deliberately absent from this map. `config` is not an artifact of the run at

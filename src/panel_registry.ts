@@ -57,7 +57,7 @@ const PANELS: PanelDescriptor[] = [
   },
   {
     // Ahead of the breakdowns: it is the only COMPLETE list of what the run set out to do, and a
-    // scenario that produced nothing appears in no other section. Simulation only — a live run has
+    // scenario that produced nothing appears in no other section. Backtests only — a session has
     // no scenario grid, so the source is absent and the panel is dropped.
     id: 'scenario-roster',
     title: 'Scenarios',

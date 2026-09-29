@@ -270,7 +270,7 @@ export async function getTradeHistory(runId: string): Promise<TradeHistoryReport
 
 /**
  * The ROSTER of a run — every scenario it declared, including those that produced nothing, each
- * with its reason. Simulation only: a live run has no scenario grid and the route answers 404,
+ * with its reason. Backtests only: an AutoTrader session has no scenario grid and the route answers 404,
  * which is an absence here, not a failure.
  */
 export async function getScenarioDetails(runId: string): Promise<ScenarioDetailsReport | SectionAbsence> {

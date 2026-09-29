@@ -14,7 +14,7 @@ import type {
 import { t } from '@/translate'
 
 /**
- * A live bot's life across its restarts. A deployment is not a run: it has no directory and no
+ * A bot's life across its restarts. A deployment is not a run: it has no directory and no
  * artifacts, only an identity that a series of runs name — so everything here comes from the
  * ledger, and the way into the report routes is a session's `run_id`.
  */
