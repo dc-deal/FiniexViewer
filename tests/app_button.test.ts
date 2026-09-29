@@ -51,4 +51,27 @@ describe('AppButton', () => {
   it('never submits a form by accident', () => {
     expect(mount(AppButton).attributes('type')).toBe('button')
   })
+
+  it('takes less room where a row of them has to fit', () => {
+    expect(mount(AppButton).classes()).toContain('normal')
+    expect(mount(AppButton, { props: { size: 'compact' } }).classes()).toContain('compact')
+  })
+
+  /**
+   * The distinction `marked` exists for. A facet's popover trigger holds a state worth showing —
+   * values are picked — but it is a DISCLOSURE: the primitive already gives it `aria-expanded`,
+   * and `aria-pressed` beside that would announce two roles at once. So `marked` takes the chosen
+   * look and says nothing, while what such a control states in words carries the meaning.
+   */
+  it('wears the chosen look without announcing a toggle', () => {
+    const marked = mount(AppButton, { props: { marked: true } })
+    expect(marked.classes()).toContain('active')
+    expect(marked.attributes('aria-pressed')).toBeUndefined()
+  })
+
+  it('still announces the real toggle', () => {
+    const toggle = mount(AppButton, { props: { active: true } })
+    expect(toggle.classes()).toContain('active')
+    expect(toggle.attributes('aria-pressed')).toBe('true')
+  })
 })

@@ -62,6 +62,10 @@ function summaryWith(row: RunSummaryCurrency): RunSummary {
     orders_rejected: 0,
     sl_tp_triggered: 0,
     unit_count: 1,
+    // null on an artifact written before contract 6 — not a zero
+    units_declared: null,
+    units_disabled: null,
+    units_absent: [],
     signal_fresh_ratio: null,
     disturbance_episode_count: 0,
     disturbance_stale_seconds: 0,
@@ -70,9 +74,19 @@ function summaryWith(row: RunSummaryCurrency): RunSummary {
   }
 }
 
-function cells(row: RunSummaryCurrency): string[] {
+/**
+ * The panel's figures as label -> value.
+ *
+ * Read by NAME rather than by position, which the ten-column table forced. A positional assertion
+ * survives a column being inserted beside it and quietly checks the wrong thing — the same trap
+ * that made a settings test click the wrong button once a second one appeared.
+ */
+function figures(row: RunSummaryCurrency): Record<string, string> {
   const wrapper = mount(ExecutivePanel, { props: { model: summaryWith(row) } })
-  return wrapper.findAll('tbody td').map(cell => cell.text())
+  return Object.fromEntries(wrapper.findAll('.figure').map(pair => [
+    pair.find('dt').text(),
+    pair.find('dd').text(),
+  ]))
 }
 
 describe('ExecutivePanel', () => {
@@ -98,25 +112,52 @@ describe('ExecutivePanel', () => {
   })
 
   it('renders measured values with their units', () => {
-    const [currency, netPnl, profitFactor, winRate, trades, expectancy, avgWin, avgLoss, maxDd] =
-      cells(MEASURED)
-    expect(currency).toBe('USD')
-    expect(netPnl).toBe('-50.60 USD')
-    expect(profitFactor).toBe('0.57')
-    expect(winRate).toBe('58.3%')           // backend ratio 0..1, converted at the render edge
-    expect(trades).toBe('12 (7W/5L)')
-    expect(expectancy).toBe('+0.35R')
-    expect(avgWin).toBe('+1.40R')
-    expect(avgLoss).toBe('-0.90R')
-    expect(maxDd).toBe('54.90 USD')         // positive magnitude by contract, no abs() applied
+    const f = figures(MEASURED)
+    expect(f['Net P&L']).toBe('-50.60 USD')
+    expect(f['Profit factor']).toBe('0.57')
+    expect(f['Win rate']).toBe('58.3%')      // backend ratio 0..1, converted at the render edge
+    expect(f['Trades']).toBe('12 (7W/5L)')
+    expect(f['Expectancy']).toBe('+0.35R')
+    expect(f['Avg win R']).toBe('+1.40R')
+    expect(f['Avg loss R']).toBe('-0.90R')
+    // positive magnitude by contract, no abs() applied; the percentage is already multiplied
+    expect(f['Max drawdown']).toContain('54.90 USD')
+  })
+
+  // The currency heads its own group of blocks rather than being one figure among them.
+  it('heads each account with its currency', () => {
+    const wrapper = mount(ExecutivePanel, { props: { model: summaryWith(MEASURED) } })
+    expect(wrapper.find('.currency-title').text()).toBe('USD')
+  })
+
+  /**
+   * Thirty fields arrive per currency and the table showed ten. These three were carried and never
+   * shown — and on a run that ended with positions open they are the ones that explain why the
+   * booked figure and the account disagree.
+   */
+  it('shows the account figures the table had no room for', () => {
+    const open: RunSummaryCurrency = {
+      ...MEASURED, final_equity: 9_949.4, open_position_count: 2, unrealized_pnl: -12.5,
+    }
+    const f = figures(open)
+    expect(f['Final equity']).toBe('9,949.40 USD')
+    expect(f['Still open']).toBe('2')
+    expect(f['Unrealised']).toBe('-12.50 USD')
+  })
+
+  // An unrealised 0.00 beside "0 open" reads as a figure somebody measured. Neither line appears.
+  it('leaves out what is open where nothing is', () => {
+    const f = figures({ ...MEASURED, open_position_count: 0, unrealized_pnl: 0 })
+    expect(f['Still open']).toBeUndefined()
+    expect(f['Unrealised']).toBeUndefined()
   })
 
   it('renders n/a instead of a number nobody measured', () => {
-    const [, , profitFactor, , , expectancy, avgWin, avgLoss] = cells(UNDEFINED_VALUES)
-    expect(profitFactor).toBe('n/a')
-    expect(expectancy).toBe('n/a')
-    expect(avgWin).toBe('n/a')
-    expect(avgLoss).toBe('n/a')
+    const f = figures(UNDEFINED_VALUES)
+    expect(f['Profit factor']).toBe('n/a')
+    expect(f['Expectancy']).toBe('n/a')
+    expect(f['Avg win R']).toBe('n/a')
+    expect(f['Avg loss R']).toBe('n/a')
   })
 
   it('gates each R value on its own subset count', () => {
@@ -128,9 +169,9 @@ describe('ExecutivePanel', () => {
       r_win_count: 0,
       r_loss_count: 1,
     }
-    const [, , , , , , avgWin, avgLoss] = cells(noWinner)
-    expect(avgWin).toBe('n/a')
-    expect(avgLoss).toBe('-0.90R')
+    const f = figures(noWinner)
+    expect(f['Avg win R']).toBe('n/a')
+    expect(f['Avg loss R']).toBe('-0.90R')
   })
 
   it('never renders a ratio nobody measured — an untraded run has no win rate', () => {
@@ -139,9 +180,9 @@ describe('ExecutivePanel', () => {
       ...MEASURED, total_trades: 0, winning_trades: 0, losing_trades: 0,
       win_rate: 0, profit_factor: 0,
     }
-    const [, , profitFactor, winRate] = cells(untraded)
-    expect(profitFactor).toBe('n/a')
-    expect(winRate).toBe('n/a')
+    const f = figures(untraded)
+    expect(f['Profit factor']).toBe('n/a')
+    expect(f['Win rate']).toBe('n/a')
   })
 
   it('keeps a measured zero — one losing trade really is a win rate of zero', () => {
@@ -149,9 +190,9 @@ describe('ExecutivePanel', () => {
       ...MEASURED, total_trades: 1, winning_trades: 0, losing_trades: 1,
       win_rate: 0, profit_factor: 0,
     }
-    const [, , profitFactor, winRate] = cells(onlyLosses)
-    expect(profitFactor).toBe('0.00')
-    expect(winRate).toBe('0.0%')
+    const f = figures(onlyLosses)
+    expect(f['Profit factor']).toBe('0.00')
+    expect(f['Win rate']).toBe('0.0%')
   })
 
   it('says so when a run carries no currency rows', () => {
@@ -172,6 +213,9 @@ function report(overrides: Partial<WarningsErrorsReport> = {}): WarningsErrorsRe
       failed_count: 0,
       total_units: 3,
       failed_unit_names: [],
+      error_count: null,
+      warning_count: null,
+      log_warning_count: null,
       first_failure_name: '',
       first_failure_error: '',
       emergency_reason: '',
@@ -413,8 +457,8 @@ function unit(overrides: Partial<PortfolioUnitRow> = {}): PortfolioUnitRow {
     account_max_drawdown: 19.57,
     account_max_dd_pct: 0.19,
     total_fees: 2.16,
-    data_source: 'mt5',
-    sentiment_source: '',
+    data_broker_type: 'mt5',
+    data_sentiment_type: '',
     broker_name: 'Vantage International Group Limited',
     spot_mode: false,
     has_error: false,
@@ -532,10 +576,10 @@ describe('PortfolioPanel', () => {
   })
 
   it('offers no link when the unit names no data source', () => {
-    // live runs leave data_source empty — a link would land nowhere
+    // an autotrader session leaves data_broker_type empty — a link would land nowhere
     const wrapper = mountPortfolio({
       run_id: '20260615_130000',
-      units: [unit({ data_source: '', broker_name: 'Kraken', spot_mode: true })],
+      units: [unit({ data_broker_type: '', broker_name: 'Kraken', spot_mode: true })],
       aggregates: [],
     })
     expect(wrapper.findComponent(RouterLinkStub).exists()).toBe(false)
@@ -584,6 +628,13 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     group: 'simulation',
     artifacts: ['run_summary.json', 'portfolio.json'],
     name: 'multi_position_test',
+    // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
+    results: null,
+    run_outcome: null,
+    error_count: null,
+    warning_count: null,
+    log_warning_count: null,
+
     has_reports: true,
     start_time: '2026-08-30T14:58:19.182635+00:00',
     parent_id: null,

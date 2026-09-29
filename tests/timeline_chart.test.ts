@@ -72,6 +72,28 @@ describe('TimelineChart', () => {
     expect(wrapper.html().indexOf('axis-row')).toBeLessThan(wrapper.html().indexOf('lane-row'))
   })
 
+  /**
+   * The two extreme labels hang INWARDS, which is a layout property and not decoration. A `mid`
+   * label at 100 % is pulled back visually by a transform, but a transform does not shrink the
+   * LAYOUT box — so half the label stayed past the chart's right edge and the panel around it
+   * offered a scrollbar for 67 px of nothing. Scrolling that phantom then slid the lane-label
+   * column out of view, which is how `GBPUSD_blocks_01` came to read as `locks_01`.
+   */
+  it('hangs the first and last labels inwards, so neither reaches past the chart', () => {
+    const wrapper = mountChart([lane('a', [[0, 100]])], 0, 100, { ticks: 4 })
+    const edges = wrapper.findAll('.tick').map(node => node.classes()
+      .find(name => ['start', 'mid', 'end'].includes(name)))
+    expect(edges).toEqual(['start', 'mid', 'mid', 'end'])
+  })
+
+  // two ticks is the floor, and then BOTH of them are extremes
+  it('makes both labels extremes where the axis carries only two', () => {
+    const wrapper = mountChart([lane('a', [[0, 100]])], 0, 100, { ticks: 2 })
+    const edges = wrapper.findAll('.tick').map(node => node.classes()
+      .find(name => ['start', 'mid', 'end'].includes(name)))
+    expect(edges).toEqual(['start', 'end'])
+  })
+
   // The note moved off the page and onto the axis itself: it is a caveat a reader wants ONCE,
   // not a paragraph under every chart.
   it('keeps what the scale means on the axis, within reach rather than in the way', () => {

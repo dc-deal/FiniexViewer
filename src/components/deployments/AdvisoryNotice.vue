@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { duration } from '@/components/runs/report_format'
 import type { DeploymentAdvisory } from '@/types/api/deployment_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 /**
  * Says whether the sessions below may be read as one series. The backend sends counts, not
@@ -21,6 +21,18 @@ const moved = computed(() =>
 const idle = computed(() =>
   props.advisory.longest_gap_hours === null ? null : duration(props.advisory.longest_gap_hours)
 )
+
+/**
+ * Two sentences rather than one with a number in it — "1 sessions, all produced by one
+ * configuration" is how the other reads, and here the VERB agrees as well as the noun, which no
+ * joined word fixes. The moved branch above needs no such care: it is shown only where a stand
+ * count exceeds one, so there are at least two sessions behind it.
+ */
+const settled = computed(() =>
+  props.advisory.sessions === 1
+    ? t('One session, so a single configuration stands behind these rows')
+    : `${props.advisory.sessions} ${t('sessions, all produced by one configuration')}`
+)
 </script>
 
 <template>
@@ -30,13 +42,13 @@ const idle = computed(() =>
     <span v-if="moved" class="mark">⚠</span>
     <template v-if="moved">
       {{ advisory.sessions }} {{ t('sessions span') }}
-      {{ advisory.strategy_stands }} {{ t('strategy stands') }}
+      {{ plural(advisory.strategy_stands, t('strategy stand'), t('strategy stands')) }}
       {{ t('and') }}
-      {{ advisory.operation_stands }} {{ t('operational stands') }} —
+      {{ plural(advisory.operation_stands, t('operational stand'), t('operational stands')) }} —
       {{ t('these rows are not one series, and a total over them answers no question') }}.
     </template>
     <template v-else>
-      {{ advisory.sessions }} {{ t('sessions, all produced by one configuration') }}.
+      {{ settled }}.
     </template>
     <template v-if="idle"> {{ t('Longest idle stretch') }}: {{ idle }}.</template>
   </p>

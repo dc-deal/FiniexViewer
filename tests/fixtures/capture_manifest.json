@@ -1,5 +1,5 @@
 {
-  "contract": 12,
+  "contract": 15,
   "captured_from": "GET /api/v1 through the dev proxy",
   "captured_on": "2026-09-29"
 }

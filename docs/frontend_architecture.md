@@ -336,22 +336,75 @@ A toggle reuses the pressed look as a lasting state instead of inventing a fifth
 `aria-pressed` is emitted only where `active` is actually used: a plain button carrying it claims
 to be a toggle it is not.
 
-**Not everything became an `AppButton`.** The facet chips, the app bar, the accordion header and the
-JSON fold are trigger controls with their own visual language, and several are portalled Reka UI
-primitives whose trigger element the component does not fully own. The facet chips had the same
-defect and were given the same four states with the same tokens; unifying them under `AppButton` is
-its own step.
+**`marked` is the chosen look WITHOUT that announcement**, and the distinction is not pedantry. A
+facet's popover trigger holds a state worth showing — values are picked — but it is a disclosure,
+and Reka UI already gives it `aria-expanded`; `aria-pressed` beside that announces two roles at
+once. So `marked` takes the border and the ink, and what the control states in words (the count
+badge) is what carries the meaning aloud. `active` stays for a real toggle, such as the sort group
+where one of several is chosen.
 
-### URL Query State — `use_query_sync` / `use_run_query_sync`
+**`compact` is the second size**, and it exists because density is a requirement of these views
+rather than a preference: a facet bar carries six or more chips side by side. It changes the
+padding and nothing else, so every state still reads the same.
 
-Every user-selectable option on a page is stored in the URL as a query param, so any view is a shareable link that survives reload. Two composables own disjoint sets of params:
+**A portalled trigger is not an exception — `as-child` is the answer.** The facet chips carried
+sixty lines of CSS that restated `AppButton`'s four states with the same tokens, because two of the
+three are Reka UI `PopoverTrigger`s. Wrapping them with `as-child` lets the primitive keep the
+disclosure behaviour while `AppButton` carries the look, and the duplicate contract is gone — a
+second copy drifts the moment the first one changes. Measured after the change: the chips are still
+20 px tall with `2px 8px` of padding, so nothing got less dense. The same pattern already held the
+dialog's close button.
+
+**What is still not an `AppButton`:** the app bar, the accordion header, the JSON fold, and the
+option rows inside a facet's popover. Those are menu items and disclosure headers rather than
+buttons — a different control type with a different shape, not the same one written twice.
+
+### URL Query State — `use_query_sync` / `use_run_query_sync` / `use_facet_query`
+
+Every user-selectable option on a page is stored in the URL as a query param, so any view is a shareable link that survives reload. Three composables own disjoint sets of params:
 
 - `use_query_sync.ts` — the chart selection (`?broker=...&symbol=...&timeframe=...`), activated in `AppShell`.
 - `use_run_query_sync.ts` — the run and the scenarios narrowed to (`?run=...&unit=...`), activated in `RunsView`. `unit` is one step BELOW the run and selecting a run clears it, so it is applied after the run resolves — read first, it is silently dropped and a shared link loses its narrowing. `?group=` and `?name=` were the old cascade's params and are actively REMOVED from a link that still carries them, rather than left to look meaningful.
+- `use_facet_query.ts` — a facet bar's narrowing, ordering and search, one instance per bar.
 
-Priority on load: **URL params > localStorage > null**. Both wait for `router.isReady()` before reading params, to avoid a race with the initial navigation, then watch their store and call `router.replace` on every change. For the chart selection, localStorage is a write-through cache; the run selection has no cache, because the run index is live data.
+Priority on load: **URL params > localStorage > null**. All three wait for `router.isReady()` before reading params, to avoid a race with the initial navigation, then watch their state and write on every change. For the chart selection, localStorage is a write-through cache; the run selection has no cache, because the run index is live data.
 
-**Both merge, never replace.** `router.replace({ query })` with a freshly built object silently drops every param the other composable owns. `query_param_utils.ts` holds the two functions that make the merge the default: `readQuery` (the current query as plain strings) and `writeParam` (set, or delete when the value is null).
+**One writer, because four owners of one query cannot each rebuild it.** `router.replace({ query })`
+with a freshly built object drops every param the others own — and `route.query` only updates once
+a navigation RESOLVES, so two writers firing in the same flush both read the state before either
+wrote and the second one wins. That is reachable rather than theoretical: choosing a run writes
+`run`, and the same change clears the roster's facets, which writes `unitf`.
+
+`query_param_utils.ts` therefore holds `patchQuery(router, patch)`: writers state what THEIR keys
+should become, and one navigation per tick applies them together against the live query. A later
+patch for the same key wins, which is what writing twice means. `readQuery` and `writeParam` remain
+underneath it.
+
+#### A facet bar in the URL
+
+Three params per bar, prefixed with the thing the bar narrows — `run…` for the run index, `unit…`
+for the scenario roster, the same two words `run=` and `unit=` already use:
+
+```
+/runs?run=20260929_080044_c7cc7f14
+     &runf=group:simulation;artifacts:reports  &runsort=oldest  &runq=tunnel
+     &unitf=status:success;result:profit       &unitsort=pnl    &unitq=EUR
+```
+
+A param is absent while its part of the bar is untouched, and the sort is written only when it is
+not the bar's default, so an ordinary link stays short. The facets are written sorted by id, so the
+same narrowing always produces the same link whatever order the chips were clicked in.
+
+**Why the search and the sort ride along.** A search REMOVES rows, so it is a filter. A sort does
+not change the set, but these sorts are analytical — *worst result first*, *longest tick timespan
+first* — and that is what a sender means to show. Panel order, collapsed sections and pinned panels
+stay in `localStorage`: those are how one reader arranged their screen, not what they are looking
+at.
+
+**Separators: `facet:value,value;facet:value`.** Measured 2026-09-29 over 52 distinct facet values
+from the live run index and three scenario rosters — every one matches `[A-Za-z0-9_. ]`, so none
+collides. A value that ever carried `,` `;` or `:` would not survive the round trip; the answer then
+is repeated params rather than an escape scheme, the same conclusion the `unit` param reached.
 
 ### Settings — three kinds of state, and which one needs an account
 
@@ -503,6 +556,16 @@ the same absent-source rule every other section uses.
 processed ticks and closed positions, while `ticks_processed`, `execution_time_ms` and
 `tick_timespan_seconds` are carried on exactly those 18. Nothing is rendered or sorted from the
 five — a zero nobody reported is not a figure. Reported to the backend and open.
+
+**Two of that row's figures both look like "time" and are not one axis.** The **tick timespan**
+(`tick_timespan_seconds`) is MARKET time — from the unit's first processed tick to its last, so a
+tick-limited scenario ends before the *data window* it was declared to cover. **Execution time**
+(`execution_time_ms`) is the MACHINE's: how long it took to run. The roster shows both and keeps
+them apart by ink, the timespan leading in the primary colour and the execution time secondary,
+because ranking scenarios by the wrong one of the two answers a question nobody asked. Execution
+time was withheld until contract 13: the field carried seconds under a millisecond name, so 1.98
+for 13,584 ticks read as 6.9 million ticks a second. The backend migrated the stored runs, and the
+same row now reads 1980.67.
 
 **Where a configuration came from is NOT a property of a run.** `GET /api/v1/directory` carries
 `origin` (`configs` | `user_configs` | `user_algos`) per FILE, and a run's `config_snapshot` is that
@@ -734,6 +797,15 @@ the axis carries, how a period becomes a coloured span. No package was added for
 library would be a dependency for one view, and a proportional bar on a linear scale is a hundred
 lines that stay themeable through the existing tokens.
 
+**The two outermost axis labels hang INWARDS, and that is layout rather than taste.** A label
+placed at its mark and pulled back by `translate` moves on screen but not in layout, so a centred
+label at the far edge keeps half its box past the chart. The panel around it then offers a
+scrollbar for something nobody can see — measured 2026-09-29 at 67 px — and scrolling that phantom
+slides the lane-label column out of view, which is how `GBPUSD_blocks_01` came to read as
+`locks_01`. The first label therefore hangs right of its mark and the last hangs left, whichever
+branch placed them, evenly spaced or one per kept piece. `e2e/panel_layout.spec.ts` holds it,
+because only a browser can measure it.
+
 **The table under the chart carries EVERY field a period has, and stays a table.** It once showed
 eleven of the fifteen the hover card shows, so the list meant to make periods comparable carried
 less than the thing that describes one. The two answer different questions — *what about this one*
@@ -759,7 +831,7 @@ the others.
 
 **The stamps are never rescaled, and this is the sharp edge.** A deployment carries TWO time bases
 that differ by a factor of thousands: the ledger's session stamps are wall clock (four sessions of
-26 s each, 7 s apart) while a booking period is stamped on the market clock the session replayed
+26 s each, 7 s apart) while a booking period is stamped on the canonical clock the session replayed
 (the same ~27 h window in all four). No single axis can carry both. An earlier attempt squeezed
 each session's periods into its wall-clock window to produce a staircase, and that drew a session
 that does not exist. The axis therefore follows the period stamps, unscaled: sessions that
@@ -856,6 +928,15 @@ to null. `run_not_found` says the backend does not know a run our own index just
 disagreement between two indexes, raised as `RunNotFoundError` rather than swallowed behind a blank
 panel. They are told apart by the response body, since the status cannot say which.
 
+**A worker type is a path, and a path needs `base/PathLabel.vue`.** Since operators write their own
+strategies, `worker_instances` and `decision_logic_type` hold values like
+`user_algos/touch_and_turn/touch_and_turn_range_worker.py` — 56 characters of monospace. Measured
+2026-09-29: sharing the panel's width with the decision logic left that column 140 px, so the type
+broke mid-word and the parameters column sat off the edge behind a scrollbar. `PathLabel` renders
+the last segment as the name and dims the folders before it, and offers a `<wbr>` at every
+separator so the label wraps at `/` instead of pushing its table sideways; the whole value stays in
+the `title`. The workers section takes the full width of the strategy grid for the same reason.
+
 ### Display Strings — a marker, not a translation layer
 
 Every user-facing string goes through `t()` (`src/translate.ts`), which returns its input unchanged. The interface is English-only and there is no language switch.
@@ -863,6 +944,20 @@ Every user-facing string goes through `t()` (`src/translate.ts`), which returns 
 The marker exists because the expensive half of adding a language later is *finding* the display strings, not translating them. The English text is the key — `vue-i18n` supports message-as-key — so adopting a real module replaces one implementation and adds a catalogue, without touching a single call site.
 
 Deliberately absent until a second language exists: a language switch (nothing to switch), and a key taxonomy (a scheme invented for 40 strings will not fit 400). When one English text ever needs two different translations, an optional context argument solves it then; adding one is backward compatible.
+
+**`plural(count, one, many)` sits beside `t()`**, because a count and its noun have to agree:
+`1 trade`, `2 trades`. Both words are passed in already marked — `plural(n, t('trade'), t('trades'))`
+— so every display string stays literally inside a `t()` at its call site, which is the whole
+mechanism by which they can be found later. A helper that marked them itself would hide them from
+exactly the search `t()` exists to serve. It is English-only on purpose and lives in
+`translate.ts`, because that is the file a real translation module replaces, and pluralisation is
+one of the things such a module owns — languages with more than two forms need a rule this cannot
+express.
+
+Not every count needs it. `3 of 40`, `1 rejected` and `2/5 executed` read correctly as they are.
+And a sentence whose VERB agrees as well as its noun is rewritten rather than patched: the
+deployment advisory says *"One session, so a single configuration stands behind these rows"* rather
+than joining an `s` onto a plural sentence, the same construction the scenario roster already used.
 
 No tool enforces the marker — it is carried by review.
 

@@ -23,13 +23,13 @@ const narrowing = useScenarioSelection()
 const picked = computed(() => narrowing.units.value)
 
 /**
- * Chart target for a unit. `data_source` carries the broker keys the chart addresses, so the
+ * Chart target for a unit. `data_broker_type` carries the broker keys the chart addresses, so the
  * link exists only where the field is filled — sessions leave it empty and get plain text
  * rather than a link that lands nowhere. The timeframe is left out on purpose: the chart keeps
  * the one the user last chose.
  */
 function chartTarget(unit: PortfolioUnitRow): RouteLocationRaw {
-  return { name: 'viewer', query: { broker: unit.data_source, symbol: unit.symbol } }
+  return { name: 'viewer', query: { broker: unit.data_broker_type, symbol: unit.symbol } }
 }
 </script>
 
@@ -62,7 +62,7 @@ function chartTarget(unit: PortfolioUnitRow): RouteLocationRaw {
           </td>
           <td>
             <RouterLink
-              v-if="unit.data_source"
+              v-if="unit.data_broker_type"
               class="symbol-link"
               :to="chartTarget(unit)"
               :title="t('Open in chart')"

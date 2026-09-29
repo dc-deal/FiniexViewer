@@ -25,12 +25,28 @@ withDefaults(defineProps<{
    * it has no surface until pointed at, so it does not stamp a box into a sentence.
    */
   variant?: 'solid' | 'quiet'
+  /**
+   * How much room the control takes. `compact` is for a row of them — a facet bar carries six or
+   * more side by side, and density is a requirement of these views rather than a preference. It
+   * changes the padding and nothing else, so every state still reads the same.
+   */
+  size?: 'normal' | 'compact'
   /** A toggle currently holding the selection. Distinct from being pressed right now. */
   active?: boolean
+  /**
+   * The chosen LOOK without the toggle's announcement. For a control that carries a state but is
+   * not a toggle — a popover trigger whose facet has values picked is a disclosure, and `active`
+   * would give it `aria-pressed` beside the `aria-expanded` the primitive already sets, claiming
+   * two roles at once. What such a control states in words (a count, a badge) is what a screen
+   * reader should hear; the border is for the eye.
+   */
+  marked?: boolean
   disabled?: boolean
 }>(), {
   variant: 'solid',
+  size: 'normal',
   active: false,
+  marked: false,
   disabled: false,
 })
 </script>
@@ -39,7 +55,7 @@ withDefaults(defineProps<{
   <button
     type="button"
     class="app-button"
-    :class="[variant, { active }]"
+    :class="[variant, size, { active: active || marked }]"
     :disabled="disabled"
     :aria-pressed="active ? 'true' : undefined"
   >
@@ -73,6 +89,12 @@ withDefaults(defineProps<{
   border: 1px solid transparent;
   background: none;
   color: var(--color-accent);
+}
+
+/* after both variants, because it has to win their padding on source order */
+.app-button.solid.compact,
+.app-button.quiet.compact {
+  padding: 2px var(--space-sm);
 }
 
 .app-button:hover:not(:disabled) {

@@ -5,7 +5,7 @@ import {
   amount, figure, numberOrNa, percentOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { BookingPeriodRow } from '@/types/api/report_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 /**
  * A period row from either scope. The run-scoped route omits `run_id` because the whole response
@@ -71,7 +71,7 @@ const identitySpan = computed(() => (props.showRun ? 3 : 2))
        screen-reader semantics with it instead of us re-implementing them. -->
   <details class="periods">
     <summary class="periods-summary">
-      {{ periods.length }} {{ t('booking periods') }}
+      {{ plural(periods.length, t('booking period'), t('booking periods')) }}
       <!-- the currency, stated ONCE for the whole table instead of in every amount -->
       <template v-if="sharedCurrency"> · {{ t('figures in') }} {{ sharedCurrency }}</template>
     </summary>

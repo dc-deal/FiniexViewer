@@ -6,7 +6,8 @@ import FacetBar from '@/components/base/FacetBar.vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import type { FacetDefinition, FacetSelection, SortDefinition } from '@/types/facet_types'
+import { useFacetQuery } from '@/composables/use_facet_query'
+import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { RunInfo } from '@/types/api/report_types'
 import { t } from '@/translate'
 
@@ -25,9 +26,8 @@ import { t } from '@/translate'
 const runsStore = useRunsStore()
 const { runs, selectedRun, selectedRunId, loadingRuns } = storeToRefs(runsStore)
 
-const selection = ref<FacetSelection>({})
-const search = ref('')
-const sort = ref('newest')
+// the narrowing rides in the URL under `runf` / `runq` / `runsort`, so a filtered index is a link
+const { selection, search, sort } = useFacetQuery('run', 'newest')
 
 /** A value the row does not state is not offered — an empty option reads as a category. */
 function stated(value: string | null): string[] {
@@ -148,8 +148,12 @@ watch(selectedRunId, runId => { open.value = runId === null })
             <span class="run-group">{{ run.group }}</span>
             <span class="run-name">{{ run.name }}</span>
             <span class="run-id">{{ run.run_id }}</span>
-            <span v-if="run.parent_kind" class="run-mark">{{ run.parent_kind }}</span>
-            <span v-if="!run.has_reports" class="run-mark logs">{{ t('logs only') }}</span>
+            <!-- one cell, however many marks: two spans of their own would push the id column to a
+                 different place on every row, which is what made the list look ragged -->
+            <span class="run-marks">
+              <span v-if="run.parent_kind" class="run-mark">{{ run.parent_kind }}</span>
+              <span v-if="!run.has_reports" class="run-mark logs">{{ t('logs only') }}</span>
+            </span>
           </button>
         </li>
       </ul>
@@ -211,8 +215,17 @@ watch(selectedRunId, runId => { open.value = runId === null })
   overflow-y: auto;
 }
 
+/**
+ * A GRID, not a flex row. With flex the name took whatever was left and the marks varied in width,
+ * so the id column landed somewhere different on every row and the list read as ragged. Fixed
+ * tracks put each value under the one above it, which is the whole point of a list of runs.
+ *
+ * The name track is `minmax(0, 1fr)` rather than `1fr`: without the zero minimum a long name
+ * refuses to shrink and pushes the columns to its right off the panel.
+ */
 .run-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 11rem 7rem minmax(0, 1fr) auto auto;
   align-items: baseline;
   gap: var(--space-sm);
   width: 100%;
@@ -250,17 +263,14 @@ watch(selectedRunId, runId => { open.value = runId === null })
 }
 
 .run-when {
-  flex: 0 0 11rem;
   color: var(--color-text-primary);
 }
 
 .run-group {
-  flex: 0 0 6rem;
   color: var(--color-text-secondary);
 }
 
 .run-name {
-  flex: 1;
   color: var(--color-accent);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -269,8 +279,14 @@ watch(selectedRunId, runId => { open.value = runId === null })
 
 .run-id,
 .run-mark {
-  flex-shrink: 0;
   color: var(--color-text-secondary);
+}
+
+/* the marks sit together in one track, so an absent mark never moves the id */
+.run-marks {
+  display: flex;
+  gap: var(--space-xs);
+  justify-content: flex-end;
 }
 
 .run-mark {

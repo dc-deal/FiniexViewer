@@ -66,3 +66,41 @@ test('a link naming a run that is gone says so', async ({ page }) => {
 
   await expect(page.locator('.state-overlay')).toContainText('20260101_000000_deadbeef')
 })
+
+/**
+ * A narrowed list is a link somebody can send (viewer#116). The unit suite proves the encoding and
+ * the merge; only a browser proves that the address bar ends up carrying it and that a boot from
+ * that address reproduces what the sender saw.
+ */
+test('a narrowed run list survives a reload and stays a shareable link', async ({ page }) => {
+  await page.goto('/runs')
+  await expect(page.locator('.run-row').first()).toBeVisible()
+
+  const before = await page.locator('.run-row').count()
+  // a term that narrows without emptying: the picker searches the run id and the SET name, and
+  // the capture holds six `demo_btcusd_bot` runs among 39
+  await page.locator('input.facet-search').first().fill('demo_btcusd')
+  await expect(page).toHaveURL(/runq=demo_btcusd/)
+  const narrowed = await page.locator('.run-row').count()
+  expect(narrowed).toBeGreaterThan(0)
+  expect(narrowed).toBeLessThan(before)
+
+  await page.reload()
+
+  await expect(page.locator('.run-row').first()).toBeVisible()
+  expect(await page.locator('.run-row').count()).toBe(narrowed)
+})
+
+/**
+ * Two bars and the run in ONE url. The run picker's params and the roster's must coexist with
+ * `run` and `unit`, and no writer may drop another's key — the failure a single-tick race produces
+ * is exactly one missing param, which looks like nothing at all until the link is opened.
+ */
+test('the run, the scenario and both bars ride in one url', async ({ page }) => {
+  await page.goto(`/runs?run=${FIXTURE_RUN}&runsort=oldest&unitsort=ticks`)
+
+  await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_RUN)
+  await expect(page).toHaveURL(new RegExp(`run=${FIXTURE_RUN}`))
+  await expect(page).toHaveURL(/runsort=oldest/)
+  await expect(page).toHaveURL(/unitsort=ticks/)
+})

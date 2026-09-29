@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import AppButton from '@/components/base/AppButton.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
+import { useFacetQuery } from '@/composables/use_facet_query'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
-import type { FacetDefinition, FacetSelection, SortDefinition } from '@/types/facet_types'
-import type { ScenarioDetailsReport, ScenarioRow } from '@/types/api/scenario_types'
-import { t } from '@/translate'
+import { amount, numberOrNa } from '@/components/runs/report_format'
+import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
+import type { ScenarioRosterView, ScenarioRow } from '@/types/api/scenario_types'
+import type { PortfolioUnitRow } from '@/types/api/report_types'
+import { plural, t } from '@/translate'
 
 /**
  * Every scenario the run declared — the ones that produced nothing included, each with its reason.
@@ -20,12 +23,49 @@ import { t } from '@/translate'
  * tracker of thousands of rows, and the one the operator asked for.
  */
 const props = defineProps<{
-  model: ScenarioDetailsReport
+  model: ScenarioRosterView
 }>()
 
-const selection = ref<FacetSelection>({})
-const search = ref('')
-const sort = ref('name')
+const roster = computed(() => props.model.scenarios)
+
+/**
+ * What each scenario EARNED, by unit name — the documented foreign key, not a guess.
+ *
+ * A scenario with no portfolio row is not a scenario that earned nothing: the portfolio is the
+ * shorter list by construction (declared · attempted · produced · counted), so an absent row means
+ * the unit produced no result at all, and the roster shows nothing rather than a zero.
+ */
+const earnings = computed(() => {
+  const byUnit = new Map<string, PortfolioUnitRow>()
+  for (const unit of props.model.portfolio?.units ?? []) byUnit.set(unit.name, unit)
+  return byUnit
+})
+
+/**
+ * Which scenarios reported an error. The response declares `keys.errors: ["name"]` — ONE row per
+ * unit — so this is a MARK, never a count: "2 errors" could not occur and would be an invention.
+ */
+const failedUnits = computed(() =>
+  new Set((props.model.warningsErrors?.errors ?? []).map(row => row.name))
+)
+
+/**
+ * Warnings scoped to a UNIT. A warning whose scope is `run` belongs to the whole run and is shown
+ * in its own panel, not against a row here — attaching it to every scenario would multiply one
+ * notice into forty.
+ */
+const warnedUnits = computed(() => {
+  const counts = new Map<string, number>()
+  for (const row of props.model.warningsErrors?.warnings ?? []) {
+    if (row.scope === 'run') continue
+    counts.set(row.scope, (counts.get(row.scope) ?? 0) + 1)
+  }
+  return counts
+})
+
+// the narrowing rides in the URL under `unitf` / `unitq` / `unitsort` — the same two words the
+// `run=` and `unit=` params already use
+const { selection, search, sort } = useFacetQuery('unit', 'name')
 
 // a different run is a different roster, so a narrowing made for the old one means nothing
 watch(() => props.model, () => {
@@ -42,6 +82,21 @@ function stated(value: string): string[] {
   return value ? [value] : []
 }
 
+/** What a unit earned, or null where the portfolio has no row for it. */
+function earned(row: ScenarioRow): PortfolioUnitRow | null {
+  return earnings.value.get(row.name) ?? null
+}
+
+/**
+ * The two facets that answer the questions an operator actually arrives with — *did anything
+ * happen* and *did it go wrong* — rather than describing the configuration, which the five above
+ * already do.
+ *
+ * Neither infers a category. "traded" is whether a stated count is zero, and profit / loss is the
+ * SIGN of a stated figure — the same polarity this project already renders as a colour, here as a
+ * filter instead. A unit with no portfolio row is claimed by neither value, which is the rule that
+ * a row stating no value is never claimed by a facet.
+ */
 const facets: FacetDefinition<ScenarioRow>[] = [
   { id: 'symbol', label: 'Symbol', valuesOf: row => stated(row.symbol) },
   { id: 'market', label: 'Market', valuesOf: row => stated(row.market_type) },
@@ -49,38 +104,111 @@ const facets: FacetDefinition<ScenarioRow>[] = [
   { id: 'status', label: 'State', valuesOf: row => stated(row.status) },
   // the glossary's word for this value: 'kraken_spot' is a BROKER entry, not a data origin —
   // and 'data source' collides with the provenance complex, which is a different thing entirely
-  { id: 'source', label: 'Broker', valuesOf: row => stated(row.data_source) },
+  { id: 'source', label: 'Broker', valuesOf: row => stated(row.data_broker_type) },
+  {
+    id: 'activity',
+    label: 'Activity',
+    valuesOf: row => {
+      const unit = earned(row)
+      if (!unit) return []
+      return [unit.total_trades > 0 ? 'traded' : 'no trades']
+    },
+  },
+  {
+    id: 'result',
+    label: 'Result',
+    valuesOf: row => {
+      const unit = earned(row)
+      if (!unit || unit.total_trades === 0) return []
+      if (unit.net_profit > 0) return ['profit']
+      if (unit.net_profit < 0) return ['loss']
+      return ['flat']
+    },
+  },
+  {
+    id: 'trouble',
+    label: 'Trouble',
+    valuesOf: row => {
+      const marks: string[] = []
+      if (failedUnits.value.has(row.name)) marks.push('error')
+      if (warnedUnits.value.has(row.name)) marks.push('warning')
+      return marks
+    },
+  },
 ]
 
 /**
- * Sorting by net P&L and by trade count is missing on purpose: the roster carries no figures and
- * the response that does is a shorter list. Merging them here would invent a third thing — raised
- * with the backend 2026-09-27 and waiting on their answer.
- *
- * Nothing sorts by `worker_count`, `trades_requested` or the signal counters either: measured over
- * 370 rows on 2026-09-27, all five read 0 on EVERY row, including the 18 that processed ticks and
+ * A scenario with no portfolio row sorts LAST on every figure that comes from one, whichever
+ * direction is chosen. It has no value rather than a low one, and letting it sort as zero would
+ * put "produced nothing" above "lost money", which is a ranking nobody asked for.
+ */
+function byUnit(pick: (unit: PortfolioUnitRow) => number) {
+  return (a: ScenarioRow, b: ScenarioRow): number => {
+    const left = earned(a)
+    const right = earned(b)
+    if (!left && !right) return 0
+    if (!left) return 1
+    if (!right) return -1
+    return pick(right) - pick(left)
+  }
+}
+
+/**
+ * Nothing sorts by `worker_count`, `trades_requested` or the signal counters: measured over 370
+ * rows on 2026-09-27, all five read 0 on EVERY row, including the 18 that processed ticks and
  * closed positions. A sort over a field that is always zero is a control that does nothing.
  */
 const sorts: SortDefinition<ScenarioRow>[] = [
   { id: 'name', label: 'name', compare: (a, b) => a.name.localeCompare(b.name) },
+  { id: 'pnl', label: 'net P&L', compare: byUnit(unit => unit.net_profit) },
+  { id: 'trades', label: 'trades', compare: byUnit(unit => unit.total_trades) },
+  {
+    id: 'covered',
+    label: 'tick timespan',
+    compare: (a, b) => b.tick_timespan_seconds - a.tick_timespan_seconds,
+  },
   { id: 'ticks', label: 'ticks', compare: (a, b) => b.ticks_processed - a.ticks_processed },
   {
-    id: 'duration',
-    label: 'time taken',
+    id: 'execution',
+    label: 'execution time',
     compare: (a, b) => b.execution_time_ms - a.execution_time_ms,
   },
 ]
 
-/** Seconds as a reader takes them in — the rendering edge, per the UTC policy. */
-function took(ms: number): string {
-  if (ms < 1000) return `${ms.toFixed(0)} ms`
-  if (ms < 90_000) return `${(ms / 1000).toFixed(1)} s`
-  return `${(ms / 60_000).toFixed(1)} min`
+/**
+ * The **tick timespan**: the market time a scenario actually processed, from its first to its last
+ * tick. Both words are the backend's — measured, where a *data window* is declared, so a
+ * tick-limited scenario ends before the window it was given.
+ */
+/** Polarity of what a unit earned — the same role the figure carries everywhere else. */
+function signOf(row: ScenarioRow): string {
+  const unit = earned(row)
+  if (!unit || unit.net_profit === 0) return ''
+  return unit.net_profit > 0 ? 'positive' : 'negative'
+}
+
+function covered(seconds: number): string {
+  if (!seconds) return ''
+  if (seconds < 5400) return `${(seconds / 60).toFixed(0)} min`
+  if (seconds < 172_800) return `${(seconds / 3600).toFixed(1)} h`
+  return `${(seconds / 86_400).toFixed(1)} d`
+}
+
+/**
+ * The **execution time**: how long the scenario took on the machine, which says nothing about how
+ * much market time it processed. Held back until contract 13, where the field stopped carrying
+ * seconds under a millisecond name — 1.98 for 13,584 ticks was 1.98 SECONDS, and sorting by a
+ * figure whose unit is unknown ranks scenarios by a number nobody can read.
+ */
+function took(milliseconds: number): string {
+  if (!milliseconds) return ''
+  if (milliseconds < 1000) return `${milliseconds.toFixed(0)} ms`
+  return `${(milliseconds / 1000).toFixed(1)} s`
 }
 
 const shown = computed(() => sortRows(
   applyFacets({
-    rows: props.model.units,
+    rows: roster.value.units,
     definitions: facets,
     selection: selection.value,
     search: search.value,
@@ -90,7 +218,7 @@ const shown = computed(() => sortRows(
   sort.value
 ))
 
-const failed = computed(() => props.model.units.filter(row => row.status === 'failed').length)
+const failed = computed(() => roster.value.units.filter(row => row.status === 'failed').length)
 
 /**
  * The roster is where a scenario is CHOSEN — it is the only complete list, so it is the only place
@@ -118,7 +246,7 @@ const chosenLabel = computed(() =>
          narrowed list would otherwise hide the very rows a reader most needs to see -->
     <p v-if="failed" class="roster-notice">
       <span class="mark">⚠</span>
-      {{ failed }} {{ t('of') }} {{ model.units.length }}
+      {{ failed }} {{ t('of') }} {{ roster.units.length }}
       {{ t('scenarios produced nothing — their reason is on the row') }}
     </p>
 
@@ -142,7 +270,7 @@ const chosenLabel = computed(() =>
       v-model:selection="selection"
       v-model:search="search"
       v-model:sort="sort"
-      :rows="model.units"
+      :rows="roster.units"
       :facets="facets"
       :sorts="sorts"
       :search-of="row => row.name"
@@ -170,19 +298,45 @@ const chosenLabel = computed(() =>
             {{ row.symbol }}
             <template v-if="row.market_type"> · {{ row.market_type }}</template>
             · {{ row.account_currency }}
-            · {{ row.data_source }}
+            · {{ row.data_broker_type }}
           </span>
+          <!-- a warning scoped to THIS unit; a run-wide one belongs to its own panel -->
+          <span
+            v-if="warnedUnits.get(row.name)"
+            class="roster-mark warned"
+            :title="t('This scenario carries a warning of its own')"
+          >⚠ {{ warnedUnits.get(row.name) }}</span>
           <span class="roster-state" :class="row.status">
             {{ row.status === 'failed' ? '✖' : '✓' }} {{ row.status }}
           </span>
         </button>
         <p v-if="row.error_message" class="roster-reason">{{ row.error_message }}</p>
-        <!-- only the counters that are actually carried: worker_count, the signal counters and
-             trades_requested read 0 on every row measured, so printing them would state a zero the
-             run never reported -->
+        <!-- What it DID, beside what it was. The figures come from the portfolio row joined on the
+             unit name; a scenario the portfolio has no row for shows none of them rather than
+             zeros, because "produced nothing" and "earned nothing" are different statements.
+
+             Still not printed: worker_count, trades_requested and the signal counters read 0 on
+             every row measured. -->
         <p v-else class="roster-figures">
-          {{ row.ticks_processed.toLocaleString() }} {{ t('ticks') }}
-          <template v-if="row.execution_time_ms"> · {{ took(row.execution_time_ms) }}</template>
+          <span v-if="covered(row.tick_timespan_seconds)" class="figure-covered">
+            {{ covered(row.tick_timespan_seconds) }}
+          </span>
+          {{ plural(row.ticks_processed, t('tick'), t('ticks')) }}
+          <!-- the machine's own figure, told apart from the market's by its muted ink -->
+          <span
+            v-if="took(row.execution_time_ms)"
+            class="figure-took"
+            :title="t('Execution time: how long the scenario took on the machine')"
+          >{{ t('in') }} {{ took(row.execution_time_ms) }}</span>
+          <template v-if="earned(row)">
+            · {{ plural(earned(row)!.total_trades, t('trade'), t('trades')) }}
+            <span v-if="earned(row)!.total_trades" :class="signOf(row)">
+              · {{ amount(earned(row)!.net_profit, earned(row)!.currency) }}
+            </span>
+            <template v-if="earned(row)!.total_trades">
+              · {{ t('PF') }} {{ numberOrNa(earned(row)!.profit_factor, earned(row)!.total_trades) }}
+            </template>
+          </template>
         </p>
       </li>
     </ul>
@@ -288,6 +442,31 @@ const chosenLabel = computed(() =>
 
 .roster-state.success { color: var(--color-positive); }
 .roster-state.failed { color: var(--color-error); }
+
+/* a warning travels with its glyph, never on colour alone */
+.roster-mark.warned {
+  margin-left: auto;
+  color: var(--color-warning);
+}
+
+/* the marked row already owns margin-left: auto, so the state follows the warning rather than
+   fighting it for the right edge */
+.roster-mark.warned + .roster-state {
+  margin-left: var(--space-sm);
+}
+
+/* the tick timespan — the figure that says how BIG the scenario was, so it leads */
+.figure-covered {
+  color: var(--color-text-primary);
+}
+
+/* the machine's cost, not the market's: present, and plainly secondary to everything beside it */
+.figure-took {
+  color: var(--color-text-secondary);
+}
+
+.roster-figures .positive { color: var(--color-positive); }
+.roster-figures .negative { color: var(--color-negative); }
 
 .roster-reason {
   margin: var(--space-xs) 0 0;

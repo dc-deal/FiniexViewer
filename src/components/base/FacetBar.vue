@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="T">
 import { computed } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
+import AppButton from '@/components/base/AppButton.vue'
 import { applyFacets, facetOptions, isNarrowed, toggleValue } from '@/components/base/facet_filter'
 import type { FacetDefinition, FacetSelection, SortDefinition } from '@/types/facet_types'
 import { t } from '@/translate'
@@ -91,12 +92,18 @@ function clear(): void {
       >
 
       <PopoverRoot v-for="entry in drawn" :key="entry.facet.id">
-        <PopoverTrigger class="facet-trigger" :class="{ picked: pickedCount(entry.facet.id) > 0 }">
-          {{ t(entry.facet.label) }}
-          <span v-if="pickedCount(entry.facet.id)" class="facet-badge">
-            {{ pickedCount(entry.facet.id) }}
-          </span>
-          <span class="facet-caret">▾</span>
+        <!-- as-child: the primitive keeps the disclosure behaviour, AppButton carries the look.
+             `marked` rather than `active` — a facet holding values is a state worth showing, but
+             the control is a disclosure and `aria-pressed` beside its `aria-expanded` would claim
+             two roles. The badge says the same thing in words, which is what is read aloud. -->
+        <PopoverTrigger as-child>
+          <AppButton class="facet-trigger" size="compact" :marked="pickedCount(entry.facet.id) > 0">
+            {{ t(entry.facet.label) }}
+            <span v-if="pickedCount(entry.facet.id)" class="facet-badge">
+              {{ pickedCount(entry.facet.id) }}
+            </span>
+            <span class="facet-caret">▾</span>
+          </AppButton>
         </PopoverTrigger>
         <PopoverPortal>
           <PopoverContent class="facet-panel" :side-offset="4" align="start">
@@ -115,7 +122,9 @@ function clear(): void {
         </PopoverPortal>
       </PopoverRoot>
 
-      <button v-if="narrowed" class="facet-clear" @click="clear()">✕ {{ t('clear') }}</button>
+      <AppButton v-if="narrowed" class="facet-clear" size="compact" @click="clear()">
+        ✕ {{ t('clear') }}
+      </AppButton>
 
       <span class="facet-spacer" />
       <!-- the count is the honest half of a filter: it says what is NOT being shown -->
@@ -126,13 +135,16 @@ function clear(): void {
 
     <div class="facet-row">
       <span class="facet-label">{{ t('Sort by') }}</span>
-      <button
+      <!-- a group where one is chosen: `active` IS the right word here, and the announcement
+           that comes with it is true -->
+      <AppButton
         v-for="option in sorts"
         :key="option.id"
         class="facet-sort"
-        :class="{ active: option.id === sort }"
+        size="compact"
+        :active="option.id === sort"
         @click="emit('update:sort', option.id)"
-      >{{ t(option.label) }}</button>
+      >{{ t(option.label) }}</AppButton>
     </div>
   </div>
 </template>
@@ -170,62 +182,10 @@ function clear(): void {
   border-color: var(--color-accent);
 }
 
-/* A chip row rather than AppButton: two of the three are portalled popover triggers, so unifying
-   them is its own step. The STATES are the same four and use the same tokens — ink at rest (muted
-   ink is what a disabled control wears), the surface lifting under a pointer and sinking under a
-   press, with the press also moving the chip down a pixel because surface alone is too weak. */
-.facet-trigger,
-.facet-sort,
-.facet-clear {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  background-color: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  padding: 2px var(--space-sm);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  transition: background-color 80ms ease, border-color 80ms ease;
-}
-
-.facet-trigger:hover,
-.facet-sort:hover,
-.facet-clear:hover {
-  background-color: var(--color-bg-hover);
-  border-color: var(--color-accent);
-}
-
-.facet-trigger:active,
-.facet-sort:active,
-.facet-clear:active {
-  background-color: var(--color-bg-active);
-  transform: translateY(1px);
-}
-
-.facet-trigger.picked,
-.facet-sort.active {
-  color: var(--color-accent);
-  border-color: var(--color-accent);
-  background-color: var(--color-bg-active);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .facet-trigger,
-  .facet-sort,
-  .facet-clear {
-    transition: none;
-  }
-}
-
-.facet-trigger:focus-visible,
-.facet-sort:focus-visible,
-.facet-clear:focus-visible {
-  outline: 1px solid var(--color-accent);
-  outline-offset: 1px;
-}
+/* The chips ARE buttons and come from `AppButton` — the four states, the tokens and the two
+   channels each state carries live there and nowhere else. Sixty lines that restated them stood
+   here until the two popover triggers could be wrapped with `as-child`; a second copy of a button
+   contract drifts the moment the first one changes. */
 
 .facet-badge {
   color: var(--color-text-primary);

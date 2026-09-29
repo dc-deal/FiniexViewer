@@ -4,7 +4,7 @@ import type { UnitErrorRow, WarningsErrorsReport } from '@/types/api/report_type
 import { utcInstant } from '@/components/runs/report_format'
 import { rowKey } from '@/api/list_key'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 const props = defineProps<{
   model: WarningsErrorsReport
@@ -127,7 +127,7 @@ function hasDetail(row: UnitErrorRow): boolean {
 
     <details v-if="minorWarnings.length" class="minor">
       <summary>
-        {{ minorWarnings.length }} {{ t('minor warnings in the log') }}
+        {{ plural(minorWarnings.length, t('minor warning in the log'), t('minor warnings in the log')) }}
       </summary>
       <div v-for="(row, i) in minorWarnings" :key="'n' + i" class="entry">
         <span class="entry-scope">{{ row.scope }}</span>

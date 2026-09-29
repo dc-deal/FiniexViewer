@@ -63,7 +63,7 @@ const PANELS: PanelDescriptor[] = [
     title: 'Scenarios',
     icon: '🗂️',
     component: ScenarioRosterPanel,
-    source: 'scenarios',
+    source: 'scenarioRoster',
     groups: 'simulation',
     defaultOpen: false,
   },

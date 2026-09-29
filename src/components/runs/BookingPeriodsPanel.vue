@@ -8,7 +8,7 @@ import { useDisplaySettings } from '@/composables/use_display_settings'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import type { LaneOrder } from '@/types/settings_types'
 import type { BookingPeriodsReport } from '@/types/api/report_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 const props = defineProps<{
   model: BookingPeriodsReport
@@ -103,12 +103,16 @@ const otherCurrencies = computed(() =>
         <p class="verdict-text">{{ verdict.text }}</p>
         <p class="verdict-detail">
           {{ t('Periods') }}: {{ amount(model.total_net_pnl, model.currency) }} ·
-          {{ model.total_trades }} {{ t('trades') }}
+          {{ plural(model.total_trades, t('trade'), t('trades')) }}
           &nbsp;|&nbsp;
           {{ t('Run') }}:
+          <!-- the two are nullable apart from each other, so the count is shown only where it
+               was stated rather than as an empty word beside a figure -->
           <template v-if="model.run_net_pnl !== null">
-            {{ amount(model.run_net_pnl, model.currency) }} ·
-            {{ model.run_total_trades }} {{ t('trades') }}
+            {{ amount(model.run_net_pnl, model.currency) }}
+            <template v-if="model.run_total_trades !== null">
+              · {{ plural(model.run_total_trades, t('trade'), t('trades')) }}
+            </template>
           </template>
           <template v-else>{{ t('nothing reported') }}</template>
         </p>

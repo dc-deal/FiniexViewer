@@ -3,7 +3,7 @@ import {
   amount, magnitude, duration, percentFigure, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { DeploymentRow } from '@/types/api/deployment_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 /**
  * The ledger's own figures for one deployment in one account currency. One block per currency,
@@ -26,7 +26,7 @@ defineProps<{
       <span class="figure">
         {{ magnitude(row.max_drawdown, row.currency) }} ({{ percentFigure(row.max_drawdown_pct) }})
       </span>
-      <span class="label">{{ row.sessions }} {{ t('sessions') }}</span>
+      <span class="label">{{ plural(row.sessions, t('session'), t('sessions')) }}</span>
     </div>
     <div class="header-line secondary">
       <span>{{ utcInstant(row.first_started) }} → {{ utcInstant(row.last_started) }}</span>

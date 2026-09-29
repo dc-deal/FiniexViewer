@@ -430,8 +430,8 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         order: 'time',
       },
     })
-    expect(run.find('.axis').attributes('title')).toContain("the run's own clock")
-    // both scopes now carry the run's clock; only the deployment note explains the look-alike lanes
+    expect(run.find('.axis').attributes('title')).toContain('the canonical clock')
+    // both scopes carry the canonical clock; only the deployment note explains the look-alike lanes
     expect(deployment.find('.axis').attributes('title')).toContain('replayed one window')
   })
 
@@ -485,6 +485,46 @@ describe('BookingPeriodTimeline — many short slices', () => {
   it('orders the lanes by start time, so the bars form a diagonal', () => {
     const labels = mountSlices().findAll('.lane-label').map(node => node.text())
     expect(labels).toEqual(['zeta', 'mid', 'alpha'])
+  })
+
+  /**
+   * Two units CAN open at the same instant — measured on a real walk-forward set, one pair equal
+   * to the millisecond — and the order then came from whatever sequence the response carried. The
+   * name settles it, so the same run draws the same chart twice. An exact tie only: a millisecond
+   * apart is a real difference, and a tolerance would be a rule nobody stated.
+   */
+  it('settles an exact tie by name, so the same run draws the same chart twice', () => {
+    const together = (unit: string) => ({
+      ...period({ unit_name: unit, period_no: 1 }),
+      opened_at: new Date(5 * HOUR).toISOString(),
+      closed_at: new Date(6 * HOUR).toISOString(),
+    })
+    const wrapper = mount(BookingPeriodTimeline, {
+      props: {
+        periods: [together('GBPUSD'), together('EURUSD'), together('AUDUSD')],
+        keyFields: ['unit_name', 'period_no'],
+        order: 'time',
+      },
+    })
+    expect(wrapper.findAll('.lane-label').map(node => node.text()))
+      .toEqual(['AUDUSD', 'EURUSD', 'GBPUSD'])
+  })
+
+  it('leaves a millisecond of difference as a difference', () => {
+    const at = (unit: string, ms: number) => ({
+      ...period({ unit_name: unit, period_no: 1 }),
+      opened_at: new Date(5 * HOUR + ms).toISOString(),
+      closed_at: new Date(6 * HOUR).toISOString(),
+    })
+    const wrapper = mount(BookingPeriodTimeline, {
+      props: {
+        periods: [at('EURUSD', 1), at('GBPUSD', 0)],
+        keyFields: ['unit_name', 'period_no'],
+        order: 'time',
+      },
+    })
+    expect(wrapper.findAll('.lane-label').map(node => node.text()))
+      .toEqual(['GBPUSD', 'EURUSD'])
   })
 
   it('orders them by name when asked to', () => {

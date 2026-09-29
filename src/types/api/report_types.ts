@@ -91,6 +91,48 @@ export interface RunInfo {
   app_version: string
   git_commit: string
   config_snapshot: string
+  /**
+   * WHAT THE RUN DID, folded from its booking periods by the backend's own reductions — contract
+   * 15, and the answer to a request this repo made rather than computing it here. One entry per
+   * account currency, because money is never summed across them.
+   *
+   * THREE states, and reading any two of them as one invents a fact:
+   *
+   *   null   the ledger holds nothing for this run — still going, died before its close, or
+   *          `reporting: none`. Read it together with `reporting`.
+   *   []     it closed without figures.
+   *   list   what it earned.
+   *
+   * Measured 2026-09-29 over 41 runs: 38 lists, 2 null, 1 empty — all three occur.
+   */
+  results: RunResult[] | null
+  /**
+   * `success` | `finished_with_errors` | `failed` | `crashed` — the same grading the exit code
+   * carries. A plain string rather than a closed union: the vocabulary is the backend's, and a
+   * fifth value would arrive as itself instead of making the mirror silently wrong.
+   *
+   * `null` where no ledger record exists, which is the same two runs `results` is null on.
+   */
+  run_outcome: string | null
+  /**
+   * Three counts that are NOT interchangeable, and the tiers are the backend's own:
+   *
+   *   error_count        ERROR records in the error pot
+   *   warning_count      Tier 1 — what a validator decided, shown in the report
+   *   log_warning_count  Tier 2 — WARNING records from the log pot, ignorable by design
+   *
+   * `null` where not recorded, never 0 — a count nobody took is not a zero.
+   */
+  error_count: number | null
+  warning_count: number | null
+  log_warning_count: number | null
+}
+
+/** What one run earned in one account currency. */
+export interface RunResult {
+  currency: string
+  net_pnl: number
+  total_trades: number
 }
 
 /** Response type for GET /api/v1/reports/runs */
@@ -99,6 +141,8 @@ export interface RunListResponse {
   // list of objects says nothing about its own identity, and a consumer keying on the obvious
   // field folds two rows into one — silently, and in the direction that loses data.
   key: string[]
+  // The same declaration for the nested `results` list — one row per currency, not per run.
+  results_key: string[]
   runs: RunInfo[]
   count: number
 }
@@ -150,6 +194,20 @@ export interface RunSummaryCurrency {
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/run-summary */
+/**
+ * A unit the run declared and that produced nothing, with the reason the backend states.
+ *
+ * `reason_code` is the machine word for grouping; `reason` is written for a person and is rendered
+ * as it arrives. `checks` names the validation checks that failed — the ids `GET
+ * /api/v1/validation-checks` gives a title and a description for, so a reader never meets a bare id.
+ */
+export interface UnitAbsence {
+  name: string
+  reason: string
+  reason_code: string
+  checks: string[]
+}
+
 export interface RunSummary {
   run_id: string                  // the run this body was built from — assert it, never assume it
   currencies: RunSummaryCurrency[]
@@ -158,6 +216,18 @@ export interface RunSummary {
   orders_rejected: number
   sl_tp_triggered: number
   unit_count: number              // backtest: N scenarios | AutoTrader session: 1
+  /**
+   * What the run was ASKED to do, beside what it produced — the difference between `unit_count`
+   * and these is the whole "declared · attempted · produced · counted" distinction in one place.
+   *
+   * `null` on an artifact written before contract 6, which is not a zero: a run that declared
+   * nothing and a run that never recorded the figure are different, and only one of them is a
+   * finding. Nothing back-fills a stored artifact.
+   */
+  units_declared: number | null
+  units_disabled: number | null
+  /** One entry per unit that produced nothing, each carrying WHY. Empty where all of them ran. */
+  units_absent: UnitAbsence[]
   // Weakest SIGNAL channel of the run. null = no SIGNAL worker was involved — deliberately
   // not 1.0, which would claim a perfect feed.
   signal_fresh_ratio: number | null
@@ -179,10 +249,10 @@ export interface WarningRow {
 
 /**
  * One buffered log record, as it was recorded rather than as it was rendered. The two times are
- * different questions: `observed_at` is wall-clock and answers how long OUR machine took;
- * `event_time` is the run's own clock — simulated market time in a backtest, the wall clock in a
- * session — and is null for entries that predate it. Never substitute one for the other: sorting
- * by observed_at looks right and is wrong.
+ * different questions: `observed_at` is the wall clock and answers how long OUR machine took;
+ * `event_time` is the canonical clock — the replayed tick's time in a backtest, the processed
+ * event's in a live-adapter session — and is null for entries that predate it. Never substitute
+ * one for the other: sorting by observed_at looks right and is wrong.
  */
 export interface LogEntryRow {
   level: string
@@ -220,6 +290,18 @@ export interface WarningsErrorsOutcome {
   // Resolves that ambiguity — but it is newer than most artifacts, which default it to false, so
   // it cannot be trusted on an older one. Mirrored, deliberately not rendered.
   operator_interrupted: boolean
+  /**
+   * The same three counts the run index carries, counted once and the same way in both pipelines
+   * (contract 15). `null` on an artifact written before it — and that is ordinary DATA rather
+   * than a gap to fill: the index was back-filled from these artifacts, the artifacts were not
+   * rewritten. Measured 2026-09-29: the index reads 3 / 547 for a run whose artifact reads null.
+   *
+   * The warning ROWS are not a count. A backtest summarises its whole Tier-2 pot in ONE row while
+   * an AutoTrader session writes one per entry, so counting rows compares two different things.
+   */
+  error_count: number | null
+  warning_count: number | null
+  log_warning_count: number | null
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/warnings-errors */
@@ -277,11 +359,15 @@ export interface PortfolioUnitRow {
   drawdown_carried_from: string
   drawdown_restarts: number
   total_fees: number
-  // Provenance. data_source carries the same broker keys GET /brokers returns ('mt5'), which is
-  // what makes the jump into the chart possible; broker_name is a display name ('Kraken') and
+  // Provenance. data_broker_type carries the same broker keys GET /brokers returns ('mt5'), which
+  // is what makes the jump into the chart possible; broker_name is a display name ('Kraken') and
   // is not addressable. Filled on both pipelines since the AutoTrader path threads it through.
-  data_source: string
-  sentiment_source: string
+  //
+  // Named `data_source` until contract 14, where that word was split: a report's `data_source`
+  // was a BROKER, while a stress configuration's is whichever INPUT an outage hits. Each half now
+  // has its own name, and the glossary word for this one is `data broker`.
+  data_broker_type: string
+  data_sentiment_type: string
   broker_name: string
   spot_mode: boolean
   has_error: boolean

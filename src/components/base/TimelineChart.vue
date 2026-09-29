@@ -211,13 +211,9 @@ const axisTicks = computed<Tick[]>(() => {
 })
 
 /**
- * Where a label hangs relative to its position. On a broken axis the two labels around a break sit
- * only BREAK_WIDTH apart, and they are the two the reader needs most — so instead of dropping one,
- * a piece's opening label hangs to the right of its mark and its closing label to the left. They
- * then sit back to back across the break rather than on top of each other.
- *
- * A piece too narrow to hold both loses its CLOSING label: the break's own caption follows
- * immediately after it and says the same thing in different words.
+ * How close two labels may sit, in percent of the width, before the second moves to the row below.
+ * A timestamp is wide and the marks it belongs to can be near each other; this is the threshold
+ * that decides between one row and two.
  */
 const MIN_TICK_GAP = 14
 
@@ -228,20 +224,19 @@ const MIN_TICK_GAP = 14
  * says which mark it belongs to — which is the thing a staggered axis otherwise leaves ambiguous.
  */
 const placedTicks = computed(() => {
-  const all = axis.value.breaks.length
-    ? axisTicks.value.filter((tick, index) => {
-        if (tick.edge !== 'end' || index === axisTicks.value.length - 1) return true
-        const opening = axisTicks.value[index - 1]
-        return !opening || tick.at - opening.at >= MIN_TICK_GAP
-      })
-    : axisTicks.value
+  const all = axisTicks.value
 
   const lastOnRow = [-Infinity, -Infinity]
-  return all.map(tick => {
+  return all.map((tick, index) => {
     // the top row unless its neighbour there is too close, in which case the row below
     const row = tick.at - lastOnRow[0]! >= MIN_TICK_GAP ? 0 : 1
     lastOnRow[row] = tick.at
-    return { ...tick, row }
+    // Whatever a branch above decided, the OUTERMOST two labels hang inwards. A centred label at
+    // the far edge keeps half its box past the chart — the transform pulls it back on screen but
+    // not in layout, so the panel around it offered 67 px of scrollbar, and scrolling that phantom
+    // slid the lane labels away. Measured 2026-09-29; `e2e/panel_layout.spec.ts` holds it.
+    const edge = index === 0 ? 'start' : (index === all.length - 1 ? 'end' : tick.edge)
+    return { ...tick, edge, row }
   })
 })
 
@@ -392,8 +387,8 @@ const drawn = computed(() =>
 }
 
 /* By class, not by :first-child — the gap labels share this container, so a positional selector
-   matched the wrong element. `start` hangs right of its mark, `end` hangs left of it, which is
-   what keeps the two labels around a break from overprinting. */
+   matched the wrong element. `start` hangs right of its mark and `end` hangs left of it, which is
+   what keeps the outermost two labels inside the chart in LAYOUT as well as on screen. */
 .tick.start { transform: none; }
 .tick.end { transform: translateX(-100%); }
 .tick.mid { transform: translateX(-50%); }

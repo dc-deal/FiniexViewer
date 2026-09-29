@@ -18,6 +18,12 @@ function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
   return {
     artifacts: ['run_summary.json'],
     has_reports: true,
+    // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
+    results: null,
+    run_outcome: null,
+    error_count: null,
+    warning_count: null,
+    log_warning_count: null,
     start_time: '2026-06-15T12:00:00+00:00',
     parent_id: null,
     parent_kind: null,
@@ -69,6 +75,10 @@ const SUMMARY: RunSummary = {
   orders_rejected: 4,
   sl_tp_triggered: 6,
   unit_count: 1,
+  // null on an artifact written before contract 6 — not a zero
+  units_declared: null,
+  units_disabled: null,
+  units_absent: [],
   signal_fresh_ratio: null,
   disturbance_episode_count: 0,
   disturbance_stale_seconds: 0,

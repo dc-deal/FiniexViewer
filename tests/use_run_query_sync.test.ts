@@ -11,6 +11,12 @@ function header(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
   return {
     artifacts: ['run_summary.json'],
     has_reports: true,
+    // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
+    results: null,
+    run_outcome: null,
+    error_count: null,
+    warning_count: null,
+    log_warning_count: null,
     start_time: '2026-06-15T12:00:00+00:00',
     parent_id: null,
     parent_kind: null,

@@ -25,6 +25,17 @@ is flaky and we would never see it. And **the mocked responses come from the uni
 (`e2e/api_mock.ts` reads the same captures), never hand-written in a spec: a second mirror of the
 HTTP contract goes stale in silence, which has already happened once here.
 
+**What the browser tier is for, concretely.** `run_selection.spec.ts` holds the reload and the URL
+— a real `localStorage`, a real history entry. `trade_groups.spec.ts` holds the open/closed regimes
+of the scenario groups. `panel_layout.spec.ts` holds that **no panel scrolls sideways**, at a wide
+and at a narrow width: `.panel-content` carries `overflow-x: auto`, which is the right safety valve
+and a poor everyday state, because the moment it engages the panel's leftmost column slides out of
+view and nothing says so. Two defects of exactly that shape reached the screen in one week — a
+56-character worker type pushing the configuration table past its column, and an axis label whose
+transform pulled it back on screen but not in layout, so a panel offered 67 px of scrollbar for
+nothing. Both are geometry, so jsdom cannot see either. `performance.spec.ts` is excluded from the
+ordinary run (`npm run test:perf`, one worker) because its budgets fail under contention.
+
 **The browser is not in the container.** The image is Alpine on musl and Playwright's browsers are
 glibc builds, so the runner connects over CDP to a browser on the developer's machine —
 `e2e/cdp_fixture.ts` documents the one command that needs. `.npmrc` carries
@@ -65,7 +76,9 @@ tests/
   use_query_sync.test.ts    — URL-first priority, localStorage fallback, _ready guard, URL write-back
   runs_store.test.ts        — run index loading, the flat index, missing-artifact flag, error handling, and the scenario narrowing: several at once, one taken back out, no duplicates, dropped whenever the run below it changes
   use_run_query_sync.test.ts — the run restored from the URL, a link saved under the old cascade opened and its dead params cleaned away, merge with foreign params, and the scenario narrowing: restored AFTER the run that clears it, several names comma separated, a hand-edited param with blanks, ignored without a run, written and removed again
+  translate.test.ts         — the marker returns its input; the count agrees with its noun, zero reads as plural, a large count stays grouped
   query_param_utils.test.ts — query reading (string-only), param write and delete
+  use_facet_query.test.ts   — the facet encoding round trip and its stable order, a group it cannot read, a value with a space; seeding a bar from the URL, writing nothing while untouched, keeping another view's params, two bars in one URL; and `patchQuery` keeping both writers of one tick
   run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the narrowing (a unit's errors, a run-wide warning kept while another unit's drops, the outcome counts marked as the run's), the executive figures marked as the run's, the portfolio breakdown incl. the chart link and the narrowed unit MARKED rather than filtered (the run-wide total stays), and the run header incl. the two kinds of parent
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
   settings_store.test.ts    — per-field reconciliation (unknown key dropped, missing key defaulted, out-of-range refused), the schema-version discard, setters that ignore rather than clamp, and the display subset handed to panels
@@ -85,6 +98,7 @@ tests/
   run_config.test.ts        — the two configuration shapes, override PRESENCE without resolution, the worker join, and the guarantee that no top-level key is unreachable
   app_button.test.ts        — the two shapes, a toggle announced as one ONLY where it is one, a genuinely disabled button rather than one merely styled as it, and that nothing submits a form by accident
   hover_card.test.ts        — portalled out of the page, opens on focus, carries the caller's figures and their polarity
+  path_label.test.ts        — the whole path comes out whole, the name told from the folders, a break offered at every separator, and the full value kept in the title
   timeline_chart.test.ts    — scale and clamping, the broken axis and its length-preserving property, staggered labels
   deployment_panels.test.ts — the change marks between rows (against the produced four-session history), the absent idle stretch, the upper-bound gap, the missing totals row, the identity that does not move, the advisory wording
 

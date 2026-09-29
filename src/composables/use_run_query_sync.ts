@@ -2,7 +2,7 @@ import { watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
-import { readQuery, writeParam } from '@/composables/query_param_utils'
+import { patchQuery, readQuery } from '@/composables/query_param_utils'
 
 /**
  * How several scenarios ride in one param. Measured 2026-09-27 over 58 names from the roster, the
@@ -58,21 +58,18 @@ export function useRunQuerySync(): void {
     writeUrl()
   })
 
-  /** The selection as query params, merged into whatever else the URL carries. */
+  /** The selection as query params, patched into whatever else the URL carries. */
   function writeUrl(): void {
-    // merge, never replace — the chart selection owns params in the same query
-    const query = readQuery(route.query)
-    writeParam(query, 'run', selectedRunId.value)
-    writeParam(
-      query,
-      'unit',
-      selectedUnits.value.length ? selectedUnits.value.join(UNIT_SEPARATOR) : null
-    )
-    // `group` and `name` were the cascade's own params and mean nothing now. A saved link may
-    // still carry them; they are removed rather than left to look meaningful.
-    writeParam(query, 'group', null)
-    writeParam(query, 'name', null)
-    router.replace({ query })
+    // a patch, never a whole query — the chart selection and two facet bars own params in the same
+    // URL, and a writer that rebuilds the object drops whatever the others wrote in the same tick
+    patchQuery(router, {
+      run: selectedRunId.value,
+      unit: selectedUnits.value.length ? selectedUnits.value.join(UNIT_SEPARATOR) : null,
+      // `group` and `name` were the cascade's own params and mean nothing now. A saved link may
+      // still carry them; they are removed rather than left to look meaningful.
+      group: null,
+      name: null,
+    })
   }
 
   // only write URL after init is complete — prevents intermediate states from clobbering params

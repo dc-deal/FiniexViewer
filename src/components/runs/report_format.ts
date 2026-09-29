@@ -67,9 +67,9 @@ export function rValue(value: number | null, count: number): string {
   return `${sign}${value.toFixed(2)}R`
 }
 
-// UTC on purpose, and not the viewer's zone. A log entry's event_time is the RUN's own clock —
-// simulated market time in a backtest — so relabelling it in a local zone would present a
-// simulated moment as a real one.
+// UTC on purpose, and not the viewer's zone. A log entry's event_time is the canonical clock —
+// the market time the run read, which in a backtest is the replayed tick's — so relabelling it in
+// a local zone would present a simulated moment as a real one.
 const utcClock = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
   year: 'numeric', month: '2-digit', day: '2-digit',

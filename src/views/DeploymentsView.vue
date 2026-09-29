@@ -14,7 +14,7 @@ import AppSpinner from '@/components/base/AppSpinner.vue'
 import { orderPeriods } from '@/components/runs/period_order'
 import type { LaneOrder } from '@/types/settings_types'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 const store = useDeploymentsStore()
 const {
@@ -93,7 +93,7 @@ const showDeployment = computed(() =>
              third row they have already added up the column above it -->
         <AdvisoryNotice v-if="detail?.advisory" :advisory="detail.advisory" />
         <p v-if="detail" class="counts">
-          {{ detail.count }} {{ t('sessions') }} ·
+          {{ plural(detail.count, t('session'), t('sessions')) }} ·
           <!-- the WHY is on the title: the number is the fact, the explanation is a caveat -->
           <span
             :class="{ flagged: detail.unfinished > 0 }"

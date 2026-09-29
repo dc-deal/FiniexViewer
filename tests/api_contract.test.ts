@@ -39,7 +39,7 @@ import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 12
+const EXPECTED_CONTRACT = 15
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -51,6 +51,9 @@ const EXPECTED_CONTRACT = 12
  */
 const EXPECTED_KEYS = {
   runs: ['run_id'],
+  // the run index carries a NESTED list — one row per account currency, not per run
+  runResults: ['currency'],
+  dataBrokers: ['data_broker_type'],
   deployments: ['deployment_id', 'currency'],
   sessions: ['run_id', 'currency'],
   deploymentPeriods: ['run_id', 'unit_name', 'period_no'],
@@ -70,6 +73,27 @@ describe('api contract', () => {
     const typed: RunListResponse = runsList
     expect(typed.runs.length).toBeGreaterThan(0)
     expect(typed.key).toEqual(EXPECTED_KEYS.runs)
+    expect(typed.results_key).toEqual(EXPECTED_KEYS.runResults)
+  })
+
+  /**
+   * What a run DID, on the index row (contract 15) — and the THREE states of `results`, which the
+   * capture happens to carry all of. Reading `null` and `[]` as one invents a fact: the first says
+   * the ledger holds nothing for that run, the second that it closed without figures.
+   */
+  it('the index states what each run did, in three distinguishable states', () => {
+    const typed: RunListResponse = runsList
+    const states = typed.runs.map(run =>
+      run.results === null ? 'null' : (run.results.length ? 'list' : 'empty'))
+    expect(new Set(states).size).toBeGreaterThan(1)
+    const earning = typed.runs.find(run => run.results?.length)!
+    expect(earning.results![0]!.currency).toBeTruthy()
+    expect(typeof earning.results![0]!.net_pnl).toBe('number')
+    expect(typeof earning.results![0]!.total_trades).toBe('number')
+    // a count nobody took is null, never 0 — and the outcome travels with it
+    expect(earning.run_outcome).toBeTruthy()
+    const unrecorded = typed.runs.find(run => run.results === null)
+    if (unrecorded) expect(unrecorded.run_outcome).toBeNull()
   })
 
   it('the deployment list is keyed per account currency', () => {
@@ -115,6 +139,8 @@ describe('api contract', () => {
     const typed: ScenarioDetailsReport = scenarioDetails
     expect(typed.units.length).toBeGreaterThan(0)
     expect(typed.keys.units).toEqual(['name'])
+    // contract 14 split the word `data_source`: this half is the BROKER a unit read its ticks from
+    expect(typed.keys.data_brokers).toEqual(EXPECTED_KEYS.dataBrokers)
   })
 
   /**

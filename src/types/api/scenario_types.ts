@@ -1,3 +1,5 @@
+import type { PortfolioReport, WarningsErrorsReport } from '@/types/api/report_types'
+
 /**
  * `GET /api/v1/reports/runs/{run_id}/scenario-details` — the ROSTER of a run.
  *
@@ -14,8 +16,14 @@
 export interface ScenarioRow {
   name: string
   symbol: string
-  /** The broker type — the row carries no second field for it, by the backend's decision. */
-  data_source: string
+  /**
+   * The broker whose tick archive this unit read — the glossary calls it the `data broker`, and
+   * the row carries no second field for it by the backend's decision.
+   *
+   * Named `data_source` until contract 14, where that word was split: a report's `data_source`
+   * was a BROKER, while a stress configuration's is whichever INPUT an outage hits.
+   */
+  data_broker_type: string
   /**
    * `crypto` | `forex` — added in contract 5 and NOT back-filled, so a run recorded before that
    * reads `''`. Empty means not stated, never "no market".
@@ -61,9 +69,9 @@ export interface ScenarioRow {
   error_message: string
 }
 
-/** One data source the run drew on, and which scenarios used it. */
-export interface ScenarioDataSource {
-  broker_type: string
+/** One data broker the run drew on, and which scenarios used it. */
+export interface ScenarioDataBroker {
+  data_broker_type: string
   market_type: string
   scenario_count: number
   symbols: string[]
@@ -71,14 +79,37 @@ export interface ScenarioDataSource {
 }
 
 /** What makes one row of each list unique, one entry per list — contract 9. */
+/**
+ * What the scenario roster renders: the complete list of a run's scenarios, joined with what each
+ * one actually produced.
+ *
+ * Composed by the host rather than served as one response, and the join is legitimate rather than
+ * invented: the unit is ONE identity under several field names — `scenario_details.units[].name`,
+ * `portfolio.units[].name`, `warnings_errors.errors[].name`, `warnings[].scope` — confirmed in the
+ * backend's code and stated in their architecture document as a foreign key. Nothing here derives
+ * a figure; every number shown comes from a field, and a unit with no matching row simply shows no
+ * number rather than a zero it never reported.
+ *
+ * The three parts answer three different questions, which is why they belong side by side: the
+ * roster says WHAT WAS DECLARED, the portfolio what it EARNED, the warnings what WENT WRONG. A
+ * reader scanning forty scenarios needs all three at once, and no single response carries them.
+ */
+export interface ScenarioRosterView {
+  scenarios: ScenarioDetailsReport
+  /** Null where the run carries no portfolio — then the roster shows no figures, not zeros. */
+  portfolio: PortfolioReport | null
+  /** Null where the run carries no warnings/errors section. */
+  warningsErrors: WarningsErrorsReport | null
+}
+
 export interface ScenarioDetailsKeys {
   units: string[]
-  data_sources: string[]
+  data_brokers: string[]
 }
 
 export interface ScenarioDetailsReport {
   run_id: string
   units: ScenarioRow[]
-  data_sources: ScenarioDataSource[]
+  data_brokers: ScenarioDataBroker[]
   keys: ScenarioDetailsKeys
 }

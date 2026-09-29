@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import JsonTree from '@/components/base/JsonTree.vue'
+import PathLabel from '@/components/base/PathLabel.vue'
 import { scenarioCount, scenarioOverrides, strategyOf, workersOf } from '@/components/runs/config_shape'
 import type { RunConfigReport } from '@/types/api/report_types'
 import { t } from '@/translate'
@@ -69,7 +70,10 @@ function scalar(value: unknown): string {
     <div v-if="strategy" class="strategy">
       <section>
         <h3 class="section">{{ t('Decision logic') }}</h3>
-        <p class="logic-type">{{ strategy.decision_logic_type || t('not declared') }}</p>
+        <p class="logic-type">
+          <PathLabel v-if="strategy.decision_logic_type" :value="strategy.decision_logic_type" />
+          <span v-else>{{ t('not declared') }}</span>
+        </p>
         <dl v-if="parameters.length" class="params">
           <div v-for="[key, value] in parameters" :key="key" class="param">
             <dt>{{ key }}</dt>
@@ -78,7 +82,7 @@ function scalar(value: unknown): string {
         </dl>
       </section>
 
-      <section>
+      <section class="workers">
       <h3 class="section">{{ t('Workers') }}</h3>
       <div v-if="workers.length" class="table-scroll">
         <table class="kpi-table">
@@ -93,9 +97,12 @@ function scalar(value: unknown): string {
             <!-- the two maps joined: one says what an instance IS, the other how it was tuned, and
                  a reader shown them apart has to do the join by hand -->
             <tr v-for="worker in workers" :key="worker.instance">
-              <td class="text-cell">{{ worker.instance }}</td>
-              <td class="text-cell">{{ worker.type || '—' }}</td>
-              <td class="text-cell">{{ inline(worker.parameters) }}</td>
+              <td class="instance">{{ worker.instance }}</td>
+              <td>
+                <PathLabel v-if="worker.type" :value="worker.type" />
+                <template v-else>—</template>
+              </td>
+              <td class="parameters">{{ inline(worker.parameters) }}</td>
             </tr>
           </tbody>
         </table>
@@ -147,6 +154,15 @@ function scalar(value: unknown): string {
   gap: 0 var(--space-xl);
   align-items: start;
 }
+
+/**
+ * The workers take the whole width, however many columns the grid made.
+ *
+ * Measured 2026-09-29: a worker type is a path — `user_algos/touch_and_turn/…_worker.py`, 56
+ * characters — and three monospace columns beside the decision logic left it 140 px. It broke
+ * mid-word and the parameters column was pushed off the edge behind a scrollbar.
+ */
+.workers { grid-column: 1 / -1; }
 
 /* the parameters fill the width they are given rather than stacking down one edge: ten of them in
    a single column left nine tenths of the panel empty */
@@ -207,6 +223,9 @@ function scalar(value: unknown): string {
 .kpi-table th,
 .kpi-table td {
   text-align: left;
+  /* top, not the default middle: a row is as tall as its longest cell, and a short cell centred
+     against a wrapped parameter list floats in the middle of nothing */
+  vertical-align: top;
   padding: var(--space-xs) var(--space-sm);
   border-bottom: 1px solid var(--color-border);
   font-family: monospace;
@@ -217,6 +236,13 @@ function scalar(value: unknown): string {
   color: var(--color-text-secondary);
   font-weight: normal;
 }
+
+/* the row's identity — it stays on one line and the other two columns give way for it */
+.instance { white-space: nowrap; }
+
+/* as many pairs as fit, then the next line. `· ` gives the break opportunities, the rule below is
+   for the single parameter that is longer than the column itself */
+.parameters { overflow-wrap: anywhere; }
 
 .hint {
   margin: 0;

@@ -10,7 +10,7 @@ import type { BookingPeriodRow } from '@/types/api/report_types'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { LaneOrder } from '@/types/settings_types'
 import type { TimelineLane, TimelineSpan } from '@/types/timeline_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 /**
  * Booking periods as a timeline. This is the domain half: it decides what a lane is, which clock
@@ -174,7 +174,15 @@ const scope = computed(() => {
   }
   const earliest = (lane: typeof current.lanes[number]): number =>
     Math.min(...lane.spans.map(span => span.from))
-  return { ...current, lanes: [...current.lanes].sort((a, b) => earliest(a) - earliest(b)) }
+  // Two units CAN open at the same instant — measured 2026-09-29, one pair of a walk-forward set
+  // to the millisecond — and then the order came from whatever sequence the response happened to
+  // carry. The name settles it, so the same run draws the same chart twice. Only an exact tie:
+  // a millisecond apart is a real difference, and a tolerance would be a rule we invented.
+  return {
+    ...current,
+    lanes: [...current.lanes].sort((a, b) =>
+      earliest(a) - earliest(b) || a.label.localeCompare(b.label)),
+  }
 })
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -188,8 +196,8 @@ const withinOneDay = computed(() => scope.value.to - scope.value.from < DAY_MS)
 
 const scaleNote = computed(() => {
   const clock = props.sessions?.length
-    ? t("Axis: the run's own clock, unscaled. Sessions that replayed one window therefore look alike — which is what makes them comparable. When they ran is in the table above.")
-    : t("Axis: the run's own clock — simulated market time in a backtest.")
+    ? t('Axis: the canonical clock, unscaled. Sessions that replayed one window therefore look alike — which is what makes them comparable. When they ran is in the table above.')
+    : t("Axis: the canonical clock — the market time the run read, not the machine's.")
   if (!withinOneDay.value) return clock
   const day = utcInstant(new Date(scope.value.from).toISOString()).split(' ')[0] ?? ''
   return `${clock} ${t('All times on')} ${day}.`
@@ -222,7 +230,7 @@ function gapLabel(millis: number): string {
 
 /** Said once where there are too many removals to name each — summarised, never hidden. */
 function breaksLabel(count: number, total: number): string {
-  return `${count} ${t('breaks')} · ${duration(total / HOUR_MS)} ${t('idle removed')}`
+  return `${plural(count, t('break'), t('breaks'))} · ${duration(total / HOUR_MS)} ${t('idle removed')}`
 }
 
 /**

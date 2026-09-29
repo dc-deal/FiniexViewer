@@ -8,7 +8,7 @@ import { useDisplaySettings } from '@/composables/use_display_settings'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { rowKey } from '@/api/list_key'
 import type { TradeRow, TradeView } from '@/types/api/report_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 const props = defineProps<{
   model: TradeView
@@ -146,8 +146,15 @@ const summarised = computed(() => groups.value.length >= display.value.scenarioT
 /** A unit the reader has opened or closed by hand, which outranks the threshold for that unit. */
 const overrides = ref(new Map<string, boolean>())
 
-// a different run is a different set of units, so a choice made about the old one means nothing
-watch(() => props.model, () => overrides.value.clear())
+/**
+ * A different RUN is a different set of units, so a choice made about the old one means nothing.
+ *
+ * Watched by the run's OWN id, never by `props.model`. The model is composed by the host — a fresh
+ * object literal on every evaluation of its `sources` — so watching its identity forgets the
+ * reader's choices whenever anything upstream re-evaluates, and the group they just opened closes
+ * under them. The unit suite could not see it: there the model is a stable object.
+ */
+watch(() => props.model.history.run_id, () => overrides.value.clear())
 
 function isExpanded(name: string): boolean {
   return overrides.value.get(name) ?? !summarised.value
@@ -323,7 +330,10 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
               @keydown.enter.prevent="toggleGroup(group.name)"
               @keydown.space.prevent="toggleGroup(group.name)"
             >
-              <td class="text-cell" colspan="6">
+              <!-- five: Symbol · Dir · Lots · Opened · Held. The net then lands UNDER the Net P&L
+                   header and the meta spans the last two. It was six, which made this row nine
+                   columns wide in an eight-column table and stretched it past its own header. -->
+              <td class="text-cell" colspan="5">
                 <span class="group-marker">{{ isExpanded(group.name) ? '▾' : '▸' }}</span>
                 {{ group.name }}
               </td>
@@ -332,7 +342,7 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
               </td>
               <td v-else />
               <td colspan="2" class="group-meta">
-                {{ group.trades.length }} {{ t('trades') }}
+                {{ plural(group.trades.length, t('trade'), t('trades')) }}
                 <template v-if="group.total">
                   · {{ t('fees') }} {{ amount(group.total.total_fees, group.total.currency) }}
                 </template>

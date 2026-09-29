@@ -93,7 +93,16 @@ const sources = computed(() => ({
   portfolio: portfolio.value,
   bookingPeriods: bookingPeriods.value,
   config: config.value,
-  scenarios: scenarios.value,
+  // composed rather than served: the roster says what was DECLARED, the portfolio what it EARNED
+  // and warnings-errors what WENT WRONG — three responses, one question a reader scans forty rows
+  // with. Joined on the unit name, which is one identity across all three.
+  scenarioRoster: scenarios.value
+    ? {
+        scenarios: scenarios.value,
+        portfolio: portfolio.value,
+        warningsErrors: warningsErrors.value,
+      }
+    : null,
   // composed rather than served: the trade view needs the positions AND the order funnel, and
   // those live on two different routes
   tradeView: tradeHistory.value
@@ -147,7 +156,7 @@ const showPanels = computed(() =>
   <div class="runs-view">
     <header class="runs-header">
       <RunPicker />
-      <AppBar v-if="showPanels" />
+      <AppBar v-if="showPanels" :sources="sources" />
     </header>
 
     <div class="runs-body">
