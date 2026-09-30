@@ -2,6 +2,7 @@
 import {
   TooltipArrow, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger,
 } from 'reka-ui'
+import type { Figure } from '@/types/figure_types'
 
 /**
  * A data card that appears beside whatever it wraps.
@@ -16,8 +17,8 @@ import {
 defineProps<{
   /** One line naming the thing — the card's heading. */
   title: string
-  /** Already-rendered figures. `tone` colours a value ('positive' | 'negative'), else empty. */
-  details?: { label: string, value: string, tone?: string }[]
+  /** Already-rendered figures — the same pair a `FigureBlock` places. */
+  details?: Figure[]
   /** Where it prefers to sit; it flips on its own when that side has no room. */
   side?: 'top' | 'right' | 'bottom' | 'left'
 }>()
@@ -54,7 +55,7 @@ defineProps<{
 /* not scoped: the card is portalled out of this component's subtree, so a scoped rule cannot
    reach it. The class is specific enough to stay contained. */
 .hover-card {
-  z-index: 60;
+  z-index: var(--z-card);
   min-width: 15rem;
   /* it can be taller than the screen on a rich row — scroll inside rather than truncate, because
      a card that hides a figure is worse than one that asks for a scroll */

@@ -1,1 +1,85 @@
-{"key": ["run_id", "currency"], "deployment_id": "deploy_20260927_132425", "sessions": [{"index": 1, "run_id": "20260927_132425_238c2704", "started": "2026-09-27T13:24:25.351044Z", "net_pnl": -209.094875, "max_drawdown": 380.18984374999854, "max_drawdown_pct": 3.7995464541275346, "currency": "USD", "bot": "demo_btcusd_bot", "bot_id": "demo-btc", "ended": "2026-09-27T13:25:11.571865Z", "ran_hours": 0.012839116944444444, "gap_hours": null, "gap_between_starts": false, "strategy_changed": false, "operation_changed": false}, {"index": 2, "run_id": "20260927_132518_f23728c1", "started": "2026-09-27T13:25:18.214541Z", "net_pnl": -144.70335, "max_drawdown": 597.3631312500002, "max_drawdown_pct": 5.969935821483836, "currency": "USD", "bot": "demo_btcusd_bot", "bot_id": "demo-btc", "ended": "2026-09-27T13:26:01.988581Z", "ran_hours": 0.012159455555555556, "gap_hours": 0.0018451877777777778, "gap_between_starts": false, "strategy_changed": false, "operation_changed": false}, {"index": 3, "run_id": "20260927_132608_8ce75f5d", "started": "2026-09-27T13:26:08.714272Z", "net_pnl": 70.44608749999999, "max_drawdown": 597.3631312500002, "max_drawdown_pct": 5.969935821483836, "currency": "USD", "bot": "demo_btcusd_bot", "bot_id": "demo-btc", "ended": "2026-09-27T13:26:52.084670Z", "ran_hours": 0.012047332777777779, "gap_hours": 0.0018682475000000001, "gap_between_starts": false, "strategy_changed": true, "operation_changed": false}, {"index": 4, "run_id": "20260927_132658_4465e10f", "started": "2026-09-27T13:26:58.731855Z", "net_pnl": 0.0, "max_drawdown": 597.3631312500002, "max_drawdown_pct": 5.969935821483836, "currency": "USD", "bot": "demo_btcusd_bot", "bot_id": "demo-btc", "ended": "2026-09-27T13:27:41.003171Z", "ran_hours": 0.011742032222222223, "gap_hours": 0.001846440277777778, "gap_between_starts": false, "strategy_changed": false, "operation_changed": true}], "count": 4, "unfinished": 1, "advisory": {"sessions": 4, "strategy_stands": 2, "operation_stands": 2, "longest_gap_hours": null}}
+{
+  "key": [
+    "run_id",
+    "currency"
+  ],
+  "deployment_id": "deploy_20260927_132425",
+  "sessions": [
+    {
+      "index": 1,
+      "run_id": "20260927_132425_238c2704",
+      "started": "2026-09-27T13:24:25.351044Z",
+      "net_pnl": -209.094875,
+      "max_drawdown": 380.18984374999854,
+      "max_drawdown_pct": 3.7995464541275346,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "ended": "2026-09-27T13:25:11.571865Z",
+      "ran_hours": 0.012839116944444444,
+      "gap_hours": null,
+      "gap_between_starts": false,
+      "strategy_changed": false,
+      "operation_changed": false
+    },
+    {
+      "index": 2,
+      "run_id": "20260927_132518_f23728c1",
+      "started": "2026-09-27T13:25:18.214541Z",
+      "net_pnl": -144.70335,
+      "max_drawdown": 597.3631312500002,
+      "max_drawdown_pct": 5.969935821483836,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "ended": "2026-09-27T13:26:01.988581Z",
+      "ran_hours": 0.012159455555555556,
+      "gap_hours": 0.0018451877777777778,
+      "gap_between_starts": false,
+      "strategy_changed": false,
+      "operation_changed": false
+    },
+    {
+      "index": 3,
+      "run_id": "20260927_132608_8ce75f5d",
+      "started": "2026-09-27T13:26:08.714272Z",
+      "net_pnl": 70.44608749999999,
+      "max_drawdown": 597.3631312500002,
+      "max_drawdown_pct": 5.969935821483836,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "ended": "2026-09-27T13:26:52.084670Z",
+      "ran_hours": 0.012047332777777779,
+      "gap_hours": 0.0018682475000000001,
+      "gap_between_starts": false,
+      "strategy_changed": true,
+      "operation_changed": false
+    },
+    {
+      "index": 4,
+      "run_id": "20260927_132658_4465e10f",
+      "started": "2026-09-27T13:26:58.731855Z",
+      "net_pnl": 0.0,
+      "max_drawdown": 597.3631312500002,
+      "max_drawdown_pct": 5.969935821483836,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "ended": "2026-09-27T13:27:41.003171Z",
+      "ran_hours": 0.011742032222222223,
+      "gap_hours": 0.001846440277777778,
+      "gap_between_starts": false,
+      "strategy_changed": false,
+      "operation_changed": true
+    }
+  ],
+  "count": 4,
+  "unfinished": 1,
+  "advisory": {
+    "sessions": 4,
+    "strategy_stands": 2,
+    "operation_stands": 2,
+    "longest_gap_hours": null
+  }
+}

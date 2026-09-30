@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest'
+import HoverCard from '@/components/base/HoverCard.vue'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
@@ -162,7 +163,7 @@ function mountWithSelection(
 }
 
 function headOf(wrapper: VueWrapper, name: string) {
-  return wrapper.findAll('.roster-head').find(node => node.text().startsWith(name))!
+  return wrapper.findAll('.record-row').find(node => node.text().startsWith(name))!
 }
 
 /** The facet panels are portalled, so a trigger is opened and the options read off the document. */
@@ -207,10 +208,12 @@ describe('ScenarioRosterPanel', () => {
     expect(wrapper.find('.roster-notice').exists()).toBe(false)
   })
 
-  it('puts the reason on the row that failed, and figures on the rows that did not', () => {
+  it('puts the reason on the row that failed, and only there', () => {
     const wrapper = mountPanel()
-    expect(wrapper.find('.roster-reason').text()).toContain('Warmup for M30')
-    expect(wrapper.findAll('.roster-figures')).toHaveLength(3)
+    expect(wrapper.find('.record-detail').text()).toContain('Warmup for M30')
+    // one reason among four rows: the other three produced something and carry figures instead
+    expect(wrapper.findAll('.record-detail')).toHaveLength(1)
+    expect(wrapper.findAll('.record-row')).toHaveLength(4)
   })
 
   describe('the facet bar over it', () => {
@@ -360,7 +363,7 @@ describe('ScenarioRosterPanel', () => {
     // Marked by a rule AND by aria-pressed — never by colour alone.
     it('marks the chosen row, and only that one', () => {
       const { wrapper } = mountWithSelection(MIXED, ['eth_b'])
-      const picked = wrapper.findAll('.roster-row.picked')
+      const picked = wrapper.findAll('.record-row.picked')
       expect(picked).toHaveLength(1)
       expect(picked[0]?.text()).toContain('eth_b')
       expect(headOf(wrapper, 'eth_b').attributes('aria-pressed')).toBe('true')
@@ -371,7 +374,7 @@ describe('ScenarioRosterPanel', () => {
     it('stays inert where no host supplied a selection', async () => {
       const wrapper = mountPanel()
       await headOf(wrapper, 'eth_b').trigger('click')
-      expect(wrapper.findAll('.roster-row.picked')).toHaveLength(0)
+      expect(wrapper.findAll('.record-row.picked')).toHaveLength(0)
     })
 
     // Several at once is what turns the roster from a jump into a comparison.
@@ -380,7 +383,7 @@ describe('ScenarioRosterPanel', () => {
       await headOf(wrapper, 'eth_a').trigger('click')
       await headOf(wrapper, 'eth_b').trigger('click')
       expect(unit.value).toEqual(['eth_a', 'eth_b'])
-      expect(wrapper.findAll('.roster-row.picked')).toHaveLength(2)
+      expect(wrapper.findAll('.record-row.picked')).toHaveLength(2)
 
       await headOf(wrapper, 'eth_a').trigger('click')
       expect(unit.value).toEqual(['eth_b'])
@@ -422,34 +425,110 @@ describe('ScenarioRosterPanel', () => {
       earning('loser', { total_trades: 1, net_profit: -4.25, profit_factor: 0 }),
     ])
 
-    function figuresFor(wrapper: VueWrapper, name: string): string {
-      const rowEl = wrapper.findAll('.roster-row').find(node => node.text().includes(name))!
-      return rowEl.find('.roster-figures').text()
+    /**
+     * One scenario's row, read CELL BY CELL against the column headings.
+     *
+     * Not as running text any more, and that is the point of the columns: the currency a scenario
+     * declares and the currency an amount is denominated in are both "USD", so a text probe for
+     * what a unit EARNED matched what it merely WAS. Reading by heading cannot confuse the two.
+     */
+    function cellsFor(wrapper: VueWrapper, name: string): Record<string, string> {
+      const labels = wrapper.findAll('.record-head > span').map(node => node.text())
+      const row = wrapper.findAll('.record-row').find(node => node.text().includes(name))!
+      const cells = row.findAll(':scope > span').map(node => node.text())
+      return Object.fromEntries(labels.map((label, index) => [label, cells[index] ?? '']))
     }
 
+    /**
+     * The ACCOUNT half of a scenario, which is why the portfolio panel existed and is now gone:
+     * the response carries fifty fields per unit and that panel printed seventeen. The four worth
+     * a column are columns; the rest answer *what happened to this account* rather than *how do
+     * these compare*, which is a question about ONE row and therefore a card.
+     */
+    it('carries the account the row has no width for', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([
+        earning('winner', {
+          total_trades: 3,
+          initial_balance: 10_000,
+          current_balance: 9_993.36,
+          final_equity: 9_987.26,
+          unrealized_pnl: -6.1,
+          total_spread_cost: 2.74,
+        }),
+      ])))
+      const card = wrapper.findAllComponents(HoverCard)[0]!
+      const rows = Object.fromEntries(
+        (card.props('details') as { label: string, value: string }[])
+          .map(pair => [pair.label, pair.value])
+      )
+      expect(rows['Opened with']).toBe('10,000.00 USD')
+      expect(rows['Balance']).toBe('9,993.36 USD')
+      expect(rows['Final equity']).toBe('9,987.26 USD')
+      expect(rows['Unrealised']).toBe('-6.10 USD')
+      expect(rows['Spread']).toBe('2.74 USD')
+    })
+
+    /** A scenario the portfolio has no row for has no account to describe. */
+    it('offers no card where the portfolio has no row for the unit', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { total_trades: 1 })])))
+      // three scenarios, one of them earning — only that one is carded
+      expect(wrapper.findAllComponents(HoverCard)).toHaveLength(1)
+    })
+
+    /**
+     * The rank lives twice — on the column and on the cell — and it has to, because the list owns
+     * the tracks while the caller owns the cells. A track given up under a cell that stayed would
+     * shift every later cell into the wrong column, and nothing on screen would say so. This is
+     * the guard against the two drifting apart.
+     */
+    it('gives every cell the rank its own column declares', () => {
+      const wrapper = mountPanel(view(ROSTER, EARNED))
+      const heads = wrapper.findAll('.record-head > span').map(n => n.attributes('data-rank'))
+      const cells = wrapper.find('.record-row').findAll(':scope > span')
+        .map(n => n.attributes('data-rank'))
+
+      expect(heads).toHaveLength(15)
+      expect(cells).toEqual(heads)
+      // and the three a narrow list keeps are the ones worth keeping
+      expect(heads.filter(rank => rank === '1')).toHaveLength(3)
+    })
+
     it('shows what a unit earned beside what it was', () => {
-      const wrapper = mountPanel(view(ROSTER, EARNED))
-      expect(figuresFor(wrapper, 'winner')).toContain('3 trades')
-      expect(figuresFor(wrapper, 'winner')).toContain('12.50 USD')
+      const cells = cellsFor(mountPanel(view(ROSTER, EARNED)), 'winner')
+      // the W/L split rides in the same cell: contract 18 counts a trade that realised exactly
+      // nothing as neither, so the two need not add up to the total
+      expect(cells['Trades']).toContain('3')
+      expect(cells['Net P&L']).toBe('12.50 USD')
+      expect(cells['PF']).toBe('2.40')
+      // and what it WAS, on the same line
+      expect(cells['Symbol']).toBe('ETHUSD')
+      expect(cells['Broker']).toBe('kraken_spot')
     })
 
-    // the defect the operator saw on screen: a count of one wearing the plural
-    it('agrees the noun with the count', () => {
-      const wrapper = mountPanel(view(ROSTER, EARNED))
-      expect(figuresFor(wrapper, 'loser')).toContain('1 trade ')
-      expect(figuresFor(wrapper, 'loser')).not.toContain('1 trades')
+    /**
+     * A column headed "Trades" needs no noun in its cells — that is the heading's job, and
+     * repeating it on every row is the ink a table spends on itself. The pluralisation rule the
+     * prose version carried lives on where prose remains; `translate.test.ts` holds it.
+     */
+    it('states a count as a bare figure under its own heading', () => {
+      const cells = cellsFor(mountPanel(view(ROSTER, EARNED)), 'loser')
+      expect(cells['Trades']).toContain('1')
+      expect(cells['Net P&L']).toBe('-4.25 USD')
     })
 
-    it('shows NO figures for a unit the portfolio has no row for', () => {
-      const wrapper = mountPanel(view(ROSTER, EARNED))
-      const text = figuresFor(wrapper, 'absent')
-      expect(text).not.toContain('trades')
-      expect(text).not.toContain('USD')
+    it('shows NO earned figures for a unit the portfolio has no row for', () => {
+      const cells = cellsFor(mountPanel(view(ROSTER, EARNED)), 'absent')
+      expect(cells['Trades']).toBe('')
+      expect(cells['Net P&L']).toBe('')
+      expect(cells['PF']).toBe('')
+      // what it WAS is still stated — the roster is the complete list whatever the portfolio holds
+      expect(cells['Symbol']).toBe('ETHUSD')
     })
 
-    it('shows no figures at all where the run carries no portfolio', () => {
-      const wrapper = mountPanel(view(ROSTER, null))
-      expect(figuresFor(wrapper, 'winner')).not.toContain('trades')
+    it('shows no earned figures at all where the run carries no portfolio', () => {
+      const cells = cellsFor(mountPanel(view(ROSTER, null)), 'winner')
+      expect(cells['Trades']).toBe('')
+      expect(cells['Net P&L']).toBe('')
     })
 
     // The response declares `keys.errors: ["name"]` — ONE row per unit — so a count could only
@@ -503,9 +582,16 @@ describe('ScenarioRosterPanel', () => {
       expect(rowNames(wrapper)).toEqual(['long', 'middle', 'short'])
     })
 
+    /**
+     * The same formatter the run list and the executive summary use, so one concept reads one way
+     * wherever it appears — it was this panel's own compact form until 2026-09-30.
+     */
     it('shows the tick timespan in units a reader takes in', () => {
-      const wrapper = mountPanel(view(report([row({ name: 'a', tick_timespan_seconds: 21_600 })])))
-      expect(figuresFor(wrapper, 'a')).toContain('6.0 h')
+      const short = mountPanel(view(report([row({ name: 'a', tick_timespan_seconds: 21_600 })])))
+      expect(cellsFor(short, 'a')['Tick timespan']).toBe('6.0 h')
+
+      const long = mountPanel(view(report([row({ name: 'b', tick_timespan_seconds: 417_600 })])))
+      expect(cellsFor(long, 'b')['Tick timespan']).toBe('116.0 h (4.8 days)')
     })
 
     /**
@@ -530,8 +616,8 @@ describe('ScenarioRosterPanel', () => {
         row({ name: 'a', execution_time_ms: 513.36 }),
         row({ name: 'b', execution_time_ms: 2601.07 }),
       ])))
-      expect(figuresFor(wrapper, 'a')).toContain('513 ms')
-      expect(figuresFor(wrapper, 'b')).toContain('2.6 s')
+      expect(cellsFor(wrapper, 'a')['Took']).toBe('513 ms')
+      expect(cellsFor(wrapper, 'b')['Took']).toBe('2.6 s')
     })
 
     /**

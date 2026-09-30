@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import RecordList from '@/components/base/RecordList.vue'
 import { rowKey } from '@/api/list_key'
 import {
   amount, figure, numberOrNa, percentOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { BookingPeriodRow } from '@/types/api/report_types'
+import type { ListBand, ListColumn } from '@/types/list_types'
 import { plural, t } from '@/translate'
 
 /**
@@ -61,8 +63,64 @@ function band(period: PeriodRow): string {
   return `${money(period.min_equity, period)} … ${money(period.max_equity, period)}`
 }
 
+/**
+ * What the account held when the period OPENED. Stamped at the source since contract 17, and
+ * `null` on a period recorded before that — measured, absent on 4 of 8 deployment periods. Never
+ * `final_equity - net_pnl`: that is derived, and wrong besides, since `net_pnl` is realised while
+ * equity also values what is still open.
+ */
+function opening(period: PeriodRow): string {
+  return period.opening_equity === null ? t('n/a') : money(period.opening_equity, period)
+}
+
+/**
+ * The three parts `total_fees` adds up to, one hover away rather than three more columns on a
+ * table that already carries fourteen. Attributed as `net_pnl` is — the costs of the trades this
+ * period CLOSED, never a swap still accruing on an open position.
+ */
+function feeSplit(period: PeriodRow): string {
+  return `${t('commission')} ${money(period.commission_cost, period)}`
+    + ` · ${t('swap')} ${money(period.swap_cost, period)}`
+    + ` · ${t('spread')} ${money(period.spread_cost, period)}`
+}
+
 /** Columns under the identity group, which has no heading of its own. */
-const identitySpan = computed(() => (props.showRun ? 3 : 2))
+/**
+ * Fifteen fields, and the BANDS are what make them read as three things rather than as one row of
+ * equal words. The run column appears only where the rows span several runs, so both the columns
+ * and the identity band are built rather than listed.
+ *
+ * Ranked so a narrow panel keeps the question a period answers — when, what it earned, where the
+ * account ended — and gives up the ratios and the cost split first.
+ */
+const columns = computed<ListColumn[]>(() => [
+  { label: t('Unit'), width: 'minmax(8rem, 16fr)', rank: 1 },
+  ...(props.showRun ? [{ label: t('Run'), width: 'minmax(0, 16fr)', rank: 2 } as ListColumn] : []),
+  { label: t('No'), width: 'minmax(0, 3fr)', figure: true, rank: 3 },
+  { label: t('Opened'), width: 'minmax(0, 17fr)', rank: 1 },
+  { label: t('Closed'), width: 'minmax(0, 17fr)', rank: 2 },
+  { label: t('Reason'), width: 'minmax(0, 9fr)', rank: 3 },
+  { label: t('Trades'), width: 'minmax(0, 7fr)', figure: true, rank: 2 },
+  { label: t('Net P&L'), width: 'minmax(0, 11fr)', figure: true, rank: 1 },
+  { label: t('Win Rate'), width: 'minmax(0, 7fr)', figure: true, rank: 4 },
+  { label: t('PF'), width: 'minmax(0, 6fr)', figure: true, rank: 4 },
+  { label: t('Fees'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
+  { label: t('Max DD'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
+  { label: t('Opening'), width: 'minmax(0, 11fr)', figure: true, rank: 4 },
+  { label: t('Equity band'), width: 'minmax(0, 20fr)', figure: true, rank: 4 },
+  { label: t('Final equity'), width: 'minmax(0, 11fr)', figure: true, rank: 1 },
+])
+
+/**
+ * The spans must cover the columns exactly — the stem checks it and draws nothing where they do
+ * not, because a band off by one sits over the wrong column and says nothing about it.
+ */
+const bands = computed<ListBand[]>(() => [
+  { label: '', span: props.showRun ? 3 : 2 },
+  { label: t('Period'), span: 3 },
+  { label: t('Result'), span: 5 },
+  { label: t('Account'), span: 4 },
+])
 </script>
 
 <template>
@@ -75,61 +133,47 @@ const identitySpan = computed(() => (props.showRun ? 3 : 2))
       <!-- the currency, stated ONCE for the whole table instead of in every amount -->
       <template v-if="sharedCurrency"> · {{ t('figures in') }} {{ sharedCurrency }}</template>
     </summary>
-    <div class="table-scroll">
-    <table class="kpi-table">
-      <thead>
-        <!-- the columns grouped by the question they answer, so fifteen fields read as three
-             things rather than as one undifferentiated row -->
-        <tr class="group-row">
-          <th :colspan="identitySpan" />
-          <th colspan="3">{{ t('Period') }}</th>
-          <th colspan="5">{{ t('Result') }}</th>
-          <th colspan="3">{{ t('Account') }}</th>
-        </tr>
-        <tr>
-          <th>{{ t('Unit') }}</th>
-          <th v-if="showRun">{{ t('Run') }}</th>
-          <th>{{ t('No') }}</th>
-          <th>{{ t('Opened') }}</th>
-          <th>{{ t('Closed') }}</th>
-          <th>{{ t('Reason') }}</th>
-          <th>{{ t('Trades') }}</th>
-          <th>{{ t('Net P&L') }}</th>
-          <th>{{ t('Win Rate') }}</th>
-          <th>{{ t('PF') }}</th>
-          <th>{{ t('Fees') }}</th>
-          <th>{{ t('Max DD') }}</th>
-          <th>{{ t('Equity band') }}</th>
-          <th>{{ t('Final equity') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="period in periods" :key="rowKey(period, keyFields)">
-          <td class="text-cell">{{ period.unit_name }}</td>
-          <td v-if="showRun" class="text-cell">
-            <RouterLink
-              v-if="period.run_id"
-              class="run-link"
-              :to="{ name: 'runs', query: { run: period.run_id } }"
-              :title="t('Open this run')"
-            >{{ period.run_id }} ↗</RouterLink>
-          </td>
-          <td>{{ period.period_no }}</td>
-          <td>{{ utcInstant(period.opened_at) }}</td>
-          <td>{{ utcInstant(period.closed_at) }}</td>
-          <td class="text-cell">{{ period.reason }}</td>
-          <td>{{ period.trade_count }}</td>
-          <td :class="signClass(period.net_pnl)">{{ money(period.net_pnl, period) }}</td>
-          <td>{{ percentOrNa(period.win_rate, period.trade_count) }}</td>
-          <td>{{ numberOrNa(period.profit_factor, period.trade_count) }}</td>
-          <td>{{ money(period.total_fees, period) }}</td>
-          <td>{{ drawdown(period) }}</td>
-          <td class="band-cell">{{ band(period) }}</td>
-          <td>{{ money(period.final_equity, period) }}</td>
-        </tr>
-      </tbody>
-      </table>
-    </div>
+    <RecordList
+      class="periods-list"
+      :rows="periods"
+      :columns="columns"
+      :bands="bands"
+      :row-key="period => rowKey(period, keyFields)"
+      inert
+    >
+      <template #default="{ row: period }">
+        <span :data-rank="1" class="text-cell" :title="period.unit_name">
+          {{ period.unit_name }}
+        </span>
+        <span v-if="showRun" :data-rank="2" class="text-cell">
+          <RouterLink
+            v-if="period.run_id"
+            class="run-link"
+            :to="{ name: 'runs', query: { run: period.run_id } }"
+            :title="t('Open this run')"
+          >{{ period.run_id }} ↗</RouterLink>
+        </span>
+        <span :data-rank="3">{{ period.period_no }}</span>
+        <span :data-rank="1" :title="utcInstant(period.opened_at)">
+          {{ utcInstant(period.opened_at) }}
+        </span>
+        <span :data-rank="2" :title="utcInstant(period.closed_at)">
+          {{ utcInstant(period.closed_at) }}
+        </span>
+        <span :data-rank="3" class="text-cell">{{ period.reason }}</span>
+        <span :data-rank="2">{{ period.trade_count }}</span>
+        <span :data-rank="1" :class="signClass(period.net_pnl)">
+          {{ money(period.net_pnl, period) }}
+        </span>
+        <span :data-rank="4">{{ percentOrNa(period.win_rate, period.trade_count) }}</span>
+        <span :data-rank="4">{{ numberOrNa(period.profit_factor, period.trade_count) }}</span>
+        <span :data-rank="3" :title="feeSplit(period)">{{ money(period.total_fees, period) }}</span>
+        <span :data-rank="3">{{ drawdown(period) }}</span>
+        <span :data-rank="4">{{ opening(period) }}</span>
+        <span :data-rank="4" class="band-cell" :title="band(period)">{{ band(period) }}</span>
+        <span :data-rank="1">{{ money(period.final_equity, period) }}</span>
+      </template>
+    </RecordList>
   </details>
 </template>
 
@@ -142,47 +186,20 @@ const identitySpan = computed(() => (props.showRun ? 3 : 2))
   color: var(--color-text-secondary);
 }
 
-.table-scroll {
-  overflow-x: auto;
+/* only what the shared list does not own: it carries the tracks, the bands, the headings and the
+   read-only rows */
+.periods-list {
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
-.kpi-table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.kpi-table th,
-.kpi-table td {
-  text-align: right;
-  padding: var(--space-xs) var(--space-sm);
-  border-bottom: 1px solid var(--color-border);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
+.periods-list :deep(.record-row) > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.kpi-table th {
-  color: var(--color-text-secondary);
-  font-weight: normal;
-}
-
-/* the group names recede: they say what a block of columns is about, they are not headers to read
-   row by row. A rule between the blocks carries the grouping, so the words can stay quiet. */
-.group-row th {
-  text-align: center;
-  padding-bottom: 0;
-  border-bottom: none;
-  color: var(--color-text-secondary);
-  opacity: 0.7;
-  font-size: calc(var(--font-size-sm) * 0.9);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.group-row th + th {
-  border-left: 1px solid var(--color-border);
-}
-
+/* an equity band is two amounts and an ellipsis, read as one value rather than compared */
 .band-cell {
   color: var(--color-text-secondary);
 }

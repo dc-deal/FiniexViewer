@@ -95,8 +95,9 @@ function openSettings(tab: SettingsTab): void {
 <style>
 /* portalled out of this component, so it cannot be reached by a scoped rule */
 .menu-content {
-  /* same reason as the dialog: the page has positioned elements that declare a z-index */
-  z-index: 70;
+  /* above a popover: a menu opened over one has to win, and the two sat at the same value until
+     the scale in tokens.css named them apart */
+  z-index: var(--z-menu);
   min-width: 12rem;
   display: flex;
   flex-direction: column;

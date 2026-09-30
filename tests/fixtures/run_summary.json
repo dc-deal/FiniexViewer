@@ -1,1 +1,82 @@
-{"run_id": "20260927_132124_10c3d2c7", "currencies": [{"currency": "USD", "net_pnl": 1.2887957031250008, "profit_factor": 2.472066222784005, "win_rate": 0.5, "account_max_drawdown": 15.44682988281238, "max_equity": 10000.0, "account_max_dd_pct": 0.1544682988281238, "total_fees": 16.216480078125002, "gross_profit": 2.1642968750000007, "gross_loss": 0.8755011718749999, "total_trades": 2, "winning_trades": 1, "losing_trades": 1, "unrealized_pnl": -19.914260156250002, "final_equity": 79981.37453554687, "open_position_count": 3, "expectancy": 0.0, "avg_win_r": null, "avg_loss_r": null, "r_trade_count": 0, "r_win_count": 0, "r_loss_count": 0, "avg_mae_winners": 0.0, "avg_mae_losers": 0.0, "avg_mfe_losers": 3.7530029296875003, "largest_mae": 0.0, "largest_mfe": 6.7090087890625005, "avg_trade_duration_s": 9161.365, "max_consecutive_wins": 1, "max_consecutive_losses": 1}], "orders_sent": 5, "orders_executed": 5, "orders_rejected": 0, "sl_tp_triggered": 0, "unit_count": 8, "units_declared": 10, "units_disabled": 0, "units_absent": [{"name": "ETHUSD_blocks_01", "reason": "Scenario 'ETHUSD_blocks_01' failed validation:\n\n1. Warmup for M30 has 1/20 bars (5%) — insufficient for indicator stabilization.", "reason_code": "ValidationError", "checks": ["warmup_quality"]}, {"name": "ETHUSD_blocks_02", "reason": "Scenario 'ETHUSD_blocks_02' failed validation:\n\n1. Warmup for M30 has 13/20 bars (65%) — insufficient for indicator stabilization.", "reason_code": "ValidationError", "checks": ["warmup_quality"]}], "signal_fresh_ratio": null, "disturbance_episode_count": 0, "disturbance_stale_seconds": 0.0, "disturbance_source_count": 0, "disturbance_stress_injected": 0, "keys": {"currencies": ["currency"], "units_absent": ["name"]}}
+{
+  "run_id": "20260927_132124_10c3d2c7",
+  "currencies": [
+    {
+      "currency": "USD",
+      "net_pnl": 1.2887957031250008,
+      "profit_factor": 2.472066222784005,
+      "win_rate": 0.5,
+      "account_max_drawdown": 15.44682988281238,
+      "max_equity": 10000.0,
+      "account_max_dd_pct": 0.1544682988281238,
+      "account_max_drawdown_unit": "ETHUSD_blocks_05",
+      "total_fees": 9.173216015625,
+      "fees_charged": 16.216480078125002,
+      "gross_profit": 2.1642968750000007,
+      "gross_loss": 0.8755011718749999,
+      "total_trades": 2,
+      "winning_trades": 1,
+      "losing_trades": 1,
+      "unrealized_pnl": -19.914260156250002,
+      "final_equity": null,
+      "total_final_equity": 79981.37453554687,
+      "total_initial_balance": 80000.0,
+      "unit_count": 8,
+      "open_position_count": 3,
+      "expectancy": 0.0,
+      "avg_win_r": null,
+      "avg_loss_r": null,
+      "r_trade_count": 0,
+      "r_win_count": 0,
+      "r_loss_count": 0,
+      "avg_mae_winners": 0.0,
+      "avg_mae_losers": 0.0,
+      "avg_mfe_losers": 3.7530029296875003,
+      "largest_mae": 0.0,
+      "largest_mfe": 6.7090087890625005,
+      "avg_trade_duration_s": 9161.365,
+      "max_consecutive_wins": 1,
+      "max_consecutive_losses": 1
+    }
+  ],
+  "orders_sent": 5,
+  "orders_executed": 5,
+  "orders_rejected": 0,
+  "sl_tp_triggered": 0,
+  "unit_count": 8,
+  "tick_timespan_seconds": 172691.47199999998,
+  "tick_timespan_total_seconds": 172691.472,
+  "units_declared": 10,
+  "units_disabled": 0,
+  "units_absent": [
+    {
+      "name": "ETHUSD_blocks_01",
+      "reason": "Scenario 'ETHUSD_blocks_01' failed validation:\n\n1. Warmup for M30 has 1/20 bars (5%) — insufficient for indicator stabilization.",
+      "reason_code": "ValidationError",
+      "checks": [
+        "warmup_quality"
+      ]
+    },
+    {
+      "name": "ETHUSD_blocks_02",
+      "reason": "Scenario 'ETHUSD_blocks_02' failed validation:\n\n1. Warmup for M30 has 13/20 bars (65%) — insufficient for indicator stabilization.",
+      "reason_code": "ValidationError",
+      "checks": [
+        "warmup_quality"
+      ]
+    }
+  ],
+  "signal_fresh_ratio": null,
+  "disturbance_episode_count": 0,
+  "disturbance_stale_seconds": 0.0,
+  "disturbance_source_count": 0,
+  "disturbance_stress_injected": 0,
+  "keys": {
+    "currencies": [
+      "currency"
+    ],
+    "units_absent": [
+      "name"
+    ]
+  }
+}

@@ -103,11 +103,7 @@ const sources = computed(() => ({
         warningsErrors: warningsErrors.value,
       }
     : null,
-  // composed rather than served: the trade view needs the positions AND the order funnel, and
-  // those live on two different routes
-  tradeView: tradeHistory.value
-    ? { history: tradeHistory.value, summary: summary.value }
-    : null,
+  tradeHistory: tradeHistory.value,
 }))
 
 /**

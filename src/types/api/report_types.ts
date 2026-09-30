@@ -126,6 +126,11 @@ export interface RunInfo {
   error_count: number | null
   warning_count: number | null
   log_warning_count: number | null
+  /**
+   * The market time this run's units processed, covered together so a stretch two of them share
+   * counts once. `null` on a run recorded before the figure existed — an absence, not a zero.
+   */
+  tick_timespan_seconds: number | null
 }
 
 /** What one run earned in one account currency. */
@@ -163,7 +168,23 @@ export interface RunSummaryCurrency {
   // `_ratio` are NOT one and are read per field. Never pass this to the ratio formatter.
   account_max_dd_pct: number
   max_equity: number
+  /**
+   * Which account the drawdown trio above belongs to. The trio is the DEEPEST account's, taken
+   * together from that one account, because a trough and a peak from two different accounts
+   * describe a decline that never happened.
+   */
+  account_max_drawdown_unit: string
+  /**
+   * TWO fee figures, and they are different populations rather than a rounding apart.
+   *
+   * `total_fees` is the fees of the CLOSED trades — the same population the trade list, the
+   * booking periods and the ledger sum, so those four agree by construction. `fees_charged` is
+   * what the run actually charged, open positions included. Measured on one run with three
+   * positions still open: 9.17 against 16.22. One file read the first and the next read the
+   * second under one name until contract 18.
+   */
   total_fees: number
+  fees_charged: number
   gross_profit: number
   gross_loss: number            // positive magnitude
   total_trades: number
@@ -180,7 +201,16 @@ export interface RunSummaryCurrency {
   // Open at the end of the run: stock read at an instant, not flow derived from records. The two
   // differ by exactly the unrealised movement, so neither substitutes for the other.
   unrealized_pnl: number
-  final_equity: number
+  /**
+   * ONE account's closing equity — and `null` wherever this currency spans several, which a
+   * backtest of N scenarios always does: those are N independent accounts, one balance each, and
+   * no account ever held their sum. The sum is `total_final_equity` and says so in its name.
+   */
+  final_equity: number | null
+  total_final_equity: number
+  total_initial_balance: number
+  /** How many accounts the two totals above are over. 1 means `final_equity` is stated. */
+  unit_count: number
   open_position_count: number
   // Excursion statistics — how far a trade ran against and in favour before it closed
   avg_mae_winners: number
@@ -235,6 +265,14 @@ export interface RunSummary {
   disturbance_stale_seconds: number
   disturbance_source_count: number
   disturbance_stress_injected: number
+  /**
+   * Market time. `tick_timespan_seconds` is what the run's units PROCESSED covered together, so a
+   * stretch two scenarios share counts ONCE; `tick_timespan_total_seconds` is the plain sum. They
+   * differ by exactly the overlap — measured on one run, 464 h covered against 928 h summed, its
+   * eight scenarios being four pairs of identical windows. Never the wall clock the run took.
+   */
+  tick_timespan_seconds: number | null
+  tick_timespan_total_seconds: number | null
 }
 
 /**
@@ -292,9 +330,10 @@ export interface WarningsErrorsOutcome {
   operator_interrupted: boolean
   /**
    * The same three counts the run index carries, counted once and the same way in both pipelines
-   * (contract 15). `null` on an artifact written before it — and that is ordinary DATA rather
-   * than a gap to fill: the index was back-filled from these artifacts, the artifacts were not
-   * rewritten. Measured 2026-09-29: the index reads 3 / 547 for a run whose artifact reads null.
+   * (contract 15). The 39 stored artifacts written before that were back-filled from their own
+   * rows, so `null` here means what it means everywhere else — nothing recorded — and never
+   * "written before the counts existed". Verified 2026-09-29 after the back-fill: index and
+   * artifact answer 0 / 3 / 547 for the same run.
    *
    * The warning ROWS are not a count. A backtest summarises its whole Tier-2 pot in ONE row while
    * an AutoTrader session writes one per entry, so counting rows compares two different things.
@@ -358,7 +397,17 @@ export interface PortfolioUnitRow {
   drawdown_started_at: string
   drawdown_carried_from: string
   drawdown_restarts: number
+  /**
+   * TWO fee figures, and they are different populations rather than a rounding apart.
+   *
+   * `total_fees` is the fees of the CLOSED trades — the same population the trade list, the
+   * booking periods and the ledger sum, so those four agree by construction. `fees_charged` is
+   * what the run actually charged, open positions included. Measured on one run with three
+   * positions still open: 9.17 against 16.22. One file read the first and the next read the
+   * second under one name until contract 18.
+   */
   total_fees: number
+  fees_charged: number
   // Provenance. data_broker_type carries the same broker keys GET /brokers returns ('mt5'), which
   // is what makes the jump into the chart possible; broker_name is a display name ('Kraken') and
   // is not addressable. Filled on both pipelines since the AutoTrader path threads it through.
@@ -430,9 +479,28 @@ export interface PortfolioAggregateRow {
   account_max_drawdown: number
   account_max_dd_pct: number
   max_equity: number
+  /**
+   * Which account the drawdown trio above belongs to. The trio is the DEEPEST account's, taken
+   * together from that one account, because a trough and a peak from two different accounts
+   * describe a decline that never happened.
+   */
+  account_max_drawdown_unit: string
+  /**
+   * TWO fee figures, and they are different populations rather than a rounding apart.
+   *
+   * `total_fees` is the fees of the CLOSED trades — the same population the trade list, the
+   * booking periods and the ledger sum, so those four agree by construction. `fees_charged` is
+   * what the run actually charged, open positions included. Measured on one run with three
+   * positions still open: 9.17 against 16.22. One file read the first and the next read the
+   * second under one name until contract 18.
+   */
   total_fees: number
+  fees_charged: number
   unrealized_pnl: number
-  final_equity: number
+  /** One account's closing equity, `null` over several — see the note on its per-currency twin. */
+  final_equity: number | null
+  total_final_equity: number
+  total_initial_balance: number
   open_position_count: number
 }
 
@@ -462,6 +530,21 @@ export interface BookingPeriodRow {
   win_rate: number              // ratio 0..1, not a percentage
   // null = undefined rather than zero, as everywhere: a period without a losing trade has none
   profit_factor: number | null
+  // The three parts `total_fees` adds up to, attributed the way `net_pnl` is: the costs of the
+  // trades this period CLOSED. A swap accruing on a position still open belongs to the open book
+  // and is deliberately not here.
+  commission_cost: number
+  swap_cost: number
+  spread_cost: number
+  /**
+   * Stamped at the source rather than derived — `final_equity - net_pnl` would be wrong as well as
+   * derived, because `net_pnl` is realised while equity also values what is still open.
+   *
+   * `null` on a period recorded before the field existed. Measured across two captures: stated on
+   * all 10 run periods and absent on 4 of 8 deployment periods. Nothing back-fills a stored
+   * artifact, so the absence is the data.
+   */
+  opening_equity: number | null
   final_equity: number
   min_equity: number
   max_equity: number
@@ -475,6 +558,45 @@ export interface BookingPeriodRow {
 }
 
 /**
+ * One unit's periods folded into its total — SERVED, never folded here.
+ *
+ * The backend applies its own declared reductions, which is the whole reason this is a response
+ * field rather than three lines of ours: the drawdown trio comes from the period that won it
+ * rather than from a separate min and max, a rate is rebuilt from the summed components rather
+ * than averaged, and a figure with no honest fold answers `null`.
+ */
+export interface BookingPeriodUnitTotal {
+  unit_name: string
+  currency: string
+  period_count: number
+  opened_at: string
+  closed_at: string
+  trade_count: number
+  net_pnl: number
+  total_fees: number
+  commission_cost: number
+  swap_cost: number
+  spread_cost: number
+  gross_profit: number
+  gross_loss: number
+  win_rate: number
+  profit_factor: number | null
+  /**
+   * `null` where the unit's FIRST period recorded no opening. Until contract 18 the fold skipped
+   * the missing value and showed the SECOND period's instead, which is why this carried a "do not
+   * render" note for a day.
+   */
+  opening_equity: number | null
+  final_equity: number
+  min_equity: number
+  max_equity: number
+  /** The deepest decline WITHIN one period, against the account's own decline across them all. */
+  deepest_period_drawdown: number
+  account_max_drawdown: number
+  account_max_dd_pct: number
+}
+
+/**
  * Response type for GET /api/v1/reports/runs/{run_id}/booking-periods — ONE account currency per
  * response. The closing figures are a CHECK, not a footer, and what they check is COMPLETENESS:
  * `total_*` are summed over the periods, `run_*` are the run's own counters, and both descend
@@ -484,8 +606,10 @@ export interface BookingPeriodRow {
  */
 export interface BookingPeriodsReport {
   run_id: string
-  key: string[]
+  /** One declared key per list in this response, not one for the response. */
+  keys: { periods: string[], unit_totals: string[] }
   periods: BookingPeriodRow[]
+  unit_totals: BookingPeriodUnitTotal[]
   // the currency the totals below are about
   currency: string
   // EVERY account currency the run booked, including `currency` above. Empty on an artifact
@@ -507,7 +631,12 @@ export interface BookingPeriodsReport {
    */
   reconciles: boolean | null
   deepest_period_drawdown: number
-  final_equity: number
+  /**
+   * The sum over `unit_totals`, and named as a total for that reason. It was `final_equity` and
+   * was the LAST period row's own figure — one of the run's eight accounts, printed as though it
+   * were the run's.
+   */
+  total_final_equity: number
 }
 
 /**
@@ -553,6 +682,13 @@ export interface RunConfigReport {
 
 /** One fill behind a trade's entry or exit — a position can be opened in several pieces. */
 export interface TradeExecution {
+  /**
+   * How many trade rows of this unit carry this fill. 1 is the ordinary case; more means one
+   * position was closed in pieces and each piece is its own trade row, which is why four rows can
+   * share an entry price. Served rather than counted: the record is byte-identical on every trade
+   * that shares it, so counting here would also be wrong under a narrowing or a row cap.
+   */
+  shared_by: number
   trade_id: string
   side: string
   volume: number
@@ -618,9 +754,19 @@ export interface TradeRow {
   entry_executions: TradeExecution[]
   exit_executions: TradeExecution[]
   entry_slippage: number
-  exit_slippage: number
   entry_slippage_pct: number
-  exit_slippage_pct: number
+  /**
+   * NULL on a trade that records no exit slippage — measured 2026-09-29 over 437 trades from eight
+   * runs: null on 118 of them, 27 %. The entry half was stated on every one of the 437, so it is
+   * mirrored as a plain number; whether that is guaranteed or only true of this archive is a
+   * question for the backend rather than something to infer from a sample.
+   *
+   * The mirror said `number` until this measurement and the panel called `.toFixed()` on it, which
+   * threw while rendering an expanded scenario group and took the whole panel with it. The contract
+   * test could not catch it: it proves the mirror against ONE capture, and that run had no null.
+   */
+  exit_slippage: number | null
+  exit_slippage_pct: number | null
 }
 
 /** Run-wide trade statistics for one account currency. */
@@ -685,14 +831,3 @@ export interface TradeHistoryReport {
   keys: TradeHistoryKeys
 }
 
-/**
- * What the trade view renders: the positions that closed, and the order funnel that produced
- * them. Composed by the host rather than served as one response, because the two live on
- * different routes — and they belong together, since 544 rejected orders behind 11 closed
- * positions is a finding that neither half states on its own.
- */
-export interface TradeView {
-  history: TradeHistoryReport
-  /** The run summary, for its four order counters. Null where the run carries no summary. */
-  summary: RunSummary | null
-}

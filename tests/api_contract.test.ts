@@ -39,7 +39,7 @@ import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 15
+const EXPECTED_CONTRACT = 18
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -58,6 +58,8 @@ const EXPECTED_KEYS = {
   sessions: ['run_id', 'currency'],
   deploymentPeriods: ['run_id', 'unit_name', 'period_no'],
   runPeriods: ['unit_name', 'period_no'],
+  // the folded row is one per UNIT, so the period number is not part of what makes it unique
+  runUnitTotals: ['unit_name'],
   trades: ['scenario_name', 'position_id', 'exit_tick_index'],
 }
 
@@ -114,10 +116,20 @@ describe('api contract', () => {
     expect(typed.key).toEqual(EXPECTED_KEYS.deploymentPeriods)
   })
 
+  /**
+   * Since contract 17 the response declares a key per LIST rather than one for itself, because it
+   * carries two: the periods and the fold over them.
+   */
   it('run-scoped periods are unique without the run, which is implied', () => {
     const typed: BookingPeriodsReport = runBookingPeriods
     expect(typed.periods.length).toBeGreaterThan(0)
-    expect(typed.key).toEqual(EXPECTED_KEYS.runPeriods)
+    expect(typed.keys.periods).toEqual(EXPECTED_KEYS.runPeriods)
+  })
+
+  it('declares a key for the served fold as well as for the periods', () => {
+    const typed: BookingPeriodsReport = runBookingPeriods
+    expect(typed.unit_totals.length).toBeGreaterThan(0)
+    expect(typed.keys.unit_totals).toEqual(EXPECTED_KEYS.runUnitTotals)
   })
 
   /**

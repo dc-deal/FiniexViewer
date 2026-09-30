@@ -239,12 +239,12 @@ function readAtLabel(at: Date): string {
 </template>
 
 <style scoped>
-/* Above every positioned thing on the page. Without this the timeline's markers (z-index 5 in
-   TimelineChart) paint straight through a dialog that declares none — measured, not guessed. */
+/* Above every positioned thing on the page. Without this the timeline's spans (--z-chart) paint
+   straight through a dialog that declares none — measured, not guessed. */
 .settings-overlay {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: var(--z-overlay);
   background-color: rgb(0 0 0 / 50%);
 }
 
@@ -253,7 +253,7 @@ function readAtLabel(at: Date): string {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 81;
+  z-index: var(--z-dialog);
   width: min(26rem, calc(100vw - 2rem));
   max-height: calc(100vh - 4rem);
   overflow-y: auto;

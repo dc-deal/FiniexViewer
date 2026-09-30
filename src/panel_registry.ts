@@ -1,7 +1,6 @@
 import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
-import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
 import ConfigPanel from '@/components/runs/ConfigPanel.vue'
@@ -31,7 +30,6 @@ const PANELS: PanelDescriptor[] = [
     icon: '📊',
     component: ExecutivePanel,
     source: 'runSummary',
-    groups: 'all',
     defaultOpen: true,
   },
   {
@@ -42,17 +40,6 @@ const PANELS: PanelDescriptor[] = [
     icon: '⚠️',
     component: WarningsErrorsPanel,
     source: 'warningsErrors',
-    groups: 'all',
-    defaultOpen: true,
-  },
-  {
-    // The breakdown run-summary cannot give: its currency rows are already summed over the units
-    id: 'portfolio',
-    title: 'Portfolio',
-    icon: '💼',
-    component: PortfolioPanel,
-    source: 'portfolio',
-    groups: 'all',
     defaultOpen: true,
   },
   {
@@ -64,7 +51,6 @@ const PANELS: PanelDescriptor[] = [
     icon: '🗂️',
     component: ScenarioRosterPanel,
     source: 'scenarioRoster',
-    groups: 'simulation',
     defaultOpen: false,
   },
   {
@@ -74,8 +60,7 @@ const PANELS: PanelDescriptor[] = [
     title: 'Trade History',
     icon: '📒',
     component: TradeHistoryPanel,
-    source: 'tradeView',
-    groups: 'all',
+    source: 'tradeHistory',
     defaultOpen: false,
   },
   {
@@ -87,7 +72,6 @@ const PANELS: PanelDescriptor[] = [
     icon: '📅',
     component: BookingPeriodsPanel,
     source: 'bookingPeriods',
-    groups: 'all',
     defaultOpen: true,
   },
   {
@@ -98,7 +82,6 @@ const PANELS: PanelDescriptor[] = [
     icon: '⚙',
     component: ConfigPanel,
     source: 'config',
-    groups: 'all',
     defaultOpen: false,
   },
   {
@@ -109,7 +92,6 @@ const PANELS: PanelDescriptor[] = [
     icon: '🏷',
     component: RunHeaderPanel,
     source: 'runInfo',
-    groups: 'all',
     // Provenance rather than a headline: which artifact am I looking at. Folded by default —
     // the reader who needs it opens it, and the one who never does hides it from the bar.
     defaultOpen: false,
@@ -122,7 +104,6 @@ const PANELS: PanelDescriptor[] = [
     // its own source, not the shared summary: the store answers null where neither half of this
     // panel has anything to say, and PanelColumn then drops it like any absent section
     source: 'feedHealth',
-    groups: 'all',
     defaultOpen: false,
   },
 ]

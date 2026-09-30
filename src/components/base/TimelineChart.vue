@@ -18,7 +18,13 @@ const props = withDefaults(defineProps<{
   to: number
   /** Turns a position into an axis label — the caller owns what the scale means. */
   format: (value: number) => string
-  /** Said out loud under the axis, because a scale whose meaning is implicit gets misread. */
+  /**
+   * The scale's meaning in two or three words, ALWAYS visible, in the room left of the axis that
+   * would otherwise be empty. A note only a hover reveals is a note nobody reads: the reader who
+   * needs it is exactly the one who does not know it is there.
+   */
+  scaleLabel?: string
+  /** The whole of it, one hover away — what a short label cannot carry. */
   scaleNote?: string
   /**
    * Remove a stretch where NOTHING is drawn once it exceeds this length, and mark the removal.
@@ -45,11 +51,21 @@ const props = withDefaults(defineProps<{
    */
   formatBreaks?: (count: number, total: number) => string
   ticks?: number
+  /**
+   * Mark ROUND MOMENTS rather than equal divisions — midnight, six o'clock, the hour.
+   *
+   * Opt-in, and it has to be: this chart's scale is a NUMBER, and only its caller knows that the
+   * number is a millisecond. Assuming it made an axis of 0..100 fall back to its two ends, which
+   * the suite caught. A caller that passes something else keeps equal divisions.
+   */
+  naturalTime?: boolean
   /** Width of the lane-label column, in rem. */
   labelWidth?: number
 }>(), {
   ticks: 5,
+  naturalTime: false,
   labelWidth: 15,
+  scaleLabel: '',
   scaleNote: '',
   collapseGapsLongerThan: 0,
   formatGap: (length: number) => String(length),
@@ -192,12 +208,35 @@ const axisTicks = computed<Tick[]>(() => {
       { at: 100, label: props.format(props.to), edge: 'end' },
     ]
   }
-  if (!axis.value.breaks.length) {
+  if (!axis.value.breaks.length && !props.naturalTime) {
     const count = Math.max(2, props.ticks)
     return Array.from({ length: count }, (_, i) => {
       const value = props.from + (length.value * i) / (count - 1)
       return { at: (i / (count - 1)) * 100, label: props.format(value), edge: 'mid' }
     })
+  }
+  if (!axis.value.breaks.length) {
+    const step = naturalStep(length.value, Math.max(2, props.ticks))
+    // Marks on ROUND moments — midnight, six o'clock — rather than on equal divisions of the span.
+    // Divided evenly, a four-tick axis over two days reads `23:59:40Z`, which is a quarter of the
+    // span and nothing else; the stems under such labels mark nothing a reader recognises. On a
+    // natural step they mark the day and the hour, which is what the eye is looking for.
+    const marks: { at: number, label: string, edge: string }[] = []
+    for (let value = Math.ceil(props.from / step) * step; value <= props.to; value += step) {
+      marks.push({
+        at: ((value - props.from) / length.value) * 100,
+        label: props.format(value),
+        edge: 'mid',
+      })
+    }
+    // a span shorter than one step has no round moment inside it, so it keeps its own two ends
+    if (marks.length < 2) {
+      return [
+        { at: 0, label: props.format(props.from), edge: 'start' },
+        { at: 100, label: props.format(props.to), edge: 'end' },
+      ]
+    }
+    return marks
   }
   // one label per kept piece, centred on it: its two edges are what a reader wants, and they fit
   // in the width the piece actually has only when they share a label
@@ -209,6 +248,27 @@ const axisTicks = computed<Tick[]>(() => {
     edge: 'mid',
   }))
 })
+
+/**
+ * The steps an axis of TIME is allowed to mark, coarsest first once it fits.
+ *
+ * Not arbitrary: each is a unit a reader already counts in. A step of 6 h puts a mark at every
+ * midnight, six, noon and eighteen — the moments a trading day is read by — where 5 h would drift
+ * through the day and mark nothing twice the same.
+ */
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+const STEPS = [
+  MINUTE, 2 * MINUTE, 5 * MINUTE, 10 * MINUTE, 15 * MINUTE, 30 * MINUTE,
+  HOUR, 2 * HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR,
+  DAY, 2 * DAY, 7 * DAY, 14 * DAY, 28 * DAY, 91 * DAY, 365 * DAY,
+]
+
+/** The smallest step that keeps the marks at or under the count asked for. */
+function naturalStep(span: number, count: number): number {
+  return STEPS.find(step => span / step <= count) ?? STEPS[STEPS.length - 1]!
+}
 
 /**
  * How close two labels may sit, in percent of the width, before the second moves to the row below.
@@ -264,7 +324,7 @@ const drawn = computed(() =>
 <template>
   <div v-if="drawn.length" class="timeline" :style="{ '--label-width': `${labelWidth}rem` }">
     <div class="axis-row">
-      <span class="axis-spacer" />
+      <span class="axis-spacer" :title="scaleNote">{{ scaleLabel }}</span>
       <div class="axis" :title="scaleNote">
         <span
           v-for="tick in placedTicks"
@@ -356,6 +416,17 @@ const drawn = computed(() =>
 .axis-spacer,
 .lane-label {
   flex: 0 0 var(--label-width);
+}
+
+/* the scale's name, in the same ink as the stamps it belongs to, so the two read as one axis */
+.axis-spacer {
+  align-self: flex-start;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lane-label {
@@ -475,7 +546,7 @@ const drawn = computed(() =>
 
 .tooltip {
   position: absolute;
-  z-index: 5;
+  z-index: var(--z-chart);
   transform: translateX(-50%);
   min-width: 15rem;
   padding: var(--space-sm);

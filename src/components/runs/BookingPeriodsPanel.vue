@@ -25,14 +25,11 @@ interface Verdict {
  * number: the run reported no figure in this currency, so nothing was compared — and it is shown
  * as loudly as a failure, because a tick there would claim evidence that does not exist.
  */
+/**
+ * Only the two states worth saying out loud. A reconciliation that PASSED renders nothing at all —
+ * see the note in the template — so it needs no wording, no tone and no glyph.
+ */
 const verdict = computed<Verdict>(() => {
-  if (props.model.reconciles === true) {
-    return {
-      tone: 'agrees',
-      mark: '✓',
-      text: t('Every trade record is accounted for by the periods below'),
-    }
-  }
   if (props.model.reconciles === false) {
     return {
       tone: 'disagrees',
@@ -95,9 +92,18 @@ const otherCurrencies = computed(() =>
 <template>
   <div class="booking-periods">
     <!-- The check comes first: it decides whether the rows below may be read as complete. -->
-    <!-- The explanation is on the TITLE, not on the page. What the check proves is a caveat a
-         reader wants once, and three lines of prose on every run is three lines of noise. -->
-    <div class="verdict" :class="verdict.tone" :title="t('This compares completeness, not arithmetic: both figures descend from one value, so a wrong P&L moves them together and the check stays green.')">
+    <!--
+      A CHECK THAT PASSED SAYS NOTHING.
+
+      This reconciliation is ours, not the reader's: nobody opens a panel of booking periods asking
+      whether our own arithmetic adds up. Where it fails, or where it could not run, that is the
+      first thing they need — loud, framed, with both sides printed. Where it passes, the correct
+      output is silence, and the periods below get the room.
+
+      The explanation stays on the TITLE rather than the page: what the check proves is a caveat a
+      reader wants once, and three lines of prose on every run is three lines of noise.
+    -->
+    <div v-if="model.reconciles !== true" class="verdict" :class="verdict.tone" :title="t('This compares completeness, not arithmetic: both figures descend from one value, so a wrong P&L moves them together and the check stays green.')">
       <span class="verdict-mark">{{ verdict.mark }}</span>
       <div class="verdict-body">
         <p class="verdict-text">{{ verdict.text }}</p>
@@ -131,17 +137,18 @@ const otherCurrencies = computed(() =>
       <BookingPeriodTimeline
         v-model:order="laneOrder"
         :periods="orderedPeriods"
-        :key-fields="model.key"
+        :key-fields="model.keys.periods"
       />
-      <BookingPeriodTable :periods="orderedPeriods" :key-fields="model.key" />
+      <BookingPeriodTable :periods="orderedPeriods" :key-fields="model.keys.periods" />
     </template>
 
-    <!-- both figures are the RUN's: the deepest drawdown is taken across every period and the
-         final equity is the account's, so neither has a per-scenario version to show -->
+    <!-- both figures are the RUN's: the deepest drawdown is taken across every period, and the
+         closing equity is the SUM over the units — it was the last period row's own figure, one
+         account of several, printed as though it were the run's -->
     <p class="footnote">
       <span v-if="narrowed" class="scope">{{ t('whole run') }}</span>
       {{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }} ·
-      {{ t('Final equity') }}: {{ amount(model.final_equity, model.currency) }}
+      {{ t('Final equity, all accounts') }}: {{ amount(model.total_final_equity, model.currency) }}
       <template v-if="otherCurrencies.length">
         &nbsp;|&nbsp; {{ t('Other account currencies') }}: {{ otherCurrencies.join(', ') }}
       </template>

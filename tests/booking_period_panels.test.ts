@@ -64,8 +64,9 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
    * no per-unit version of the check. Left unlabelled above one lane it claims to be about that
    * lane, which is exactly the misreading the narrowing exists to prevent.
    */
+  // only where there IS a verdict: a check that passed renders nothing, so nothing can mislead
   it('keeps the verdict run-wide, and says so', () => {
-    const wrapper = mountNarrowed(MIXED, ['unit_a'])
+    const wrapper = mountNarrowed({ ...MIXED, reconciles: false }, ['unit_a'])
     expect(wrapper.find('.verdict-scope').text()).toContain('whole run')
   })
 
@@ -99,10 +100,21 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
 })
 
 describe('BookingPeriodsPanel — the reconciliation', () => {
-  it('confirms completeness when the periods account for the run', () => {
+  /**
+   * A CHECK THAT PASSED SAYS NOTHING. The reconciliation is ours, not the reader's: nobody opens a
+   * panel of booking periods asking whether our own arithmetic adds up, and a box is a device for
+   * forcing attention that a passing check has no claim on. Where it fails — or could not run —
+   * that is the first thing they need.
+   */
+  it('says nothing at all when the periods account for the run', () => {
     const wrapper = mountPanel(report({ reconciles: true }))
-    expect(wrapper.find('.verdict').classes()).toContain('agrees')
-    expect(wrapper.text()).toContain('accounted for')
+    expect(wrapper.find('.verdict').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('accounted for')
+  })
+
+  it('still speaks where the check did not run', () => {
+    const wrapper = mountPanel(report({ reconciles: null }))
+    expect(wrapper.find('.verdict').classes()).toContain('unchecked')
   })
 
   it('calls a disagreement a finding and shows both figures', () => {
@@ -129,9 +141,17 @@ describe('BookingPeriodsPanel — the reconciliation', () => {
     expect(unchecked.find('.verdict-mark').classes()).toEqual(failed.find('.verdict-mark').classes())
   })
 
-  it('says what the run reported, or that it reported nothing', () => {
-    expect(mountPanel(report({ run_net_pnl: null })).text()).toContain('nothing reported')
-    expect(mountPanel(report({ run_net_pnl: -18373.66 })).text()).toContain('-18,373.66')
+  /**
+   * The two sides are printed only where they DISAGREE. Where the check passes they are equal by
+   * definition and both figures already stand in the Executive Summary above, so repeating them
+   * teaches a reader nothing and costs them a line — and the check's own caveat says it compares
+   * completeness rather than arithmetic, so a green one carries no figure worth reading twice.
+   */
+  it('says what the run reported, or that it reported nothing — where they disagree', () => {
+    expect(mountPanel(report({ reconciles: false, run_net_pnl: null })).text())
+      .toContain('nothing reported')
+    expect(mountPanel(report({ reconciles: false, run_net_pnl: -18373.66 })).text())
+      .toContain('-18,373.66')
   })
 
   /**
@@ -139,7 +159,7 @@ describe('BookingPeriodsPanel — the reconciliation', () => {
    * reader wants once, and three lines of prose on every run is three lines of noise.
    */
   it('keeps what the check proves on the verdict, not in the page', () => {
-    const wrapper = mountPanel(report({ reconciles: true }))
+    const wrapper = mountPanel(report({ reconciles: false }))
     expect(wrapper.text()).not.toContain('completeness, not arithmetic')
     expect(wrapper.find('.verdict').attributes('title')).toContain('completeness, not arithmetic')
   })
@@ -178,6 +198,33 @@ describe('BookingPeriodTable', () => {
     expect(negative).toBe(positive)
   })
 
+  /**
+   * The balance the period OPENED with — stamped at the source since contract 17, because
+   * `final_equity - net_pnl` is not it: `net_pnl` is realised while equity also values what is
+   * still open. `null` on a period recorded before the field existed, which is an absence and not
+   * an opening of zero; measured, 4 of 8 deployment periods have none.
+   */
+  it('states what the period opened with, and says so where nothing was recorded', () => {
+    expect(mountTable([period({ opening_equity: 9_500 })]).text()).toContain('9,500.00')
+    expect(mountTable([period({ opening_equity: null })]).text()).toContain('n/a')
+  })
+
+  /**
+   * Three more columns on a table that already carries fourteen would cost more than they tell,
+   * so the split rides in the title of the figure it adds up to.
+   */
+  it('keeps the fee breakdown one hover from the fee', () => {
+    const wrapper = mountTable([period({
+      total_fees: 14.04, commission_cost: 9.04, swap_cost: 1.0, spread_cost: 4.0,
+    })])
+    // by POSITION, not by "the first cell with a title": four cells carry one now, because at this
+    // width the unit name, both stamps and the equity band all truncate
+    const labels = wrapper.findAll('.record-head > span').map(node => node.text())
+    const fees = wrapper.find('.record-row').findAll(':scope > span')[labels.indexOf('Fees')]!
+    expect(fees.text()).toContain('14.04')
+    expect(fees.attributes('title')).toBe('commission 9.04 · swap 1.00 · spread 4.00')
+  })
+
   it('shows the run column only where the rows span several runs', () => {
     expect(mountTable([period()], false).text()).not.toContain('Run')
     expect(mountTable([period()], true).text()).toContain('Run')
@@ -198,16 +245,16 @@ describe('BookingPeriodTable', () => {
     const wrapper = mountTable([period({
       min_equity: 9_500, max_equity: 10_250, final_equity: 9_875.5,
     })])
-    const headers = wrapper.findAll('thead tr').at(-1)!.findAll('th').map(th => th.text())
+    const headers = wrapper.findAll('.record-head > span').map(node => node.text())
     expect(headers).toContain('Equity band')
     expect(headers).toContain('Final equity')
-    const cells = wrapper.findAll('tbody td').map(td => td.text())
+    const cells = wrapper.find('.record-row').findAll(':scope > span').map(node => node.text())
     expect(cells).toContain('9,500.00 … 10,250.00')
     expect(cells).toContain('9,875.50')
   })
 
   it('groups the columns by the question they answer', () => {
-    const groups = mountTable([period()]).findAll('.group-row th').map(th => th.text())
+    const groups = mountTable([period()]).findAll('.record-bands > span').map(n => n.text())
     expect(groups).toEqual(['', 'Period', 'Result', 'Account'])
   })
 
@@ -221,7 +268,7 @@ describe('BookingPeriodTable', () => {
       period({ unit_name: 'b', net_pnl: 4.2 }),
     ])
     expect(wrapper.find('.periods-summary').text()).toContain('figures in USD')
-    const cells = wrapper.findAll('tbody td').map(td => td.text())
+    const cells = wrapper.find('.record-row').findAll(':scope > span').map(node => node.text())
     expect(cells).toContain('-1.75')
     expect(cells.some(cell => cell.includes('USD'))).toBe(false)
   })
@@ -233,7 +280,8 @@ describe('BookingPeriodTable', () => {
       period({ unit_name: 'b', currency: 'EUR', net_pnl: 4.2 }),
     ])
     expect(wrapper.find('.periods-summary').text()).not.toContain('figures in')
-    const cells = wrapper.findAll('tbody td').map(td => td.text())
+    // both rows, because the point is that TWO currencies stand side by side
+    const cells = wrapper.findAll('.record-row > span').map(node => node.text())
     expect(cells).toContain('-1.75 USD')
     expect(cells).toContain('4.20 EUR')
   })
@@ -250,6 +298,16 @@ describe('BookingPeriodTimeline', () => {
       period({ unit_name: 'beta' }),
     ])
     expect(wrapper.findAll('.lane-row')).toHaveLength(2)
+  })
+
+  /**
+   * The axis is a CLOCK, not a duration, and the glossary is explicit that `market clock` is not a
+   * term: a decision reads the *canonical clock*, and *tick timespan* is the market time a unit
+   * processed. Pinned here because the wrong one of those two reads perfectly plausibly.
+   */
+  it('names the axis with the clock the run actually read', () => {
+    const wrapper = mountTimeline([period({ unit_name: 'alpha' })])
+    expect(wrapper.text()).toContain('canonical clock')
   })
 
   it('colours by polarity and leaves a flat result neutral', () => {

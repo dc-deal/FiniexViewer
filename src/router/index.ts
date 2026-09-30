@@ -1,9 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ChartView from '@/views/ChartView.vue'
-import RunsView from '@/views/RunsView.vue'
-import DeploymentsView from '@/views/DeploymentsView.vue'
-import AboutView from '@/views/AboutView.vue'
 
+/**
+ * Every view is loaded on demand.
+ *
+ * Statically imported, the whole application arrived in one file — 592 kB before this, and a
+ * reader opening the run list paid for the charting library they had not asked for. A route
+ * component is the natural seam: Vite gives each one its own chunk and the browser fetches it when
+ * the route is entered.
+ */
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -14,22 +18,22 @@ const router = createRouter({
     {
       path: '/viewer',
       name: 'viewer',
-      component: ChartView
+      component: () => import('@/views/ChartView.vue')
     },
     {
       path: '/runs',
       name: 'runs',
-      component: RunsView
+      component: () => import('@/views/RunsView.vue')
     },
     {
       path: '/deployments',
       name: 'deployments',
-      component: DeploymentsView
+      component: () => import('@/views/DeploymentsView.vue')
     },
     {
       path: '/about',
       name: 'about',
-      component: AboutView
+      component: () => import('@/views/AboutView.vue')
     }
   ]
 })

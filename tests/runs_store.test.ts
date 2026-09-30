@@ -24,6 +24,7 @@ function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
     error_count: null,
     warning_count: null,
     log_warning_count: null,
+    tick_timespan_seconds: null,
     start_time: '2026-06-15T12:00:00+00:00',
     parent_id: null,
     parent_kind: null,
@@ -84,6 +85,8 @@ const SUMMARY: RunSummary = {
   disturbance_stale_seconds: 0,
   disturbance_source_count: 0,
   disturbance_stress_injected: 0,
+  tick_timespan_seconds: null,
+  tick_timespan_total_seconds: null,
 }
 
 

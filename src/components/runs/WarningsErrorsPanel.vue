@@ -43,6 +43,29 @@ const isClean = computed(() => !errors.value.length && !warnings.value.length)
 /** '' on artifacts written before the grading existed — an absence, never rendered as a state. */
 const outcomeRecorded = computed(() => props.model.outcome.run_outcome !== '')
 
+/**
+ * What the unit counts SAY, rather than a fraction beside a verb. `0 / 8 units failed` was read as
+ * "8 units failed" — the two numbers and the word sat in one line and the eye took the nearest
+ * pair.
+ */
+const unitLine = computed(() => {
+  const { failed_count: failed, total_units: total } = props.model.outcome
+  return `${failed} ${t('of')} ${plural(total, t('unit'), t('units'))} ${t('failed')}`
+})
+
+/**
+ * Nothing wrong, so nothing to frame.
+ *
+ * A box is a device for forcing attention, and a healthy run has no claim on any. What survives is
+ * the GRADE, in one quiet line: `run_outcome` is the backend's own verdict and is not readable off
+ * the screen — a run can be graded `finished_with_errors` while this panel shows only warnings,
+ * because the errors may sit in a section nobody rendered. That no UNIT failed, by contrast, is
+ * visible already: there is no error row. So the count appears only when it is not zero.
+ */
+const quiet = computed(() =>
+  props.model.outcome.run_outcome === 'success' && props.model.outcome.failed_count === 0
+)
+
 const outcomeMark = computed(() => {
   if (props.model.outcome.run_outcome === 'failed') return '✖'
   if (props.model.outcome.run_outcome === 'success') return '✓'
@@ -68,14 +91,17 @@ function hasDetail(row: UnitErrorRow): boolean {
 <template>
   <div class="warnings-panel">
     <!-- the outcome counts every unit the run attempted, so it stays the RUN's under a narrowing -->
-    <div class="outcome" :class="model.outcome.run_outcome">
+    <div class="outcome" :class="[model.outcome.run_outcome, { quiet }]">
       <span v-if="narrowed" class="scope">{{ t('whole run') }}</span>
       <span v-if="outcomeRecorded" class="outcome-verdict">
         {{ outcomeMark }} {{ model.outcome.run_outcome }}
       </span>
       <span v-else class="outcome-absent">{{ t('no outcome recorded') }}</span>
-      <span class="outcome-units">
-        {{ model.outcome.failed_count }} / {{ model.outcome.total_units }} {{ t('units failed') }}
+      <!-- `0 / 8 units failed` put "8 units failed" side by side and read as exactly that. The
+           sentence now says which of the two cases it is instead of leaving the reader to parse a
+           fraction. -->
+      <span v-if="model.outcome.failed_count > 0" class="outcome-units has-failures">
+        {{ unitLine }}
       </span>
       <span v-if="model.outcome.first_failure_name" class="outcome-first">
         {{ t('first failure:') }} {{ model.outcome.first_failure_name }}
@@ -155,6 +181,7 @@ function hasDetail(row: UnitErrorRow): boolean {
   background-color: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
   border-radius: 4px;
+  /* see `quiet` in the script: a healthy run keeps the grade and loses the frame */
   padding: var(--space-sm) var(--space-md);
 }
 
@@ -187,6 +214,19 @@ function hasDetail(row: UnitErrorRow): boolean {
 .outcome-units,
 .outcome-first {
   color: var(--color-text-secondary);
+}
+
+/* nothing wrong, nothing framed */
+.outcome.quiet {
+  background: none;
+  border-color: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* a unit that failed is not plain structure — it is the reason somebody opened this panel */
+.outcome-units.has-failures {
+  color: var(--color-error);
 }
 
 .emergency {

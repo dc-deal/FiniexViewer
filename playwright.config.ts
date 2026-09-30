@@ -36,6 +36,20 @@ export default defineConfig({
    */
   retries: 0,
 
+  /**
+   * ONE worker, and it is the FASTER of the two. Measured 2026-09-30 over the whole suite:
+   *
+   *     8 workers   ~37 s   and a different spec red on each run
+   *     1 worker     20 s   and green three times over
+   *
+   * The reason parallelism loses here is the shape of this setup: every worker opens its own
+   * context in the SAME browser over ONE CDP connection, against one dev server that transforms
+   * modules on demand. They contend rather than overlap. With `retries: 0` the contention surfaces
+   * as a red spec, which reads as a defect and costs an investigation each time — the exact failure
+   * the perf spec was already excluded from the ordinary run to avoid.
+   */
+  workers: 1,
+
   // a trace file and an HTML report are useful in front of a person and useless in a log
   reporter: process.env['CI'] ? 'list' : [['list'], ['html', { open: 'never' }]],
 

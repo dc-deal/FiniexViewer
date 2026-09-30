@@ -1,41 +1,74 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import HoverCard from '@/components/base/HoverCard.vue'
+import RecordList from '@/components/base/RecordList.vue'
 import {
-  amount, magnitude, numberOrNa, percent, signClass, utcInstant,
+  amount, magnitude, numberOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import { useDisplaySettings } from '@/composables/use_display_settings'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { rowKey } from '@/api/list_key'
-import type { TradeRow, TradeView } from '@/types/api/report_types'
+import type { ListCard, ListColumn } from '@/types/list_types'
+import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
 
 const props = defineProps<{
-  model: TradeView
+  model: TradeHistoryReport
 }>()
 
-const history = computed(() => props.model.history)
+/**
+ * PROPORTIONAL tracks, not content-sized ones, and this is load-bearing rather than a preference.
+ *
+ * While every group is CLOSED the first five columns hold no cells at all — the group heading
+ * spans them — so an `auto` or `max-content` track is sized from nothing and then re-sized the
+ * moment a group opens, sliding every heading sideways. That was a real defect, fixed once with
+ * `table-layout: fixed` plus eight percentage widths; these are those same eight proportions,
+ * carried into the track declaration that now prevents it.
+ *
+ * `fr` rather than `%` because the grid's gaps are subtracted first, which percentages ignore and
+ * then overflow. `minmax(0, …)` because a bare `Nfr` keeps an automatic MINIMUM, so one long cell
+ * would widen its column after all.
+ */
+const columns: ListColumn[] = [
+  // 12 rather than the table's 9: the old cells OVERFLOWED their column, so a symbol always showed
+  // in full; a grid cell truncates instead, and 9 % cut `ETHUSD` to `ETHU…`. The three points come
+  // from the two excursion columns, which had room to spare for an eight-character amount.
+  { label: t('Symbol'), width: 'minmax(0, 12fr)', rank: 1 },
+  { label: t('Dir'), width: 'minmax(0, 7fr)', rank: 2 },
+  { label: t('Lots'), width: 'minmax(0, 7fr)', figure: true, rank: 3 },
+  // rank 1 with the symbol, and the two together are what IDENTIFIES a trade to a reader: a
+  // scenario trades one symbol many times, so the moment is what tells two rows apart
+  { label: t('Opened'), width: 'minmax(0, 19fr)', rank: 1 },
+  { label: t('Held'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
+  { label: t('Worst against'), width: 'minmax(0, 16fr)', figure: true, rank: 4 },
+  { label: t('Best in favour'), width: 'minmax(0, 16fr)', figure: true, rank: 4 },
+  /*
+   * LAST, where it was sixth, and the move is structural rather than cosmetic.
+   *
+   * The group heading is three cells over eight tracks — the name over five, the net over one, the
+   * count and fees over the last two. That arithmetic is fixed at eight, and a rank that gives up
+   * a column leaves it spanning tracks the grid no longer has. Counted from the END it holds at
+   * every width: the name takes everything but the last track, the net takes the last one.
+   *
+   * Reading order gains by it besides. Opened · Held · worst · best · net is the life of the trade
+   * in order, and the result of it now closes the line instead of sitting in the middle.
+   */
+  { label: t('Net P&L'), width: 'minmax(0, 15fr)', figure: true, rank: 1 },
+]
 
 /**
- * The order funnel, which belongs here rather than in a panel of its own: this view is about
- * execution, and what was ATTEMPTED is the other half of what was closed. Measured on a real run:
- * 566 orders sent, 22 executed, 544 rejected — the trade list below shows eleven positions and
- * says nothing about the 96 % that never became one.
+ * The fills of one trade — the executions that opened and closed it. Presented the way the
+ * backend's own printout does, with the label inside the cell, so the sub-list needs no headings
+ * of its own over two lines.
  */
-const funnel = computed(() => {
-  const summary = props.model.summary
-  if (!summary) return null
-  const rate = summary.orders_sent > 0
-    ? summary.orders_executed / summary.orders_sent
-    : null
-  return {
-    sent: summary.orders_sent,
-    executed: summary.orders_executed,
-    rejected: summary.orders_rejected,
-    slTp: summary.sl_tp_triggered,
-    rate,
-  }
-})
+const fillColumns: ListColumn[] = [
+  { label: '', width: 'minmax(0, 10fr)' },
+  { label: '', width: 'minmax(0, 24fr)' },
+  { label: '', width: 'minmax(0, 10fr)' },
+  { label: '', width: 'minmax(0, 24fr)' },
+  { label: '', width: 'minmax(0, 15fr)' },
+  { label: '', width: 'minmax(0, 14fr)' },
+  { label: '', width: 'minmax(0, 7fr)' },
+]
 
 const display = useDisplaySettings()
 
@@ -68,8 +101,8 @@ const narrowed = computed(() => narrowing.units.value.length > 0)
  */
 const selected = computed(() => {
   const units = narrowing.units.value
-  if (!units.length) return history.value.trades
-  return history.value.trades.filter(trade => showsUnit(units, trade.scenario_name))
+  if (!units.length) return props.model.trades
+  return props.model.trades.filter(trade => showsUnit(units, trade.scenario_name))
 })
 
 const shown = computed(() => selected.value.slice(0, rowCap.value))
@@ -80,7 +113,7 @@ const hidden = computed(() => Math.max(0, selected.value.length - rowCap.value))
  * response carried, so it stays the figure for the whole run — but under a narrowing it would
  * name a number the rows below have nothing to do with.
  */
-const total = computed(() => narrowed.value ? selected.value.length : history.value.count)
+const total = computed(() => narrowed.value ? selected.value.length : props.model.count)
 
 /**
  * The trades grouped under the unit that produced them, each group carrying its own totals.
@@ -96,43 +129,44 @@ const total = computed(() => narrowed.value ? selected.value.length : history.va
  * (`pos_usdjpy_1` three times in one): a partial close books several records of ONE position, and
  * two scenarios of the same symbol both count from `pos_<symbol>_1`.
  */
-const tradeKey = computed(() => history.value.keys.trades)
+const tradeKey = computed(() => props.model.keys.trades)
 
-const groups = computed(() => {
-  /**
-   * Totals are declared unique by (scenario_name, currency), so a scenario that traded in two
-   * currencies has TWO of them. Keying this map on the name alone let the second overwrite the
-   * first in silence. No run does it today — but the declared key says it is possible, and the
-   * group header shows one figure, so a scenario with more than one total gets none and falls back
-   * to its row count rather than being handed an arbitrary half.
-   */
-  const byName = new Map<string, typeof history.value.scenario_totals>()
-  for (const total of history.value.scenario_totals) {
+/**
+ * A group heading's figures are the ones the API SERVED for that group, looked up by its key —
+ * never folded from the rows. That is not fastidiousness: the backend's own reductions state that
+ * a drawdown must come from the row that won it, a rate is rebuilt from summed components rather
+ * than averaged, and a streak can cross a boundary. Folding here would be a second source of truth
+ * that disagrees with theirs in exactly the cases nobody checks.
+ *
+ * Totals are declared unique by (scenario_name, currency), so a scenario that traded in two
+ * currencies has TWO of them. Keying this map on the name alone let the second overwrite the first
+ * in silence. No run does it today — but the declared key says it is possible, and the heading
+ * shows one figure, so a scenario with more than one total gets NONE and falls back to its row
+ * count rather than being handed an arbitrary half.
+ */
+const totals = computed(() => {
+  const byName = new Map<string, typeof props.model.scenario_totals>()
+  for (const total of props.model.scenario_totals) {
     const bucket = byName.get(total.scenario_name) ?? []
     bucket.push(total)
     byName.set(total.scenario_name, bucket)
   }
-  const totals = new Map(
+  return new Map(
     [...byName.entries()]
       .filter(([, bucket]) => bucket.length === 1)
       .map(([name, bucket]) => [name, bucket[0]!])
   )
-  const order: string[] = []
-  const byUnit = new Map<string, TradeRow[]>()
-  for (const trade of shown.value) {
-    if (!byUnit.has(trade.scenario_name)) {
-      byUnit.set(trade.scenario_name, [])
-      order.push(trade.scenario_name)
-    }
-    byUnit.get(trade.scenario_name)!.push(trade)
-  }
-  return order.map(name => ({
-    name,
-    trades: byUnit.get(name) ?? [],
-    // absent where a unit traded but reports no total — shown as a count rather than invented
-    total: totals.get(name) ?? null,
-  }))
 })
+
+function totalOf(name: string) {
+  return totals.value.get(name) ?? null
+}
+
+/**
+ * How many units the drawn rows cover. The list itself does the partitioning now, so this counts
+ * the distinct names rather than building a second set of groups beside the one on screen.
+ */
+const unitCount = computed(() => new Set(shown.value.map(trade => trade.scenario_name)).size)
 
 /**
  * Past the scenario threshold the individual unit recedes and its summary becomes the primary
@@ -141,7 +175,7 @@ const groups = computed(() => {
  *
  * Nothing is hidden silently — the header says how many trades are behind it, and it is one click.
  */
-const summarised = computed(() => groups.value.length >= display.value.scenarioThreshold)
+const summarised = computed(() => unitCount.value >= display.value.scenarioThreshold)
 
 /** A unit the reader has opened or closed by hand, which outranks the threshold for that unit. */
 const overrides = ref(new Map<string, boolean>())
@@ -154,7 +188,7 @@ const overrides = ref(new Map<string, boolean>())
  * reader's choices whenever anything upstream re-evaluates, and the group they just opened closes
  * under them. The unit suite could not see it: there the model is a stable object.
  */
-watch(() => props.model.history.run_id, () => overrides.value.clear())
+watch(() => props.model.run_id, () => overrides.value.clear())
 
 function isExpanded(name: string): boolean {
   return overrides.value.get(name) ?? !summarised.value
@@ -162,6 +196,59 @@ function isExpanded(name: string): boolean {
 
 function toggleGroup(name: string): void {
   overrides.value.set(name, !isExpanded(name))
+}
+
+/**
+ * One execution, with the leg it came from. The leg is response STRUCTURE — which array held it —
+ * not a value we worked out.
+ */
+interface FillRow {
+  leg: string
+  execution: TradeExecution
+}
+
+/**
+ * The fills a reader has opened, by the trade's own key. Collapsed by default: measured on a real
+ * run, every trade has one entry fill and one exit fill, so showing them always would treble the
+ * list for two lines that matter on the 61 trades of 85 whose entry is SHARED with another trade.
+ */
+const openFills = ref(new Set<string>())
+
+watch(() => props.model.run_id, () => openFills.value.clear())
+
+function toggleFills(trade: TradeRow): void {
+  const key = rowKey(trade, tradeKey.value)
+  const open = new Set(openFills.value)
+  if (!open.delete(key)) open.add(key)
+  openFills.value = open
+}
+
+function showsFills(trade: TradeRow): boolean {
+  return openFills.value.has(rowKey(trade, tradeKey.value))
+}
+
+function fillsOf(trade: TradeRow): FillRow[] {
+  return [
+    ...trade.entry_executions.map(execution => ({ leg: t('in'), execution })),
+    ...trade.exit_executions.map(execution => ({ leg: t('out'), execution })),
+  ]
+}
+
+/**
+ * What this trade took of a fill it shares with others — the `shared(Nx)` line of the backend's own
+ * printout. All three figures are served: `lots` on the trade, `volume` and `shared_by` on the
+ * execution.
+ *
+ * Gated on `shared_by`, not on a volume comparison. The count is the backend's statement that the
+ * fill belongs to several trades; comparing the two volumes would be us inferring the same thing,
+ * and it would also be blind in the other direction — a fill can be shared without this trade's
+ * share differing from the whole of it in any way we could see.
+ */
+function shareOf(trade: TradeRow, fill: FillRow): string {
+  const shared = fill.execution.shared_by
+  if (shared <= 1) return ''
+  return `${trade.lots} ${t('of')} ${fill.execution.volume} · `
+    + `${t('shared by')} ${plural(shared, t('trade'), t('trades'))}`
 }
 
 /** Seconds as the operator reads a holding period. */
@@ -201,8 +288,10 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
     },
     {
       label: t('Slippage'),
+      // the exit half is absent on a quarter of the trades in this archive — stated as such rather
+      // than as a zero, and never assumed to be a number
       value: `${t('in')} ${trade.entry_slippage.toFixed(4)} · `
-        + `${t('out')} ${trade.exit_slippage.toFixed(4)}`,
+        + `${t('out')} ${trade.exit_slippage === null ? t('n/a') : trade.exit_slippage.toFixed(4)}`,
     },
     {
       label: t('Worst against'),
@@ -229,69 +318,18 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
   }
   return rows
 }
+
+/** Every trade has a card — there is always more than eight columns can hold. */
+function card(trade: TradeRow): ListCard {
+  return {
+    title: `${trade.scenario_name} · ${trade.direction} ${trade.lots}`,
+    details: details(trade),
+  }
+}
 </script>
 
 <template>
   <div class="trade-history">
-    <!-- what was ATTEMPTED, before what was closed: a low execution rate changes how every figure
-         below it reads, so it comes first rather than sitting in a panel of its own -->
-    <p v-if="funnel" class="funnel">
-      <span class="funnel-label">{{ t('Orders') }}</span>
-      <span class="funnel-value">
-        {{ funnel.executed }}/{{ funnel.sent }} {{ t('executed') }}
-        <template v-if="funnel.rate !== null">({{ percent(funnel.rate) }})</template>
-      </span>
-      <span v-if="funnel.rejected" class="funnel-rejected">
-        {{ funnel.rejected }} {{ t('rejected') }}
-      </span>
-      <span v-if="funnel.slTp" class="funnel-label">
-        {{ funnel.slTp }} {{ t('closed by SL/TP') }}
-      </span>
-      <span v-if="narrowed" class="scope">{{ t('whole run') }}</span>
-    </p>
-
-    <!-- the analytics come per CURRENCY, not per unit: there is no per-scenario version of them to
-         show, so under a narrowing they keep their figures and say whose they are -->
-    <p v-if="narrowed && history.analytics.length" class="scope-line">
-      {{ t('The figures below are the whole run — the trade rows beneath them are not') }}
-    </p>
-
-    <section v-for="stats in history.analytics" :key="stats.currency" class="analytics">
-      <div class="figure">
-        <span class="label">{{ t('Trades') }}</span>
-        <span class="value">{{ stats.trade_count }} · {{ stats.currency }}</span>
-      </div>
-      <div class="figure">
-        <span class="label">{{ t('Net') }}</span>
-        <span class="value" :class="signClass(stats.net_pnl)">
-          {{ amount(stats.net_pnl, stats.currency) }}
-        </span>
-      </div>
-      <div class="figure">
-        <span class="label">{{ t('Expectancy') }}</span>
-        <!-- R-denominated, so it means nothing without a trade that carried a stop -->
-        <span class="value">{{ numberOrNa(stats.expectancy, stats.r_trade_count) }}</span>
-      </div>
-      <div class="figure">
-        <span class="label">{{ t('Mean hold') }}</span>
-        <span class="value">{{ held(stats.avg_trade_duration_s) }}</span>
-      </div>
-      <div class="figure">
-        <span class="label">{{ t('Worst against') }}</span>
-        <span class="value">{{ magnitude(stats.largest_mae, stats.currency) }}</span>
-      </div>
-      <div class="figure">
-        <span class="label">{{ t('Best in favour') }}</span>
-        <span class="value">{{ amount(stats.largest_mfe, stats.currency) }}</span>
-      </div>
-      <div class="figure">
-        <span class="label">{{ t('Longest streak') }}</span>
-        <span class="value">
-          {{ stats.max_consecutive_wins }}W / {{ stats.max_consecutive_losses }}L
-        </span>
-      </div>
-    </section>
-
     <p v-if="hidden" class="notice">
       <span class="mark">⚠</span>
       {{ t('Showing the first') }} {{ rowCap }} {{ t('of') }} {{ total }}
@@ -305,132 +343,97 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
         ? t('The chosen scenarios closed no positions')
         : t('This run closed no positions') }}
     </div>
-    <div v-else class="table-scroll">
-      <table class="kpi-table">
-        <thead>
-          <tr>
-            <th>{{ t('Symbol') }}</th>
-            <th>{{ t('Dir') }}</th>
-            <th>{{ t('Lots') }}</th>
-            <th>{{ t('Opened') }}</th>
-            <th>{{ t('Held') }}</th>
-            <th>{{ t('Net P&L') }}</th>
-            <th>{{ t('Worst against') }}</th>
-            <th>{{ t('Best in favour') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="group in groups" :key="group.name">
-            <!-- the boundary and the summary in one row: it says where a unit's trades begin AND
-                 what they came to, instead of leaving the second half in a detached footer -->
-            <tr
-              class="group"
-              tabindex="0"
-              @click="toggleGroup(group.name)"
-              @keydown.enter.prevent="toggleGroup(group.name)"
-              @keydown.space.prevent="toggleGroup(group.name)"
-            >
-              <!-- five: Symbol · Dir · Lots · Opened · Held. The net then lands UNDER the Net P&L
-                   header and the meta spans the last two. It was six, which made this row nine
-                   columns wide in an eight-column table and stretched it past its own header. -->
-              <td class="text-cell" colspan="5">
-                <span class="group-marker">{{ isExpanded(group.name) ? '▾' : '▸' }}</span>
-                {{ group.name }}
-              </td>
-              <td v-if="group.total" :class="signClass(group.total.net_pnl)">
-                {{ amount(group.total.net_pnl, group.total.currency) }}
-              </td>
-              <td v-else />
-              <td colspan="2" class="group-meta">
-                {{ plural(group.trades.length, t('trade'), t('trades')) }}
-                <template v-if="group.total">
-                  · {{ t('fees') }} {{ amount(group.total.total_fees, group.total.currency) }}
-                </template>
-              </td>
-            </tr>
-            <HoverCard
-              v-for="trade in (isExpanded(group.name) ? group.trades : [])"
-              :key="rowKey(trade, tradeKey)"
-              :title="`${trade.scenario_name} · ${trade.direction} ${trade.lots}`"
-              :details="details(trade)"
-              side="top"
-            >
-              <tr tabindex="0">
-                <td class="text-cell indent">{{ trade.symbol }}</td>
-                <td class="text-cell">{{ trade.direction }}</td>
-                <td>{{ trade.lots }}</td>
-                <td>{{ utcInstant(trade.entry_time) }}</td>
-                <td>{{ held(trade.duration_s) }}</td>
-                <td :class="signClass(trade.net_pnl)">
-                  {{ amount(trade.net_pnl, trade.currency) }}
-                </td>
-                <td>{{ magnitude(trade.mae_pnl, trade.currency) }}</td>
-                <td colspan="2">{{ amount(trade.mfe_pnl, trade.currency) }}</td>
-              </tr>
-            </HoverCard>
+    <RecordList
+      v-else
+      class="trade-list"
+      :rows="shown"
+      :columns="columns"
+      :row-key="trade => rowKey(trade, tradeKey)"
+      :group-by="trade => trade.scenario_name"
+      :is-open="isExpanded"
+      :row-card="card"
+      :shows-children="showsFills"
+      @toggle="toggleGroup"
+      @pick="toggleFills"
+    >
+      <!--
+        The boundary and the summary in one row: it says where a unit's trades begin AND what they
+        came to, instead of leaving the second half in a detached footer. The figures are the API's
+        SERVED `scenario_totals`, looked up by name — and the net still lands under its own heading,
+        so a reader runs down the one column and meets both the trades and their totals.
+      -->
+      <template #group="{ group }">
+        <!-- TWO cells, counted from the end: everything but the last track, then the last track.
+             The old three-cell form was fixed at eight columns and a rank that gives one up would
+             leave it spanning tracks the grid no longer has. The count and the fees ride inside the
+             name — they are a note ABOUT the group, never values of a column. -->
+        <span class="group-name" :title="group.key">
+          <span class="group-marker">{{ group.open ? '▾' : '▸' }}</span>
+          {{ group.key }}
+          <span class="group-meta">
+            {{ plural(group.rows.length, t('trade'), t('trades')) }}
+            <template v-if="totalOf(group.key)">
+              · {{ t('fees') }}
+              {{ amount(totalOf(group.key)!.total_fees, totalOf(group.key)!.currency) }}
+            </template>
+          </span>
+        </span>
+        <span class="group-net" :class="signClass(totalOf(group.key)?.net_pnl ?? 0)">
+          <template v-if="totalOf(group.key)">
+            {{ amount(totalOf(group.key)!.net_pnl, totalOf(group.key)!.currency) }}
           </template>
-        </tbody>
-      </table>
-    </div>
+        </span>
+      </template>
+
+      <!-- the rank on every cell is the one its own column declares, and each of these lists
+           asserts the two agree: the list owns the tracks, this template owns the cells -->
+      <template #default="{ row: trade }">
+        <span :data-rank="1" :title="trade.symbol">{{ trade.symbol }}</span>
+        <span :data-rank="2">{{ trade.direction }}</span>
+        <span :data-rank="3">{{ trade.lots }}</span>
+        <span :data-rank="1">{{ utcInstant(trade.entry_time) }}</span>
+        <span :data-rank="3">{{ held(trade.duration_s) }}</span>
+        <span :data-rank="4">{{ magnitude(trade.mae_pnl, trade.currency) }}</span>
+        <span :data-rank="4">{{ amount(trade.mfe_pnl, trade.currency) }}</span>
+        <span :data-rank="1" :class="signClass(trade.net_pnl)">
+          {{ amount(trade.net_pnl, trade.currency) }}
+        </span>
+      </template>
+
+      <!--
+        The third level: the executions that opened and closed this trade. Laid out the way the
+        backend's own printout does, label inside the cell — so the sub-list needs no headings over
+        two lines, and it is read-only because the in-then-out ORDER is the content.
+      -->
+      <template #children="{ row: trade }">
+        <RecordList
+          class="fill-list"
+          :rows="fillsOf(trade)"
+          :columns="fillColumns"
+          :row-key="fill => `${fill.leg}-${fill.execution.trade_id}`"
+          hide-head
+          inert
+        >
+          <template #default="{ row: fill }">
+            <span class="fill-leg">└─ {{ fill.leg }}</span>
+            <span :title="fill.execution.trade_id">{{ fill.execution.trade_id }}</span>
+            <span>{{ t('vol') }} {{ fill.execution.volume }}</span>
+            <span class="fill-share">{{ shareOf(trade, fill) }}</span>
+            <span :title="String(fill.execution.price)">
+              {{ t('price') }} {{ fill.execution.price }}
+            </span>
+            <span :title="`${fill.execution.fee} ${fill.execution.fee_currency}`">
+              {{ t('fee') }} {{ fill.execution.fee }} {{ fill.execution.fee_currency }}
+            </span>
+            <span>{{ fill.execution.liquidity }}</span>
+          </template>
+        </RecordList>
+      </template>
+    </RecordList>
   </div>
 </template>
 
 <style scoped>
-.funnel {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-md);
-  margin: 0 0 var(--space-sm);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.funnel-label { color: var(--color-text-secondary); }
-.funnel-value { color: var(--color-text-primary); }
-
-/* a rejection is not an error of ours — it is a fact about the run that must not be overlooked */
-.funnel-rejected { color: var(--color-warning); }
-
-/* the scope of a figure, in the annotation role: it marks a boundary between what is narrowed and
-   what is not. Not a warning — nothing here is wrong, it is simply about something wider. */
-.scope {
-  margin-left: auto;
-  padding: 0 var(--space-xs);
-  border: 1px dashed var(--color-annotation);
-  border-radius: 4px;
-  color: var(--color-annotation);
-}
-
-.scope-line {
-  margin: 0 0 var(--space-sm);
-  color: var(--color-annotation);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.analytics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
-}
-
-.figure {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-xs) var(--space-sm);
-  background-color: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.figure .label { color: var(--color-text-secondary); }
-.figure .value { color: var(--color-text-primary); }
-
 .notice {
   margin: 0 0 var(--space-sm);
   padding: var(--space-xs) var(--space-sm);
@@ -444,47 +447,28 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
 
 .mark { margin-right: var(--space-xs); }
 
-.table-scroll { overflow-x: auto; }
-
-.kpi-table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.kpi-table th,
-.kpi-table td {
-  text-align: right;
-  padding: var(--space-xs) var(--space-sm);
-  border-bottom: 1px solid var(--color-border);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
+/* Every cell of this list is a figure or a short word, so none of them wraps: the row stays one
+   line and the columns stay comparable down the page. The tracks are fixed proportions, declared
+   in the script — so a long value is cut rather than allowed to widen its column. */
+.trade-list :deep(.record-row) > span,
+.trade-list :deep(.record-group) > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.kpi-table th {
-  color: var(--color-text-secondary);
-  font-weight: normal;
-}
-
-.text-cell { text-align: left; }
-
-/* the group row carries a unit's name and its totals — separated from the trades under it so it
-   cannot be read as one of them, which is exactly how the old footer went wrong */
-.group td {
-  border-top: 2px solid var(--color-border);
-  padding-top: var(--space-sm);
+/* Counted from the END, and that is what makes the heading survive the ranks: the name takes every
+   track but the last, the net takes the last one. A `span 5` was fixed at eight columns, so a rank
+   that gave one up left it spanning tracks that were no longer there. The Symbol column alone is
+   12 % of the width and cut `ETHUSD_blocks_06` to `ETHU…`, which is why the name spans at all. */
+.group-name {
+  grid-column: 1 / -2;
   color: var(--color-text-primary);
-  background-color: var(--color-bg-elevated);
 }
 
-/* the whole row opens and closes the unit, so it carries the cursor that says so */
-.group {
-  cursor: pointer;
-}
-
-.group:focus-visible {
-  outline: 1px solid var(--color-accent);
-  outline-offset: -1px;
+.group-net {
+  grid-column: -2 / -1;
+  text-align: right;
 }
 
 .group-marker {
@@ -493,10 +477,24 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
   color: var(--color-text-secondary);
 }
 
-.group-meta { color: var(--color-text-secondary); }
+/* the count and the fees are a NOTE about the group, not values of any column — so they read on
+   after the name in the same cell rather than sitting under a heading they have nothing to do with */
+.group-meta {
+  color: var(--color-text-secondary);
+}
 
-/* the trades sit under their group rather than beside it */
-.indent { padding-left: var(--space-lg); }
+/* the fills are a level BELOW the trade, and the indent plus the secondary ink says so without a
+   frame — a box around two lines inside a row is more furniture than information */
+.fill-list :deep(.record-row) {
+  border-bottom: none;
+  color: var(--color-text-secondary);
+}
+
+.fill-leg { color: var(--color-text-secondary); }
+
+/* the share of a shared fill is the one thing here worth noticing, so it is not muted with the
+   rest — this is the `shared(Nx)` case the backend's printout marks */
+.fill-share { color: var(--color-text-primary); }
 
 .hint {
   color: var(--color-text-secondary);

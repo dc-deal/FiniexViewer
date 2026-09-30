@@ -127,6 +127,31 @@ describe('ConfigPanel', () => {
     expect(text).toContain('CORE/rsi')
   })
 
+  /**
+   * The NOTICE carries the finding — that some scenarios ran with something else — and the list is
+   * which ones. Folded, because on a run of forty it pushed the configuration this panel exists to
+   * show off the screen; a native `<details>`, so the keyboard and a screen reader get it for free.
+   */
+  it('folds the list of overriding scenarios but keeps the warning in the open', () => {
+    const moved: RunConfigReport = {
+      ...SIM,
+      config: {
+        scenarios: [
+          { name: 'window_1', strategy_config: { min_confidence: 0.7 } },
+          { name: 'window_2', execution_config: { slippage: 2 } },
+        ],
+      },
+    }
+    const wrapper = mountPanel(moved)
+    expect(wrapper.find('.notice.moved').exists()).toBe(true)
+
+    const disclosure = wrapper.find('details.overrides')
+    expect(disclosure.exists()).toBe(true)
+    expect(disclosure.attributes('open')).toBeUndefined()
+    expect(disclosure.find('summary').text()).toBe('2 scenarios with their own configuration')
+    expect(wrapper.findAll('.override-list li')).toHaveLength(2)
+  })
+
   it('stays silent about overrides where there are none', () => {
     const inherited: RunConfigReport = { ...SIM, config: { scenarios: [{ name: 'a' }] } }
     expect(mountPanel(inherited).find('.notice.moved').exists()).toBe(false)

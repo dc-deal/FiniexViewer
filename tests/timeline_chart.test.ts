@@ -225,3 +225,61 @@ describe('TimelineChart', () => {
     expect(mountChart([]).find('.timeline').exists()).toBe(false)
   })
 })
+
+describe('TimelineChart — an axis of time', () => {
+  const DAY = 86_400_000
+  const FROM = Date.UTC(2025, 9, 13, 0, 0, 0)
+
+  function mountTime(to: number, ticks = 5) {
+    return mount(TimelineChart, {
+      props: {
+        lanes: [{ id: 'a', label: 'a', spans: [{ id: 's', from: FROM, to, label: 'p', tone: 'flat', title: 'p' }] }],
+        from: FROM,
+        to,
+        ticks,
+        naturalTime: true,
+        format: (value: number) => new Date(value).toISOString().slice(0, 16) + 'Z',
+      },
+    })
+  }
+
+  /**
+   * Divided evenly, a four-mark axis over two days lands on `23:59:40Z` — a quarter of the span and
+   * nothing a reader recognises, which makes the stem under it mark nothing. On a natural step the
+   * marks are midnights and hours.
+   */
+  it('marks round moments rather than equal divisions', () => {
+    const labels = mountTime(FROM + 3 * DAY).findAll('.tick').map(node => node.text())
+    expect(labels.every(label => label.endsWith(':00Z'))).toBe(true)
+    expect(labels.some(label => label.endsWith('T00:00Z'))).toBe(true)
+  })
+
+  it('takes a finer step for a shorter span', () => {
+    const labels = mountTime(FROM + 6 * 3_600_000).findAll('.tick').map(node => node.text())
+    expect(labels.length).toBeGreaterThan(2)
+    expect(labels.every(label => label.endsWith(':00Z'))).toBe(true)
+  })
+
+  /**
+   * A span with no round moment inside it keeps its own two ends — an axis with one mark says less
+   * than an axis with none.
+   */
+  it('keeps its own ends where no round moment falls inside', () => {
+    const labels = mountTime(FROM + 30_000).findAll('.tick').map(node => node.text())
+    expect(labels).toHaveLength(2)
+  })
+
+  /** Opt-in, because this chart's scale is a NUMBER and only its caller knows it is a millisecond. */
+  it('divides evenly where the caller did not say the scale is time', () => {
+    const wrapper = mount(TimelineChart, {
+      props: {
+        lanes: [{ id: 'a', label: 'a', spans: [{ id: 's', from: 0, to: 100, label: 'p', tone: 'flat', title: 'p' }] }],
+        from: 0,
+        to: 100,
+        ticks: 3,
+        format: (value: number) => String(value),
+      },
+    })
+    expect(wrapper.findAll('.tick').map(node => node.text())).toEqual(['0', '50', '100'])
+  })
+})

@@ -59,19 +59,22 @@ describe('SessionsTable', () => {
       session({ index: 1, run_id: 'run_a' }),
       session({ index: 2, run_id: 'run_b', strategy_changed: true }),
     ])
-    const rows = wrapper.findAll('tbody tr')
-    expect(rows).toHaveLength(3)
-    expect(rows[1]?.classes()).toContain('boundary')
-    expect(rows[1]?.text()).toContain('Strategy changed')
-    // and the row after it is the session that carried the flag
-    expect(rows[2]?.text()).toContain('run_b')
+    const lead = wrapper.find('.record-lead')
+    expect(lead.exists()).toBe(true)
+    expect(lead.text()).toContain('Strategy changed')
+    // and the row it sits above is the session that carried the flag
+    const rows = wrapper.findAll('.record-row')
+    expect(rows).toHaveLength(2)
+    expect(rows[1]?.text()).toContain('run_b')
+    // a boundary is a statement about the GAP, so it is nothing to click and nothing to mark
+    expect(lead.element.tagName).toBe('P')
   })
 
   it('names both when strategy and operation moved together', () => {
     const wrapper = mountSessions([
       session({ strategy_changed: true, operation_changed: true }),
     ])
-    expect(wrapper.find('.boundary').text()).toContain('Strategy and operation changed')
+    expect(wrapper.find('.record-lead').text()).toContain('Strategy and operation changed')
   })
 
   it('draws no line where nothing moved', () => {
@@ -85,7 +88,7 @@ describe('SessionsTable', () => {
     const wrapper = mountSessions([session({ gap_hours: null })])
     // the fourth column is the idle stretch; checking it by position keeps the assertion from
     // passing on a '—' that happens to sit somewhere else in the row
-    const gapCell = wrapper.findAll('tbody td')[3]
+    const gapCell = wrapper.find('.record-row').findAll(':scope > span')[3]
     expect(gapCell?.text()).toBe('—')
   })
 
@@ -93,7 +96,7 @@ describe('SessionsTable', () => {
   // one that never ran. Every session in the only deployment we can measure is that short.
   it('does not round a short session down to nothing', () => {
     const wrapper = mountSessions([session({ ran_hours: 0.0062 })])
-    const ranCell = wrapper.findAll('tbody td')[2]
+    const ranCell = wrapper.find('.record-row').findAll(':scope > span')[2]
     expect(ranCell?.text()).toBe('22 s')
   })
 
@@ -125,9 +128,10 @@ describe('SessionsTable', () => {
    */
   it('keeps no ordinal of its own — the run is the identity, the order is the sequence', () => {
     const wrapper = mountSessions([session({ index: 7 })])
-    expect(wrapper.find('thead').text()).not.toContain('Session')
+    expect(wrapper.find('.record-head').text()).not.toContain('Session')
     // the first cell of the row is the run, not a number
-    expect(wrapper.findAll('tbody td')[0]?.text()).toContain(BASE_SESSION.run_id)
+    expect(wrapper.find('.record-row').findAll(':scope > span')[0]?.text())
+      .toContain(BASE_SESSION.run_id)
   })
 
   it('renders a decline as a magnitude, like every other drawdown', () => {
@@ -182,15 +186,15 @@ describe('SessionsTable across a history that moved', () => {
 
   it('draws exactly the two boundaries the ledger reports, each above its session', () => {
     const wrapper = mountSessions(HISTORY)
-    const boundaries = wrapper.findAll('.boundary')
+    const boundaries = wrapper.findAll('.record-lead')
     expect(boundaries).toHaveLength(2)
     expect(boundaries[0]?.text()).toContain('Strategy changed')
     expect(boundaries[1]?.text()).toContain('Operation changed')
 
-    const rows = wrapper.findAll('tbody tr')
-    // session 1, session 2, MARK, session 3, MARK, session 4
-    expect(rows[2]?.classes()).toContain('boundary')
-    expect(rows[3]?.text()).toContain('r3')
+    // the rows themselves stay four: a boundary is a line of its own, not a row of the list
+    const rows = wrapper.findAll('.record-row')
+    expect(rows).toHaveLength(4)
+    expect(rows[2]?.text()).toContain('r3')
   })
 })
 

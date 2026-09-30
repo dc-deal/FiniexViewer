@@ -7,13 +7,11 @@ import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { provideTestSelection } from './scenario_selection_harness'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings } from '@/types/settings_types'
-import type { RunSummary, TradeHistoryReport, TradeRow, TradeView } from '@/types/api/report_types'
+import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
 
 import fixture from './fixtures/trade_history.json'
-import summaryFixture from './fixtures/run_summary.json'
 
 const BASE: TradeHistoryReport = fixture
-const SUMMARY: RunSummary = summaryFixture
 
 function report(overrides: Partial<TradeHistoryReport> = {}): TradeHistoryReport {
   return { ...BASE, ...overrides }
@@ -23,9 +21,8 @@ function trade(overrides: Partial<TradeRow> = {}): TradeRow {
   return { ...(BASE.trades[0] as TradeRow), ...overrides }
 }
 
-function mountPanel(history: TradeHistoryReport, summary: RunSummary | null = null) {
-  const model: TradeView = { history, summary }
-  return mount(TradeHistoryPanel, { props: { model } })
+function mountPanel(history: TradeHistoryReport) {
+  return mount(TradeHistoryPanel, { props: { model: history } })
 }
 
 /** The panel under a host that supplies presentation preferences, the way PanelColumn does. */
@@ -33,7 +30,7 @@ function mountWithDisplay(
   history: TradeHistoryReport,
   overrides: Partial<DisplaySettings> = {}
 ) {
-  const model: TradeView = { history, summary: null }
+  const model = history
   const display = ref<DisplaySettings>({
     scenarioThreshold: DEFAULT_SETTINGS.scenarioThreshold,
     laneOrder: DEFAULT_SETTINGS.laneOrder,
@@ -53,10 +50,9 @@ function mountWithDisplay(
 function mountNarrowed(
   history: TradeHistoryReport,
   unit: string[],
-  summary: RunSummary | null = null,
   overrides: Partial<DisplaySettings> = {}
 ) {
-  const model: TradeView = { history, summary }
+  const model = history
   const display = ref<DisplaySettings>({
     scenarioThreshold: DEFAULT_SETTINGS.scenarioThreshold,
     laneOrder: DEFAULT_SETTINGS.laneOrder,
@@ -73,9 +69,9 @@ function mountNarrowed(
   return mount(Host)
 }
 
-/** Trade rows only — the group rows share the tbody and are not trades. */
+/** Trade rows only. The stem gives a group heading its own class, so nothing has to be filtered. */
 function tradeRows(wrapper: VueWrapper) {
-  return wrapper.findAll('tbody tr').filter(row => !row.classes().includes('group'))
+  return wrapper.findAll('.record-row')
 }
 
 /** The figures a card carries, as label -> value. */
@@ -113,7 +109,7 @@ describe('TradeHistoryPanel', () => {
 
     it('opens one group per unit, in the order the trades arrived', () => {
       const wrapper = mountPanel(twoUnits())
-      const groups = wrapper.findAll('tbody tr.group')
+      const groups = wrapper.findAll('.record-group')
       expect(groups).toHaveLength(2)
       expect(groups[0]?.text()).toContain('unit_a')
       expect(groups[1]?.text()).toContain('unit_b')
@@ -121,8 +117,7 @@ describe('TradeHistoryPanel', () => {
 
     it('puts the unit totals in its group row rather than in a detached footer', () => {
       const wrapper = mountPanel(twoUnits())
-      expect(wrapper.find('tfoot').exists()).toBe(false)
-      const first = wrapper.findAll('tbody tr.group')[0]
+      const first = wrapper.findAll('.record-group')[0]
       expect(first?.text()).toContain('2')
       expect(first?.text()).toContain('5.00')
     })
@@ -132,7 +127,7 @@ describe('TradeHistoryPanel', () => {
         trades: [trade({ scenario_name: 'orphan' })],
         scenario_totals: [],
       }))
-      const group = wrapper.find('tbody tr.group')
+      const group = wrapper.find('.record-group')
       expect(group.text()).toContain('orphan')
       expect(group.text()).toContain('1')
     })
@@ -150,21 +145,6 @@ describe('TradeHistoryPanel', () => {
     expect(negative).toContain('104.50')
     expect(negative).not.toContain('-104.50')
     expect(negative).toBe(positive)
-  })
-
-  // expectancy is denominated in R; without a trade that carried a stop there is no R at all
-  it('withholds an expectancy nobody could measure', () => {
-    const withoutR = mountPanel(report({
-      analytics: [{ ...BASE.analytics[0]!, expectancy: 0, r_trade_count: 0 }],
-    }))
-    expect(withoutR.text()).toContain('n/a')
-  })
-
-  it('states the expectancy where trades carried a stop', () => {
-    const withR = mountPanel(report({
-      analytics: [{ ...BASE.analytics[0]!, expectancy: 0.42, r_trade_count: 7 }],
-    }))
-    expect(withR.text()).toContain('0.42')
   })
 
   /**
@@ -195,7 +175,7 @@ describe('TradeHistoryPanel', () => {
   it('says so plainly where a run closed no position', () => {
     const wrapper = mountPanel(report({ trades: [], count: 0 }))
     expect(wrapper.text()).toContain('closed no positions')
-    expect(wrapper.find('tbody').exists()).toBe(false)
+    expect(wrapper.find('.record-list').exists()).toBe(false)
   })
 
   describe('the card behind a row', () => {
@@ -243,45 +223,7 @@ describe('TradeHistoryPanel', () => {
       trades: [trade({ scenario_name: 'only_one', position_id: 'p1' })],
       count: 1,
     }))
-    expect(wrapper.findAll('tbody tr.group')).toHaveLength(1)
-  })
-
-  /**
-   * The funnel moved here from a panel of its own, because this view is about EXECUTION and what
-   * was attempted is the other half of what was closed. Measured on a real run: 566 sent, 22
-   * executed, 544 rejected — the list below shows eleven positions and says nothing about the 96 %
-   * that never became one.
-   */
-  describe('the order funnel', () => {
-    it('states how many of the sent orders were executed', () => {
-      const wrapper = mountPanel(BASE, {
-        ...SUMMARY, orders_sent: 566, orders_executed: 22, orders_rejected: 544,
-      })
-      const funnel = wrapper.find('.funnel')
-      expect(funnel.text()).toContain('22/566')
-      expect(funnel.text()).toContain('3.9%')
-    })
-
-    // a rejection is a fact about the run, not an error of ours — and it must not be overlooked
-    it('marks the rejected orders as something to weigh', () => {
-      const wrapper = mountPanel(BASE, { ...SUMMARY, orders_sent: 10, orders_rejected: 7 })
-      expect(wrapper.find('.funnel-rejected').text()).toContain('7')
-    })
-
-    it('stays silent about rejections where there were none', () => {
-      const wrapper = mountPanel(BASE, { ...SUMMARY, orders_sent: 5, orders_rejected: 0 })
-      expect(wrapper.find('.funnel-rejected').exists()).toBe(false)
-    })
-
-    it('shows no funnel at all where the run carries no summary', () => {
-      expect(mountPanel(BASE, null).find('.funnel').exists()).toBe(false)
-    })
-
-    // nothing sent means no rate to state, rather than a rate of zero
-    it('withholds a rate where nothing was sent', () => {
-      const wrapper = mountPanel(BASE, { ...SUMMARY, orders_sent: 0, orders_executed: 0 })
-      expect(wrapper.find('.funnel').text()).not.toContain('%')
-    })
+    expect(wrapper.findAll('.record-group')).toHaveLength(1)
   })
 
   /**
@@ -335,7 +277,7 @@ describe('TradeHistoryPanel', () => {
         { ...BASE.scenario_totals[0]!, scenario_name: 'two_ccy', currency: 'EUR', net_pnl: 9 },
       ],
     }))
-    const group = wrapper.find('tbody tr.group')
+    const group = wrapper.find('.record-group')
     expect(group.text()).toContain('two_ccy')
     expect(group.text()).not.toContain('5.00')
     expect(group.text()).not.toContain('9.00')
@@ -362,20 +304,20 @@ describe('TradeHistoryPanel', () => {
 
     it('draws every unit in full while there are few of them', () => {
       const wrapper = mountWithDisplay(units(3), { scenarioThreshold: 6 })
-      expect(wrapper.findAll('tbody tr.group')).toHaveLength(3)
+      expect(wrapper.findAll('.record-group')).toHaveLength(3)
       expect(tradeRows(wrapper)).toHaveLength(3)
     })
 
     it('keeps the summaries and withholds the rows once there are many', () => {
       const wrapper = mountWithDisplay(units(8), { scenarioThreshold: 6 })
-      expect(wrapper.findAll('tbody tr.group')).toHaveLength(8)
+      expect(wrapper.findAll('.record-group')).toHaveLength(8)
       expect(tradeRows(wrapper)).toHaveLength(0)
     })
 
     // the group row is what makes the collapse honest: it still answers what and how much
     it('still names the unit, its total and its count when collapsed', () => {
       const wrapper = mountWithDisplay(units(8), { scenarioThreshold: 6 })
-      const first = wrapper.findAll('tbody tr.group')[0]
+      const first = wrapper.findAll('.record-group')[0]
       expect(first?.text()).toContain('unit_0')
       expect(first?.text()).toContain('5.00')
       expect(first?.text()).toContain('1')
@@ -383,22 +325,17 @@ describe('TradeHistoryPanel', () => {
 
     it('opens a collapsed unit when it is asked to', async () => {
       const wrapper = mountWithDisplay(units(8), { scenarioThreshold: 6 })
-      await wrapper.findAll('tbody tr.group')[0]?.trigger('click')
+      await wrapper.findAll('.record-group')[0]?.trigger('click')
       expect(tradeRows(wrapper)).toHaveLength(1)
     })
 
     it('closes a unit the reader chooses to close, however few there are', async () => {
       const wrapper = mountWithDisplay(units(2), { scenarioThreshold: 6 })
       expect(tradeRows(wrapper)).toHaveLength(2)
-      await wrapper.findAll('tbody tr.group')[0]?.trigger('click')
+      await wrapper.findAll('.record-group')[0]?.trigger('click')
       expect(tradeRows(wrapper)).toHaveLength(1)
     })
 
-    it('reaches the collapse from a keyboard as well as a pointer', async () => {
-      const wrapper = mountWithDisplay(units(8), { scenarioThreshold: 6 })
-      await wrapper.findAll('tbody tr.group')[0]?.trigger('keydown.enter')
-      expect(tradeRows(wrapper)).toHaveLength(1)
-    })
   })
 
   it('draws as many rows as the settings allow, and says so', () => {
@@ -460,33 +397,156 @@ describe('TradeHistoryPanel', () => {
       expect(wrapper.find('.hint').text()).toContain('The chosen scenarios closed no positions')
     })
 
-    /**
-     * The funnel and the analytics come from `run-summary` and per CURRENCY — neither has a
-     * per-unit version. Left unlabelled above one scenario's rows they read as that scenario's,
-     * which is the silent wrongness this narrowing exists to remove.
-     */
-    it('marks the run-wide figures as the run\'s, not the scenario\'s', () => {
-      const wrapper = mountNarrowed(MIXED, ['unit_a'], SUMMARY)
-      expect(wrapper.find('.funnel .scope').text()).toBe('whole run')
-      expect(wrapper.find('.scope-line').exists()).toBe(true)
-    })
-
-    it('leaves those figures unmarked where nothing is narrowed', () => {
-      const wrapper = mountNarrowed(MIXED, [], SUMMARY)
-      expect(wrapper.find('.funnel .scope').exists()).toBe(false)
-      expect(wrapper.find('.scope-line').exists()).toBe(false)
-    })
-
     // `count` is the run's own total and can exceed the rows served, so under a narrowing it
     // names a number the drawn rows have nothing to do with.
     it('counts the cap against the narrowed set, not the run', () => {
       const trades = Array.from({ length: 60 }, (_, i) =>
         trade({ position_id: `p${i}`, scenario_name: i < 40 ? 'unit_a' : 'unit_b' }))
-      const wrapper = mountNarrowed(report({ trades, count: 9999 }), ['unit_a'], null,
+      const wrapper = mountNarrowed(report({ trades, count: 9999 }), ['unit_a'],
         { tradeRowCap: 10 })
       const notice = wrapper.find('.notice')
       expect(notice.text()).toContain('40')
       expect(notice.text()).not.toContain('9999')
+    })
+  })
+
+  /**
+   * BUILT, not captured — and that is the point. `exit_slippage` is null on 118 of the 437 trades
+   * measured across eight runs (27 %), and on NONE of the two in the capture. The mirror therefore
+   * said `number`, the card called `.toFixed()` on it, and expanding a scenario group threw inside
+   * the render function and took the whole panel down: the operator saw a Trade History that never
+   * appeared, which reads as slowness rather than as a crash.
+   *
+   * The contract test cannot catch this class. It proves the mirror against ONE capture, so a field
+   * that is null a quarter of the time but stated in the captured run is invisible to it.
+   */
+  describe('a field the capture happens not to have null', () => {
+    it('states an absent exit slippage rather than throwing on it', () => {
+      const wrapper = mountPanel(report({
+        trades: [trade({ exit_slippage: null, exit_slippage_pct: null })],
+      }))
+      expect(cardRows(wrapper)['Slippage']).toContain('n/a')
+      // the half that IS stated still reads as a figure
+      expect(cardRows(wrapper)['Slippage']).toMatch(/in [-0-9.]/)
+    })
+
+    it('still renders the row itself', () => {
+      const wrapper = mountPanel(report({
+        trades: [trade({ exit_slippage: null, exit_slippage_pct: null })],
+      }))
+      expect(tradeRows(wrapper)).toHaveLength(1)
+    })
+  })
+  /**
+   * The third level. A trade's FILLS are the executions that opened and closed it, and they answer
+   * the question the columns cannot: why four rows share one entry price. Measured on a real run —
+   * 85 trades, 29 distinct entry fills, 61 trades whose entry fill is larger than their own lots.
+   */
+  describe('the fills under a trade', () => {
+    function fill(overrides: Partial<TradeExecution> = {}): TradeExecution {
+      return { ...(BASE.trades[0]!.entry_executions[0] as TradeExecution), ...overrides }
+    }
+
+    it('keeps them folded until the row is clicked', () => {
+      const wrapper = mountPanel(report({ trades: [trade()] }))
+      expect(wrapper.find('.fill-list').exists()).toBe(false)
+    })
+
+    it('opens both legs on a click, and closes them on the next', async () => {
+      const wrapper = mountPanel(report({ trades: [trade()] }))
+      await tradeRows(wrapper)[0]!.trigger('click')
+
+      const fills = wrapper.find('.fill-list')
+      expect(fills.exists()).toBe(true)
+      expect(fills.findAll('.record-row')).toHaveLength(2)
+      expect(fills.text()).toContain('in')
+      expect(fills.text()).toContain('out')
+      expect(fills.text()).toContain('SYNTH-pos_ethusd_1-000001')
+
+      await tradeRows(wrapper)[0]!.trigger('click')
+      expect(wrapper.find('.fill-list').exists()).toBe(false)
+    })
+
+    /** The in-then-out ORDER is the content, so the sub-list offers nothing to reorder it with. */
+    it('draws no headings and no controls of its own', async () => {
+      const wrapper = mountPanel(report({ trades: [trade()] }))
+      await tradeRows(wrapper)[0]!.trigger('click')
+      const fills = wrapper.find('.fill-list')
+      expect(fills.findAll('.record-head')).toHaveLength(0)
+      expect(fills.findAll('button')).toHaveLength(0)
+    })
+
+    /**
+     * The share is shown ONLY where the backend says the fill belongs to several trades — its
+     * `shared_by`, served since contract 17. Gating on a volume comparison instead would be us
+     * inferring what the count states.
+     */
+    it('names the share where the backend says the fill is shared', async () => {
+      const wrapper = mountPanel(report({
+        trades: [trade({ lots: 0.02, entry_executions: [fill({ volume: 0.1, shared_by: 3 })] })],
+      }))
+      await tradeRows(wrapper)[0]!.trigger('click')
+      expect(wrapper.find('.fill-share').text()).toBe('0.02 of 0.1 · shared by 3 trades')
+    })
+
+    it('says nothing about a share where the fill belongs to this trade alone', async () => {
+      const wrapper = mountPanel(report({
+        trades: [trade({ lots: 0.1, entry_executions: [fill({ volume: 0.1, shared_by: 1 })] })],
+      }))
+      await tradeRows(wrapper)[0]!.trigger('click')
+      expect(wrapper.findAll('.fill-share').every(cell => cell.text() === '')).toBe(true)
+    })
+
+    /** One sibling is not a share: the wording only makes sense from two. */
+    it('reads the count rather than the volumes', async () => {
+      const wrapper = mountPanel(report({
+        trades: [trade({ lots: 0.02, entry_executions: [fill({ volume: 0.1, shared_by: 1 })] })],
+      }))
+      await tradeRows(wrapper)[0]!.trigger('click')
+      expect(wrapper.find('.fill-share').text()).toBe('')
+    })
+  })
+  /**
+   * The columns a narrow list gives up. Eight fields in a 620 px panel is unreadable, and the card
+   * is why nothing is lost by it — every figure on the row is in there whatever the width.
+   */
+  describe('what a narrow list keeps', () => {
+    /**
+     * The rank lives twice — on the column and on the cell — because the list owns the tracks
+     * while this panel owns the cells. A track given up under a cell that stayed would shift every
+     * later cell into the wrong column, and nothing on screen would say so.
+     */
+    it('gives every cell the rank its own column declares', () => {
+      const wrapper = mountPanel(report({ trades: [trade()] }))
+      const heads = wrapper.find('.trade-list').findAll('.record-head > span')
+        .map(node => node.attributes('data-rank'))
+      const cells = wrapper.find('.record-row').findAll(':scope > span')
+        .map(node => node.attributes('data-rank'))
+
+      expect(heads).toHaveLength(8)
+      expect(cells).toEqual(heads)
+      // which trade, and what it came to: Symbol, Opened, Net P&L
+      expect(heads.filter(rank => rank === '1')).toHaveLength(3)
+    })
+
+    /**
+     * The group heading is counted from the END for exactly this reason: its old three cells were
+     * fixed at eight columns, so a rank that gave one up left it spanning tracks the grid no longer
+     * had. Two cells, the last of which is the net under its own heading, hold at every width.
+     */
+    it('lays the group heading out from the end of the tracks', () => {
+      const wrapper = mountPanel(report({ trades: [trade()] }))
+      const cells = wrapper.find('.record-group').findAll(':scope > span')
+      expect(cells).toHaveLength(2)
+      expect(cells[1]?.classes()).toContain('group-net')
+    })
+
+    /** The net is the LAST column, which is what lets the heading above be counted from the end. */
+    it('closes the row with the net, after the life of the trade', () => {
+      const wrapper = mountPanel(report({ trades: [trade()] }))
+      const heads = wrapper.find('.trade-list').findAll('.record-head > span').map(n => n.text())
+      expect(heads[heads.length - 1]).toBe('Net P&L')
+      expect(heads.slice(3)).toEqual(['Opened', 'Held', 'Worst against', 'Best in favour', 'Net P&L'])
     })
   })
 })

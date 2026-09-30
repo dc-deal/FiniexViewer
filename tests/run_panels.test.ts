@@ -4,14 +4,10 @@ import { defineComponent, h } from 'vue'
 import { provideTestSelection } from './scenario_selection_harness'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
-import PortfolioPanel from '@/components/runs/PortfolioPanel.vue'
 import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import type {
-  PortfolioAggregateRow,
   RunInfo,
-  PortfolioReport,
-  PortfolioUnitRow,
   RunSummary,
   RunSummaryCurrency,
   WarningsErrorsReport,
@@ -21,7 +17,6 @@ import type {
 // second mirror of the contract, and a field the backend renames then stays green here while the
 // page renders NaN — which is exactly what happened to the drawdown columns in contract 2.
 import runSummaryFixture from './fixtures/run_summary.json'
-import portfolioFixture from './fixtures/portfolio.json'
 
 const MEASURED: RunSummaryCurrency = {
   ...(runSummaryFixture.currencies[0] as RunSummaryCurrency),
@@ -53,7 +48,7 @@ const UNDEFINED_VALUES: RunSummaryCurrency = {
   r_loss_count: 0,
 }
 
-function summaryWith(row: RunSummaryCurrency): RunSummary {
+function summaryWith(row: RunSummaryCurrency, overrides: Partial<RunSummary> = {}): RunSummary {
   return {
     run_id: '20260615_130000',
     currencies: [row],
@@ -71,6 +66,9 @@ function summaryWith(row: RunSummaryCurrency): RunSummary {
     disturbance_stale_seconds: 0,
     disturbance_source_count: 0,
     disturbance_stress_injected: 0,
+    tick_timespan_seconds: null,
+    tick_timespan_total_seconds: null,
+    ...overrides,
   }
 }
 
@@ -81,8 +79,11 @@ function summaryWith(row: RunSummaryCurrency): RunSummary {
  * survives a column being inserted beside it and quietly checks the wrong thing — the same trap
  * that made a settings test click the wrong button once a second one appeared.
  */
-function figures(row: RunSummaryCurrency): Record<string, string> {
-  const wrapper = mount(ExecutivePanel, { props: { model: summaryWith(row) } })
+function figures(
+  row: RunSummaryCurrency,
+  overrides: Partial<RunSummary> = {}
+): Record<string, string> {
+  const wrapper = mount(ExecutivePanel, { props: { model: summaryWith(row, overrides) } })
   return Object.fromEntries(wrapper.findAll('.figure').map(pair => [
     pair.find('dt').text(),
     pair.find('dd').text(),
@@ -150,6 +151,100 @@ describe('ExecutivePanel', () => {
     const f = figures({ ...MEASURED, open_position_count: 0, unrealized_pnl: 0 })
     expect(f['Still open']).toBeUndefined()
     expect(f['Unrealised']).toBeUndefined()
+  })
+
+  /**
+   * The question an operator arrives with — how long did it simulate, over how many days. The wall
+   * clock does not answer it, and neither figure existed on this panel before contract 17.
+   */
+  describe('market time', () => {
+    const HOURS = 3600
+
+    it('states the market time the run covered, in days once it passes two', () => {
+      const f = figures(MEASURED, { tick_timespan_seconds: 464 * HOURS })
+      expect(f['Covered']).toBe('464.0 h (19.3 days)')
+    })
+
+    it('stays in hours for a run shorter than two days', () => {
+      const f = figures(MEASURED, { tick_timespan_seconds: 5 * HOURS })
+      expect(f['Covered']).toBe('5.0 h')
+    })
+
+    /**
+     * Covered counts a stretch two scenarios share ONCE; summed adds the units up. Their
+     * difference IS the overlap, which is why the second figure only appears when there is one.
+     */
+    it('names the summed span beside it where the units overlap', () => {
+      const f = figures(MEASURED, {
+        tick_timespan_seconds: 464 * HOURS,
+        tick_timespan_total_seconds: 928 * HOURS,
+      })
+      expect(f['Covered']).toBe('464.0 h (19.3 days)')
+      expect(f['Summed']).toBe('928.0 h (38.7 days)')
+    })
+
+    it('says nothing about a sum that equals the span', () => {
+      const f = figures(MEASURED, {
+        tick_timespan_seconds: 5 * HOURS,
+        tick_timespan_total_seconds: 5 * HOURS,
+      })
+      expect(f['Summed']).toBeUndefined()
+    })
+
+    // a run recorded before the figure existed states nothing, which is not a run of zero length
+    it('renders n/a where the run never recorded it', () => {
+      expect(figures(MEASURED)['Covered']).toBe('n/a')
+    })
+  })
+
+  /**
+   * Both excursions come from `run-summary` and had no other home once the trade list's own
+   * summary block went: that block repeated this response, but these two were among the repeats
+   * this panel did not actually print.
+   */
+  it('states how far the worst and best trade ran, as magnitudes', () => {
+    const f = figures({ ...MEASURED, largest_mae: -18_399.05, largest_mfe: 6.71 })
+    expect(f['Worst against']).toBe('18,399.05 USD')
+    expect(f['Best in favour']).toBe('6.71 USD')
+  })
+
+  /**
+   * TWO fee figures since contract 18, and they are different populations: `total_fees` is what the
+   * CLOSED trades cost — the population the trade list and the booking periods sum — while
+   * `fees_charged` is what the run charged in all. They part exactly when something is still open,
+   * and the second is shown only then, because an identical pair under two names reads as a
+   * discrepancy.
+   */
+  it('names what the run charged only where it exceeds the closed trades', () => {
+    const open = figures({ ...MEASURED, total_fees: 9.17, fees_charged: 16.22 })
+    expect(open['Fees']).toBe('9.17 USD')
+    expect(open['Charged']).toBe('16.22 USD')
+
+    const settled = figures({ ...MEASURED, total_fees: 9.17, fees_charged: 9.17 })
+    expect(settled['Fees']).toBe('9.17 USD')
+    expect(settled['Charged']).toBeUndefined()
+  })
+
+  it('states what the account started from', () => {
+    expect(figures({ ...MEASURED, total_initial_balance: 80_000 })['Initial capital'])
+      .toBe('80,000.00 USD')
+  })
+
+  /**
+   * A run of several accounts says so at the head of the block, and names which one the drawdown
+   * trio belongs to — both on their own lines, because a count and a scenario name are not figures
+   * and appending either to a value wrapped the amount beside it. With ONE account neither line
+   * appears: there is nothing to tell apart.
+   */
+  it('says how many accounts the block is about, and which one fell deepest', () => {
+    const many = figures({ ...MEASURED, unit_count: 8, account_max_drawdown_unit: 'GBPUSD_feb' })
+    expect(many['Accounts']).toBe('8')
+    expect(many['Deepest account']).toBe('GBPUSD_feb')
+    expect(many['Max drawdown']).not.toContain('GBPUSD_feb')
+
+    const one = figures({ ...MEASURED, unit_count: 1, account_max_drawdown_unit: 'GBPUSD_feb' })
+    expect(one['Accounts']).toBeUndefined()
+    expect(one['Deepest account']).toBeUndefined()
   })
 
   it('renders n/a instead of a number nobody measured', () => {
@@ -290,10 +385,19 @@ describe('WarningsErrorsPanel — narrowed to a scenario', () => {
 })
 
 describe('WarningsErrorsPanel', () => {
-  it('says a clean run is clean', () => {
+  /**
+   * A healthy run keeps its GRADE and loses everything else. `run_outcome` is the backend's own
+   * verdict and cannot be read off the screen — a run graded `finished_with_errors` can show only
+   * warnings here, because its errors may sit in a section nobody renders. That no UNIT failed is
+   * visible already: there is no error row. So the count appears only when it is not zero, and the
+   * frame around the whole thing goes with it: a box forces attention, and nothing here wants any.
+   */
+  it('says a clean run is clean, and says nothing more', () => {
     const wrapper = mount(WarningsErrorsPanel, { props: { model: report() } })
     expect(wrapper.text()).toContain('No warnings or errors')
-    expect(wrapper.text()).toContain('0 / 3')
+    expect(wrapper.text()).toContain('success')
+    expect(wrapper.find('.outcome-units').exists()).toBe(false)
+    expect(wrapper.find('.outcome').classes()).toContain('quiet')
   })
 
   it('never renders a missing verdict as a state', () => {
@@ -440,188 +544,6 @@ describe('FeedHealthPanel', () => {
   })
 })
 
-function unit(overrides: Partial<PortfolioUnitRow> = {}): PortfolioUnitRow {
-  return {
-    ...(portfolioFixture.units[0] as PortfolioUnitRow),
-    name: 'USDJPY_blocks_01',
-    symbol: 'USDJPY',
-    currency: 'USD',
-    total_trades: 2,
-    winning_trades: 1,
-    losing_trades: 1,
-    win_rate: 0.5,
-    profit_factor: 0.3524,
-    total_profit: 6.9,
-    total_loss: 19.57,
-    net_profit: -12.68,
-    account_max_drawdown: 19.57,
-    account_max_dd_pct: 0.19,
-    total_fees: 2.16,
-    data_broker_type: 'mt5',
-    data_sentiment_type: '',
-    broker_name: 'Vantage International Group Limited',
-    spot_mode: false,
-    has_error: false,
-    total_long_trades: 1,
-    total_short_trades: 1,
-    max_equity: 10006.9,
-    current_balance: 9987.32,
-    initial_balance: 10000,
-    conversion_rate: 147.63,
-    base_currency: '',
-    quote_currency: '',
-    balances: { USD: 9987.32 },
-    initial_balances: { USD: 10000 },
-    last_price: 147.63,
-    spot_est_current: 0,
-    spot_est_initial: 0,
-    spot_est_pnl: 0,
-    spot_est_pnl_pct: 0,
-    total_spread_cost: 2.16,
-    total_commission: 0,
-    total_swap: 0,
-    maker_fee: 0,
-    taker_fee: 0,
-    ...overrides,
-  }
-}
-
-function aggregate(overrides: Partial<PortfolioAggregateRow> = {}): PortfolioAggregateRow {
-  return {
-    ...(portfolioFixture.aggregates[0] as PortfolioAggregateRow),
-    currency: 'USD',
-    unit_count: 1,
-    total_trades: 2,
-    winning_trades: 1,
-    losing_trades: 1,
-    win_rate: 0.5,
-    profit_factor: 0.3524,
-    total_profit: 6.9,
-    total_loss: 19.57,
-    net_profit: -12.68,
-    account_max_drawdown: 19.57,
-    total_fees: 2.16,
-    ...overrides,
-  }
-}
-
-function mountPortfolio(model: PortfolioReport) {
-  return mount(PortfolioPanel, {
-    props: { model },
-    global: { stubs: { RouterLink: RouterLinkStub } },
-  })
-}
-
-/** The panel under a host that carries a narrowing, the way RunsView does. */
-function mountPortfolioNarrowed(model: PortfolioReport, unit: string[]) {
-  const Host = defineComponent({
-    setup() {
-      provideTestSelection(unit)
-      return () => h(PortfolioPanel, { model })
-    },
-  })
-  return mount(Host, { global: { stubs: { RouterLink: RouterLinkStub } } })
-}
-
-describe('PortfolioPanel', () => {
-  it('renders one row per unit with a totals row behind it', () => {
-    const wrapper = mountPortfolio({
-      run_id: '20260615_130000',
-      units: [unit(), unit({ name: 'USDJPY_blocks_02', net_profit: 4.2 })],
-      aggregates: [aggregate({ unit_count: 2 })],
-    })
-    expect(wrapper.findAll('tbody tr')).toHaveLength(2)
-    const totals = wrapper.findAll('tfoot td').map(cell => cell.text())
-    expect(totals[0]).toBe('All units (2) · USD')
-    expect(totals[1]).toBe('-12.68 USD')
-  })
-
-  /**
-   * The deliberate exception to the narrowing. The footer here is an aggregate over the whole run
-   * with no per-unit version, and a single unit row under an "All units" total is precisely the
-   * misreading the narrowing removes everywhere else. Marking also answers the question narrowing
-   * raises on this panel — how the chosen scenario compares with the others.
-   */
-  it('marks the narrowed unit but keeps every row and the run-wide total', () => {
-    const model: PortfolioReport = {
-      run_id: '20260615_130000',
-      units: [unit(), unit({ name: 'USDJPY_blocks_02', net_profit: 4.2 })],
-      aggregates: [aggregate({ unit_count: 2 })],
-    }
-    const wrapper = mountPortfolioNarrowed(model, ['USDJPY_blocks_02'])
-    expect(wrapper.findAll('tbody tr')).toHaveLength(2)
-    const picked = wrapper.findAll('tbody tr.picked')
-    expect(picked).toHaveLength(1)
-    expect(picked[0]?.text()).toContain('USDJPY_blocks_02')
-    expect(wrapper.findAll('tfoot td')[0]?.text()).toBe('All units (2) · USD')
-  })
-
-  it('marks nothing where no narrowing is in force', () => {
-    const model: PortfolioReport = {
-      run_id: '20260615_130000',
-      units: [unit()],
-      aggregates: [],
-    }
-    expect(mountPortfolioNarrowed(model, []).findAll('tbody tr.picked')).toHaveLength(0)
-  })
-
-  it('links a unit into the chart via its data source', () => {
-    const wrapper = mountPortfolio({ run_id: '20260615_130000', units: [unit()], aggregates: [] })
-    const link = wrapper.findComponent(RouterLinkStub)
-    expect(link.props('to')).toEqual({
-      name: 'viewer',
-      query: { broker: 'mt5', symbol: 'USDJPY' },
-    })
-    expect(link.text()).toContain('USDJPY')
-  })
-
-  it('offers no link when the unit names no data source', () => {
-    // an autotrader session leaves data_broker_type empty — a link would land nowhere
-    const wrapper = mountPortfolio({
-      run_id: '20260615_130000',
-      units: [unit({ data_broker_type: '', broker_name: 'Kraken', spot_mode: true })],
-      aggregates: [],
-    })
-    expect(wrapper.findComponent(RouterLinkStub).exists()).toBe(false)
-    expect(wrapper.text()).toContain('USDJPY')
-    expect(wrapper.text()).toContain('spot')
-  })
-
-  it('never renders a ratio nobody measured as a number', () => {
-    // an untraded unit arrives with 0.0 rather than null — 0.00 / 0.0% would claim a measurement
-    const wrapper = mountPortfolio({
-      run_id: '20260615_130000',
-      units: [unit({ total_trades: 0, winning_trades: 0, losing_trades: 0, win_rate: 0, profit_factor: 0 })],
-      aggregates: [],
-    })
-    const cells = wrapper.findAll('tbody td').map(cell => cell.text())
-    expect(cells[3]).toBe('n/a')   // profit factor
-    expect(cells[4]).toBe('n/a')   // win rate
-  })
-
-  it('keeps a measured zero as a number', () => {
-    // one losing trade and no winner: the profit factor really is 0, and n/a would hide that
-    const wrapper = mountPortfolio({
-      run_id: '20260615_130000',
-      units: [unit({ total_trades: 1, winning_trades: 0, losing_trades: 1, win_rate: 0, profit_factor: 0 })],
-      aggregates: [],
-    })
-    const cells = wrapper.findAll('tbody td').map(cell => cell.text())
-    expect(cells[3]).toBe('0.00')
-    expect(cells[4]).toBe('0.0%')
-  })
-
-  it('marks a unit that reported an error', () => {
-    const wrapper = mountPortfolio({ run_id: '20260615_130000', units: [unit({ has_error: true })], aggregates: [] })
-    expect(wrapper.find('.unit-error').exists()).toBe(true)
-  })
-
-  it('says so when a run carries no units', () => {
-    const wrapper = mountPortfolio({ run_id: '20260615_130000', units: [], aggregates: [] })
-    expect(wrapper.text()).toContain('No units in this run')
-  })
-})
-
 function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
   return {
     run_id: '20260830_145819_af372b28',
@@ -634,6 +556,7 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     error_count: null,
     warning_count: null,
     log_warning_count: null,
+    tick_timespan_seconds: null,
 
     has_reports: true,
     start_time: '2026-08-30T14:58:19.182635+00:00',

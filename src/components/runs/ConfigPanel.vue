@@ -4,7 +4,7 @@ import JsonTree from '@/components/base/JsonTree.vue'
 import PathLabel from '@/components/base/PathLabel.vue'
 import { scenarioCount, scenarioOverrides, strategyOf, workersOf } from '@/components/runs/config_shape'
 import type { RunConfigReport } from '@/types/api/report_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 const props = defineProps<{
   model: RunConfigReport
@@ -57,12 +57,22 @@ function scalar(value: unknown): string {
       {{ overrides.length }} {{ t('of') }} {{ scenarios }}
       {{ t('scenarios carry their own configuration — the block below is the base they start from, not what those scenarios ran with') }}
     </p>
-    <ul v-if="overrides.length" class="override-list">
-      <li v-for="entry in overrides" :key="entry.name">
-        <span class="scenario">{{ entry.name }}</span>
-        <span class="keys">{{ entry.keys.join(' · ') }}</span>
-      </li>
-    </ul>
+    <!-- Folded, and a native <details> rather than a custom toggle: the NOTICE above carries the
+         finding — that some scenarios ran with something else — and the list is which ones. On a
+         run of forty it pushed the configuration itself off the screen. `details` brings the
+         keyboard and screen-reader semantics instead of us re-implementing them. -->
+    <details v-if="overrides.length" class="overrides">
+      <summary class="overrides-summary">
+        {{ plural(overrides.length, t('scenario with its own configuration'),
+                  t('scenarios with their own configuration')) }}
+      </summary>
+      <ul class="override-list">
+        <li v-for="entry in overrides" :key="entry.name">
+          <span class="scenario">{{ entry.name }}</span>
+          <span class="keys">{{ entry.keys.join(' · ') }}</span>
+        </li>
+      </ul>
+    </details>
 
     <!-- two columns where the panel is wide enough for them, one where it is not. auto-fit
          rather than a media query, because a panel's width is the user's arrangement and not
@@ -202,8 +212,24 @@ function scalar(value: unknown): string {
 
 .mark { margin-right: var(--space-xs); }
 
+/* the same disclosure the booking-period table uses, so the two read as one idiom */
+.overrides {
+  margin-bottom: var(--space-sm);
+}
+
+.overrides-summary {
+  cursor: pointer;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.overrides-summary:hover {
+  color: var(--color-text-primary);
+}
+
 .override-list {
-  margin: 0 0 var(--space-sm);
+  margin: var(--space-xs) 0 0;
   padding-left: var(--space-lg);
   font-family: monospace;
   font-size: var(--font-size-sm);

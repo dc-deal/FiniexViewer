@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import RecordList from '@/components/base/RecordList.vue'
 import { rowKey } from '@/api/list_key'
 import { amount, magnitude, duration, signClass, utcInstant } from '@/components/runs/report_format'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
+import type { ListColumn } from '@/types/list_types'
 import { t } from '@/translate'
 
 /**
@@ -18,6 +20,19 @@ defineProps<{
   sessions: DeploymentSessionRow[]
   keyFields: string[]
 }>()
+
+/**
+ * Six columns on the shared list stem. Ranked, because a deployment panel is narrow more often
+ * than a run panel is: what survives is WHICH session and what it earned.
+ */
+const columns: ListColumn[] = [
+  { label: t('Run'), width: 'minmax(9rem, 22fr)', rank: 1 },
+  { label: t('Started'), width: 'minmax(0, 18fr)', rank: 2 },
+  { label: t('Ran'), width: 'minmax(0, 12fr)', figure: true, rank: 3 },
+  { label: t('Idle before'), width: 'minmax(0, 14fr)', figure: true, rank: 3 },
+  { label: t('Net P&L'), width: 'minmax(0, 18fr)', figure: true, rank: 1 },
+  { label: t('Max DD'), width: 'minmax(0, 16fr)', figure: true, rank: 2 },
+]
 
 /** What changed at the boundary before a session, or null where nothing did. */
 function boundary(session: DeploymentSessionRow): string | null {
@@ -41,88 +56,57 @@ function gap(session: DeploymentSessionRow): string {
 </script>
 
 <template>
-  <div class="table-scroll">
-    <table class="kpi-table">
-      <thead>
-        <tr>
-          <th>{{ t('Run') }}</th>
-          <th>{{ t('Started') }}</th>
-          <th>{{ t('Ran') }}</th>
-          <th>{{ t('Idle before') }}</th>
-          <th>{{ t('Net P&L') }}</th>
-          <th>{{ t('Max DD') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template v-for="session in sessions" :key="rowKey(session, keyFields)">
-          <!-- the mark sits BETWEEN two sessions: everything above it was produced by a
-               different configuration from everything below, which a badge on one row would
-               misreport as a property of that row -->
-          <tr v-if="boundary(session)" class="boundary">
-            <td colspan="6">{{ boundary(session) }}</td>
-          </tr>
-          <tr>
-            <td class="text-cell">
-              <RouterLink
-                class="run-link"
-                :to="{ name: 'runs', query: { run: session.run_id } }"
-                :title="t('Open this run')"
-              >{{ session.run_id }} ↗</RouterLink>
-            </td>
-            <td>{{ utcInstant(session.started) }}</td>
-            <td>{{ duration(session.ran_hours) }}</td>
-            <td>{{ gap(session) }}</td>
-            <td :class="signClass(session.net_pnl)">
-              {{ amount(session.net_pnl, session.currency) }}
-            </td>
-            <td>{{ magnitude(session.max_drawdown, session.currency) }}</td>
-          </tr>
-        </template>
-      </tbody>
-      <!-- no totals row: net_pnl would sum, max_drawdown is a MAXIMUM and adding it counts one
-           decline once per session that was still inside it. The figures above the table are the
-           ledger's own, already reduced correctly. -->
-    </table>
-  </div>
+  <!-- no totals row: net_pnl would sum, max_drawdown is a MAXIMUM and adding it counts one decline
+       once per session that was still inside it. The figures above the list are the ledger's own,
+       already reduced correctly. -->
+  <RecordList
+    class="sessions-list"
+    :rows="sessions"
+    :columns="columns"
+    :row-key="session => rowKey(session, keyFields)"
+    :has-lead="session => Boolean(boundary(session))"
+    inert
+  >
+    <!-- the mark sits BETWEEN two sessions: everything above it was produced by a different
+         configuration from everything below, which a badge on one row would misreport as a
+         property of that row -->
+    <template #lead="{ row: session }">{{ boundary(session) }}</template>
+
+    <template #default="{ row: session }">
+      <span :data-rank="1" class="session-run">
+        <RouterLink
+          class="run-link"
+          :to="{ name: 'runs', query: { run: session.run_id } }"
+          :title="t('Open this run')"
+        >{{ session.run_id }} ↗</RouterLink>
+      </span>
+      <span :data-rank="2">{{ utcInstant(session.started) }}</span>
+      <span :data-rank="3">{{ duration(session.ran_hours) }}</span>
+      <span :data-rank="3">{{ gap(session) }}</span>
+      <span :data-rank="1" :class="signClass(session.net_pnl)">
+        {{ amount(session.net_pnl, session.currency) }}
+      </span>
+      <span :data-rank="2">{{ magnitude(session.max_drawdown, session.currency) }}</span>
+    </template>
+  </RecordList>
 </template>
 
 <style scoped>
-.table-scroll {
-  overflow-x: auto;
-}
-
-.kpi-table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.kpi-table th,
-.kpi-table td {
-  text-align: right;
-  padding: var(--space-xs) var(--space-sm);
-  border-bottom: 1px solid var(--color-border);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
+/* only what the shared list does not own: it carries the tracks, the headings, the read-only rows
+   and the dashed boundary line */
+.sessions-list :deep(.record-row) > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.kpi-table th {
-  color: var(--color-text-secondary);
-  font-weight: normal;
-}
-
-.text-cell {
+/* the run is the identity, and the only thing on the row that is read rather than compared */
+.session-run {
   text-align: left;
 }
 
-.boundary td {
+.sessions-list :deep(.record-lead) {
   text-align: center;
-  color: var(--color-annotation);
-  /* dashed on purpose: a configuration boundary is not a warning, and the dash is the second
-     channel that separates it from both where hue cannot */
-  border-top: 2px dashed var(--color-annotation);
-  border-bottom: none;
-  padding-top: var(--space-sm);
 }
 
 .run-link {

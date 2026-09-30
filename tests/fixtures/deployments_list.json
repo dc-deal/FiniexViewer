@@ -1,1 +1,51 @@
-{"key": ["deployment_id", "currency"], "deployments": [{"deployment_id": "deploy_20260927_132812", "sessions": 1, "first_started": "2026-09-27T13:28:12.700239Z", "last_started": "2026-09-27T13:28:12.700239Z", "net_pnl": -107.407375, "max_drawdown": 597.3631312500002, "max_drawdown_pct": 5.969935821483836, "currency": "USD", "bot": "demo_btcusd_bot", "bot_id": "demo-btc", "longest_gap_hours": null, "changed": false}, {"deployment_id": "deploy_20260927_132425", "sessions": 4, "first_started": "2026-09-27T13:24:25.351044Z", "last_started": "2026-09-27T13:26:58.731855Z", "net_pnl": -283.3521375, "max_drawdown": 597.3631312500002, "max_drawdown_pct": 5.969935821483836, "currency": "USD", "bot": "demo_btcusd_bot", "bot_id": "demo-btc", "longest_gap_hours": 0.0018682475000000001, "changed": true}, {"deployment_id": "deploy_20260924_125725", "sessions": 1, "first_started": "2026-09-24T12:57:25.488890Z", "last_started": "2026-09-24T12:57:25.488890Z", "net_pnl": 0.0, "max_drawdown": 0.0, "max_drawdown_pct": 0.0, "currency": "USD", "bot": "deployment_continuity_test", "bot_id": "deploy01", "longest_gap_hours": null, "changed": false}], "count": 3}
+{
+  "key": [
+    "deployment_id",
+    "currency"
+  ],
+  "deployments": [
+    {
+      "deployment_id": "deploy_20260927_132812",
+      "sessions": 1,
+      "first_started": "2026-09-27T13:28:12.700239Z",
+      "last_started": "2026-09-27T13:28:12.700239Z",
+      "net_pnl": -107.407375,
+      "max_drawdown": 597.3631312500002,
+      "max_drawdown_pct": 5.969935821483836,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": null,
+      "changed": false
+    },
+    {
+      "deployment_id": "deploy_20260927_132425",
+      "sessions": 4,
+      "first_started": "2026-09-27T13:24:25.351044Z",
+      "last_started": "2026-09-27T13:26:58.731855Z",
+      "net_pnl": -283.3521375,
+      "max_drawdown": 597.3631312500002,
+      "max_drawdown_pct": 5.969935821483836,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": 0.0018682475000000001,
+      "changed": true
+    },
+    {
+      "deployment_id": "deploy_20260924_125725",
+      "sessions": 1,
+      "first_started": "2026-09-24T12:57:25.488890Z",
+      "last_started": "2026-09-24T12:57:25.488890Z",
+      "net_pnl": 0.0,
+      "max_drawdown": 0.0,
+      "max_drawdown_pct": 0.0,
+      "currency": "USD",
+      "bot": "deployment_continuity_test",
+      "bot_id": "deploy01",
+      "longest_gap_hours": null,
+      "changed": false
+    }
+  ],
+  "count": 3
+}

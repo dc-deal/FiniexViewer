@@ -145,8 +145,8 @@ what every report route takes. It also runs backwards, because a session's index
 times in one day, and both are used here:
 
 ```
-GET /api/v1/contract      open, like /health   ->  {"contract": 2, "app_version": "...", "changes": [...]}
-X-Api-Contract: 2         on EVERY response, refusals included
+GET /api/v1/contract      open, like /health   ->  {"contract": 17, "app_version": "...", "changes": [...]}
+X-Api-Contract: 17        on EVERY response, refusals included
 { "key": ["deployment_id", "currency"], "deployments": [ ... ] }
 ```
 
@@ -165,7 +165,7 @@ Six consequences the frontend is built around:
 - **Every report body names the run it was built from**, and `api_client` asserts it against what was requested (`RunIdMismatchError`). This is the only defence a client has against an ambiguous id: a duplicate passes every membership check, the route resolves it to whichever run it finds first, and nothing else in the payload would give that away. It has happened — three runs once shared one id here.
 - **A 409 is a third thing again: the artifact is there and cannot be parsed**, because it was written by an older schema and the run has to be repeated. `getWarningsErrors` raises `ArtifactUnreadableError` carrying the backend's own detail text, and the view shows it as a notice *beside* the panels rather than instead of them — one unreadable section must not hide the readable ones. Three distinct answers, three distinct states: 404 absent, 409 stale, anything else an outage.
 - **The index is the authority on which runs exist, and it is never bypassed.** A URL, a bookmark or a shared link can name a run whose artifacts were removed since. `selectRun` refuses an id the index does not contain, so a stale link produces no request at all rather than one 404 per section — the same rule the layout store applies to stored panel ids. An empty index is its own state (`{"runs": [], "count": 0}` is a normal 200), and the view says so instead of offering empty pickers with no explanation.
-- **`has_reports` on the index row decides whether a run is worth asking about.** `false` means the run exists as logs only and every report route answers 404 — a normal state, because a test session writes logs and no artifacts. It is neither a failure nor a reason to hide the run: the picker shows it, marked `logs only` and not selectable, and neither the store nor the view issues a request for it. Hiding it instead would raise the question where the run went; asking anyway would be the 404 storm the rule above exists to prevent.
+- **`has_reports` on the index row decides whether a run is worth asking about.** `false` means the run exists as logs only and every report route answers 404 — a normal state, because a test session writes logs and no artifacts. It is neither a failure nor a reason to hide the run: the picker shows it marked `logs only`, and neither the store nor the view issues a request for it. It IS selectable — it was a disabled option once, but the run view now says what such a run is and the store asks the backend for nothing, so a row that cannot be clicked would only look broken. Hiding it instead would raise the question where the run went; asking anyway would be the 404 storm the rule above exists to prevent.
 
 **`run_id` is opaque, and stays that way.** It is minted as `<date>_<time>_<8 hex>` and the backend pins the character class to `[0-9a-f_]` with a test, so interpolating it into a URL path unencoded is safe by assertion rather than by hope. Nothing here parses it: no split, no date extracted for display, no sort. Ordering comes from the index, which is newest-first by contract.
 
@@ -313,6 +313,25 @@ control moves through as it is pointed at and pressed — lifting, then sinking,
 "pressed" reads the same way whichever theme is on. They are not measured for hue distinctness the
 way a role colour is; what they were measured for is text contrast, which is 12.97:1 or better over
 all three button surfaces in both themes (2026-09-27).
+
+**A role colour is computed, and the constraints can contradict each other.** Measured 2026-09-29:
+the light theme's `--color-positive` was `#0f8a7e` — **4.24:1 against white, the only status colour
+in that theme below WCAG AA for normal text**, and the only one under the 0.100 chroma floor. The
+replacement was not chosen but searched for, and the search says how little room there is:
+
+```
+max chroma reachable in sRGB      >= 4.24:1   >= 4.50:1
+hue 178-192  (the teal it is)        0.103       0.101
+hue 165-178  (greener)               0.118       0.114
+hue 150-165  (green)                 0.156       0.150
+```
+
+`#008674` takes that whole room: chroma 0.101, 4.504:1. A greener candidate reached 0.114 and
+4.58:1 — better on both stated thresholds — and was rejected, because its distance from
+`--color-negative` under deuteranopia fell from 11.7 to 8.3 ΔE. Green against red is the axis
+red-green colour blindness collapses, so the better numbers would have been paid for on the channel
+that matters most for a profit-and-loss palette. The sign in the figure itself is the second
+channel that makes 10.7 ΔE enough.
 
 **`text-secondary` on a surface is the look of a DISABLED control, and nothing clickable may wear
 it.** A settings button did, and the first person to meet it read it as greyed out and unusable
@@ -540,7 +559,121 @@ and the response that does is a shorter list, so the sort would need those two m
 thing — raised with FiniexTestingIDE on 2026-09-27 and waiting on their answer rather than worked
 around here.
 
+### The list itself — one stem under every table-shaped list
+
+`FacetBar` narrows a list; **`src/components/base/RecordList.vue`** draws it. The two are deliberately
+separate: either can serve a list the other has never seen, and the run picker has extra controls
+between the bar and the rows that a single combined component would have to grow a prop for.
+
+- **`RecordList.vue`** — generic over its row type. It owns the grid tracks, the sticky headings, the
+  row button with its four states, the group heading, an optional spanning prose line, an optional
+  card beside the row, and an optional block of CHILD records. It holds no state, sorts nothing,
+  filters nothing and folds nothing.
+- **`src/types/list_types.ts`** — `ListColumn` (label, track, whether it is a figure), `ListCard`
+  (what the card beside a row shows) and `ListGroup` (one partition: key, rows, open).
+
+**The columns line up across rows, and a grid on the row cannot do it.** Each row is its own
+`<button>` — deliberately, because a row that cannot be focused or pressed is the look of a broken
+control — and a grid declared on the button sizes ITS OWN tracks. Forty-one rows were forty-one
+independent grids: measured 2026-09-29, the figures drifted 99 px across fourteen rows. `subgrid`
+reconciles them — the list owns the tracks, the `<li>` disappears with `display: contents` so the
+button becomes a direct item of it, and the button adopts the tracks instead of inventing them.
+
+**A GROUP and a CHILD are different things, kept apart on purpose.** A group is a partition of the
+same row kind: no columns of its own, only a heading over rows that already fit. A child is a record
+of ANOTHER kind that a row owns — a trade's fills — with its own columns. Serving both from one
+mechanism is what makes a list component collapse under itself. The grouping is the CALLER's
+declaration, never a control: a list whose grouping the reader can rearrange has no shape anyone
+recognises, and a screenshot of it shows a different list than their own.
+
+**A group heading carries no figure it had to compute.** Its numbers are the ones the API SERVED for
+that group — `scenario_totals` on the trade history — looked up by key. `ListGroup` therefore holds
+no totals at all. That is not fastidiousness: the backend's own declared reductions state that a
+drawdown must come from the row that won it, that a rate is rebuilt from summed components rather
+than averaged, and that a streak can cross a boundary and so answers nothing. A heading with no
+served total shows its NAME and its ROW COUNT, and no figure.
+
+**Where a track is content-sized and where it must not be.** `auto` is fine in a list without
+groups. With groups it is a defect: while every group is closed the columns the heading spans hold
+no cells at all, so the track is sized from nothing and then re-sized the moment a group opens,
+sliding every heading sideways. A grouped list therefore declares proportional tracks —
+`minmax(0, Nfr)`, where `fr` accounts for the gaps that percentages ignore and `minmax(0, …)` stops
+one long cell widening its column. A heading cell may SPAN tracks, which is what the table's old
+`colspan` did for the unit's name.
+
+**The card beside a row is wrapped by the LIST, not by the caller.** reka-ui's trigger takes a
+single element and that element is the row button, which the list owns. Wrapping every row
+unconditionally would mount a tooltip context per row — five hundred on a long trade list, for
+lists that offer no card — so a row without a card is a bare button.
+
+**Bands over the headings, for a list too wide to read as one row of equal words.** `bands` is a
+list of `{ label, span }`, drawn as a second sticky row above the headings, each band spanning its
+columns. The booking periods read as *Period · Result · Account* rather than as fifteen equal
+fields. The spans must cover the columns EXACTLY; the stem checks the arithmetic and draws no bands
+at all where it does not add up, because a band off by one sits over the wrong column and nothing
+on screen says so. That was a real defect in the table this replaced — `colspan 6 + 1 + 2` in an
+eight-column layout stretched it past its own heading.
+
+A declared span is the span at the **widest** tier, and it has to shrink with the ranks. Under
+ranks the grid has fewer tracks than the declaration counts, so a fixed span reaches past the end
+of it: measured 2026-09-30 on the booking periods at a 28 rem panel, four bands demanded fourteen
+tracks of a four-track grid, the browser grew implicit columns to fit them, and every band then
+stood over the wrong columns. The arithmetic check above could not see it — it compares against
+`columns.length`, which is the count at the widest tier and says nothing about the others. So each
+band carries all four of its spans on itself (`--s1` … `--s4`, the columns of its own that survive
+that tier) and the container query chooses one for every band at once. That is what makes it
+expressible in static CSS: the stem does not know how many bands a caller declares, but it does
+know which tier is in force. A band that keeps **no** column is reported and no bands are drawn —
+`span 0` is not a span, and patching it to one would put it over somebody else's column.
+
+The same arithmetic reaches a GROUP heading, which is why the trade history's is counted from the
+END: its name takes `1 / -2` and its net `-2 / -1`, so the heading holds at every tier. The three
+cells it replaced spanned `5 + 1 + 2`, fixed at eight columns. That is also why `Net P&L` is the
+last column of that list rather than the sixth.
+
+**A line BEFORE a row, for a statement about the gap.** `hasLead` plus a `lead` slot, mirroring
+`hasDetail` / `detail`. A deployment's configuration changed between two sessions: everything above
+ran with one thing and everything below with another, so a badge on either row would misreport it
+as a property of that row. It is a line and not a control — nothing to click, nothing to mark — and
+it wears the annotation role DASHED, which is what that role is for.
+
+**Columns given up as the list narrows, by rank.** A column declares `rank: 1 | 2 | 3 | 4`; 1
+survives every width and 4 goes first. Absent means 1, so a list that ranks nothing keeps every
+column, exactly as before.
+
+Measured on the scenario roster at a 900 px window: twelve columns in a 620 px panel is 40 px each,
+five monospace characters, every cell unreadable. The columns are not equal though — `market`,
+`currency` and `broker` carried the SAME value on all ten rows there. Ranked, the same panel shows
+five columns in full: scenario · tick timespan · trades · net P&L · state.
+
+Two mechanisms, and neither alone works. A cell hidden with `display: none` leaves its TRACK
+standing and its share of the width with it; a track removed under a cell that stays shifts every
+later cell into the wrong column. So the stem publishes a track string per tier as a custom
+property and a **container query** picks one, while the same query hides the cells. The width that
+matters is the LIST's, not the window's — a panel's width is the reader's own arrangement, since
+they drag the seams — which is why a container query and not a media query. A `.record-shell`
+wrapper exists solely to be measured: an element cannot query its own width.
+
+The rank lives twice, on the column and on the cell, and it has to: the list owns the tracks while
+the caller owns the cells. Each ranked list asserts that the two agree.
+
+Consumers today: the run picker, the trade history, the scenario roster, the booking periods and
+the deployment sessions. Still to move: the portfolio, whose rebuild around the ACCOUNT lens is
+undecided rather than blocked.
+
 ### The scenario roster — the only complete list of a run
+
+Rendered through `base/RecordList.vue`, twelve columns wide: scenario · symbol · market · currency ·
+broker · tick timespan · ticks · took · trades · net P&L · PF · state. It was a name line over a
+prose figures line, which reads as a sentence per scenario and compares across forty of them not at
+all. The reason a scenario produced nothing is the list's spanning detail line, so prose never sets
+a column's width.
+
+Two of the twelve declare a FLOOR rather than a share: the scenario name and the state. Everything
+here compresses rather than scrolls at a narrow width, which is the right trade for a panel whose
+width the reader sets — but measured at 900 px the state read `f…` and `s…`, and whether a scenario
+failed is what the list is opened for. Hiding columns outright below some width is the obvious next
+step and is not taken: which columns go is a judgement about what the list is FOR.
 
 `GET …/scenario-details` is the authority for *which scenarios does this run have* (settled with the
 backend 2026-09-25): it is built from the batch ITSELF rather than from results, so a scenario that
@@ -566,6 +699,27 @@ because ranking scenarios by the wrong one of the two answers a question nobody 
 time was withheld until contract 13: the field carried seconds under a millisecond name, so 1.98
 for 13,584 ticks read as 6.9 million ticks a second. The backend migrated the stored runs, and the
 same row now reads 1980.67.
+
+**The run index says what each run DID — contract 15, and a request this repo made rather than a
+figure it computed.** `results` carries one entry per account currency (`results_key` is
+`["currency"]`), beside `run_outcome` and three counts. The backend folds it from each run's
+booking periods by its own declared reductions and reads the ledger once per CHANGE of the ledger,
+not once per request: about 95 ms for the whole list of 41 runs. The alternative was one
+`run-summary` per row — forty requests to fill a list of forty, the N+1 their own documentation
+warns about — which is why this was asked for instead of worked around.
+
+Three rules govern how it is rendered, and each has cost something to learn elsewhere:
+
+- **`null`, `[]` and a list are three statements, not two.** `null` is the ledger holding nothing
+  for that run (still going, died before its close, or `reporting: none` — read it beside
+  `reporting`); `[]` is a run that closed without figures. Measured 2026-09-29 over 41 runs: 38
+  lists, 2 null, 1 empty, so all three reach the screen.
+- **Two currencies are two figures.** Summing them would be a value the backend never stated, and
+  wrong arithmetic besides. No sort is offered over P&L or the trade count for the same reason: a
+  single number to sort by does not exist per run.
+- **A count of `null` is not a zero.** `error_count` and `warning_count` are marked only where a
+  count was taken and is not zero. `log_warning_count` is Tier 2 — ignorable by design, the
+  backend's own word — so it is mirrored and not put on the row.
 
 **Where a configuration came from is NOT a property of a run.** `GET /api/v1/directory` carries
 `origin` (`configs` | `user_configs` | `user_algos`) per FILE, and a run's `config_snapshot` is that
@@ -614,10 +768,13 @@ have to forward a run-specific emit, which is the domain leaking into the part t
 it. `RunsView` supplies it, not `PanelColumn`, which draws a deployment's panels and has no
 scenario to narrow to.
 
-**Six figures are run-wide and cannot be split, so they are LABELLED rather than filtered:** the
-executive KPI table (one row per CURRENCY), the order funnel and the per-currency analytics in
-Trade History, the reconciliation verdict and the deepest-drawdown footnote in Booking Periods, and
-the outcome counts in Warnings & Errors. A run-wide number sitting unlabelled over one scenario's
+**Four figures are run-wide and cannot be split, so they are LABELLED rather than filtered:** the
+executive KPI table (one row per CURRENCY), the reconciliation verdict and the deepest-drawdown
+footnote in Booking Periods, and the outcome counts in Warnings & Errors. It was six: the order
+funnel and the per-currency analytics stood in Trade History too, and both are gone — 17 of the 19
+fields in `trade_history.analytics[]` are identical in value to `run-summary.currencies[]`, which
+the executive panel prints above them on the same page. The backend confirmed the duplication is
+deliberate (one derivation, two routes) and that the summary's copy is the one to show. A run-wide number sitting unlabelled over one scenario's
 rows reads as that scenario's — the same class of silent wrongness the narrowing exists to remove.
 The executive table matters most of the six because it sits at the TOP: a reader who has just
 narrowed meets it first. Portfolio is handled by marking instead: its footer is an aggregate with
@@ -695,16 +852,48 @@ exactly one set holds more than five.** So the last dropdown was choosing betwee
 things while the one above it held 29 — and the question a reader actually arrives with, *the run
 I did on Thursday*, is navigation by TIME, which a name cascade cannot answer at all.
 
-It is now the same `FacetBar` the scenario roster uses, pointed at `RunInfo`: facets for group,
-set, artifacts, reporting, origin and version, sorted newest-first by default, with a search over
-the run id and the set name. The bar is generic and holds no state, so this cost the facet
-definitions and nothing else.
+It is now the same `FacetBar` the scenario roster uses over a `RecordList` — the shared list surface
+— pointed at `RunInfo`: facets for group, set, artifacts, reporting, origin, version, outcome and
+trouble, sorted newest-first by default, with a search over the run id and the set name. Both
+components are generic and hold no state, so this cost the facet definitions and ten column
+declarations.
+
+The row says what the run DID, from the index response itself and without a request per run:
 
 ```
-Search runs by id or set   Group ▾  Set ▾  Artifacts ▾  …        12 of 40
-Sort by  [newest]  oldest  name
-  25 Sep 2026, 11:52   simulation   ETHUSD_blocks_robustness   20260925_095227_d9b8d79d
+Search runs by id or set   Group ▾  Set ▾  Artifacts ▾  …        12 of 46
+Sort by  [newest]  oldest  market time  name
+
+Started        Run type    Set                       Run id            Market time  Outcome    Net P&L      Trades
+Sep 25, 11:52  simulation  ETHUSD_blocks_robustness  20260925_095227…     464.0 h  ✓ success  −317.36 USD  85 trades
 ```
+
+The run id is shortened to its timestamp with the whole value one hover away: the eight hex
+characters after it separate two runs of the same second and nothing else. One consequence for the
+browser suite — a spec that looks for a run by the row's TEXT cannot find it, and must filter on the
+id cell's `title` instead.
+
+**The stamp says only what its neighbours do not**, the same rule the time axis follows: the year is
+dropped inside the current year and kept outside it, and the seconds are gone — two runs of the same
+minute are told apart by the id. `Sep 29, 2026, 12:27 PM` was 22 characters and needed 13 rem of a
+28 rem panel, which is what made the narrowest rank tier overflow by 24 px. The month stays a WORD
+on purpose: this column is the reader's own zone while the card beside it carries UTC, and a numeric
+`2026-09-29 12:27` reads like the canonical clock that it is not.
+
+**Ten columns, ranked 10 → 8 → 6 → 4, and a card on every row.** What a narrow list keeps is the
+question the list exists to answer — WHICH run (`Started`, `Set`), whether it worked (`Outcome`) and
+what it earned (`Net P&L`). `Run id` goes first although it is the row's declared key: it renders as
+the timestamp part of the id, which is the same instant `Started` already shows in words, and two
+spellings of one fact are not two facts. Every rung of the ladder gives something up — a rank the
+list does not use makes a breakpoint that changes nothing, which reads as a broken one.
+
+The card is what makes the ranks defensible: `RunInfo` carries twenty-one fields and ten reach a
+column, so the rest are on the row whatever its width — `ticks_from` / `orders_to`, the parent, the
+configuration and its id, the version and commit, `reporting`, the size on disk, how many sections
+the run wrote, how many data windows it declared, and the **Tier-2 log warning count**, which the row
+deliberately omits because that tier is ignorable by design and which reaches 547 on one stored run.
+Nothing is fetched and nothing is derived: every line names a field of the index row already on
+screen.
 
 **Three consequences worth stating.** `runs_store` lost the whole cascade — `groups`, `names`,
 `runsInSelection`, `selectedGroup`, `selectedName`, `setGroup`, `setName` — because nothing else
@@ -721,7 +910,7 @@ readable encoding for arbitrary facet state is a separate design and neither lis
 
 The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
 
-- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon, component, the `source` key it reads, which run groups it applies to, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild.
+- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon, component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild.
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 - **`src/stores/layout_store.ts`** — the arrangement, persisted under the single versioned key `layout.v1`.
 
@@ -864,12 +1053,49 @@ grant the token holds.
 
 ### Trade History — the only place a single trade exists
 
-`runs/TradeHistoryPanel.vue`. Every other section of a run is already summed over these rows, so
-this is the one that answers *which* trade, not *how much*.
+`runs/TradeHistoryPanel.vue`, rendered through `base/RecordList.vue` — the same list surface the run
+picker uses. Every other section of a run is already summed over these rows, so this is the one that
+answers *which* trade, not *how much*.
 
-**The table carries nine columns and the hover card carries all thirty-eight.** That split is what
-the card was built for: a trade has more to say than a row has width, and truncating the row would
-decide for the reader which fields matter.
+**Eight columns, and everything else in the card.** That split is what the card was built for: a
+trade has thirty-eight fields and a row has width for eight, and truncating the row would decide for
+the reader which of them matter. The eight are declared as a `ListColumn[]`, not as markup.
+
+Ranked 8 → 6 → 4 → 3. What a narrow list keeps is which trade (`Symbol`, `Opened`) and what it came
+to (`Net P&L`) — the symbol alone does not identify a row, since a scenario trades one symbol many
+times and the moment is what tells two of them apart. The excursions go first, then the lots and the
+holding period; all of them stay in the card at every width.
+
+**Three levels: the unit, the trade, the FILLS.** The trades are grouped under the unit that
+produced them, and a click on a trade opens the executions that opened and closed it. The fill level
+answers the one question the columns cannot: *why do four rows carry the same entry price?* Because
+they are one position closed in pieces. Measured on a real run — 85 trades, 29 distinct entry fills,
+61 trades whose entry fill is larger than their own lots.
+
+The fill sub-list is read-only and draws no headings: the in-then-out ORDER is the content, so there
+is nothing to sort it by, and a heading row over every two lines would label what each cell already
+labels inline. Its presentation follows the backend's own printout.
+
+**The group heading's figures are the API's served `scenario_totals`, looked up by name.** Nothing
+is folded here — see *The list itself* above for why, and for what a heading shows when no total was
+served. One refinement belongs to this panel: totals are declared unique by
+`(scenario_name, currency)`, so a scenario that traded in two currencies has TWO. The heading shows
+one figure, so such a scenario gets NONE rather than an arbitrary half.
+
+**The tracks are proportional, and that is a fix rather than a taste.** They were eight percentage
+widths under `table-layout: fixed`, and the reason is worth keeping: while every group is closed the
+columns the heading spans hold no cells at all, so an automatic layout sized them from nothing and
+then re-sized them the moment a group opened, sliding every heading sideways under the reader's
+eyes. The `minmax(0, Nfr)` tracks carry the same eight proportions and prevent the same defect. They
+also mean a rank costs nothing to lay out: the surviving `fr` shares simply redistribute.
+
+**The group heading is counted from the END, and `Net P&L` is the last column because of it.** The
+heading was three cells spanning `5 + 1 + 2`, an arithmetic fixed at eight columns — so a rank that
+gave one up left it spanning tracks the grid no longer had. Two cells (`1 / -2` for the name, its
+count and its fees; `-2 / -1` for the net) hold at every tier, and the net still lands under its own
+heading, so a reader runs down the one column and meets both the trades and their totals. The
+reading order gains by it besides: opened · held · worst · best · net is the life of the trade in
+order, with the result closing the line instead of sitting in the middle.
 
 **An adverse excursion is rendered as a magnitude.** Measured in one response: `mae_pnl` is signed
 (−18,399.05) while the analytics block's `largest_mae` is the magnitude of that same number
@@ -881,11 +1107,14 @@ renamed from `drawdown()` once a second quantity needed it.
 distance in `price_unit` — and the card shows all three, because which one answers a question
 depends on the question.
 
-**The row cap is visible.** A thirty-day session produces thousands of trades and drawing them all
-would stall the page, so the panel draws 500 and SAYS how many of how many it drew. A silent
-truncation reads as "that was all", which for a trade list is the most misleading thing it could
-say. Virtualisation replaces the cap the day a run exceeds it — `@tanstack/vue-virtual` is already
-in the tree through reka-ui, though it would have to become a direct dependency.
+**The row cap is visible, and the narrowing runs BEFORE it.** A thirty-day session produces
+thousands of trades and drawing them all would stall the page, so the panel draws 500 and SAYS how
+many of how many it drew. A silent truncation reads as "that was all", which for a trade list is the
+most misleading thing it could say. Capping first would take the first 500 trades of the whole run
+and filter what was left, so a unit that traded late would show nothing while the panel claimed it
+had drawn everything — and the cap is counted against the NARROWED set for the same reason.
+Virtualisation replaces the cap the day a run exceeds it — `@tanstack/vue-virtual` is already in the
+tree through reka-ui, though it would have to become a direct dependency.
 
 ### Configuration — shown, never resolved
 

@@ -208,7 +208,7 @@ function clear(): void {
 <style>
 /* portalled out of the component, so a scoped rule cannot reach it */
 .facet-panel {
-  z-index: 70;
+  z-index: var(--z-popover);
   display: flex;
   flex-direction: column;
   min-width: 11rem;

@@ -77,9 +77,17 @@ const utcClock = new Intl.DateTimeFormat('en-GB', {
   hour12: false,
 })
 
-/** ISO-8601 instant rendered as UTC. Empty for null — an absent time stays a hole. */
+/**
+ * ISO-8601 instant rendered as UTC. Empty for null — an absent time stays a hole.
+ *
+ * And empty for a stamp that is not a date, which is the SAME hole: `formatToParts` throws a
+ * `RangeError` on an invalid date rather than returning anything, so one damaged field in one row
+ * took down the whole list it was in. Measured 2026-09-30 on the run list, where a row carrying a
+ * damaged `start_time` is a case the column beside it already handles.
+ */
 export function utcInstant(iso: string | null): string {
   if (iso === null) return ''
+  if (Number.isNaN(new Date(iso).getTime())) return ''
   const part: Record<string, string> = {}
   for (const piece of utcClock.formatToParts(new Date(iso))) part[piece.type] = piece.value
   return `${part['year']}-${part['month']}-${part['day']} ${part['hour']}:${part['minute']}:${part['second']}Z`
@@ -116,4 +124,38 @@ export function duration(hours: number): string {
   if (hours < 1) return `${(hours * 60).toFixed(0)} min`
   if (hours < 48) return `${hours.toFixed(1)} h`
   return `${(hours / 24).toFixed(1)} d`
+}
+
+/**
+ * MARKET time — how much of the market a run read, which is the question `duration` above does not
+ * answer. Kept separate from it on purpose: a holding period shortens to seconds, while a market
+ * span is read in hours and then in days, and the backend's own printout states both together once
+ * it passes a day. `null` is the figure a run never recorded, never a zero.
+ */
+export function marketSpan(seconds: number | null): string {
+  if (seconds === null) return t('n/a')
+  const hours = seconds / 3600
+  if (hours < 48) return `${hours.toFixed(1)} h`
+  return `${hours.toFixed(1)} h (${(hours / 24).toFixed(1)} ${t('days')})`
+}
+
+/**
+ * A size in bytes, in the step a reader can hold. Decimal steps and decimal names, deliberately:
+ * kB at 1024 is the wrong name for the number, and the figure is here for orientation — how much
+ * an archived run weighs — never for accounting.
+ */
+export function bytes(value: number): string {
+  if (value < 1000) return `${value} B`
+  if (value < 1_000_000) return `${(value / 1000).toFixed(1)} kB`
+  if (value < 1_000_000_000) return `${(value / 1_000_000).toFixed(1)} MB`
+  return `${(value / 1_000_000_000).toFixed(2)} GB`
+}
+
+/**
+ * A long hash shortened to the part that distinguishes it, with the whole of it a hover away —
+ * the same treatment the run id gets in the list. A `config_id` is 64 characters, and a card
+ * carrying one in full is wider than the panel it sits over.
+ */
+export function shortHash(value: string): string {
+  return value.length > 14 ? `${value.slice(0, 12)}…` : value
 }

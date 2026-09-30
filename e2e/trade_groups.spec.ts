@@ -25,12 +25,15 @@ async function withThreshold(page: Page, threshold: number): Promise<void> {
 async function openTradeHistory(page: Page): Promise<void> {
   await page.goto(`/runs?run=${FIXTURE_RUN}`)
   await page.locator('.panel-trigger', { hasText: 'Trade History' }).click()
-  await expect(page.locator('.trade-history tr.group').first()).toBeVisible()
+  await expect(page.locator('.trade-history .record-group').first()).toBeVisible()
 }
 
-/** Scoped to the panel: other panels on the page have tables of their own. */
+/**
+ * Scoped to the panel, and that scope is now load-bearing rather than tidy: `.record-row` is the
+ * shared list stem's class, so the run picker's rows carry it too.
+ */
 function tradeRows(page: Page) {
-  return page.locator('.trade-history tbody tr:not(.group)')
+  return page.locator('.trade-history .record-row')
 }
 
 test.beforeEach(async ({ page }) => {
@@ -42,7 +45,7 @@ test('past the threshold the groups start closed and a click opens one', async (
   await withThreshold(page, 1)
   await openTradeHistory(page)
 
-  const group = page.locator('.trade-history tr.group').first()
+  const group = page.locator('.trade-history .record-group').first()
   await expect(group.locator('.group-marker')).toHaveText('▸')
   expect(await tradeRows(page).count()).toBe(0)
 
@@ -56,7 +59,7 @@ test('below the threshold they start open and a click closes one', async ({ page
   await withThreshold(page, 99)
   await openTradeHistory(page)
 
-  const group = page.locator('.trade-history tr.group').first()
+  const group = page.locator('.trade-history .record-group').first()
   await expect(group.locator('.group-marker')).toHaveText('▾')
   const before = await tradeRows(page).count()
 
@@ -67,16 +70,51 @@ test('below the threshold they start open and a click closes one', async ({ page
 })
 
 /**
- * The group row must not be wider than the table it is in. It was nine columns in an eight-column
- * table (`colspan 6 + 1 + 2`), which stretched the table past its own header and put the scenario
- * name under the wrong column.
+ * The group heading must span exactly the columns the list declares — no more, no less.
+ *
+ * It was nine columns in an eight-column table once (`colspan 6 + 1 + 2`), which stretched the
+ * table past its own header and put the scenario name under the wrong column. The stem removes the
+ * arithmetic — the heading adopts the list's own tracks through `subgrid` — so what is worth
+ * asserting now is that the heading and a row resolve to the SAME grid, measured from the browser
+ * rather than counted from markup.
  */
-test('the group row spans exactly the table it is in', async ({ page }) => {
+test('the group heading stands on the same columns as the rows beneath it', async ({ page }) => {
   await openTradeHistory(page)
 
-  const headers = await page.locator('.trade-history thead th').count()
-  const spans = await page.locator('.trade-history tr.group').first().locator('td').evaluateAll(
-    cells => cells.reduce((sum, cell) => sum + ((cell as HTMLTableCellElement).colSpan || 1), 0)
+  const columnsOf = (selector: string) => page.locator(selector).first().evaluate(
+    element => getComputedStyle(element).gridTemplateColumns
   )
-  expect(spans).toBe(headers)
+
+  // The LIST owns the tracks; measured here as used pixel widths, which also catches one that
+  // collapsed to nothing. Not the `.record-head`: that is an `<li>` with `display: contents`, so it
+  // is no grid at all and resolves to `none` — its cells are items of the list, like every row's.
+  // `.trade-list` is the caller's class and now lands on the list's SHELL — the box the container
+  // queries measure, since an element cannot query its own width. The grid is the `<ul>` inside it.
+  const tracks = (await columnsOf('.trade-history .trade-list .record-list')).split(' ')
+  expect(tracks).toHaveLength(8)
+  expect(tracks.every(track => parseFloat(track) > 0)).toBe(true)
+
+  // and the heading stands on those same tracks rather than on eight of its own
+  const headingColumns = await columnsOf('.trade-history .record-group')
+  const rowColumns = await columnsOf('.trade-history .record-row')
+  expect(headingColumns).toBe(rowColumns)
+  expect(headingColumns.startsWith('subgrid')).toBe(true)
+})
+
+/**
+ * The third level: a trade's fills. Clicking a trade row opens the executions that opened and
+ * closed it — and the sub-list is read-only, because the in-then-out order is the content.
+ */
+test('a trade opens its fills, and they offer nothing to click', async ({ page }) => {
+  await withThreshold(page, 99)
+  await openTradeHistory(page)
+
+  await expect(page.locator('.trade-history .fill-list')).toHaveCount(0)
+
+  await tradeRows(page).first().click()
+
+  const fills = page.locator('.trade-history .fill-list').first()
+  await expect(fills).toBeVisible()
+  await expect(fills.locator('.record-row')).toHaveCount(2)
+  await expect(fills.locator('button')).toHaveCount(0)
 })

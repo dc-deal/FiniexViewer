@@ -27,7 +27,22 @@ HTTP contract goes stale in silence, which has already happened once here.
 
 **What the browser tier is for, concretely.** `run_selection.spec.ts` holds the reload and the URL
 — a real `localStorage`, a real history entry. `trade_groups.spec.ts` holds the open/closed regimes
-of the scenario groups. `panel_layout.spec.ts` holds that **no panel scrolls sideways**, at a wide
+of the scenario groups, and two things only a browser can state: that the group heading resolves to
+the SAME grid as the rows beneath it — read from `getComputedStyle`, which also catches a track
+collapsed to zero — and that a trade opens its fills and they offer nothing to click. The test it
+replaced counted `<th>` against the group row's `colspan`; after the migration both are zero, so it
+would have passed for ever on a subject that no longer exists. `list_ranks.spec.ts` holds the ranks, and it is the ONLY instrument for them: jsdom evaluates no
+container queries at all, so the unit suites can assert only that each list declares the same rank
+twice — on the column and on the cell. Whether the browser then acts on it needs a browser. Four
+widths, every ranked list on the run view, and the assertion is a RELATIONSHIP rather than a pixel
+number: the track count, the visible headings and the visible cells are all the count of columns
+whose rank survives the tier the shell measured. It also asserts that every ranked list actually
+gives something up when narrowed, that the run list keeps its card at the narrowest tier, and that
+neither the run list nor the trade list scrolls sideways there. Two traps it walked into while being
+written, both now in the spec's own comments: a url carrying `?run=` draws NO run list, because the
+picker collapses once a run is chosen; and the booking-period table lives in a closed `<details>`,
+which is not laid out at all — its grid resolves to numbers that mean nothing, and the first version
+of the spec duly reported a track count no declaration could produce. `panel_layout.spec.ts` holds that **no panel scrolls sideways**, at a wide
 and at a narrow width: `.panel-content` carries `overflow-x: auto`, which is the right safety valve
 and a poor everyday state, because the moment it engages the panel's leftmost column slides out of
 view and nothing says so. Two defects of exactly that shape reached the screen in one week — a
@@ -79,28 +94,30 @@ tests/
   translate.test.ts         — the marker returns its input; the count agrees with its noun, zero reads as plural, a large count stays grouped
   query_param_utils.test.ts — query reading (string-only), param write and delete
   use_facet_query.test.ts   — the facet encoding round trip and its stable order, a group it cannot read, a value with a space; seeding a bar from the URL, writing nothing while untouched, keeping another view's params, two bars in one URL; and `patchQuery` keeping both writers of one tick
-  run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the narrowing (a unit's errors, a run-wide warning kept while another unit's drops, the outcome counts marked as the run's), the executive figures marked as the run's, the portfolio breakdown incl. the chart link and the narrowed unit MARKED rather than filtered (the run-wide total stays), and the run header incl. the two kinds of parent
+  run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the narrowing (a unit's errors, a run-wide warning kept while another unit's drops, the outcome counts marked as the run's), the executive figures marked as the run's, the portfolio breakdown incl. the chart link and the narrowed unit MARKED rather than filtered (the run-wide total stays), and the run header incl. the two kinds of parent, MARKET TIME (covered in days past two, the summed span only where the units overlap, n/a where the run never recorded it), the two excursions, what the account started from, and a run of several accounts saying how many and which one fell deepest
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
   settings_store.test.ts    — per-field reconciliation (unknown key dropped, missing key defaulted, out-of-range refused), the schema-version discard, setters that ignore rather than clamp, and the display subset handed to panels
   settings_menu.test.ts     — the three dialog tabs (display against the store, layout export/import incl. a bad file reported rather than swallowed, account in each of its four states), and the menu: the theme entry naming what it switches TO, the account name once the server reports one
   caller_store.test.ts      — the four states of GET /api/v1/caller, the display-name fallback, a refused token told apart from an unreachable server, and that nothing is cached
+  record_list.test.ts         — the shared list stem: the flat list unchanged (one row per record under one set of headings, the TRACKS owned by the list rather than by a row), groups (partitioned in the order the rows arrive and never alphabetically, a closed group's heading drawn without its rows, the click reported as a key so the component holds no state, the first cell indented and never the row, the heading a native button carrying aria-expanded), the card beside a row (wrapped by the list, absent where the caller answers null, and NO tooltip machinery mounted at all where no card was offered), nested read-only use (no headings, and a row that is a div rather than a button that ignores its click), a chosen row announced as chosen and only where rows can be chosen, and BANDS: their spans must cover the columns exactly or none are drawn, each band carries the span it KEEPS at every rank tier (the declared span counts the widest tier only), and a band that would lose every column when narrow is reported rather than patched to one
   facet_filter.test.ts      — OR within a facet and AND across facets, a facet counting against the OTHERS and not itself, a picked value kept listed at zero, a row that states no value never claimed by one, and that nothing is mutated
-  run_picker.test.ts        — the flat list (every run whatever its group), newest first, sorting on the INSTANT rather than the text of the stamp, the start time beside the id, a damaged stamp shown as no date rather than Invalid Date, a logs-only run marked but still selectable, narrowing by facet, and the list collapsing once a run is chosen
-  scenario_roster.test.ts   — the complete roster incl. the scenarios that produced nothing and their reason, the notice above the filter, narrowing by facet and by search, the honest count, a facet dropped where no row states a value, and CHOOSING scenarios (click narrows, a second click takes one back out, several collected at once, a failed scenario choosable like any other, inert without a host, the hint that says what a click does and the state that replaces it)
+  run_picker.test.ts        — the flat list on the shared stem (every run whatever its group), newest first, sorting on the INSTANT rather than the text of the stamp, a damaged stamp shown as no date rather than Invalid Date, the stamp read from its OWN cell since the id beside it also begins with the year, the year dropped inside the current one and kept outside it, a logs-only run marked but still selectable, narrowing by facet, the list collapsing once a run is chosen, what the row says the run DID (one figure per account currency and never folded, an outcome shown only where the run recorded one, the trouble count silent at zero, the id shortened with the whole value in its title, how much market time it covered), and the RANKS with the card that makes them defensible: every cell carrying the rank its own column declares, a card on every row, the configuration and provenance and weight, `ticks_from` stated only where the run recorded it, the artifacts counted with their names in the title, the Tier-2 log count present only where it is not zero, and a run whose stamp is not a date still drawn
+  scenario_roster.test.ts   — the complete roster incl. the scenarios that produced nothing and their reason, the notice above the filter, narrowing by facet and by search, the honest count, a facet dropped where no row states a value, and CHOOSING scenarios (click narrows, a second click takes one back out, several collected at once, a failed scenario choosable like any other, inert without a host, the hint that says what a click does and the state that replaces it). Its figures are read CELL BY CELL against the column headings since the twelve-column migration — as running text, a probe for the currency an amount is IN matched the currency a scenario merely declares
   run_reports_store.test.ts — section loading (warnings/errors, portfolio), error text, clearing on run change, shared error slot across concurrent sections, and the ABSENCE as a value — the cause kept beside the empty slot, two sections missing for different reasons, an absence that is not an error, and every reason forgotten on a selection change
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 / 409 / 403 mapping
   api_contract.test.ts      — the captured fixtures against the contract they were taken under, and each list's declared row key
   deployments_store.test.ts — ledger listing, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state
-  booking_period_panels.test.ts — the three-state reconciliation incl. "not checked", the completeness wording, the magnitude drawdown, the timeline (tracks, polarity, no extent, unreadable timestamps, and no rule ruled across lanes that do not share the boundary), the table carrying every field the hover card has incl. the equity band, the column groups, the shared currency stated once and kept per-cell where the rows disagree, and under a narrowing: only the chosen lanes drawn while the run-wide verdict keeps its figures and says so
-  trade_history.test.ts     — the magnitude excursion, the gated expectancy, the VISIBLE row cap, what the card carries that the row cannot, and the scenario threshold (summaries past it, the group row still complete, opening one by pointer and by keyboard), and under a narrowing: narrowed BEFORE capped, the cap counted against the narrowed set, an empty result stated as the scenario's, the run-wide funnel and analytics marked as the run's
+  booking_period_panels.test.ts — the three-state reconciliation incl. "not checked", the completeness wording, the magnitude drawdown, the timeline (tracks, polarity, no extent, unreadable timestamps, and no rule ruled across lanes that do not share the boundary), the table carrying every field the hover card has incl. the equity band, the column groups, the shared currency stated once and kept per-cell where the rows disagree, the opening balance with its absence stated rather than computed, the fee breakdown one hover from the fee, and under a narrowing: only the chosen lanes drawn while the run-wide verdict keeps its figures and says so
+  trade_history.test.ts     — the magnitude excursion, the VISIBLE row cap, what the card carries that the row cannot, the scenario threshold (summaries past it, the group heading still complete, opening one by pointer), the FILLS as a third level (folded until clicked, both legs then drawn, no headings and no controls of their own, the share named only where the trade took part of a bigger fill, and never a claim about how many trades share one), and under a narrowing: narrowed BEFORE capped, the cap counted against the narrowed set, an empty result stated as the scenario's; plus what a narrow list keeps — every cell carrying its column's rank, the group heading laid out from the END of the tracks rather than by a span fixed at eight columns, and the net closing the row after the life of the trade
   hints_store.test.ts       — reconciliation (a retired id dropped, an unknown version discarded, no duplicates), a dismissal that lasts the session and is never written down, a ban that outlives the visit, and the reset that undoes both
   json_tree.test.ts         — key naming, quoted strings, array indices, null, fold depth
-  run_config.test.ts        — the two configuration shapes, override PRESENCE without resolution, the worker join, and the guarantee that no top-level key is unreachable
+  run_config.test.ts        — the two configuration shapes, override PRESENCE without resolution, the overriding scenarios folded away while the warning stays in the open, the worker join, and the guarantee that no top-level key is unreachable
   app_button.test.ts        — the two shapes, a toggle announced as one ONLY where it is one, a genuinely disabled button rather than one merely styled as it, and that nothing submits a form by accident
   hover_card.test.ts        — portalled out of the page, opens on focus, carries the caller's figures and their polarity
+  report_format.test.ts     — the three formatters worth testing apart from the panels that use them: the canonical UTC clock, and a stamp that is NOT a date giving nothing rather than throwing (Intl raises on an invalid date, so one damaged field took down the whole list it was in); the byte steps, named after the step they actually divided by; a long hash shortened to the part that distinguishes it
   path_label.test.ts        — the whole path comes out whole, the name told from the folders, a break offered at every separator, and the full value kept in the title
   timeline_chart.test.ts    — scale and clamping, the broken axis and its length-preserving property, staggered labels
-  deployment_panels.test.ts — the change marks between rows (against the produced four-session history), the absent idle stretch, the upper-bound gap, the missing totals row, the identity that does not move, the advisory wording
+  deployment_panels.test.ts — the change marks between rows, drawn as a line ABOVE the session that starts the new stand and never as a row of the list (against the produced four-session history), the absent idle stretch, the upper-bound gap, the missing totals row, the identity that does not move, the advisory wording
 
 tests/fixtures/            — responses captured from the running backend, plus the contract manifest
 ```
@@ -194,9 +211,16 @@ own rather than under load, because each of the 500 rows is wrapped in its own f
 instance. They declare `timeout: 20_000` so the default 5 s does not turn a slow render into a
 failure that says nothing — the assertions are untouched and can still go red.
 
+**The cost moved but did not go away, and the budgets must not be trimmed as table-era slack.** The
+wrapping now belongs to `RecordList` rather than to the panel: a list wraps a row only where its
+caller offers a card, which is why the run picker mounts none at all — but the trade history offers
+one for every trade, so it is still 500 instances on a 500-row draw.
+
 The cost itself should not stay. `HoverCard` mounts one tooltip PROVIDER per instance, where the
 primitive expects a single provider high in the tree and one root per item. Lifting it is a change
-to a shared base component used in four places, so it is recorded here rather than done on the way.
+to a shared base component used in three places — `base/RecordList.vue`, `base/TimelineChart.vue` and
+`runs/BookingPeriodTimeline.vue` through the chart — so it is recorded here rather than done on the
+way.
 
 ### Missing browser interfaces (`tests/setup.ts`)
 
@@ -228,6 +252,29 @@ Stores that trigger async work on reactive changes (e.g., `bars_store` watches t
 
 ---
 
+## A fourth tier, and it is a PERSON: the smoke protocol
+
+The three tiers above — type-check, unit suite, browser suite — say whether the code does what it
+was written to do. None of them says whether the app SHOWS the right thing on a run nobody wrote a
+test for.
+
+The fourth tier is an operator-requested sweep over the viewer's surface: every situation the app
+must be able to show, walked against real stored runs, one after another. It is not a gate and not
+automated; its instrument is a browser and a deliberate look. Two scripts support it:
+
+- **`scripts/classify_runs.py`** asks the API which situation each stored run actually produces —
+  several brokers, a failed grade, logs only, shared fills, a very long market span. A case no
+  stored run produces any more is recorded UNCOVERED rather than dropped, because an uncovered case
+  is the one that breaks unseen. Measured 2026-09-30 over 46 runs, three cases are uncovered: two
+  account currencies in one run, a unit ERROR, and a scenario with two portfolio rows.
+- **`scripts/capture_fixtures.py`** re-cuts the twelve fixtures from their source runs. The
+  contract moved through seven versions in five days and each time the mirror, the fixtures and
+  `EXPECTED_CONTRACT` move together (§21) — by hand that is where one capture gets forgotten.
+
+The protocol itself, its freshness check and its case catalogue are internal and live outside
+`docs/`, because they name run ids on this machine and change with the archive rather than with the
+code.
+
 ## Adding New Tests
 
 1. Create `tests/<module_name>.test.ts`.
@@ -239,3 +286,9 @@ Stores that trigger async work on reactive changes (e.g., `bars_store` watches t
 7. Portalled content (reka-ui dialogs, menus, hover cards) is read off `document`, not off the wrapper, and the wrapper is unmounted in `afterEach` rather than the body being wiped — wiping removes the node the teleport still holds.
 8. **In a tabbed dialog, read the ACTIVE panel** (`.tab-panel[data-state="active"]`). The primitive keeps the inactive panels in the document and empties them, so the first match is usually an empty shell — a test that reads it sees `''` and fails for the wrong reason. Switching a tab by hand needs `mousedown`, not `click`: the primitive acts on pointer-down.
 9. No server, no network — tests run offline.
+10. **A GENERIC base component is mounted through the template that uses it, or its type parameter
+    is lost.** `RecordList` infers its row type from `rows` where a template names it; through
+    `mount()` there is no template, so every slot scope arrives as `unknown` and the props degrade
+    with it. `record_list.test.ts` narrows that at ONE documented place rather than at each of six
+    slots. A host `.vue` would be cleaner and is not available: `tsconfig.tests.json` compiles only
+    `tests/**/*.ts`.

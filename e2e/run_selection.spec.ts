@@ -17,8 +17,10 @@ test.beforeEach(async ({ page }) => {
 test('a chosen run and scenario survive a reload', async ({ page }) => {
   await page.goto('/runs')
 
-  // the picker is the way in: a flat list, newest first
-  const row = page.locator('.run-row', { hasText: FIXTURE_RUN })
+  // Found by the id cell's TITLE, not by the row's text: the cell shows only the timestamp part,
+  // since the eight hex characters after it separate two runs of the same second and nothing else.
+  const row = page.locator('.run-list .record-row')
+    .filter({ has: page.locator(`.run-id[title="${FIXTURE_RUN}"]`) })
   await expect(row).toBeVisible()
   await row.click()
 
@@ -29,7 +31,7 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
   await page.locator('.panel-trigger', { hasText: 'Scenarios' }).click()
 
   // narrow to one scenario from the roster
-  const scenario = page.locator('.roster-head').first()
+  const scenario = page.locator('.scenario-roster .record-row').first()
   const chosen = (await scenario.locator('.roster-name').innerText()).trim()
   await scenario.click()
 
@@ -40,7 +42,7 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
   await page.reload()
 
   await expect(page.locator('.narrowed-head')).toContainText(chosen)
-  await expect(page.locator('.roster-row.picked')).toHaveCount(1)
+  await expect(page.locator('.scenario-roster .record-row.picked')).toHaveCount(1)
 })
 
 /**
@@ -74,21 +76,21 @@ test('a link naming a run that is gone says so', async ({ page }) => {
  */
 test('a narrowed run list survives a reload and stays a shareable link', async ({ page }) => {
   await page.goto('/runs')
-  await expect(page.locator('.run-row').first()).toBeVisible()
+  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
-  const before = await page.locator('.run-row').count()
+  const before = await page.locator('.run-list .record-row').count()
   // a term that narrows without emptying: the picker searches the run id and the SET name, and
   // the capture holds six `demo_btcusd_bot` runs among 39
   await page.locator('input.facet-search').first().fill('demo_btcusd')
   await expect(page).toHaveURL(/runq=demo_btcusd/)
-  const narrowed = await page.locator('.run-row').count()
+  const narrowed = await page.locator('.run-list .record-row').count()
   expect(narrowed).toBeGreaterThan(0)
   expect(narrowed).toBeLessThan(before)
 
   await page.reload()
 
-  await expect(page.locator('.run-row').first()).toBeVisible()
-  expect(await page.locator('.run-row').count()).toBe(narrowed)
+  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+  expect(await page.locator('.run-list .record-row').count()).toBe(narrowed)
 })
 
 /**

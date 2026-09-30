@@ -47,8 +47,8 @@ describe('AppBar', () => {
     const sources = allSources()
     delete sources['scenarioRoster']
 
-    const portfolio = allPanels().find(panel => panel.source === 'portfolio')!
-    const toggle = toggleFor(mountBar(sources), portfolio.title)
+    const present = allPanels().find(panel => panel.source === 'bookingPeriods')!
+    const toggle = toggleFor(mountBar(sources), present.title)
     expect(toggle.attributes('disabled')).toBeUndefined()
     expect(toggle.classes()).not.toContain('absent')
   })
@@ -63,8 +63,8 @@ describe('AppBar', () => {
     delete sources['scenarioRoster']
     const wrapper = mountBar(sources)
 
-    const portfolio = allPanels().find(panel => panel.source === 'portfolio')!
-    const hidden = toggleFor(wrapper, portfolio.title)
+    const present = allPanels().find(panel => panel.source === 'bookingPeriods')!
+    const hidden = toggleFor(wrapper, present.title)
     await hidden.trigger('click')
 
     expect(hidden.classes()).not.toContain('shown')

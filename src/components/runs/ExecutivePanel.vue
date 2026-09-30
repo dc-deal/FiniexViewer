@@ -4,7 +4,8 @@ import FigureBlock from '@/components/base/FigureBlock.vue'
 import type { RunSummary, RunSummaryCurrency } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 import {
-  amount, magnitude, numberOrNa, percent, percentFigure, percentOrNa, rValue, signClass,
+  amount, magnitude, marketSpan, numberOrNa, percent, percentFigure, percentOrNa, rValue,
+  signClass,
 } from '@/components/runs/report_format'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import { t } from '@/translate'
@@ -62,7 +63,33 @@ function activity(row: RunSummaryCurrency): Figure[] {
     // a magnitude: the loss half is reported as a positive figure, and a minus sign here would
     // claim a direction the field does not carry
     { label: t('Gross loss'), value: magnitude(row.gross_loss, row.currency) },
-    { label: t('Fees'), value: amount(row.total_fees, row.currency) },
+    {
+      label: t('Fees'),
+      value: amount(row.total_fees, row.currency),
+      title: t('The fees of the CLOSED trades — the same population the trade list and the booking periods sum, so all three agree.'),
+    },
+    /*
+     * The second fee figure, and only where it differs: what the run CHARGED, open positions
+     * included. The two are one number apart exactly when something is still open, and one file
+     * read one while the next read the other under a single name until contract 18.
+     */
+    ...(row.fees_charged === row.total_fees ? [] : [{
+      label: t('Charged'),
+      value: amount(row.fees_charged, row.currency),
+      title: t('What the run charged in all, open positions included. It exceeds the fees above by what the still-open positions cost.'),
+    }]),
+    /*
+     * The two excursions. They have no other home on the page: the trade list's own summary block
+     * was removed because `trade_history.analytics[]` repeats this response field for field — but
+     * these two were among the repeats that this panel did not actually print, so removing that
+     * block took them off the screen entirely.
+     */
+    {
+      label: t('Worst against'),
+      value: magnitude(row.largest_mae, row.currency),
+      title: t('How far the worst trade ran against the position before it closed — a magnitude, since the direction is in the name.'),
+    },
+    { label: t('Best in favour'), value: amount(row.largest_mfe, row.currency) },
   ]
 }
 
@@ -72,15 +99,57 @@ function activity(row: RunSummaryCurrency): Figure[] {
  * a reader without this block concludes something is broken.
  */
 function account(row: RunSummaryCurrency): Figure[] {
-  const figures: Figure[] = [
+  const figures: Figure[] = []
+  /*
+   * How many accounts this block is about, said ONCE at its head rather than on each figure.
+   *
+   * It matters because two of the figures under it are SUMS on a run of several: a backtest of N
+   * scenarios is N independent accounts with one balance each. Qualifying them line by line put
+   * "Final equity · 8 accounts" in a label and wrapped the amount beside it over two lines; the
+   * count belongs to the block, because every figure in it shares the same scope.
+   */
+  if (row.unit_count > 1) {
+    figures.push({
+      label: t('Accounts'),
+      value: `${row.unit_count}`,
+      title: t('Independent accounts, one balance each. The capital and the closing equity below are sums over them; no single account held either.'),
+    })
+  }
+  figures.push(
+    { label: t('Initial capital'), value: amount(row.total_initial_balance, row.currency) },
     {
       label: t('Max drawdown'),
       value: `${magnitude(row.account_max_drawdown, row.currency)} (${percentFigure(row.account_max_dd_pct)})`,
       title: t('A magnitude: the sign is not reliable across the archive. The percentage is already multiplied.'),
     },
     { label: t('Max equity'), value: amount(row.max_equity, row.currency) },
-    { label: t('Final equity'), value: amount(row.final_equity, row.currency) },
-  ]
+    /*
+     * ONE account's closing equity, or the total over several — never the same word for both.
+     * A backtest of N scenarios is N independent accounts, one balance each, and no account ever
+     * held their sum: the backend therefore answers `final_equity: null` there and names the sum
+     * `total_final_equity`. Printing the sum under "Final equity" claimed a balance that never
+     * existed, which is the defect this line was changed for.
+     */
+    row.final_equity === null
+      ? {
+          label: t('Final equity'),
+          value: amount(row.total_final_equity, row.currency),
+          title: t('The SUM over the accounts named above: no single one held it. Where a currency has one account this is that account, and the word means what it says.'),
+        }
+      : { label: t('Final equity'), value: amount(row.final_equity, row.currency) },
+  )
+  /*
+   * WHICH account the drawdown trio is about. It is one line of its own rather than a suffix on the
+   * drawdown: a scenario name is not a figure, and appended there it wrapped the cell over two
+   * lines. Only where there are several accounts — with one, the name adds nothing.
+   */
+  if (row.unit_count > 1) {
+    figures.push({
+      label: t('Deepest account'),
+      value: row.account_max_drawdown_unit,
+      title: t('The drawdown, the max equity and their percentage above all belong to this one account — taken together from it, because a trough and a peak from two accounts describe a decline that never happened.'),
+    })
+  }
   // shown only where something IS open — zero open positions needs no line, and an unrealised 0.00
   // beside it reads as a figure somebody measured
   if (row.open_position_count > 0) {
@@ -104,6 +173,39 @@ function held(seconds: number, trades: number): string {
   if (seconds < 172_800) return `${(seconds / 3600).toFixed(1)} h`
   return `${(seconds / 86_400).toFixed(1)} d`
 }
+
+/**
+ * How much MARKET the run read — the question the wall clock does not answer, and the one an
+ * operator arrives with: *how long did it simulate, over how many days?*
+ *
+ * Two figures, because they are two different things and their difference is itself a finding.
+ * `Covered` counts a stretch two scenarios share ONCE; `Summed` adds the units up. A run of eight
+ * scenarios that is four pairs of identical windows reads 464 h covered against 928 h summed —
+ * the backend's own printout showed only the second and called it the simulation's length, which
+ * counted every market hour of it twice. The sum is shown only where it differs.
+ */
+const marketTime = computed<Figure[]>(() => {
+  const covered = props.model.tick_timespan_seconds
+  const summed = props.model.tick_timespan_total_seconds
+  const figures: Figure[] = [
+    {
+      label: t('Covered'),
+      value: marketSpan(covered),
+      title: t('Market time the run\'s units processed, a shared stretch counted once. Not the wall-clock time the run took.'),
+    },
+  ]
+  // rounded to the second before comparing: the two are floats of the same quantity and a run whose
+  // units do not overlap answered 172691.472 against 172691.47199999998, so a strict comparison
+  // printed a "sum" identical to the span beside it
+  if (covered !== null && summed !== null && Math.round(summed) !== Math.round(covered)) {
+    figures.push({
+      label: t('Summed'),
+      value: marketSpan(summed),
+      title: t('The units added up. It exceeds the covered span by exactly the overlap between them.'),
+    })
+  }
+  return figures
+})
 
 /**
  * What was ATTEMPTED. Kept here as well as above the trade rows on purpose: there it says what the
@@ -176,6 +278,7 @@ const scope = computed<Figure[]>(() => {
     <div class="blocks">
       <FigureBlock :title="t('Orders')" :figures="orders" min-width="11rem" />
       <FigureBlock :title="t('Scope')" :figures="scope" min-width="11rem" />
+      <FigureBlock :title="t('Market time')" :figures="marketTime" min-width="11rem" />
     </div>
   </div>
 </template>

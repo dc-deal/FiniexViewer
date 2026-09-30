@@ -203,10 +203,45 @@ const scaleNote = computed(() => {
   return `${clock} ${t('All times on')} ${day}.`
 })
 
+/**
+ * A mark says only what its NEIGHBOURS do not.
+ *
+ * `2025-10-13 00:00:00Z` on every mark is twenty characters of which sixteen repeat, and the axis
+ * then reads as a wall of stamps rather than as a scale. The big charting tools all do the same
+ * thing here: the date appears where the day turns over, and everything inside a day is a time.
+ * The part every mark shares — the month and the year — is stated ONCE beside the scale's name.
+ *
+ * Seconds are gone deliberately: at a step of an hour or a day they are always `00`, and the whole
+ * instant is still on the row itself and in the table below.
+ */
 function axisFormat(value: number): string {
-  const stamp = utcInstant(new Date(value).toISOString())
-  return withinOneDay.value ? (stamp.split(' ')[1] ?? stamp) : stamp
+  const at = new Date(value)
+  const midnight = at.getUTCHours() === 0 && at.getUTCMinutes() === 0
+  const day = `${String(at.getUTCDate()).padStart(2, '0')} ${MONTHS[at.getUTCMonth()]}`
+  const clock = `${String(at.getUTCHours()).padStart(2, '0')}:`
+    + `${String(at.getUTCMinutes()).padStart(2, '0')}Z`
+  if (withinOneDay.value) return clock
+  return midnight ? day : clock
 }
+
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
+
+/**
+ * The month and year every mark shares, or null where the periods span more than one month — then
+ * the marks carry the day themselves and there is nothing common to hoist.
+ */
+const sharedMonth = computed(() => {
+  const stamps = props.periods.flatMap(period => [
+    new Date(period.opened_at), new Date(period.closed_at),
+  ])
+  if (!stamps.length) return null
+  const first = stamps[0]!
+  const key = (at: Date) => `${at.getUTCFullYear()}-${at.getUTCMonth()}`
+  if (stamps.some(at => key(at) !== key(first))) return null
+  return `${MONTHS[first.getUTCMonth()]} ${first.getUTCFullYear()}`
+})
 
 const HOUR_MS = 60 * 60 * 1000
 
@@ -274,7 +309,9 @@ function rangeLabel(from: number, to: number): string {
       :from="scope.from"
       :to="scope.to"
       :format="axisFormat"
+      :scale-label="sharedMonth ? `${t('canonical clock')} · ${sharedMonth}` : t('canonical clock')"
       :scale-note="scaleNote"
+      natural-time
       :collapse-gaps-longer-than="longestSpan"
       :format-gap="gapLabel"
       :format-range="rangeLabel"

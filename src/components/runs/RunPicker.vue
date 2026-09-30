@@ -5,11 +5,15 @@ import { useRunsStore } from '@/stores/runs_store'
 import FacetBar from '@/components/base/FacetBar.vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
+import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetQuery } from '@/composables/use_facet_query'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
-import type { RunInfo } from '@/types/api/report_types'
-import { t } from '@/translate'
+import type { ListCard, ListColumn } from '@/types/list_types'
+import type { Figure } from '@/types/figure_types'
+import { amount, bytes, marketSpan, shortHash, utcInstant } from '@/components/runs/report_format'
+import type { RunInfo, RunResult } from '@/types/api/report_types'
+import { plural, t } from '@/translate'
 
 /**
  * Which run to look at — a facet bar over a flat list, not a cascade of dropdowns.
@@ -42,7 +46,94 @@ const facets: FacetDefinition<RunInfo>[] = [
   { id: 'reporting', label: 'Reporting', valuesOf: row => stated(row.reporting) },
   { id: 'origin', label: 'Origin', valuesOf: row => stated(row.parent_kind) },
   { id: 'version', label: 'Version', valuesOf: row => stated(row.app_version) },
+  // contract 15. A run the ledger holds nothing for states no outcome, and an absence is not a
+  // category — `stated` drops it rather than offering "unknown" as something to pick.
+  { id: 'outcome', label: 'Outcome', valuesOf: row => stated(row.run_outcome) },
+  {
+    id: 'trouble',
+    label: 'Trouble',
+    // PRESENCE of a stated count, never a threshold of our own: null means nobody counted, which
+    // is not the same as zero and claims nothing either way
+    valuesOf: row => {
+      const marks: string[] = []
+      if (row.error_count) marks.push('error')
+      if (row.warning_count) marks.push('warning')
+      return marks
+    },
+  },
 ]
+
+/**
+ * What a run earned, ONE ENTRY PER ACCOUNT CURRENCY — never folded into a single figure.
+ *
+ * `results` has three states and they are three different statements: `null` is the ledger holding
+ * nothing for this run (still going, died before its close, or `reporting: none` — read it beside
+ * `reporting`), `[]` is a run that closed without figures, a list is what it earned. Measured over
+ * the 41 runs here: 38 lists, 2 null, 1 empty, so all three reach the screen.
+ *
+ * A run with two currencies shows two figures. Adding them would be the derivation this repo does
+ * not do — and it would be wrong as arithmetic besides, since the two are different money.
+ */
+function earned(run: RunInfo): RunResult[] {
+  return run.results ?? []
+}
+
+/**
+ * The column headings, in the order of the list's tracks. Held here rather than written out in the
+ * template because `P&L` in markup is an invalid character reference — `&L` is not an entity, and
+ * the template stops compiling on it. The last track carries the origin and logs-only marks and
+ * has no heading: they are marks, not a measured column.
+ *
+ * **What a narrow list keeps**, and it is the question this list exists to answer: WHICH run
+ * (`Started`, `Set`), whether it worked (`Outcome`), and what it earned (`Net P&L`). Everything
+ * else is given up in order, and every one of them is in the row's card whatever the width.
+ *
+ * `Run id` goes FIRST although it is the row's declared key, and that is the one choice here worth
+ * stating: it renders as the timestamp part of the id, which is the same instant `Started` already
+ * shows in words. Two spellings of one fact are not two facts.
+ *
+ * Every rung of the ladder gives something up — 10 columns, then 8, 6 and 4. A rank the list does
+ * not use makes a breakpoint that changes nothing, which reads as a broken one: the first version
+ * of this declared no rank 4 at all and so held all ten columns down to 48rem, then dropped six at
+ * once.
+ */
+const columns: ListColumn[] = [
+  // Sized from the cells rather than from a rem number, now that the stamp is 13 characters
+  // instead of 22. `auto` needs the cell to stay on one line, which `.run-when` declares — the
+  // 13rem it replaces was chosen because the old stamp wrapped at 11.
+  { label: t('Started'), width: 'auto', rank: 1 },
+  { label: t('Run type'), width: '7rem', rank: 4 },
+  // a floor as well as the slack: the set NAMES the run, and with a bare `1fr` the columns added
+  // since squeezed it to `EU…` — the one cell on the row a reader actually recognises
+  { label: t('Set'), width: 'minmax(7rem, 1fr)', rank: 1 },
+  // the id and `Started` encode the SAME instant, so the id is the one that goes: the stamp is
+  // what a reader scans by, and the whole id stays in the cell's title and in the card
+  { label: t('Run id'), width: 'auto', rank: 4 },
+  // How much MARKET the run read — what the scenario roster puts first for the same reason: it is
+  // the figure that says how big a run was, and nothing else on the row carries it.
+  { label: t('Market time'), width: 'auto', figure: true, rank: 3 },
+  { label: t('Outcome'), width: 'auto', rank: 1 },
+  { label: t('Net P&L'), width: 'auto', figure: true, rank: 1 },
+  { label: t('Trades'), width: 'auto', figure: true, rank: 3 },
+  { label: t('Trouble'), width: 'auto', figure: true, rank: 2 },
+  { label: '', width: 'auto', rank: 2 },
+]
+
+/**
+ * The run id, shortened to the part a reader recognises: the timestamp. The eight hex characters
+ * after it separate two runs of the same second and nothing else, and they were costing the set
+ * name nine characters in every row since the columns began sharing one grid.
+ */
+function shortId(runId: string): string {
+  const at = runId.lastIndexOf('_')
+  return at > 0 ? `${runId.slice(0, at)}…` : runId
+}
+
+/** The polarity of a figure, the same role it carries in every other panel. */
+function signOf(value: number): string {
+  if (value === 0) return ''
+  return value > 0 ? 'positive' : 'negative'
+}
 
 /**
  * Parsed rather than compared as text: `start_time` is ISO-8601 with an explicit offset, and two
@@ -54,9 +145,19 @@ function instant(iso: string): number {
   return Number.isNaN(at) ? 0 : at
 }
 
+/** A run that never recorded its span sorts last under "longest" rather than first. */
+function span(run: RunInfo): number {
+  return run.tick_timespan_seconds ?? -1
+}
+
 const sorts: SortDefinition<RunInfo>[] = [
   { id: 'newest', label: 'newest', compare: (a, b) => instant(b.start_time) - instant(a.start_time) },
   { id: 'oldest', label: 'oldest', compare: (a, b) => instant(a.start_time) - instant(b.start_time) },
+  {
+    id: 'span',
+    label: 'market time',
+    compare: (a, b) => span(b) - span(a) || instant(b.start_time) - instant(a.start_time),
+  },
   {
     id: 'name',
     label: 'name',
@@ -81,12 +182,92 @@ const shown = computed(() => sortRows(
 /**
  * When the run started, in the reader's own zone. The id encodes the same instant, but nobody
  * reads `20260925_095227` as a date at a glance — which is the whole reason this column exists.
+ *
+ * A label says only what its neighbours do not, which is the same rule the time axis follows: the
+ * year is dropped inside the current one and kept outside it, and the seconds are gone — two runs
+ * of the same minute are told apart by the id, not by this. `Sep 29, 2026, 12:27 PM` was 22
+ * characters and needed 13rem of a 28rem panel, which is what made the narrowest tier overflow by
+ * 24 px. `Sep 29, 12:27` is 13.
+ *
+ * The MONTH stays a word on purpose. This column is the reader's own zone while the card beside it
+ * carries UTC, and a numeric `2026-09-29 12:27` reads like the canonical clock that it is not.
  */
 function startedAt(iso: string): string {
   if (!iso) return ''
   const at = new Date(iso)
   if (Number.isNaN(at.getTime())) return ''
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(at)
+  const sameYear = at.getFullYear() === new Date().getFullYear()
+  return new Intl.DateTimeFormat(undefined, {
+    ...(sameYear ? {} : { year: 'numeric' }),
+    month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(at)
+}
+
+/**
+ * What the row has no width for — and on this list that is most of the index row.
+ *
+ * `RunInfo` carries twenty-one fields and ten of them reach a column. The rest are what a reader
+ * asks about ONE run: where its ticks came from, which configuration produced it, how much it
+ * weighs on disk, which sections it wrote. A card is where a question about one row belongs, and
+ * the operator's standing rule is that every table offers the extended information of the API line
+ * it already has.
+ *
+ * Nothing is derived and nothing is fetched: every line below names a field of the index row that
+ * is on screen anyway. Measured over the 46 stored runs on 2026-09-30, which is why several lines
+ * are conditional — `reporting` reads `expected` on all 46 and `app_version` `1.4.0` on all 46,
+ * while `ticks_from` is stated on 18 and `data_windows` on 18.
+ */
+function card(run: RunInfo): ListCard {
+  const details: Figure[] = []
+  // UTC beside the column's local rendering: the stamp in the column is in the reader's own zone,
+  // and the canonical clock is the one the run itself was written in. Absent for a stamp that is
+  // not a date — the same hole the column shows as "no date", never an empty pair.
+  const started = utcInstant(run.start_time)
+  if (started) details.push({ label: t('Started (UTC)'), value: started })
+  // WHERE THE TICKS CAME FROM and WHERE THE ORDERS WENT — the two facts that separate the four
+  // kinds of run. Null on a run recorded before contract 12, so stated or absent, never guessed.
+  if (run.ticks_from) details.push({ label: t('Ticks from'), value: run.ticks_from })
+  if (run.orders_to) details.push({ label: t('Orders to'), value: run.orders_to })
+  if (run.parent_id) {
+    details.push({ label: run.parent_kind ?? t('Parent'), value: run.parent_id })
+  }
+  details.push(
+    { label: t('Configuration'), value: run.config_snapshot },
+    { label: t('Config id'), value: shortHash(run.config_id), title: run.config_id },
+    { label: t('Version'), value: `${run.app_version} · ${run.git_commit}` },
+    { label: t('Reporting'), value: run.reporting },
+    { label: t('Size'), value: bytes(run.size_bytes) },
+  )
+  // The sections the run WROTE. It says which panels can exist at all, and it varies by pipeline
+  // rather than by a count that could be assumed — 16, 19 or 20 over the stored runs, and 0 on the
+  // two that are logs only, where the row's own mark already says so.
+  if (run.artifacts.length) {
+    details.push({
+      label: t('Artifacts'),
+      value: plural(run.artifacts.length, t('section'), t('sections')),
+      title: run.artifacts.join(', '),
+    })
+  }
+  // the windows a run DECLARED, which is not the market time it went on to read — that figure is
+  // its own column. Null is a run that never recorded the field, so an absence stays an absence.
+  if (run.data_windows?.length) {
+    details.push({
+      label: t('Data windows'),
+      value: plural(run.data_windows.length, t('window'), t('windows')),
+      title: run.data_windows.map(window => window.unit_name).join(', '),
+    })
+  }
+  // Tier 2, the one trouble count the row deliberately leaves off: WARNING records from the log
+  // pot, ignorable by design. It reaches 547 on one stored run, so it is worth a line where it is
+  // not zero — and a zero says nothing, so it gets none.
+  if (run.log_warning_count) {
+    details.push({
+      label: t('Log warnings'),
+      value: String(run.log_warning_count),
+      title: t('Tier 2 — WARNING records in the log, ignorable by design. See the scenario logs.'),
+    })
+  }
+  return { title: run.run_id, details }
 }
 
 /**
@@ -134,29 +315,64 @@ watch(selectedRunId, runId => { open.value = runId === null })
       </p>
       <p v-else-if="!shown.length" class="picker-hint">{{ t('No run matches') }}</p>
 
-      <ul v-else class="run-list">
-        <li v-for="run in shown" :key="run.run_id">
-          <!-- A logs-only run is chosen like any other: the view says what it is, and the store
-               asks for nothing. A row that cannot be clicked is the look of a broken control. -->
-          <button
-            type="button"
-            class="run-row"
-            :class="{ picked: run.run_id === selectedRunId }"
-            @click="runsStore.selectRun(run.run_id)"
-          >
-            <span class="run-when">{{ startedAt(run.start_time) || t('no date') }}</span>
-            <span class="run-group">{{ run.group }}</span>
-            <span class="run-name">{{ run.name }}</span>
-            <span class="run-id">{{ run.run_id }}</span>
-            <!-- one cell, however many marks: two spans of their own would push the id column to a
-                 different place on every row, which is what made the list look ragged -->
-            <span class="run-marks">
-              <span v-if="run.parent_kind" class="run-mark">{{ run.parent_kind }}</span>
-              <span v-if="!run.has_reports" class="run-mark logs">{{ t('logs only') }}</span>
+      <RecordList
+        v-else
+        class="run-list"
+        :rows="shown"
+        :columns="columns"
+        :row-key="run => run.run_id"
+        :is-picked="run => run.run_id === selectedRunId"
+        :row-card="card"
+        @pick="run => runsStore.selectRun(run.run_id)"
+      >
+        <!-- A logs-only run is chosen like any other: the view says what it is, and the store asks
+             for nothing. A row that cannot be clicked is the look of a broken control. -->
+        <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
+             this template owns the cells, so a track given up under a cell that stayed would shift
+             every later cell into the wrong column -->
+        <template #default="{ row: run }">
+          <span :data-rank="1" class="run-when">
+            {{ startedAt(run.start_time) || t('no date') }}
+          </span>
+          <span :data-rank="4" class="run-group">{{ run.group }}</span>
+          <span :data-rank="1" class="run-name" :title="run.name">{{ run.name }}</span>
+          <!-- the stamp identifies it to a reader, the eight hex characters do not — and the whole
+               id is one hover away. Same treatment the configuration id already gets. -->
+          <span :data-rank="4" class="run-id" :title="run.run_id">{{ shortId(run.run_id) }}</span>
+          <!-- What the run DID, from the index row itself — no request per run (contract 15). -->
+          <span :data-rank="3" class="run-span">{{ marketSpan(run.tick_timespan_seconds) }}</span>
+          <span :data-rank="1" class="run-outcome" :class="run.run_outcome ?? ''">
+            <template v-if="run.run_outcome">
+              {{ run.run_outcome === 'success' ? '✓' : '✖' }} {{ run.run_outcome }}
+            </template>
+          </span>
+          <!-- one line per account currency, and the two cells iterate the same list, so the
+               amount and its trade count stay on one line together -->
+          <span :data-rank="1" class="run-pnl">
+            <span
+              v-for="result in earned(run)"
+              :key="result.currency"
+              :class="signOf(result.net_pnl)"
+            >{{ amount(result.net_pnl, result.currency) }}</span>
+          </span>
+          <span :data-rank="3" class="run-trades">
+            <span v-for="result in earned(run)" :key="result.currency">
+              {{ plural(result.total_trades, t('trade'), t('trades')) }}
             </span>
-          </button>
-        </li>
-      </ul>
+          </span>
+          <!-- one slot, present or not: a mark on some rows and not others moved the column -->
+          <span :data-rank="2" class="run-counts">
+            <span v-if="run.error_count" class="run-mark error">✖ {{ run.error_count }}</span>
+            <span v-if="run.warning_count" class="run-mark warned">⚠ {{ run.warning_count }}</span>
+          </span>
+          <!-- one cell, however many marks: two spans of their own would push the id column to a
+               different place on every row, which is what made the list look ragged -->
+          <span :data-rank="2" class="run-marks">
+            <span v-if="run.parent_kind" class="run-mark">{{ run.parent_kind }}</span>
+            <span v-if="!run.has_reports" class="run-mark logs">{{ t('logs only') }}</span>
+          </span>
+        </template>
+      </RecordList>
     </template>
   </div>
 </template>
@@ -206,63 +422,22 @@ watch(selectedRunId, runId => { open.value = runId === null })
 }
 
 /* the list is the way in, so it gets room — but never more than a third of the window, or the
-   panels it leads to are never on screen at the same time */
+   panels it leads to are never on screen at the same time. Everything else about its shape —
+   the tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`. */
 .run-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   max-height: 33vh;
   overflow-y: auto;
 }
 
-/**
- * A GRID, not a flex row. With flex the name took whatever was left and the marks varied in width,
- * so the id column landed somewhere different on every row and the list read as ragged. Fixed
- * tracks put each value under the one above it, which is the whole point of a list of runs.
- *
- * The name track is `minmax(0, 1fr)` rather than `1fr`: without the zero minimum a long name
- * refuses to shrink and pushes the columns to its right off the panel.
- */
-.run-row {
-  display: grid;
-  grid-template-columns: 11rem 7rem minmax(0, 1fr) auto auto;
-  align-items: baseline;
-  gap: var(--space-sm);
-  width: 100%;
-  padding: var(--space-xs) var(--space-sm);
-  border: none;
-  border-left: 2px solid transparent;
-  border-bottom: 1px solid var(--color-border);
-  background: none;
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
-}
-
-.run-row:hover {
-  background-color: var(--color-bg-hover);
-}
-
-.run-row:active {
-  background-color: var(--color-bg-active);
-}
-
-.run-row:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: -2px;
-}
-
 /* the chosen row is marked by a rule AND by colour, never by colour alone */
-.run-row.picked {
-  border-left-color: var(--color-annotation);
-}
-
-.run-row.picked .run-name {
+:deep(.record-row.picked) .run-name {
   color: var(--color-annotation);
 }
 
+/* one line, which is what lets the track be `auto`: an auto track is the widest cell in it, and a
+   cell that may wrap has no single width to be measured by */
 .run-when {
+  white-space: nowrap;
   color: var(--color-text-primary);
 }
 
@@ -289,10 +464,77 @@ watch(selectedRunId, runId => { open.value = runId === null })
   justify-content: flex-end;
 }
 
+/* The badge fits INSIDE the text line rather than standing on it. Measured 2026-09-30: at the
+   default line height its box was 20 px in a row of 16 px cells, so a row carrying one stood 29 px
+   against 27 — and changing the sort or the filter visibly changed the rhythm of the list. A
+   reader then sees the list move rather than the data change. */
 .run-mark {
   padding: 0 var(--space-xs);
   border: 1px solid var(--color-border);
   border-radius: 4px;
+  line-height: 1;
+}
+
+/* What the run DID. The same roles the scenario roster uses for the same facts, so a reader who
+   learns them in one list does not relearn them in the other — and every status glyph travels with
+   its word, because a dark yellow and a dark red are inseparable under red-green colour blindness
+   in the light theme. */
+.run-outcome {
+  white-space: nowrap;
+}
+
+/* a column of figures is read downwards, so it is right-aligned and its digits line up; several
+   account currencies stack within the cell rather than widening it */
+.run-pnl {
+  /* a zero has no polarity and therefore no sign colour — but it is still a figure the backend
+     stated, so it reads in plain ink rather than inheriting nothing */
+  color: var(--color-text-primary);
+}
+
+.run-pnl,
+/* read down the column against its neighbours, like every other figure here */
+.run-span {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.run-trades {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  white-space: nowrap;
+}
+
+.run-outcome.success { color: var(--color-positive); }
+.run-outcome.failed,
+.run-outcome.crashed { color: var(--color-error); }
+.run-outcome.finished_with_errors { color: var(--color-warning); }
+
+/* two currencies are two figures, never one */
+.run-trades {
+  color: var(--color-text-secondary);
+}
+
+.run-pnl .positive { color: var(--color-positive); }
+.run-pnl .negative { color: var(--color-negative); }
+
+/* reserved whether or not a mark is in it, so the trade count lines up down the list */
+.run-counts {
+  display: flex;
+  gap: var(--space-xs);
+  justify-content: flex-end;
+  min-width: 4.5rem;
+}
+
+.run-mark.error {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.run-mark.warned {
+  border-color: var(--color-warning);
+  color: var(--color-warning);
 }
 
 .run-mark.logs {
