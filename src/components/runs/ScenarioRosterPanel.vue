@@ -401,15 +401,15 @@ const chosenLabel = computed(() =>
         <span :data-rank="4">{{ row.market_type }}</span>
         <span :data-rank="4">{{ row.account_currency }}</span>
         <span :data-rank="4">{{ row.data_broker_type }}</span>
-        <span :data-rank="2" class="figure-covered">{{ marketSpan(row.tick_timespan_seconds) }}</span>
-        <span :data-rank="3">{{ row.ticks_processed.toLocaleString() }}</span>
+        <span :data-rank="2" class="figure-cell figure-covered">{{ marketSpan(row.tick_timespan_seconds) }}</span>
+        <span :data-rank="3" class="figure-cell">{{ row.ticks_processed.toLocaleString() }}</span>
         <!-- the machine's own figure, told apart from the market's by its muted ink -->
         <span
           :data-rank="4"
-          class="figure-took"
+          class="figure-cell figure-took"
           :title="t('Execution time: how long the scenario took on the machine, which says nothing about how much market time it processed')"
         >{{ took(row.execution_time_ms) }}</span>
-        <span :data-rank="2">
+        <span :data-rank="2" class="figure-cell">
           <template v-if="earned(row)">
             {{ earned(row)!.total_trades }}
             <template v-if="earned(row)!.total_trades">
@@ -417,27 +417,27 @@ const chosenLabel = computed(() =>
             </template>
           </template>
         </span>
-        <span :data-rank="4">
+        <span :data-rank="4" class="figure-cell">
           <template v-if="earned(row)">
             {{ percentOrNa(earned(row)!.win_rate, earned(row)!.total_trades) }}
           </template>
         </span>
-        <span :data-rank="1" :class="signOf(row)">
+        <span :data-rank="1" class="figure-cell" :class="signOf(row)">
           <template v-if="earned(row) && earned(row)!.total_trades">
             {{ amount(earned(row)!.net_profit, earned(row)!.currency) }}
           </template>
         </span>
-        <span :data-rank="4">
+        <span :data-rank="4" class="figure-cell">
           <template v-if="earned(row) && earned(row)!.total_trades">
             {{ numberOrNa(earned(row)!.profit_factor, earned(row)!.total_trades) }}
           </template>
         </span>
-        <span :data-rank="3">
+        <span :data-rank="3" class="figure-cell">
           <template v-if="earned(row)">
             {{ magnitude(earned(row)!.account_max_drawdown, earned(row)!.currency) }}
           </template>
         </span>
-        <span :data-rank="4">
+        <span :data-rank="4" class="figure-cell">
           <template v-if="earned(row)">
             {{ amount(earned(row)!.total_fees, earned(row)!.currency) }}
           </template>
@@ -483,6 +483,14 @@ const chosenLabel = computed(() =>
 
 /* the interactive role, because the name IS the control — a row that looks like running text is a
    control nobody finds, which is exactly how this one went unnoticed */
+/* A FIGURE CELL is right-aligned under its right-aligned heading. `figure: true` on a column aligns
+   the HEADING; the cells are this component's, so the second half lives here. Measured 2026-09-30
+   across every ranked list: three of four had figure cells sitting up to 172 px left of the heading
+   they belong to. The geometry is asserted in `e2e/list_ranks.spec.ts` — no unit test can see it. */
+.roster-list :deep(.figure-cell) {
+  text-align: right;
+}
+
 .roster-name {
   color: var(--color-accent);
   overflow: hidden;

@@ -153,7 +153,7 @@ const bands = computed<ListBand[]>(() => [
             :title="t('Open this run')"
           >{{ period.run_id }} ↗</RouterLink>
         </span>
-        <span :data-rank="3">{{ period.period_no }}</span>
+        <span :data-rank="3" class="figure-cell">{{ period.period_no }}</span>
         <span :data-rank="1" :title="utcInstant(period.opened_at)">
           {{ utcInstant(period.opened_at) }}
         </span>
@@ -161,23 +161,31 @@ const bands = computed<ListBand[]>(() => [
           {{ utcInstant(period.closed_at) }}
         </span>
         <span :data-rank="3" class="text-cell">{{ period.reason }}</span>
-        <span :data-rank="2">{{ period.trade_count }}</span>
-        <span :data-rank="1" :class="signClass(period.net_pnl)">
+        <span :data-rank="2" class="figure-cell">{{ period.trade_count }}</span>
+        <span :data-rank="1" class="figure-cell" :class="signClass(period.net_pnl)">
           {{ money(period.net_pnl, period) }}
         </span>
-        <span :data-rank="4">{{ percentOrNa(period.win_rate, period.trade_count) }}</span>
-        <span :data-rank="4">{{ numberOrNa(period.profit_factor, period.trade_count) }}</span>
-        <span :data-rank="3" :title="feeSplit(period)">{{ money(period.total_fees, period) }}</span>
-        <span :data-rank="3">{{ drawdown(period) }}</span>
-        <span :data-rank="4">{{ opening(period) }}</span>
-        <span :data-rank="4" class="band-cell" :title="band(period)">{{ band(period) }}</span>
-        <span :data-rank="1">{{ money(period.final_equity, period) }}</span>
+        <span :data-rank="4" class="figure-cell">{{ percentOrNa(period.win_rate, period.trade_count) }}</span>
+        <span :data-rank="4" class="figure-cell">{{ numberOrNa(period.profit_factor, period.trade_count) }}</span>
+        <span :data-rank="3" class="figure-cell" :title="feeSplit(period)">{{ money(period.total_fees, period) }}</span>
+        <span :data-rank="3" class="figure-cell">{{ drawdown(period) }}</span>
+        <span :data-rank="4" class="figure-cell">{{ opening(period) }}</span>
+        <span :data-rank="4" class="figure-cell band-cell" :title="band(period)">{{ band(period) }}</span>
+        <span :data-rank="1" class="figure-cell">{{ money(period.final_equity, period) }}</span>
       </template>
     </RecordList>
   </details>
 </template>
 
 <style scoped>
+/* A FIGURE CELL is right-aligned under its right-aligned heading. `figure: true` on a column aligns
+   the HEADING; the cells are this component's, so the second half lives here. Measured 2026-09-30:
+   all ten figure columns of this table sat left of their headings. The geometry is asserted in
+   `e2e/list_ranks.spec.ts` — no unit test can see it. */
+.periods-list :deep(.figure-cell) {
+  text-align: right;
+}
+
 .periods-summary {
   cursor: pointer;
   padding: var(--space-xs) 0;

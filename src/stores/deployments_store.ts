@@ -20,6 +20,13 @@ import { t } from '@/translate'
  */
 export const useDeploymentsStore = defineStore('deployments', () => {
   const deployments = ref<DeploymentRow[]>([])
+  /**
+   * What makes one ledger row unique, as the response DECLARES it — (deployment_id, currency).
+   * Kept rather than dropped because the list that draws these rows needs it for the same reason
+   * every other list does: a bot that booked in two account currencies has two rows, and keying on
+   * the deployment alone folds them into one, silently and in the direction that loses data.
+   */
+  const deploymentsKey = ref<string[]>([])
   const selectedDeploymentId = ref<string | null>(null)
   const detail = ref<DeploymentDetail | null>(null)
   const periods = ref<DeploymentBookingPeriodsReport | null>(null)
@@ -72,6 +79,7 @@ export const useDeploymentsStore = defineStore('deployments', () => {
       const response = await getDeployments()
       // the order is a decision of the backend's — newest first, so the row you came for is on top
       deployments.value = response.deployments
+      deploymentsKey.value = response.key
     } catch (e) {
       if (e instanceof SurfaceForbiddenError) {
         forbiddenSurface.value = e.surface
@@ -120,6 +128,7 @@ export const useDeploymentsStore = defineStore('deployments', () => {
 
   return {
     deployments,
+    deploymentsKey,
     selectedDeploymentId,
     selectedRows,
     detail,

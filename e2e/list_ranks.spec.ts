@@ -82,6 +82,9 @@ async function expectRanksHold(page: Page, selector: string): Promise<ListState>
 // every list a run view draws, and each one declares its own ranks
 const RUN_LISTS = ['.run-list', '.roster-list', '.trade-list', '.periods-list']
 
+/** The panels those lists live in. Closed by default, so each has to be asked for. */
+const PANELS = ['Scenarios', 'Trade History', 'Booking Periods']
+
 const WIDTHS = [1800, 1100, 820, 620]
 
 test.beforeEach(async ({ page }) => {
@@ -99,11 +102,16 @@ test.beforeEach(async ({ page }) => {
 async function openEverything(page: Page): Promise<void> {
   await page.goto(`/runs?run=${FIXTURE_RUN}`)
   await expect(page.locator('.panel-trigger').first()).toBeVisible()
-  const triggers = page.locator('.panel-trigger:not([disabled])')
-  const count = await triggers.count()
-  for (let index = 0; index < count; index++) {
-    const trigger = triggers.nth(index)
+  /*
+   * By NAME, and each one waited for. Sweeping the bar by index looked equivalent and was not:
+   * measured 2026-09-30, three panels read `aria-expanded=false` AFTER the sweep had clicked them,
+   * because the clicks landed before the stored layout finished reconciling and it closed them
+   * again. The spec then measured two lists of four and reported nothing about the other two.
+   */
+  for (const name of PANELS) {
+    const trigger = page.locator('.panel-trigger', { hasText: name })
     if (await trigger.getAttribute('aria-expanded') === 'false') await trigger.click()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
   }
   await page.locator('.picker-chosen .app-button').click()
   // and every disclosure inside them: the booking-period table lives in a closed `<details>`, and
@@ -127,10 +135,15 @@ for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 1200 })
     await openEverything(page)
 
+    const measured: string[] = []
     for (const selector of RUN_LISTS) {
       if (!await isDrawn(page, selector)) continue
       await expectRanksHold(page, selector)
+      measured.push(selector)
     }
+    // A skipped list reads as a covered one, and that is how two of these four went unmeasured for
+    // a while. At a width this wide every one of them is on screen, so a missing one is a finding.
+    expect(measured, 'a ranked list was not on screen and so went unmeasured').toEqual(RUN_LISTS)
   })
 }
 
@@ -190,5 +203,55 @@ test('neither the run list nor the trade list scrolls sideways when narrow', asy
     )
     // two pixels of slack: a sub-pixel track width rounds up, which is not a scrollbar
     expect(overflow, `${selector} overflows by ${overflow} px`).toBeLessThanOrEqual(2)
+  }
+})
+
+/**
+ * A FIGURE CELL stands under its own heading, and only a browser can say whether it does.
+ *
+ * `figure: true` on a column right-aligns the HEADING; the cells come from the caller's slot, so
+ * the second half is the caller's. Measured 2026-09-30, and it was wrong nearly everywhere: three
+ * of the four ranked lists had figure cells sitting left of the heading they belong to — by 11 to
+ * 172 px, ten columns of ten in the booking periods. A column of figures that does not line up
+ * with its own label is not a column, and no unit test can see it: the declaration was right in
+ * every case, the geometry was not.
+ *
+ * The edges compared are the INK's, through a Range over the contents, so a cell's padding does not
+ * enter into it. The tolerance is the padding difference between a heading and a cell.
+ */
+test('every figure cell stands under its own heading', async ({ page }) => {
+  await page.setViewportSize({ width: 1900, height: 1200 })
+  await openEverything(page)
+
+  for (const selector of RUN_LISTS) {
+    const offsets = await page.locator(selector).first().evaluate(shell => {
+      const list = shell.querySelector('.record-list')!
+      const heads = [...list.querySelectorAll('.record-head > span')]
+      const cells = [...list.querySelector('.record-row')!.children]
+      const inkRight = (element: Element): number | null => {
+        const range = document.createRange()
+        range.selectNodeContents(element)
+        const box = range.getBoundingClientRect()
+        return box.width === 0 ? null : box.right
+      }
+      const out: { label: string, off: number }[] = []
+      heads.forEach((head, index) => {
+        if (!head.classList.contains('head-figure')) return
+        const cell = cells[index]
+        if (!cell || getComputedStyle(cell as HTMLElement).display === 'none') return
+        const headRight = inkRight(head)
+        const cellRight = inkRight(cell)
+        // a cell with no ink states nothing and has nothing to align
+        if (headRight === null || cellRight === null) return
+        out.push({ label: head.textContent?.trim() ?? '', off: cellRight - headRight })
+      })
+      return out
+    })
+
+    expect(offsets.length, `${selector} draws no figure column at all`).toBeGreaterThan(0)
+    for (const { label, off } of offsets) {
+      expect(Math.abs(off), `${selector} · ${label} sits ${off.toFixed(0)} px from its heading`)
+        .toBeLessThanOrEqual(8)
+    }
   }
 })

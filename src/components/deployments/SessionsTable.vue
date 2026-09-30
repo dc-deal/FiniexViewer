@@ -81,17 +81,24 @@ function gap(session: DeploymentSessionRow): string {
         >{{ session.run_id }} ↗</RouterLink>
       </span>
       <span :data-rank="2">{{ utcInstant(session.started) }}</span>
-      <span :data-rank="3">{{ duration(session.ran_hours) }}</span>
-      <span :data-rank="3">{{ gap(session) }}</span>
-      <span :data-rank="1" :class="signClass(session.net_pnl)">
+      <span :data-rank="3" class="figure-cell">{{ duration(session.ran_hours) }}</span>
+      <span :data-rank="3" class="figure-cell">{{ gap(session) }}</span>
+      <span :data-rank="1" class="figure-cell" :class="signClass(session.net_pnl)">
         {{ amount(session.net_pnl, session.currency) }}
       </span>
-      <span :data-rank="2">{{ magnitude(session.max_drawdown, session.currency) }}</span>
+      <span :data-rank="2" class="figure-cell">{{ magnitude(session.max_drawdown, session.currency) }}</span>
     </template>
   </RecordList>
 </template>
 
 <style scoped>
+/* A FIGURE CELL is right-aligned under its right-aligned heading: `figure: true` on a column aligns
+   the HEADING, and the cells are this component's. Asserted as geometry in
+   `e2e/list_ranks.spec.ts` — no unit test can see it. */
+.sessions-list :deep(.figure-cell) {
+  text-align: right;
+}
+
 /* only what the shared list does not own: it carries the tracks, the headings, the read-only rows
    and the dashed boundary line */
 .sessions-list :deep(.record-row) > span {

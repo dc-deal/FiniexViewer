@@ -390,12 +390,12 @@ function card(trade: TradeRow): ListCard {
       <template #default="{ row: trade }">
         <span :data-rank="1" :title="trade.symbol">{{ trade.symbol }}</span>
         <span :data-rank="2">{{ trade.direction }}</span>
-        <span :data-rank="3">{{ trade.lots }}</span>
+        <span :data-rank="3" class="figure-cell">{{ trade.lots }}</span>
         <span :data-rank="1">{{ utcInstant(trade.entry_time) }}</span>
-        <span :data-rank="3">{{ held(trade.duration_s) }}</span>
-        <span :data-rank="4">{{ magnitude(trade.mae_pnl, trade.currency) }}</span>
-        <span :data-rank="4">{{ amount(trade.mfe_pnl, trade.currency) }}</span>
-        <span :data-rank="1" :class="signClass(trade.net_pnl)">
+        <span :data-rank="3" class="figure-cell">{{ held(trade.duration_s) }}</span>
+        <span :data-rank="4" class="figure-cell">{{ magnitude(trade.mae_pnl, trade.currency) }}</span>
+        <span :data-rank="4" class="figure-cell">{{ amount(trade.mfe_pnl, trade.currency) }}</span>
+        <span :data-rank="1" class="figure-cell" :class="signClass(trade.net_pnl)">
           {{ amount(trade.net_pnl, trade.currency) }}
         </span>
       </template>
@@ -461,6 +461,15 @@ function card(trade: TradeRow): ListCard {
    track but the last, the net takes the last one. A `span 5` was fixed at eight columns, so a rank
    that gave one up left it spanning tracks that were no longer there. The Symbol column alone is
    12 % of the width and cut `ETHUSD_blocks_06` to `ETHU…`, which is why the name spans at all. */
+
+/* A FIGURE CELL is right-aligned under its right-aligned heading. `figure: true` on a column aligns
+   the HEADING; the cells are this component's, so the second half lives here. Measured 2026-09-30
+   across every ranked list: three of four had figure cells sitting up to 172 px left of the heading
+   they belong to. The geometry is asserted in `e2e/list_ranks.spec.ts` — no unit test can see it. */
+.trade-list :deep(.figure-cell) {
+  text-align: right;
+}
+
 .group-name {
   grid-column: 1 / -2;
   color: var(--color-text-primary);

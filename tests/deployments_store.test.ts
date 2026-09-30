@@ -47,6 +47,20 @@ describe('deployments_store', () => {
       expect(store.deployments.length).toBe(deploymentsFixture.deployments.length)
     })
 
+    /**
+     * The declared key is KEPT rather than dropped, because the list that draws these rows needs
+     * it for the same reason every other list does: the ledger's identity is
+     * (deployment_id, currency), and keying on the deployment alone folds a bot that booked in two
+     * account currencies into one row — silently, and in the direction that loses data.
+     */
+    it('keeps the row identity the ledger declared', async () => {
+      resolveAll()
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      expect(store.deploymentsKey).toEqual(deploymentsFixture.key)
+      expect(store.deploymentsKey).toContain('currency')
+    })
+
     it('reports a surface the token does not carry as itself, not as a failure', async () => {
       vi.mocked(apiClient.getDeployments).mockRejectedValue(new SurfaceForbiddenError('deployments'))
       const store = useDeploymentsStore()

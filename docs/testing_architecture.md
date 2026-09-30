@@ -38,11 +38,21 @@ widths, every ranked list on the run view, and the assertion is a RELATIONSHIP r
 number: the track count, the visible headings and the visible cells are all the count of columns
 whose rank survives the tier the shell measured. It also asserts that every ranked list actually
 gives something up when narrowed, that the run list keeps its card at the narrowest tier, and that
-neither the run list nor the trade list scrolls sideways there. Two traps it walked into while being
-written, both now in the spec's own comments: a url carrying `?run=` draws NO run list, because the
-picker collapses once a run is chosen; and the booking-period table lives in a closed `<details>`,
-which is not laid out at all — its grid resolves to numbers that mean nothing, and the first version
-of the spec duly reported a track count no declaration could produce. `panel_layout.spec.ts` holds that **no panel scrolls sideways**, at a wide
+neither the run list nor the trade list scrolls sideways there. It also holds the OTHER declaration
+that needs two halves: **every figure cell stands under its own heading**, compared as the right edge
+of the INK through a Range so padding does not enter into it. That assertion found three of the four
+lists misaligned by 11 to 172 px, ten columns of ten in the booking periods — every declaration
+correct, the geometry not.
+
+Three traps it walked into while being written, all now in the spec's own comments. A url carrying
+`?run=` draws NO run list, because the picker collapses once a run is chosen. The booking-period
+table lives in a closed `<details>`, which is not laid out at all — its grid resolves to numbers
+that mean nothing, and the first version of the spec duly reported a track count no declaration
+could produce. And sweeping the panel bar by index looked equivalent to opening panels by NAME and
+was not: three panels read `aria-expanded=false` after the sweep had clicked them, because the clicks
+landed before the stored layout finished reconciling and it closed them again — so the spec measured
+two lists of four and said nothing about the other two. It now names the lists it measured and fails
+if one is missing, because a silent skip reads as coverage. `panel_layout.spec.ts` holds that **no panel scrolls sideways**, at a wide
 and at a narrow width: `.panel-content` carries `overflow-x: auto`, which is the right safety valve
 and a poor everyday state, because the moment it engages the panel's leftmost column slides out of
 view and nothing says so. Two defects of exactly that shape reached the screen in one week — a
@@ -106,7 +116,8 @@ tests/
   run_reports_store.test.ts — section loading (warnings/errors, portfolio), error text, clearing on run change, shared error slot across concurrent sections, and the ABSENCE as a value — the cause kept beside the empty slot, two sections missing for different reasons, an absence that is not an error, and every reason forgotten on a selection change
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 / 409 / 403 mapping
   api_contract.test.ts      — the captured fixtures against the contract they were taken under, and each list's declared row key
-  deployments_store.test.ts — ledger listing, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state
+  deployments_store.test.ts — ledger listing, the row identity the ledger DECLARED kept rather than dropped, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state
+  deployment_picker.test.ts — the select box replaced by a facet bar over a flat list: what a deployment DID on the row rather than behind the choice, ONE ROW PER LEDGER ROW (a bot booking in two account currencies has two, and the identity is read from the declared key rather than hardcoded), the deployment a clicked row belongs to, the list collapsing once one is chosen, an empty ledger stated plainly; and what the row leaves out — every cell carrying its column's rank, a card on every row, the drawdown caveat beside the drawdown (a sum over sessions it is NOT), the bot id only where the profile declares one, the configuration spoken about only where it MOVED, an absent idle stretch stated as absent rather than as zero, and the facets: the configuration offered as words rather than as a boolean, and no currency facet at all where every deployment books in one
   booking_period_panels.test.ts — the three-state reconciliation incl. "not checked", the completeness wording, the magnitude drawdown, the timeline (tracks, polarity, no extent, unreadable timestamps, and no rule ruled across lanes that do not share the boundary), the table carrying every field the hover card has incl. the equity band, the column groups, the shared currency stated once and kept per-cell where the rows disagree, the opening balance with its absence stated rather than computed, the fee breakdown one hover from the fee, and under a narrowing: only the chosen lanes drawn while the run-wide verdict keeps its figures and says so
   trade_history.test.ts     — the magnitude excursion, the VISIBLE row cap, what the card carries that the row cannot, the scenario threshold (summaries past it, the group heading still complete, opening one by pointer), the FILLS as a third level (folded until clicked, both legs then drawn, no headings and no controls of their own, the share named only where the trade took part of a bigger fill, and never a claim about how many trades share one), and under a narrowing: narrowed BEFORE capped, the cap counted against the narrowed set, an empty result stated as the scenario's; plus what a narrow list keeps — every cell carrying its column's rank, the group heading laid out from the END of the tracks rather than by a span fixed at eight columns, and the net closing the row after the life of the trade
   hints_store.test.ts       — reconciliation (a retired id dropped, an unknown version discarded, no duplicates), a dismissal that lasts the session and is never written down, a ban that outlives the visit, and the reset that undoes both

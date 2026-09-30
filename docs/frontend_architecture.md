@@ -579,6 +579,21 @@ independent grids: measured 2026-09-29, the figures drifted 99 px across fourtee
 reconciles them — the list owns the tracks, the `<li>` disappears with `display: contents` so the
 button becomes a direct item of it, and the button adopts the tracks instead of inventing them.
 
+**`figure: true` needs TWO halves, exactly like `rank`, and for the same reason.** The declaration
+right-aligns the HEADING, which the stem owns; the CELLS come from the caller's slot, so the caller
+right-aligns those. Measured 2026-09-30 across every ranked list, comparing the right edge of the
+INK: three of the four had figure cells sitting **11 to 172 px left of the heading they belong to**,
+ten columns of ten in the booking periods. Every declaration was correct and the geometry was not,
+which is why no unit test could see it — the invariant lives in `e2e/list_ranks.spec.ts`. Each
+caller marks its figure cells `figure-cell` and carries one rule for them.
+
+A column of figures that does not line up with its own label is not a column. The fix is one rule
+per list; the reason it is not one rule in the stem is that a scoped stylesheet cannot reach into a
+caller's slotted cells, and the stem does not know which position each caller's figures sit in.
+Cloning the slot's vnodes to stamp both `rank` and `figure` from the column list would remove both
+duplications at once — recorded as a direction, not taken, because it would change how all five
+callers are written.
+
 **A GROUP and a CHILD are different things, kept apart on purpose.** A group is a partition of the
 same row kind: no columns of its own, only a heading over rows that already fit. A child is a record
 of ANOTHER kind that a row owns — a trade's fills — with its own columns. Serving both from one
@@ -949,10 +964,31 @@ renders `allPanels()` unfiltered. Deployment panels in that registry would put t
 the run view, where they can never render. Scoping the registry per view is foundation work that a
 list and a table do not need.
 
-**One row per (deployment x account currency), and the store keeps all of them.** A P&L added over
-two currencies is not a number, so the ledger splits the rows and the view shows one header block
-and one sessions table per currency. `deployment_id` alone is therefore NOT a key — picking the
-first match would drop a whole currency's figures, silently.
+**Choosing a deployment is a facet bar over a flat list**, the same `FacetBar` + `RecordList` the
+run picker and the scenario roster use — the select box it replaces showed `bot · deployment_id`,
+**two of the twelve fields a ledger row carries**. The other ten — how many sessions, when the
+first and last started, what it earned, how deep it fell, the longest idle stretch, whether the
+configuration moved — were invisible until something had been chosen, which is the run cascade's
+defect one level shallower: a reader choosing a deployment is choosing between its HISTORIES.
+
+Nine columns ranked 9 → 7 → 5 → 3, a card for the rest, and the list collapses to one line once a
+deployment is chosen. `Bot` is rank 1 beside the id deliberately: the id is minted per deployment
+and says nothing a reader recognises, while `bot` is what the profile is CALLED — and neither alone
+answers *is this the one I mean*, because the id is a stamp and an operator improves the name.
+
+**One row per (deployment x account currency), and the store keeps all of them — plus the key that
+says so.** A P&L added over two currencies is not a number, so the ledger splits the rows and the
+view shows one header block and one sessions table per currency. `deployment_id` alone is therefore
+NOT a key — picking the first match would drop a whole currency's figures, silently.
+
+The list honours that: **one row per LEDGER ROW**, not per deployment. A select had to fold them,
+because two options reading `demo_bot · deploy_2026…` twice are two things to a reader, and folding
+meant either hiding a currency or summing across them. A list shows both and says why — the id
+repeats, the amounts carry their own currency, and clicking either opens the one deployment they are
+both part of. The store therefore keeps `deploymentsKey` from the response rather than dropping it,
+the same way the booking-period reports pass theirs down. No stored deployment books in two
+currencies today (all three on this machine are USD), so this is the declared key being honoured
+rather than a case being served.
 
 **Nothing is re-aggregated client-side.** `net_pnl` is a sum over the sessions, `max_drawdown` is
 their **maximum** — each session carries the running decline against the peak reached so far, so
