@@ -652,14 +652,41 @@ ran with one thing and everything below with another, so a badge on either row w
 as a property of that row. It is a line and not a control — nothing to click, nothing to mark — and
 it wears the annotation role DASHED, which is what that role is for.
 
-**Columns given up as the list narrows, by rank.** A column declares `rank: 1 | 2 | 3 | 4`; 1
-survives every width and 4 goes first. Absent means 1, so a list that ranks nothing keeps every
-column, exactly as before.
+**Columns given up as the list narrows, by rank.** A column declares `rank: 1 | 2 | 3 | 4 | 5`; 1
+survives every width and 5 goes first. Absent means 1, so a list that ranks nothing keeps every
+column, exactly as before. The rungs are **34 / 48 / 62 / 80 rem** of the LIST's own width.
+
+**There are five rungs because the fourth was unbounded above, and that is where the defect lived.**
+Measured 2026-09-30 at three window widths, comparing each track against what its content needs: at
+69 rem the booking periods drew all fourteen columns in tracks of **22 px** — three monospace
+characters — and overflowed by 18 px; the run list gave `Set`, the one cell a reader recognises,
+112 px for 157 px of text, so it read `aggressive_t…`; the roster gave `Currency` 42 px for a 68 px
+heading, three headings too tight at once. **None of those is a narrow window** — 69 rem is the
+ordinary width of a maximised one here, which is exactly why a ladder topping out at 62 rem never
+engaged. With the fifth rung all three overflow at zero at every measured width.
+
+Each list declares a rank at every rung it needs and no more, because a rank the list does not use
+makes a breakpoint that changes nothing — which reads as a broken one rather than as an absent one:
+
+| list | columns | ladder |
+|---|---|---|
+| `RunPicker` | 10 | 10 → 8 → 7 → 6 → 4 |
+| `TradeHistoryPanel` | 8 | 8 → 6 → 4 → 3 |
+| `ScenarioRosterPanel` | 15 | 15 → 11 → 8 → 5 → 3 |
+| `BookingPeriodTable` | 14–15 | 14 → 10 → 8 → 6 → 4 |
+| `SessionsTable` | 6 | 6 → 4 → 3 |
+| `DeploymentPicker` | 9 | 9 → 7 → 5 → 3 |
+
+What goes first is decided from the DATA where the data can decide it. The roster's `market`,
+`currency` and `broker` carried the same value on all ten rows of a measurement, so they lead. The
+booking periods' `Win Rate` and `PF` read `n/a` on eight of ten drawn rows, because eight of those
+periods booked no trade at all — and `Opening` and `Equity band` describe the same account movement
+that `Final equity` closes, which is rank 1. The run list gives up its `Run id` early despite it
+being the declared key: it renders as the timestamp part, the same instant `Started` spells out.
 
 Measured on the scenario roster at a 900 px window: twelve columns in a 620 px panel is 40 px each,
-five monospace characters, every cell unreadable. The columns are not equal though — `market`,
-`currency` and `broker` carried the SAME value on all ten rows there. Ranked, the same panel shows
-five columns in full: scenario · tick timespan · trades · net P&L · state.
+five monospace characters, every cell unreadable. Ranked, the same panel shows three columns in
+full: scenario · net P&L · state.
 
 Two mechanisms, and neither alone works. A cell hidden with `display: none` leaves its TRACK
 standing and its share of the width with it; a track removed under a cell that stays shifts every
@@ -926,7 +953,7 @@ readable encoding for arbitrary facet state is a separate design and neither lis
 The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
 
 - **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon, component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild.
-- **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
+- **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). **The bar follows the READER's order, not the registry's**: it renders from `visiblePanels`, exactly what the column renders, and appends the switched-off panels at the end in registry order. It rendered `allPanels()` until 2026-09-30, so dragging Broker to the top of the column left its toggle sixth in the bar — two arrangements to hold in one head, and the bar is the thing a reader navigates by. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 - **`src/stores/layout_store.ts`** — the arrangement, persisted under the single versioned key `layout.v1`.
 
 **A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a streamed frame later (testingide#379/#380) without being written twice. The rule is about DATA: presentation preferences reach a panel ambiently instead (see *Settings* above), which ties it to no source.
@@ -1151,6 +1178,75 @@ and filter what was left, so a unit that traded late would show nothing while th
 had drawn everything — and the cap is counted against the NARROWED set for the same reason.
 Virtualisation replaces the cap the day a run exceeds it — `@tanstack/vue-virtual` is already in the
 tree through reka-ui, though it would have to become a direct dependency.
+
+### Run Totals — the fold, minus everything already on screen
+
+`GET /reports/runs/{run_id}/aggregated-portfolio`, rendered by `runs/AggregatedPortfolioPanel.vue`
+as `FigureBlock`s, one group of blocks per account currency. Registered with `defaultOpen: false`,
+which IS the disclosure this was asked for — the panel shell already collapses, so nesting it inside
+the Executive Summary would have meant rebuilding that panel's prop contract to carry a second
+model.
+
+**The panel's discipline is what it leaves out.** The response carries 42 fields per currency on top
+of a 21-field headline, and almost all of the headline is `run-summary` again. Measured field by
+field on 2026-09-30 against what the Executive Summary renders: **39 are new**, and four groups of
+those are what a reader has no other way to reach — the run-wide cost split (the per-unit version is
+in the roster's card and this total is nowhere else), `highest_equity` with the scenario that reached
+it, the realised `final_balance` beside the equity, and the averages plus the spot holdings. Printing
+the rest would be the same figure twice on one screen.
+
+**Three distinctions that a reader gets wrong without this panel**, and each carries its caveat where
+the figure is rather than in a paragraph:
+
+- `highest_equity` is the highest peak ANY account reached; `max_equity` in the summary belongs to
+  the account that fell DEEPEST. Two numbers about two different accounts.
+- `final_balance` is REALISED; `total_final_equity` values what is still open as well. They differ by
+  exactly the unrealised movement, and a reader meeting only one concludes the other is broken.
+- A SPOT account is an inventory, so its worth is an ESTIMATE — quote balance plus the base holding
+  at a price. The backend says so by serving `last_price` beside `est_current`, and the word stays on
+  screen.
+
+**Two blocks are deliberately absent, and a test guards each.** The `pending_*` figures are the
+`pending-orders` route's subject and showing them here would pre-empt a panel that can say more; and
+`spot_scenarios[]` is a per-account inventory of eight rows by eleven fields — a list rather than a
+figure, and the roster already names those scenarios.
+
+**`margin` and `spot` are the two HALVES of a currency that holds both account models**, null where
+it holds one. Null there means "not split", never "nothing traded" — and where `is_mixed` is true the
+panel says so, because the figures then fold two kinds of account into one.
+
+### Broker — the conditions a run traded under
+
+`GET /reports/runs/{run_id}/broker`, `key: ["broker_type"]`, rendered by `runs/BrokerPanel.vue`: a
+`FigureBlock` of conditions per broker with a `RecordList` of its symbols beneath.
+
+**It replaced Portfolio rather than renaming it.** What each account EARNED is the scenario roster's
+row and its card now. What rules it traded UNDER had no home at all — and that question has a wrong
+answer by default, which is the reason the panel exists rather than a reason it is nice to have.
+
+**The sentence at the top is the point of the whole panel.** Two stored runs put forex at 1:500 with
+hedging beside crypto at 1:1 with none (`20260930_080501_5a37660b`, `20260927_092959_cd1d9b1e`):
+four scenarios under margin calls, one under none. A drawdown reached on 500:1 leverage and a
+drawdown reached on a spot account are not the same kind of number — one could have been liquidated
+and the other could not — and every other panel in this view puts them in one column and sorts them
+against each other. The advisory is built from the fields that actually DIFFER, so it never claims a
+difference two brokers do not have, and it is silent on a run that used one broker.
+
+**The margin fields are gated on `leverage > 1`, which is the BACKEND's condition and not ours.**
+`ide_docs/broker_config_guide.md` marks `margin_mode`, `margin_call_level` and `stopout_level` as
+required *"If leverage > 1"*, and the adapter guide repeats it. Below that a broker states none of
+them, so what arrives is a default: the captured spot broker reads `margin_mode: 'none'` with both
+levels at `0.0`, and rendering "margin call at 0.00%" says the opposite of what is true — that the
+account is called immediately, rather than that it can never be called. Gating on the MODE instead
+would have worked on this data and been the wrong rule, which is why the reading came before the
+guess. For the same reason the advisory says *margin calls on some and not on others* in words
+rather than printing `retail_hedging / none`, where the second half is a default.
+
+**A size is formatted, never stringified.** The symbol table carries volumes, steps and tick sizes
+that span six orders of magnitude, and JavaScript switches to exponential notation below 1e-7 — the
+captured spot symbol steps in units of 1e-8, which put `1e-8` in a column of plain decimals. An
+`Intl.NumberFormat` at up to eight fraction digits keeps one notation for one kind of quantity, and
+drops trailing zeroes so a forex minimum still reads `0.01`.
 
 ### Configuration — shown, never resolved
 

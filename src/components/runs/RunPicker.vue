@@ -92,26 +92,32 @@ function earned(run: RunInfo): RunResult[] {
  * stating: it renders as the timestamp part of the id, which is the same instant `Started` already
  * shows in words. Two spellings of one fact are not two facts.
  *
- * Every rung of the ladder gives something up — 10 columns, then 8, 6 and 4. A rank the list does
- * not use makes a breakpoint that changes nothing, which reads as a broken one: the first version
- * of this declared no rank 4 at all and so held all ten columns down to 48rem, then dropped six at
- * once.
+ * Every rung of the ladder gives something up — 10 columns, then 8, 7, 6 and 4. A rank the list
+ * does not use makes a breakpoint that changes nothing, which reads as a broken one: the first
+ * version of this declared no rank 4 at all and so held all ten columns down to 48rem, then dropped
+ * six at once.
+ *
+ * The FIFTH rung earns its place by measurement rather than by symmetry. At 71 rem — the ordinary
+ * width of a maximised window here, not a narrow one — the ten columns left `Set` with 112 px for
+ * 157 px of text, so the one cell a reader recognises read `aggressive_t…` while the run id beside
+ * it showed the same instant `Started` already spells out. Those two go at 80 rem and `Set` gets
+ * their width.
  */
 const columns: ListColumn[] = [
   // Sized from the cells rather than from a rem number, now that the stamp is 13 characters
   // instead of 22. `auto` needs the cell to stay on one line, which `.run-when` declares — the
   // 13rem it replaces was chosen because the old stamp wrapped at 11.
   { label: t('Started'), width: 'auto', rank: 1 },
-  { label: t('Run type'), width: '7rem', rank: 4 },
+  { label: t('Run type'), width: '7rem', rank: 5 },
   // a floor as well as the slack: the set NAMES the run, and with a bare `1fr` the columns added
   // since squeezed it to `EU…` — the one cell on the row a reader actually recognises
   { label: t('Set'), width: 'minmax(7rem, 1fr)', rank: 1 },
   // the id and `Started` encode the SAME instant, so the id is the one that goes: the stamp is
   // what a reader scans by, and the whole id stays in the cell's title and in the card
-  { label: t('Run id'), width: 'auto', rank: 4 },
+  { label: t('Run id'), width: 'auto', rank: 5 },
   // How much MARKET the run read — what the scenario roster puts first for the same reason: it is
   // the figure that says how big a run was, and nothing else on the row carries it.
-  { label: t('Market time'), width: 'auto', figure: true, rank: 3 },
+  { label: t('Market time'), width: 'auto', figure: true, rank: 4 },
   { label: t('Outcome'), width: 'auto', rank: 1 },
   { label: t('Net P&L'), width: 'auto', figure: true, rank: 1 },
   { label: t('Trades'), width: 'auto', figure: true, rank: 3 },
@@ -334,13 +340,13 @@ watch(selectedRunId, runId => { open.value = runId === null })
           <span :data-rank="1" class="run-when">
             {{ startedAt(run.start_time) || t('no date') }}
           </span>
-          <span :data-rank="4" class="run-group">{{ run.group }}</span>
+          <span :data-rank="5" class="run-group">{{ run.group }}</span>
           <span :data-rank="1" class="run-name" :title="run.name">{{ run.name }}</span>
           <!-- the stamp identifies it to a reader, the eight hex characters do not — and the whole
                id is one hover away. Same treatment the configuration id already gets. -->
-          <span :data-rank="4" class="run-id" :title="run.run_id">{{ shortId(run.run_id) }}</span>
+          <span :data-rank="5" class="run-id" :title="run.run_id">{{ shortId(run.run_id) }}</span>
           <!-- What the run DID, from the index row itself — no request per run (contract 15). -->
-          <span :data-rank="3" class="run-span">{{ marketSpan(run.tick_timespan_seconds) }}</span>
+          <span :data-rank="4" class="run-span">{{ marketSpan(run.tick_timespan_seconds) }}</span>
           <span :data-rank="1" class="run-outcome" :class="run.run_outcome ?? ''">
             <template v-if="run.run_outcome">
               {{ run.run_outcome === 'success' ? '✓' : '✖' }} {{ run.run_outcome }}

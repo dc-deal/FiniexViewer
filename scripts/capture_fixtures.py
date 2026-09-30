@@ -34,6 +34,8 @@ TARGETS = [
     ('trade_history.json', f'reports/runs/{RUN}/trade-history'),
     ('scenario_details.json', f'reports/runs/{RUN}/scenario-details'),
     ('warnings_errors.json', f'reports/runs/{RUN}/warnings-errors'),
+    ('broker.json', f'reports/runs/{RUN}/broker'),
+    ('aggregated_portfolio.json', f'reports/runs/{RUN}/aggregated-portfolio'),
     ('run_config_simulation.json', f'reports/runs/{RUN}/config'),
     ('run_config_live.json', f'reports/runs/{LIVE_RUN}/config'),
     ('deployments_list.json', 'deployments'),

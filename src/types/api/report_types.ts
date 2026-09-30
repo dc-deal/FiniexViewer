@@ -831,3 +831,211 @@ export interface TradeHistoryReport {
   keys: TradeHistoryKeys
 }
 
+
+/**
+ * One SYMBOL as a broker defines it — the trading rules that make an order legal or illegal.
+ *
+ * These are not properties of the market, they are properties of this broker's instrument: the same
+ * pair at two brokers has two minimum volumes and two swap rates, which is exactly why a run using
+ * several brokers cannot be read as one set of conditions.
+ */
+export interface BrokerSymbol {
+  symbol: string
+  volume_min: number
+  volume_max: number
+  volume_step: number
+  contract_size: number
+  tick_size: number
+  base_currency: string
+  quote_currency: string
+  /**
+   * The financing rate for holding the position overnight, per direction. Measured on a spot
+   * broker: both are 0.0, which is a stated zero rather than an absence — spot has no swap.
+   */
+  swap_long: number
+  swap_short: number
+}
+
+/**
+ * One broker a run traded through, with the scenarios that used it.
+ *
+ * `margin_mode`, `margin_call_level` and `stopout_level` are required only **where leverage > 1** —
+ * stated in `ide_docs/broker_config_guide.md` and repeated in the adapter guide. Below that a
+ * broker states none of them, so what arrives is a default rather than a measurement: the captured
+ * spot broker reads `margin_mode: 'none'` with both levels at `0.0`, and rendering that as "margin
+ * call at 0%" says the opposite of what is true. The leverage is the gate, not the mode.
+ */
+export interface BrokerUnit {
+  // the same broker keys GET /brokers returns, which is what ties a scenario to the data plane
+  broker_type: string
+  market_type: string
+  // what the venue calls itself, and which of its servers this was — a display identity
+  company: string
+  server: string
+  // `demo` | `live` — the venue's own word for the account, NOT whether money moved. A backtest
+  // against a live-server definition is still a simulation; where the orders went is `orders_to`.
+  trade_mode: string
+  leverage: number
+  margin_mode: string
+  // ALREADY percentages: 50.0 means 50 %. Both read 0.0 where `margin_mode` is `none`.
+  margin_call_level: number
+  stopout_level: number
+  hedging_allowed: boolean
+  // content hash of the broker configuration — two units sharing it were configured identically
+  config_hash: string
+  // which scenarios of the run traded through this broker, by the unit name every other section
+  // keys on
+  scenarios: string[]
+  symbols: BrokerSymbol[]
+}
+
+/** Response type for GET /api/v1/reports/runs/{run_id}/broker */
+export interface BrokerReport {
+  run_id: string
+  units: BrokerUnit[]
+  // what makes one unit unique, declared rather than assumed
+  key: string[]
+}
+
+/**
+ * One SPOT account of the run, as a quote balance plus a base-asset holding.
+ *
+ * A spot account is an inventory, not a balance with margin arithmetic (`ide_docs/glossary.md`,
+ * *account model*), so its worth is the quote balance plus the base holding valued at a price —
+ * which is why `est_current` is an ESTIMATE and `last_price` is served beside it. Nothing here is
+ * multiplied by us.
+ */
+export interface SpotScenarioRow {
+  scenario_name: string
+  quote_currency: string
+  base_currency: string
+  quote_balance: number
+  base_balance: number
+  quote_initial: number
+  base_initial: number
+  last_price: number
+  est_current: number
+  est_initial: number
+  has_base_holdings: boolean
+}
+
+/**
+ * The run-wide headline of an aggregate. Twenty-one fields, and almost every one of them is also on
+ * `run-summary.currencies[]` — the Executive Summary shows those. Three are not: `total_profit`,
+ * `total_loss` and `net_profit`, which name the same quantities `gross_profit` / `gross_loss` /
+ * `net_pnl` do on the other route.
+ */
+export interface AggregatedHeadline {
+  currency: string
+  unit_count: number
+  total_trades: number
+  winning_trades: number
+  losing_trades: number
+  win_rate: number              // ratio 0..1
+  profit_factor: number
+  total_profit: number
+  total_loss: number
+  net_profit: number
+  account_max_drawdown: number
+  max_equity: number
+  account_max_dd_pct: number    // ALREADY a percentage
+  account_max_drawdown_unit: string
+  total_fees: number
+  fees_charged: number
+  unrealized_pnl: number
+  // ONE account's figure, null over several — the same rule run-summary states
+  final_equity: number | null
+  total_final_equity: number
+  total_initial_balance: number
+  open_position_count: number
+}
+
+/**
+ * Everything the run came to in one account model, folded by the backend over the scenarios.
+ *
+ * What is HERE and nowhere else on the page: the run-wide cost split, the highest equity ANY
+ * account reached with the scenario that reached it, the realised BALANCE beside the equity, and
+ * the averages behind the profit factor. The `pending_*` block is the subject of the
+ * `pending-orders` route and is mirrored rather than shown, so this panel does not pre-empt it.
+ */
+export interface AggregatedCombined {
+  headline: AggregatedHeadline
+  is_spot: boolean
+  // empty on the combined fold; the backend names the half where a run mixes account models
+  label: string
+  total_long_trades: number
+  total_short_trades: number
+  avg_win: number
+  avg_loss: number
+  initial_balance: number
+  /**
+   * REALISED, where `headline.total_final_equity` values what is still open as well. The two differ
+   * by exactly the unrealised movement, and a reader meeting only one of them concludes the other
+   * is broken.
+   */
+  final_balance: number
+  avg_initial: number
+  balance_pnl: number
+  balance_pnl_pct: number       // ALREADY a percentage
+  // null where it is undefined rather than zero — a run with no decline has no recovery to measure
+  recovery_factor: number | null
+  account_max_dd_pct: number
+  account_max_drawdown_scenario: string
+  /**
+   * The highest peak ANY account reached, with the scenario that reached it. Distinct from
+   * `headline.max_equity`, which belongs to the DEEPEST account's drawdown trio and is therefore a
+   * different account's number. Contract 18.
+   */
+  highest_equity: number
+  highest_equity_scenario: string
+  total_spread_cost: number
+  total_commission: number
+  total_swap: number
+  maker_fee: number
+  taker_fee: number
+  avg_spread: number
+  orders_sent: number
+  orders_executed: number
+  orders_rejected: number
+  sl_tp_triggered: number
+  execution_rate_pct: number
+  pending_total_resolved: number
+  pending_total_filled: number
+  pending_total_rejected: number
+  pending_total_timed_out: number
+  pending_total_force_closed: number
+  pending_avg_latency_ms: number
+  pending_min_latency_ms: number
+  pending_max_latency_ms: number
+  pending_active_limit_count: number
+  pending_active_stop_count: number
+  spot_scenarios: SpotScenarioRow[]
+  spot_total_est_current: number
+  spot_total_est_initial: number
+  spot_has_base_holdings: boolean
+}
+
+/**
+ * One account currency of the run, folded three ways.
+ *
+ * `combined` is every scenario of that currency together. `margin` and `spot` are the two halves
+ * where a currency holds BOTH account models, and they are `null` otherwise — measured on the
+ * captured run, both null with `is_mixed: false`. Reading a null half as "nothing there" rather
+ * than as "not split" would invent a run that traded nothing.
+ */
+export interface AggregatedCurrency {
+  currency: string
+  scenario_count: number
+  scenario_names: string[]
+  is_spot: boolean
+  is_mixed: boolean
+  combined: AggregatedCombined
+  margin: AggregatedCombined | null
+  spot: AggregatedCombined | null
+}
+
+/** Response type for GET /api/v1/reports/runs/{run_id}/aggregated-portfolio */
+export interface AggregatedPortfolioReport {
+  run_id: string
+  currencies: AggregatedCurrency[]
+}

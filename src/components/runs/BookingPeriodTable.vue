@@ -92,22 +92,32 @@ function feeSplit(period: PeriodRow): string {
  *
  * Ranked so a narrow panel keeps the question a period answers — when, what it earned, where the
  * account ended — and gives up the ratios and the cost split first.
+ *
+ * **Five rungs over fourteen fields: 14 → 10 → 8 → 6 → 4.** Measured 2026-09-30, this is the list
+ * that needed the fifth: at 69 rem it drew all fourteen columns in tracks of **22 px** — three
+ * monospace characters — and overflowed by 18 px, and 69 rem is the ordinary width of a maximised
+ * window here, not a narrow one.
+ *
+ * The four that go FIRST are the ratios and the two other views of the account movement, and the
+ * data says why: over ten drawn periods, eight had no trades at all, so `Win Rate` and `PF` read
+ * `n/a` on eight of ten rows. `Opening` and `Equity band` describe the same movement that
+ * `Final equity` closes, and that one is rank 1.
  */
 const columns = computed<ListColumn[]>(() => [
   { label: t('Unit'), width: 'minmax(8rem, 16fr)', rank: 1 },
-  ...(props.showRun ? [{ label: t('Run'), width: 'minmax(0, 16fr)', rank: 2 } as ListColumn] : []),
-  { label: t('No'), width: 'minmax(0, 3fr)', figure: true, rank: 3 },
+  ...(props.showRun ? [{ label: t('Run'), width: 'minmax(0, 16fr)', rank: 4 } as ListColumn] : []),
+  { label: t('No'), width: 'minmax(0, 3fr)', figure: true, rank: 4 },
   { label: t('Opened'), width: 'minmax(0, 17fr)', rank: 1 },
   { label: t('Closed'), width: 'minmax(0, 17fr)', rank: 2 },
-  { label: t('Reason'), width: 'minmax(0, 9fr)', rank: 3 },
+  { label: t('Reason'), width: 'minmax(0, 9fr)', rank: 4 },
   { label: t('Trades'), width: 'minmax(0, 7fr)', figure: true, rank: 2 },
   { label: t('Net P&L'), width: 'minmax(0, 11fr)', figure: true, rank: 1 },
-  { label: t('Win Rate'), width: 'minmax(0, 7fr)', figure: true, rank: 4 },
-  { label: t('PF'), width: 'minmax(0, 6fr)', figure: true, rank: 4 },
+  { label: t('Win Rate'), width: 'minmax(0, 7fr)', figure: true, rank: 5 },
+  { label: t('PF'), width: 'minmax(0, 6fr)', figure: true, rank: 5 },
   { label: t('Fees'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
   { label: t('Max DD'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
-  { label: t('Opening'), width: 'minmax(0, 11fr)', figure: true, rank: 4 },
-  { label: t('Equity band'), width: 'minmax(0, 20fr)', figure: true, rank: 4 },
+  { label: t('Opening'), width: 'minmax(0, 11fr)', figure: true, rank: 5 },
+  { label: t('Equity band'), width: 'minmax(0, 20fr)', figure: true, rank: 5 },
   { label: t('Final equity'), width: 'minmax(0, 11fr)', figure: true, rank: 1 },
 ])
 
@@ -145,7 +155,7 @@ const bands = computed<ListBand[]>(() => [
         <span :data-rank="1" class="text-cell" :title="period.unit_name">
           {{ period.unit_name }}
         </span>
-        <span v-if="showRun" :data-rank="2" class="text-cell">
+        <span v-if="showRun" :data-rank="4" class="text-cell">
           <RouterLink
             v-if="period.run_id"
             class="run-link"
@@ -153,24 +163,24 @@ const bands = computed<ListBand[]>(() => [
             :title="t('Open this run')"
           >{{ period.run_id }} ↗</RouterLink>
         </span>
-        <span :data-rank="3" class="figure-cell">{{ period.period_no }}</span>
+        <span :data-rank="4" class="figure-cell">{{ period.period_no }}</span>
         <span :data-rank="1" :title="utcInstant(period.opened_at)">
           {{ utcInstant(period.opened_at) }}
         </span>
         <span :data-rank="2" :title="utcInstant(period.closed_at)">
           {{ utcInstant(period.closed_at) }}
         </span>
-        <span :data-rank="3" class="text-cell">{{ period.reason }}</span>
+        <span :data-rank="4" class="text-cell">{{ period.reason }}</span>
         <span :data-rank="2" class="figure-cell">{{ period.trade_count }}</span>
         <span :data-rank="1" class="figure-cell" :class="signClass(period.net_pnl)">
           {{ money(period.net_pnl, period) }}
         </span>
-        <span :data-rank="4" class="figure-cell">{{ percentOrNa(period.win_rate, period.trade_count) }}</span>
-        <span :data-rank="4" class="figure-cell">{{ numberOrNa(period.profit_factor, period.trade_count) }}</span>
+        <span :data-rank="5" class="figure-cell">{{ percentOrNa(period.win_rate, period.trade_count) }}</span>
+        <span :data-rank="5" class="figure-cell">{{ numberOrNa(period.profit_factor, period.trade_count) }}</span>
         <span :data-rank="3" class="figure-cell" :title="feeSplit(period)">{{ money(period.total_fees, period) }}</span>
         <span :data-rank="3" class="figure-cell">{{ drawdown(period) }}</span>
-        <span :data-rank="4" class="figure-cell">{{ opening(period) }}</span>
-        <span :data-rank="4" class="figure-cell band-cell" :title="band(period)">{{ band(period) }}</span>
+        <span :data-rank="5" class="figure-cell">{{ opening(period) }}</span>
+        <span :data-rank="5" class="figure-cell band-cell" :title="band(period)">{{ band(period) }}</span>
         <span :data-rank="1" class="figure-cell">{{ money(period.final_equity, period) }}</span>
       </template>
     </RecordList>

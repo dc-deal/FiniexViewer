@@ -2,6 +2,8 @@ import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
+import BrokerPanel from '@/components/runs/BrokerPanel.vue'
+import AggregatedPortfolioPanel from '@/components/runs/AggregatedPortfolioPanel.vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
 import ConfigPanel from '@/components/runs/ConfigPanel.vue'
 import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
@@ -64,6 +66,20 @@ const PANELS: PanelDescriptor[] = [
     defaultOpen: false,
   },
   {
+    /*
+     * The CONDITIONS a run traded under, and it replaces the portfolio panel rather than renaming
+     * it: what each account earned is the scenario roster's row and its card now, while what rules
+     * it traded under had no home at all. Open by default, because a run using several brokers is
+     * a caveat about every other panel in the column and a reader must not have to look for it.
+     */
+    id: 'broker',
+    title: 'Broker',
+    icon: '🏦',
+    component: BrokerPanel,
+    source: 'broker',
+    defaultOpen: true,
+  },
+  {
     // The bookkeeping stretches the run was divided into, and the completeness check over them.
     // Absent on every run from before the journal existed, which PanelColumn handles by dropping
     // the panel rather than showing it empty.
@@ -73,6 +89,23 @@ const PANELS: PanelDescriptor[] = [
     component: BookingPeriodsPanel,
     source: 'bookingPeriods',
     defaultOpen: true,
+  },
+  {
+    /*
+     * What the run came to, folded over its scenarios — and only the figures no other panel on the
+     * page states: the run-wide cost split, the highest equity ANY account reached, the realised
+     * balance beside the equity, the averages behind the profit factor.
+     *
+     * CLOSED by default, and that is the disclosure it was asked for: the panel shell already
+     * collapses, so the fold nests here rather than inside the Executive Summary, whose prop
+     * contract would have had to be rebuilt to carry a second model.
+     */
+    id: 'aggregated-portfolio',
+    title: 'Run Totals',
+    icon: 'Σ',
+    component: AggregatedPortfolioPanel,
+    source: 'aggregated',
+    defaultOpen: false,
   },
   {
     // Provenance, beside the header: what the run was COMMISSIONED with, resolved from the

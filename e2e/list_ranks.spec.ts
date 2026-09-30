@@ -16,12 +16,19 @@ import { mockApi, FIXTURE_RUN } from './api_mock'
  * it is this spec, and it is the only instrument for it.
  */
 
-/** The stem's own breakpoints, in the order the container query applies them. */
+/**
+ * The stem's own breakpoints, in the order the container query applies them.
+ *
+ * FIVE rungs, and the top one is not a narrow width: measured 2026-09-30, the booking periods
+ * drew all fourteen columns at 69 rem in tracks of 22 px and overflowed by 18 px, while the run
+ * list gave the set name 112 px for 157 px of text. Both are an ordinary maximised window here.
+ */
 function tierOf(shellRem: number): number {
   if (shellRem <= 34) return 1
   if (shellRem <= 48) return 2
   if (shellRem <= 62) return 3
-  return 4
+  if (shellRem <= 80) return 4
+  return 5
 }
 
 interface ListState {
@@ -71,7 +78,7 @@ async function expectRanksHold(page: Page, selector: string): Promise<ListState>
   const where = `${selector} at ${state.shellRem.toFixed(1)}rem (tier ${tier}), `
     + `ranks [${state.declared.join(',')}] over tracks [${state.trackList}]`
 
-  expect(state.declared.every(rank => rank >= 1 && rank <= 4), `${where}: a rank out of range`)
+  expect(state.declared.every(rank => rank >= 1 && rank <= 5), `${where}: a rank out of range`)
     .toBe(true)
   expect(state.tracks, `${where}: tracks`).toBe(survive)
   expect(state.shownHeads, `${where}: visible headings`).toBe(survive)
@@ -85,7 +92,9 @@ const RUN_LISTS = ['.run-list', '.roster-list', '.trade-list', '.periods-list']
 /** The panels those lists live in. Closed by default, so each has to be asked for. */
 const PANELS = ['Scenarios', 'Trade History', 'Booking Periods']
 
-const WIDTHS = [1800, 1100, 820, 620]
+// 1800 is above the 80rem rung and 1300 is below it — without a width on each side the fifth
+// tier is never exercised, and a rung nothing measures is a rung nobody knows is broken
+const WIDTHS = [1800, 1300, 1100, 820, 620]
 
 test.beforeEach(async ({ page }) => {
   await mockApi(page)

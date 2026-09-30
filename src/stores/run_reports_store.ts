@@ -1,14 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getBookingPeriods, getPortfolio, getRunConfig, getScenarioDetails, getTradeHistory,
-  getWarningsErrors,
+  getAggregatedPortfolio, getBookingPeriods, getBroker, getPortfolio, getRunConfig,
+  getScenarioDetails, getTradeHistory, getWarningsErrors,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { isAbsent } from '@/types/api/absence_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type {
+  AggregatedPortfolioReport,
   BookingPeriodsReport,
+  BrokerReport,
   RunConfigReport,
   TradeHistoryReport,
   PortfolioReport,
@@ -25,12 +27,16 @@ import { t } from '@/translate'
 export const useRunReportsStore = defineStore('run_reports', () => {
   const warningsErrors = ref<WarningsErrorsReport | null>(null)
   const portfolio = ref<PortfolioReport | null>(null)
+  const broker = ref<BrokerReport | null>(null)
+  const aggregated = ref<AggregatedPortfolioReport | null>(null)
   const bookingPeriods = ref<BookingPeriodsReport | null>(null)
   const config = ref<RunConfigReport | null>(null)
   const tradeHistory = ref<TradeHistoryReport | null>(null)
   const scenarios = ref<ScenarioDetailsReport | null>(null)
   const loadingWarningsErrors = ref(false)
   const loadingPortfolio = ref(false)
+  const loadingBroker = ref(false)
+  const loadingAggregated = ref(false)
   const loadingBookingPeriods = ref(false)
   const loadingConfig = ref(false)
   const loadingTradeHistory = ref(false)
@@ -51,6 +57,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   function clear(): void {
     warningsErrors.value = null
     portfolio.value = null
+    broker.value = null
+    aggregated.value = null
     bookingPeriods.value = null
     config.value = null
     tradeHistory.value = null
@@ -95,6 +103,45 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       error.value = `${t('Could not load the portfolio breakdown')}: ${detail}`
     } finally {
       loadingPortfolio.value = false
+    }
+  }
+
+  /**
+   * The brokers the run traded through. Absent on an AutoTrader session, which writes no such
+   * section — so the absence is structure and the view says it once above the column.
+   */
+  async function loadBroker(runId: string): Promise<void> {
+    loadingBroker.value = true
+    broker.value = null
+    try {
+      const answer = await getBroker(runId)
+      if (isAbsent(answer)) absences.value['broker'] = answer
+      else broker.value = answer
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      error.value = `${t('Could not load the broker conditions')}: ${detail}`
+    } finally {
+      loadingBroker.value = false
+    }
+  }
+
+  /**
+   * What the run came to, folded over its scenarios. Its own request rather than a second read of
+   * `run-summary`: the fold carries the run-wide cost split, the highest equity any account
+   * reached and the realised balance beside the equity, none of which the summary states.
+   */
+  async function loadAggregated(runId: string): Promise<void> {
+    loadingAggregated.value = true
+    aggregated.value = null
+    try {
+      const answer = await getAggregatedPortfolio(runId)
+      if (isAbsent(answer)) absences.value['aggregated'] = answer
+      else aggregated.value = answer
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      error.value = `${t('Could not load the aggregated portfolio')}: ${detail}`
+    } finally {
+      loadingAggregated.value = false
     }
   }
 
@@ -179,11 +226,15 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     scenarios,
     absences,
     portfolio,
+    broker,
+    aggregated,
     bookingPeriods,
     config,
     tradeHistory,
     loadingWarningsErrors,
     loadingPortfolio,
+    loadingBroker,
+    loadingAggregated,
     loadingBookingPeriods,
     loadingConfig,
     loadingTradeHistory,
@@ -193,6 +244,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     clear,
     loadWarningsErrors,
     loadPortfolio,
+    loadBroker,
+    loadAggregated,
     loadBookingPeriods,
     loadConfig,
     loadTradeHistory,

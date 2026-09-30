@@ -195,13 +195,14 @@ const sorts: SortDefinition<ScenarioRow>[] = [
 const columns: ListColumn[] = [
   { label: t('Scenario'), width: 'minmax(9rem, 14fr)', rank: 1 },
   { label: t('Symbol'), width: 'minmax(0, 8fr)', rank: 3 },
-  { label: t('Market'), width: 'minmax(0, 7fr)', rank: 4 },
-  { label: t('Currency'), width: 'minmax(0, 5fr)', rank: 4 },
+  { label: t('Market'), width: 'minmax(0, 7fr)', rank: 5 },
+  // 6fr, not 5: measured, the HEADING needs 68 px and 5fr gave it 60 at a 96rem panel
+  { label: t('Currency'), width: 'minmax(0, 6fr)', rank: 5 },
   // a broker name is an identity, not a figure: `kraken_sp…` names nothing
-  { label: t('Broker'), width: 'minmax(0, 10fr)', rank: 4 },
+  { label: t('Broker'), width: 'minmax(0, 10fr)', rank: 5 },
   { label: t('Tick timespan'), width: 'minmax(0, 11fr)', figure: true, rank: 2 },
   { label: t('Ticks'), width: 'minmax(0, 9fr)', figure: true, rank: 3 },
-  { label: t('Took'), width: 'minmax(0, 7fr)', figure: true, rank: 4 },
+  { label: t('Took'), width: 'minmax(0, 7fr)', figure: true, rank: 5 },
   { label: t('Trades'), width: 'minmax(0, 10fr)', figure: true, rank: 2 },
   { label: t('Win Rate'), width: 'minmax(0, 7fr)', figure: true, rank: 4 },
   { label: t('Net P&L'), width: 'minmax(0, 10fr)', figure: true, rank: 1 },
@@ -218,6 +219,11 @@ const columns: ListColumn[] = [
    * The ranks above follow the same measurement: `market`, `currency` and `broker` carried the
    * SAME value on all ten rows there, so they are the first to go. What a narrow list keeps is
    * WHICH scenario, what it earned, and whether it worked.
+   *
+   * Those three are rank 5 with `Took`, the machine's own figure — five rungs over fifteen fields,
+   * 15 → 11 → 8 → 5 → 3. The fifth exists because measured 2026-09-30 at 69 rem this list gave
+   * `Currency` 42 px for 68 px of heading, with three headings too tight at once, and 69 rem is the
+   * ordinary width of a maximised window here rather than a narrow one.
    */
   { label: t('State'), width: 'minmax(4.5rem, 8fr)', rank: 1 },
 ]
@@ -398,14 +404,14 @@ const chosenLabel = computed(() =>
       <template #default="{ row }">
         <span :data-rank="1" class="roster-name" :title="row.name">{{ row.name }}</span>
         <span :data-rank="3">{{ row.symbol }}</span>
-        <span :data-rank="4">{{ row.market_type }}</span>
-        <span :data-rank="4">{{ row.account_currency }}</span>
-        <span :data-rank="4">{{ row.data_broker_type }}</span>
+        <span :data-rank="5">{{ row.market_type }}</span>
+        <span :data-rank="5">{{ row.account_currency }}</span>
+        <span :data-rank="5">{{ row.data_broker_type }}</span>
         <span :data-rank="2" class="figure-cell figure-covered">{{ marketSpan(row.tick_timespan_seconds) }}</span>
         <span :data-rank="3" class="figure-cell">{{ row.ticks_processed.toLocaleString() }}</span>
         <!-- the machine's own figure, told apart from the market's by its muted ink -->
         <span
-          :data-rank="4"
+          :data-rank="5"
           class="figure-cell figure-took"
           :title="t('Execution time: how long the scenario took on the machine, which says nothing about how much market time it processed')"
         >{{ took(row.execution_time_ms) }}</span>

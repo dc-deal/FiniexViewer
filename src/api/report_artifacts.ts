@@ -22,6 +22,8 @@ import type { RunInfo } from '@/types/api/report_types'
 export const SECTION_ARTIFACTS: Record<string, string> = {
   warningsErrors: 'warnings_errors.json',
   portfolio: 'portfolio.json',
+  broker: 'broker.json',
+  aggregated: 'aggregated_portfolio.json',
   bookingPeriods: 'booking_periods.json',
   tradeHistory: 'trade_history.json',
   scenarios: 'scenario_details.json',

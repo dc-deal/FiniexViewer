@@ -21,7 +21,8 @@ const {
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
 const {
-  warningsErrors, portfolio, bookingPeriods, config, tradeHistory, scenarios, absences,
+  warningsErrors, portfolio, broker, aggregated, bookingPeriods, config, tradeHistory, scenarios,
+  absences,
   unreadable, error: sectionError,
 } = storeToRefs(reportsStore)
 
@@ -77,6 +78,8 @@ watch(selectedRunId, runId => {
 
   if (has('warningsErrors')) reportsStore.loadWarningsErrors(runId)
   if (has('portfolio')) reportsStore.loadPortfolio(runId)
+  if (has('broker')) reportsStore.loadBroker(runId)
+  if (has('aggregated')) reportsStore.loadAggregated(runId)
   if (has('bookingPeriods')) reportsStore.loadBookingPeriods(runId)
   if (has('tradeHistory')) reportsStore.loadTradeHistory(runId)
   if (has('scenarios')) reportsStore.loadScenarios(runId)
@@ -91,6 +94,8 @@ const sources = computed(() => ({
   feedHealth: feedHealth.value,
   warningsErrors: warningsErrors.value,
   portfolio: portfolio.value,
+  broker: broker.value,
+  aggregated: aggregated.value,
   bookingPeriods: bookingPeriods.value,
   config: config.value,
   // composed rather than served: the roster says what was DECLARED, the portfolio what it EARNED
@@ -120,6 +125,8 @@ const sources = computed(() => ({
 const SECTION_TITLES: Record<string, string> = {
   warningsErrors: 'Warnings & Errors',
   portfolio: 'Portfolio',
+  broker: 'Broker',
+  aggregated: 'Run Totals',
   bookingPeriods: 'Booking Periods',
   config: 'Configuration',
   tradeHistory: 'Trade History',

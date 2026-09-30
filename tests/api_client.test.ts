@@ -21,6 +21,8 @@ import {
   getRunSummary,
   getWarningsErrors,
   getPortfolio,
+  getBroker,
+  getAggregatedPortfolio,
   getBookingPeriods,
   getDeployments,
   getDeployment,
@@ -41,6 +43,8 @@ import deploymentDetailFixture from './fixtures/deployment_detail.json'
 import deploymentPeriodsFixture from './fixtures/deployment_booking_periods.json'
 import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
+import brokerFixture from './fixtures/broker.json'
+import aggregatedFixture from './fixtures/aggregated_portfolio.json'
 import { isAbsent } from '@/types/api/absence_types'
 
 describe('api_client', () => {
@@ -239,6 +243,59 @@ describe('api_client', () => {
     it('rethrows any other failure', async () => {
       mockGet.mockRejectedValue({ response: { status: 500 } })
       await expect(getPortfolio('20260615_130000')).rejects.toBeDefined()
+    })
+  })
+
+  describe('getBroker', () => {
+    it('calls the broker endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: brokerFixture })
+      const result = await getBroker(brokerFixture.run_id)
+      expect(mockGet).toHaveBeenCalledWith(`/reports/runs/${brokerFixture.run_id}/broker`)
+      expect(result).toEqual(brokerFixture)
+    })
+
+    /** An AutoTrader session writes no broker section, so the absence is ordinary structure. */
+    it('carries the cause of a missing section rather than a bare absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it' } } })
+      expect(await getBroker('20260615_130000')).toEqual({
+        absent: true,
+        cause: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it',
+      })
+    })
+
+    it('refuses a body belonging to another run', async () => {
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_999999', units: [], key: [] } })
+      await expect(getBroker('20260615_130000')).rejects.toBeInstanceOf(RunIdMismatchError)
+    })
+  })
+
+  describe('getAggregatedPortfolio', () => {
+    it('calls the aggregated-portfolio endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: aggregatedFixture })
+      const result = await getAggregatedPortfolio(aggregatedFixture.run_id)
+      expect(mockGet).toHaveBeenCalledWith(
+        `/reports/runs/${aggregatedFixture.run_id}/aggregated-portfolio`
+      )
+      expect(result).toEqual(aggregatedFixture)
+    })
+
+    /** An AutoTrader session writes no aggregated portfolio, so the absence is ordinary. */
+    it('carries the cause of a missing section rather than a bare absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it' } } })
+      expect(await getAggregatedPortfolio('20260615_130000')).toEqual({
+        absent: true,
+        cause: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it',
+      })
+    })
+
+    it('refuses a body belonging to another run', async () => {
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_999999', currencies: [] } })
+      await expect(getAggregatedPortfolio('20260615_130000'))
+        .rejects.toBeInstanceOf(RunIdMismatchError)
     })
   })
 

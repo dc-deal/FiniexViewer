@@ -30,6 +30,8 @@ const REPORTS: Record<string, string> = {
   'run-summary': 'run_summary.json',
   'warnings-errors': 'warnings_errors.json',
   'portfolio': 'portfolio.json',
+  'broker': 'broker.json',
+  'aggregated-portfolio': 'aggregated_portfolio.json',
   'booking-periods': 'run_booking_periods.json',
   'trade-history': 'trade_history.json',
   'scenario-details': 'scenario_details.json',

@@ -1,0 +1,45 @@
+{
+  "run_id": "20260927_132124_10c3d2c7",
+  "units": [
+    {
+      "broker_type": "kraken_spot",
+      "market_type": "crypto",
+      "company": "Kraken",
+      "server": "kraken_spot",
+      "trade_mode": "live",
+      "leverage": 1,
+      "margin_mode": "none",
+      "margin_call_level": 0.0,
+      "stopout_level": 0.0,
+      "hedging_allowed": false,
+      "config_hash": "5f9d6588",
+      "scenarios": [
+        "ETHUSD_blocks_03",
+        "ETHUSD_blocks_04",
+        "ETHUSD_blocks_05",
+        "ETHUSD_blocks_06",
+        "ETHUSD_blocks_07",
+        "ETHUSD_blocks_08",
+        "ETHUSD_blocks_09",
+        "ETHUSD_blocks_10"
+      ],
+      "symbols": [
+        {
+          "symbol": "ETHUSD",
+          "volume_min": 0.001,
+          "volume_max": 10000.0,
+          "volume_step": 1e-08,
+          "contract_size": 1,
+          "tick_size": 0.01,
+          "base_currency": "ETH",
+          "quote_currency": "USD",
+          "swap_long": 0.0,
+          "swap_short": 0.0
+        }
+      ]
+    }
+  ],
+  "key": [
+    "broker_type"
+  ]
+}

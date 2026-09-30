@@ -8,6 +8,8 @@ import type {
 } from '@/types/api/report_types'
 import bookingPeriodsFixture from './fixtures/run_booking_periods.json'
 import portfolioFixture from './fixtures/portfolio.json'
+import brokerFixture from './fixtures/broker.json'
+import aggregatedFixture from './fixtures/aggregated_portfolio.json'
 import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
 import * as apiClient from '@/api/api_client'
@@ -18,6 +20,8 @@ import type { SectionAbsence } from '@/types/api/absence_types'
 vi.mock('@/api/api_client', () => ({
   getWarningsErrors: vi.fn(),
   getPortfolio: vi.fn(),
+  getBroker: vi.fn(),
+  getAggregatedPortfolio: vi.fn(),
   getBookingPeriods: vi.fn(),
   getRunConfig: vi.fn(),
   getTradeHistory: vi.fn(),
@@ -260,6 +264,89 @@ describe('useRunReportsStore — portfolio section', () => {
     await store.loadPortfolio('20260615_130000')
     expect(store.error).toBe('Could not load warnings and errors: gone')
     expect(store.portfolio).toEqual(PORTFOLIO)
+  })
+
+  /**
+   * The broker section. Absent on an AutoTrader session, which writes no such artifact — the same
+   * ordinary structure every other section has, and the reason the panel is gated on `artifacts`
+   * rather than asked for unconditionally.
+   */
+  describe('broker conditions', () => {
+    // a BLOCK body, deliberately: `mockReset()` returns the mock, which is a function, and vitest
+    // takes a function returned from beforeEach as a teardown hook. It then CALLS the mock at
+    // teardown, and with a rejection queued that is an unhandled one nobody awaits.
+    beforeEach(() => { vi.mocked(apiClient.getBroker).mockReset() })
+
+    it('loads the section for a run', async () => {
+      vi.mocked(apiClient.getBroker).mockResolvedValue(brokerFixture)
+      const store = useRunReportsStore()
+      await store.loadBroker('20260615_130000')
+      expect(apiClient.getBroker).toHaveBeenCalledWith('20260615_130000')
+      expect(store.broker).toEqual(brokerFixture)
+      expect(store.loadingBroker).toBe(false)
+    })
+
+    it('keeps the section null and records WHY where the run writes none', async () => {
+      vi.mocked(apiClient.getBroker).mockResolvedValue(ABSENT)
+      const store = useRunReportsStore()
+      await store.loadBroker('20260615_130000')
+      expect(store.broker).toBeNull()
+      expect(store.absences['broker']).toEqual(ABSENT)
+      expect(store.error).toBeNull()
+    })
+
+    it('surfaces a failure as a readable message', async () => {
+      vi.mocked(apiClient.getBroker).mockRejectedValue(new Error('boom'))
+      const store = useRunReportsStore()
+      await store.loadBroker('20260615_130000')
+      expect(store.error).toBe('Could not load the broker conditions: boom')
+    })
+
+    it('is dropped with every other section when the run changes', async () => {
+      vi.mocked(apiClient.getBroker).mockResolvedValue(brokerFixture)
+      const store = useRunReportsStore()
+      await store.loadBroker('20260615_130000')
+      store.clear()
+      expect(store.broker).toBeNull()
+    })
+  })
+
+  /** The fold of the run over its scenarios — its own request, and its own ordinary absence. */
+  describe('the aggregated fold', () => {
+    beforeEach(() => { vi.mocked(apiClient.getAggregatedPortfolio).mockReset() })
+
+    it('loads the section for a run', async () => {
+      vi.mocked(apiClient.getAggregatedPortfolio).mockResolvedValue(aggregatedFixture)
+      const store = useRunReportsStore()
+      await store.loadAggregated('20260615_130000')
+      expect(apiClient.getAggregatedPortfolio).toHaveBeenCalledWith('20260615_130000')
+      expect(store.aggregated).toEqual(aggregatedFixture)
+      expect(store.loadingAggregated).toBe(false)
+    })
+
+    it('keeps the section null and records WHY where the run writes none', async () => {
+      vi.mocked(apiClient.getAggregatedPortfolio).mockResolvedValue(ABSENT)
+      const store = useRunReportsStore()
+      await store.loadAggregated('20260615_130000')
+      expect(store.aggregated).toBeNull()
+      expect(store.absences['aggregated']).toEqual(ABSENT)
+      expect(store.error).toBeNull()
+    })
+
+    it('surfaces a failure as a readable message', async () => {
+      vi.mocked(apiClient.getAggregatedPortfolio).mockRejectedValue(new Error('boom'))
+      const store = useRunReportsStore()
+      await store.loadAggregated('20260615_130000')
+      expect(store.error).toBe('Could not load the aggregated portfolio: boom')
+    })
+
+    it('is dropped with every other section when the run changes', async () => {
+      vi.mocked(apiClient.getAggregatedPortfolio).mockResolvedValue(aggregatedFixture)
+      const store = useRunReportsStore()
+      await store.loadAggregated('20260615_130000')
+      store.clear()
+      expect(store.aggregated).toBeNull()
+    })
   })
 
   describe('booking periods', () => {

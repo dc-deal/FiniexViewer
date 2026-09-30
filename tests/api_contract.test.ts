@@ -7,6 +7,8 @@ import deploymentBookingPeriods from './fixtures/deployment_booking_periods.json
 import runBookingPeriods from './fixtures/run_booking_periods.json'
 import runSummary from './fixtures/run_summary.json'
 import portfolio from './fixtures/portfolio.json'
+import broker from './fixtures/broker.json'
+import aggregated from './fixtures/aggregated_portfolio.json'
 import warningsErrors from './fixtures/warnings_errors.json'
 import configLive from './fixtures/run_config_live.json'
 import configSimulation from './fixtures/run_config_simulation.json'
@@ -15,10 +17,12 @@ import scenarioDetails from './fixtures/scenario_details.json'
 import manifest from './fixtures/capture_manifest.json'
 
 import type {
+  AggregatedPortfolioReport,
   BookingPeriodsReport,
+  BrokerReport,
   PortfolioReport,
-  RunListResponse,
   RunConfigReport,
+  RunListResponse,
   RunSummary,
   TradeHistoryReport,
   WarningsErrorsReport,
@@ -61,6 +65,7 @@ const EXPECTED_KEYS = {
   // the folded row is one per UNIT, so the period number is not part of what makes it unique
   runUnitTotals: ['unit_name'],
   trades: ['scenario_name', 'position_id', 'exit_tick_index'],
+  brokers: ['broker_type'],
 }
 
 describe('api contract', () => {
@@ -174,6 +179,49 @@ describe('api contract', () => {
     expect(typed.aggregates.length).toBeGreaterThan(0)
     expect(typed.units[0]?.account_max_drawdown).toBeGreaterThanOrEqual(0)
     expect(typed.aggregates[0]?.account_max_drawdown).toBeGreaterThanOrEqual(0)
+  })
+
+  /**
+   * The broker conditions, and the one value in here that must never be read as a figure: a spot
+   * broker declares `margin_mode: 'none'` and its two margin LEVELS arrive as 0.0. That zero is
+   * the absence of a regime, not a level of zero, and the panel gates on the mode for exactly that
+   * reason. Held here because it is a property of the CONTRACT rather than of the component.
+   */
+  it('the broker section still satisfies the mirrored shape', () => {
+    const typed: BrokerReport = broker
+    expect(typed.key).toEqual(EXPECTED_KEYS.brokers)
+    expect(typed.units.length).toBeGreaterThan(0)
+    const unit = typed.units[0]!
+    expect(unit.symbols.length).toBeGreaterThan(0)
+    expect(unit.scenarios.length).toBeGreaterThan(0)
+    // the captured run traded spot: no margin regime, and both levels therefore zero
+    expect(unit.margin_mode).toBe('none')
+    expect(unit.margin_call_level).toBe(0)
+    expect(unit.stopout_level).toBe(0)
+    expect(unit.leverage).toBe(1)
+    expect(unit.hedging_allowed).toBe(false)
+  })
+
+  /**
+   * The aggregated fold. Two things here are structure rather than data, and reading either as the
+   * other invents a run: `margin` and `spot` are the two HALVES of a currency that holds both
+   * account models, and they are null where it holds one — not "nothing traded". And
+   * `headline.final_equity` is ONE account's figure, null over several, the same rule run-summary
+   * states.
+   */
+  it('the aggregated portfolio still satisfies the mirrored shape', () => {
+    const typed: AggregatedPortfolioReport = aggregated
+    expect(typed.currencies.length).toBeGreaterThan(0)
+    const row = typed.currencies[0]!
+    expect(row.scenario_names.length).toBe(row.scenario_count)
+    expect(row.is_mixed).toBe(false)
+    expect(row.margin).toBeNull()
+    expect(row.spot).toBeNull()
+    expect(row.combined.headline.final_equity).toBeNull()
+    // the three figures this fold carries and run-summary does not
+    expect(row.combined.highest_equity).toBeGreaterThan(0)
+    expect(row.combined.highest_equity_scenario).not.toBe('')
+    expect(row.combined.final_balance).toBeGreaterThan(0)
   })
 
   it('the warnings and errors section still satisfies the mirrored shape', () => {

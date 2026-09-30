@@ -17,7 +17,7 @@ export interface ListColumn {
   /** Right-aligned and read downwards. A figure column's heading sits over its digits. */
   figure?: boolean
   /**
-   * How early this column is given up when the list is narrow. 1 survives everything; 4 goes
+   * How early this column is given up when the list is narrow. 1 survives everything; 5 goes
    * first. Absent means 1 — a list that declares no ranks keeps every column at every width.
    *
    * Twelve columns in a 620 px panel is 40 px each, five monospace characters, and every cell
@@ -28,8 +28,19 @@ export interface ListColumn {
    *
    * The width that matters is the LIST's, never the viewport's: a panel's width is the reader's
    * own arrangement, since they drag the seams. Hence a container query rather than a media query.
+   *
+   * **There are FIVE ranks because a wide list needs a rung above the panel width it usually has.**
+   * The ladder ran 34 / 48 / 62 rem, which left the top tier unbounded: measured 2026-09-30, the
+   * booking periods drew all fourteen columns at 69 rem in tracks of **22 px** — three monospace
+   * characters — and overflowed by 18 px, while the run list squeezed the SET name that names the
+   * run into 112 px for 157 px of text. Neither is narrow; both are the ordinary width of a maximised
+   * window. So rank 5 goes at 80 rem, and the rungs below it are unchanged.
+   *
+   * **Declare a rank at every rung the list needs, and no more.** A rank the list does not use makes
+   * a breakpoint that changes nothing, which reads as a broken one — a six-column list wants three
+   * rungs and a fifteen-column list wants five.
    */
-  rank?: 1 | 2 | 3 | 4
+  rank?: 1 | 2 | 3 | 4 | 5
 }
 
 /**

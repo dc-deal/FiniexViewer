@@ -109,6 +109,13 @@ defineSlots<{
   children?: (props: { row: T }) => unknown
 }>()
 
+/**
+ * How many rungs the ladder has. Five, and the fifth is the reason: the ladder ran 34 / 48 / 62 rem,
+ * which left the TOP tier unbounded — so a fourteen-column list drew all fourteen at 69 rem in
+ * tracks of 22 px and overflowed by 18 px. The CSS below carries the same five and they must agree.
+ */
+const TIERS = 5
+
 const tracks = computed(() => props.columns.map(column => column.width).join(' '))
 
 /**
@@ -129,7 +136,7 @@ const deepestRank = computed(
  */
 const tierTracks = computed<Record<string, string>>(() => {
   const styles: Record<string, string> = {}
-  for (let tier = 1; tier <= 4; tier += 1) {
+  for (let tier = 1; tier <= TIERS; tier += 1) {
     styles[`--list-tracks-${tier}`] = props.columns
       .filter(column => (column.rank ?? 1) <= tier)
       .map(column => column.width)
@@ -153,7 +160,7 @@ const bandHeight = 'calc(var(--font-size-sm) * 1.4 + var(--space-xs))'
 /** A band with the span it keeps at each tier, since a rank changes how many columns it covers. */
 interface DrawnBand {
   label: string
-  /** `--s1` … `--s4`, the surviving column count per tier. The container query picks which. */
+  /** `--s1` … `--s5`, the surviving column count per tier. The container query picks which. */
   tiers: Record<string, string>
 }
 
@@ -187,7 +194,7 @@ const bandSpans = computed<DrawnBand[] | null>(() => {
     const own = props.columns.slice(first, first + band.span)
     first += band.span
     const tiers: Record<string, string> = {}
-    for (let tier = 1; tier <= 4; tier += 1) {
+    for (let tier = 1; tier <= TIERS; tier += 1) {
       tiers[`--s${tier}`] = String(own.filter(column => (column.rank ?? 1) <= tier).length)
     }
     return { label: band.label, tiers }
@@ -369,7 +376,25 @@ const sections = computed<ListGroup<T>[]>(() => {
  * arrangement, since they drag the seams.
  */
 .record-list.ranked {
-  grid-template-columns: var(--list-tracks-4);
+  grid-template-columns: var(--list-tracks-5);
+}
+
+/* The rung that was missing, and it is not a NARROW width: measured 2026-09-30, the booking periods
+   drew all fourteen columns at 69 rem in tracks of 22 px and overflowed by 18 px, while the run list
+   gave the set name that names the run 112 px for 157 px of text. Both are the ordinary width of a
+   maximised window on this machine. A list that declares no rank 5 is untouched by it. */
+@container record-list (max-width: 80rem) {
+  .record-list.ranked {
+    grid-template-columns: var(--list-tracks-4);
+  }
+
+  .record-list.ranked .record-bands > span {
+    grid-column: span var(--s4);
+  }
+
+  .record-list.ranked :deep([data-rank="5"]) {
+    display: none;
+  }
 }
 
 @container record-list (max-width: 62rem) {
@@ -424,10 +449,10 @@ const sections = computed<ListGroup<T>[]>(() => {
 
 /* the bands sit ABOVE the headings, so the headings stick below them rather than at zero */
 .record-bands > span {
-  /* the span of the WIDEST tier, which is the only one an unranked list ever uses. The three
+  /* the span of the WIDEST tier, which is the only one an unranked list ever uses. The four
      container queries above swap it for the tier in force — one rule for every band, since the
      count each band keeps rides on the band itself. */
-  grid-column: span var(--s4);
+  grid-column: span var(--s5);
   position: sticky;
   top: 0;
   z-index: var(--z-list-head);

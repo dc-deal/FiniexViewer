@@ -18,10 +18,30 @@ const props = defineProps<{
 const layoutStore = useLayoutStore()
 const { visiblePanels } = storeToRefs(layoutStore)
 
-// The bar renders from the registry, so a new panel gets its toggle without touching this file.
+/**
+ * The toggles, in the READER's order and not the registry's.
+ *
+ * The bar and the column have to agree: a reader who drags Broker to the top and then finds its
+ * toggle still sixth in the bar has two orders to hold in their head, and the bar is the thing they
+ * navigate by. So the arrangement decides — `visiblePanels` is exactly what `PanelColumn` renders,
+ * pinned panels lifted and all.
+ *
+ * A panel that is switched OFF has no place in that arrangement (hiding removes it from the
+ * column), so the hidden ones follow in the registry's order. That keeps them in one group at the
+ * end, which is also where a reader looks for something they turned off.
+ *
+ * A new panel still needs no change here: it enters through the registry and the layout store
+ * appends it.
+ */
 const toggles = computed(() => {
-  const shown = new Set(visiblePanels.value.map(panel => panel.id))
-  return allPanels().map(panel => {
+  const arranged = visiblePanels.value.map(panel => panel.id)
+  const byId = new Map(allPanels().map(panel => [panel.id, panel]))
+  const ordered = [
+    ...arranged.map(id => byId.get(id)).filter(panel => panel !== undefined),
+    ...allPanels().filter(panel => !arranged.includes(panel.id)),
+  ]
+  const shown = new Set(arranged)
+  return ordered.map(panel => {
     const model = props.sources[panel.source]
     return {
       ...panel,

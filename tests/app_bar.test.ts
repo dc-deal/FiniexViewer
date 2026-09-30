@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import AppBar from '@/components/panels/AppBar.vue'
+import { useLayoutStore } from '@/stores/layout_store'
 import { allPanels } from '@/panel_registry'
 
 /** Every section present — the baseline the absent cases are measured against. */
@@ -25,6 +26,35 @@ describe('AppBar', () => {
 
   it('renders a toggle for every registered panel', () => {
     expect(mountBar(allSources()).findAll('.bar-toggle')).toHaveLength(allPanels().length)
+  })
+
+  /**
+   * The bar and the column must agree about ORDER. A reader who drags a panel to the top and then
+   * finds its toggle still sixth in the bar has two arrangements to hold in their head — and the
+   * bar is the thing they navigate by, so the arrangement decides and the registry does not.
+   */
+  it('follows the order the reader arranged, not the registry', () => {
+    const ids = allPanels().map(panel => panel.id)
+    const moved = [ids[ids.length - 1]!, ...ids.slice(0, -1)]
+    useLayoutStore().reorder(moved)
+
+    const titles = mountBar(allSources()).findAll('.bar-toggle').map(node => node.text())
+    const lastPanel = allPanels()[ids.length - 1]!
+    expect(titles[0]).toContain(lastPanel.title)
+  })
+
+  /**
+   * A panel that is switched OFF has no place in the arrangement — hiding removes it from the
+   * column — so the hidden ones follow at the end in the registry's order, which is also where a
+   * reader looks for something they turned off.
+   */
+  it('keeps a hidden panel listed, after everything still arranged', () => {
+    const first = allPanels()[0]!
+    useLayoutStore().hide(first.id)
+
+    const titles = mountBar(allSources()).findAll('.bar-toggle').map(node => node.text())
+    expect(titles).toHaveLength(allPanels().length)
+    expect(titles[titles.length - 1]).toContain(first.title)
   })
 
   /**

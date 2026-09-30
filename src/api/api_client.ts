@@ -13,6 +13,8 @@ import type {
   BookingPeriodsReport,
   RunConfigReport,
   TradeHistoryReport,
+  AggregatedPortfolioReport,
+  BrokerReport,
   PortfolioReport,
   RunInfo,
   RunListResponse,
@@ -133,6 +135,41 @@ export async function getWarningsErrors(runId: string): Promise<WarningsErrorsRe
 export async function getPortfolio(runId: string): Promise<PortfolioReport | SectionAbsence> {
   try {
     const response = await http.get<PortfolioReport>(`/reports/runs/${runId}/portfolio`)
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    throw error
+  }
+}
+
+/**
+ * What the run came to, folded over its scenarios by the backend. An AutoTrader session omits the
+ * section entirely, so the absence is ordinary structure here as everywhere else.
+ */
+export async function getAggregatedPortfolio(
+  runId: string
+): Promise<AggregatedPortfolioReport | SectionAbsence> {
+  try {
+    const response = await http.get<AggregatedPortfolioReport>(
+      `/reports/runs/${runId}/aggregated-portfolio`
+    )
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    throw error
+  }
+}
+
+/**
+ * The brokers a run traded through. One of the nine report routes this app did not consume until
+ * the portfolio panel was replaced by it — an AutoTrader session omits the section, so the absence
+ * is as normal here as anywhere else.
+ */
+export async function getBroker(runId: string): Promise<BrokerReport | SectionAbsence> {
+  try {
+    const response = await http.get<BrokerReport>(`/reports/runs/${runId}/broker`)
     return assertBelongsTo(runId, response.data)
   } catch (error) {
     const absence = absenceFrom(error)
