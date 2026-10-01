@@ -233,8 +233,8 @@ const orders = computed<Figure[]>(() => {
 
 /**
  * Declared · ran · disabled · absent — the four counts that say whether this summary is about the
- * run somebody configured. `units_declared` is null on an artifact written before the field
- * existed, and a null is left out rather than shown as a zero nobody reported.
+ * run somebody configured. All FOUR are null on an artifact written before the field existed, the
+ * list included, and a null is left out rather than shown as a zero nobody reported.
  */
 const scope = computed<Figure[]>(() => {
   const summary = props.model
@@ -245,7 +245,7 @@ const scope = computed<Figure[]>(() => {
   if (summary.units_disabled !== null) {
     figures.push({ label: t('Disabled'), value: `${summary.units_disabled}` })
   }
-  if (summary.units_absent.length) {
+  if (summary.units_absent?.length) {
     figures.push({
       label: t('Produced nothing'),
       value: `${summary.units_absent.length}`,

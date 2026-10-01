@@ -253,8 +253,9 @@ describe('api contract', () => {
    * the arithmetic is noticed here rather than guessed at from a screen.
    *
    * And this route declares NO key, alone among the list routes this app consumes — measured on 16
-   * responses, none carried `key` or `keys`. Asserted so the day it gains one is loud: the panel
-   * then keys on the declaration instead of on a drawing position.
+   * responses, none carried `key` or `keys`. Asserted so the day it gains one is loud, and that day
+   * is scheduled: testingide stated the key as `["name"]` on 2026-10-01 and plans it for contract
+   * 19. When this goes red the panel moves onto the declaration.
    */
   it('the pending orders still satisfy the mirrored shape', () => {
     const typed: PendingOrdersReport = pending

@@ -86,6 +86,19 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
     expect(wrapper.find('.footnote .scope').text()).toBe('whole run')
   })
 
+  /**
+   * A run that booked no period at all states no figure in its currency, and the backend serves
+   * `total_final_equity` as null there. `Intl.NumberFormat` formats null as `0.00` without
+   * complaining, so the footnote printed a closing equity nobody reported. Measured 2026-10-01 on
+   * `20260924_165923_4d6c2f5f` — one run of 45, which is exactly how long such a figure survives.
+   */
+  it('leaves out a closing equity the run never reported, rather than printing it as zero', () => {
+    const wrapper = mountPanel(report({ total_final_equity: null }))
+    const footnote = wrapper.find('.footnote').text()
+    expect(footnote).toContain('Deepest period drawdown')
+    expect(footnote).not.toContain('Final equity')
+  })
+
   it('draws the lanes of every chosen scenario, not just the first', () => {
     const wrapper = mountNarrowed(MIXED, ['unit_a', 'unit_b'])
     const labels = wrapper.findAll('.lane-label').map(node => node.text())

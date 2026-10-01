@@ -147,8 +147,12 @@ const otherCurrencies = computed(() =>
          account of several, printed as though it were the run's -->
     <p class="footnote">
       <span v-if="narrowed" class="scope">{{ t('whole run') }}</span>
-      {{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }} ·
-      {{ t('Final equity, all accounts') }}: {{ amount(model.total_final_equity, model.currency) }}
+      {{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }}
+      <!-- left out rather than shown as the zero the formatter would make of a null: the run
+           states no figure in this currency, which is not a closing equity of nothing -->
+      <template v-if="model.total_final_equity !== null">
+        · {{ t('Final equity, all accounts') }}: {{ amount(model.total_final_equity, model.currency) }}
+      </template>
       <template v-if="otherCurrencies.length">
         &nbsp;|&nbsp; {{ t('Other account currencies') }}: {{ otherCurrencies.join(', ') }}
       </template>

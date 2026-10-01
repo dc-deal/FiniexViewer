@@ -43,21 +43,23 @@ const columns: ListColumn[] = [
   { label: t('Timed out'), width: 'minmax(0, 8fr)', figure: true, rank: 5 },
   { label: t('Force closed'), width: 'minmax(0, 10fr)', figure: true, rank: 5 },
   { label: t('Latency'), width: 'minmax(0, 10fr)', figure: true, rank: 3 },
-  { label: t('Resting'), width: 'minmax(0, 8fr)', figure: true, rank: 1 },
+  { label: t('Open at end'), width: 'minmax(0, 9fr)', figure: true, rank: 1 },
 ]
 
 /**
- * The orders still waiting, both kinds together. `order_type` is on the row, so the two lists the
- * response splits them into are a grouping rather than a distinction — the same shape the trade
- * list's fills take, where the leg comes from which array held it.
+ * The orders still waiting, both kinds together. The two lists the response splits them into are a
+ * GROUPING and nothing more: the word comes from the row's own `order_type`, never from which array
+ * held it. Measured 2026-10-01 — `active_stop_orders` carried an order of type `stop_limit`, which
+ * this panel had been drawing as `stop`.
  */
 interface OpenOrder {
+  /** the backend's own word for the kind of order, straight off the row */
   kind: string
   /**
-   * A drawing POSITION, not an identity, and built here because there is nothing else honest to
-   * key on. Measured 2026-10-01: `pos_gbpusd_1` appears in two different scenarios of one run, and
-   * this response declares no key at all — alone among the list routes this app consumes. The unit
-   * name scopes it so two units cannot collide.
+   * A drawing POSITION, not an identity, because the declared key is not on the wire yet.
+   * testingide stated it 2026-10-01 — `order_id` keys these two lists WITHIN their unit — and
+   * contract 18 serves no key at all. The position carries the unit name for the same reason the
+   * declaration needs it: measured, `pos_gbpusd_1` rests in two different scenarios of one run.
    */
   at: string
   order: PendingOrderRow
@@ -65,8 +67,8 @@ interface OpenOrder {
 
 function openOrders(unit: PendingOrderUnit): OpenOrder[] {
   return [
-    ...unit.active_limit_orders.map(order => ({ kind: t('limit'), order })),
-    ...unit.active_stop_orders.map(order => ({ kind: t('stop'), order })),
+    ...unit.active_limit_orders.map(order => ({ kind: order.order_type, order })),
+    ...unit.active_stop_orders.map(order => ({ kind: order.order_type, order })),
   ].map((row, index) => ({ ...row, at: `${unit.name}-${index}` }))
 }
 
@@ -96,16 +98,24 @@ function latencySpread(unit: PendingOrderUnit): string {
 }
 
 /**
- * How many of this unit's orders are RESTING — the backend's own word, from their glossary: *a
- * pending order the venue (or the trade simulator) has accepted and that waits for its price: a
- * resting limit, a resting stop.*
+ * How many of this unit's orders were still OPEN when the scenario's data ended.
+ *
+ * It was called *resting* until testingide corrected it on 2026-10-01, and the correction matters:
+ * in a backtest the simulation records every such order as `expired` (reason `scenario_end`) in the
+ * same step, because the data has ended and it can never fill — but it deliberately does NOT clear
+ * these two lists, so the snapshot still shows them. The `order-history` row and this entry are the
+ * SAME order at the same instant, seen twice. *Resting* claims it is still waiting for a price, and
+ * in a backtest nothing is.
  *
  * It is NOT the orders the unit had pending. An order that left the queue — filled, rejected, timed
- * out or force-closed — is counted in the funnel and is gone from here; what remains is what was
- * still waiting when the run ended. The two are separate populations, which is why a unit can read
- * `resolved 1 · filled 1 · resting 1` and have had two orders.
+ * out or force-closed — is counted in the funnel and is gone from here. The two are separate
+ * populations, which is why a unit can read `resolved 1 · filled 1 · open at end 1` and have had
+ * two orders.
+ *
+ * In an AutoTrader session the answer differs: an order left standing at the venue gets no expired
+ * row and IS still live. Nothing on screen can show that yet — `units` is empty on such a run.
  */
-function resting(unit: PendingOrderUnit): number {
+function openAtEnd(unit: PendingOrderUnit): number {
   return unit.active_limit_orders.length + unit.active_stop_orders.length
 }
 
@@ -121,7 +131,7 @@ function rejectedTone(unit: PendingOrderUnit): string {
 <template>
   <div class="pending-panel">
     <div v-if="!model.units.length" class="hint">
-      {{ t('This run placed no order that had to wait') }}
+      {{ t('No pending-order statistics for this run') }}
     </div>
     <RecordList
       v-else
@@ -129,7 +139,7 @@ function rejectedTone(unit: PendingOrderUnit): string {
       :rows="model.units"
       :columns="columns"
       :row-key="unit => unit.name"
-      :shows-children="unit => resting(unit) > 0"
+      :shows-children="unit => openAtEnd(unit) > 0"
       inert
     >
       <template #default="{ row: unit }">
@@ -148,13 +158,13 @@ function rejectedTone(unit: PendingOrderUnit): string {
         <span
           :data-rank="1"
           class="figure-cell"
-          :title="t('Still waiting for its price when the run ended — a resting limit or a resting stop. An order that filled, was rejected, timed out or was force-closed left the queue and is counted to the left of this.')"
-        >{{ resting(unit) }}</span>
+          :title="t('Still open when the data of its scenario ended. In a backtest it is recorded as expired at that same moment — the data stopped, so it could never fill. An order that filled, was rejected, timed out or was force-closed left the queue earlier and is counted to the left of this.')"
+        >{{ openAtEnd(unit) }}</span>
       </template>
 
       <!--
-        The RESTING orders, beneath the unit that placed them. Drawn only where there are any — an
-        empty block under every row would treble the list to say nothing.
+        The orders still OPEN at data end, beneath the unit that placed them. Drawn only where there
+        are any — an empty block under every row would treble the list to say nothing.
 
         The row key is NOT the order id — see `OpenOrder.at` for why.
       -->

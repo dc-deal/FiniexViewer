@@ -112,6 +112,29 @@ describe('ExecutivePanel', () => {
     expect(mount(ExecutivePanel, { props: { model: summaryWith(MEASURED) } }).find('.scope').exists()).toBe(false)
   })
 
+  /**
+   * An artifact written before these fields existed serves all four of them as NULL, and nothing
+   * back-fills a stored run. `units_absent.length` on null throws inside a computed, which kills the
+   * render effect — and with it the WHOLE panel column, not just this panel.
+   *
+   * Measured in a browser 2026-10-01 against `20260925_101700_e63e3980`: fourteen page errors and
+   * zero panels drawn. The two counts beside it were guarded from the start; the list was not.
+   */
+  it('survives an older artifact that recorded none of the four scope fields', () => {
+    const older = summaryWith(MEASURED, {
+      units_declared: null,
+      units_disabled: null,
+      units_absent: null,
+      signal_fresh_ratio: null,
+    })
+    const wrapper = mount(ExecutivePanel, { props: { model: older } })
+
+    // it renders, and it says only what the artifact actually recorded
+    expect(wrapper.text()).toContain('Units with results')
+    expect(wrapper.text()).not.toContain('Declared')
+    expect(wrapper.text()).not.toContain('Produced nothing')
+  })
+
   it('renders measured values with their units', () => {
     const f = figures(MEASURED)
     expect(f['Net P&L']).toBe('-50.60 USD')

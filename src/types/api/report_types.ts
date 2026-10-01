@@ -256,8 +256,16 @@ export interface RunSummary {
    */
   units_declared: number | null
   units_disabled: number | null
-  /** One entry per unit that produced nothing, each carrying WHY. Empty where all of them ran. */
-  units_absent: UnitAbsence[]
+  /**
+   * One entry per unit that produced nothing, each carrying WHY. Empty where all of them ran — and
+   * `null`, like the two counts above it, on an artifact written before the field existed.
+   *
+   * It was typed as a plain array until 2026-10-01, when a run from 2026-09-25 crashed the whole
+   * panel column: `units_absent.length` on null throws inside a computed, the render effect dies,
+   * and every panel disappears. Measured on `20260925_101700_e63e3980`, which serves
+   * `units_declared`, `units_disabled`, `units_absent` and `signal_fresh_ratio` all null.
+   */
+  units_absent: UnitAbsence[] | null
   // Weakest SIGNAL channel of the run. null = no SIGNAL worker was involved — deliberately
   // not 1.0, which would claim a perfect feed.
   signal_fresh_ratio: number | null
@@ -635,8 +643,13 @@ export interface BookingPeriodsReport {
    * The sum over `unit_totals`, and named as a total for that reason. It was `final_equity` and
    * was the LAST period row's own figure — one of the run's eight accounts, printed as though it
    * were the run's.
+   *
+   * Nullable for the same reason as `run_net_pnl` above it: the run states no figure in this
+   * currency. Measured 2026-10-01 on `20260924_165923_4d6c2f5f`, which books no period at all and
+   * serves it null — and `Intl.NumberFormat` turns null into `0.00` without complaining, so the
+   * footnote printed a closing equity nobody had reported.
    */
-  total_final_equity: number
+  total_final_equity: number | null
 }
 
 /**
@@ -1041,19 +1054,35 @@ export interface AggregatedPortfolioReport {
 }
 
 /**
- * One order still waiting when the run ended — a limit or a stop that never resolved.
+ * One order that was still open when its scenario ran out of data.
  *
- * `order_type` says which kind it is, so the two lists it can arrive in are a grouping rather than
- * a distinction: `active_limit_orders` and `active_stop_orders` carry the same shape.
+ * NOT a resting order, and the difference is testingide's (2026-10-01): in a backtest the
+ * simulation records every such order as `expired` with reason `scenario_end` in the same step, and
+ * deliberately leaves it in these lists so this snapshot still shows it. The `order-history` row
+ * and this entry are one order at one instant, seen twice. In an AutoTrader session an order left
+ * standing at the venue gets NO expired row and is genuinely still live — `units` is empty on such
+ * a run today, so nothing on screen can show that yet.
+ *
+ * `order_type` says which kind it is, and it is the ONLY thing that says so: the two lists an order
+ * can arrive in are a grouping, not a distinction. Measured 2026-10-01 over 219 units,
+ * `active_stop_orders` carried a `stop_limit` — so the array does not name the type.
  */
 export interface PendingOrderRow {
   /**
-   * NOT unique across the response. Measured 2026-10-01 on `20260929_085949_ccc36468`:
-   * `pos_gbpusd_1` appears in two different scenarios of one run, which is exactly the case the
-   * declared-key rule exists for. This route declares no key at all — see the open request — so
-   * nothing here is rendered as the order's identity.
+   * The DECLARED key of the two order lists — but only WITHIN its unit (testingide, 2026-10-01).
+   * One executor per unit mints the ids and a resting order sits in exactly one of the two lists,
+   * so it identifies an order there and nowhere else: measured on `20260929_085949_ccc36468`,
+   * `pos_gbpusd_1` rests in two different scenarios of one run. The declaration is not on the wire
+   * yet — contract 18 serves no key at all — so nothing is keyed on it today.
    */
   order_id: string
+  /**
+   * Closed at three values here (testingide, 2026-10-01): `limit` · `stop` · `stop_limit`.
+   * `active_stop_orders` holds a stop or a stop-limit whose trigger has not been reached;
+   * `active_limit_orders` holds a limit. A stop-limit whose stop HAS triggered becomes a limit
+   * order, moves to the other list and reads `limit` from then on. Their enum also knows
+   * `trailing_stop`, `iceberg` and `unknown`; none can enter these lists today.
+   */
   order_type: string
   direction: string
   lots: number
@@ -1086,7 +1115,13 @@ export interface PendingOrderUnit {
   // zero on all 202 units measured — part of the funnel's vocabulary, not of this archive's data
   total_timed_out: number
   total_force_closed: number
-  // the latency of the resolutions, over `latency_count` of them
+  /**
+   * MILLISECONDS, confirmed by testingide 2026-10-01 — their execution-layer table said
+   * "ticks (sim)" and was stale, corrected the same day. In a simulation it is the MODELLED delay
+   * on the market clock (`broker_fill_msc − placed_at_msc`), not a measurement of anything; for a
+   * force-closed order it is the time it sat until the scenario ended. The three figures cover
+   * every RESOLVED outcome, rejected and force-closed included, not fills only.
+   */
   avg_latency_ms: number
   min_latency_ms: number
   max_latency_ms: number
@@ -1098,9 +1133,11 @@ export interface PendingOrderUnit {
 /**
  * Response type for GET /api/v1/reports/runs/{run_id}/pending-orders
  *
- * It declares NO key, alone among the list routes this app consumes — measured on 16 responses,
- * none carried `key` or `keys`. Recorded as an open request; until it is answered nothing from
- * this response is presented as a row's identity.
+ * Contract 18 declares NO key, alone among the list routes this app consumes — measured on 16
+ * responses, none carried `key` or `keys`. The key is `["name"]` and testingide plans it for
+ * contract 19 (2026-10-01): a unit name IS a scenario name, and a scenario set whose names repeat
+ * is refused at validation. `units` is empty on an AutoTrader run — this section is filled by the
+ * simulation only.
  */
 export interface PendingOrdersReport {
   run_id: string

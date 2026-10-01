@@ -120,21 +120,24 @@ describe('PendingOrdersPanel', () => {
   })
 
   /**
-   * RESTING is the backend's own word, from their glossary: *a pending order the venue (or the
-   * trade simulator) has accepted and that waits for its price*. And it is a SEPARATE population
-   * from the funnel — their execution-layer doc says every order that *leaves the queue* is what
-   * gets counted there, so a unit can read `resolved 1 · filled 1 · resting 1` and have had two
-   * orders. Measured on `20260929_085949_ccc36468`, which is exactly that case.
+   * OPEN AT END is a SEPARATE population from the funnel: their execution-layer doc says every
+   * order that *leaves the queue* is what gets counted there, so a unit can read
+   * `resolved 1 · filled 1 · open at end 1` and have had two orders. Measured on
+   * `20260929_085949_ccc36468`, which is exactly that case.
+   *
+   * It was called *resting* until testingide corrected it on 2026-10-01: in a backtest the
+   * simulation also records such an order as `expired` at scenario end and deliberately leaves it
+   * in these lists, so nothing is waiting for a price any more.
    */
-  describe('the orders still resting', () => {
-    it('counts a resting order apart from the funnel it never entered', () => {
+  describe('the orders still open when the data ended', () => {
+    it('counts such an order apart from the funnel it never entered', () => {
       const shown = cells(mountPanel(report([unit({
         total_resolved: 1, total_filled: 1, active_limit_orders: [ORDER],
       })])))
       expect(shown['Resolved']).toBe('1')
       expect(shown['Filled']).toBe('1')
-      // two orders: one left the queue, one is still waiting
-      expect(shown['Resting']).toBe('1')
+      // two orders: one left the queue, one was still open when the data ended
+      expect(shown['Open at end']).toBe('1')
     })
 
     it('counts them on the row and draws them beneath it', () => {
@@ -142,7 +145,7 @@ describe('PendingOrdersPanel', () => {
         active_limit_orders: [ORDER],
         active_stop_orders: [{ ...ORDER, order_type: 'stop', direction: 'short' }],
       })]))
-      expect(cells(wrapper)['Resting']).toBe('2')
+      expect(cells(wrapper)['Open at end']).toBe('2')
 
       const orders = wrapper.findAll('.order-list .record-row')
       expect(orders).toHaveLength(2)
@@ -151,17 +154,30 @@ describe('PendingOrdersPanel', () => {
       expect(orders[1]!.text()).toContain('stop')
     })
 
+    /**
+     * The array a resting order arrives in is a GROUPING, not its type. Measured 2026-10-01 over
+     * 219 units: `active_stop_orders` carried an order whose own `order_type` is `stop_limit`,
+     * which this panel drew as `stop` until the measurement found it.
+     */
+    it('names an order by its own type rather than by the array that held it', () => {
+      const wrapper = mountPanel(report([unit({
+        active_stop_orders: [{ ...ORDER, order_type: 'stop_limit' }],
+      })]))
+      expect(wrapper.find('.order-list .record-row').text()).toContain('stop_limit')
+    })
+
     /** An empty block under every row would treble the list to say nothing. */
-    it('draws nothing beneath a unit with no order waiting', () => {
+    it('draws nothing beneath a unit that ended with none open', () => {
       const wrapper = mountPanel(report([unit()]))
-      expect(cells(wrapper)['Resting']).toBe('0')
+      expect(cells(wrapper)['Open at end']).toBe('0')
       expect(wrapper.find('.order-list').exists()).toBe(false)
     })
 
     /**
-     * `order_id` is NOT unique: measured 2026-10-01, `pos_gbpusd_1` appears in two scenarios of one
-     * run, and this response declares no key at all. Keying the list on it would make Vue reuse one
-     * node for two orders, so the key is a drawing position scoped by the unit.
+     * `order_id` is NOT unique across the response: measured 2026-10-01, `pos_gbpusd_1` appears in
+     * two scenarios of one run. testingide declared it a key WITHIN a unit the same day, but
+     * contract 18 serves no key at all, so the list is keyed by a drawing position scoped by the
+     * unit — which holds whichever of the two it turns out to be.
      */
     it('keys an order by position rather than by an id that repeats', () => {
       const wrapper = mountPanel(report([unit({
@@ -207,9 +223,14 @@ describe('PendingOrdersPanel', () => {
     })
   })
 
-  it('says so plainly where a run placed no order that had to wait', () => {
+  /**
+   * It does not claim the run placed no such order: `units` is EMPTY on an AutoTrader run, where
+   * this section is simply not produced (testingide, 2026-10-01), so the honest sentence names the
+   * absence of the statistics rather than the absence of orders.
+   */
+  it('states the absence of the statistics without claiming what the run did', () => {
     const wrapper = mountPanel(report([]))
-    expect(wrapper.text()).toContain('no order that had to wait')
+    expect(wrapper.text()).toContain('No pending-order statistics')
     expect(wrapper.find('.pending-list').exists()).toBe(false)
   })
 
