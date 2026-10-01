@@ -4,6 +4,7 @@ import { useSelectionStore } from '@/stores/selection_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import { getCoverage, getBars } from '@/api/api_client'
 import type { ChartBar } from '@/types/api/bar_types'
+import { t } from '@/translate'
 
 // Number of candles to show by default — applies to all timeframes uniformly.
 // Window = TARGET_BARS * minutes_per_bar * 60 seconds.
@@ -54,7 +55,7 @@ export const useBarsStore = defineStore('bars', () => {
         close: b.c,
       }))
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load bars'
+      error.value = e instanceof Error ? e.message : t('Failed to load bars')
     } finally {
       loading.value = false
     }

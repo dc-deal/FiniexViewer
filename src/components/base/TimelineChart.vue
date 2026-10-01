@@ -1,0 +1,589 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import HoverCard from '@/components/base/HoverCard.vue'
+import type { TimelineLane } from '@/types/timeline_types'
+
+/**
+ * Spans on a shared horizontal scale, one lane per row, with the axis on top.
+ *
+ * Deliberately knows nothing about runs, periods or time: it places numbers on a scale and labels
+ * the scale with a formatter the caller supplies. Every domain decision — what a lane is, which
+ * clock the numbers are on, how a span is coloured — belongs to the caller, so the same chart
+ * draws one run's ledger and a whole deployment without either meaning leaking in here.
+ */
+const props = withDefaults(defineProps<{
+  lanes: TimelineLane[]
+  /** The scale. Positions outside it are clamped rather than drawn off the edge. */
+  from: number
+  to: number
+  /** Turns a position into an axis label — the caller owns what the scale means. */
+  format: (value: number) => string
+  /**
+   * The scale's meaning in two or three words, ALWAYS visible, in the room left of the axis that
+   * would otherwise be empty. A note only a hover reveals is a note nobody reads: the reader who
+   * needs it is exactly the one who does not know it is there.
+   */
+  scaleLabel?: string
+  /** The whole of it, one hover away — what a short label cannot carry. */
+  scaleNote?: string
+  /**
+   * Remove a stretch where NOTHING is drawn once it exceeds this length, and mark the removal.
+   *
+   * This breaks the axis, which is only honest because of what is removed: a time axis encodes
+   * duration through length, and cutting an EMPTY stretch leaves every drawn length and every
+   * ratio between them exactly as it was. Compressing the gap instead of removing it would not —
+   * that would claim a proportion the data does not have. Zero or absent keeps the axis linear.
+   */
+  collapseGapsLongerThan?: number
+  /** Renders the length of a removed stretch — the caller owns what the scale's units mean. */
+  formatGap?: (length: number) => string
+  /**
+   * Renders a kept piece as ONE label spanning it. A piece's two edges can sit closer together
+   * than a single label is wide, and two labels then overprint into a smear; one range says the
+   * same thing in the space that is actually there. Falls back to two formatted ends.
+   */
+  formatRange?: (from: number, to: number) => string
+  /**
+   * Renders the removals as ONE caption instead of labelling each. Above a handful of breaks the
+   * per-gap captions and the per-piece ranges crowd into a smear — measured on a scenario set of
+   13 one-hour slices over five weeks, 98.5 % of the span empty and twelve breaks, which put 25
+   * labels in one width. The geometry stays honest; only the labels stop pretending to be legible.
+   */
+  formatBreaks?: (count: number, total: number) => string
+  ticks?: number
+  /**
+   * Mark ROUND MOMENTS rather than equal divisions — midnight, six o'clock, the hour.
+   *
+   * Opt-in, and it has to be: this chart's scale is a NUMBER, and only its caller knows that the
+   * number is a millisecond. Assuming it made an axis of 0..100 fall back to its two ends, which
+   * the suite caught. A caller that passes something else keeps equal divisions.
+   */
+  naturalTime?: boolean
+  /** Width of the lane-label column, in rem. */
+  labelWidth?: number
+}>(), {
+  ticks: 5,
+  naturalTime: false,
+  labelWidth: 15,
+  scaleLabel: '',
+  scaleNote: '',
+  collapseGapsLongerThan: 0,
+  formatGap: (length: number) => String(length),
+  formatRange: undefined,
+  formatBreaks: undefined,
+})
+
+interface Segment {
+  from: number
+  to: number
+  /** Share of the plot width this segment occupies. */
+  width: number
+  /** Where it starts, in plot percent. */
+  at: number
+}
+
+/** A removed stretch, drawn as a fixed-width break rather than to scale. */
+interface Break {
+  at: number
+  length: number
+  /** Thinner the more of them there are — see BREAK_BUDGET. */
+  width: number
+}
+
+/**
+ * What one break costs, and the ceiling on what they cost together.
+ *
+ * A break has to take SOME width — a zero-width one is invisible and the two sides then read as
+ * contiguous, which is the thing the break exists to deny. But at a fixed 5 % each, ten breaks take
+ * half the plot for nothing. So the budget is capped: the removals share it and the data keeps the
+ * rest, which means more breaks make each one thinner rather than eating the chart.
+ */
+const BREAK_WIDTH_MAX = 5
+const BREAK_BUDGET = 20
+
+/** Labels need room. Below these shares of the plot a span falls back, then goes silent. */
+const LABEL_MIN_WIDTH = 6
+const SHORT_LABEL_MIN_WIDTH = 2.5
+
+/** Above this many breaks the labels are summarised rather than drawn one per piece. */
+const MAX_LABELLED_BREAKS = 3
+
+const length = computed(() => props.to - props.from)
+
+/** Every drawn stretch, merged — what the axis has to keep. */
+const occupied = computed(() => {
+  const all = props.lanes
+    .flatMap(lane => lane.spans)
+    .map(span => ({ from: Math.min(span.from, span.to), to: Math.max(span.from, span.to) }))
+    .sort((a, b) => a.from - b.from)
+  const merged: { from: number, to: number }[] = []
+  for (const piece of all) {
+    const last = merged[merged.length - 1]
+    if (last && piece.from <= last.to) last.to = Math.max(last.to, piece.to)
+    else merged.push({ ...piece })
+  }
+  return merged
+})
+
+/**
+ * The axis as kept pieces plus removed stretches. Without collapsing this is one piece spanning
+ * the whole scale, so every caller reads the same shape.
+ */
+const axis = computed(() => {
+  const threshold = props.collapseGapsLongerThan
+  const pieces = occupied.value
+  if (threshold <= 0 || pieces.length < 2 || length.value <= 0) {
+    return {
+      segments: [{ from: props.from, to: props.to, at: 0, width: 100 }] as Segment[],
+      breaks: [] as Break[],
+    }
+  }
+
+  // group the kept stretches, absorbing any gap that is not worth removing
+  const kept: { from: number, to: number }[] = [{ from: props.from, to: pieces[0]!.to }]
+  const removed: number[] = []
+  for (let i = 1; i < pieces.length; i += 1) {
+    const gap = pieces[i]!.from - pieces[i - 1]!.to
+    if (gap > threshold) {
+      kept.push({ from: pieces[i]!.from, to: pieces[i]!.to })
+      removed.push(gap)
+    } else {
+      kept[kept.length - 1]!.to = pieces[i]!.to
+    }
+  }
+  kept[kept.length - 1]!.to = Math.max(kept[kept.length - 1]!.to, props.to)
+
+  const breakWidth = Math.min(BREAK_WIDTH_MAX, BREAK_BUDGET / removed.length)
+  const dataWidth = 100 - removed.length * breakWidth
+  const total = kept.reduce((sum, piece) => sum + (piece.to - piece.from), 0)
+  const segments: Segment[] = []
+  const breaks: Break[] = []
+  let cursor = 0
+  kept.forEach((piece, index) => {
+    if (index > 0) {
+      breaks.push({ at: cursor, length: removed[index - 1]!, width: breakWidth })
+      cursor += breakWidth
+    }
+    const width = total > 0 ? ((piece.to - piece.from) / total) * dataWidth : dataWidth
+    segments.push({ from: piece.from, to: piece.to, at: cursor, width })
+    cursor += width
+  })
+  return { segments, breaks }
+})
+
+/** Position as a percentage of the plot, piecewise where the axis is broken. Clamped. */
+function offset(value: number): number {
+  const segments = axis.value.segments
+  for (const segment of segments) {
+    if (value <= segment.to) {
+      const span = segment.to - segment.from
+      const inside = span > 0 ? Math.max(0, (value - segment.from) / span) : 0
+      return Math.min(100, segment.at + Math.min(1, inside) * segment.width)
+    }
+  }
+  const last = segments[segments.length - 1]!
+  return Math.min(100, last.at + last.width)
+}
+
+/**
+ * A tick at each kept piece's edges rather than at even intervals: once the axis is broken, an
+ * evenly spaced tick can fall inside a stretch that was removed and would name a moment the chart
+ * does not show.
+ */
+interface Tick {
+  at: number
+  label: string
+  /** Where the label hangs: 'start' right of its mark, 'end' left of it, 'mid' centred. */
+  edge: string
+}
+
+/** True where there are so many removals that labelling each would produce a smear. */
+const crowded = computed(() => axis.value.breaks.length > MAX_LABELLED_BREAKS)
+
+const axisTicks = computed<Tick[]>(() => {
+  // too many pieces to label: the two ends of the whole scale, and nothing between them
+  if (crowded.value) {
+    return [
+      { at: 0, label: props.format(props.from), edge: 'start' },
+      { at: 100, label: props.format(props.to), edge: 'end' },
+    ]
+  }
+  if (!axis.value.breaks.length && !props.naturalTime) {
+    const count = Math.max(2, props.ticks)
+    return Array.from({ length: count }, (_, i) => {
+      const value = props.from + (length.value * i) / (count - 1)
+      return { at: (i / (count - 1)) * 100, label: props.format(value), edge: 'mid' }
+    })
+  }
+  if (!axis.value.breaks.length) {
+    const step = naturalStep(length.value, Math.max(2, props.ticks))
+    // Marks on ROUND moments — midnight, six o'clock — rather than on equal divisions of the span.
+    // Divided evenly, a four-tick axis over two days reads `23:59:40Z`, which is a quarter of the
+    // span and nothing else; the stems under such labels mark nothing a reader recognises. On a
+    // natural step they mark the day and the hour, which is what the eye is looking for.
+    const marks: { at: number, label: string, edge: string }[] = []
+    for (let value = Math.ceil(props.from / step) * step; value <= props.to; value += step) {
+      marks.push({
+        at: ((value - props.from) / length.value) * 100,
+        label: props.format(value),
+        edge: 'mid',
+      })
+    }
+    // a span shorter than one step has no round moment inside it, so it keeps its own two ends
+    if (marks.length < 2) {
+      return [
+        { at: 0, label: props.format(props.from), edge: 'start' },
+        { at: 100, label: props.format(props.to), edge: 'end' },
+      ]
+    }
+    return marks
+  }
+  // one label per kept piece, centred on it: its two edges are what a reader wants, and they fit
+  // in the width the piece actually has only when they share a label
+  return axis.value.segments.map(segment => ({
+    at: segment.at + segment.width / 2,
+    label: props.formatRange
+      ? props.formatRange(segment.from, segment.to)
+      : `${props.format(segment.from)} → ${props.format(segment.to)}`,
+    edge: 'mid',
+  }))
+})
+
+/**
+ * The steps an axis of TIME is allowed to mark, coarsest first once it fits.
+ *
+ * Not arbitrary: each is a unit a reader already counts in. A step of 6 h puts a mark at every
+ * midnight, six, noon and eighteen — the moments a trading day is read by — where 5 h would drift
+ * through the day and mark nothing twice the same.
+ */
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+const STEPS = [
+  MINUTE, 2 * MINUTE, 5 * MINUTE, 10 * MINUTE, 15 * MINUTE, 30 * MINUTE,
+  HOUR, 2 * HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR,
+  DAY, 2 * DAY, 7 * DAY, 14 * DAY, 28 * DAY, 91 * DAY, 365 * DAY,
+]
+
+/** The smallest step that keeps the marks at or under the count asked for. */
+function naturalStep(span: number, count: number): number {
+  return STEPS.find(step => span / step <= count) ?? STEPS[STEPS.length - 1]!
+}
+
+/**
+ * How close two labels may sit, in percent of the width, before the second moves to the row below.
+ * A timestamp is wide and the marks it belongs to can be near each other; this is the threshold
+ * that decides between one row and two.
+ */
+const MIN_TICK_GAP = 14
+
+/**
+ * Labels are STAGGERED onto a second line rather than dropped or shrunk. A timestamp is wide and
+ * the marks it belongs to can be close: shrinking the text makes the axis unreadable, dropping a
+ * label loses a moment the reader needs. Two rows double the room, and a pointer under each label
+ * says which mark it belongs to — which is the thing a staggered axis otherwise leaves ambiguous.
+ */
+const placedTicks = computed(() => {
+  const all = axisTicks.value
+
+  const lastOnRow = [-Infinity, -Infinity]
+  return all.map((tick, index) => {
+    // the top row unless its neighbour there is too close, in which case the row below
+    const row = tick.at - lastOnRow[0]! >= MIN_TICK_GAP ? 0 : 1
+    lastOnRow[row] = tick.at
+    // Whatever a branch above decided, the OUTERMOST two labels hang inwards. A centred label at
+    // the far edge keeps half its box past the chart — the transform pulls it back on screen but
+    // not in layout, so the panel around it offered 67 px of scrollbar, and scrolling that phantom
+    // slid the lane labels away. Measured 2026-09-29; `e2e/panel_layout.spec.ts` holds it.
+    const edge = index === 0 ? 'start' : (index === all.length - 1 ? 'end' : tick.edge)
+    return { ...tick, edge, row }
+  })
+})
+
+const removedTotal = computed(() =>
+  axis.value.breaks.reduce((sum, gap) => sum + gap.length, 0)
+)
+
+const drawn = computed(() =>
+  props.lanes.map(lane => ({
+    ...lane,
+    bars: lane.spans.map(span => {
+      const left = offset(span.from)
+      // a span shorter than a pixel still has to be findable, so width has a floor in CSS
+      const width = Math.max(0, offset(span.to) - left)
+      // a clipped word reads as a fault; a bar with no label reads as a small bar
+      const caption = width >= LABEL_MIN_WIDTH
+        ? span.label
+        : (width >= SHORT_LABEL_MIN_WIDTH ? (span.shortLabel ?? '') : '')
+      return { ...span, left, width, caption }
+    }),
+  }))
+)
+</script>
+
+<template>
+  <div v-if="drawn.length" class="timeline" :style="{ '--label-width': `${labelWidth}rem` }">
+    <div class="axis-row">
+      <span class="axis-spacer" :title="scaleNote">{{ scaleLabel }}</span>
+      <div class="axis" :title="scaleNote">
+        <span
+          v-for="tick in placedTicks"
+          :key="`tick-${tick.at}`"
+          class="tick"
+          :class="[tick.edge, `row-${tick.row}`]"
+          :style="{ left: `${tick.at}%` }"
+        >{{ tick.label }}</span>
+        <!-- the pointer belongs to the MARK, not to the label, so it is placed and centred
+             independently — a staggered label otherwise leaves the reader guessing which one -->
+        <span
+          v-for="tick in placedTicks"
+          :key="`stem-${tick.at}`"
+          class="stem"
+          :class="`row-${tick.row}`"
+          :style="{ left: `${tick.at}%` }"
+        />
+        <!-- the removal is NAMED, which is the only thing that makes a broken axis honest. Where
+             there are too many to name individually, one caption says how much was removed in
+             total — summarised, never silently dropped -->
+        <template v-if="!crowded">
+          <span
+            v-for="gap in axis.breaks"
+            :key="`gaplabel-${gap.at}`"
+            class="gap-label"
+            :style="{ left: `${gap.at + gap.width / 2}%` }"
+          >{{ formatGap(gap.length) }}</span>
+        </template>
+        <span v-else class="gap-label summary" :style="{ left: '50%' }">
+          {{ formatBreaks
+            ? formatBreaks(axis.breaks.length, removedTotal)
+            : `${axis.breaks.length} / ${formatGap(removedTotal)}` }}
+        </span>
+      </div>
+    </div>
+
+    <div v-for="lane in drawn" :key="lane.id" class="lane-row">
+      <RouterLink
+        v-if="lane.to"
+        class="lane-label lane-link"
+        :to="lane.to"
+        :title="lane.label"
+      >{{ lane.label }} ↗</RouterLink>
+      <span v-else class="lane-label" :title="lane.label">{{ lane.label }}</span>
+      <div class="lane">
+        <span
+          v-for="gap in axis.breaks"
+          :key="`gap-${gap.at}`"
+          class="gap"
+          :style="{ left: `${gap.at}%`, width: `${gap.width}%` }"
+          :title="formatGap(gap.length)"
+        />
+        <HoverCard
+          v-for="bar in lane.bars"
+          :key="bar.id"
+          :title="bar.title"
+          :details="bar.details"
+        >
+          <div
+            class="span"
+            :class="bar.tone"
+            :style="{ left: `${bar.left}%`, width: `${bar.width}%` }"
+            tabindex="0"
+          >
+            <span v-if="bar.caption" class="span-label">{{ bar.caption }}</span>
+          </div>
+        </HoverCard>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<style scoped>
+.timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.axis-row,
+.lane-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.axis-spacer,
+.lane-label {
+  flex: 0 0 var(--label-width);
+}
+
+/* the scale's name, in the same ink as the stamps it belongs to, so the two read as one axis */
+.axis-spacer {
+  align-self: flex-start;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lane-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* the axis carries the scale and nothing else — recessive, never competing with the spans */
+.axis {
+  position: relative;
+  flex: 1;
+  /* three lines: two staggered rows of labels, then the removals, so none overprints another */
+  height: 3.4rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* By class, not by :first-child — the gap labels share this container, so a positional selector
+   matched the wrong element. `start` hangs right of its mark and `end` hangs left of it, which is
+   what keeps the outermost two labels inside the chart in LAYOUT as well as on screen. */
+.tick.start { transform: none; }
+.tick.end { transform: translateX(-100%); }
+.tick.mid { transform: translateX(-50%); }
+
+.tick.row-1 { top: 1.05rem; }
+
+/* the pointer from a label down to the mark it names */
+.stem {
+  position: absolute;
+  width: 1px;
+  background-color: var(--color-border);
+}
+
+.stem.row-0 { top: 0.95rem; height: 1.3rem; }
+.stem.row-1 { top: 2rem; height: 0.25rem; }
+
+.lane-link {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.lane-link:hover {
+  text-decoration: underline;
+}
+
+.lane {
+  position: relative;
+  flex: 1;
+  height: 1.25rem;
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+/* the removed stretch: hatched and dashed, so it never reads as a span with no colour */
+.gap {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  border-left: 1px dashed var(--color-annotation);
+  border-right: 1px dashed var(--color-annotation);
+  background-color: var(--color-bg-base);
+  pointer-events: none;
+}
+
+.gap-label {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+  text-align: center;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-annotation);
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.span {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  min-width: 3px;
+  border-radius: 4px;
+  /* a 2px surface ring, so two adjacent spans never read as one */
+  outline: 2px solid var(--color-bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.span.positive { background-color: var(--color-positive); }
+.span.negative { background-color: var(--color-negative); }
+.span.flat     { background-color: var(--color-text-secondary); }
+
+/* the label wears ink, never the span colour */
+.span-label {
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-bg-base);
+  padding: 0 var(--space-xs);
+  white-space: nowrap;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: var(--z-chart);
+  transform: translateX(-50%);
+  min-width: 15rem;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-bg-surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+  pointer-events: none;
+}
+
+.tooltip-title {
+  margin: 0 0 var(--space-xs);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.tooltip-rows {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0 var(--space-md);
+  margin: 0;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.tooltip-rows dt {
+  color: var(--color-text-secondary);
+}
+
+.tooltip-rows dd {
+  margin: 0;
+  text-align: right;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.tooltip-rows dd.positive { color: var(--color-positive); }
+.tooltip-rows dd.negative { color: var(--color-negative); }
+</style>

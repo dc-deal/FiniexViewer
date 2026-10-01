@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import pkg from '../../package.json'
+import { t } from '@/translate'
 </script>
 
 <template>
@@ -7,12 +8,12 @@ import pkg from '../../package.json'
     <h2 class="about-title">{{ pkg.name }}</h2>
     <p class="about-version">v{{ pkg.version }}</p>
     <div class="about-body">
-      <p>Web companion for FiniexTestingIDE.</p>
-      <p>Connects to the FiniexTestingIDE API server and renders market data as interactive candle charts. Read-only — no trade execution.</p>
+      <p>{{ t('Web companion for FiniexTestingIDE.') }}</p>
+      <p>{{ t('Connects to the FiniexTestingIDE API server and renders market data as interactive candle charts. Read-only — no trade execution.') }}</p>
     </div>
     <div class="about-meta">
-      <span>Charts: TradingView Lightweight Charts (Apache 2.0)</span>
-      <span>License: {{ pkg.license }}</span>
+      <span>{{ t('Charts: TradingView Lightweight Charts (Apache 2.0)') }}</span>
+      <span>{{ t('License:') }} {{ pkg.license }}</span>
     </div>
   </div>
 </template>

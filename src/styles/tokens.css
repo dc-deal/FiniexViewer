@@ -1,11 +1,50 @@
+/*
+ * Colour carries ROLE, and each role has exactly one colour:
+ *
+ *   accent     a LINK, and interactive focus. Nothing else — a heading, a rule or a badge in the
+ *              link colour reads as clickable.
+ *   warning    something the reader must weigh before trusting what is beside it. Always with a
+ *              glyph and a word: in the light theme a dark yellow and a dark red are inseparable
+ *              under red-green colour blindness (measured CVD ΔE 5.5), so hue is never the only
+ *              channel a warning travels on.
+ *   annotation the structure of a table or a chart — a boundary between rows, a marked division.
+ *              Says "the thing changed here", not "something is wrong". Always DASHED, because
+ *              once a palette owns blue and yellow no third HUE can be made distinct under
+ *              red-green colour blindness: measured ΔE 7.4 against the link blue at deutan, which
+ *              is only legal with a second channel. The dash is that channel.
+ *   error      something is wrong with the data or the request.
+ *   positive /
+ *   negative   the polarity of a figure. Never a rank, never a category.
+ *   text-secondary  structure and neutral annotation: notices that inform rather than warn.
+ *
+ * Text contrast measured against the panel surface, 2026-09-23: warning 8.2:1 dark, 5.9:1 light.
+ *
+ * SURFACES are not roles — they are lightness steps of one surface, and a control moves through
+ * them as it is pointed at and pressed. `bg-hover` lifts, `bg-active` sinks, in both themes, so
+ * "pressed" reads the same way whichever theme is on. Measured 2026-09-27: text over all three
+ * button surfaces is 12.97:1 or better in both themes.
+ *
+ * The step between them is deliberately small (a luminance ratio of ~1.1), because surface is a
+ * WEAK channel on its own — too weak to carry press feedback. The pressed state therefore also
+ * moves the control down by a pixel, and position works regardless of contrast sensitivity.
+ *
+ * `text-secondary` on a surface is the look of a DISABLED control. Nothing that can be clicked may
+ * wear it — a settings button did, and was read as greyed out by the first person to meet it.
+ */
 :root[data-theme='dark'] {
   --color-bg-base:        #0d0d0f;
   --color-bg-surface:     #18181b;
   --color-bg-elevated:    #1e1e23;
+  --color-bg-hover:       #26262c;
+  --color-bg-active:      #16161a;
   --color-text-primary:   #eeeeee;
   --color-text-secondary: #888888;
   --color-accent:         #4aaeff;
   --color-error:          #ee0055;
+  --color-warning:        #e5a50a;
+  --color-annotation:     #e07ad8;
+  --color-positive:       #26a69a;
+  --color-negative:       #ef5350;
   --color-border:         #2a2a2e;
   --color-tree-connector: #555555;
 }
@@ -14,10 +53,23 @@
   --color-bg-base:        #f0f0f2;
   --color-bg-surface:     #ffffff;
   --color-bg-elevated:    #f8f8fa;
+  --color-bg-hover:       #ececf0;
+  --color-bg-active:      #e0e0e6;
   --color-text-primary:   #111111;
   --color-text-secondary: #555555;
   --color-accent:         #0066cc;
   --color-error:          #cc0033;
+  --color-warning:        #6f6000;
+  --color-annotation:     #a21caf;
+  /* #0f8a7e until 2026-09-29, where it measured 4.24:1 against white — the only status colour in
+     this theme below WCAG AA for normal text, and the only one under the 0.100 chroma floor.
+     COMPUTED rather than chosen: in sRGB the teal band (hue 178-192) tops out at chroma 0.101 once
+     4.50:1 is required, so this is the whole of the room there is. A greener candidate reached
+     0.114 and 4.58:1 but its distance from --color-negative under deuteranopia fell from 11.7 to
+     8.3 ΔE — green against red is the axis red-green colour blindness collapses, so the better
+     numbers would have been paid for on the channel that matters most here. */
+  --color-positive:       #008674;
+  --color-negative:       #c62828;
   --color-border:         #dcdcdc;
   --color-tree-connector: #999999;
 }
@@ -32,4 +84,25 @@
   --font-size-sm: 0.85em;
   --font-size-md: 1rem;
   --font-size-lg: 1.25rem;
+
+  /**
+   * Stacking order, as a named scale rather than six numbers chosen one at a time.
+   *
+   * Every value here was picked in isolation by whoever wrote the component, and one collision had
+   * already happened: the facet popover and the top menu both sat at 70, so which of them won was
+   * decided by document order rather than by intent. The gaps are deliberate — room to put
+   * something between two layers without renumbering the ones above it.
+   *
+   * The rule is the ORDER, not the number: a chart paints below anything that floats over the
+   * page, a popover floats over the page, a menu floats over a popover, and a dialog covers
+   * everything because it is modal.
+   */
+  --z-chart: 5;
+  /* a list's sticky headings float over its own rows and nothing else */
+  --z-list-head: 10;
+  --z-card: 60;
+  --z-popover: 70;
+  --z-menu: 75;
+  --z-overlay: 80;
+  --z-dialog: 81;
 }

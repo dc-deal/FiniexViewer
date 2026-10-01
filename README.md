@@ -15,13 +15,13 @@ Read-only candle chart that loads historical bar data from a running FiniexTesti
 
 - A **separate repository** that talks to FiniexTestingIDE over HTTP — no shared filesystem.
 - A **Vue 3 / TypeScript / Vite** single-page application, dark mode by default.
-- A **read-only candle viewer** — no trade execution, no scenario control.
+- A **read-only viewer** — candle chart, run reports, and a live bot's history across its restarts. No trade execution, no scenario control.
 
 ## What This Is Not
 
 - Not a trading platform or execution UI.
 - Not a strategy runner — no simulation control from the browser.
-- No authentication, no user accounts, no multi-user setup.
+- No login, no user accounts, no multi-user setup.
 - Not a replacement for the FiniexTestingIDE CLI.
 
 ---
@@ -46,6 +46,17 @@ Create `.env.local` to point at your API server (default is `http://localhost:80
 ```bash
 echo "VITE_API_BASE_URL=http://localhost:8000" > .env.local
 ```
+
+If the API requires a bearer token, put it in the same file:
+
+```bash
+echo "FINIEX_API_TOKEN=<your token>" >> .env.local
+```
+
+**Note the missing `VITE_` prefix, and do not add one.** A `VITE_*` variable is inlined into the
+browser bundle at build time, which would publish the token to anyone who opens the page. This one
+is read by the dev proxy and attached to the outgoing request, so the browser never receives it.
+Leave it unset and no `Authorization` header is sent.
 
 ### Run
 
@@ -78,7 +89,8 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | HTTP client | **axios** |
 | Layout | **splitpanes** |
 | Theme | CSS Custom Properties token system, dark/light mode |
-| Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` |
+| Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` + `@stylistic` |
+| Dead code | **knip** — unreferenced files, exports and dependencies |
 | Testing | **Vitest** + **Vue Test Utils** — unit tests, jsdom environment |
 | CI | **GitHub Actions** — type-check + tests on every PR and push to master |
 
@@ -95,7 +107,9 @@ Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_a
 │                         │                            │                          │
 │  - Broker/Symbol picker │                            │  - Parquet tick reader   │
 │  - Candle chart         │                            │  - Bar index manager     │
-│  - Shareable URL state  │                            │  - Scenario engine       │
+│  - Run report panels    │                            │  - Scenario engine       │
+│  - Deployment history   │                            │  - Run-results ledger    │
+│  - Shareable URL state  │                            │                          │
 └─────────────────────────┘                            └──────────────────────────┘
 ```
 
@@ -109,6 +123,8 @@ Two-container topology and request flow: [docs/frontend_architecture.md](docs/fr
 npm run dev          # start Vite dev server
 npm run build        # production build
 npm run type-check   # TypeScript check without emit
+npm run lint         # ESLint with autofix (lint:check to only report)
+npm run knip         # report unreferenced files, exports and dependencies
 npm run test         # run unit tests (Vitest)
 npm run test:coverage  # run tests with coverage report
 ```

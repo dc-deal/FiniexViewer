@@ -3,6 +3,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useSelectionStore } from '@/stores/selection_store'
 import { useSymbolStore } from '@/stores/symbol_store'
+import { patchQuery } from '@/composables/query_param_utils'
 
 export function useQuerySync(): void {
   const router = useRouter()
@@ -33,10 +34,7 @@ export function useQuerySync(): void {
   // only write URL after init is complete — prevents intermediate states from clobbering params
   watch([broker, symbol, timeframe], ([b, s, tf]) => {
     if (!_ready) return
-    const query: Record<string, string> = {}
-    if (b)  query['broker']    = b
-    if (s)  query['symbol']    = s
-    if (tf) query['timeframe'] = tf
-    router.replace({ query })
+    // a patch, never a whole query — the runs view and two facet bars own params in the same URL
+    patchQuery(router, { broker: b, symbol: s, timeframe: tf })
   })
 }

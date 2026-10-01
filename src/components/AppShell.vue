@@ -8,6 +8,8 @@ import { useSelectionStore } from '@/stores/selection_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import { useQuerySync } from '@/composables/use_query_sync'
 import AppSelect from '@/components/base/AppSelect.vue'
+import TopMenu from '@/components/TopMenu.vue'
+import { t } from '@/translate'
 
 const brokerStore = useBrokerStore()
 const symbolStore = useSymbolStore()
@@ -40,36 +42,40 @@ function onBrokerChange(b: string): void {
   <div class="shell">
     <header class="shell-header">
       <span class="shell-title">FiniexViewer</span>
+      <div class="shell-spacer" />
+      <TopMenu />
     </header>
     <div class="shell-body">
       <Splitpanes class="shell-splitpanes">
         <Pane :min-size="12" :max-size="30" :size="16" class="sidebar">
           <nav class="sidebar-nav">
-            <RouterLink to="/viewer" class="nav-link">Viewer</RouterLink>
-            <RouterLink to="/about" class="nav-link">About</RouterLink>
+            <RouterLink to="/viewer" class="nav-link">{{ t('Viewer') }}</RouterLink>
+            <RouterLink to="/runs" class="nav-link">{{ t('Runs') }}</RouterLink>
+            <RouterLink to="/deployments" class="nav-link">{{ t('Deployments') }}</RouterLink>
+            <RouterLink to="/about" class="nav-link">{{ t('About') }}</RouterLink>
           </nav>
           <div class="sidebar-selectors">
-            <label class="selector-label">Broker</label>
+            <label class="selector-label">{{ t('Broker') }}</label>
             <AppSelect
               :model-value="broker"
               :options="brokers.map(b => ({ value: b, label: b }))"
-              placeholder="Select broker"
+              :placeholder="t('Select broker')"
               :disabled="brokersLoading"
               @update:model-value="onBrokerChange"
             />
-            <label class="selector-label">Symbol</label>
+            <label class="selector-label">{{ t('Symbol') }}</label>
             <AppSelect
               :model-value="symbol"
               :options="currentSymbols.map(s => ({ value: s.symbol, label: s.symbol }))"
-              placeholder="Select symbol"
+              :placeholder="t('Select symbol')"
               :disabled="broker === null || symbolsLoading"
               @update:model-value="selectionStore.setSymbol"
             />
-            <label class="selector-label">Timeframe</label>
+            <label class="selector-label">{{ t('Timeframe') }}</label>
             <AppSelect
               :model-value="timeframe"
               :options="timeframes.map(tf => ({ value: tf, label: tf }))"
-              placeholder="Select timeframe"
+              :placeholder="t('Select timeframe')"
               :disabled="symbol === null"
               @update:model-value="selectionStore.setTimeframe"
             />
@@ -106,6 +112,10 @@ function onBrokerChange(b: string): void {
   font-weight: bold;
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
+}
+
+.shell-spacer {
+  flex: 1;
 }
 
 .shell-body {

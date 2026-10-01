@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getSymbols } from '@/api/api_client'
 import type { BrokerSymbol } from '@/types/api/broker_types'
+import { t } from '@/translate'
 
 export const useSymbolStore = defineStore('symbol', () => {
   const symbolsByBroker = ref<Record<string, BrokerSymbol[]>>({})
@@ -15,7 +16,7 @@ export const useSymbolStore = defineStore('symbol', () => {
     try {
       symbolsByBroker.value[broker] = await getSymbols(broker)
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load symbols'
+      error.value = e instanceof Error ? e.message : t('Failed to load symbols')
     } finally {
       loading.value = false
     }

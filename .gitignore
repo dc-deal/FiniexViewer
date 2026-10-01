@@ -51,7 +51,24 @@ Thumbs.db
 # Claude / AI assistant runtime (never commit)
 .claude/
 CLAUDE.md
+.mcp.json
 
 # GitHub issues export (local reference only)
 github_issues/
 export_github_issues.sh
+
+# Internal working docs (private — may reference user_algos / private bots)
+INTERNAL_*.md
+ISSUE_*.md
+SESSION_*.md
+
+# A read-only copy of FiniexTestingIDE's documentation, refreshed by sync_ide_docs.sh.
+# Another project's content — never tracked here.
+ide_docs/
+sync_ide_docs.sh
+
+# Playwright — reports, traces and screenshots are run output, never source
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
