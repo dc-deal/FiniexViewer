@@ -32,6 +32,7 @@ const REPORTS: Record<string, string> = {
   'portfolio': 'portfolio.json',
   'broker': 'broker.json',
   'aggregated-portfolio': 'aggregated_portfolio.json',
+  'pending-orders': 'pending_orders.json',
   'booking-periods': 'run_booking_periods.json',
   'trade-history': 'trade_history.json',
   'scenario-details': 'scenario_details.json',
@@ -40,6 +41,13 @@ const REPORTS: Record<string, string> = {
 
 /** The run every report capture was taken from — the only one the mock can answer for. */
 export const FIXTURE_RUN = (fixture('scenario_details.json') as { run_id: string }).run_id
+
+/**
+ * The deployment the ledger captures belong to, read from the capture rather than transcribed —
+ * the same rule the run id follows, so a re-capture cannot strand it.
+ */
+export const FIXTURE_DEPLOYMENT =
+  (fixture('deployment_detail.json') as { deployment_id: string }).deployment_id
 
 /**
  * The shell's own routes. These are NOT contract mirrors and must not be read as one — they are
@@ -87,6 +95,34 @@ export async function mockApi(page: Page): Promise<void> {
         return route.fulfill(absent('run_not_found', `Only ${FIXTURE_RUN} is captured`))
       }
       return route.fulfill({ json: fixture(file), headers: CONTRACT })
+    }
+
+    /*
+     * The LEDGER plane. It went unserved until 2026-10-01, so the deployments view, its picker and
+     * its timeline had never been in a browser test at all — and the misaligned figure cells the
+     * geometry assertion later found on the run side were present there too, unseen.
+     */
+    if (path === '/api/v1/deployments') {
+      return route.fulfill({ json: fixture('deployments_list.json'), headers: CONTRACT })
+    }
+
+    const ledger = /^\/api\/v1\/deployments\/([^/]+)(?:\/([a-z-]+))?$/.exec(path)
+    if (ledger) {
+      const id = ledger[1] as string
+      if (id !== FIXTURE_DEPLOYMENT) {
+        return route.fulfill(absent('deployment_not_found', `Only ${FIXTURE_DEPLOYMENT} is captured`))
+      }
+      const section = ledger[2]
+      if (!section) {
+        return route.fulfill({ json: fixture('deployment_detail.json'), headers: CONTRACT })
+      }
+      if (section === 'booking-periods') {
+        return route.fulfill({
+          json: fixture('deployment_booking_periods.json'),
+          headers: CONTRACT,
+        })
+      }
+      return route.fulfill(absent('artifact_not_produced', `No capture for ledger '${section}'`))
     }
 
     return route.fulfill(absent('not_mocked', `No fixture routes ${path}`))

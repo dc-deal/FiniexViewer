@@ -24,6 +24,7 @@ export const SECTION_ARTIFACTS: Record<string, string> = {
   portfolio: 'portfolio.json',
   broker: 'broker.json',
   aggregated: 'aggregated_portfolio.json',
+  pendingOrders: 'pending_orders.json',
   bookingPeriods: 'booking_periods.json',
   tradeHistory: 'trade_history.json',
   scenarios: 'scenario_details.json',

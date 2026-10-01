@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getAggregatedPortfolio, getBookingPeriods, getBroker, getPortfolio, getRunConfig,
-  getScenarioDetails, getTradeHistory, getWarningsErrors,
+  getAggregatedPortfolio, getBookingPeriods, getBroker, getPendingOrders, getPortfolio,
+  getRunConfig, getScenarioDetails, getTradeHistory, getWarningsErrors,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { isAbsent } from '@/types/api/absence_types'
@@ -11,6 +11,7 @@ import type {
   AggregatedPortfolioReport,
   BookingPeriodsReport,
   BrokerReport,
+  PendingOrdersReport,
   RunConfigReport,
   TradeHistoryReport,
   PortfolioReport,
@@ -29,6 +30,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const portfolio = ref<PortfolioReport | null>(null)
   const broker = ref<BrokerReport | null>(null)
   const aggregated = ref<AggregatedPortfolioReport | null>(null)
+  const pendingOrders = ref<PendingOrdersReport | null>(null)
   const bookingPeriods = ref<BookingPeriodsReport | null>(null)
   const config = ref<RunConfigReport | null>(null)
   const tradeHistory = ref<TradeHistoryReport | null>(null)
@@ -37,6 +39,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const loadingPortfolio = ref(false)
   const loadingBroker = ref(false)
   const loadingAggregated = ref(false)
+  const loadingPendingOrders = ref(false)
   const loadingBookingPeriods = ref(false)
   const loadingConfig = ref(false)
   const loadingTradeHistory = ref(false)
@@ -49,7 +52,15 @@ export const useRunReportsStore = defineStore('run_reports', () => {
    * say it once, above the column, rather than eight panels each saying nothing.
    */
   const absences = ref<Record<string, SectionAbsence>>({})
-  const error = ref<string | null>(null)
+  /**
+   * Why a section could not be loaded, keyed by the slot it would have filled.
+   *
+   * ONE ref served all seven sections until 2026-10-01 and they load concurrently, so the last
+   * writer won: a section that failed could have its message overwritten by a later one, and the
+   * reader was told about whichever happened to finish last. Keyed, every failure survives — the
+   * same shape `absences` above already has, and for the same reason.
+   */
+  const errors = ref<Record<string, string>>({})
   // the artifact exists but predates the current schema — not an absence and not an outage
   const unreadable = ref<string | null>(null)
 
@@ -59,12 +70,13 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     portfolio.value = null
     broker.value = null
     aggregated.value = null
+    pendingOrders.value = null
     bookingPeriods.value = null
     config.value = null
     tradeHistory.value = null
     scenarios.value = null
     absences.value = {}
-    error.value = null
+    errors.value = {}
     unreadable.value = null
   }
 
@@ -84,7 +96,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
         unreadable.value = e.message
       } else {
         const detail = e instanceof Error ? e.message : String(e)
-        error.value = `${t('Could not load warnings and errors')}: ${detail}`
+        errors.value['warningsErrors'] = `${t('Could not load warnings and errors')}: ${detail}`
       }
     } finally {
       loadingWarningsErrors.value = false
@@ -100,7 +112,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       else portfolio.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
-      error.value = `${t('Could not load the portfolio breakdown')}: ${detail}`
+      errors.value['portfolio'] = `${t('Could not load the portfolio breakdown')}: ${detail}`
     } finally {
       loadingPortfolio.value = false
     }
@@ -119,7 +131,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       else broker.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
-      error.value = `${t('Could not load the broker conditions')}: ${detail}`
+      errors.value['broker'] = `${t('Could not load the broker conditions')}: ${detail}`
     } finally {
       loadingBroker.value = false
     }
@@ -139,9 +151,29 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       else aggregated.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
-      error.value = `${t('Could not load the aggregated portfolio')}: ${detail}`
+      errors.value['aggregated'] = `${t('Could not load the aggregated portfolio')}: ${detail}`
     } finally {
       loadingAggregated.value = false
+    }
+  }
+
+  /**
+   * What became of the pending orders. Its own request rather than a reading of the aggregate: the
+   * fold states the run-wide counts, this one states them PER SCENARIO and carries the orders that
+   * are still open, which is what makes a rejection traceable to the unit that produced it.
+   */
+  async function loadPendingOrders(runId: string): Promise<void> {
+    loadingPendingOrders.value = true
+    pendingOrders.value = null
+    try {
+      const answer = await getPendingOrders(runId)
+      if (isAbsent(answer)) absences.value['pendingOrders'] = answer
+      else pendingOrders.value = answer
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      errors.value['pendingOrders'] = `${t('Could not load the pending orders')}: ${detail}`
+    } finally {
+      loadingPendingOrders.value = false
     }
   }
 
@@ -158,7 +190,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
         unreadable.value = e.message
       } else {
         const detail = e instanceof Error ? e.message : String(e)
-        error.value = `${t('Could not load the booking periods')}: ${detail}`
+        errors.value['bookingPeriods'] = `${t('Could not load the booking periods')}: ${detail}`
       }
     } finally {
       loadingBookingPeriods.value = false
@@ -180,7 +212,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       else config.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
-      error.value = `${t('Could not load the configuration')}: ${detail}`
+      errors.value['config'] = `${t('Could not load the configuration')}: ${detail}`
     } finally {
       loadingConfig.value = false
     }
@@ -196,7 +228,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       else tradeHistory.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
-      error.value = `${t('Could not load the trade history')}: ${detail}`
+      errors.value['tradeHistory'] = `${t('Could not load the trade history')}: ${detail}`
     } finally {
       loadingTradeHistory.value = false
     }
@@ -215,7 +247,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       else scenarios.value = answer
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e)
-      error.value = `${t('Could not load the scenario roster')}: ${detail}`
+      errors.value['scenarios'] = `${t('Could not load the scenario roster')}: ${detail}`
     } finally {
       loadingScenarios.value = false
     }
@@ -228,6 +260,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     portfolio,
     broker,
     aggregated,
+    pendingOrders,
     bookingPeriods,
     config,
     tradeHistory,
@@ -235,17 +268,19 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingPortfolio,
     loadingBroker,
     loadingAggregated,
+    loadingPendingOrders,
     loadingBookingPeriods,
     loadingConfig,
     loadingTradeHistory,
     loadingScenarios,
-    error,
+    errors,
     unreadable,
     clear,
     loadWarningsErrors,
     loadPortfolio,
     loadBroker,
     loadAggregated,
+    loadPendingOrders,
     loadBookingPeriods,
     loadConfig,
     loadTradeHistory,

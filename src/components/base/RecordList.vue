@@ -284,6 +284,7 @@ const sections = computed<ListGroup<T>[]>(() => {
         :key="`${column.label}-${index}`"
         :class="{ 'head-figure': column.figure }"
         :data-rank="column.rank ?? 1"
+        :title="column.label"
       >{{ column.label }}</span>
     </li>
 
@@ -467,6 +468,13 @@ const sections = computed<ListGroup<T>[]>(() => {
 }
 
 .record-head > span {
+  /* CLIPPED, and that is a correctness floor rather than tidiness: `nowrap` with no overflow rule
+     let a heading wider than its column spill over the one beside it and the two words overprinted.
+     Measured 2026-10-01 at 620 px — `Final equity` wanted 98 px of 90. A heading that truncates
+     keeps its whole word in the title, exactly as a cell does; a column that must stay legible at
+     every width says so with a floor in its own track. */
+  overflow: hidden;
+  text-overflow: ellipsis;
   position: sticky;
   /* below the bands where there are bands, at the top where there are none: both rows stick, and
      at the same offset the headings would have covered the bands they belong to */

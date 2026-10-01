@@ -128,6 +128,36 @@ describe('ConfigPanel', () => {
   })
 
   /**
+   * On the shared list stem, which is what removed the last bespoke `<table>` from the app. Inert:
+   * a configuration is reference material, with nothing to choose and nothing to sort by — so the
+   * rows are divs rather than buttons, and a row that looked clickable and was not would be the
+   * same defect as a control that looks disabled and works.
+   */
+  it('draws the workers on the shared list, read-only', () => {
+    const wrapper = mountPanel(LIVE)
+    const list = wrapper.find('.worker-list')
+    expect(list.exists()).toBe(true)
+    expect(wrapper.findAll('table')).toHaveLength(0)
+
+    const heads = list.findAll('.record-head > span').map(node => node.text())
+    expect(heads).toEqual(['Instance', 'Type', 'Parameters'])
+    expect(list.findAll('.record-row').length).toBeGreaterThan(0)
+    expect(list.findAll('button')).toHaveLength(0)
+  })
+
+  /**
+   * A value longer than its column is cut on screen and kept whole in its title. Found by its
+   * INSTANCE rather than by position: the row order is the configuration's, not ours.
+   */
+  it('keeps a long worker type reachable', () => {
+    const row = mountPanel(LIVE).findAll('.record-row')
+      .find(node => node.text().includes('rsi_fast'))!
+    const cells = row.findAll(':scope > span')
+    expect(cells[1]?.attributes('title')).toBe('CORE/rsi')
+    expect(cells[2]?.attributes('title')).toContain('periods')
+  })
+
+  /**
    * The NOTICE carries the finding — that some scenarios ran with something else — and the list is
    * which ones. Folded, because on a run of forty it pushed the configuration this panel exists to
    * show off the screen; a native `<details>`, so the keyboard and a screen reader get it for free.

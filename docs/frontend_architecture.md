@@ -579,6 +579,15 @@ independent grids: measured 2026-09-29, the figures drifted 99 px across fourtee
 reconciles them — the list owns the tracks, the `<li>` disappears with `display: contents` so the
 button becomes a direct item of it, and the button adopts the tracks instead of inventing them.
 
+**A heading is CLIPPED and carries its own word.** `.record-head > span` is `white-space: nowrap`;
+without an overflow rule a heading wider than its column spilled over the one beside it and the two
+words overprinted — measured 2026-10-01, `Win Rate` took 68 px of a 66 px track on the deployment
+view, where a fifteenth column takes share from the rest. The stem clips now and puts the whole
+label in a `title`, the same pattern a cell uses. A column that must stay legible at every width
+says so with a FLOOR in its own track instead: five of the booking periods carry one, because a
+timestamp is 20 fixed characters and a heading is as wide as its word, and a proportional share
+cannot express either.
+
 **`figure: true` needs TWO halves, exactly like `rank`, and for the same reason.** The declaration
 right-aligns the HEADING, which the stem owns; the CELLS come from the caller's slot, so the caller
 right-aligns those. Measured 2026-09-30 across every ranked list, comparing the right edge of the
@@ -956,6 +965,12 @@ The viewer shows many small panels around one chart rather than one view per pag
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). **The bar follows the READER's order, not the registry's**: it renders from `visiblePanels`, exactly what the column renders, and appends the switched-off panels at the end in registry order. It rendered `allPanels()` until 2026-09-30, so dragging Broker to the top of the column left its toggle sixth in the bar — two arrangements to hold in one head, and the bar is the thing a reader navigates by. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 - **`src/stores/layout_store.ts`** — the arrangement, persisted under the single versioned key `layout.v1`.
 
+**A section that fails to load says so, and every one of them does.** `run_reports_store` keyed its
+failure messages by section on 2026-10-01; one ref served all seven until then, and they load
+CONCURRENTLY — so the last writer won and the reader was told about whichever section happened to
+finish last while the other failures vanished. Same shape as `absences` beside it, and for the same
+reason. The run view prints one line per failure.
+
 **A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a streamed frame later (testingide#379/#380) without being written twice. The rule is about DATA: presentation preferences reach a panel ambiently instead (see *Settings* above), which ties it to no source.
 
 **Two stores, two questions.** `runs_store` answers *which* run is selected — the index, the chosen run and the scenarios narrowed to. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
@@ -1215,6 +1230,33 @@ figure, and the roster already names those scenarios.
 it holds one. Null there means "not split", never "nothing traded" — and where `is_mixed` is true the
 panel says so, because the figures then fold two kinds of account into one.
 
+### Pending Orders — why an order did not become what it was meant to be
+
+`GET /api/v1/reports/runs/{run_id}/pending-orders`, rendered by `runs/PendingOrdersPanel.vue` as a
+`RecordList` of scenarios with the orders still waiting as child records beneath the rows that have
+any. Registered closed by default: it is evidence, and a reader opens it with a question.
+
+**The question nothing else on the page can answer.** Every other section says what the run DID.
+Measured 2026-10-01 over 202 units across 20 runs, one unit **resolved 527 orders and filled none of
+them** — and every other panel of that run showed a normal-looking result. A rejection is traceable
+to the scenario that produced it only here.
+
+**The five counts are a funnel the backend states in full:**
+`resolved = filled + rejected + timed_out + force_closed`, which held on all 202 units. The parts
+are shown beside their total so the shape is readable, and nothing is computed from the identity —
+it is asserted in the contract test, which is where a change to the arithmetic should be noticed.
+
+**What goes first is measured rather than guessed.** `timed_out` and `force_closed` read zero on all
+202 units: part of the funnel's vocabulary, not of this archive's data, so they are rank 5. What a
+narrow panel keeps is which scenario, how many it resolved, how many were REJECTED and what is still
+open.
+
+**This route declares NO key — alone among the list routes this app consumes**, measured on 16
+responses. And the obvious field is not unique: `pos_gbpusd_1` appears in two different scenarios of
+one run. So nothing here is rendered as an order's identity; the open orders are keyed by a drawing
+POSITION scoped to the unit, which is the only honest fallback, and a contract test asserts the
+absence so the day it gains a key the suite goes red. Recorded as an open request.
+
 ### Broker — the conditions a run traded under
 
 `GET /reports/runs/{run_id}/broker`, `key: ["broker_type"]`, rendered by `runs/BrokerPanel.vue`: a
@@ -1261,6 +1303,11 @@ is not visible in what we receive, and for the three-level blocks the base layer
 backend's own app configuration and is not in this document at all. Computing an effective value
 would be a second implementation of someone else's rule, drifting silently the moment they change
 it — the same failure as a hand-written mock of a response.
+
+**The workers are on the shared list**, which removed the last bespoke `<table>` from the app.
+Three columns, read-only, no ranks: measured over the stored configurations a worker is 8–14
+characters of type and 19–37 of parameters, so all three fit at any width this panel is given, and
+a rank that never engages is a breakpoint that changes nothing.
 
 **So the panel reports presence, not resolution.** That a scenario carries its own block is
 readable from the document; what that override resolves to is not. The notice therefore names the

@@ -98,6 +98,12 @@ function feeSplit(period: PeriodRow): string {
  * monospace characters — and overflowed by 18 px, and 69 rem is the ordinary width of a maximised
  * window here, not a narrow one.
  *
+ * **Five of the fifteen carry a FLOOR, and a proportional share cannot express what they need.** A
+ * timestamp is 20 fixed characters and a heading is as wide as its word: measured 2026-10-01, the
+ * stamps lost their SECONDS to truncation — and two consecutive periods are told apart by exactly
+ * those — while `No` rendered as `N…` and `Final equity` as `Final equi…`. The fr shares then
+ * divide what is left, which is what they are good at.
+ *
  * The four that go FIRST are the ratios and the two other views of the account movement, and the
  * data says why: over ten drawn periods, eight had no trades at all, so `Win Rate` and `PF` read
  * `n/a` on eight of ten rows. `Opening` and `Equity band` describe the same movement that
@@ -106,19 +112,26 @@ function feeSplit(period: PeriodRow): string {
 const columns = computed<ListColumn[]>(() => [
   { label: t('Unit'), width: 'minmax(8rem, 16fr)', rank: 1 },
   ...(props.showRun ? [{ label: t('Run'), width: 'minmax(0, 16fr)', rank: 4 } as ListColumn] : []),
-  { label: t('No'), width: 'minmax(0, 3fr)', figure: true, rank: 4 },
-  { label: t('Opened'), width: 'minmax(0, 17fr)', rank: 1 },
-  { label: t('Closed'), width: 'minmax(0, 17fr)', rank: 2 },
+  { label: t('No'), width: 'minmax(2.5rem, 3fr)', figure: true, rank: 4 },
+  { label: t('Opened'), width: 'minmax(10.5rem, 17fr)', rank: 1 },
+  { label: t('Closed'), width: 'minmax(10.5rem, 17fr)', rank: 2 },
   { label: t('Reason'), width: 'minmax(0, 9fr)', rank: 4 },
   { label: t('Trades'), width: 'minmax(0, 7fr)', figure: true, rank: 2 },
   { label: t('Net P&L'), width: 'minmax(0, 11fr)', figure: true, rank: 1 },
-  { label: t('Win Rate'), width: 'minmax(0, 7fr)', figure: true, rank: 5 },
+  // 9fr, not 7: measured at 1920 px on the DEPLOYMENT view, where `showRun` adds a fifteenth
+  // column and takes share from the rest, the heading needed 68 px of a 66 px track and
+  // overflowed into `PF` beside it
+  { label: t('Win Rate'), width: 'minmax(0, 9fr)', figure: true, rank: 5 },
   { label: t('PF'), width: 'minmax(0, 6fr)', figure: true, rank: 5 },
   { label: t('Fees'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
   { label: t('Max DD'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
   { label: t('Opening'), width: 'minmax(0, 11fr)', figure: true, rank: 5 },
   { label: t('Equity band'), width: 'minmax(0, 20fr)', figure: true, rank: 5 },
-  { label: t('Final equity'), width: 'minmax(0, 11fr)', figure: true, rank: 1 },
+  // A FLOOR, alone among the figures here: where the account ENDED is why this list is rank 1
+  // at all, and the heading is twelve characters. Measured at 620 px it had 90 px of the 98
+  // it needs, so it truncated to `Final equi…` — legible, but this is the one it should not
+  // have to be.
+  { label: t('Final equity'), width: 'minmax(7.5rem, 11fr)', figure: true, rank: 1 },
 ])
 
 /**

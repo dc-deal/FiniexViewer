@@ -72,35 +72,61 @@ function toggle(id: string, shown: boolean): void {
       a disabled control, and with an actually-disabled state beside it the two would have been
       indistinguishable.
     -->
-    <button
-      v-for="panel in toggles"
-      :key="panel.id"
-      class="bar-toggle"
-      :class="{ shown: panel.shown, absent: panel.absent }"
-      :disabled="panel.absent"
-      :title="panel.absent
-        ? `${t(panel.title)} — ${t('this run carries no such section')}`
-        : t(panel.title)"
-      @click="toggle(panel.id, panel.shown)"
-    >
-      <span class="bar-icon">{{ panel.icon }}</span>
-      <span class="bar-label">{{ t(panel.title) }}</span>
-    </button>
-    <div class="bar-spacer" />
-    <button class="bar-action" @click="layoutStore.collapseAll()">{{ t('Collapse all') }}</button>
-    <button class="bar-action" @click="layoutStore.reset()">{{ t('Reset layout') }}</button>
+    <div class="bar-toggles">
+      <button
+        v-for="panel in toggles"
+        :key="panel.id"
+        class="bar-toggle"
+        :class="{ shown: panel.shown, absent: panel.absent }"
+        :disabled="panel.absent"
+        :title="panel.absent
+          ? `${t(panel.title)} — ${t('this run carries no such section')}`
+          : t(panel.title)"
+        @click="toggle(panel.id, panel.shown)"
+      >
+        <span class="bar-icon">{{ panel.icon }}</span>
+        <span class="bar-label">{{ t(panel.title) }}</span>
+      </button>
+    </div>
+    <!-- the two actions are ONE group and never split from each other — see the layout note -->
+    <div class="bar-actions">
+      <button class="bar-action" @click="layoutStore.collapseAll()">{{ t('Collapse all') }}</button>
+      <button class="bar-action" @click="layoutStore.reset()">{{ t('Reset layout') }}</button>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/*
+ * TWO groups, and that is the whole point: the toggles wrap among themselves while the two actions
+ * stay together at the right. As one flat flex row the inventory and the actions wrapped against
+ * each other — at ten panels `Reset layout` dropped to a second line ALONE, which reads as a
+ * mistake rather than as a row that ran out of width.
+ */
 .app-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-xs);
-  flex-wrap: wrap;
   padding: var(--space-xs) 0;
   font-family: monospace;
   font-size: var(--font-size-sm);
+}
+
+/* the inventory takes the slack and wraps inside itself, however many panels there come to be */
+.bar-toggles {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  flex: 1;
+}
+
+/* never wraps and never shrinks: two actions split over two lines look like a broken row */
+.bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
 }
 
 .bar-toggle,
@@ -165,10 +191,6 @@ function toggle(id: string, shown: boolean): void {
 .bar-toggle.absent .bar-label {
   text-decoration: line-through;
   text-decoration-thickness: 1px;
-}
-
-.bar-spacer {
-  flex: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

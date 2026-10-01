@@ -23,6 +23,7 @@ import {
   getPortfolio,
   getBroker,
   getAggregatedPortfolio,
+  getPendingOrders,
   getBookingPeriods,
   getDeployments,
   getDeployment,
@@ -45,6 +46,7 @@ import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
 import brokerFixture from './fixtures/broker.json'
 import aggregatedFixture from './fixtures/aggregated_portfolio.json'
+import pendingFixture from './fixtures/pending_orders.json'
 import { isAbsent } from '@/types/api/absence_types'
 
 describe('api_client', () => {
@@ -296,6 +298,30 @@ describe('api_client', () => {
       mockGet.mockResolvedValue({ data: { run_id: '20260615_999999', currencies: [] } })
       await expect(getAggregatedPortfolio('20260615_130000'))
         .rejects.toBeInstanceOf(RunIdMismatchError)
+    })
+  })
+
+  describe('getPendingOrders', () => {
+    it('calls the pending-orders endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: pendingFixture })
+      const result = await getPendingOrders(pendingFixture.run_id)
+      expect(mockGet).toHaveBeenCalledWith(`/reports/runs/${pendingFixture.run_id}/pending-orders`)
+      expect(result).toEqual(pendingFixture)
+    })
+
+    it('carries the cause of a missing section rather than a bare absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it' } } })
+      expect(await getPendingOrders('20260615_130000')).toEqual({
+        absent: true,
+        cause: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it',
+      })
+    })
+
+    it('refuses a body belonging to another run', async () => {
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_999999', units: [] } })
+      await expect(getPendingOrders('20260615_130000')).rejects.toBeInstanceOf(RunIdMismatchError)
     })
   })
 

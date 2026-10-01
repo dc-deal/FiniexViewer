@@ -1039,3 +1039,70 @@ export interface AggregatedPortfolioReport {
   run_id: string
   currencies: AggregatedCurrency[]
 }
+
+/**
+ * One order still waiting when the run ended — a limit or a stop that never resolved.
+ *
+ * `order_type` says which kind it is, so the two lists it can arrive in are a grouping rather than
+ * a distinction: `active_limit_orders` and `active_stop_orders` carry the same shape.
+ */
+export interface PendingOrderRow {
+  /**
+   * NOT unique across the response. Measured 2026-10-01 on `20260929_085949_ccc36468`:
+   * `pos_gbpusd_1` appears in two different scenarios of one run, which is exactly the case the
+   * declared-key rule exists for. This route declares no key at all — see the open request — so
+   * nothing here is rendered as the order's identity.
+   */
+  order_id: string
+  order_type: string
+  direction: string
+  lots: number
+  entry_price: number
+  limit_price: number
+  stop_loss: number
+  take_profit: number
+}
+
+/**
+ * What became of one scenario's pending orders, and what is still open.
+ *
+ * The five counts are a FUNNEL and the backend states every part of it:
+ * `resolved = filled + rejected + timed_out + force_closed`, which held on all 202 units measured
+ * across 20 runs on 2026-10-01. Nothing is computed from it here; the identity is stated so a
+ * reader can see that 527 resolved against 0 filled means 527 rejected.
+ */
+export interface PendingOrderUnit {
+  // the unit name every other section keys on, and the symbol it traded
+  name: string
+  symbol: string
+  total_resolved: number
+  total_filled: number
+  /**
+   * Rare and large when it happens: non-zero on 7 of 202 units measured, and 527 on one of them.
+   * That shape is the reason this section exists — a run can resolve five hundred orders and fill
+   * none of them while every other panel shows a normal-looking result.
+   */
+  total_rejected: number
+  // zero on all 202 units measured — part of the funnel's vocabulary, not of this archive's data
+  total_timed_out: number
+  total_force_closed: number
+  // the latency of the resolutions, over `latency_count` of them
+  avg_latency_ms: number
+  min_latency_ms: number
+  max_latency_ms: number
+  latency_count: number
+  active_limit_orders: PendingOrderRow[]
+  active_stop_orders: PendingOrderRow[]
+}
+
+/**
+ * Response type for GET /api/v1/reports/runs/{run_id}/pending-orders
+ *
+ * It declares NO key, alone among the list routes this app consumes — measured on 16 responses,
+ * none carried `key` or `keys`. Recorded as an open request; until it is answered nothing from
+ * this response is presented as a row's identity.
+ */
+export interface PendingOrdersReport {
+  run_id: string
+  units: PendingOrderUnit[]
+}

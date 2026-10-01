@@ -15,6 +15,7 @@ import type {
   TradeHistoryReport,
   AggregatedPortfolioReport,
   BrokerReport,
+  PendingOrdersReport,
   PortfolioReport,
   RunInfo,
   RunListResponse,
@@ -154,6 +155,23 @@ export async function getAggregatedPortfolio(
     const response = await http.get<AggregatedPortfolioReport>(
       `/reports/runs/${runId}/aggregated-portfolio`
     )
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    throw error
+  }
+}
+
+/**
+ * What became of a run's pending orders, per scenario, and what is still open. An AutoTrader
+ * session omits the section, so the absence is ordinary structure here as everywhere else.
+ */
+export async function getPendingOrders(
+  runId: string
+): Promise<PendingOrdersReport | SectionAbsence> {
+  try {
+    const response = await http.get<PendingOrdersReport>(`/reports/runs/${runId}/pending-orders`)
     return assertBelongsTo(runId, response.data)
   } catch (error) {
     const absence = absenceFrom(error)

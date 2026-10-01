@@ -21,9 +21,10 @@ const {
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
 const {
-  warningsErrors, portfolio, broker, aggregated, bookingPeriods, config, tradeHistory, scenarios,
+  warningsErrors, portfolio, broker, aggregated, pendingOrders, bookingPeriods, config,
+  tradeHistory, scenarios,
   absences,
-  unreadable, error: sectionError,
+  unreadable, errors: sectionErrors,
 } = storeToRefs(reportsStore)
 
 // loads the run index and restores the cascade from the URL
@@ -80,6 +81,7 @@ watch(selectedRunId, runId => {
   if (has('portfolio')) reportsStore.loadPortfolio(runId)
   if (has('broker')) reportsStore.loadBroker(runId)
   if (has('aggregated')) reportsStore.loadAggregated(runId)
+  if (has('pendingOrders')) reportsStore.loadPendingOrders(runId)
   if (has('bookingPeriods')) reportsStore.loadBookingPeriods(runId)
   if (has('tradeHistory')) reportsStore.loadTradeHistory(runId)
   if (has('scenarios')) reportsStore.loadScenarios(runId)
@@ -96,6 +98,7 @@ const sources = computed(() => ({
   portfolio: portfolio.value,
   broker: broker.value,
   aggregated: aggregated.value,
+  pendingOrders: pendingOrders.value,
   bookingPeriods: bookingPeriods.value,
   config: config.value,
   // composed rather than served: the roster says what was DECLARED, the portfolio what it EARNED
@@ -127,6 +130,7 @@ const SECTION_TITLES: Record<string, string> = {
   portfolio: 'Portfolio',
   broker: 'Broker',
   aggregated: 'Run Totals',
+  pendingOrders: 'Pending Orders',
   bookingPeriods: 'Booking Periods',
   config: 'Configuration',
   tradeHistory: 'Trade History',
@@ -196,8 +200,12 @@ const showPanels = computed(() =>
         <!-- said ONCE above the column: every section below is narrowed, and a reader who forgot
              would otherwise read a single scenario's figures as the run's -->
         <p v-if="unreadable" class="notice">{{ unreadable }}</p>
-        <!-- a section that failed to load says so; the sections that did load stay visible -->
-        <p v-if="sectionError" class="notice failed">{{ sectionError }}</p>
+        <!-- EVERY section that failed says so, and the sections that did load stay visible. One
+             line per failure: the sections load concurrently, so a single slot showed whichever
+             finished last and silently dropped the rest. -->
+        <p v-for="(message, section) in sectionErrors" :key="section" class="notice failed">
+          {{ message }}
+        </p>
         <!-- the whole manipulated area is framed, so it can never be mistaken for the whole run.
              The frame is the second channel beside the colour: a reader who cannot separate the
              hues still sees an edge that was not there before. -->

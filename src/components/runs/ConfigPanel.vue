@@ -2,7 +2,9 @@
 import { computed } from 'vue'
 import JsonTree from '@/components/base/JsonTree.vue'
 import PathLabel from '@/components/base/PathLabel.vue'
+import RecordList from '@/components/base/RecordList.vue'
 import { scenarioCount, scenarioOverrides, strategyOf, workersOf } from '@/components/runs/config_shape'
+import type { ListColumn } from '@/types/list_types'
 import type { RunConfigReport } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
 
@@ -13,6 +15,21 @@ const props = defineProps<{
 const strategy = computed(() => strategyOf(props.model.config))
 const workers = computed(() => (strategy.value ? workersOf(strategy.value) : []))
 const parameters = computed(() => Object.entries(strategy.value?.decision_logic_config ?? {}))
+/**
+ * Three columns, and no ranks: measured over the stored configurations a worker is 8–14 characters
+ * of type and 19–37 of parameters, so all three fit at any width this panel is given. A rank that
+ * never engages is a breakpoint that changes nothing.
+ *
+ * The one value that can outgrow its column is the TYPE — a worker type is a path, and one measured
+ * 56 characters. `PathLabel` keeps the whole of it in a title, which is the accepted pattern here
+ * for a value longer than the column it sits in.
+ */
+const workerColumns: ListColumn[] = [
+  { label: t('Instance'), width: 'minmax(0, 10fr)' },
+  { label: t('Type'), width: 'minmax(0, 16fr)' },
+  { label: t('Parameters'), width: 'minmax(0, 20fr)' },
+]
+
 const overrides = computed(() => scenarioOverrides(props.model.config))
 const scenarios = computed(() => scenarioCount(props.model.config))
 
@@ -94,29 +111,28 @@ function scalar(value: unknown): string {
 
       <section class="workers">
       <h3 class="section">{{ t('Workers') }}</h3>
-      <div v-if="workers.length" class="table-scroll">
-        <table class="kpi-table">
-          <thead>
-            <tr>
-              <th>{{ t('Instance') }}</th>
-              <th>{{ t('Type') }}</th>
-              <th>{{ t('Parameters') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- the two maps joined: one says what an instance IS, the other how it was tuned, and
-                 a reader shown them apart has to do the join by hand -->
-            <tr v-for="worker in workers" :key="worker.instance">
-              <td class="instance">{{ worker.instance }}</td>
-              <td>
-                <PathLabel v-if="worker.type" :value="worker.type" />
-                <template v-else>—</template>
-              </td>
-              <td class="parameters">{{ inline(worker.parameters) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- the two maps joined: one says what an instance IS, the other how it was tuned, and a
+           reader shown them apart has to do the join by hand. Read-only: a configuration is
+           reference material, with nothing to choose and nothing to sort by. -->
+      <RecordList
+        v-if="workers.length"
+        class="worker-list"
+        :rows="workers"
+        :columns="workerColumns"
+        :row-key="worker => worker.instance"
+        inert
+      >
+        <template #default="{ row: worker }">
+          <span class="instance">{{ worker.instance }}</span>
+          <span :title="worker.type">
+            <PathLabel v-if="worker.type" :value="worker.type" />
+            <template v-else>—</template>
+          </span>
+          <span class="parameters" :title="inline(worker.parameters)">
+            {{ inline(worker.parameters) }}
+          </span>
+        </template>
+      </RecordList>
       <p v-else class="hint">{{ t('This strategy declares no workers') }}</p>
       </section>
     </div>
@@ -239,36 +255,19 @@ function scalar(value: unknown): string {
 .scenario { color: var(--color-text-primary); margin-right: var(--space-sm); }
 .keys { color: var(--color-warning); }
 
-.table-scroll { overflow-x: auto; }
-
-.kpi-table {
-  border-collapse: collapse;
-  width: 100%;
+/* Every cell here is one line, so the rows stay the same height and the columns stay comparable
+   down the page — the shared list owns the tracks, the headings and the read-only row. A value
+   longer than its column is cut and kept whole in its title, the pattern every other list uses. */
+.worker-list :deep(.record-row) > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.kpi-table th,
-.kpi-table td {
-  text-align: left;
-  /* top, not the default middle: a row is as tall as its longest cell, and a short cell centred
-     against a wrapped parameter list floats in the middle of nothing */
-  vertical-align: top;
-  padding: var(--space-xs) var(--space-sm);
-  border-bottom: 1px solid var(--color-border);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
+/* the row's identity reads as the thing it names, not as secondary structure */
+.instance { color: var(--color-text-primary); }
 
-.kpi-table th {
-  color: var(--color-text-secondary);
-  font-weight: normal;
-}
-
-/* the row's identity — it stays on one line and the other two columns give way for it */
-.instance { white-space: nowrap; }
-
-/* as many pairs as fit, then the next line. `· ` gives the break opportunities, the rule below is
-   for the single parameter that is longer than the column itself */
-.parameters { overflow-wrap: anywhere; }
+.parameters { color: var(--color-text-secondary); }
 
 .hint {
   margin: 0;

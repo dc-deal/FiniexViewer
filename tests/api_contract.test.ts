@@ -9,6 +9,7 @@ import runSummary from './fixtures/run_summary.json'
 import portfolio from './fixtures/portfolio.json'
 import broker from './fixtures/broker.json'
 import aggregated from './fixtures/aggregated_portfolio.json'
+import pending from './fixtures/pending_orders.json'
 import warningsErrors from './fixtures/warnings_errors.json'
 import configLive from './fixtures/run_config_live.json'
 import configSimulation from './fixtures/run_config_simulation.json'
@@ -20,6 +21,7 @@ import type {
   AggregatedPortfolioReport,
   BookingPeriodsReport,
   BrokerReport,
+  PendingOrdersReport,
   PortfolioReport,
   RunConfigReport,
   RunListResponse,
@@ -222,6 +224,47 @@ describe('api contract', () => {
     expect(row.combined.highest_equity).toBeGreaterThan(0)
     expect(row.combined.highest_equity_scenario).not.toBe('')
     expect(row.combined.final_balance).toBeGreaterThan(0)
+  })
+
+  /**
+   * A STATED gap, not a passing test. The captured run traded spot and was written before
+   * contract 18, where an open position's excursion was measured only at entry and close — so every
+   * `mae_pnl` in this capture is `0.0`, and nothing driven by the fixture exercises the sign the
+   * trade list drops.
+   *
+   * Held here so the gap cannot be mistaken for coverage. The property itself IS tested, by a
+   * hand-built trade in `trade_history.test.ts`; what is missing is a captured one. Ten of the
+   * fourteen stored runs measured 2026-10-01 carry real excursions, so a re-capture would close
+   * this — and would fail this assertion, which is the point: it is then removed rather than
+   * quietly kept.
+   */
+  it('carries no adverse excursion, so nothing fixture-driven asserts its sign', () => {
+    const typed: TradeHistoryReport = tradeHistory
+    expect(typed.trades.length).toBeGreaterThan(0)
+    expect(typed.trades.every(row => row.mae_pnl === 0)).toBe(true)
+  })
+
+  /**
+   * The pending orders, and TWO properties of the contract rather than of a component.
+   *
+   * The five counts are a funnel: `resolved = filled + rejected + timed_out + force_closed`, which
+   * held on all 202 units measured across 20 runs. The panel renders the parts beside the total
+   * and computes nothing from the identity — this is where it is checked, so a backend change to
+   * the arithmetic is noticed here rather than guessed at from a screen.
+   *
+   * And this route declares NO key, alone among the list routes this app consumes — measured on 16
+   * responses, none carried `key` or `keys`. Asserted so the day it gains one is loud: the panel
+   * then keys on the declaration instead of on a drawing position.
+   */
+  it('the pending orders still satisfy the mirrored shape', () => {
+    const typed: PendingOrdersReport = pending
+    expect(typed.units.length).toBeGreaterThan(0)
+    for (const row of typed.units) {
+      expect(row.total_filled + row.total_rejected + row.total_timed_out + row.total_force_closed)
+        .toBe(row.total_resolved)
+    }
+    expect('key' in typed).toBe(false)
+    expect('keys' in typed).toBe(false)
   })
 
   it('the warnings and errors section still satisfies the mirrored shape', () => {

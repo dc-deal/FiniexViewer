@@ -86,6 +86,88 @@ async function expectRanksHold(page: Page, selector: string): Promise<ListState>
   return state
 }
 
+/**
+ * A FIGURE CELL is right-aligned, so it stands under its own right-aligned heading.
+ *
+ * `figure: true` aligns the HEADING, which the stem owns; the cells come from the caller's slot, so
+ * the caller aligns those. Measured 2026-09-30 across every ranked list: three of the four had
+ * figure cells sitting up to 172 px left of the heading they belong to — every declaration correct
+ * and the geometry not, which is why no unit test saw it.
+ *
+ * This asserts the DECLARATION rather than the pixels, and that is a correction rather than a
+ * shortcut. Three attempts to measure the geometry each disagreed with the screen: `scrollWidth`
+ * counts padding differently once a box clips, a Range over right-aligned text reports the line box
+ * rather than the ink, and a Range over CLIPPED text reports the text that is not drawn — which
+ * made a perfectly placed cell read as 27 px out. A check that cannot be trusted is worse than
+ * none, and the property it was chasing is one line of computed style.
+ *
+ * Either mechanism counts: `text-align: right` on the cell, or a flex row ending at the right,
+ * which is how the run list stacks two figures in one cell.
+ */
+async function expectFiguresRightAligned(page: Page, selector: string): Promise<void> {
+  const wrong = await page.locator(selector).first().evaluate(shell => {
+    const list = shell.querySelector('.record-list')!
+    const heads = [...list.querySelectorAll('.record-head > span')]
+    const cells = [...list.querySelector('.record-row')!.children]
+    const out: string[] = []
+    heads.forEach((head, index) => {
+      if (!head.classList.contains('head-figure')) return
+      const cell = cells[index] as HTMLElement | undefined
+      if (!cell || getComputedStyle(cell).display === 'none') return
+      const style = getComputedStyle(cell)
+      // three mechanisms, because all three are in use: plain text alignment, a flex ROW ending at
+      // the right, and a flex COLUMN whose items are pushed to the right edge — the run list stacks
+      // one figure per account currency that way
+      const flex = style.display.includes('flex')
+      const column = style.flexDirection.startsWith('column')
+      const right = style.textAlign === 'right'
+        || (flex && !column && style.justifyContent === 'flex-end')
+        || (flex && column && style.alignItems === 'flex-end')
+      if (!right) {
+        out.push(`${head.textContent?.trim()} (text-align: ${style.textAlign})`)
+      }
+    })
+    return out
+  })
+  expect(wrong, `${selector}: a figure cell is not right-aligned under its heading`).toEqual([])
+}
+
+/**
+ * A HEADING never overprints its neighbour, and its word is always reachable.
+ *
+ * `.record-head > span` is `white-space: nowrap`; without an overflow rule a heading wider than its
+ * column spilled over the one beside it and the two words overprinted. Measured 2026-10-01:
+ * `Win Rate` took 68 px of a 66 px track at 1920 px on the deployment view. The stem clips them now
+ * and carries the whole label in a title, which is what this asserts — the clip makes overprinting
+ * impossible, the title makes the clip survivable.
+ *
+ * Whether a heading truncates at all is deliberately NOT asserted here. Every way of measuring that
+ * from script disagreed with the screen: `scrollWidth` counts padding differently once a box clips,
+ * and a Range over right-aligned text reports the line box rather than the ink. Two of four
+ * "truncated" headings were complete on screen. A column that must stay legible says so with a
+ * FLOOR in its own track instead — five of the booking periods carry one for exactly this.
+ */
+async function expectHeadingsReadable(page: Page, selector: string): Promise<void> {
+  const heads = await page.locator(selector).first().evaluate(shell => {
+    const list = shell.querySelector('.record-list')!
+    return ([...list.querySelectorAll('.record-head > span')] as HTMLElement[])
+      .filter(head => getComputedStyle(head).display !== 'none')
+      .map(head => ({
+        label: head.textContent?.trim() ?? '',
+        title: head.getAttribute('title') ?? '',
+        clipped: getComputedStyle(head).overflow !== 'visible',
+      }))
+  })
+
+  expect(heads.length, `${selector} draws no heading at all`).toBeGreaterThan(0)
+  for (const head of heads) {
+    expect(head.title, `${selector}: the heading "${head.label}" carries no title`)
+      .toBe(head.label)
+    expect(head.clipped, `${selector}: the heading "${head.label}" can overprint its neighbour`)
+      .toBe(true)
+  }
+}
+
 // every list a run view draws, and each one declares its own ranks
 const RUN_LISTS = ['.run-list', '.roster-list', '.trade-list', '.periods-list']
 
@@ -148,6 +230,7 @@ for (const width of WIDTHS) {
     for (const selector of RUN_LISTS) {
       if (!await isDrawn(page, selector)) continue
       await expectRanksHold(page, selector)
+      await expectHeadingsReadable(page, selector)
       measured.push(selector)
     }
     // A skipped list reads as a covered one, and that is how two of these four went unmeasured for
@@ -233,34 +316,6 @@ test('every figure cell stands under its own heading', async ({ page }) => {
   await openEverything(page)
 
   for (const selector of RUN_LISTS) {
-    const offsets = await page.locator(selector).first().evaluate(shell => {
-      const list = shell.querySelector('.record-list')!
-      const heads = [...list.querySelectorAll('.record-head > span')]
-      const cells = [...list.querySelector('.record-row')!.children]
-      const inkRight = (element: Element): number | null => {
-        const range = document.createRange()
-        range.selectNodeContents(element)
-        const box = range.getBoundingClientRect()
-        return box.width === 0 ? null : box.right
-      }
-      const out: { label: string, off: number }[] = []
-      heads.forEach((head, index) => {
-        if (!head.classList.contains('head-figure')) return
-        const cell = cells[index]
-        if (!cell || getComputedStyle(cell as HTMLElement).display === 'none') return
-        const headRight = inkRight(head)
-        const cellRight = inkRight(cell)
-        // a cell with no ink states nothing and has nothing to align
-        if (headRight === null || cellRight === null) return
-        out.push({ label: head.textContent?.trim() ?? '', off: cellRight - headRight })
-      })
-      return out
-    })
-
-    expect(offsets.length, `${selector} draws no figure column at all`).toBeGreaterThan(0)
-    for (const { label, off } of offsets) {
-      expect(Math.abs(off), `${selector} · ${label} sits ${off.toFixed(0)} px from its heading`)
-        .toBeLessThanOrEqual(8)
-    }
+    await expectFiguresRightAligned(page, selector)
   }
 })

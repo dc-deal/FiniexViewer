@@ -10,6 +10,7 @@ import bookingPeriodsFixture from './fixtures/run_booking_periods.json'
 import portfolioFixture from './fixtures/portfolio.json'
 import brokerFixture from './fixtures/broker.json'
 import aggregatedFixture from './fixtures/aggregated_portfolio.json'
+import pendingFixture from './fixtures/pending_orders.json'
 import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
 import * as apiClient from '@/api/api_client'
@@ -22,6 +23,7 @@ vi.mock('@/api/api_client', () => ({
   getPortfolio: vi.fn(),
   getBroker: vi.fn(),
   getAggregatedPortfolio: vi.fn(),
+  getPendingOrders: vi.fn(),
   getBookingPeriods: vi.fn(),
   getRunConfig: vi.fn(),
   getTradeHistory: vi.fn(),
@@ -92,7 +94,7 @@ describe('useRunReportsStore', () => {
     await store.loadWarningsErrors('20260615_130000')
     expect(apiClient.getWarningsErrors).toHaveBeenCalledWith('20260615_130000')
     expect(store.warningsErrors).toEqual(REPORT)
-    expect(store.error).toBeNull()
+    expect(store.errors['warningsErrors']).toBeUndefined()
     expect(store.loadingWarningsErrors).toBe(false)
   })
 
@@ -101,14 +103,14 @@ describe('useRunReportsStore', () => {
     const store = useRunReportsStore()
     await store.loadWarningsErrors('20260615_130000')
     expect(store.warningsErrors).toBeNull()
-    expect(store.error).toBeNull()
+    expect(store.errors['warningsErrors']).toBeUndefined()
   })
 
   it('surfaces a failure as a readable message', async () => {
     vi.mocked(apiClient.getWarningsErrors).mockRejectedValue(new Error('boom'))
     const store = useRunReportsStore()
     await store.loadWarningsErrors('20260615_130000')
-    expect(store.error).toBe('Could not load warnings and errors: boom')
+    expect(store.errors['warningsErrors']).toBe('Could not load warnings and errors: boom')
     expect(store.loadingWarningsErrors).toBe(false)
   })
 
@@ -118,7 +120,7 @@ describe('useRunReportsStore', () => {
     const store = useRunReportsStore()
     await store.loadWarningsErrors('20260615_130000')
     expect(store.unreadable).toBe('Re-run to regenerate it.')
-    expect(store.error).toBeNull()
+    expect(store.errors['warningsErrors']).toBeUndefined()
     expect(store.warningsErrors).toBeNull()
   })
 
@@ -137,7 +139,7 @@ describe('useRunReportsStore', () => {
     await store.loadWarningsErrors('20260615_130000')
     store.clear()
     expect(store.warningsErrors).toBeNull()
-    expect(store.error).toBeNull()
+    expect(store.errors).toEqual({})
   })
 
   it('drops the previous section before the next one arrives', async () => {
@@ -182,7 +184,7 @@ describe('useRunReportsStore — what is not here, and why', () => {
     vi.mocked(apiClient.getPortfolio).mockResolvedValue(ABSENT)
     const store = useRunReportsStore()
     await store.loadPortfolio('20260615_130000')
-    expect(store.error).toBeNull()
+    expect(store.errors['portfolio']).toBeUndefined()
   })
 
   it('keeps two sections apart when both are missing for different reasons', async () => {
@@ -231,14 +233,14 @@ describe('useRunReportsStore — portfolio section', () => {
     const store = useRunReportsStore()
     await store.loadPortfolio('20260615_130000')
     expect(store.portfolio).toBeNull()
-    expect(store.error).toBeNull()
+    expect(store.errors['portfolio']).toBeUndefined()
   })
 
   it('surfaces a failure as a readable message', async () => {
     vi.mocked(apiClient.getPortfolio).mockRejectedValue(new Error('boom'))
     const store = useRunReportsStore()
     await store.loadPortfolio('20260615_130000')
-    expect(store.error).toBe('Could not load the portfolio breakdown: boom')
+    expect(store.errors['portfolio']).toBe('Could not load the portfolio breakdown: boom')
   })
 
   it('clear drops every section together', async () => {
@@ -254,15 +256,29 @@ describe('useRunReportsStore — portfolio section', () => {
     expect(store.portfolio).toBeNull()
   })
 
-  it('a succeeding section never erases the message a sibling section wrote', async () => {
-    // the sections share one error slot and load concurrently — a loader that reset it on the
-    // way in would silently drop the failure the other one just reported
+  /**
+   * Each section keeps its OWN message. One ref served all seven until 2026-10-01 and they load
+   * concurrently, so the last writer won and a reader was told about whichever section happened to
+   * finish last — the other failures were simply gone.
+   */
+  it('keeps every failure, one per section', async () => {
+    vi.mocked(apiClient.getWarningsErrors).mockRejectedValue(new Error('gone'))
+    vi.mocked(apiClient.getPortfolio).mockRejectedValue(new Error('also gone'))
+    const store = useRunReportsStore()
+    await store.loadWarningsErrors('20260615_130000')
+    await store.loadPortfolio('20260615_130000')
+    expect(store.errors['warningsErrors']).toBe('Could not load warnings and errors: gone')
+    expect(store.errors['portfolio']).toBe('Could not load the portfolio breakdown: also gone')
+  })
+
+  it('leaves a section that succeeded without a message of its own', async () => {
     vi.mocked(apiClient.getWarningsErrors).mockRejectedValue(new Error('gone'))
     vi.mocked(apiClient.getPortfolio).mockResolvedValue(PORTFOLIO)
     const store = useRunReportsStore()
     await store.loadWarningsErrors('20260615_130000')
     await store.loadPortfolio('20260615_130000')
-    expect(store.error).toBe('Could not load warnings and errors: gone')
+    expect(store.errors['warningsErrors']).toBe('Could not load warnings and errors: gone')
+    expect(store.errors['portfolio']).toBeUndefined()
     expect(store.portfolio).toEqual(PORTFOLIO)
   })
 
@@ -292,14 +308,14 @@ describe('useRunReportsStore — portfolio section', () => {
       await store.loadBroker('20260615_130000')
       expect(store.broker).toBeNull()
       expect(store.absences['broker']).toEqual(ABSENT)
-      expect(store.error).toBeNull()
+      expect(store.errors['broker']).toBeUndefined()
     })
 
     it('surfaces a failure as a readable message', async () => {
       vi.mocked(apiClient.getBroker).mockRejectedValue(new Error('boom'))
       const store = useRunReportsStore()
       await store.loadBroker('20260615_130000')
-      expect(store.error).toBe('Could not load the broker conditions: boom')
+      expect(store.errors['broker']).toBe('Could not load the broker conditions: boom')
     })
 
     it('is dropped with every other section when the run changes', async () => {
@@ -330,14 +346,14 @@ describe('useRunReportsStore — portfolio section', () => {
       await store.loadAggregated('20260615_130000')
       expect(store.aggregated).toBeNull()
       expect(store.absences['aggregated']).toEqual(ABSENT)
-      expect(store.error).toBeNull()
+      expect(store.errors['aggregated']).toBeUndefined()
     })
 
     it('surfaces a failure as a readable message', async () => {
       vi.mocked(apiClient.getAggregatedPortfolio).mockRejectedValue(new Error('boom'))
       const store = useRunReportsStore()
       await store.loadAggregated('20260615_130000')
-      expect(store.error).toBe('Could not load the aggregated portfolio: boom')
+      expect(store.errors['aggregated']).toBe('Could not load the aggregated portfolio: boom')
     })
 
     it('is dropped with every other section when the run changes', async () => {
@@ -346,6 +362,44 @@ describe('useRunReportsStore — portfolio section', () => {
       await store.loadAggregated('20260615_130000')
       store.clear()
       expect(store.aggregated).toBeNull()
+    })
+  })
+
+  /** What became of the pending orders — its own request, and its own ordinary absence. */
+  describe('the pending orders', () => {
+    beforeEach(() => { vi.mocked(apiClient.getPendingOrders).mockReset() })
+
+    it('loads the section for a run', async () => {
+      vi.mocked(apiClient.getPendingOrders).mockResolvedValue(pendingFixture)
+      const store = useRunReportsStore()
+      await store.loadPendingOrders('20260615_130000')
+      expect(apiClient.getPendingOrders).toHaveBeenCalledWith('20260615_130000')
+      expect(store.pendingOrders).toEqual(pendingFixture)
+      expect(store.loadingPendingOrders).toBe(false)
+    })
+
+    it('keeps the section null and records WHY where the run writes none', async () => {
+      vi.mocked(apiClient.getPendingOrders).mockResolvedValue(ABSENT)
+      const store = useRunReportsStore()
+      await store.loadPendingOrders('20260615_130000')
+      expect(store.pendingOrders).toBeNull()
+      expect(store.absences['pendingOrders']).toEqual(ABSENT)
+      expect(store.errors['pendingOrders']).toBeUndefined()
+    })
+
+    it('surfaces a failure as a readable message of its own', async () => {
+      vi.mocked(apiClient.getPendingOrders).mockRejectedValue(new Error('boom'))
+      const store = useRunReportsStore()
+      await store.loadPendingOrders('20260615_130000')
+      expect(store.errors['pendingOrders']).toBe('Could not load the pending orders: boom')
+    })
+
+    it('is dropped with every other section when the run changes', async () => {
+      vi.mocked(apiClient.getPendingOrders).mockResolvedValue(pendingFixture)
+      const store = useRunReportsStore()
+      await store.loadPendingOrders('20260615_130000')
+      store.clear()
+      expect(store.pendingOrders).toBeNull()
     })
   })
 
@@ -370,7 +424,7 @@ describe('useRunReportsStore — portfolio section', () => {
       const store = useRunReportsStore()
       await store.loadBookingPeriods('20260615_130000')
       expect(store.unreadable).toContain('older schema')
-      expect(store.error).toBeNull()
+      expect(store.errors['bookingPeriods']).toBeUndefined()
     })
 
     it('is cleared with every other section when the selection changes', async () => {
@@ -395,7 +449,7 @@ describe('useRunReportsStore — portfolio section', () => {
       const store = useRunReportsStore()
       await store.loadConfig('20260101_000000_aaaaaaaa')
       expect(store.config).toBeNull()
-      expect(store.error).toBeNull()
+      expect(store.errors['config']).toBeUndefined()
     })
 
     // a disagreement between the two indexes must reach the reader rather than look like a
@@ -404,7 +458,7 @@ describe('useRunReportsStore — portfolio section', () => {
       vi.mocked(apiClient.getRunConfig).mockRejectedValue(new RunNotFoundError('20260101_000000_x'))
       const store = useRunReportsStore()
       await store.loadConfig('20260101_000000_x')
-      expect(store.error).toContain('does not know run')
+      expect(store.errors['config']).toContain('does not know run')
       expect(store.config).toBeNull()
     })
 
@@ -430,7 +484,7 @@ describe('useRunReportsStore — portfolio section', () => {
       const store = useRunReportsStore()
       await store.loadTradeHistory('20260615_130000')
       expect(store.tradeHistory).toBeNull()
-      expect(store.error).toBeNull()
+      expect(store.errors['tradeHistory']).toBeUndefined()
     })
 
     it('is cleared with every other section when the selection changes', async () => {

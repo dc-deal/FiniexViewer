@@ -1,0 +1,80 @@
+{
+  "run_id": "20260927_132124_10c3d2c7",
+  "units": [
+    {
+      "name": "ETHUSD_blocks_03",
+      "symbol": "ETHUSD",
+      "total_resolved": 1,
+      "total_filled": 1,
+      "total_rejected": 0,
+      "total_timed_out": 0,
+      "total_force_closed": 0,
+      "avg_latency_ms": 60.0,
+      "min_latency_ms": 60.0,
+      "max_latency_ms": 60.0,
+      "latency_count": 1,
+      "active_limit_orders": [],
+      "active_stop_orders": []
+    },
+    {
+      "name": "ETHUSD_blocks_04",
+      "symbol": "ETHUSD",
+      "total_resolved": 1,
+      "total_filled": 1,
+      "total_rejected": 0,
+      "total_timed_out": 0,
+      "total_force_closed": 0,
+      "avg_latency_ms": 60.0,
+      "min_latency_ms": 60.0,
+      "max_latency_ms": 60.0,
+      "latency_count": 1,
+      "active_limit_orders": [],
+      "active_stop_orders": []
+    },
+    {
+      "name": "ETHUSD_blocks_05",
+      "symbol": "ETHUSD",
+      "total_resolved": 1,
+      "total_filled": 1,
+      "total_rejected": 0,
+      "total_timed_out": 0,
+      "total_force_closed": 0,
+      "avg_latency_ms": 60.0,
+      "min_latency_ms": 60.0,
+      "max_latency_ms": 60.0,
+      "latency_count": 1,
+      "active_limit_orders": [],
+      "active_stop_orders": []
+    },
+    {
+      "name": "ETHUSD_blocks_06",
+      "symbol": "ETHUSD",
+      "total_resolved": 2,
+      "total_filled": 2,
+      "total_rejected": 0,
+      "total_timed_out": 0,
+      "total_force_closed": 0,
+      "avg_latency_ms": 43.5,
+      "min_latency_ms": 27.0,
+      "max_latency_ms": 60.0,
+      "latency_count": 2,
+      "active_limit_orders": [],
+      "active_stop_orders": []
+    },
+    {
+      "name": "ETHUSD_blocks_09",
+      "symbol": "ETHUSD",
+      "total_resolved": 2,
+      "total_filled": 2,
+      "total_rejected": 0,
+      "total_timed_out": 0,
+      "total_force_closed": 0,
+      "avg_latency_ms": 43.5,
+      "min_latency_ms": 27.0,
+      "max_latency_ms": 60.0,
+      "latency_count": 2,
+      "active_limit_orders": [],
+      "active_stop_orders": []
+    }
+  ]
+}
