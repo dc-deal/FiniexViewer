@@ -161,18 +161,26 @@ async function expectHeadingsReadable(page: Page, selector: string): Promise<voi
 
   expect(heads.length, `${selector} draws no heading at all`).toBeGreaterThan(0)
   for (const head of heads) {
-    expect(head.title, `${selector}: the heading "${head.label}" carries no title`)
-      .toBe(head.label)
+    /*
+     * STARTS WITH the label, rather than equalling it. The title is how a clipped heading can still
+     * be read in full, so the label has to come FIRST — but a column may declare a `hint` for a
+     * field whose own name misleads, and that follows the label in the same title. `Order id` is the
+     * first: the backend's glossary opens its entry with "Not an order's own id".
+     */
+    expect(head.title.startsWith(head.label), `${selector}: the heading "${head.label}" does not lead its own title`)
+      .toBe(true)
     expect(head.clipped, `${selector}: the heading "${head.label}" can overprint its neighbour`)
       .toBe(true)
   }
 }
 
 // every list a run view draws, and each one declares its own ranks
-const RUN_LISTS = ['.run-list', '.roster-list', '.trade-list', '.periods-list']
+// `.order-list` joined on 2026-10-05, and its absence until then was a real gap: the panel it
+// replaced was never swept either, so a ranked list of this app went unmeasured at every width.
+const RUN_LISTS = ['.run-list', '.roster-list', '.trade-list', '.periods-list', '.order-list']
 
 /** The panels those lists live in. Closed by default, so each has to be asked for. */
-const PANELS = ['Scenarios', 'Trade History', 'Booking Periods']
+const PANELS = ['Scenarios', 'Trade History', 'Booking Periods', 'Orders']
 
 // 1800 is above the 80rem rung and 1300 is below it — without a width on each side the fifth
 // tier is never exercised, and a rung nothing measures is a rung nobody knows is broken

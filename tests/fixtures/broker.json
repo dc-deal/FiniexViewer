@@ -13,6 +13,7 @@
       "stopout_level": 0.0,
       "hedging_allowed": false,
       "config_hash": "5f9d6588",
+      "broker_config_id": "",
       "scenarios": [
         "ETHUSD_blocks_03",
         "ETHUSD_blocks_04",

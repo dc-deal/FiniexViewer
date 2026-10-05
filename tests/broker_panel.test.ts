@@ -19,6 +19,8 @@ const SPOT: BrokerUnit = brokerFixture.units[0] as BrokerUnit
 
 const MARGIN: BrokerUnit = {
   broker_type: 'mt5',
+  // empty on a simulation unit, which is every unit in the archive — see the field's own note
+  broker_config_id: '',
   market_type: 'forex',
   company: 'Vantage International Group Limited',
   server: 'VantageInternational-Demo',

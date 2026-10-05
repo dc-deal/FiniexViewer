@@ -5,6 +5,7 @@ import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { provideTestSelection } from './scenario_selection_harness'
+import { provideTestPositionLink } from './position_link_harness'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings } from '@/types/settings_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
@@ -523,7 +524,7 @@ describe('TradeHistoryPanel', () => {
       const cells = wrapper.find('.record-row').findAll(':scope > span')
         .map(node => node.attributes('data-rank'))
 
-      expect(heads).toHaveLength(8)
+      expect(heads).toHaveLength(9)
       expect(cells).toEqual(heads)
       // which trade, and what it came to: Symbol, Opened, Net P&L
       expect(heads.filter(rank => rank === '1')).toHaveLength(3)
@@ -546,7 +547,79 @@ describe('TradeHistoryPanel', () => {
       const wrapper = mountPanel(report({ trades: [trade()] }))
       const heads = wrapper.find('.trade-list').findAll('.record-head > span').map(n => n.text())
       expect(heads[heads.length - 1]).toBe('Net P&L')
-      expect(heads.slice(3)).toEqual(['Opened', 'Held', 'Worst against', 'Best in favour', 'Net P&L'])
+      expect(heads.slice(4)).toEqual(['Opened', 'Held', 'Worst against', 'Best in favour', 'Net P&L'])
+    })
+
+  })
+
+  /**
+   * The way back from a trade to the orders of its position. A trade is one CLOSE, so several
+   * trades can lead to the same orders — correct, not a collision: "what happened on the way to
+   * this position" has one answer whichever close the reader came from.
+   */
+  describe('the way back to the orders', () => {
+    function mountLinked(
+      history: TradeHistoryReport,
+      marked: Parameters<typeof provideTestPositionLink>[0] = null,
+      reachable: Parameters<typeof provideTestPositionLink>[1] = 'all'
+    ) {
+      let state!: ReturnType<typeof provideTestPositionLink>
+      const Host = defineComponent({
+        setup() {
+          state = provideTestPositionLink(marked, reachable)
+          return () => h(TradeHistoryPanel, { model: history })
+        },
+      })
+      return { wrapper: mount(Host), state }
+    }
+
+    it('names the panel and the POSITION, never the position id alone', async () => {
+      const row = trade()
+      const { wrapper, state } = mountLinked(report({ trades: [row] }))
+      await wrapper.find('.to-orders').trigger('click')
+      expect(state.jumps).toEqual([
+        { panelId: 'orders', ref: { scenario: row.scenario_name, position: row.position_id } },
+      ])
+    })
+
+    /** No Orders panel in the workspace means no way back — not a link that lands nowhere. */
+    it('draws no way back where the target panel is not in the workspace', () => {
+      const { wrapper } = mountLinked(report({ trades: [trade()] }), null, ['trade-history'])
+      expect(wrapper.find('.to-orders').exists()).toBe(false)
+      // the position is still DATA, it is part of the trade's own key
+      expect(wrapper.find('.record-row').text()).toContain(trade().position_id)
+    })
+
+    /** A partial close books one trade more, so the mark covers several rows of one position. */
+    it('marks every trade of the position, because a partial close books more than one', () => {
+      const row = trade()
+      const { wrapper } = mountLinked(
+        report({
+          trades: [
+            { ...row, exit_tick_index: 1 },
+            { ...row, exit_tick_index: 2 },
+            { ...row, position_id: 'pos_other', exit_tick_index: 3 },
+          ],
+        }),
+        { scenario: row.scenario_name, position: row.position_id },
+      )
+      const marked = wrapper.findAll('.trade-list .record-row')
+        .map(node => node.classes().includes('marked'))
+      expect(marked).toEqual([true, true, false])
+    })
+  })
+
+  describe('what a narrow list keeps again', () => {
+    /**
+     * The POSITION leads the row — the trade's own key field, and the way back to its orders. It is
+     * leftmost in both panels on purpose, so the two lists read as two views of one thing.
+     */
+    it('leads the row with the position, which is part of the trade`s own key', () => {
+      const wrapper = mountPanel(report({ trades: [trade()] }))
+      const heads = wrapper.find('.trade-list').findAll('.record-head > span').map(n => n.text())
+      expect(heads[0]).toBe('Position')
+      const first = wrapper.find('.record-row').findAll(':scope > span')[0]!
+      expect(first.text()).toContain(trade().position_id)
     })
   })
 })

@@ -569,8 +569,9 @@ between the bar and the rows that a single combined component would have to grow
   row button with its four states, the group heading, an optional spanning prose line, an optional
   card beside the row, and an optional block of CHILD records. It holds no state, sorts nothing,
   filters nothing and folds nothing.
-- **`src/types/list_types.ts`** — `ListColumn` (label, track, whether it is a figure), `ListCard`
-  (what the card beside a row shows) and `ListGroup` (one partition: key, rows, open).
+- **`src/types/list_types.ts`** — `ListColumn` (label, track, whether it is a figure, its rank, and
+  an optional `hint`), `ListCard` (what the card beside a row shows) and `ListGroup` (one partition:
+  key, rows, open).
 
 **The columns line up across rows, and a grid on the row cannot do it.** Each row is its own
 `<button>` — deliberately, because a row that cannot be focused or pressed is the look of a broken
@@ -587,6 +588,19 @@ label in a `title`, the same pattern a cell uses. A column that must stay legibl
 says so with a FLOOR in its own track instead: five of the booking periods carry one, because a
 timestamp is 20 fixed characters and a heading is as wide as its word, and a proportional share
 cannot express either.
+
+**`rowClass` is the one class a CALLER puts on a row**, for a distinction only it can see; the list
+keeps `picked`, `grouped` and `inert` beside it rather than handing the class list over. Its first
+use is the position boundary above. A lead line (`hasLead`) says such a thing in words and takes a
+row to do it — a rule belongs on the row it precedes.
+
+**A column can declare what it MEANS, for a field whose own name misleads.** `hint` rides in the
+heading's `title` AFTER the label — never in place of it, because a heading wider than its column is
+clipped and the title is how it can still be read in full. The first case is `order_id` on an order
+row: the backend's glossary opens its entry with *"Not an order's own id: the id of the POSITION the
+order belongs to"*, so a heading reading `Order` alone claimed something false. The heading carries
+their term, `Order id`, and their sentence is one hover away. It is the same attachment point
+viewer#26 will serve these from.
 
 **`figure: true` needs TWO halves, exactly like `rank`, and for the same reason.** The declaration
 right-aligns the HEADING, which the stem owns; the CELLS come from the caller's slot, so the caller
@@ -979,6 +993,12 @@ reason. The run view prints one line per failure.
 
 **And the absence now says WHY.** Until the backend named the cause (contract 5), every missing section answered `run_not_found` and this client collapsed it to `null` — so a run still going, a run started with `reporting: none`, and a run whose pipeline never writes that section all rendered as the same blank space. `getX` now answers `Report | SectionAbsence`, the store keeps the reason beside the empty slot in `absences`, and `RunsView` says it ONCE above the column, **grouped by cause** — a run that ended early is missing several sections for one reason, and naming it once is the point. The sentence shown is the backend's own `detail`: it is written for a reader and held that way by a test on their side, so replacing it with one of ours would be a second, worse copy.
 
+**A section that cannot be DRAWN is a finding about that section, not about the report.** Every panel renders inside an error boundary: `AccordionPanel` catches a render error from its own subtree, stops it there, and puts a sentence in the panel's place with a mark on its header, so the news survives the panel being folded. The stack goes to the console; a reader gets a sentence (§10).
+
+This exists because its absence emptied the workspace. Measured 2026-10-01: one field the backend serves as `null` on 17 of 45 stored runs was read as an array inside a computed, and Vue unwinds a render error to the nearest component that handles it — with nothing handling it, ELEVEN panels left the screen because one of them could not draw.
+
+The boundary clears when the panel is handed a different model, so a defect in one run's DATA does not follow the reader to the next; `PanelColumn` passes the model down as that signal. A defect in the CODE throws again on the second attempt and the frame simply stays — it settles rather than looping.
+
 The two DEPLOYMENT routes deliberately keep `| null`: an unknown deployment id is a stale link rather than a missing section, and `deployments_store` already renders that as its own state.
 
 **The same mechanism also carries "nothing to report".** Feed Health reads its own source rather than the shared run summary, and `runs_store` answers null where neither half of that panel speaks. Only `signal_fresh_ratio` is about SIGNAL — it is null when no SIGNAL worker ran; the four disturbance figures come from the feed-stability report and describe the DATA SOURCES, so a market feed can stall with no SIGNAL worker anywhere. The panel appears when a freshness was measured OR at least one episode occurred, and is dropped when neither is true. The backend's console draws the same line: `format_disturbance_line` returns an empty string at zero episodes rather than printing four zeros. Deciding this in the store rather than in the panel keeps the judgement out of the template and reuses the absent-source rule instead of inventing a second one.
@@ -1222,7 +1242,7 @@ the figure is rather than in a paragraph:
   screen.
 
 **Two blocks are deliberately absent, and a test guards each.** The `pending_*` figures are the
-`pending-orders` route's subject and showing them here would pre-empt a panel that can say more; and
+the Orders panel's subject and showing them here would pre-empt a panel that can say more; and
 `spot_scenarios[]` is a per-account inventory of eight rows by eleven fields — a list rather than a
 figure, and the roster already names those scenarios.
 
@@ -1230,32 +1250,132 @@ figure, and the roster already names those scenarios.
 it holds one. Null there means "not split", never "nothing traded" — and where `is_mixed` is true the
 panel says so, because the figures then fold two kinds of account into one.
 
-### Pending Orders — why an order did not become what it was meant to be
+### Orders — why an order did not become what it was meant to be
 
-`GET /api/v1/reports/runs/{run_id}/pending-orders`, rendered by `runs/PendingOrdersPanel.vue` as a
-`RecordList` of scenarios with the orders still waiting as child records beneath the rows that have
-any. Registered closed by default: it is evidence, and a reader opens it with a question.
+`GET /api/v1/reports/runs/{run_id}/pending-orders` **and** `GET …/order-history`, composed in
+`RunsView` and rendered by `runs/OrdersPanel.vue` as a `RecordList` grouped by scenario: the
+scenario's pending funnel is the group heading, its order records are the rows. Registered closed by
+default: it is evidence, and a reader opens it with a question.
+
+**ONE panel where there were two, and that is the point.** The two routes describe the same orders
+from two sides — `pending-orders` what BECAME of a scenario's orders, `order-history` the orders
+themselves. The Pending Orders panel could say *527 rejected* and reach not one of the 527, while
+the sentence explaining each was already on the wire in a route nothing consumed. The registry lost
+an entry rather than gaining one.
+
+**The join is the scenario name, and it holds by CONSTRUCTION.** `pending-orders.units[].name` and
+`order-history.orders[].scenario_name` are both written from the same run unit's name
+(FiniexTestingIDE, 2026-10-01). Two edges, both handled: a scenario whose every order was refused
+before the queue never enters the pending pipeline, so it has rows and no funnel; and an AutoTrader
+run serves no units at all, because that section is filled by the simulation only. In both the
+heading says so rather than drawing a funnel of zeroes, which would claim a measurement nobody made.
 
 **The question nothing else on the page can answer.** Every other section says what the run DID.
 Measured 2026-10-01 over 202 units across 20 runs, one unit **resolved 527 orders and filled none of
-them** — and every other panel of that run showed a normal-looking result. A rejection is traceable
-to the scenario that produced it only here.
+them** — and every other panel of that run showed a normal-looking result.
 
 **The five counts are a funnel the backend states in full:**
-`resolved = filled + rejected + timed_out + force_closed`, which held on all 202 units. The parts
-are shown beside their total so the shape is readable, and nothing is computed from the identity —
-it is asserted in the contract test, which is where a change to the arithmetic should be noticed.
+`resolved = filled + rejected + timed_out + force_closed`, which held on all 202 units. Nothing is
+computed from the identity — it is asserted in the contract test, which is where a change to the
+arithmetic should be noticed. `timed_out` and `force_closed` read zero on all 202, so the heading
+prints them only when they are not zero.
 
-**What goes first is measured rather than guessed.** `timed_out` and `force_closed` read zero on all
-202 units: part of the funnel's vocabulary, not of this archive's data, so they are rank 5. What a
-narrow panel keeps is which scenario, how many it resolved, how many were REJECTED and what is still
-open.
+**A ROW IS A LIFECYCLE RECORD, NOT AN ORDER**, and that decides the shape. One order appears as
+several rows: `pending` on entry, `executed` on the fill, a `close` row when its position closes,
+one more per partial close. Measured 2026-10-02 over 40 runs and 4,660 rows, the vocabulary is five
+`action`/`status` pairs — `open/pending` 1561 · `close/executed` 1554 · `open/executed` 994 ·
+`open/rejected` 548 · `open/expired` 3. So the list is two levels and not three: an order cannot be
+a group with its lifecycle beneath it, because no field identifies one.
 
-**This route declares NO key — alone among the list routes this app consumes**, measured on 16
-responses. And the obvious field is not unique: `pos_gbpusd_1` appears in two different scenarios of
-one run. So nothing here is rendered as an order's identity; the open orders are keyed by a drawing
-POSITION scoped to the unit, which is the only honest fallback, and a contract test asserts the
-absence so the day it gains a key the suite goes red. Recorded as an open request.
+**`order_id` is not an identity and the route declares no key** — that is the backend's answer
+rather than an omission. It is a per-unit position counter: 167 rows carried one id on a measured
+run. They asked us not to adopt the content key that happens to be unique either, because two
+partial closes on one tick would collide. A row is keyed by its POSITION within its scenario, in
+append order; the ordinal field is planned in testingide#557, and a contract test asserts the
+absence so the day it arrives is loud.
+
+**A POSITION reads as one thing, because a reader should not have to ask.** Within a scenario the
+rows of one position are tied together: the row that OPENS a position carries the id and a rule
+above it, the rows that carry it on show `└─` in the id's place. Nothing is derived — the grouping
+is `order_id`, which their glossary states is the position's id.
+
+The continuation is read from the row ABOVE rather than from a block of its own, and that is
+measured: 2 of 246 scenario groups interleave two positions (both in a scenario named
+`partial_close_lifecycle`, where two run at once and their records alternate). Where that happens
+the id simply appears again. It is built over the NARROWED list, so the predecessor is the row the
+reader actually sees.
+
+**No POSITION column, and the one that stayed carries THEIR word.** `order_id` IS the position id
+— their glossary says so, and over 2,548 rows carrying a position the two strings were identical on
+every one — so the second column repeated the first. The survivor is headed `Order id` with the
+glossary's own sentence as its hint, because `Order` alone read as an order's own identity, which is
+exactly what the field is not. What the deleted column really said, *a position exists here*, the
+status `executed` already says.
+
+**The narrowing reaches it like every other scenario-shaped panel.** It filters the ORDERS, so a
+scenario the reader dropped takes its funnel heading with it, and an empty result is stated as the
+chosen scenarios' rather than as the run's.
+
+**An absent value is `null`, never `0.0` or `""`** (contract 20): `event_time` on 45 % of rows,
+`executed_price` and `position_id` likewise, `rejection_*` on 88 %. Each renders as absent. The
+stamp is `event_time` and says when THIS ROW's event happened — the fill on `executed`, the refusal
+on `rejected`, the expiry on `expired`; it was `execution_time` until contract 20 and was renamed
+because that name means a DURATION everywhere else in the API.
+
+**The orders open at data end are shown in the heading and are NOT added to the funnel.** In a
+backtest the simulation records every such order as `expired` in the same step and deliberately
+leaves it in the active lists — one order, two views of one instant, and it is already a row below.
+It is stated because it is a property of the SCENARIO that no single row carries. In an AutoTrader
+session the answer differs: an order left standing at the venue gets no `expired` row.
+
+**The route takes a `symbol` and this app never sends one.** The panel groups by scenario and one
+scenario is one symbol, so the parameter would narrow nothing a reader asked for. Before contract 20
+it was also unsafe: a rejected row had an empty symbol and the filter silently dropped every
+rejection.
+
+### The way between an order and its trade
+
+A reader on `pos_gbpusd_1 · close · executed` can reach the trades that position produced, and a
+reader on a trade can reach its orders — including a refusal on the way. The position id leads the
+row in BOTH lists, as a link, so the two read as two views of one thing.
+
+**The join is `(scenario_name, position_id)` and it is DECLARED**, not worked out here:
+FiniexTestingIDE, 2026-10-02 — *"an executed order-history row's `(scenario_name, position_id)`
+names the same position as a trade-history row's, by construction"*. **Never the position id
+alone:** every scenario counts from `pos_<symbol>_1`, so two scenarios of one symbol both have a
+`pos_gbpusd_1`. Both halves travel together everywhere — in the URL, in the comparison, in the test.
+
+**The ROW level is deliberately shut, and the reason is theirs.** A close books exactly one trade
+and appends exactly one `close · executed` row; measured here, 1,554 of 1,554 pair exactly on
+`(exit_time, exit_price)`. We do not use it, by either content or ordinal, because *"in a long
+AutoTrader session the order history and the trade history are bounded buffers of different sizes
+and drop their oldest records at different points, after which 'the n-th' points at the wrong trade
+without any sign."* A jump therefore lands on a POSITION, and where a partial close booked several
+trades all of them are marked — correct, since "what happened on the way to this position" has one
+answer whichever close the reader came from.
+
+**`use_position_link.ts` is ambient, like the scenario narrowing, and for the same reason.** Making
+a sibling panel visible and scrolling to a row is about the WORKSPACE, which a panel must not know;
+writing a query param needs a router, which would tie a panel to one. `RunsView` provides the
+channel and the panels only read the mark and ask for the jump. The channel carries three things:
+
+| | |
+|---|---|
+| `marked` | the position on show, parsed from the `position` query param |
+| `jumpTo(panelId, ref)` | write the param · `show` the panel · `setOpen` it · scroll to the marked row |
+| `canJumpTo(panelId)` | does that panel have a model at all — the HOST's knowledge, read from the same `sources` record `PanelColumn` is handed |
+
+**The mark is in the URL and the SCROLL is not.** A shared link puts the reader on the same position
+(§23), and a page that jumps on every reload is a page that moved while nobody was looking. The
+scroll waits two ticks — one for the layout store's change to reach the column, one for the panel it
+just opened to render — and where the row is still absent it does nothing rather than scrolling to
+nothing: a target beyond the trade list's visible cap, or inside a group it folded, is a row that is
+not there.
+
+**Three absences draw no link at all**, which is the difference between a jump and a dead end: a
+position that produced no trade (55 measured), a run that serves no trade history (10 measured), and
+a panel this run has no model for. The position id is still printed in all three — it is data, part
+of the trade's own declared key.
 
 ### Broker — the conditions a run traded under
 

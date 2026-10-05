@@ -34,6 +34,16 @@ const props = defineProps<{
   columns: ListColumn[]
   /** What makes a row unique — the list's declared key, never guessed. */
   rowKey: (row: T) => string
+  /**
+   * One class the CALLER puts on a row, for a distinction only it can see. The list owns the row's
+   * own states — picked, grouped, inert — and never writes this one.
+   *
+   * It exists for a BOUNDARY inside a group: the Orders panel marks the row that starts a new
+   * position, so a scenario's records read as the positions they belong to rather than as one flat
+   * run of lines. A lead line (`hasLead`) would say it in words and take a row to do it; a rule
+   * belongs on the row it precedes.
+   */
+  rowClass?: (row: T) => string | undefined
   /** The row currently chosen, if the caller has such a notion. */
   isPicked?: (row: T) => boolean
   /**
@@ -213,13 +223,22 @@ const bandSpans = computed<DrawnBand[] | null>(() => {
   return drawn
 })
 
+/**
+ * What a heading says on hover. The LABEL comes first and always: a heading wider than its column
+ * is clipped, and the title is how it can still be read in full. A `hint` follows it where the
+ * column declares one, for a field whose own name misleads.
+ */
+function headTitle(column: ListColumn): string {
+  return column.hint ? `${column.label} — ${column.hint}` : column.label
+}
+
 const grouped = computed(() => props.groupBy !== undefined)
 
 /** Declared once so the three branches of the row — inert, carded and bare — cannot drift apart. */
 function rowAttrs(row: T): Record<string, unknown> {
   const picked = props.isPicked?.(row)
   return {
-    class: ['record-row', { picked, grouped: grouped.value, inert: props.inert }],
+    class: ['record-row', props.rowClass?.(row), { picked, grouped: grouped.value, inert: props.inert }],
     ...(picked === undefined || props.inert ? {} : { 'aria-pressed': picked }),
   }
 }
@@ -284,7 +303,7 @@ const sections = computed<ListGroup<T>[]>(() => {
         :key="`${column.label}-${index}`"
         :class="{ 'head-figure': column.figure }"
         :data-rank="column.rank ?? 1"
-        :title="column.label"
+        :title="headTitle(column)"
       >{{ column.label }}</span>
     </li>
 

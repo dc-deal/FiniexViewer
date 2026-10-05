@@ -6,6 +6,7 @@ import {
 } from '@/components/runs/report_format'
 import { useDisplaySettings } from '@/composables/use_display_settings'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
+import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import { rowKey } from '@/api/list_key'
 import type { ListCard, ListColumn } from '@/types/list_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
@@ -29,6 +30,21 @@ const props = defineProps<{
  * would widen its column after all.
  */
 const columns: ListColumn[] = [
+  /*
+   * FIRST, and it is the trade's own key field rather than an affordance bolted on: a trade is
+   * keyed `(scenario_name, position_id, exit_tick_index)`, so the position is part of what makes
+   * this row itself. It is also the way back to the orders, which is why it reads as a link.
+   *
+   * Leftmost in BOTH panels, deliberately: the same field in the same place, so the two lists read
+   * as two views of one thing. Rank 3, with the lots and the held time — navigation gives way to
+   * the figures before the figures give way to each other.
+   */
+  {
+    label: t('Position'),
+    hint: t('The position this trade closed — a partial close books one trade more, so a trade is not its position.'),
+    width: 'minmax(0, 14fr)',
+    rank: 3,
+  },
   // 12 rather than the table's 9: the old cells OVERFLOWED their column, so a symbol always showed
   // in full; a grid cell truncates instead, and 9 % cut `ETHUSD` to `ETHU…`. The three points come
   // from the two excursion columns, which had room to spare for an eight-character amount.
@@ -81,6 +97,26 @@ const display = useDisplaySettings()
 const rowCap = computed(() => display.value.tradeRowCap)
 
 const narrowing = useScenarioSelection()
+const link = usePositionLink()
+
+/**
+ * The way back to the orders of this trade's position — the DECLARED join
+ * `(scenario_name, position_id)`, never the id alone: every scenario counts from `pos_<symbol>_1`.
+ *
+ * A trade is one CLOSE of a position, so several trades can lead to the same orders. That is
+ * correct and not a collision: the question "what happened on the way to this position" has one
+ * answer whichever of its closes the reader came from.
+ */
+function jumpToOrders(trade: TradeRow): void {
+  link.jumpTo('orders', { scenario: trade.scenario_name, position: trade.position_id })
+}
+
+/** Every trade of the position a reader jumped to — a partial close means there are several. */
+function rowClass(trade: TradeRow): string | undefined {
+  return marksPosition(link.marked.value, trade.scenario_name, trade.position_id)
+    ? 'marked'
+    : undefined
+}
 
 /**
  * True while one scenario is on show. The funnel above the rows comes from `run-summary` and is a
@@ -349,6 +385,7 @@ function card(trade: TradeRow): ListCard {
       :rows="shown"
       :columns="columns"
       :row-key="trade => rowKey(trade, tradeKey)"
+      :row-class="rowClass"
       :group-by="trade => trade.scenario_name"
       :is-open="isExpanded"
       :row-card="card"
@@ -388,6 +425,17 @@ function card(trade: TradeRow): ListCard {
       <!-- the rank on every cell is the one its own column declares, and each of these lists
            asserts the two agree: the list owns the tracks, this template owns the cells -->
       <template #default="{ row: trade }">
+        <span :data-rank="3" class="trade-position" :title="trade.position_id">
+          <!-- a link only where there is an Orders panel to land in -->
+          <button
+            v-if="link.canJumpTo('orders')"
+            type="button"
+            class="to-orders"
+            :title="t('Show the orders of this position')"
+            @click.stop="jumpToOrders(trade)"
+          >{{ trade.position_id }} ↗</button>
+          <template v-else>{{ trade.position_id }}</template>
+        </span>
         <span :data-rank="1" :title="trade.symbol">{{ trade.symbol }}</span>
         <span :data-rank="2">{{ trade.direction }}</span>
         <span :data-rank="3" class="figure-cell">{{ trade.lots }}</span>
@@ -468,6 +516,31 @@ function card(trade: TradeRow): ListCard {
    they belong to. The geometry is asserted in `e2e/list_ranks.spec.ts` — no unit test can see it. */
 .trade-list :deep(.figure-cell) {
   text-align: right;
+}
+
+/* interactive text wears the link role, and the mark covers every trade of that position */
+.to-orders {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.to-orders:hover,
+.to-orders:focus-visible {
+  text-decoration: underline;
+}
+
+.trade-position {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-list :deep(.record-row.marked) {
+  background-color: var(--color-bg-raised);
 }
 
 .group-name {

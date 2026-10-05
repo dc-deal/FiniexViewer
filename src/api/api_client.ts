@@ -15,6 +15,7 @@ import type {
   TradeHistoryReport,
   AggregatedPortfolioReport,
   BrokerReport,
+  OrderHistoryReport,
   PendingOrdersReport,
   PortfolioReport,
   RunInfo,
@@ -172,6 +173,26 @@ export async function getPendingOrders(
 ): Promise<PendingOrdersReport | SectionAbsence> {
   try {
     const response = await http.get<PendingOrdersReport>(`/reports/runs/${runId}/pending-orders`)
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    throw error
+  }
+}
+
+/**
+ * Every order a run placed, as the lifecycle records they are. The companion to `pending-orders`:
+ * that route states what became of a scenario's orders, this one states the orders themselves.
+ *
+ * Deliberately UNFILTERED. The route takes a `symbol`, and the panel groups by scenario — one
+ * scenario is one symbol, so the parameter would narrow nothing a reader asked for.
+ */
+export async function getOrderHistory(
+  runId: string
+): Promise<OrderHistoryReport | SectionAbsence> {
+  try {
+    const response = await http.get<OrderHistoryReport>(`/reports/runs/${runId}/order-history`)
     return assertBelongsTo(runId, response.data)
   } catch (error) {
     const absence = absenceFrom(error)

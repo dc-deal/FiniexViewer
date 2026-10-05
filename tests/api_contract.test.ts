@@ -10,6 +10,7 @@ import portfolio from './fixtures/portfolio.json'
 import broker from './fixtures/broker.json'
 import aggregated from './fixtures/aggregated_portfolio.json'
 import pending from './fixtures/pending_orders.json'
+import history from './fixtures/order_history.json'
 import warningsErrors from './fixtures/warnings_errors.json'
 import configLive from './fixtures/run_config_live.json'
 import configSimulation from './fixtures/run_config_simulation.json'
@@ -21,6 +22,7 @@ import type {
   AggregatedPortfolioReport,
   BookingPeriodsReport,
   BrokerReport,
+  OrderHistoryReport,
   PendingOrdersReport,
   PortfolioReport,
   RunConfigReport,
@@ -45,7 +47,7 @@ import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 18
+const EXPECTED_CONTRACT = 21
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -67,6 +69,8 @@ const EXPECTED_KEYS = {
   // the folded row is one per UNIT, so the period number is not part of what makes it unique
   runUnitTotals: ['unit_name'],
   trades: ['scenario_name', 'position_id', 'exit_tick_index'],
+  // one field is enough: a unit name IS a scenario name, and a set with a repeated name is refused
+  pendingUnits: ['name'],
   brokers: ['broker_type'],
 }
 
@@ -252,10 +256,9 @@ describe('api contract', () => {
    * and computes nothing from the identity — this is where it is checked, so a backend change to
    * the arithmetic is noticed here rather than guessed at from a screen.
    *
-   * And this route declares NO key, alone among the list routes this app consumes — measured on 16
-   * responses, none carried `key` or `keys`. Asserted so the day it gains one is loud, and that day
-   * is scheduled: testingide stated the key as `["name"]` on 2026-10-01 and plans it for contract
-   * 19. When this goes red the panel moves onto the declaration.
+   * And the route DECLARES its key since contract 19 — it was the one list route this app consumed
+   * without one. A unit name is a scenario name, and a scenario set whose names repeat is refused
+   * at validation, which is why one field is enough where `trades` needs three.
    */
   it('the pending orders still satisfy the mirrored shape', () => {
     const typed: PendingOrdersReport = pending
@@ -264,8 +267,40 @@ describe('api contract', () => {
       expect(row.total_filled + row.total_rejected + row.total_timed_out + row.total_force_closed)
         .toBe(row.total_resolved)
     }
+    expect(typed.key).toEqual(EXPECTED_KEYS.pendingUnits)
+  })
+
+  /**
+   * The order history, and THREE properties of the contract.
+   *
+   * It is the one list route with no declared key, and that is the backend's answer rather than an
+   * omission: a row is a lifecycle RECORD and one order appears as several. Asserted so that a key
+   * appearing — the ordinal field planned in testingide#557 — is loud rather than silent.
+   *
+   * Its scenario names must be a SUBSET of the pending units, because the panel joins on them. Not
+   * equality: a scenario whose every order was refused before the queue appears here and not there.
+   *
+   * And `event_time` carries the contract-20 rename. Finding `execution_time` on these rows again
+   * would mean a response from before it, which this mirror does not support (CLAUDE.md §21).
+   */
+  it('the order history still satisfies the mirrored shape', () => {
+    const typed: OrderHistoryReport = history
+    expect(typed.orders.length).toBeGreaterThan(0)
+    expect(typed.count).toBe(typed.orders.length)
+
     expect('key' in typed).toBe(false)
     expect('keys' in typed).toBe(false)
+
+    const units = new Set((pending as PendingOrdersReport).units.map(unit => unit.name))
+    const orphans = typed.orders
+      .map(row => row.scenario_name)
+      .filter(name => !units.has(name))
+    expect(orphans).toEqual([])
+
+    for (const row of typed.orders) {
+      expect(row).toHaveProperty('event_time')
+      expect(row).not.toHaveProperty('execution_time')
+    }
   })
 
   it('the warnings and errors section still satisfies the mirrored shape', () => {

@@ -11,6 +11,7 @@ import portfolioFixture from './fixtures/portfolio.json'
 import brokerFixture from './fixtures/broker.json'
 import aggregatedFixture from './fixtures/aggregated_portfolio.json'
 import pendingFixture from './fixtures/pending_orders.json'
+import historyFixture from './fixtures/order_history.json'
 import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
 import * as apiClient from '@/api/api_client'
@@ -23,6 +24,7 @@ vi.mock('@/api/api_client', () => ({
   getPortfolio: vi.fn(),
   getBroker: vi.fn(),
   getAggregatedPortfolio: vi.fn(),
+  getOrderHistory: vi.fn(),
   getPendingOrders: vi.fn(),
   getBookingPeriods: vi.fn(),
   getRunConfig: vi.fn(),
@@ -362,6 +364,36 @@ describe('useRunReportsStore — portfolio section', () => {
       await store.loadAggregated('20260615_130000')
       store.clear()
       expect(store.aggregated).toBeNull()
+    })
+  })
+
+  /** The orders themselves — the companion request the Orders panel joins to the funnel. */
+  describe('the order history', () => {
+    beforeEach(() => { vi.mocked(apiClient.getOrderHistory).mockReset() })
+
+    it('loads the section for a run', async () => {
+      vi.mocked(apiClient.getOrderHistory).mockResolvedValue(historyFixture)
+      const store = useRunReportsStore()
+      await store.loadOrderHistory('20260615_130000')
+      expect(apiClient.getOrderHistory).toHaveBeenCalledWith('20260615_130000')
+      expect(store.orderHistory).toEqual(historyFixture)
+      expect(store.loadingOrderHistory).toBe(false)
+    })
+
+    it('keeps the section null and records WHY where the run writes none', async () => {
+      vi.mocked(apiClient.getOrderHistory).mockResolvedValue(ABSENT)
+      const store = useRunReportsStore()
+      await store.loadOrderHistory('20260615_130000')
+      expect(store.orderHistory).toBeNull()
+      expect(store.absences['orderHistory']).toEqual(ABSENT)
+      expect(store.errors['orderHistory']).toBeUndefined()
+    })
+
+    it('surfaces a failure as a readable message of its own', async () => {
+      vi.mocked(apiClient.getOrderHistory).mockRejectedValue(new Error('boom'))
+      const store = useRunReportsStore()
+      await store.loadOrderHistory('20260615_130000')
+      expect(store.errors['orderHistory']).toBe('Could not load the order history: boom')
     })
   })
 

@@ -41,6 +41,18 @@ export interface ListColumn {
    * rungs and a fifteen-column list wants five.
    */
   rank?: 1 | 2 | 3 | 4 | 5
+  /**
+   * What the column MEANS, where the heading cannot carry it. It rides in the heading's `title`
+   * after the label, so the label stays readable when the heading is clipped.
+   *
+   * For a field whose own name misleads. The first case: `order_id` on an order row is the id of
+   * the POSITION, not of the order — their glossary says so in its first six words — so a heading
+   * reading `Order id` is their term and a reader needs the sentence one hover away.
+   *
+   * It is a stopgap in the honest sense: viewer#26 serves these from the backend's own glossary,
+   * and this is the same place the card will attach to.
+   */
+  hint?: string
 }
 
 /**

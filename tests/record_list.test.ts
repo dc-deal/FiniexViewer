@@ -50,6 +50,7 @@ interface ListProps {
   groupBy?: (row: unknown) => string
   isOpen?: (key: string) => boolean
   showsChildren?: (row: unknown) => boolean
+  rowClass?: (row: unknown) => string | undefined
   bands?: ListBand[]
   columns?: ListColumn[]
 }
@@ -73,6 +74,42 @@ describe('RecordList — the flat list', () => {
     expect(wrapper.findAll('.record-head')).toHaveLength(1)
     expect(wrapper.findAll('.record-row')).toHaveLength(3)
     expect(wrapper.findAll('.record-group')).toHaveLength(0)
+  })
+
+  /**
+   * A heading wider than its column is CLIPPED, so its title is how it can still be read in full.
+   * Where a column declares a `hint` the meaning follows the label rather than replacing it — a
+   * field whose own name misleads needs both, and the clipping affordance must survive.
+   */
+  /**
+   * One class the caller puts on a row, for a distinction only it can see. The list keeps its own
+   * states beside it rather than handing the class list over.
+   */
+  it('lets the caller mark a row without losing the list`s own states', () => {
+    const wrapper = mountList({ rowClass: (row: unknown) => asRow(row).net > 0 ? 'up' : undefined })
+    const rows = wrapper.findAll('.record-row')
+    expect(rows[0]!.classes()).toContain('up')
+    expect(rows[1]!.classes()).not.toContain('up')
+    // the list's own class is still there
+    expect(rows[0]!.classes()).toContain('record-row')
+  })
+
+  describe('what a heading says on hover', () => {
+    it('is the label alone where the column declares no hint', () => {
+      const heads = mountList().findAll('.record-head > span')
+      expect(heads[0]!.attributes('title')).toBe('Unit')
+    })
+
+    it('puts a hint AFTER the label rather than in place of it', () => {
+      const heads = mountList({
+        columns: [
+          { label: 'Order id', hint: 'the id of the POSITION, not of the order', width: 'auto' },
+          { label: 'Net', width: 'auto', figure: true },
+        ],
+      }).findAll('.record-head > span')
+      expect(heads[0]!.attributes('title')).toBe('Order id — the id of the POSITION, not of the order')
+      expect(heads[1]!.attributes('title')).toBe('Net')
+    })
   })
 
   /**

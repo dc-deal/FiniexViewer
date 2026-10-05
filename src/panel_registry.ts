@@ -4,7 +4,7 @@ import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
 import BrokerPanel from '@/components/runs/BrokerPanel.vue'
 import AggregatedPortfolioPanel from '@/components/runs/AggregatedPortfolioPanel.vue'
-import PendingOrdersPanel from '@/components/runs/PendingOrdersPanel.vue'
+import OrdersPanel from '@/components/runs/OrdersPanel.vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
 import ConfigPanel from '@/components/runs/ConfigPanel.vue'
 import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
@@ -111,15 +111,19 @@ const PANELS: PanelDescriptor[] = [
   {
     /*
      * Why an order did not become what it was meant to be. Every other section answers what the run
-     * DID; this one is the only place a rejection is traceable to the scenario that produced it —
+     * DID; this one is the only place a rejection is traceable to the order that was refused —
      * measured, one unit resolved 527 orders and filled none while every other panel of that run
      * looked normal. Closed by default: it is evidence, and a reader opens it with a question.
+     *
+     * ONE entry where there were two. `pending-orders` and `order-history` describe the same orders
+     * from two sides, and a reader who saw the funnel in one panel could reach no single order of
+     * it from the other. The funnel is the group heading now; the orders are the rows.
      */
-    id: 'pending-orders',
-    title: 'Pending Orders',
+    id: 'orders',
+    title: 'Orders',
     icon: '⏳',
-    component: PendingOrdersPanel,
-    source: 'pendingOrders',
+    component: OrdersPanel,
+    source: 'orders',
     defaultOpen: false,
   },
   {

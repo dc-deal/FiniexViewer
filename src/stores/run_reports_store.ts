@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getAggregatedPortfolio, getBookingPeriods, getBroker, getPendingOrders, getPortfolio,
+  getAggregatedPortfolio, getBookingPeriods, getBroker, getOrderHistory, getPendingOrders,
+  getPortfolio,
   getRunConfig, getScenarioDetails, getTradeHistory, getWarningsErrors,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
@@ -11,6 +12,7 @@ import type {
   AggregatedPortfolioReport,
   BookingPeriodsReport,
   BrokerReport,
+  OrderHistoryReport,
   PendingOrdersReport,
   RunConfigReport,
   TradeHistoryReport,
@@ -31,6 +33,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const broker = ref<BrokerReport | null>(null)
   const aggregated = ref<AggregatedPortfolioReport | null>(null)
   const pendingOrders = ref<PendingOrdersReport | null>(null)
+  const orderHistory = ref<OrderHistoryReport | null>(null)
   const bookingPeriods = ref<BookingPeriodsReport | null>(null)
   const config = ref<RunConfigReport | null>(null)
   const tradeHistory = ref<TradeHistoryReport | null>(null)
@@ -40,6 +43,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const loadingBroker = ref(false)
   const loadingAggregated = ref(false)
   const loadingPendingOrders = ref(false)
+  const loadingOrderHistory = ref(false)
   const loadingBookingPeriods = ref(false)
   const loadingConfig = ref(false)
   const loadingTradeHistory = ref(false)
@@ -71,6 +75,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     broker.value = null
     aggregated.value = null
     pendingOrders.value = null
+    orderHistory.value = null
     bookingPeriods.value = null
     config.value = null
     tradeHistory.value = null
@@ -177,6 +182,26 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     }
   }
 
+  /**
+   * Every order the run placed, as lifecycle records. The companion to the one above: that states
+   * what BECAME of a scenario's orders, this states the orders themselves, and the Orders panel
+   * joins them on the scenario name.
+   */
+  async function loadOrderHistory(runId: string): Promise<void> {
+    loadingOrderHistory.value = true
+    orderHistory.value = null
+    try {
+      const answer = await getOrderHistory(runId)
+      if (isAbsent(answer)) absences.value['orderHistory'] = answer
+      else orderHistory.value = answer
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      errors.value['orderHistory'] = `${t('Could not load the order history')}: ${detail}`
+    } finally {
+      loadingOrderHistory.value = false
+    }
+  }
+
   /** Booking periods carry the same 409 case as any other stored artifact. */
   async function loadBookingPeriods(runId: string): Promise<void> {
     loadingBookingPeriods.value = true
@@ -261,6 +286,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     broker,
     aggregated,
     pendingOrders,
+    orderHistory,
     bookingPeriods,
     config,
     tradeHistory,
@@ -269,6 +295,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingBroker,
     loadingAggregated,
     loadingPendingOrders,
+    loadingOrderHistory,
     loadingBookingPeriods,
     loadingConfig,
     loadingTradeHistory,
@@ -281,6 +308,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadBroker,
     loadAggregated,
     loadPendingOrders,
+    loadOrderHistory,
     loadBookingPeriods,
     loadConfig,
     loadTradeHistory,

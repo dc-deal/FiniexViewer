@@ -896,6 +896,15 @@ export interface BrokerUnit {
   hedging_allowed: boolean
   // content hash of the broker configuration — two units sharing it were configured identically
   config_hash: string
+  /**
+   * The frozen broker configuration itself, beside the hash that only digests it (contract 19).
+   * An AutoTrader session freezes at its start what it trades with — the venue's symbol
+   * specifications, the seed's fee structure, the detected fee tier — and this names that content.
+   *
+   * EMPTY on a simulation unit, which reads the archive's broker files when it runs, and on any
+   * session recorded before contract 19. It is not on the API as a document: this is the id only.
+   */
+  broker_config_id: string
   // which scenarios of the run traded through this broker, by the unit name every other section
   // keys on
   scenarios: string[]
@@ -945,7 +954,9 @@ export interface AggregatedHeadline {
   winning_trades: number
   losing_trades: number
   win_rate: number              // ratio 0..1
-  profit_factor: number
+  // null where it is undefined — no losing trade to divide by. Measured 2026-10-02 over a sample
+  // of 12 runs; every other profit factor in this mirror already said so and this one did not.
+  profit_factor: number | null
   total_profit: number
   total_loss: number
   net_profit: number
@@ -1017,9 +1028,12 @@ export interface AggregatedCombined {
   pending_total_rejected: number
   pending_total_timed_out: number
   pending_total_force_closed: number
-  pending_avg_latency_ms: number
-  pending_min_latency_ms: number
-  pending_max_latency_ms: number
+  // null where no pending order was resolved in this currency — not a latency of zero. Measured
+  // 2026-10-02; nothing renders these yet (the panel leaves the pending block to its own route),
+  // which is why the wrong type survived unnoticed.
+  pending_avg_latency_ms: number | null
+  pending_min_latency_ms: number | null
+  pending_max_latency_ms: number | null
   pending_active_limit_count: number
   pending_active_stop_count: number
   spot_scenarios: SpotScenarioRow[]
@@ -1131,15 +1145,85 @@ export interface PendingOrderUnit {
 }
 
 /**
+ * One LIFECYCLE RECORD of an order — not an order.
+ *
+ * The distinction is the backend's and it decides the whole panel: an order appears as several
+ * rows. `pending` when it enters the pipeline, `executed` when it fills, a `close` row when its
+ * position closes, one more per partial close. Measured 2026-10-02 over 40 runs and 4,660 rows,
+ * the vocabulary is five `action`/`status` pairs: `open/pending` 1561 · `close/executed` 1554 ·
+ * `open/executed` 994 · `open/rejected` 548 · `open/expired` 3. A sixth the code can write and this
+ * archive does not hold is `close/rejected` — a partial close below the symbol minimum.
+ *
+ * `order_id` is NOT an identity: it is a per-unit position counter (`pos_<symbol>_<n>`), and 167
+ * rows carried one id on a single measured run. The route declares no key; a row is identified by
+ * its POSITION within its scenario, in append order, and a field for it is planned in
+ * testingide#557. Their words: *please do not adopt the content key* — two partial closes on one
+ * tick would collide.
+ */
+export interface OrderHistoryRow {
+  // the per-unit position counter, shown as data and never as identity
+  order_id: string
+  // the unit name every other section keys on — this is the join to `pending-orders`
+  scenario_name: string
+  /**
+   * The position this row opened or closed, once there IS one. Null on 45 % of rows, which is
+   * exactly those where no position exists yet or never will (pending, rejected, expired).
+   */
+  position_id: string | null
+  symbol: string
+  // null where the record never held one: a rejection stored before contract 20, on 12 % of rows
+  direction: string | null
+  // `open` or `close`. Nullable because the backend states it as a field that can be absent, not
+  // because this archive has one — contract 20 fills it on every row measured here.
+  action: string | null
+  // `pending` · `executed` · `rejected` · `expired` are what order-history writes; their enum also
+  // lists `submitted`, `partial` and `cancelled`, which this route never produces
+  status: string
+  requested_lots: number | null
+  executed_lots: number | null
+  executed_price: number | null
+  /**
+   * When THIS ROW's event happened, on the run's clock — the fill on `executed`, the refusal on
+   * `rejected`, the EXPIRY on `expired`, null on `pending`. It was `execution_time` until contract
+   * 20 and was renamed because everywhere else in this API that name means a DURATION.
+   */
+  event_time: string | null
+  commission: number
+  swap: number
+  slippage_points: number
+  // a whole sentence of the backend's, on a rejected row and nowhere else
+  rejection_reason: string | null
+  rejection_message: string | null
+}
+
+/**
+ * Response type for GET /api/v1/reports/runs/{run_id}/order-history
+ *
+ * No declared key, and that IS the answer rather than an omission — see `OrderHistoryRow`.
+ *
+ * The `symbol` query parameter exists and is safe since contract 20; before it, a rejected row had
+ * an empty symbol and the filter silently dropped every rejection. This app filters by SCENARIO
+ * anyway, because one scenario is one symbol and the scenario is what the panel groups by.
+ */
+export interface OrderHistoryReport {
+  run_id: string
+  orders: OrderHistoryRow[]
+  count: number
+  symbols: string[]
+}
+
+/**
  * Response type for GET /api/v1/reports/runs/{run_id}/pending-orders
  *
- * Contract 18 declares NO key, alone among the list routes this app consumes — measured on 16
- * responses, none carried `key` or `keys`. The key is `["name"]` and testingide plans it for
- * contract 19 (2026-10-01): a unit name IS a scenario name, and a scenario set whose names repeat
- * is refused at validation. `units` is empty on an AutoTrader run — this section is filled by the
- * simulation only.
+ * `units` is empty on an AutoTrader run — this section is filled by the simulation only.
  */
 export interface PendingOrdersReport {
   run_id: string
   units: PendingOrderUnit[]
+  /**
+   * What makes one unit unique, declared since contract 19 — this was the one list route this app
+   * consumed without a declaration. One field is enough where `trades` needs three: a unit name IS
+   * a scenario name, and a scenario set whose names repeat is refused at validation.
+   */
+  key: string[]
 }

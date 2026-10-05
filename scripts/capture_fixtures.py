@@ -16,6 +16,7 @@ source changes on every capture is a fixture whose diff says nothing. They are t
 case catalogue in INTERNAL_viewer_smoke_protocol.md names, so a run deleted on the other side shows
 up in both places at once.
 """
+import datetime
 import json
 import os
 import sys
@@ -37,6 +38,7 @@ TARGETS = [
     ('broker.json', f'reports/runs/{RUN}/broker'),
     ('aggregated_portfolio.json', f'reports/runs/{RUN}/aggregated-portfolio'),
     ('pending_orders.json', f'reports/runs/{RUN}/pending-orders'),
+    ('order_history.json', f'reports/runs/{RUN}/order-history'),
     ('run_config_simulation.json', f'reports/runs/{RUN}/config'),
     ('run_config_live.json', f'reports/runs/{LIVE_RUN}/config'),
     ('deployments_list.json', 'deployments'),
@@ -46,6 +48,7 @@ TARGETS = [
 
 OUT = os.path.join('tests', 'fixtures')
 dry = '--dry' in sys.argv
+served = set()
 
 for name, path in TARGETS:
     url = f'{BASE}/{path}'
@@ -75,4 +78,22 @@ for name, path in TARGETS:
             json.dump(body, handle, indent=2, ensure_ascii=False)
             handle.write('\n')
 
+    served.add(contract)
     print(f'{name:34} contract {contract:>3}  {added} {removed}'.rstrip())
+
+# The manifest is what the contract test compares EXPECTED_CONTRACT against, so a capture that
+# leaves it behind produces fixtures from one contract asserted as another. It was written by hand
+# until the 19 capture, where it was simply forgotten.
+if not dry and served:
+    if len(served) > 1:
+        print(f'MIXED CONTRACTS across the captures: {sorted(served)} - manifest NOT written')
+    else:
+        manifest = {
+            'contract': int(served.pop()),
+            'captured_from': 'GET /api/v1 through the dev proxy',
+            'captured_on': datetime.date.today().isoformat(),
+        }
+        with open(os.path.join(OUT, 'capture_manifest.json'), 'w', encoding='utf-8', newline='\n') as handle:
+            json.dump(manifest, handle, indent=2)
+            handle.write('\n')
+        print(f'capture_manifest.json               contract {manifest["contract"]:>3}  {manifest["captured_on"]}')

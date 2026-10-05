@@ -7,6 +7,137 @@
   ],
   "runs": [
     {
+      "run_id": "20261001_123125_d4fcd9c9",
+      "group": "autotrader",
+      "name": "mock_session_test",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "start_time": "2026-10-01T12:31:25.109851+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "d7fef99f2dd61aa4ff87649a3c0cef1e357bd2199d1002a5f555496e6dd9e3c9",
+      "app_version": "1.4.0",
+      "git_commit": "403abbc3",
+      "config_snapshot": "mock_session_test.json",
+      "reporting": "expected",
+      "size_bytes": 39603,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "mock_session_test",
+          "start_date": "2026-01-25T02:19:46+00:00",
+          "end_date": "2026-01-26T02:14:00+00:00"
+        }
+      ],
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 86042.614,
+      "has_reports": true
+    },
+    {
+      "run_id": "20260930_080501_5a37660b",
+      "group": "simulation",
+      "name": "EURUSD_3_windows_sandbox",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "start_time": "2026-09-30T08:05:01.820896+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "a5a9c39189239009450db1aef717ac36ac123577b812b473be4fdb15fcf3ba4d",
+      "app_version": "1.4.0",
+      "git_commit": "34d05232",
+      "config_snapshot": "eurusd_3_windows_sandbox.json",
+      "reporting": "expected",
+      "size_bytes": 863411,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "GBPUSD_window_01",
+          "start_date": "2025-10-09T20:00:00+00:00",
+          "end_date": "2025-10-09T23:59:00+00:00"
+        },
+        {
+          "unit_name": "GBPUSD_window_02",
+          "start_date": "2025-10-14T14:00:00+00:00",
+          "end_date": "2025-10-14T23:00:00+00:00"
+        },
+        {
+          "unit_name": "BTCUSD_blocks_04",
+          "start_date": "2026-01-27T16:00:00+00:00",
+          "end_date": "2026-01-27T22:00:00+00:00"
+        },
+        {
+          "unit_name": "GBPUSD_window_03",
+          "start_date": "2025-09-25T16:00:00+00:00",
+          "end_date": "2025-09-25T23:00:00+00:00"
+        },
+        {
+          "unit_name": "USDJPY_window_04",
+          "start_date": "2025-09-23T16:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 19.787456229287578,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 5,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 63860.89200000001,
+      "has_reports": true
+    },
+    {
       "run_id": "20260929_233620_123c7bc0",
       "group": "autotrader",
       "name": "aggressive_trend_mock",
@@ -3882,5 +4013,5 @@
       "has_reports": true
     }
   ],
-  "count": 45
+  "count": 47
 }

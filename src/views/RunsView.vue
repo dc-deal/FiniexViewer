@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
+import { useLayoutStore } from '@/stores/layout_store'
 import { useRunQuerySync } from '@/composables/use_run_query_sync'
+import { patchQuery } from '@/composables/query_param_utils'
 import { provideScenarioSelection } from '@/composables/use_scenario_selection'
+import {
+  formatPositionRef,
+  parsePositionRef,
+  providePositionLink,
+} from '@/composables/use_position_link'
+import type { PositionRef } from '@/composables/use_position_link'
 import { hasArtifact } from '@/api/report_artifacts'
+import { panelById } from '@/panel_registry'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import AppBar from '@/components/panels/AppBar.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
@@ -21,7 +31,8 @@ const {
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
 const {
-  warningsErrors, portfolio, broker, aggregated, pendingOrders, bookingPeriods, config,
+  warningsErrors, portfolio, broker, aggregated, pendingOrders, orderHistory, bookingPeriods,
+  config,
   tradeHistory, scenarios,
   absences,
   unreadable, errors: sectionErrors,
@@ -38,6 +49,57 @@ provideScenarioSelection({
   toggle: (unit: string) => runsStore.toggleUnit(unit),
   clear: () => runsStore.clearUnits(),
 })
+
+/**
+ * The position a reader asked to look at, and the jump that puts them in front of it.
+ *
+ * The VIEW owns it, not the panels: making a sibling panel visible and scrolling to a row is about
+ * the WORKSPACE, which a panel must not know. Two panels act on it — the orders and the trades —
+ * and both only read the mark and ask for the jump.
+ *
+ * The mark rides in the URL so a link carries it (§23). The SCROLL does not: it happens on the
+ * click, never on a restore, because a page that jumps on every reload is a page that moved while
+ * the reader was not looking.
+ */
+const route = useRoute()
+const router = useRouter()
+const layoutStore = useLayoutStore()
+
+providePositionLink({
+  marked: computed(() => parsePositionRef(
+    typeof route.query['position'] === 'string' ? route.query['position'] : undefined
+  )),
+  jumpTo: (panelId: string, ref: PositionRef) => {
+    patchQuery(router, { position: formatPositionRef(ref) })
+    // a hidden panel is not in the column at all, and a folded one draws nothing — the jump has to
+    // make the target reachable before it can scroll to it
+    layoutStore.show(panelId)
+    layoutStore.setOpen(panelId, true)
+    void scrollToMark(panelId)
+  },
+  canJumpTo: (panelId: string) => {
+    const descriptor = panelById(panelId)
+    if (!descriptor) return false
+    // the same record PanelColumn is handed, read by the source a descriptor declares
+    const models = sources.value as Record<string, unknown>
+    return models[descriptor.source] != null
+  },
+})
+
+/**
+ * Scroll the marked row into view, once it exists.
+ *
+ * Two ticks rather than one: the first lets the layout store's change reach the column, the second
+ * lets the panel that was just opened render its rows. A row still absent after that is one the
+ * target panel does not draw — beyond its visible cap, or in a group it folded — and the jump then
+ * leaves the mark where it is rather than scrolling to nothing.
+ */
+async function scrollToMark(panelId: string): Promise<void> {
+  await nextTick()
+  await nextTick()
+  const row = document.querySelector(`[data-panel="${panelId}"] .record-row.marked`)
+  row?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+}
 
 /**
  * Names in the narrowing this run does not have — an edited link, or one saved before the set was
@@ -82,6 +144,7 @@ watch(selectedRunId, runId => {
   if (has('broker')) reportsStore.loadBroker(runId)
   if (has('aggregated')) reportsStore.loadAggregated(runId)
   if (has('pendingOrders')) reportsStore.loadPendingOrders(runId)
+  if (has('orderHistory')) reportsStore.loadOrderHistory(runId)
   if (has('bookingPeriods')) reportsStore.loadBookingPeriods(runId)
   if (has('tradeHistory')) reportsStore.loadTradeHistory(runId)
   if (has('scenarios')) reportsStore.loadScenarios(runId)
@@ -98,7 +161,19 @@ const sources = computed(() => ({
   portfolio: portfolio.value,
   broker: broker.value,
   aggregated: aggregated.value,
-  pendingOrders: pendingOrders.value,
+  // composed rather than served: `pending-orders` says what BECAME of a scenario's orders and
+  // `order-history` carries the orders themselves. Joined on the scenario name, which both sides
+  // write from the same run unit. The history is what the panel needs — a run with a funnel and no
+  // orders has nothing to show — so the pending half may be null and the panel says so.
+  orders: orderHistory.value
+    ? {
+        pending: pendingOrders.value,
+        history: orderHistory.value,
+        // the TRADES too, and only so a link can be absent where it would lead nowhere: 55 of the
+        // measured positions opened and never closed, so they produced no trade at all
+        trades: tradeHistory.value,
+      }
+    : null,
   bookingPeriods: bookingPeriods.value,
   config: config.value,
   // composed rather than served: the roster says what was DECLARED, the portfolio what it EARNED
@@ -131,6 +206,7 @@ const SECTION_TITLES: Record<string, string> = {
   broker: 'Broker',
   aggregated: 'Run Totals',
   pendingOrders: 'Pending Orders',
+  orderHistory: 'Order History',
   bookingPeriods: 'Booking Periods',
   config: 'Configuration',
   tradeHistory: 'Trade History',
@@ -140,12 +216,15 @@ const SECTION_TITLES: Record<string, string> = {
 const missingSections = computed(() => {
   const all = { ...absences.value }
   if (summaryAbsence.value) all['runSummary'] = summaryAbsence.value
-  const byCause = new Map<string, { detail: string, sections: string[] }>()
+  // the CAUSE is carried, not only grouped by: it is what the list is keyed on below, and the
+  // detail it was keyed on before is empty whenever the backend sends no sentence — so two
+  // different causes collided on one empty key and Vue was free to reuse the wrong node
+  const byCause = new Map<string, { cause: string, detail: string, sections: string[] }>()
   for (const [slot, absence] of Object.entries(all)) {
     const title = slot === 'runSummary' ? t('Executive Summary') : t(SECTION_TITLES[slot] ?? slot)
     const seen = byCause.get(absence.cause)
     if (seen) seen.sections.push(title)
-    else byCause.set(absence.cause, { detail: absence.detail, sections: [title] })
+    else byCause.set(absence.cause, { cause: absence.cause, detail: absence.detail, sections: [title] })
   }
   return [...byCause.values()]
 })
@@ -190,7 +269,7 @@ const showPanels = computed(() =>
           {{ t('This run exists as logs only — it carries no report artifacts') }}
         </p>
         <!-- one line per REASON, never one per absent section -->
-        <p v-for="missing in missingSections" :key="missing.detail" class="notice absent">
+        <p v-for="missing in missingSections" :key="missing.cause" class="notice absent">
           <span class="mark">ⓘ</span>
           <span>
             <strong>{{ missing.sections.join(' · ') }}</strong>

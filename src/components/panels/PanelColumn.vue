@@ -59,11 +59,13 @@ const order = computed({
     <AccordionPanel
       v-for="panel in rendered"
       :key="panel.state.id"
+      :data-panel="panel.state.id"
       :title="panel.title"
       :icon="panel.icon"
       :open="panel.state.open"
       :pinned="panel.state.pinned"
       :locked="panel.state.locked"
+      :reset-on="panel.model"
       @update:open="value => layoutStore.setOpen(panel.state.id, value)"
       @toggle-pin="layoutStore.togglePin(panel.state.id)"
       @toggle-lock="layoutStore.toggleLock(panel.state.id)"

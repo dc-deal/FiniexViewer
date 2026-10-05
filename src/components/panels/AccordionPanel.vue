@@ -1,13 +1,19 @@
 <script setup lang="ts">
+import { onErrorCaptured, ref, watch } from 'vue'
 import { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent } from 'reka-ui'
 import { t } from '@/translate'
 
-defineProps<{
+const props = defineProps<{
   title: string
   icon: string
   open: boolean
   pinned: boolean
   locked: boolean
+  /**
+   * Whatever the panel is currently showing. Only its IDENTITY is used: when it changes, a panel
+   * that failed is given another go, so a defect on one run does not follow the reader to the next.
+   */
+  resetOn?: unknown
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +22,30 @@ const emit = defineEmits<{
   'toggle-lock': []
   hide: []
 }>()
+
+/**
+ * The boundary, and it exists because its absence emptied the whole workspace.
+ *
+ * Measured 2026-10-01: one field the backend serves as null on 17 of 45 runs was read as an array
+ * inside a computed. That throw killed the render effect — and Vue unwinds to the nearest component
+ * that handles it, so with nothing handling it the reader lost ELEVEN panels because one of them
+ * could not draw. A section that cannot be drawn is a finding about that section, never a reason to
+ * take the other ten away.
+ *
+ * `false` stops the error here. The stack goes to the console for whoever is debugging; the reader
+ * gets a sentence, because a stack trace on screen is not an explanation (§10).
+ */
+const failed = ref(false)
+
+onErrorCaptured((error) => {
+  failed.value = true
+  console.error(`[panel] ${props.title} could not be rendered`, error)
+  return false
+})
+
+watch(() => props.resetOn, () => {
+  failed.value = false
+})
 </script>
 
 <template>
@@ -29,6 +59,7 @@ const emit = defineEmits<{
         <span class="panel-chevron" :class="{ expanded: open }">▸</span>
         <span class="panel-icon">{{ icon }}</span>
         <span class="panel-title">{{ t(title) }}</span>
+        <span v-if="failed" class="panel-failed-mark" :title="t('This section could not be drawn')">⚠</span>
       </CollapsibleTrigger>
       <!-- controls appear on hover, and on focus so they stay keyboard-reachable -->
       <div class="panel-controls">
@@ -48,7 +79,13 @@ const emit = defineEmits<{
       </div>
     </div>
     <CollapsibleContent class="panel-content">
-      <slot />
+      <!-- the slot is not rendered again after it threw: the same input produces the same throw,
+           and a panel that re-enters its own failure loops -->
+      <p v-if="failed" class="panel-failed">
+        <span class="mark" aria-hidden="true">⚠</span>
+        <span>{{ t('This section could not be drawn. The rest of the report is unaffected.') }}</span>
+      </p>
+      <slot v-else />
     </CollapsibleContent>
   </CollapsibleRoot>
 </template>
@@ -99,6 +136,12 @@ const emit = defineEmits<{
   color: var(--color-text-secondary);
 }
 
+/* the mark rides on the TRIGGER so a folded panel still says it failed — the sentence inside is
+   out of sight there, and a reader must not have to open a panel to learn it is broken */
+.panel-failed-mark {
+  color: var(--color-error);
+}
+
 .panel-controls {
   display: flex;
   gap: var(--space-xs);
@@ -130,5 +173,15 @@ const emit = defineEmits<{
 .panel-content {
   padding: 0 var(--space-sm) var(--space-sm);
   overflow-x: auto;
+}
+
+.panel-failed {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: baseline;
+  color: var(--color-error);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  margin: 0;
 }
 </style>

@@ -91,7 +91,7 @@ test('the group heading stands on the same columns as the rows beneath it', asyn
   // `.trade-list` is the caller's class and now lands on the list's SHELL — the box the container
   // queries measure, since an element cannot query its own width. The grid is the `<ul>` inside it.
   const tracks = (await columnsOf('.trade-history .trade-list .record-list')).split(' ')
-  expect(tracks).toHaveLength(8)
+  expect(tracks).toHaveLength(9)
   expect(tracks.every(track => parseFloat(track) > 0)).toBe(true)
 
   // and the heading stands on those same tracks rather than on eight of its own
