@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useLayoutStore } from '@/stores/layout_store'
+import { useLayoutStore, pinnedBoundary } from '@/stores/layout_store'
 import { allPanels } from '@/panel_registry'
 import { t } from '@/translate'
 
@@ -16,41 +16,43 @@ const props = defineProps<{
 }>()
 
 const layoutStore = useLayoutStore()
-const { visiblePanels } = storeToRefs(layoutStore)
+const { arrangedPanels } = storeToRefs(layoutStore)
 
 /**
- * The toggles, in the READER's order and not the registry's.
+ * The toggles, in the READER's order and not the registry's — the same arrangement the column
+ * draws, turned on its side.
  *
- * The bar and the column have to agree: a reader who drags Broker to the top and then finds its
- * toggle still sixth in the bar has two orders to hold in their head, and the bar is the thing they
- * navigate by. So the arrangement decides — `visiblePanels` is exactly what `PanelColumn` renders,
- * pinned panels lifted and all.
+ * The two have to agree: a reader who drags Broker to the top and then finds its toggle still sixth
+ * has two orders to hold in one head, and the bar is the thing they navigate by. So the arrangement
+ * decides, and **a switched-off panel keeps its place in it**. That is the point of `hidden` being
+ * a flag rather than a removal: a toggle that moves when you flip it is a control that runs away
+ * from the finger, and the bar is where you go to bring something back.
  *
- * A panel that is switched OFF has no place in that arrangement (hiding removes it from the
- * column), so the hidden ones follow in the registry's order. That keeps them in one group at the
- * end, which is also where a reader looks for something they turned off.
- *
- * A new panel still needs no change here: it enters through the registry and the layout store
- * appends it.
+ * Nothing is appended here any more. Every registered panel is in the arrangement — reconciliation
+ * puts it there — so a new panel needs no change in this file either.
  */
 const toggles = computed(() => {
-  const arranged = visiblePanels.value.map(panel => panel.id)
   const byId = new Map(allPanels().map(panel => [panel.id, panel]))
-  const ordered = [
-    ...arranged.map(id => byId.get(id)).filter(panel => panel !== undefined),
-    ...allPanels().filter(panel => !arranged.includes(panel.id)),
-  ]
-  const shown = new Set(arranged)
-  return ordered.map(panel => {
+  return arrangedPanels.value.flatMap(state => {
+    const panel = byId.get(state.id)
+    if (!panel) return []
     const model = props.sources[panel.source]
-    return {
+    return [{
       ...panel,
-      shown: shown.has(panel.id),
+      shown: !state.hidden,
+      pinned: state.pinned,
       // the run carries no such section — a state of the RUN, not of the reader's arrangement
       absent: model === null || model === undefined,
-    }
+    }]
   })
 })
+
+/**
+ * Where the pinned group ends. Drawn as a LINE on the first unpinned toggle rather than as an
+ * element between two of them: the bar is a flex row and the column is a drag container, and an
+ * extra child would be one more thing to lay out here and one more thing to drag there.
+ */
+const boundary = computed(() => pinnedBoundary(arrangedPanels.value))
 
 function toggle(id: string, shown: boolean): void {
   if (shown) {
@@ -74,10 +76,10 @@ function toggle(id: string, shown: boolean): void {
     -->
     <div class="bar-toggles">
       <button
-        v-for="panel in toggles"
+        v-for="(panel, index) in toggles"
         :key="panel.id"
         class="bar-toggle"
-        :class="{ shown: panel.shown, absent: panel.absent }"
+        :class="{ shown: panel.shown, absent: panel.absent, 'group-start': index === boundary }"
         :disabled="panel.absent"
         :title="panel.absent
           ? `${t(panel.title)} — ${t('this run carries no such section')}`
@@ -119,6 +121,18 @@ function toggle(id: string, shown: boolean): void {
   flex-wrap: wrap;
   gap: var(--space-xs);
   flex: 1;
+}
+
+/*
+ * The boundary of the pinned group, as a line on the first toggle after it. The `annotation` role
+ * and DASHED, which is what that role is for: it marks a division, not something to weigh and not
+ * something that is wrong. It carries a second channel for the same reason the status colours do —
+ * the dash reads where the hue does not.
+ */
+.bar-toggle.group-start {
+  border-left: 1px dashed var(--color-annotation);
+  padding-left: var(--space-sm);
+  margin-left: var(--space-xs);
 }
 
 /* never wraps and never shrinks: two actions split over two lines look like a broken row */

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { VueDraggable } from 'vue-draggable-plus'
-import { useLayoutStore } from '@/stores/layout_store'
+import { useLayoutStore, pinnedBoundary } from '@/stores/layout_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { panelById } from '@/panel_registry'
@@ -46,6 +46,14 @@ const rendered = computed<RenderedPanel[]>(() =>
   })
 )
 
+/*
+ * Where the pinned group ends, over what this column actually DRAWS — not over the arrangement.
+ * The bar shows every panel and the column leaves out what is switched off and what this run does
+ * not carry, so the same rule lands on a different index in each. That is the only way the two
+ * orientations differ.
+ */
+const boundary = computed(() => pinnedBoundary(rendered.value.map(panel => panel.state)))
+
 // Drag writes back the dropped order; pinned panels are re-sorted to the top on read, so a drag
 // across that boundary settles at it.
 const order = computed({
@@ -57,8 +65,9 @@ const order = computed({
 <template>
   <VueDraggable v-model="order" handle=".panel-trigger" :animation="120" class="panel-column">
     <AccordionPanel
-      v-for="panel in rendered"
+      v-for="(panel, index) in rendered"
       :key="panel.state.id"
+      :class="{ 'group-start': index === boundary }"
       :data-panel="panel.state.id"
       :title="panel.title"
       :icon="panel.icon"
@@ -80,5 +89,27 @@ const order = computed({
 .panel-column {
   display: flex;
   flex-direction: column;
+}
+
+/*
+ * The boundary of the pinned group, drawn in the GAP above the first panel after it rather than on
+ * that panel's own frame — a dashed border on `.panel` would read as the panel's edge being dashed,
+ * which says something about the panel instead of about the division.
+ *
+ * The `annotation` role and dashed: it marks a division, not a warning. The dash is the second
+ * channel the role carries so the line reads where the hue does not.
+ */
+.group-start {
+  position: relative;
+  margin-top: var(--space-md);
+}
+
+.group-start::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--space-sm) * -1);
+  border-top: 1px dashed var(--color-annotation);
 }
 </style>

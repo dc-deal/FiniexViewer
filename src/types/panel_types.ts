@@ -21,6 +21,17 @@ export interface PanelState {
   open: boolean
   pinned: boolean
   locked: boolean
+  /**
+   * Switched off. A FLAG and not a removal, which is the whole reason this field exists: the app
+   * bar is the same arrangement drawn horizontally, and a toggle that moves when you flip it is a
+   * control that runs away from the finger. A hidden panel therefore keeps its place in the list;
+   * only the column declines to draw it.
+   *
+   * It also tells reconciliation apart what it could not tell apart before: a panel the user
+   * switched off is here with the flag set, and a panel that is NEW since the layout was stored is
+   * not here at all.
+   */
+  hidden: boolean
 }
 
 export interface ColumnState {
@@ -30,12 +41,6 @@ export interface ColumnState {
 
 export interface LayoutState {
   columns: ColumnState[]
-  /**
-   * Panels the user removed from the column. Recorded explicitly, because reconciliation cannot
-   * otherwise tell a panel the user hid from one that is new since the layout was stored — and
-   * it would keep resurrecting the hidden one on every load.
-   */
-  hidden: string[]
 }
 
 /** The whole persisted arrangement: named layouts plus which one is active. */
