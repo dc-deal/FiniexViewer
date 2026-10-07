@@ -238,7 +238,12 @@ const orders = computed<Figure[]>(() => {
  */
 const scope = computed<Figure[]>(() => {
   const summary = props.model
-  const figures: Figure[] = [{ label: t('Units with results'), value: `${summary.unit_count}` }]
+  // THEIR word for `unit_count` — their own executive printout says `Scenarios` for this field, and
+  // it reads with the two beside it rather than against them: Scenarios · Declared · Disabled. It
+  // also ends a double labelling, because the ACCOUNT block above names the same field `Accounts`,
+  // which is a deliberate reframing there: that block is about balances, and a backtest of N
+  // scenarios is N independent accounts with one balance each.
+  const figures: Figure[] = [{ label: t('Scenarios'), value: `${summary.unit_count}` }]
   if (summary.units_declared !== null) {
     figures.push({ label: t('Declared'), value: `${summary.units_declared}` })
   }

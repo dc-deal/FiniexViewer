@@ -105,14 +105,25 @@ function feeSplit(period: PeriodRow): string {
  * divide what is left, which is what they are good at.
  *
  * The four that go FIRST are the ratios and the two other views of the account movement, and the
- * data says why: over ten drawn periods, eight had no trades at all, so `Win Rate` and `PF` read
+ * data says why: over ten drawn periods, eight had no trades at all, so `Win rate` and `PF` read
  * `n/a` on eight of ten rows. `Opening` and `Equity band` describe the same movement that
  * `Final equity` closes, and that one is rank 1.
  */
 const columns = computed<ListColumn[]>(() => [
   { label: t('Unit'), width: 'minmax(8rem, 16fr)', rank: 1 },
   ...(props.showRun ? [{ label: t('Run'), width: 'minmax(0, 16fr)', rank: 4 } as ListColumn] : []),
-  { label: t('No'), width: 'minmax(2.5rem, 3fr)', figure: true, rank: 4 },
+  {
+    /*
+     * Not renamed, explained. Under the `Period` group heading this reads as the period's number,
+     * which is right — what their documentation warns against is reading it as a position in the
+     * list, and that warning belongs in a hint rather than in a heading nobody has room for.
+     */
+    label: t('No'),
+    hint: t('A per-bot counter that continues across restarts — not a position in this list.'),
+    width: 'minmax(2.5rem, 3fr)',
+    figure: true,
+    rank: 4,
+  },
   { label: t('Opened'), width: 'minmax(10.5rem, 17fr)', rank: 1 },
   { label: t('Closed'), width: 'minmax(10.5rem, 17fr)', rank: 2 },
   { label: t('Reason'), width: 'minmax(0, 9fr)', rank: 4 },
@@ -121,7 +132,7 @@ const columns = computed<ListColumn[]>(() => [
   // 9fr, not 7: measured at 1920 px on the DEPLOYMENT view, where `showRun` adds a fifteenth
   // column and takes share from the rest, the heading needed 68 px of a 66 px track and
   // overflowed into `PF` beside it
-  { label: t('Win Rate'), width: 'minmax(0, 9fr)', figure: true, rank: 5 },
+  { label: t('Win rate'), width: 'minmax(0, 9fr)', figure: true, rank: 5 },
   { label: t('PF'), width: 'minmax(0, 6fr)', figure: true, rank: 5 },
   { label: t('Fees'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
   { label: t('Max DD'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },

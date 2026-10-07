@@ -156,7 +156,7 @@ describe('AggregatedPortfolioPanel', () => {
   describe('what it leaves out', () => {
     it('repeats no figure the executive summary already states', () => {
       const shown = figures(mountPanel())
-      for (const label of ['Net P&L', 'Win Rate', 'Profit Factor', 'Max equity', 'Trades']) {
+      for (const label of ['Net P&L', 'Win rate', 'Profit Factor', 'Max equity', 'Trades']) {
         expect(shown[label]).toBeUndefined()
       }
     })

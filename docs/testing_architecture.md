@@ -89,6 +89,12 @@ glibc builds, so the runner connects over CDP to a browser on the developer's ma
 cannot start. CI is a separate answer (a compose service on the official image) and shares the
 same config.
 
+**A geometry assertion used by more than one spec lives in `e2e/list_geometry.ts`, and it is shared
+because it drifted.** `expectHeadingsReadable` was copied into two specs. When a column first
+declared a `hint`, one copy was relaxed from *the title equals the label* to *the title begins with
+it* and the other was not — and the stale copy failed months later, the moment a second column
+declared one. The fix had to be made twice, which is the signal: one assertion, one home.
+
 ---
 
 ## Running Tests
@@ -320,6 +326,23 @@ automated; its instrument is a browser and a deliberate look. Two scripts suppor
   as a whole capture and are worse than none. Afterwards it names any measured property that MOVED,
   because a spec that transcribes one — the position spread in `position_link.spec.ts` is the only
   one today — then needs the new number.
+- **`scripts/check_terms.py`** is the one instrument for the thing nothing else verifies: the WORD on
+  a label. The type-checker proves a field exists and the suite proves a figure is drawn; neither has
+  an opinion about what it is called. It joins every `label: t('…')` in `src/` to the field it
+  renders — adjacent in a figure block, and in a list panel by zipping the headings to the
+  `:data-rank` cells, with the rank both sides already declare as the check — then compares that
+  against `scripts/term_register.json`, which is tracked so the baseline is reviewable and holds one
+  entry per line so a changed word is a one-line diff. **The register carries the MAPPING and never
+  the MEANING:** which field a label renders, and the name of the document that defines it. What the
+  field means is fetched from the backend when it is wanted, because a stored copy of someone else's
+  glossary is wrong the day they reword it with nothing saying so. It prints nothing when everything
+  agrees, and otherwise
+  names a label the register does not know, a label whose field moved, a field gone from the
+  backend's consumer documentation, or one of its console labels that changed. **It finds change, not
+  wrongness:** that a column head reads badly is a judgement, recorded once in the register's `note`
+  column and preserved across a regeneration, because no comparison can surface something that never
+  moves. Measured 2026-10-07: a renamed field reached the screen as `undefined` and a person found it
+  days later — this is one line of output instead.
 
 The protocol itself, its freshness check and its case catalogue are internal and live outside
 `docs/`, because they name run ids on this machine and change with the archive rather than with the

@@ -92,7 +92,7 @@ function details(period: PeriodRow): { label: string, value: string, tone?: stri
       value: amount(period.net_pnl, period.currency),
       tone: signClass(period.net_pnl),
     },
-    { label: t('Win Rate'), value: percentOrNa(period.win_rate, period.trade_count) },
+    { label: t('Win rate'), value: percentOrNa(period.win_rate, period.trade_count) },
     { label: t('PF'), value: numberOrNa(period.profit_factor, period.trade_count) },
     { label: t('Fees'), value: amount(period.total_fees, period.currency) },
     { label: t('Max DD'), value: magnitude(period.max_drawdown, period.currency) },

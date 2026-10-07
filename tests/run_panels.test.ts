@@ -131,7 +131,7 @@ describe('ExecutivePanel', () => {
     const wrapper = mount(ExecutivePanel, { props: { model: older } })
 
     // it renders, and it says only what the artifact actually recorded
-    expect(wrapper.text()).toContain('Units with results')
+    expect(wrapper.text()).toContain('Scenarios')
     expect(wrapper.text()).not.toContain('Declared')
     expect(wrapper.text()).not.toContain('Produced nothing')
   })

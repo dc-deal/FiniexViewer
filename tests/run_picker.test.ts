@@ -374,7 +374,7 @@ describe('RunPicker', () => {
         git_commit: '7faec171',
         size_bytes: 23878038,
       })]))
-      expect(rows['Configuration']).toBe('ETHUSD_blocks.json')
+      expect(rows['Config file']).toBe('ETHUSD_blocks.json')
       expect(rows['Config id']).toBe(`${'c'.repeat(12)}…`)
       expect(rows['Version']).toBe('1.4.0 · 7faec171')
       expect(rows['Size']).toBe('23.9 MB')

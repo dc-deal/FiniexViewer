@@ -204,7 +204,7 @@ const columns: ListColumn[] = [
   { label: t('Ticks'), width: 'minmax(0, 9fr)', figure: true, rank: 3 },
   { label: t('Took'), width: 'minmax(0, 7fr)', figure: true, rank: 5 },
   { label: t('Trades'), width: 'minmax(0, 10fr)', figure: true, rank: 2 },
-  { label: t('Win Rate'), width: 'minmax(0, 7fr)', figure: true, rank: 4 },
+  { label: t('Win rate'), width: 'minmax(0, 7fr)', figure: true, rank: 4 },
   { label: t('Net P&L'), width: 'minmax(0, 10fr)', figure: true, rank: 1 },
   { label: t('PF'), width: 'minmax(0, 5fr)', figure: true, rank: 4 },
   // the three the portfolio panel carried and nothing else did — per UNIT, not per run

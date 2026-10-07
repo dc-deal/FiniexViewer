@@ -238,7 +238,10 @@ function card(run: RunInfo): ListCard {
     details.push({ label: run.parent_kind ?? t('Parent'), value: run.parent_id })
   }
   details.push(
-    { label: t('Configuration'), value: run.config_snapshot },
+    // a FILE NAME, which is what the backend's own entry says it is — and the configuration ITSELF
+    // is a different field served on another route. `Config file` beside `Config id` below says
+    // which of the two this is; `Configuration` claimed the document rather than its name.
+    { label: t('Config file'), value: run.config_snapshot },
     { label: t('Config id'), value: shortHash(run.config_id), title: run.config_id },
     { label: t('Version'), value: `${run.app_version} · ${run.git_commit}` },
     { label: t('Reporting'), value: run.reporting },
