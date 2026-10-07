@@ -51,6 +51,7 @@ const UNDEFINED_VALUES: RunSummaryCurrency = {
 function summaryWith(row: RunSummaryCurrency, overrides: Partial<RunSummary> = {}): RunSummary {
   return {
     run_id: '20260615_130000',
+    keys: { currencies: ['currency'], units_absent: ['name'] },
     currencies: [row],
     orders_sent: 1,
     orders_executed: 1,

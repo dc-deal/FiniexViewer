@@ -53,6 +53,7 @@ const RUNS: RunInfo[] = [
 
 const SUMMARY: RunSummary = {
   run_id: '20260615_130000',
+  keys: { currencies: ['currency'], units_absent: ['name'] },
   currencies: [{
     ...(runSummaryFixture.currencies[0] as RunSummaryCurrency),
     currency: 'USD',

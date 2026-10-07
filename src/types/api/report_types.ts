@@ -240,6 +240,8 @@ export interface UnitAbsence {
 
 export interface RunSummary {
   run_id: string                  // the run this body was built from — assert it, never assume it
+  /** One declared key per list in this response, not one for the response. */
+  keys: { currencies: string[], units_absent: string[] }
   currencies: RunSummaryCurrency[]
   orders_sent: number
   orders_executed: number
@@ -515,6 +517,12 @@ export interface PortfolioAggregateRow {
 /** Response type for GET /api/v1/reports/runs/{run_id}/portfolio */
 export interface PortfolioReport {
   run_id: string
+  /**
+   * One declared key per list in this response. It is what makes the roster's join on `unit.name`
+   * a documented foreign key rather than a guess — stated on 46 of 46 responses and, until
+   * 2026-10-05, dropped at this boundary where every other report kept it.
+   */
+  keys: { units: string[], aggregates: string[] }
   units: PortfolioUnitRow[]
   aggregates: PortfolioAggregateRow[]
 }

@@ -80,8 +80,36 @@ export function workersOf(strategy: StrategyConfig): WorkerRow[] {
 
 /** A scenario that carries its own version of at least one cascading block. */
 export interface ScenarioOverride {
-  name: string
+  /** What the document calls it, or null where it names itself not at all. Never an ordinal. */
+  name: string | null
   keys: string[]
+}
+
+/**
+ * What a scenario calls itself, under either spelling the archive holds.
+ *
+ * Both are permanent, and the backend states that rather than us inferring it —
+ * `api_contract_log.md:287`, under *Version 12 — 2026-09-28*: *"a configuration recorded from this
+ * version on names a scenario `scenario_name` and a profile `profile_name`. A run recorded before
+ * keeps the snapshot it recorded."* The entry immediately after draws the contrast: the
+ * booking-period rename WAS migrated into the stored runs, *"the one rename here that reaches
+ * back"*. This one deliberately does not, so a stored config keeps its spelling for good.
+ *
+ * Reading both is therefore MIRRORING an artifact's own values, not a compatibility layer over two
+ * contract versions (CLAUDE.md §21): the response shape is one, and what differs is inside the
+ * opaque document it carries.
+ *
+ * Measured 2026-10-05 over all 48 stored runs, agreeing with their date to the day:
+ * `scenario_name` on 363 of 420 scenario objects — every run from 2026-09-29 on — and `name` on the
+ * other 57, every run up to 2026-09-27. Never both, never neither.
+ *
+ * Null where neither is there. Deliberately NOT an ordinal: the previous reading fell back to the
+ * drawing position and printed an invented counter on 363 of 420 scenarios — `#10` where the
+ * document says `EURGBP_balanced_10`.
+ */
+function scenarioName(scenario: Record<string, unknown>): string | null {
+  const named = scenario['scenario_name'] ?? scenario['name']
+  return typeof named === 'string' && named !== '' ? named : null
 }
 
 /**
@@ -92,12 +120,12 @@ export interface ScenarioOverride {
 export function scenarioOverrides(config: Record<string, unknown>): ScenarioOverride[] {
   const scenarios = config['scenarios']
   if (!Array.isArray(scenarios)) return []
-  return scenarios.flatMap((entry, index) => {
+  return scenarios.flatMap((entry) => {
     const scenario = asRecord(entry)
     if (!scenario) return []
     const keys = CASCADE_KEYS.filter(key => isFilled(scenario[key]))
     if (!keys.length) return []
-    return [{ name: String(scenario['name'] ?? `#${index + 1}`), keys }]
+    return [{ name: scenarioName(scenario), keys }]
   })
 }
 

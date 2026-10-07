@@ -1274,11 +1274,30 @@ heading says so rather than drawing a funnel of zeroes, which would claim a meas
 Measured 2026-10-01 over 202 units across 20 runs, one unit **resolved 527 orders and filled none of
 them** — and every other panel of that run showed a normal-looking result.
 
-**The five counts are a funnel the backend states in full:**
-`resolved = filled + rejected + timed_out + force_closed`, which held on all 202 units. Nothing is
-computed from the identity — it is asserted in the contract test, which is where a change to the
-arithmetic should be noticed. `timed_out` and `force_closed` read zero on all 202, so the heading
-prints them only when they are not zero.
+**The funnel's arithmetic, and the counter that does not mean what it says.** The backend stated it
+on 2026-10-05, after we measured it and could not reconcile it with the rows:
+
+```
+total_resolved = the open/pending rows + the closes the ALGO sent itself
+                 (a close triggered by a stop or a take-profit never enters the in-flight queue)
+total_filled   = total_resolved − total_rejected − total_timed_out − total_force_closed
+```
+
+Both hold on 222 of 222 scenario units measured. Nothing is computed from them here.
+
+**`total_filled` is drawn as `arrived`, which is THEIR word.** In a backtest the counter counts every
+order that arrived after its modelled delay, so one that merely began resting is counted and did not
+fill — `architecture_execution_layer.md:202`: *"the simulation resolves it when it ARRIVES … This is
+a known defect, not a design."* Our own `BTCUSD_blocks_02` became their worked example. Measured over
+the same 222 units, **23 report `filled ≥ 1` with no `open/executed` row at all**, and only 3 of
+those are the expired case their paragraph describes — the other 20 are collected as an open question.
+The caveat rides in the figure's own `title` rather than as a sentence on the page: a reader meets it
+where the number is, and a healthy funnel prints nothing extra.
+
+`arrived` is right for everything this panel can draw, because `units` is empty on an AutoTrader run
+and a session's counter means reported FILLS. The word splits by pipeline the day sessions carry
+units. `timed_out` and `force_closed` read zero on every unit measured, so the heading prints them
+only when they are not zero.
 
 **A ROW IS A LIFECYCLE RECORD, NOT AN ORDER**, and that decides the shape. One order appears as
 several rows: `pending` on entry, `executed` on the fill, a `close` row when its position closes,
@@ -1322,7 +1341,7 @@ stamp is `event_time` and says when THIS ROW's event happened — the fill on `e
 on `rejected`, the expiry on `expired`; it was `execution_time` until contract 20 and was renamed
 because that name means a DURATION everywhere else in the API.
 
-**The orders open at data end are shown in the heading and are NOT added to the funnel.** In a
+**The orders RESTING at data end are shown in the heading and are NOT added to the funnel.** In a
 backtest the simulation records every such order as `expired` in the same step and deliberately
 leaves it in the active lists — one order, two views of one instant, and it is already a row below.
 It is stated because it is a property of the SCENARIO that no single row carries. In an AutoTrader
@@ -1438,6 +1457,19 @@ blanket reading is invalid instead of computing a new figure.
 **One route, two shapes.** An autotrader profile carries `strategy_config` at the top; a scenario
 set carries `global.strategy_config` plus a `scenarios` list. That difference is contained in
 `config_shape.ts` rather than travelling through the components as a union.
+
+**A scenario names itself under either of two spellings, and both are permanent.** Contract 12
+(2026-09-28) renamed the scenario's identity inside the configuration document from `name` to
+`scenario_name`, and the backend states that a run recorded before it *"keeps the snapshot it
+recorded"* — unlike the booking-period rename of that same version, which WAS migrated into the
+stored runs and is called *"the one rename here that reaches back"*. The archive therefore holds
+both for good: measured over all 48 stored runs, `scenario_name` on 363 of 420 scenario objects and
+`name` on the other 57, never both and never neither. Reading both is mirroring an artifact's own
+values rather than a compatibility layer, because the response SHAPE is one and the difference lives
+inside the opaque document it carries. Where neither is present the name reads as ABSENT — the
+override list used to fall back to the drawing position and printed `#10` where the document said
+`EURGBP_balanced_10`, an invented counter of exactly the kind the deployment session index taught
+this project not to render.
 
 **`config` is deliberately not mirrored as a type**, and that is a considered exception to the
 typing rule: the document is written by the OPERATOR, its shape differs per pipeline, and it grows

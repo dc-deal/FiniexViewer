@@ -557,6 +557,59 @@ describe('TradeHistoryPanel', () => {
    * trades can lead to the same orders — correct, not a collision: "what happened on the way to
    * this position" has one answer whichever close the reader came from.
    */
+  /**
+   * The partial is the COMMON case — 952 of the 1,556 trades in the archive belong to a position
+   * closed in parts — and until this mark the only sign was one click down in the fills. The
+   * operator met it as `0.02` on a position they opened at `0.10` and could not tell why.
+   *
+   * It is READ, never counted: `entry_executions[0].shared_by` is the backend's own statement, and
+   * it equalled the number of trades of that position on 1,556 of 1,556 measured. Counting the rows
+   * would derive what they already state — and would be wrong the moment a narrowing or the visible
+   * cap hides one of them.
+   */
+  describe('a position closed in parts', () => {
+    function shared(times: number, overrides: Partial<TradeRow> = {}): TradeRow {
+      const row = trade()
+      return {
+        ...row,
+        ...overrides,
+        entry_executions: [{ ...(row.entry_executions[0] as TradeExecution), volume: 0.1, shared_by: times }],
+      }
+    }
+
+    it('says on the row that the position was closed in parts', () => {
+      const wrapper = mountPanel(report({ trades: [shared(3, { lots: 0.02 })] }))
+      expect(wrapper.find('.in-parts').text()).toBe('of 3')
+    })
+
+    it('says nothing where the position was closed whole', () => {
+      const wrapper = mountPanel(report({ trades: [shared(1)] }))
+      expect(wrapper.find('.in-parts').exists()).toBe(false)
+    })
+
+    /** The three served figures, in the backend's own wording, one hover away. */
+    it('carries what this trade took of the whole, on the hover', () => {
+      const wrapper = mountPanel(report({ trades: [shared(3, { lots: 0.02 })] }))
+      const title = wrapper.find('.trade-position').attributes('title') ?? ''
+      expect(title).toContain('closed in parts')
+      expect(title).toContain('0.02')
+      expect(title).toContain('0.1')
+      expect(title).toContain('shared by 3 trades')
+    })
+
+    /** Two partial closes of one position differ in their exit, not in their size — they look alike
+     *  because they ARE alike, and the mark is what explains the pair. */
+    it('marks every trade of the position, not just the first', () => {
+      const wrapper = mountPanel(report({
+        trades: [
+          shared(2, { lots: 0.02, exit_tick_index: 1 }),
+          shared(2, { lots: 0.08, exit_tick_index: 2 }),
+        ],
+      }))
+      expect(wrapper.findAll('.in-parts').map(node => node.text())).toEqual(['of 2', 'of 2'])
+    })
+  })
+
   describe('the way back to the orders', () => {
     function mountLinked(
       history: TradeHistoryReport,

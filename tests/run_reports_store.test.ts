@@ -54,6 +54,7 @@ const REPORT: WarningsErrorsReport = {
 
 const PORTFOLIO: PortfolioReport = {
   run_id: '20260615_130000',
+  keys: { units: ['name'], aggregates: ['currency'] },
   units: [],
   aggregates: [{
     ...(portfolioFixture.aggregates[0] as PortfolioAggregateRow),

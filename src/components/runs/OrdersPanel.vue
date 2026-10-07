@@ -27,6 +27,22 @@ import { plural, t } from '@/translate'
  *
  * A row is a LIFECYCLE RECORD, not an order: one order appears as several rows. That is why the
  * list is two levels and not three — there is no field identifying an order until testingide#557.
+ *
+ * **The funnel's arithmetic, stated by the backend on 2026-10-05 after we could not reconcile it:**
+ * `total_resolved` is the open/pending rows PLUS the closes the algo sent itself — a close triggered
+ * by a stop or a take-profit never enters the in-flight queue — and
+ * `filled = resolved − rejected − timed_out − force_closed`. Both identities hold on 222 of 222
+ * units measured. Nothing is computed from them here.
+ *
+ * **`total_filled` is drawn as ARRIVED, and that is THEIR word.** In a backtest the counter counts
+ * every order that arrived after its modelled delay, so one that merely began resting is counted
+ * and did not fill — `architecture_execution_layer.md:202`: *"the simulation resolves it when it
+ * ARRIVES … This is a known defect, not a design."* Measured: 23 of those 222 units report
+ * `filled ≥ 1` with no `open/executed` row anywhere.
+ *
+ * `arrived` is right for everything this panel can draw, because `units` is empty on an AutoTrader
+ * run and a session's counter means reported FILLS. When sessions begin to carry units the word
+ * splits by pipeline — do not fold it back into one.
  */
 const props = defineProps<{
   model: {
@@ -135,14 +151,23 @@ function funnelOf(scenario: string): PendingOrderUnit | null {
 }
 
 /**
- * How many of a scenario's orders were still OPEN when its data ended.
+ * How many of a scenario's orders were still RESTING when its data ended.
  *
- * NOT added to the funnel: in a backtest the simulation records every such order as `expired` in
- * the same step and deliberately leaves it in these lists, so the order is already counted in the
- * rows below. It is shown because the heading is about the SCENARIO, and "one order never resolved"
- * is a property of the scenario that no single row states.
+ * The word went round once and this is the settled end of it. It was `resting`; testingide said on
+ * 2026-10-01 that *"'Resting' is the wrong word for a backtest"* and suggested `open at data end`,
+ * so it became that; their endpoint table of 2026-10-05 then read *"so they are not open"*, which
+ * contradicted the suggestion. Asked, they called the second sentence badly put and settled it:
+ * *"resting at data end, then expired"* (`api_server_architecture.md:340`). RESTING is their
+ * glossary word for the state — an order the venue or the simulator has accepted, waiting for its
+ * price — and at data end these orders were in it. Do not rename it a fourth time without a sentence
+ * from them that is newer than that one.
+ *
+ * NOT added to the funnel: the same step records every such order as `expired` in `order-history`
+ * and deliberately leaves it in these lists, so it is already counted in the rows below. It is shown
+ * because the heading is about the SCENARIO, and "one order never resolved" is a property of the
+ * scenario that no single row states.
  */
-function openAtEnd(unit: PendingOrderUnit): number {
+function restingAtEnd(unit: PendingOrderUnit): number {
   return unit.active_limit_orders.length + unit.active_stop_orders.length
 }
 
@@ -302,7 +327,10 @@ function toggleGroup(scenario: string): void {
           <span class="group-meta">
             <template v-if="funnelOf(group.key)">
               {{ t('resolved') }} {{ funnelOf(group.key)!.total_resolved }}
-              · {{ t('filled') }} {{ funnelOf(group.key)!.total_filled }}
+              <!-- ARRIVED, not filled. Their word and their caveat, both verified verbatim —
+                   api_server_architecture.md:340 and architecture_execution_layer.md:190 / :202. -->
+              · <span :title="t('In a backtest this counts every order that ARRIVED after its modelled delay — so a limit, stop or stop-limit order that only began resting, and may later expire, is counted here and did not fill. The backend calls this a known defect rather than a design; a future contract renames these counters.')"
+                >{{ t('arrived') }} {{ funnelOf(group.key)!.total_filled }}</span>
               · <span :class="{ negative: funnelOf(group.key)!.total_rejected > 0 }"
                 >{{ t('rejected') }} {{ funnelOf(group.key)!.total_rejected }}</span>
               <template v-if="funnelOf(group.key)!.total_timed_out">
@@ -312,8 +340,8 @@ function toggleGroup(scenario: string): void {
                 · {{ t('force closed') }} {{ funnelOf(group.key)!.total_force_closed }}
               </template>
               · <span :title="latencySpread(funnelOf(group.key)!)">{{ latency(funnelOf(group.key)!) }}</span>
-              <template v-if="openAtEnd(funnelOf(group.key)!)">
-                · {{ t('open at data end') }} {{ openAtEnd(funnelOf(group.key)!) }}
+              <template v-if="restingAtEnd(funnelOf(group.key)!)">
+                · {{ t('resting at data end') }} {{ restingAtEnd(funnelOf(group.key)!) }}
               </template>
             </template>
             <!-- not a funnel of zeroes: this scenario never entered the pending pipeline -->

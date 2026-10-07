@@ -287,6 +287,37 @@ function shareOf(trade: TradeRow, fill: FillRow): string {
     + `${t('shared by')} ${plural(shared, t('trade'), t('trades'))}`
 }
 
+/**
+ * In how many TRADES this position was closed — one where it was closed whole.
+ *
+ * `entry_executions[0].shared_by` is the backend's own statement, and their endpoint table says why
+ * it can be READ rather than counted: *"how many trade rows of its unit carry that fill, counted
+ * over the whole unit when the report is built, so it holds on a filtered list"*
+ * (`api_server_architecture.md:336`, contract 17). Counting our own rows would derive what they
+ * already state, and would be wrong the moment a narrowing or the visible cap hides one.
+ *
+ * Measured over all 1,556 trades in the archive it equals that position's trade count exactly —
+ * 1,556 of 1,556 — with both execution lists 1-element throughout. **`[0]` is only safe while that
+ * holds:** their cardinality table has N-element cases, dormant until #143 and #342.
+ *
+ * It matters because the partial is the COMMON case, not an edge: 952 of those 1,556 trades belong
+ * to a position closed in parts. A row reading `0.02` where the reader opened `0.10` is the question
+ * this answers, and until now the answer was one click down in the fills.
+ */
+function closedInParts(trade: TradeRow): number {
+  return trade.entry_executions[0]?.shared_by ?? 1
+}
+
+/** The whole sentence, for the hover — the same three served figures the fill line uses. */
+function partsOf(trade: TradeRow): string {
+  const parts = closedInParts(trade)
+  if (parts <= 1) return ''
+  const whole = trade.entry_executions[0]?.volume
+  return `${t('This position was closed in parts')} — `
+    + `${trade.lots} ${t('of')} ${whole} ${t('here')}, `
+    + `${t('shared by')} ${plural(parts, t('trade'), t('trades'))}.`
+}
+
 /** Seconds as the operator reads a holding period. */
 function held(seconds: number): string {
   if (seconds < 90) return `${seconds.toFixed(0)} s`
@@ -425,7 +456,7 @@ function card(trade: TradeRow): ListCard {
       <!-- the rank on every cell is the one its own column declares, and each of these lists
            asserts the two agree: the list owns the tracks, this template owns the cells -->
       <template #default="{ row: trade }">
-        <span :data-rank="3" class="trade-position" :title="trade.position_id">
+        <span :data-rank="3" class="trade-position" :title="partsOf(trade) || trade.position_id">
           <!-- a link only where there is an Orders panel to land in -->
           <button
             v-if="link.canJumpTo('orders')"
@@ -435,6 +466,10 @@ function card(trade: TradeRow): ListCard {
             @click.stop="jumpToOrders(trade)"
           >{{ trade.position_id }} ↗</button>
           <template v-else>{{ trade.position_id }}</template>
+          <!-- the partial, said on the ROW. 952 of 1,556 trades are one, and the reader who sees
+               0.02 where they opened 0.10 had to open the fills to find out why -->
+          <span v-if="closedInParts(trade) > 1" class="in-parts"
+            >{{ t('of') }} {{ closedInParts(trade) }}</span>
         </span>
         <span :data-rank="1" :title="trade.symbol">{{ trade.symbol }}</span>
         <span :data-rank="2">{{ trade.direction }}</span>
@@ -531,6 +566,13 @@ function card(trade: TradeRow): ListCard {
 .to-orders:hover,
 .to-orders:focus-visible {
   text-decoration: underline;
+}
+
+/* the partial marker rides with the position, not in the figure column — a figure column is
+   right-aligned digits, and prose in it breaks the one property the whole list is built on */
+.in-parts {
+  color: var(--color-text-secondary);
+  margin-left: var(--space-xs);
 }
 
 .trade-position {

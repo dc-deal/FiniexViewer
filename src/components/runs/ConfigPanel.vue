@@ -84,8 +84,11 @@ function scalar(value: unknown): string {
                   t('scenarios with their own configuration')) }}
       </summary>
       <ul class="override-list">
-        <li v-for="entry in overrides" :key="entry.name">
-          <span class="scenario">{{ entry.name }}</span>
+        <!-- keyed by drawing position, because a scenario that names itself not at all has no
+             identity to key on and two of them would collide. The list is derived whole from one
+             immutable document and never reordered, so the position is stable. -->
+        <li v-for="(entry, index) in overrides" :key="index">
+          <span class="scenario">{{ entry.name ?? '—' }}</span>
           <span class="keys">{{ entry.keys.join(' · ') }}</span>
         </li>
       </ul>

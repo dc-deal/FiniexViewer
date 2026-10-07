@@ -72,6 +72,13 @@ const EXPECTED_KEYS = {
   // one field is enough: a unit name IS a scenario name, and a set with a repeated name is refused
   pendingUnits: ['name'],
   brokers: ['broker_type'],
+  // the portfolio's two lists — one row per scenario, one per account currency. `units` is what
+  // the roster joins on, which is why it is a documented foreign key rather than a guess.
+  portfolioUnits: ['name'],
+  portfolioAggregates: ['currency'],
+  // the run summary's two: its per-currency KPIs, and the units it declared and produced nothing for
+  summaryCurrencies: ['currency'],
+  summaryUnitsAbsent: ['name'],
 }
 
 describe('api contract', () => {
@@ -177,6 +184,8 @@ describe('api contract', () => {
     expect(typed.currencies.length).toBeGreaterThan(0)
     // the field that was renamed, read explicitly so the reason for this test stays visible
     expect(typed.currencies[0]?.account_max_drawdown).toBeGreaterThanOrEqual(0)
+    expect(typed.keys.currencies).toEqual(EXPECTED_KEYS.summaryCurrencies)
+    expect(typed.keys.units_absent).toEqual(EXPECTED_KEYS.summaryUnitsAbsent)
   })
 
   it('the portfolio still satisfies the mirrored shape, per unit and in the totals', () => {
@@ -185,6 +194,8 @@ describe('api contract', () => {
     expect(typed.aggregates.length).toBeGreaterThan(0)
     expect(typed.units[0]?.account_max_drawdown).toBeGreaterThanOrEqual(0)
     expect(typed.aggregates[0]?.account_max_drawdown).toBeGreaterThanOrEqual(0)
+    expect(typed.keys.units).toEqual(EXPECTED_KEYS.portfolioUnits)
+    expect(typed.keys.aggregates).toEqual(EXPECTED_KEYS.portfolioAggregates)
   })
 
   /**

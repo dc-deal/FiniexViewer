@@ -136,7 +136,7 @@ function earning(name: string, overrides: Partial<PortfolioUnitRow> = {}): Portf
 }
 
 function portfolio(units: PortfolioUnitRow[]): PortfolioReport {
-  return { run_id: 'r', units, aggregates: [] }
+  return { run_id: 'r', keys: { units: ['name'], aggregates: ['currency'] }, units, aggregates: [] }
 }
 
 function rowNames(wrapper: VueWrapper): string[] {

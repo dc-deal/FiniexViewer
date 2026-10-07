@@ -134,9 +134,29 @@ describe('OrdersPanel', () => {
         [unit({ total_resolved: 1, total_filled: 1 })],
       ))
       expect(heading(wrapper)).toContain('resolved 1')
-      expect(heading(wrapper)).toContain('filled 1')
+      // ARRIVED, not filled — their word, because the counter counts every order that arrived
+      // after its modelled delay and one that merely began resting is counted and did not fill
+      expect(heading(wrapper)).toContain('arrived 1')
+      expect(heading(wrapper)).not.toContain('filled')
       // three records of ONE order — said as records, and apart from the funnel
       expect(wrapper.find('.group-count').text()).toBe('3 records')
+    })
+
+    /**
+     * The counter does NOT mean filled, and the backend says so in its own docs since 2026-10-05:
+     * *"the simulation resolves it when it ARRIVES … This is a known defect, not a design"*
+     * (`architecture_execution_layer.md:202`). Measured over 222 scenario units, 23 report
+     * `total_filled >= 1` with no `open/executed` row anywhere — our own `BTCUSD_blocks_02` became
+     * their worked example. The caveat rides on the figure rather than in a sentence on the page.
+     */
+    it('carries the backend caveat on the figure, not beside it', () => {
+      const wrapper = mountPanel(model([order()], [unit({ total_resolved: 1, total_filled: 1 })]))
+      const caveat = wrapper.findAll('.group-meta span')
+        .map(node => node.attributes('title') ?? '')
+        .find(title => title.includes('ARRIVED'))
+      expect(caveat).toBeDefined()
+      expect(caveat).toContain('only began resting')
+      expect(caveat).toContain('known defect')
     })
 
     it('marks a rejection in the heading and marks nothing where there was none', () => {
@@ -167,15 +187,20 @@ describe('OrdersPanel', () => {
      * and is already a row below. It is shown because it is a property of the SCENARIO that no
      * single row states.
      */
-    it('states the orders open at data end, and only where there are any', () => {
+    /**
+     * RESTING is their glossary word for the state, and the word went round once: `resting` ->
+     * `open at data end` (their suggestion, 2026-10-01) -> back, after they called their own
+     * "so they are not open" badly put and settled on *"resting at data end, then expired"*.
+     */
+    it('states the orders resting at data end, and only where there are any', () => {
       const resting = mountPanel(model([order()], [unit({
         active_limit_orders: [{
           order_id: 'pos_ethusd_1', order_type: 'limit', direction: 'long', lots: 0.01,
           entry_price: 1, limit_price: 1, stop_loss: 0, take_profit: 2,
         }],
       })]))
-      expect(heading(resting)).toContain('open at data end 1')
-      expect(heading(mountPanel(model([order()])))).not.toContain('open at data end')
+      expect(heading(resting)).toContain('resting at data end 1')
+      expect(heading(mountPanel(model([order()])))).not.toContain('resting at data end')
     })
 
     /** Nothing timed is an absence; `0 ms` there would claim a measurement. */

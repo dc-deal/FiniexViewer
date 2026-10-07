@@ -10,7 +10,7 @@ import type { Page, Route } from '@playwright/test'
  * out inside a spec is a SECOND mirror of the HTTP contract, and a second mirror goes stale in
  * silence. It has already happened once at the unit level — a field changed shape while every
  * fixture held the empty value, so a green suite proved nothing. These bodies are the same
- * captures the unit suite and the contract test read, taken under `X-Api-Contract: 11`.
+ * captures the unit suite and the contract test read, under the contract their manifest records.
  *
  * Read from disk rather than imported: Node 20 requires an import attribute for JSON in ESM, and
  * the alternative was bending the app's module settings to suit a test helper.
@@ -69,10 +69,36 @@ function absent(cause: string, detail: string) {
   }
 }
 
-const CONTRACT = { 'X-Api-Contract': '11' }
+/**
+ * The header the backend stamps every response with, read from the captures' own manifest.
+ *
+ * Written out here it was the kind of number that stays at 11 while the fixtures move to 21, and
+ * that is what it did. Nothing reads the header today, so it cost nothing — but the file states
+ * that none of its bodies is hand-written, and a hand-written version number is the same promise
+ * broken in one line.
+ */
+const CONTRACT = {
+  'X-Api-Contract': String((fixture('capture_manifest.json') as { contract: number }).contract),
+}
+
+/**
+ * One section served with a single field of the WRONG SHAPE, so the panel reading it throws while
+ * rendering.
+ *
+ * Fault injection, not a second mirror: the body is the real capture with one field overwritten,
+ * so everything else about it stays coherent and only the named read fails. The shape is wrong
+ * rather than null on purpose — a null passes a nullish guard, and what the boundary exists for is
+ * the case the mirror did not predict.
+ */
+interface ApiMockOptions {
+  corrupt?: { section: string, field: string }
+}
+
+/** A number where a list belongs: `.filter` on it throws, which is how the original defect landed. */
+const WRONG_SHAPE = 0
 
 /** Serves every `/api/v1/**` call from the captures. Anything unmapped fails loudly, never silently. */
-export async function mockApi(page: Page): Promise<void> {
+export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise<void> {
   await page.route('**/api/v1/**', async (route: Route) => {
     const path = new URL(route.request().url()).pathname
 
@@ -95,7 +121,11 @@ export async function mockApi(page: Page): Promise<void> {
       if (runId !== FIXTURE_RUN) {
         return route.fulfill(absent('run_not_found', `Only ${FIXTURE_RUN} is captured`))
       }
-      return route.fulfill({ json: fixture(file), headers: CONTRACT })
+      const body = fixture(file) as Record<string, unknown>
+      if (options.corrupt && options.corrupt.section === section) {
+        body[options.corrupt.field] = WRONG_SHAPE
+      }
+      return route.fulfill({ json: body, headers: CONTRACT })
     }
 
     /*
