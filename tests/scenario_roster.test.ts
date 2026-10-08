@@ -468,6 +468,41 @@ describe('ScenarioRosterPanel', () => {
       expect(rows['Spread']).toBe('2.74 USD')
     })
 
+    /**
+     * What the venue CHARGED, where the `Fees` column cannot show it.
+     *
+     * `total_fees` is attributed like `net_pnl` — the trades this unit CLOSED — while
+     * `fees_charged` counts every order, so a unit holding an open position was charged more than
+     * the column says. Measured 2026-10-08 on a spot unit: the column read `0.00` while the venue
+     * had taken 2.35 in taker fees, which reads as *this scenario was free*.
+     *
+     * Asserted in both directions, because the figure appearing on every row would be noise: on a
+     * forex run the two agree and the card has nothing to add.
+     */
+    it('names what the venue charged where it exceeds what the closed trades cost', () => {
+      const cardOf = (unit: PortfolioUnitRow) => {
+        const card = mountPanel(view(ROSTER, portfolio([unit])))
+          .findAllComponents(HoverCard)[0]!
+        return Object.fromEntries(
+          (card.props('details') as { label: string, value: string }[])
+            .map(pair => [pair.label, pair.value])
+        )
+      }
+
+      const differs = cardOf(earning('winner', {
+        total_trades: 3, total_fees: 0, fees_charged: 2.36, taker_fee: 2.36,
+      }))
+      expect(differs['Charged']).toBe('2.36 USD')
+
+      // and absent where they agree: a figure on every row would be noise, and on a forex run the
+      // two are equal. The captured fixture is itself the differing case, which is why this half
+      // needs a unit built for it.
+      const agrees = cardOf(earning('winner', {
+        total_trades: 3, total_fees: 1.5, fees_charged: 1.5, taker_fee: 0,
+      }))
+      expect(agrees).not.toHaveProperty('Charged')
+    })
+
     /** A scenario the portfolio has no row for has no account to describe. */
     it('offers no card where the portfolio has no row for the unit', () => {
       const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { total_trades: 1 })])))

@@ -22,6 +22,14 @@ own content about our own label.
 A document NAME is recorded and a line number is not, deliberately: a renamed document fails loudly
 and a shifted line fails silently.
 
+**The register is keyed on the label TEXT, not on label plus component — decided 2026-10-08 and
+left as it is.** Where the same word appears in two components for two fields, one entry survives
+and the walk order decides which; both carry a note saying so. Measured that day: 2 of 146 labels
+collide (`Started` → `start_time` here and `started` there, and `Max DD`). A key of
+`Label@Component` would settle them and turn a linguistic key into a technical one — every recorded
+judgement would then hang on a file name and break on the next rename. Two documented collisions are
+the cheaper side of that trade.
+
 **A `note` is a judgement and the tool never writes one.** JSON carries no comments, so the five
 words it may begin with are listed here instead, and a regeneration preserves whatever is there:
 
@@ -62,10 +70,14 @@ THEIR_CONSOLE = os.path.join('..', 'FiniexTestingIDE', 'python', 'framework', 'r
 HISTORY_ONLY = 'contract-log'
 
 LABEL = re.compile(r"label:\s*t\('([^']*)'\)")
+# the line that closes one entry of a figure array — see `declared_window`
+ENTRY_END = re.compile(r'\s*\}[,)]?\s*$')
 RANK_ON_COLUMN = re.compile(r'\brank:\s*(\d+)')
 CELL = re.compile(r':data-rank="(\d+)"')
 INLINE_LABEL = re.compile(r"\{\{\s*t\('([^']*)'\)\s*\}\}")
 MUSTACHE = re.compile(r'\{\{(.*?)\}\}')
+TEMPLATE_LABEL = re.compile(r"\$\{\s*t\('([^']*)'\)\s*\}")
+TEMPLATE_EXPR = re.compile(r'\$\{(.*?)\}')
 READING = re.compile(r'(?:[A-Za-z_][A-Za-z0-9_]*(?:\([^()]*\))?!?\.)+([a-z][a-z0-9_]{2,})')
 HOLDERS = (r'row|unit|summary|model|order|trade|period|entry|session|deployment|bar|scenario|'
            r'headline|aggregate|funnel|info|fold|item|broker|total|combination|run|block|card|'
@@ -73,6 +85,8 @@ HOLDERS = (r'row|unit|summary|model|order|trade|period|entry|session|deployment|
 FIELD = re.compile(r'\b(?:' + HOLDERS + r')\.([a-z][a-z0-9_]*)')
 SKIP = ('value', 'label', 'currency', 'length', 'key', 'rows', 'open', 'map', 'filter', 'find',
         'join')
+# Above this a display string is a sentence rather than a label — see `labelled_readings`.
+LABEL_WORD_CAP = 5
 
 CONSOLE_LABEL = re.compile(r'["\']\s*([A-Z][A-Za-z0-9 /&%().\'-]{1,30}?):\s*(?:\{|\s*["\'])')
 
@@ -84,26 +98,36 @@ def fields_in(text):
     return found
 
 
-def inline_pairs(line):
-    """(label, field) where a label in TEMPLATE text stands directly beside the value it names.
+def labelled_readings(text, label, expression):
+    """(label, field) where a label stands directly beside the value it names.
 
-    `label: t('…')` is a declaration and names its field in the lines below it. A funnel heading
-    says the same thing in another syntax — `{{ t('resolved') }} {{ f(x)!.total_resolved }}` — and
-    was invisible here until contract 23 renamed all five of those fields and this check stayed
-    silent through it.
+    `label: t('…')` is a declaration and names its field in the lines below it. The same statement
+    is made in two other syntaxes, and both were invisible here:
+
+      `{{ t('resolved') }} {{ f(x)!.total_resolved }}`   in a template
+      `${t('commission')} ${row.commission_cost}`        in a template literal in the script
+
+    The first cost us every rename contract 23 brought to the Orders funnel — five fields, and this
+    check stayed silent. The second was found when this very file's author added such a string and
+    noticed the register could not see it.
 
     The adjacency IS the rule, and it is deliberately strict: only the readings between this label
     and the NEXT one belong to it. A label with no reading after it is prose or a section heading
-    rather than a word naming a field — measured over `src/`, 124 of 143 inline labels are exactly
+    rather than a word naming a field — measured over `src/`, 124 of 143 template labels are exactly
     that, and registering them would assert pairs nobody can defend.
     """
     found = []
-    for match in INLINE_LABEL.finditer(line):
-        tail = line[match.end():]
-        following = INLINE_LABEL.search(tail)
+    for match in label.finditer(text):
+        # a SENTENCE is not a label, and the reading after it is whatever the sentence introduces.
+        # Measured 2026-10-08 over the 167 register labels: the longest is FOUR words, so the cap
+        # rejects nothing real and removes the worst class of false pair.
+        if len(match.group(1).split()) > LABEL_WORD_CAP:
+            continue
+        tail = text[match.end():]
+        following = label.search(tail)
         window = tail[:following.start()] if following else tail
-        for expression in MUSTACHE.findall(window):
-            names = [name for name in READING.findall(expression) if name not in SKIP]
+        for found_expression in expression.findall(window):
+            names = [name for name in READING.findall(found_expression) if name not in SKIP]
             if names:
                 found.append((match.group(1), names[0]))
                 break
@@ -115,15 +139,46 @@ def read_lines(path):
         return handle.read().split('\n')
 
 
+def declared_window(lines, index, after):
+    """The text a DECLARED label may name a field in: its own entry and nothing past it.
+
+    It stops at the next `label:` or at the line that closes this object entry, because a figure
+    array puts the next label's fields three lines away and a four-line window simply took them.
+    Measured 2026-10-08: the wide window gave 78 of 146 labels a second field and almost all of
+    them belonged to the NEXT label — `Net P&L` collected `profit_factor, total_trades, win_rate`,
+    which are the three figures below it. The narrow window leaves 44, and those are the labels
+    that genuinely render several: `Max drawdown` with its percentage, `Maker / taker`,
+    `Long / short`, `Executed` with `orders_sent`.
+
+    It also corrected one primary field: `Started (UTC)` had been paired with `ticks_from`, which
+    sits on the same line and is a different figure entirely.
+    """
+    window = [lines[index][after:]]
+    for line in lines[index + 1:index + 8]:
+        if LABEL.search(line):
+            break
+        window.append(line)
+        if ENTRY_END.match(line):
+            break
+    return ' '.join(window)
+
+
 def our_pairs():
-    """(label, field) for every display label that names a served field.
+    """(label, fields) for every display label that names served fields.
 
     Three shapes, and the second is why the `rank` is read: a ListColumn array holds the headings
     and the row template holds the cells, far apart but in the same order. Both sides declare the
     rank of each column, and a unit test already holds the two equal — so the positional zip
     verifies itself, and a disagreement is dropped rather than paired wrongly.
 
-    The third is `inline_pairs` — a label written in template text rather than declared.
+    The third is `labelled_readings` — a label written in template text or in a template literal
+    rather than declared. It is read LAST, so both declaration shapes outrank it.
+
+    **The value is a LIST, because a label may name several fields and `Executed` is why.** It
+    renders `orders_executed / orders_sent`; only the first was recorded, contract 23 removed the
+    second, and the check stayed silent while `Executed 22/undefined` sat on screen for four days.
+    A single string could not have carried it, and a "primary plus secondary" split would have
+    invented a rank that `Max drawdown` and its percentage do not have.
     """
     pairs = {}
     unresolved = []
@@ -135,13 +190,17 @@ def our_pairs():
             lines = read_lines(path)
             columns, cells, inline = [], [], []
             for index, line in enumerate(lines):
-                inline += inline_pairs(line)
+                inline += labelled_readings(line, INLINE_LABEL, MUSTACHE)
+                # a template literal wraps across the concatenation, so the reading often sits on
+                # the next line; the window is two lines and `setdefault` absorbs the overlap
+                inline += labelled_readings(' '.join(lines[index:index + 2]),
+                                            TEMPLATE_LABEL, TEMPLATE_EXPR)
                 match = LABEL.search(line)
                 if match:
-                    found = fields_in(' '.join(lines[index:index + 4]))
+                    found = fields_in(declared_window(lines, index, match.end()))
                     rank = RANK_ON_COLUMN.search(' '.join(lines[index:index + 3]))
                     if found:
-                        pairs.setdefault(match.group(1), found[0])
+                        pairs.setdefault(match.group(1), found)
                     else:
                         columns.append((match.group(1), rank.group(1) if rank else '-'))
                 if CELL.search(line):
@@ -150,7 +209,7 @@ def our_pairs():
             if columns and len(columns) == len(cells):
                 for (label, rank), (cell_rank, found) in zip(columns, cells):
                     if rank == cell_rank and found:
-                        pairs.setdefault(label, found[0])
+                        pairs.setdefault(label, found)
                     else:
                         unresolved.append((path, label))
             else:
@@ -158,7 +217,7 @@ def our_pairs():
             # last, so both declaration shapes outrank it: a rank-verified column pair is a
             # stronger statement than two interpolations that happen to sit side by side
             for label, field in inline:
-                pairs.setdefault(label, field)
+                pairs.setdefault(label, [field])
     return pairs, unresolved
 
 
@@ -205,6 +264,18 @@ def their_console():
     return labels
 
 
+def recorded(entry):
+    """The fields an entry names, as a LIST whichever form it is written in.
+
+    One field is a bare string in the file and several are a list — see `baseline`. Every reader
+    goes through here so the union stays a detail of the FILE and not of the logic.
+    """
+    field = entry.get('field')
+    if not field:
+        return []
+    return [field] if isinstance(field, str) else list(field)
+
+
 def load_register():
     if not os.path.exists(REGISTER):
         return None
@@ -244,9 +315,13 @@ def baseline():
             entries[label] = {'field': None, 'doc': None, 'their': None,
                               'ours': before.get('ours'), 'note': note}
             continue
+        # ONE field stays a bare string and several become a list. A union in a data file is worth
+        # the small irregularity: writing every entry as a list would have moved all 146 lines of a
+        # file the operator reads line by line, to say nothing new about the 102 that name one field.
         entries[label] = {
-            'field': field,
-            'doc': docs.get(field),
+            'field': field[0] if len(field) == 1 else field,
+            # the document of the LEADING field — the one the label is about
+            'doc': docs.get(field[0]),
             'their': label if label in console else None,
             'ours': before.get('ours'),
             'note': note,
@@ -287,28 +362,33 @@ def check():
     for label, field in sorted(pairs.items()):
         known = register.get(label)
         if known is None:
-            findings.append(f'  NEW      "{label}" renders {field} and the register does not know it')
-        elif known.get('field') and known['field'] != field:
-            findings.append(f'  MOVED    "{label}" now renders {field}, '
-                            f'the register says {known["field"]}')
+            findings.append(f'  NEW      "{label}" renders {", ".join(field)} '
+                            'and the register does not know it')
+        elif recorded(known) and recorded(known) != field:
+            findings.append(f'  MOVED    "{label}" now renders {", ".join(field)}, '
+                            f'the register says {", ".join(recorded(known))}')
 
     if docs is None:
         findings.append(f'  SKIPPED  {THEIR_DOCS} is absent — run sync_ide_docs.sh; '
                         'the documentation half was NOT checked')
     else:
         for label, known in sorted(register.items()):
-            field = known.get('field')
             note = known.get('note') or ''
             # `undocumented` is a note somebody wrote after looking: the field is served and their
             # consumer layer does not describe it, which is a question for the backend rather than
             # a finding to repeat on every run. It stays visible in the register, not in the output.
-            if not field or note.startswith(('unresolved', 'undocumented')):
+            if note.startswith(('unresolved', 'undocumented')):
                 continue
-            # The changelog is not evidence of existence, and this is the whole reason GONE could
-            # never fire: contract 23 removed `orders_sent` and `total_resolved`, and the document
-            # announcing their removal still NAMES them. A field only the log knows is gone.
-            if docs.get(field) in (None, HISTORY_ONLY):
-                findings.append(f'  GONE     {field} ("{label}") is in no consumer document any more')
+            # EVERY field the label renders, not only the leading one — `Executed` renders
+            # `orders_executed / orders_sent` and it was the SECOND that contract 23 removed.
+            for field in recorded(known):
+                # The changelog is not evidence of existence, and this is the whole reason GONE
+                # could never fire: contract 23 removed `orders_sent` and `total_resolved`, and the
+                # document announcing their removal still NAMES them. A field only the log knows
+                # is gone.
+                if docs.get(field) in (None, HISTORY_ONLY):
+                    findings.append(f'  GONE     {field} ("{label}") is in no consumer document '
+                                    'any more')
 
     if console is None:
         findings.append(f'  SKIPPED  {THEIR_CONSOLE} is absent — the sibling checkout is not '
