@@ -286,7 +286,7 @@ describe('BookingPeriodTable', () => {
       period({ unit_name: 'a', net_pnl: -1.75 }),
       period({ unit_name: 'b', net_pnl: 4.2 }),
     ])
-    expect(wrapper.find('.periods-summary').text()).toContain('figures in USD')
+    expect(wrapper.find('.periods-summary').text()).toContain('figures in EUR')
     const cells = wrapper.find('.record-row').findAll(':scope > span').map(node => node.text())
     expect(cells).toContain('-1.75')
     expect(cells.some(cell => cell.includes('USD'))).toBe(false)

@@ -28,21 +28,25 @@ import { plural, t } from '@/translate'
  * A row is a LIFECYCLE RECORD, not an order: one order appears as several rows. That is why the
  * list is two levels and not three — there is no field identifying an order until testingide#557.
  *
- * **The funnel's arithmetic, stated by the backend on 2026-10-05 after we could not reconcile it:**
- * `total_resolved` is the open/pending rows PLUS the closes the algo sent itself — a close triggered
- * by a stop or a take-profit never enters the in-flight queue — and
- * `filled = resolved − rejected − timed_out − force_closed`. Both identities hold on 222 of 222
- * units measured. Nothing is computed from them here.
+ * **The funnel's arithmetic, and contract 23 made it simpler than it was:**
+ * `submitted = accepted + rejected + never_confirmed + expired`, measured 2026-10-08 on **all 230
+ * units across 44 runs** without exception. Nothing is computed from it here; it is stated so a
+ * reader can see that 527 submitted against 0 accepted means 527 refused.
  *
- * **`total_filled` is drawn as ARRIVED, and that is THEIR word.** In a backtest the counter counts
- * every order that arrived after its modelled delay, so one that merely began resting is counted
- * and did not fill — `architecture_execution_layer.md:202`: *"the simulation resolves it when it
- * ARRIVES … This is a known defect, not a design."* Measured: 23 of those 222 units report
- * `filled ≥ 1` with no `open/executed` row anywhere.
+ * **Every word in this heading changed with that contract, and one of them because the old one
+ * lied.** `total_filled` counted an order that had merely ARRIVED — a limit or stop order which
+ * began resting and might never fill — and the backend called that a defect of its own rather than
+ * a design. They fixed it and named the field `total_accepted`. The long caveat this comment used
+ * to carry, and the tooltip beside the word, are gone WITH THEIR SUBJECT: a paraphrase of someone
+ * else's bug outlives the bug and then describes nothing.
  *
- * `arrived` is right for everything this panel can draw, because `units` is empty on an AutoTrader
- * run and a session's counter means reported FILLS. When sessions begin to carry units the word
- * splits by pipeline — do not fold it back into one.
+ * **A resting order is not a fifth bucket.** It is already counted as `accepted`, so showing it
+ * beside the funnel adds information rather than double-counting — which was the open question
+ * until it could be measured: exactly one unit in the archive holds one, and `total_expired` is 0
+ * there as everywhere.
+ *
+ * An AutoTrader session now HAS a unit row (contract 23), where it had none — so the funnel is no
+ * longer a backtest-only heading.
  */
 const props = defineProps<{
   model: {
@@ -114,9 +118,12 @@ const shown = computed(() =>
 const narrowed = computed(() => narrowing.units.value.length > 0)
 
 /**
- * Seven columns, ranked 7 → 6 → 5 → 3. What a narrow panel keeps is WHICH order, what happened to
+ * Eight columns, ranked 8 → 7 → 5 → 3. What a narrow panel keeps is WHICH order, what happened to
  * it and when — the three that make an outcome traceable. The scenario is not a column: it is the
  * group heading.
+ *
+ * `Type` joined `Action` at rank 3 because the two are one thought — what was asked for, and as
+ * what kind of order — so a panel that gives one of them up gives up the other.
  */
 const columns: ListColumn[] = [
   {
@@ -131,6 +138,19 @@ const columns: ListColumn[] = [
     rank: 1,
   },
   { label: t('Action'), width: 'minmax(0, 7fr)', rank: 3 },
+  {
+    /*
+     * WHICH KIND of order was asked for, new in contract 23 — and this row is the only place
+     * says so, because the two lists on a pending unit hold the orders still RESTING rather than
+     * the ones that resolved. It earns its column on an AutoTrader run: measured 2026-10-08 on the
+     * field study `20261007_234345_ea606e02`, 66 limit, 17 market and 3 stop, where a simulation
+     * reads `market` on all 102 rows of the capture.
+     */
+    label: t('Type'),
+    hint: t('What kind of order was asked for: market, limit, stop or stop limit. A simulation places market orders throughout, so this column has something to say on an AutoTrader run.'),
+    width: 'minmax(0, 7fr)',
+    rank: 3,
+  },
   { label: t('Status'), width: 'minmax(0, 9fr)', rank: 1 },
   { label: t('Direction'), width: 'minmax(0, 8fr)', rank: 4 },
   { label: t('Lots'), width: 'minmax(0, 8fr)', figure: true, rank: 2 },
@@ -141,10 +161,13 @@ const columns: ListColumn[] = [
 /**
  * The funnel of the scenario a group belongs to, or null.
  *
- * Null is ORDINARY and has two causes the backend named: a scenario whose every order was refused
- * before the queue never enters the pending pipeline at all, and an AutoTrader run serves no units
- * because that section is filled by the simulation only. The heading says so rather than drawing a
- * funnel of zeroes, which would claim a measurement nobody made.
+ * Null is ORDINARY, and the cause the backend named is a scenario whose every order was refused
+ * before the queue: it never enters the pending pipeline, so there is nothing to report. The
+ * heading says so rather than drawing a funnel of zeroes, which would claim a measurement nobody
+ * made.
+ *
+ * A SECOND cause stood here and was wrong - that an AutoTrader run serves no units at all.
+ * Measured 2026-10-08: both stored AutoTrader runs carry one, the field study with 46 submitted.
  */
 function funnelOf(scenario: string): PendingOrderUnit | null {
   return props.model.pending?.units.find(unit => unit.name === scenario) ?? null
@@ -171,15 +194,23 @@ function restingAtEnd(unit: PendingOrderUnit): number {
   return unit.active_limit_orders.length + unit.active_stop_orders.length
 }
 
-function latency(unit: PendingOrderUnit): string {
-  if (!unit.latency_count) return t('n/a')
-  return `${unit.avg_latency_ms.toFixed(0)} ms`
+/**
+ * How long an order was IN FLIGHT — the word contract 23 replaced `latency` with, and the better
+ * one: it is the window between leaving the queue and being answered, not a measurement of a
+ * network.
+ */
+function inFlight(unit: PendingOrderUnit): string {
+  // the WORD travels with the figure, like every other item in the heading. It did not, and the
+  // heading read `submitted 46 - accepted 46 - rejected 0 - 1438 ms`: a reader meeting a bare
+  // duration there cannot tell what was timed. Found on screen 2026-10-08.
+  if (!unit.in_flight_count) return `${t('in flight')} ${t('n/a')}`
+  return `${t('in flight')} ${unit.avg_in_flight_ms.toFixed(0)} ms`
 }
 
-function latencySpread(unit: PendingOrderUnit): string {
-  if (!unit.latency_count) return t('No resolution was timed.')
-  return `${unit.min_latency_ms.toFixed(0)}–${unit.max_latency_ms.toFixed(0)} ms `
-    + `${t('over')} ${plural(unit.latency_count, t('resolution'), t('resolutions'))}`
+function inFlightSpread(unit: PendingOrderUnit): string {
+  if (!unit.in_flight_count) return t('Nothing was timed in flight.')
+  return `${unit.min_in_flight_ms.toFixed(0)}–${unit.max_in_flight_ms.toFixed(0)} ms `
+    + `${t('over')} ${plural(unit.in_flight_count, t('order'), t('orders'))}`
 }
 
 /**
@@ -325,21 +356,25 @@ function toggleGroup(scenario: string): void {
           <span class="group-marker">{{ group.open ? '▾' : '▸' }}</span>
           {{ group.key }}
           <span class="group-meta">
+            <!--
+              The funnel in the backend's own words since contract 23, and the caveat that used to
+              hang on `arrived` is GONE WITH ITS SUBJECT: it explained that the old `total_filled`
+              counted an order which had merely begun resting, which the backend called a defect of
+              its own. They fixed it and named the field `total_accepted`. Keeping the sentence
+              would describe a behaviour nobody has any more.
+            -->
             <template v-if="funnelOf(group.key)">
-              {{ t('resolved') }} {{ funnelOf(group.key)!.total_resolved }}
-              <!-- ARRIVED, not filled. Their word and their caveat, both verified verbatim —
-                   api_server_architecture.md:340 and architecture_execution_layer.md:190 / :202. -->
-              · <span :title="t('In a backtest this counts every order that ARRIVED after its modelled delay — so a limit, stop or stop-limit order that only began resting, and may later expire, is counted here and did not fill. The backend calls this a known defect rather than a design; a future contract renames these counters.')"
-                >{{ t('arrived') }} {{ funnelOf(group.key)!.total_filled }}</span>
+              {{ t('submitted') }} {{ funnelOf(group.key)!.total_submitted }}
+              · {{ t('accepted') }} {{ funnelOf(group.key)!.total_accepted }}
               · <span :class="{ negative: funnelOf(group.key)!.total_rejected > 0 }"
                 >{{ t('rejected') }} {{ funnelOf(group.key)!.total_rejected }}</span>
-              <template v-if="funnelOf(group.key)!.total_timed_out">
-                · {{ t('timed out') }} {{ funnelOf(group.key)!.total_timed_out }}
+              <template v-if="funnelOf(group.key)!.total_never_confirmed">
+                · {{ t('never confirmed') }} {{ funnelOf(group.key)!.total_never_confirmed }}
               </template>
-              <template v-if="funnelOf(group.key)!.total_force_closed">
-                · {{ t('force closed') }} {{ funnelOf(group.key)!.total_force_closed }}
+              <template v-if="funnelOf(group.key)!.total_expired">
+                · {{ t('expired') }} {{ funnelOf(group.key)!.total_expired }}
               </template>
-              · <span :title="latencySpread(funnelOf(group.key)!)">{{ latency(funnelOf(group.key)!) }}</span>
+              · <span :title="inFlightSpread(funnelOf(group.key)!)">{{ inFlight(funnelOf(group.key)!) }}</span>
               <template v-if="restingAtEnd(funnelOf(group.key)!)">
                 · {{ t('resting at data end') }} {{ restingAtEnd(funnelOf(group.key)!) }}
               </template>
@@ -370,6 +405,7 @@ function toggleGroup(scenario: string): void {
           <span v-else class="carries-on" aria-hidden="true">└─</span>
         </span>
         <span :data-rank="3">{{ word(order.action) }}</span>
+        <span :data-rank="3">{{ word(order.order_type) }}</span>
         <span :data-rank="1" :class="statusTone(order)">{{ order.status }}</span>
         <span :data-rank="4">{{ word(order.direction) }}</span>
         <span :data-rank="2" class="figure-cell">{{ figure(order.executed_lots ?? order.requested_lots) }}</span>

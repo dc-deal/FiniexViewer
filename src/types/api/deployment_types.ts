@@ -35,6 +35,13 @@ export interface DeploymentRow {
   longest_gap_hours: number | null
   // true when the sessions were not all produced by one configuration
   changed: boolean
+  /**
+   * Where this deployment's orders went, as the DISTINCT values of its sessions (contract 23):
+   * `["venue"]` is real money throughout, `["simulated"]` a rehearsal throughout, and BOTH is a
+   * deployment that mixed the two — which is also `changed`, and the one case the advisory fires
+   * on by itself.
+   */
+  orders_to: string[]
 }
 
 /** Response type for GET /api/v1/deployments */
@@ -77,6 +84,11 @@ export interface DeploymentSessionRow {
    */
   strategy_changed: boolean
   operation_changed: boolean
+  // where THIS session's orders went, and whether that differs from the session before it.
+  // `orders_to_changed` is false where either session did not record it - not recorded is not
+  // a change (contract 23).
+  orders_to: string | null
+  orders_to_changed: boolean
 }
 
 /**
@@ -90,6 +102,12 @@ export interface DeploymentAdvisory {
   operation_stands: number
   // null where no idle stretch could be measured — an absence, not a zero
   longest_gap_hours: number | null
+  /**
+   * The distinct `orders_to` of the sessions (contract 23), and the advisory **fires on a mix
+   * alone**: a deployment that was part rehearsal and part real money is one series only in the
+   * ledger's bookkeeping, never in what its figures mean.
+   */
+  orders_to: string[]
 }
 
 /** Response type for GET /api/v1/deployments/{deployment_id} */

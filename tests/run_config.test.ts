@@ -125,7 +125,7 @@ describe('config_shape', () => {
   // two maps over the same keys; shown apart, the reader does the join by hand
   it('joins an instance to its type and its parameters', () => {
     const rows = workersOf(strategyOf(LIVE.config)!)
-    const rsi = rows.find(row => row.instance === 'rsi_fast')
+    const rsi = rows.find(row => row.instance === 'pipeline_rsi')
     expect(rsi?.type).toBe('CORE/rsi')
     expect(rsi?.parameters).toHaveProperty('periods')
   })
@@ -161,7 +161,7 @@ describe('ConfigPanel', () => {
 
   it('shows each worker instance with its type and its tuning on one row', () => {
     const text = mountPanel(LIVE).text()
-    expect(text).toContain('rsi_fast')
+    expect(text).toContain('pipeline_rsi')
     expect(text).toContain('CORE/rsi')
   })
 
@@ -189,7 +189,7 @@ describe('ConfigPanel', () => {
    */
   it('keeps a long worker type reachable', () => {
     const row = mountPanel(LIVE).findAll('.record-row')
-      .find(node => node.text().includes('rsi_fast'))!
+      .find(node => node.text().includes('pipeline_rsi'))!
     const cells = row.findAll(':scope > span')
     expect(cells[1]?.attributes('title')).toBe('CORE/rsi')
     expect(cells[2]?.attributes('title')).toContain('periods')

@@ -50,6 +50,7 @@ const BASE: RunInfo = {
   data_windows: null,
   size_bytes: 1,
   artifacts: [],
+  stream_files: [],
 }
 
 function run(overrides: Partial<RunInfo> = {}): RunInfo {
@@ -333,6 +334,48 @@ describe('RunPicker', () => {
       ])
       const labels = wrapper.findAll('.facet-trigger').map(node => node.text())
       expect(labels.some(label => label.includes('Outcome'))).toBe(true)
+    })
+
+    /**
+     * ONE axis with three values, replacing an `Outcome` facet and a `Trouble` facet.
+     *
+     * The second could not do its job: it offered `error` from `error_count`, which is 0 on all 46
+     * stored runs including the nine graded `failed` — one of them reporting four errors, because
+     * `errors[]` holds scenarios that failed VALIDATION and never ran while `error_count` counts
+     * runtime errors. A run with errors is a run graded `failed`, so the grade already is that
+     * filter.
+     *
+     * Each value is a mechanical reading: a grade that is not `success` appears under the backend's
+     * OWN word, and the two success states split on whether a warning was counted.
+     */
+    it('splits the outcome into clean, flagged and the grade itself', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'quiet', run_outcome: 'success', warning_count: 0 }),
+        run({ run_id: 'noisy', run_outcome: 'success', warning_count: 3 }),
+        run({ run_id: 'broken', run_outcome: 'failed', warning_count: 2 }),
+        // a grade of theirs we have never seen keeps its own word rather than becoming `failed`
+        run({ run_id: 'partial', run_outcome: 'finished_with_errors', warning_count: 0 }),
+        // nobody graded it, so it answers no question about the outcome at all
+        run({ run_id: 'ungraded', run_outcome: null, warning_count: 9 }),
+      ])
+      // the options are TELEPORTED to the document, so they are read there and not in the wrapper
+      await wrapper.findAll('.facet-trigger')
+        .find(node => node.text().includes('Outcome'))!
+        .trigger('click')
+      await flushPromises()
+      const offered = [...document.querySelectorAll<HTMLElement>('.facet-option')]
+        .map(node => node.textContent ?? '')
+
+      expect(offered.some(text => text.includes('clean'))).toBe(true)
+      expect(offered.some(text => text.includes('flagged'))).toBe(true)
+      expect(offered.some(text => text.includes('failed'))).toBe(true)
+      expect(offered.some(text => text.includes('finished_with_errors'))).toBe(true)
+      // `ungraded` states no outcome, so it is offered as nothing to pick
+      expect(offered).toHaveLength(4)
+      // the two values the old pair offered and this one must not: `warning` as an axis of its own,
+      // and `error`, which no stored run could ever produce
+      expect(offered.some(text => text.trim() === 'warning')).toBe(false)
+      expect(offered.some(text => text.trim() === 'error')).toBe(false)
     })
   })
   /**

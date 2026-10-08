@@ -35,6 +35,9 @@ const BASE: DeploymentRow = {
   // null where no idle stretch EXISTS — one session has nothing between its sessions
   longest_gap_hours: null,
   changed: false,
+  // the DISTINCT values of its sessions (contract 23): one entry is a deployment that stayed on
+  // one side, both would be a rehearsal mixed with real money and `changed` by itself
+  orders_to: ['simulated'],
 }
 
 function deployment(overrides: Partial<DeploymentRow> = {}): DeploymentRow {
@@ -236,18 +239,60 @@ describe('DeploymentPicker', () => {
     })
 
     /**
-     * And the bar drops one that would change nothing — a facet offering a single value every row
-     * already carries is a control that does nothing while looking like it works. One currency
-     * across the whole ledger is exactly that case, and it is the ordinary one here: all three
-     * stored deployments book in USD.
+     * And the bar DISABLES one that would change nothing rather than dropping it — a facet offering
+     * a single value every row already carries is a control that does nothing while looking like it
+     * works. One currency across the whole ledger is exactly that case, and it is the ordinary one
+     * here: all three stored deployments book in USD.
+     *
+     * It used to be dropped, and that was worse. Whether a facet can narrow depends on what is
+     * already PICKED, so the set of chips changed on every click and the bar reflowed under an open
+     * dropdown — measured on screen 2026-10-08, the operator clicked a value and the menu they were
+     * reading moved sideways. The bar keeps its shape now, which is the same decision `AppBar.vue`
+     * makes for a section a run does not have.
      */
-    it('offers no currency facet where every deployment books in one', () => {
+    it('disables the currency facet where every deployment books in one, and keeps it in place', () => {
       const oneCurrency = [
         deployment({ deployment_id: 'a', bot: 'alpha_bot' }),
         deployment({ deployment_id: 'b', bot: 'beta_bot' }),
       ]
-      const labels = mountPicker(oneCurrency).findAll('.facet-trigger').map(node => node.text())
-      expect(labels.some(label => label.includes('Currency'))).toBe(false)
+      const triggers = mountPicker(oneCurrency).findAll('.facet-trigger')
+      const currency = triggers.find(node => node.text().includes('Currency'))
+      expect(currency, 'the facet keeps its slot in the bar').toBeDefined()
+      expect(currency!.attributes('disabled')).toBeDefined()
+      // and the one that CAN narrow is left alone
+      const bot = triggers.find(node => node.text().includes('Bot'))
+      expect(bot!.attributes('disabled')).toBeUndefined()
+    })
+
+    /**
+     * And a chip does not RESIZE when it is used, which is the same complaint with a second cause.
+     * The count badge used to be drawn only once something was picked, so the chip grew at that
+     * moment and every chip to its right slid along the bar — reported on screen 2026-10-08, one
+     * day after the dropped facet above.
+     *
+     * jsdom computes no layout, so no width can be measured here. What it CAN hold is the
+     * invariant that produces the width: every chip carries the slot whether or not it holds a
+     * number, and the stylesheet gives that slot a fixed width. The browser measures the rest —
+     * `run_selection.spec.ts` compares the bar's geometry across a pick.
+     */
+    it('keeps the count slot on every chip, picked or not', async () => {
+      const wrapper = mountPicker(two())
+      const chips = wrapper.findAll('.facet-trigger').length
+      expect(wrapper.findAll('.facet-badge')).toHaveLength(chips)
+      expect(wrapper.findAll('.facet-badge').every(node => node.text() === '')).toBe(true)
+
+      // the options are teleported to the document, so the pick happens there
+      await wrapper.findAll('.facet-trigger')
+        .find(node => node.text().includes('Bot'))!
+        .trigger('click')
+      await flushPromises()
+      document.querySelectorAll<HTMLElement>('.facet-option')[0]!.click()
+      await flushPromises()
+
+      expect(wrapper.findAll('.facet-badge')).toHaveLength(chips)
+      // exactly one chip now counts, and the others still hold their empty slot
+      expect(wrapper.findAll('.facet-badge').map(node => node.text()).filter(Boolean))
+        .toEqual(['1'])
     })
 
     /**

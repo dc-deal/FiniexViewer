@@ -486,7 +486,7 @@ describe('TradeHistoryPanel', () => {
       expect(fills.findAll('.record-row')).toHaveLength(2)
       expect(fills.text()).toContain('in')
       expect(fills.text()).toContain('out')
-      expect(fills.text()).toContain('SYNTH-pos_ethusd_1-000001')
+      expect(fills.text()).toContain('SYNTH-pos_eurgbp_1-000001')
 
       await tradeRows(wrapper)[0]!.trigger('click')
       expect(wrapper.find('.fill-list').exists()).toBe(false)
@@ -592,12 +592,18 @@ describe('TradeHistoryPanel', () => {
    * cap hides one of them.
    */
   describe('a position closed in parts', () => {
+    /**
+     * `position_closes` and `entry_lots` on the ROW since contract 23, which is why this builder
+     * no longer reaches into `entry_executions[0]`. The old `[0]` was safe only while every
+     * execution list was 1-element; the fields say the same thing without indexing a list.
+     */
     function shared(times: number, overrides: Partial<TradeRow> = {}): TradeRow {
-      const row = trade()
       return {
-        ...row,
+        ...trade(),
+        position_closes: times,
+        entry_lots: 0.1,
+        close_type: times > 1 ? 'partial' : 'full',
         ...overrides,
-        entry_executions: [{ ...(row.entry_executions[0] as TradeExecution), volume: 0.1, shared_by: times }],
       }
     }
 
@@ -618,7 +624,9 @@ describe('TradeHistoryPanel', () => {
       expect(title).toContain('closed in parts')
       expect(title).toContain('0.02')
       expect(title).toContain('0.1')
-      expect(title).toContain('shared by 3 trades')
+      expect(title).toContain('over 3 records')
+      // and WHICH record ended the chain, which `shared_by` could never say
+      expect(title).toContain('it stayed open after this')
     })
 
     /** Two partial closes of one position differ in their exit, not in their size — they look alike

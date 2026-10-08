@@ -17,6 +17,7 @@ vi.mock('@/api/api_client', () => ({
 function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' | 'name'>): RunInfo {
   return {
     artifacts: ['run_summary.json'],
+    stream_files: [],
     has_reports: true,
     // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
     results: null,
@@ -72,7 +73,13 @@ const SUMMARY: RunSummary = {
     r_win_count: 13,
     r_loss_count: 8,
   }],
-  orders_sent: 25,
+  orders_submitted: 25,
+  orders_adopted: 0,
+  orders_denied: 0,
+  orders_cancelled: 0,
+  orders_expired: 0,
+  orders_undelivered: 0,
+  orders_unaccounted: 0,
   orders_executed: 21,
   orders_rejected: 4,
   sl_tp_triggered: 6,

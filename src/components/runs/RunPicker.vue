@@ -46,19 +46,39 @@ const facets: FacetDefinition<RunInfo>[] = [
   { id: 'reporting', label: 'Reporting', valuesOf: row => stated(row.reporting) },
   { id: 'origin', label: 'Origin', valuesOf: row => stated(row.parent_kind) },
   { id: 'version', label: 'Version', valuesOf: row => stated(row.app_version) },
-  // contract 15. A run the ledger holds nothing for states no outcome, and an absence is not a
-  // category — `stated` drops it rather than offering "unknown" as something to pick.
-  { id: 'outcome', label: 'Outcome', valuesOf: row => stated(row.run_outcome) },
+  /**
+   * ONE axis where there were two, and it answers the question a reader actually arrives with:
+   * *what ran clean, what ran but was flagged, what failed.*
+   *
+   * It replaces an `Outcome` facet over `run_outcome` and a `Trouble` facet over the two counts.
+   * The second could not do its job: `Trouble` offered `error` and `warning`, and **`error_count`
+   * is 0 on all 46 stored runs** — including the nine graded `failed`, one of which reports FOUR
+   * errors. The counts measure different things: `warnings-errors.errors[]` holds scenarios that
+   * failed VALIDATION and therefore never ran, while `error_count` counts runtime errors, so a
+   * validation failure logs none. A facet offering a value it can never produce is the instrument
+   * CLAUDE.md §24 warns about — worse than none, because it is believed.
+   *
+   * And the `error` value was redundant besides: **a run with errors is a run the backend graded
+   * `failed`**, so `run_outcome` already is the error filter.
+   *
+   * Three values, and each is a mechanical reading rather than a judgement:
+   *   - not `success` → the backend's OWN grade, by its own word, so `finished_with_errors` appears
+   *     as itself rather than folded into `failed` (§15)
+   *   - `success` with a warning counted → `flagged`
+   *   - `success` with none → `clean`
+   *
+   * `clean` and `flagged` are OURS, and deliberately not their words: calling the first `success`
+   * would put a count of 21 under a chip whose column says `success` on 37 rows, which is the worse
+   * confusion. Contract 15 — a run the ledger holds nothing for states no outcome, and an absence is
+   * not a category, so it is offered as nothing to pick.
+   */
   {
-    id: 'trouble',
-    label: 'Trouble',
-    // PRESENCE of a stated count, never a threshold of our own: null means nobody counted, which
-    // is not the same as zero and claims nothing either way
+    id: 'outcome',
+    label: 'Outcome',
     valuesOf: row => {
-      const marks: string[] = []
-      if (row.error_count) marks.push('error')
-      if (row.warning_count) marks.push('warning')
-      return marks
+      if (!row.run_outcome) return []
+      if (row.run_outcome !== 'success') return [row.run_outcome]
+      return [row.warning_count ? 'flagged' : 'clean']
     },
   },
 ]

@@ -61,6 +61,14 @@ export interface RunInfo {
    * says which sections exist and costs no request: it rides on the index row.
    */
   artifacts: string[]
+  /**
+   * The STREAMS a run produced, kept OUT of `artifacts` on purpose (contract 23) — their own
+   * documentation is explicit about it: *"Ask for a stream whenever it is listed, whatever
+   * `artifacts` says."* Today one name appears, `order_events.jsonl`, and it is what makes
+   * `order-events` answerable; an artifact gate that only consults `artifacts` would never request
+   * it at all.
+   */
+  stream_files: string[]
   // Derived from `artifacts` being non-empty, so the two cannot disagree. False means the run
   // exists as LOGS ONLY and every report route answers 404 — a normal state, not a fault.
   has_reports: boolean
@@ -243,9 +251,24 @@ export interface RunSummary {
   /** One declared key per list in this response, not one for the response. */
   keys: { currencies: string[], units_absent: string[] }
   currencies: RunSummaryCurrency[]
-  orders_sent: number
+  /**
+   * ONE COUNT PER WAY AN ORDER STARTS OR ENDS, replacing the single `orders_sent` (contract 23).
+   *
+   * Two of these changed MEANING while keeping their name, which no key diff can see and which the
+   * contract log is the only place to state: `orders_executed` now counts the fills of CLOSING
+   * orders as well, and **`orders_rejected` is the venue's refusals ONLY** — a refusal before
+   * anything left the building is `orders_denied`. Rendering the one without the other understates
+   * what was turned away, which is why the Executive Summary shows them side by side.
+   */
+  orders_submitted: number
+  orders_adopted: number
   orders_executed: number
+  orders_denied: number
   orders_rejected: number
+  orders_cancelled: number
+  orders_expired: number
+  orders_undelivered: number
+  orders_unaccounted: number
   sl_tp_triggered: number
   unit_count: number              // backtest: N scenarios | AutoTrader session: 1
   /**
@@ -775,6 +798,17 @@ export interface TradeRow {
   entry_tick_index: number
   exit_tick_index: number
   entry_type: string
+  /**
+   * `partial` or `full` — WHICH part of a position's chain this row ended, new in contract 23.
+   * It answers the third of the three questions we put to testingide on 2026-10-05: the `full`
+   * row is the last one, and before this field nothing on the row said so.
+   */
+  close_type: string | null
+  // the position's size at ENTRY, so no fill has to be summed to know what was opened
+  entry_lots: number
+  // how many records this position produced in its unit, counted before any filter — the
+  // replacement for reading `entry_executions[0].shared_by` and its documented [0] assumption
+  position_closes: number
   stop_loss: number | null
   take_profit: number | null
   entry_side: string
@@ -1033,22 +1067,35 @@ export interface AggregatedCombined {
   maker_fee: number
   taker_fee: number
   avg_spread: number
-  orders_sent: number
+  // the same nine as on `RunSummary`, and the same two changed meanings — see the note there
+  orders_submitted: number
+  orders_adopted: number
   orders_executed: number
+  orders_denied: number
   orders_rejected: number
+  orders_cancelled: number
+  orders_expired: number
+  orders_undelivered: number
+  orders_unaccounted: number
   sl_tp_triggered: number
+  /**
+   * Executed over submitted PLUS adopted — their definition, not ours, and it is the reason the
+   * Executive Summary shows counts and no rate: this figure is served HERE and not on `run-summary`,
+   * so computing it there would be deriving a number the API already states one route away.
+   */
   execution_rate_pct: number
-  pending_total_resolved: number
-  pending_total_filled: number
+  // the funnel, renamed to what it counts (contract 23). `total_accepted` replaced `total_filled`
+  // because the old name claimed a fill where an order had only ARRIVED — their defect, their fix.
+  pending_total_submitted: number
+  pending_total_accepted: number
   pending_total_rejected: number
-  pending_total_timed_out: number
-  pending_total_force_closed: number
-  // null where no pending order was resolved in this currency — not a latency of zero. Measured
-  // 2026-10-02; nothing renders these yet (the panel leaves the pending block to its own route),
-  // which is why the wrong type survived unnoticed.
-  pending_avg_latency_ms: number | null
-  pending_min_latency_ms: number | null
-  pending_max_latency_ms: number | null
+  pending_total_never_confirmed: number
+  pending_total_expired: number
+  // null where nothing was in flight in this currency — not a time of zero. `latency` became
+  // `in_flight` in contract 23, which is what the window actually measures.
+  pending_avg_in_flight_ms: number | null
+  pending_min_in_flight_ms: number | null
+  pending_max_in_flight_ms: number | null
   pending_active_limit_count: number
   pending_active_stop_count: number
   spot_scenarios: SpotScenarioRow[]
@@ -1124,37 +1171,50 @@ export interface PendingOrderRow {
 /**
  * What became of one scenario's pending orders, and what is still open.
  *
- * The five counts are a FUNNEL and the backend states every part of it:
- * `resolved = filled + rejected + timed_out + force_closed`, which held on all 202 units measured
- * across 20 runs on 2026-10-01. Nothing is computed from it here; the identity is stated so a
- * reader can see that 527 resolved against 0 filled means 527 rejected.
+ * The counts are a FUNNEL and the backend states every part of it:
+ * `submitted = accepted + rejected + never_confirmed + expired`, measured 2026-10-08 on **all 230
+ * units across 44 runs** without exception. Nothing is computed from it here; the identity is
+ * stated so a reader can see that 527 submitted against 0 accepted means 527 refused.
+ *
+ * **Every name changed in contract 23, and one of them because the old one lied.** `total_filled`
+ * counted an order that had only ARRIVED — a limit or stop order that began resting and might
+ * never fill — which the backend called a known defect of its own. `total_accepted` says what it
+ * counts. `resolved` → `submitted`, `timed_out` → `never_confirmed`, `force_closed` → `expired`,
+ * and the latency trio became `in_flight`, which is what the window measures.
+ *
+ * A resting order is NOT a fifth bucket: it is already counted as `accepted`, so showing it beside
+ * the funnel adds information rather than double-counting. Measured 2026-10-08 — exactly one unit
+ * in the archive holds one, and `total_expired` is 0 there as everywhere.
  */
 export interface PendingOrderUnit {
   // the unit name every other section keys on, and the symbol it traded
   name: string
   symbol: string
-  total_resolved: number
-  total_filled: number
+  total_submitted: number
+  total_accepted: number
   /**
-   * Rare and large when it happens: non-zero on 7 of 202 units measured, and 527 on one of them.
-   * That shape is the reason this section exists — a run can resolve five hundred orders and fill
-   * none of them while every other panel shows a normal-looking result.
+   * Rare and large when it happens: non-zero on 7 of 230 units measured 2026-10-08, and 31 on one
+   * of them. That shape is the reason this section exists — a run can submit five hundred orders
+   * and fill none of them while every other panel shows a normal-looking result.
    */
   total_rejected: number
-  // zero on all 202 units measured — part of the funnel's vocabulary, not of this archive's data
-  total_timed_out: number
-  total_force_closed: number
+  // zero on all 230 units measured: it comes only from a LIVE venue that never answered, which a
+  // simulation cannot produce. Part of the vocabulary, not of this archive's data.
+  total_never_confirmed: number
+  // likewise zero everywhere — an order still on its way when the data ended
+  total_expired: number
   /**
    * MILLISECONDS, confirmed by testingide 2026-10-01 — their execution-layer table said
    * "ticks (sim)" and was stale, corrected the same day. In a simulation it is the MODELLED delay
-   * on the market clock (`broker_fill_msc − placed_at_msc`), not a measurement of anything; for a
-   * force-closed order it is the time it sat until the scenario ended. The three figures cover
-   * every RESOLVED outcome, rejected and force-closed included, not fills only.
+   * on the market clock (`broker_fill_msc − placed_at_msc`), not a measurement of anything. The
+   * three figures cover every outcome that left the queue, not fills only.
    */
-  avg_latency_ms: number
-  min_latency_ms: number
-  max_latency_ms: number
-  latency_count: number
+  avg_in_flight_ms: number
+  min_in_flight_ms: number
+  max_in_flight_ms: number
+  in_flight_count: number
+  // the orders behind `total_never_confirmed`, new in contract 23 — empty wherever that count is 0
+  never_confirmed_orders: PendingOrderRow[]
   active_limit_orders: PendingOrderRow[]
   active_stop_orders: PendingOrderRow[]
 }
@@ -1191,8 +1251,14 @@ export interface OrderHistoryRow {
   // `open` or `close`. Nullable because the backend states it as a field that can be absent, not
   // because this archive has one — contract 20 fills it on every row measured here.
   action: string | null
-  // `pending` · `executed` · `rejected` · `expired` are what order-history writes; their enum also
-  // lists `submitted`, `partial` and `cancelled`, which this route never produces
+  /**
+   * Contract 23 rewrote this vocabulary: `pending` · `executed` · `denied` · `rejected` ·
+   * `cancelled` · `expired` · `undelivered` · `unaccounted`, with `submitted` and `partial` gone.
+   *
+   * **`denied` and `rejected` are two halves of one idea and must be read together:** `rejected` is
+   * the venue's refusal, `denied` is a refusal before anything was sent. Measured 2026-10-08, one
+   * run carries both — 35 refusals across the two — and no other run in the archive carries either.
+   */
   status: string
   requested_lots: number | null
   executed_lots: number | null
@@ -1204,9 +1270,19 @@ export interface OrderHistoryRow {
    */
   event_time: string | null
   commission: number
-  swap: number
-  slippage_points: number
-  // a whole sentence of the backend's, on a rejected row and nowhere else
+  // `market` · `limit` · `stop` · `stop_limit` — what was asked for, new in contract 23
+  order_type: string | null
+  // `partial` or `full` on a closing row: WHICH part ended the position's chain. The question we
+  // put to testingide on 2026-10-05 and could not answer from `shared_by` alone.
+  close_type: string | null
+  // who asked: `strategy` · `framework` · `venue`. A framework close is a guard or a session end,
+  // not a decision the bot made, and reading the two alike credits the strategy with neither.
+  initiator: string | null
+  // why the row ended as it did, beside the status that says WHAT it ended as
+  end_reason: string | null
+  // a whole sentence of the backend's, on a refused row and nowhere else. Contract 23 added
+  // `unaccounted_order`, `position_not_found` and `close_withheld`, and dropped
+  // `broker_unreachable` and `unresolved_write`.
   rejection_reason: string | null
   rejection_message: string | null
 }
@@ -1228,9 +1304,142 @@ export interface OrderHistoryReport {
 }
 
 /**
+ * One STEP in an order's life, as the stream wrote it.
+ *
+ * `order-history` keeps a row for the submission and one for each way an order ENDED; what happened
+ * between them exists only here - the venue taking the order, a stop triggering, every cancel asked
+ * for and how it was answered, an answer that never came and the asking that settled it.
+ *
+ * Read it in `seq` order and NEVER sort it by time. Several steps often carry the same instant - a
+ * backtest's market order is taken and filled at once - so a sort by time leaves their order to
+ * chance. Their sentence, and it is a rule rather than a preference.
+ */
+export interface OrderEvent {
+  scenario_name: string
+  /** Counts the lines of ONE unit, never repeating inside it across both lists. Half of the key. */
+  seq: number
+  /**
+   * What happened. Sixteen values, and which of them a run can produce depends on its KIND: a
+   * backtest reports no `cancel_deferred`, `partially_filled`, `undelivered`, `unaccounted`,
+   * `unresolved`/`resolved` or `adopted`, and no `triggered` comes from a live venue.
+   */
+  event_type: string
+  /** The POSITION, as everywhere else in this API - it repeats across an order's open and closes. */
+  order_id: string
+  /**
+   * The `seq` of the submission these steps belong to, and the ONLY thing that identifies one
+   * order: group by `scenario_name` and this field. Null on a `denied` order, which was never
+   * submitted; on an order adopted from a previous session it points at the `adopted` event.
+   */
+  submitted_seq: number | null
+  /** `bot` on every line of `events` - what the session did and what it was told. */
+  record_plane: string
+  position_id: string | null
+  action: string | null
+  order_type: string | null
+  symbol: string | null
+  direction: string | null
+  client_order_id: string | null
+  broker_ref: string | null
+  previous_broker_ref: string | null
+  trade_id: string | null
+  lots: number | null
+  cum_lots: number | null
+  fill_price: number | null
+  limit_price: number | null
+  trigger_price: number | null
+  fee: number | null
+  fee_currency: string | null
+  submission_mid: number | null
+  submission_time_msc: number | null
+  /**
+   * How long the venue's answer took, on the `accepted` or `rejected` answering a submission. Null
+   * everywhere else - including an acceptance learned later by asking, where the span would be the
+   * asking rather than the venue.
+   */
+  in_flight_ms: number | null
+  /** The run's own clock. Null on a line written before the session's first market data. */
+  event_time: string | null
+  /** The machine's clock, LIVE ONLY - null in a backtest, which has to come out the same each run. */
+  ts_init: string | null
+  initiator: string | null
+  end_reason: string | null
+  rejection_reason: string | null
+  /** The venue's own code where it gave one, passed on as it came. */
+  venue_reason: string | null
+  message: string | null
+  /** `submit` / `cancel` / `modify` / `status_read` - which request's answer was lost. */
+  lost_request: string | null
+}
+
+/**
+ * What the venue said when the session asked it: its whole account at that moment, and never a step
+ * of one order. A backtest has none, and a request narrowed to one order returns none.
+ *
+ * **A part has THREE states and collapsing them loses the distinction that matters.** A value - an
+ * empty one included - is what the venue holds, so `[]` means "no open order". `null` WITH the part
+ * named in `unread_parts` means the venue could not be read. `null` without the name means this
+ * line does not read that part at all: positions on a spot account, balances on a `reconcile` line
+ * that did not turn.
+ *
+ * The three collections are typed no deeper than measured. Their rows are the subject of the
+ * `venue-account` panel, which is its own undertaking, and a shape nobody has seen is not mirrored.
+ */
+export interface BrokerTruthRow {
+  scenario_name: string
+  seq: number
+  /** `broker_truth` on every line of this list. */
+  record_plane: string
+  /** `session_start` / `session_end` / `reconcile` - what made the session ask. */
+  read_reason: string
+  /** `clean` or `divergent`, on a `reconcile` line and nowhere else. */
+  reconcile_state: string | null
+  /** The named members where the picture turned divergent - ghost, abandoned, orphan, stale. */
+  divergence: Record<string, unknown> | null
+  /** Every order the venue reports as open, including orders this session did not place. */
+  venue_orders: unknown[] | null
+  /** The venue's balance sheet, every asset, the quote currency included. */
+  venue_balances: Record<string, number> | null
+  /** A margin account only. */
+  venue_positions: unknown[] | null
+  /** Which parts could not be read - what separates an absence from an unread part. */
+  unread_parts: string[]
+  event_time: string | null
+  ts_init: string | null
+}
+
+/**
+ * Response type for GET /api/v1/reports/runs/{run_id}/order-events
+ *
+ * Narrowed with `?scenario_name=&order_id=`, which is how one position is asked for without
+ * pulling a whole run: 3 KB for one position against 138 KB for the run it belongs to, measured
+ * 2026-10-08. A run that wrote no stream answers 404, and a stream in an older form answers 409.
+ *
+ * The run list says whether there is one at all, in `stream_files` - the gate every other section
+ * takes from `artifacts`, which does not name this file because it is not a report artifact.
+ */
+export interface OrderEventsReport {
+  run_id: string
+  events: OrderEvent[]
+  /** Empty on a backtest, and empty on any request narrowed to one order. */
+  broker_truth: BrokerTruthRow[]
+  count: number
+  /** A key PER LIST, not one for the response: both are `["scenario_name", "seq"]`. */
+  keys: Record<string, string[]>
+  /**
+   * The session was stopped while a line was being written, so that last line was left out and
+   * everything before it is complete. It exists because the stream is served while a run is STILL
+   * GOING - a live session writes it from its first order onwards.
+   */
+  truncated_tail: boolean
+}
+
+/**
  * Response type for GET /api/v1/reports/runs/{run_id}/pending-orders
  *
- * `units` is empty on an AutoTrader run — this section is filled by the simulation only.
+ * `units` was said here to be empty on an AutoTrader run. Measured 2026-10-08, it is NOT: both
+ * stored AutoTrader runs carry a unit, the field study with 46 submitted and 46 timed in flight.
+ * The sentence came from an archive in which no such run had orders yet.
  */
 export interface PendingOrdersReport {
   run_id: string

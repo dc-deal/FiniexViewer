@@ -288,34 +288,44 @@ function shareOf(trade: TradeRow, fill: FillRow): string {
 }
 
 /**
- * In how many TRADES this position was closed — one where it was closed whole.
+ * In how many RECORDS this position was closed — one where it was closed whole.
  *
- * `entry_executions[0].shared_by` is the backend's own statement, and their endpoint table says why
- * it can be READ rather than counted: *"how many trade rows of its unit carry that fill, counted
- * over the whole unit when the report is built, so it holds on a filtered list"*
- * (`api_server_architecture.md:336`, contract 17). Counting our own rows would derive what they
- * already state, and would be wrong the moment a narrowing or the visible cap hides one.
+ * **`position_closes` on the row since contract 23, and it retires the `[0]` assumption.** This used
+ * to read `entry_executions[0].shared_by`, which was safe only while every execution list was
+ * 1-element: measured 1,556 of 1,556 at the time, with their cardinality table holding N-element
+ * cases dormant until #143 and #342. The field says the same thing without reaching into a list at
+ * all, and their note gives it the same property the old one had — *counted before any filter* — so
+ * it still holds on a narrowed list where counting our own rows would not.
  *
- * Measured over all 1,556 trades in the archive it equals that position's trade count exactly —
- * 1,556 of 1,556 — with both execution lists 1-element throughout. **`[0]` is only safe while that
- * holds:** their cardinality table has N-element cases, dormant until #143 and #342.
+ * `shareOf` below still reads `shared_by`, and that is correct: it sits on the EXECUTION and says
+ * how many trades share THAT fill, which is a different statement from how many records the
+ * position produced.
  *
- * It matters because the partial is the COMMON case, not an edge: 952 of those 1,556 trades belong
- * to a position closed in parts. A row reading `0.02` where the reader opened `0.10` is the question
- * this answers, and until now the answer was one click down in the fills.
+ * It matters because the partial is a common case rather than an edge: 2 of the 18 trades in the
+ * capture and 952 of 1,556 across the older archive belong to a position closed in parts. A row
+ * reading `0.02` where the reader opened `0.10` is the question this answers.
  */
 function closedInParts(trade: TradeRow): number {
-  return trade.entry_executions[0]?.shared_by ?? 1
+  return trade.position_closes || 1
 }
 
-/** The whole sentence, for the hover — the same three served figures the fill line uses. */
+/**
+ * The whole sentence, for the hover.
+ *
+ * `entry_lots` replaced a reach into `entry_executions[0].volume` (contract 23): the position's size
+ * at ENTRY, stated on the row, so nothing has to be summed or indexed to say what was opened.
+ *
+ * And `close_type` says which record ENDED the chain — `full` is the last one — which answers the
+ * third of the three questions put to testingide on 2026-10-05 and could not be answered from
+ * `shared_by` at all.
+ */
 function partsOf(trade: TradeRow): string {
   const parts = closedInParts(trade)
   if (parts <= 1) return ''
-  const whole = trade.entry_executions[0]?.volume
+  const ending = trade.close_type === 'full' ? t('this record closed it') : t('it stayed open after this')
   return `${t('This position was closed in parts')} — `
-    + `${trade.lots} ${t('of')} ${whole} ${t('here')}, `
-    + `${t('shared by')} ${plural(parts, t('trade'), t('trades'))}.`
+    + `${trade.lots} ${t('of')} ${trade.entry_lots} ${t('here')}, `
+    + `${t('over')} ${plural(parts, t('record'), t('records'))}. ${ending}.`
 }
 
 /** Seconds as the operator reads a holding period. */

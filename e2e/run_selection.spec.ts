@@ -106,3 +106,29 @@ test('the run, the scenario and both bars ride in one url', async ({ page }) => 
   await expect(page).toHaveURL(/runsort=oldest/)
   await expect(page).toHaveURL(/unitsort=ticks/)
 })
+
+/**
+ * THE BAR DOES NOT MOVE WHEN IT IS USED. This is the one dimension jsdom cannot judge, and it is
+ * where both reports of this defect came from: a chip changed width or appeared mid-bar, and the
+ * chips to its right slid out from under the pointer mid-click.
+ *
+ * Two causes, both now closed — a facet that could no longer narrow used to be dropped, and the
+ * count badge used to be drawn only once something was picked. The assertion is deliberately the
+ * SYMPTOM rather than either cause: every chip's left edge, before and after a pick.
+ */
+test('picking a value leaves every chip exactly where it was', async ({ page }) => {
+  await page.goto('/runs')
+  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+
+  const chips = page.locator('.facet-trigger')
+  const edges = () => chips.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().x))
+  const before = await edges()
+  expect(before.length).toBeGreaterThan(1)
+
+  // the panel is portalled out of the bar, so opening it cannot be what moves anything
+  await chips.first().click()
+  await page.locator('.facet-option').first().click()
+  await expect(page).toHaveURL(/runf=/)
+
+  expect(await edges()).toEqual(before)
+})

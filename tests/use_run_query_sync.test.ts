@@ -10,6 +10,7 @@ import type { RunInfo } from '@/types/api/report_types'
 function header(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' | 'name'>): RunInfo {
   return {
     artifacts: ['run_summary.json'],
+    stream_files: [],
     has_reports: true,
     // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
     results: null,

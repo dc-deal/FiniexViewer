@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getAggregatedPortfolio, getBookingPeriods, getBroker, getOrderHistory, getPendingOrders,
+  getAggregatedPortfolio, getBookingPeriods, getBroker, getOrderEvents, getOrderHistory,
+  getPendingOrders,
   getPortfolio,
   getRunConfig, getScenarioDetails, getTradeHistory, getWarningsErrors,
 } from '@/api/api_client'
@@ -12,6 +13,7 @@ import type {
   AggregatedPortfolioReport,
   BookingPeriodsReport,
   BrokerReport,
+  OrderEvent,
   OrderHistoryReport,
   PendingOrdersReport,
   RunConfigReport,
@@ -38,6 +40,17 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const config = ref<RunConfigReport | null>(null)
   const tradeHistory = ref<TradeHistoryReport | null>(null)
   const scenarios = ref<ScenarioDetailsReport | null>(null)
+  /**
+   * The STEPS of one order, keyed `scenario~position`, and per position rather than per run.
+   *
+   * Every other section is one request for the whole run; this one is not, because the stream is
+   * the largest thing the API serves here - 1,025 events on one stored run against 4 for the
+   * position a reader opened. The route narrows on `(scenario_name, order_id)`, so the request a
+   * reader causes is the one they asked for, and the answer is kept so reopening costs nothing.
+   */
+  const orderEvents = ref(new Map<string, OrderEvent[]>())
+  /** Which positions are in flight, by the same key - several may load at once. */
+  const loadingOrderEvents = ref(new Set<string>())
   const loadingWarningsErrors = ref(false)
   const loadingPortfolio = ref(false)
   const loadingBroker = ref(false)
@@ -80,6 +93,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     config.value = null
     tradeHistory.value = null
     scenarios.value = null
+    orderEvents.value = new Map()
+    loadingOrderEvents.value = new Set()
     absences.value = {}
     errors.value = {}
     unreadable.value = null
@@ -202,6 +217,33 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     }
   }
 
+  /**
+   * The steps of ONE position's orders. Keyed per position, so a reader opening a second one does
+   * not disturb the first, and already-held events are not fetched twice.
+   *
+   * An absence is kept here as an EMPTY list rather than in `absences`: that map is keyed by the
+   * slot a panel would have filled, and this is a row inside a panel, not a section of its own.
+   * A run with no stream at all is a different statement and the run list already carries it, in
+   * `stream_files`.
+   */
+  async function loadOrderEvents(runId: string, scenario: string, orderId: string): Promise<void> {
+    const key = `${scenario}~${orderId}`
+    if (orderEvents.value.has(key) || loadingOrderEvents.value.has(key)) return
+    loadingOrderEvents.value = new Set(loadingOrderEvents.value).add(key)
+    try {
+      const answer = await getOrderEvents(runId, scenario, orderId)
+      const events = isAbsent(answer) ? [] : answer.events
+      orderEvents.value = new Map(orderEvents.value).set(key, events)
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      errors.value[`orderEvents:${key}`] = `${t('Could not load the order steps')}: ${detail}`
+    } finally {
+      const next = new Set(loadingOrderEvents.value)
+      next.delete(key)
+      loadingOrderEvents.value = next
+    }
+  }
+
   /** Booking periods carry the same 409 case as any other stored artifact. */
   async function loadBookingPeriods(runId: string): Promise<void> {
     loadingBookingPeriods.value = true
@@ -287,6 +329,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     aggregated,
     pendingOrders,
     orderHistory,
+    orderEvents,
+    loadingOrderEvents,
     bookingPeriods,
     config,
     tradeHistory,
@@ -309,6 +353,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadAggregated,
     loadPendingOrders,
     loadOrderHistory,
+    loadOrderEvents,
     loadBookingPeriods,
     loadConfig,
     loadTradeHistory,

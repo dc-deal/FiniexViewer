@@ -47,9 +47,33 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 BASE = 'http://localhost:5173/api/v1'
-RUN = '20260927_132124_10c3d2c7'
-LIVE_RUN = '20260927_132812_176eba2d'
-DEPLOY = 'deploy_20260927_132425'
+
+# The simulation source, chosen 2026-10-08: the only run that satisfies all NINE requirements
+# below at once. It comes from FiniexTestingIDE's committed set `report_coverage_reference`, built
+# for exactly this purpose — so the fixture source is REPRODUCIBLE rather than a pointer to
+# something that can vanish with the next archive wipe. Measured: four order statuses with 35
+# refusals, two account currencies, `close_type` full AND partial with `position_closes` up to 3,
+# a scenario absent with its error, `run_outcome: failed`.
+RUN = '20261008_103627_ffcd6c2d'
+
+# The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
+# served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
+# the strategy, where a mock session's profile has ten keys to its twelve.
+LIVE_RUN = '20261007_152959_0275a107'
+
+# The ledger fixtures. Produced by FiniexTestingIDE on 2026-10-08 on request, and verified here
+# against all six properties `tests/api_contract.test.ts` asserts: four sessions, an advisory
+# (`strategy_stands 2 · operation_stands 2`), one session with `strategy_changed` and another with
+# `operation_changed`, eight periods over eight distinct opens — five replay days rather than five
+# replays of one window, which is what makes the timeline's geometry testable at all.
+#
+# It also carries `unfinished: 1` — a fifth session killed before its close, so it has a run header
+# and no ledger row. That shape had NO captured case and the contract test says so in its own
+# comment; the capture closes it.
+#
+# Reproducible: `python python/experiments/generate_demo_deployment/generate_demo_deployment.py` on
+# their side, about four minutes, and each run adds two NEW histories rather than replacing these.
+DEPLOY = 'deploy_20261008_110304'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),
@@ -63,6 +87,16 @@ TARGETS = [
     ('aggregated_portfolio.json', f'reports/runs/{RUN}/aggregated-portfolio'),
     ('pending_orders.json', f'reports/runs/{RUN}/pending-orders'),
     ('order_history.json', f'reports/runs/{RUN}/order-history'),
+    # NARROWED, because that is what the panel asks for: one position's steps. The partial
+    # close is the richest position in the capture - 12 events across 4 orders, so the three
+    # levels (position, order, step) all have something to show.
+    ('order_events.json',
+     f'reports/runs/{RUN}/order-events'
+     '?scenario_name=EURGBP_partial_close&order_id=pos_eurgbp_1'),
+    # UNNARROWED and from the live run, because `broker_truth` exists nowhere else: a backtest
+    # has no venue to ask, and a narrowed request carries none by design. It is also the only
+    # capture holding the live-only event types `cancel_deferred` and `cancel_requested`.
+    ('order_events_live.json', f'reports/runs/{LIVE_RUN}/order-events'),
     ('run_config_simulation.json', f'reports/runs/{RUN}/config'),
     ('run_config_live.json', f'reports/runs/{LIVE_RUN}/config'),
     ('deployments_list.json', 'deployments'),

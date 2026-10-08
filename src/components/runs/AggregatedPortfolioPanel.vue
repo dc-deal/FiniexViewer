@@ -40,6 +40,20 @@ function costs(row: AggregatedCurrency): Figure[] {
     { label: t('Spread'), value: money(fold.total_spread_cost) },
     { label: t('Commission'), value: money(fold.total_commission) },
     { label: t('Swap'), value: money(fold.total_swap) },
+    /*
+     * The ONE figure the Executive Summary has to give up, and it lands here because this is where
+     * its model lives: `execution_rate_pct` is served on `aggregated-portfolio` and on no other
+     * route — `run-summary` carries not a single `rate` or `pct` field. Computing it over there
+     * would be a second source of truth for a number the API already states.
+     *
+     * Their definition, not ours: executed over submitted PLUS adopted. `adopted` in the
+     * denominator is not something we would have guessed.
+     */
+    {
+      label: t('Execution rate'),
+      value: percentFigure(fold.execution_rate_pct),
+      title: t('Executed orders over submitted plus adopted — the backend\'s own definition. The Executive Summary shows the counts and leaves the rate here, because this is the only route that serves it.'),
+    },
   ]
   // the maker/taker halves only where a fee of that kind was charged — two zeroes on every forex
   // run are noise, and on a spot run they are the whole cost

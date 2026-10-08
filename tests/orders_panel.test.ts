@@ -43,8 +43,10 @@ function order(overrides: Partial<OrderHistoryRow> = {}): OrderHistoryRow {
     executed_price: null,
     event_time: null,
     commission: 0,
-    swap: 0,
-    slippage_points: 0,
+    order_type: 'market',
+    close_type: null,
+    initiator: 'strategy',
+    end_reason: null,
     rejection_reason: null,
     rejection_message: null,
     ...overrides,
@@ -55,15 +57,16 @@ function unit(overrides: Partial<PendingOrderUnit> = {}): PendingOrderUnit {
   return {
     name: SCENARIO,
     symbol: 'ETHUSD',
-    total_resolved: 1,
-    total_filled: 1,
+    total_submitted: 1,
+    total_accepted: 1,
     total_rejected: 0,
-    total_timed_out: 0,
-    total_force_closed: 0,
-    avg_latency_ms: 60,
-    min_latency_ms: 60,
-    max_latency_ms: 60,
-    latency_count: 1,
+    total_never_confirmed: 0,
+    total_expired: 0,
+    avg_in_flight_ms: 60,
+    min_in_flight_ms: 60,
+    max_in_flight_ms: 60,
+    in_flight_count: 1,
+    never_confirmed_orders: [],
     active_limit_orders: [],
     active_stop_orders: [],
     ...overrides,
@@ -131,32 +134,34 @@ describe('OrdersPanel', () => {
     it('states the scenario funnel the backend served, not the rows beneath it', () => {
       const wrapper = mountPanel(model(
         [order(), order({ status: 'executed', action: 'open' }), order({ action: 'close', status: 'executed' })],
-        [unit({ total_resolved: 1, total_filled: 1 })],
+        [unit({ total_submitted: 1, total_accepted: 1 })],
       ))
-      expect(heading(wrapper)).toContain('resolved 1')
-      // ARRIVED, not filled — their word, because the counter counts every order that arrived
-      // after its modelled delay and one that merely began resting is counted and did not fill
-      expect(heading(wrapper)).toContain('arrived 1')
+      expect(heading(wrapper)).toContain('submitted 1')
+      // ACCEPTED is their word since contract 23, and it replaced one that claimed a fill
+      // where an order had merely arrived — the rename is the backend fixing its own defect
+      expect(heading(wrapper)).toContain('accepted 1')
+      expect(heading(wrapper)).not.toContain('arrived')
       expect(heading(wrapper)).not.toContain('filled')
       // three records of ONE order — said as records, and apart from the funnel
       expect(wrapper.find('.group-count').text()).toBe('3 records')
     })
 
     /**
-     * The counter does NOT mean filled, and the backend says so in its own docs since 2026-10-05:
-     * *"the simulation resolves it when it ARRIVES … This is a known defect, not a design"*
-     * (`architecture_execution_layer.md:202`). Measured over 222 scenario units, 23 report
-     * `total_filled >= 1` with no `open/executed` row anywhere — our own `BTCUSD_blocks_02` became
-     * their worked example. The caveat rides on the figure rather than in a sentence on the page.
+     * GONE WITH ITS SUBJECT, and that is the point rather than a loss.
+     *
+     * This asserted a tooltip carrying the backend's own caveat: that `total_filled` counted
+     * every order which ARRIVED after its modelled delay, so one that merely began resting was
+     * counted and had not filled — *"a known defect, not a design"*
+     * (`architecture_execution_layer.md:202`). Contract 23 FIXED it and named the field
+     * `total_accepted`. A paraphrase of someone else's bug outlives the bug and then describes
+     * nothing, so the tooltip and this test went together. The word itself is asserted above.
      */
-    it('carries the backend caveat on the figure, not beside it', () => {
-      const wrapper = mountPanel(model([order()], [unit({ total_resolved: 1, total_filled: 1 })]))
-      const caveat = wrapper.findAll('.group-meta span')
+    it('carries no caveat where the defect it described was fixed', () => {
+      const wrapper = mountPanel(model([order()], [unit({ total_submitted: 1, total_accepted: 1 })]))
+      const titles = wrapper.findAll('.group-meta span')
         .map(node => node.attributes('title') ?? '')
-        .find(title => title.includes('ARRIVED'))
-      expect(caveat).toBeDefined()
-      expect(caveat).toContain('only began resting')
-      expect(caveat).toContain('known defect')
+      expect(titles.some(title => title.includes('ARRIVED'))).toBe(false)
+      expect(titles.some(title => title.includes('known defect'))).toBe(false)
     })
 
     it('marks a rejection in the heading and marks nothing where there was none', () => {
@@ -206,17 +211,33 @@ describe('OrdersPanel', () => {
     /** Nothing timed is an absence; `0 ms` there would claim a measurement. */
     it('states an untimed scenario as absent rather than as zero', () => {
       const wrapper = mountPanel(model([order()], [unit({
-        avg_latency_ms: 0, min_latency_ms: 0, max_latency_ms: 0, latency_count: 0,
+        avg_in_flight_ms: 0, min_in_flight_ms: 0, max_in_flight_ms: 0, in_flight_count: 0,
       })]))
-      expect(heading(wrapper)).toContain('n/a')
+      expect(heading(wrapper)).toContain('in flight n/a')
     })
 
-    /** Both counters read zero on every unit measured, so printing them always is noise. */
-    it('keeps the two outcomes that have never fired out of the heading until they do', () => {
-      expect(heading(mountPanel(model([order()])))).not.toContain('timed out')
+    /**
+     * And the duration carries its WORD, like every other item in the heading. It did not: the
+     * heading read `submitted 46 · accepted 46 · rejected 0 · 1438 ms`, and a bare duration there
+     * says nothing about what was timed. Found on screen 2026-10-08, on the field study — the
+     * only kind of run where orders rest long enough for the figure to be interesting.
+     */
+    it('names what the duration measures rather than printing a bare number', () => {
+      expect(heading(mountPanel(model([order()])))).toContain('in flight 60 ms')
+    })
 
-      const fired = mountPanel(model([order()], [unit({ total_timed_out: 2, total_resolved: 3 })]))
-      expect(heading(fired)).toContain('timed out 2')
+    /**
+     * Both counters read zero on every one of the 230 units measured 2026-10-08, so printing
+     * them always is noise. `never confirmed` comes only from a live venue that never answered
+     * and `expired` from an order still in flight when the data ended — neither of which a
+     * simulation can produce, which is why only a hand-built unit exercises them.
+     */
+    it('keeps the two outcomes that have never fired out of the heading until they do', () => {
+      expect(heading(mountPanel(model([order()])))).not.toContain('never confirmed')
+      expect(heading(mountPanel(model([order()])))).not.toContain('expired')
+
+      const fired = mountPanel(model([order()], [unit({ total_never_confirmed: 2, total_submitted: 3 })]))
+      expect(heading(fired)).toContain('never confirmed 2')
     })
   })
 
@@ -447,10 +468,30 @@ describe('OrdersPanel', () => {
       const row = wrapper.find('.order-list .record-row').findAll(':scope > span')
         .map(node => node.attributes('data-rank'))
 
-      expect(heads).toHaveLength(7)
+      expect(heads).toHaveLength(8)
       expect(row).toEqual(heads)
       // which order, what became of it, and when
       expect(heads.filter(rank => rank === '1')).toHaveLength(3)
+    })
+
+    /**
+     * WHICH KIND of order it was, which nothing else on the page states: the pending unit's two
+     * lists hold the orders still resting, not the ones that resolved. Served since contract 23
+     * and empty on no row of a real run — 66 limit, 17 market and 3 stop on the field study of
+     * 2026-10-07, against `market` on all 102 rows of the simulation capture, which is why the
+     * column looks pointless until an AutoTrader run is opened.
+     */
+    it('says what kind of order was asked for, and states an absence as one', () => {
+      const labels = mountPanel({ pending: PENDING, history: HISTORY, trades: null })
+        .findAll('.order-list .record-head > span').map(node => node.text())
+      expect(labels).toContain('Type')
+
+      const typed = mountPanel(model([order({ order_type: 'limit' })]))
+      expect(typed.find('.order-list .record-row').text()).toContain('limit')
+      // null is the contract's own value on a row it was never asked of
+      const untyped = mountPanel(model([order({ order_type: null })]))
+      expect(untyped.find('.order-list .record-row').findAll(':scope > span')[2]!.text())
+        .toBe('—')
     })
 
     /**

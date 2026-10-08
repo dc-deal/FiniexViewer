@@ -47,7 +47,7 @@ import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 21
+const EXPECTED_CONTRACT = 23
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -208,15 +208,32 @@ describe('api contract', () => {
     const typed: BrokerReport = broker
     expect(typed.key).toEqual(EXPECTED_KEYS.brokers)
     expect(typed.units.length).toBeGreaterThan(0)
-    const unit = typed.units[0]!
-    expect(unit.symbols.length).toBeGreaterThan(0)
-    expect(unit.scenarios.length).toBeGreaterThan(0)
-    // the captured run traded spot: no margin regime, and both levels therefore zero
-    expect(unit.margin_mode).toBe('none')
-    expect(unit.margin_call_level).toBe(0)
-    expect(unit.stopout_level).toBe(0)
-    expect(unit.leverage).toBe(1)
-    expect(unit.hedging_allowed).toBe(false)
+    for (const unit of typed.units) {
+      expect(unit.symbols.length).toBeGreaterThan(0)
+      expect(unit.scenarios.length).toBeGreaterThan(0)
+    }
+    /*
+     * BOTH account models in one capture, which is what the 2026-10-08 run added: the earlier one
+     * traded spot only, so the margin half of this panel had no fixture at all.
+     *
+     * The spot unit is the reason this test exists. It declares `margin_mode: 'none'` and both
+     * margin LEVELS arrive as 0.0 — that zero is the ABSENCE of a regime, not a level of zero, and
+     * the panel gates on the mode for exactly that reason. The margin unit beside it shows what a
+     * stated regime looks like, so a reader of this test can tell the two apart.
+     */
+    const margin = typed.units.find(unit => unit.broker_type === 'mt5')!
+    expect(margin.margin_mode).toBe('retail_hedging')
+    expect(margin.margin_call_level).toBe(50)
+    expect(margin.stopout_level).toBe(20)
+    expect(margin.leverage).toBe(500)
+    expect(margin.hedging_allowed).toBe(true)
+
+    const spot = typed.units.find(unit => unit.broker_type === 'kraken_spot')!
+    expect(spot.margin_mode).toBe('none')
+    expect(spot.margin_call_level).toBe(0)
+    expect(spot.stopout_level).toBe(0)
+    expect(spot.leverage).toBe(1)
+    expect(spot.hedging_allowed).toBe(false)
   })
 
   /**
@@ -242,30 +259,33 @@ describe('api contract', () => {
   })
 
   /**
-   * A STATED gap, not a passing test. The captured run traded spot and was written before
-   * contract 18, where an open position's excursion was measured only at entry and close — so every
-   * `mae_pnl` in this capture is `0.0`, and nothing driven by the fixture exercises the sign the
-   * trade list drops.
+   * The gap this used to STATE is closed, and the test that stated it is gone rather than kept.
    *
-   * Held here so the gap cannot be mistaken for coverage. The property itself IS tested, by a
-   * hand-built trade in `trade_history.test.ts`; what is missing is a captured one. Ten of the
-   * fourteen stored runs measured 2026-10-01 carry real excursions, so a re-capture would close
-   * this — and would fail this assertion, which is the point: it is then removed rather than
-   * quietly kept.
+   * It asserted that every `mae_pnl` in the capture was `0.0` — true while the captured run traded
+   * spot and predated contract 18, where an open position's excursion was measured only at entry
+   * and close. Its own note said a re-capture would close this and fail the assertion, *"which is
+   * the point: it is then removed rather than quietly kept."* The 2026-10-08 capture carries real
+   * excursions, worst `-2.84`, so this is that removal — and the assertion below is what replaces
+   * it, because it now proves something instead of being satisfied trivially.
    */
-  it('carries no adverse excursion, so nothing fixture-driven asserts its sign', () => {
+  it('carries a real adverse excursion, so the sign convention is fixture-driven', () => {
     const typed: TradeHistoryReport = tradeHistory
     expect(typed.trades.length).toBeGreaterThan(0)
-    expect(typed.trades.every(row => row.mae_pnl === 0)).toBe(true)
+    // SIGNED on a trade: an excursion against the position is negative, never a magnitude
+    const worst = typed.trades.reduce((low, row) => Math.min(low, row.mae_pnl), 0)
+    expect(worst).toBeLessThan(0)
   })
 
   /**
    * The pending orders, and TWO properties of the contract rather than of a component.
    *
-   * The five counts are a funnel: `resolved = filled + rejected + timed_out + force_closed`, which
-   * held on all 202 units measured across 20 runs. The panel renders the parts beside the total
-   * and computes nothing from the identity — this is where it is checked, so a backend change to
-   * the arithmetic is noticed here rather than guessed at from a screen.
+   * The counts are a funnel: `submitted = accepted + rejected + never_confirmed + expired`,
+   * measured 2026-10-08 on all 230 units across 44 runs without exception. Every name in it changed
+   * with contract 23 — `resolved` → `submitted`, `filled` → `accepted` because the old name claimed
+   * a fill where an order had only ARRIVED, `timed_out` → `never_confirmed`, `force_closed` →
+   * `expired`. The panel renders the parts and computes nothing from the identity; this is where it
+   * is checked, so a backend change to the arithmetic is noticed here rather than guessed at from a
+   * screen.
    *
    * And the route DECLARES its key since contract 19 — it was the one list route this app consumed
    * without one. A unit name is a scenario name, and a scenario set whose names repeat is refused
@@ -275,8 +295,8 @@ describe('api contract', () => {
     const typed: PendingOrdersReport = pending
     expect(typed.units.length).toBeGreaterThan(0)
     for (const row of typed.units) {
-      expect(row.total_filled + row.total_rejected + row.total_timed_out + row.total_force_closed)
-        .toBe(row.total_resolved)
+      expect(row.total_accepted + row.total_rejected
+        + row.total_never_confirmed + row.total_expired).toBe(row.total_submitted)
     }
     expect(typed.key).toEqual(EXPECTED_KEYS.pendingUnits)
   })
@@ -356,11 +376,11 @@ describe('api contract', () => {
      * The two sign conventions for one quantity, held here because it is a property of the
      * CONTRACT: `mae_pnl` arrives signed on a trade, `largest_mae` as a magnitude in the analytics.
      *
-     * ⚠ The current capture has NO adverse excursion — every `mae_pnl` is 0 and so is
-     * `largest_mae` — so the equality below is satisfied trivially and this assertion proves less
-     * than it did. It is kept because it is the one that would catch a flipped convention, and the
-     * gap is recorded rather than hidden: the next capture from a run that actually went against
-     * its position restores it.
+     * The 2026-10-08 capture carries a real excursion, worst `-2.84`, so the equality below is no
+     * longer satisfied trivially: it compares a signed trade figure against an unsigned analytics
+     * magnitude and would catch either convention flipping. It had been trivial for as long as the
+     * captured run traded spot and predated contract 18 — the warning that said so is gone with
+     * the gap.
      */
     const worst = typed.trades.reduce((low, row) => Math.min(low, row.mae_pnl), 0)
     const largest = typed.analytics[0]?.largest_mae ?? -1

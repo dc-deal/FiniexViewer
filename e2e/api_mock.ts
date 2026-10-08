@@ -22,7 +22,8 @@ import type { Page, Route } from '@playwright/test'
  */
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '..', 'tests', 'fixtures')
 
-function fixture(name: string): unknown {
+/** One capture, parsed. Exported so a spec can derive its own facts from the same files. */
+export function fixture(name: string): unknown {
   return JSON.parse(readFileSync(join(FIXTURES, name), 'utf-8'))
 }
 
