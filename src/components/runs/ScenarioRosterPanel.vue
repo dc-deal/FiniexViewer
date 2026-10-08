@@ -259,7 +259,7 @@ function card(row: ScenarioRow): ListCard | null {
         : t('The valuation did not succeed — this is not the same as an equity of zero.'),
       tone: unit.final_equity_valued ? '' : 'warning',
     },
-    { label: t('Unrealised'), value: money(unit.unrealized_pnl), tone: signClass(unit.unrealized_pnl) },
+    { label: t('Unrealized'), value: money(unit.unrealized_pnl), tone: signClass(unit.unrealized_pnl) },
     { label: t('Max equity'), value: money(unit.max_equity) },
     {
       label: t('Deepest drawdown'),

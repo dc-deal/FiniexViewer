@@ -57,15 +57,22 @@ REGISTER = os.path.join('scripts', 'term_register.json')
 OURS = 'src'
 THEIR_DOCS = os.path.join('ide_docs', 'consumer')
 THEIR_CONSOLE = os.path.join('..', 'FiniexTestingIDE', 'python', 'framework', 'reporting', 'console')
+# The one document that names a field it has REMOVED. It records history, so it cannot stand as
+# evidence that a field is still served — see `their_docs` and the GONE test.
+HISTORY_ONLY = 'contract-log'
 
 LABEL = re.compile(r"label:\s*t\('([^']*)'\)")
 RANK_ON_COLUMN = re.compile(r'\brank:\s*(\d+)')
 CELL = re.compile(r':data-rank="(\d+)"')
+INLINE_LABEL = re.compile(r"\{\{\s*t\('([^']*)'\)\s*\}\}")
+MUSTACHE = re.compile(r'\{\{(.*?)\}\}')
+READING = re.compile(r'(?:[A-Za-z_][A-Za-z0-9_]*(?:\([^()]*\))?!?\.)+([a-z][a-z0-9_]{2,})')
 HOLDERS = (r'row|unit|summary|model|order|trade|period|entry|session|deployment|bar|scenario|'
            r'headline|aggregate|funnel|info|fold|item|broker|total|combination|run|block|card|'
            r'symbol|check|warning|detail|instance|window')
 FIELD = re.compile(r'\b(?:' + HOLDERS + r')\.([a-z][a-z0-9_]*)')
-SKIP = ('value', 'label', 'currency', 'length', 'key', 'rows', 'open', 'map', 'filter', 'find')
+SKIP = ('value', 'label', 'currency', 'length', 'key', 'rows', 'open', 'map', 'filter', 'find',
+        'join')
 
 CONSOLE_LABEL = re.compile(r'["\']\s*([A-Z][A-Za-z0-9 /&%().\'-]{1,30}?):\s*(?:\{|\s*["\'])')
 
@@ -77,6 +84,32 @@ def fields_in(text):
     return found
 
 
+def inline_pairs(line):
+    """(label, field) where a label in TEMPLATE text stands directly beside the value it names.
+
+    `label: t('…')` is a declaration and names its field in the lines below it. A funnel heading
+    says the same thing in another syntax — `{{ t('resolved') }} {{ f(x)!.total_resolved }}` — and
+    was invisible here until contract 23 renamed all five of those fields and this check stayed
+    silent through it.
+
+    The adjacency IS the rule, and it is deliberately strict: only the readings between this label
+    and the NEXT one belong to it. A label with no reading after it is prose or a section heading
+    rather than a word naming a field — measured over `src/`, 124 of 143 inline labels are exactly
+    that, and registering them would assert pairs nobody can defend.
+    """
+    found = []
+    for match in INLINE_LABEL.finditer(line):
+        tail = line[match.end():]
+        following = INLINE_LABEL.search(tail)
+        window = tail[:following.start()] if following else tail
+        for expression in MUSTACHE.findall(window):
+            names = [name for name in READING.findall(expression) if name not in SKIP]
+            if names:
+                found.append((match.group(1), names[0]))
+                break
+    return found
+
+
 def read_lines(path):
     with open(path, encoding='utf-8') as handle:
         return handle.read().split('\n')
@@ -85,10 +118,12 @@ def read_lines(path):
 def our_pairs():
     """(label, field) for every display label that names a served field.
 
-    Two shapes, and the second is why the `rank` is read: a ListColumn array holds the headings and
-    the row template holds the cells, far apart but in the same order. Both sides declare the rank
-    of each column, and a unit test already holds the two equal — so the positional zip verifies
-    itself, and a disagreement is dropped rather than paired wrongly.
+    Three shapes, and the second is why the `rank` is read: a ListColumn array holds the headings
+    and the row template holds the cells, far apart but in the same order. Both sides declare the
+    rank of each column, and a unit test already holds the two equal — so the positional zip
+    verifies itself, and a disagreement is dropped rather than paired wrongly.
+
+    The third is `inline_pairs` — a label written in template text rather than declared.
     """
     pairs = {}
     unresolved = []
@@ -98,8 +133,9 @@ def our_pairs():
                 continue
             path = os.path.join(folder, name).replace(os.sep, '/')
             lines = read_lines(path)
-            columns, cells = [], []
+            columns, cells, inline = [], [], []
             for index, line in enumerate(lines):
+                inline += inline_pairs(line)
                 match = LABEL.search(line)
                 if match:
                     found = fields_in(' '.join(lines[index:index + 4]))
@@ -119,6 +155,10 @@ def our_pairs():
                         unresolved.append((path, label))
             else:
                 unresolved += [(path, label) for label, _ in columns]
+            # last, so both declaration shapes outrank it: a rank-verified column pair is a
+            # stronger statement than two interpolations that happen to sit side by side
+            for label, field in inline:
+                pairs.setdefault(label, field)
     return pairs, unresolved
 
 
@@ -138,9 +178,12 @@ def their_docs():
     for name in names:
         if not name.endswith('.md'):
             continue
+        history = name.startswith(HISTORY_ONLY)
         for line in read_lines(os.path.join(THEIR_DOCS, name)):
             row = table_row.match(line)
-            if row:
+            # the changelog DEFINES nothing — it records what moved. Letting it define a field
+            # would make a field it alone names indistinguishable from a field still served.
+            if row and not history:
                 defined.setdefault(row.group(1), name[:-3])
             for token in re.findall(r'`([a-z][a-z0-9_]{2,})`', line):
                 mentioned.setdefault(token, name[:-3])
@@ -261,7 +304,10 @@ def check():
             # a finding to repeat on every run. It stays visible in the register, not in the output.
             if not field or note.startswith(('unresolved', 'undocumented')):
                 continue
-            if field not in docs:
+            # The changelog is not evidence of existence, and this is the whole reason GONE could
+            # never fire: contract 23 removed `orders_sent` and `total_resolved`, and the document
+            # announcing their removal still NAMES them. A field only the log knows is gone.
+            if docs.get(field) in (None, HISTORY_ONLY):
                 findings.append(f'  GONE     {field} ("{label}") is in no consumer document any more')
 
     if console is None:

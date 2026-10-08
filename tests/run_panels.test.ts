@@ -167,14 +167,14 @@ describe('ExecutivePanel', () => {
     const f = figures(open)
     expect(f['Final equity']).toBe('9,949.40 USD')
     expect(f['Still open']).toBe('2')
-    expect(f['Unrealised']).toBe('-12.50 USD')
+    expect(f['Unrealized']).toBe('-12.50 USD')
   })
 
   // An unrealised 0.00 beside "0 open" reads as a figure somebody measured. Neither line appears.
   it('leaves out what is open where nothing is', () => {
     const f = figures({ ...MEASURED, open_position_count: 0, unrealized_pnl: 0 })
     expect(f['Still open']).toBeUndefined()
-    expect(f['Unrealised']).toBeUndefined()
+    expect(f['Unrealized']).toBeUndefined()
   })
 
   /**

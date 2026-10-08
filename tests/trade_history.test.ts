@@ -183,9 +183,33 @@ describe('TradeHistoryPanel', () => {
     it('carries what the row has no width for', () => {
       const rows = cardRows(mountPanel(report()))
       expect(rows).toHaveProperty('Fees')
+      expect(rows).toHaveProperty('Spread')
       expect(rows).toHaveProperty('Slippage')
       expect(rows).toHaveProperty('Ticks')
       expect(rows).toHaveProperty('Best in favour')
+    })
+
+    /**
+     * The spread stands APART from the fee, because the served `total_fees` does not contain it —
+     * commission plus swap and nothing else, measured 2026-10-08 over 1,591 trade rows of which
+     * 1,563 carry a non-zero spread.
+     *
+     * Held as a test because the defect it replaces was invisible in the arithmetic and loud on
+     * screen: the card printed `Fees 0.00 · spread 1.30` on a trade whose spread was the entire
+     * cost. The assertion that `Fees` does NOT mention the spread is the one that would catch it
+     * coming back.
+     */
+    it('keeps the spread out of the fee, because the served total does not contain it', () => {
+      const rows = cardRows(mountPanel(report({
+        trades: [trade({
+          total_fees: 1.75, commission_cost: 1.25, swap_cost: 0.5, spread_cost: 1.3,
+        })],
+      })))
+      expect(rows['Fees']).toContain('1.75')
+      expect(rows['Fees']).toContain('commission 1.25')
+      expect(rows['Fees']).toContain('swap 0.50')
+      expect(rows['Fees']).not.toContain('spread')
+      expect(rows['Spread']).toContain('1.30')
     })
 
     // the excursion is given three ways by the backend and the question decides which one answers

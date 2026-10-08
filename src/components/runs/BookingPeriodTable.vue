@@ -74,14 +74,18 @@ function opening(period: PeriodRow): string {
 }
 
 /**
- * The three parts `total_fees` adds up to, one hover away rather than three more columns on a
- * table that already carries fourteen. Attributed as `net_pnl` is — the costs of the trades this
- * period CLOSED, never a swap still accruing on an open position.
+ * What the period PAID, one hover away rather than three more columns on a table that already
+ * carries fourteen. Attributed as `net_pnl` is — the costs of the trades this period CLOSED, never
+ * a swap still accruing on an open position.
+ *
+ * The SPREAD is named apart from the sum, because it is not in it: `total_fees` is commission plus
+ * swap, measured over 1,044 periods. Reading the three as one total showed `0.00` beside a stated
+ * spread of `2.96` on a period that really cost that much.
  */
 function feeSplit(period: PeriodRow): string {
   return `${t('commission')} ${money(period.commission_cost, period)}`
     + ` · ${t('swap')} ${money(period.swap_cost, period)}`
-    + ` · ${t('spread')} ${money(period.spread_cost, period)}`
+    + ` — ${t('spread')} ${money(period.spread_cost, period)} ${t('besides, not part of this total')}`
 }
 
 /** Columns under the identity group, which has no heading of its own. */

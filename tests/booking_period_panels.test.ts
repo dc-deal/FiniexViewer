@@ -224,18 +224,24 @@ describe('BookingPeriodTable', () => {
 
   /**
    * Three more columns on a table that already carries fourteen would cost more than they tell,
-   * so the split rides in the title of the figure it adds up to.
+   * so the split rides in the title of the fee.
+   *
+   * The numbers are the SERVED arithmetic and not a convenient sum: `total_fees` is commission plus
+   * swap, and the spread is a cost beside it rather than a third term. Measured 2026-10-08 over
+   * 1,044 booking periods — the two-term identity held on all of them. This case carried
+   * `total_fees: 14.04` for 9.04 + 1.00 + 4.00 until then, a shape the API never serves.
    */
   it('keeps the fee breakdown one hover from the fee', () => {
     const wrapper = mountTable([period({
-      total_fees: 14.04, commission_cost: 9.04, swap_cost: 1.0, spread_cost: 4.0,
+      total_fees: 10.04, commission_cost: 9.04, swap_cost: 1.0, spread_cost: 4.0,
     })])
     // by POSITION, not by "the first cell with a title": four cells carry one now, because at this
     // width the unit name, both stamps and the equity band all truncate
     const labels = wrapper.findAll('.record-head > span').map(node => node.text())
     const fees = wrapper.find('.record-row').findAll(':scope > span')[labels.indexOf('Fees')]!
-    expect(fees.text()).toContain('14.04')
-    expect(fees.attributes('title')).toBe('commission 9.04 · swap 1.00 · spread 4.00')
+    expect(fees.text()).toContain('10.04')
+    expect(fees.attributes('title'))
+      .toBe('commission 9.04 · swap 1.00 — spread 4.00 besides, not part of this total')
   })
 
   it('shows the run column only where the rows span several runs', () => {

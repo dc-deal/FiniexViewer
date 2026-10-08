@@ -45,6 +45,10 @@ coverage/
 # Vite cache
 .vite/
 
+# Python cache — scripts/ holds the capture, the term check and the run classifier
+__pycache__/
+*.pyc
+
 # OS files
 Thumbs.db
 

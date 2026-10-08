@@ -156,7 +156,7 @@ function account(row: RunSummaryCurrency): Figure[] {
     figures.push(
       { label: t('Still open'), value: `${row.open_position_count}` },
       {
-        label: t('Unrealised'),
+        label: t('Unrealized'),
         value: amount(row.unrealized_pnl, row.currency),
         tone: signClass(row.unrealized_pnl),
       },

@@ -465,7 +465,8 @@ export interface PortfolioUnitRow {
   spot_est_initial: number
   spot_est_pnl: number
   spot_est_pnl_pct: number
-  // Cost breakdown behind total_fees
+  // What the unit PAID. `total_fees` carries the commission, the swap and — where a venue charges
+  // per side — the maker and taker fees; the SPREAD is not in it and is a cost of its own.
   total_spread_cost: number
   total_commission: number
   total_swap: number
@@ -546,9 +547,14 @@ export interface BookingPeriodRow {
   win_rate: number              // ratio 0..1, not a percentage
   // null = undefined rather than zero, as everywhere: a period without a losing trade has none
   profit_factor: number | null
-  // The three parts `total_fees` adds up to, attributed the way `net_pnl` is: the costs of the
-  // trades this period CLOSED. A swap accruing on a position still open belongs to the open book
-  // and is deliberately not here.
+  // The costs of the trades this period CLOSED, attributed the way `net_pnl` is. A swap accruing
+  // on a position still open belongs to the open book and is deliberately not here.
+  //
+  // `total_fees` is commission + swap and NOTHING ELSE — measured 2026-10-08 over 1,044 booking
+  // periods, 506 of them with a non-zero spread: the two-term identity holds on all 1,044 and the
+  // three-term one only where the spread is zero. `spread_cost` is a cost of its own, not a part
+  // of the total, which is why the aggregated panel lists it as its own figure rather than as a
+  // breakdown of fees.
   commission_cost: number
   swap_cost: number
   spread_cost: number
@@ -745,7 +751,8 @@ export interface TradeRow {
   total_fees: number
   net_pnl: number
   currency: string
-  // the three halves of total_fees
+  // What the trade cost. `total_fees` is the swap plus the commission; the SPREAD is beside it and
+  // not in it — measured over 1,591 trade rows, 1,563 of them with a non-zero spread.
   swap_cost: number
   commission_cost: number
   spread_cost: number

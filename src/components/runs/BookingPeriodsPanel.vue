@@ -21,13 +21,12 @@ interface Verdict {
 }
 
 /**
- * The reconciliation, in the three states it actually has. `null` is not a pass with a missing
- * number: the run reported no figure in this currency, so nothing was compared — and it is shown
- * as loudly as a failure, because a tick there would claim evidence that does not exist.
- */
-/**
  * Only the two states worth saying out loud. A reconciliation that PASSED renders nothing at all —
  * see the note in the template — so it needs no wording, no tone and no glyph.
+ *
+ * `null` is not a pass with a missing number: the run reported no figure in this currency, so
+ * nothing was compared, and that is shown as loudly as a failure — a tick there would claim
+ * evidence that does not exist.
  */
 const verdict = computed<Verdict>(() => {
   if (props.model.reconciles === false) {
@@ -58,10 +57,15 @@ const laneOrder = ref<LaneOrder>(display.value.laneOrder)
 watch(() => display.value.laneOrder, order => { laneOrder.value = order })
 
 /**
- * The narrowing reaches the PERIODS, never the verdict above them. `reconciles`, `total_net_pnl`
- * and `total_trades` compare the whole run's booked records against the whole run's count — there
- * is no per-unit version of that check, and showing it over one lane would claim it was about that
- * lane. It keeps its figures and says whose they are.
+ * The narrowing reaches the PERIODS, never the verdict above them. There is no per-unit version of
+ * that check, and showing it over one lane would claim it was about that lane. It keeps its figures
+ * and says whose they are.
+ *
+ * The two sides of the check, in FiniexTestingIDE's own division of labour (2026-10-07):
+ * `total_net_pnl`, `total_fees` and `total_trades` are the sums over the PERIODS and are the
+ * figures a consumer renders; `run_net_pnl` and `run_total_trades` are what the RUN reports and
+ * exist to be compared against them, equal when `reconciles` holds. We render the `total_*` family
+ * for that reason, and never the other.
  *
  * `unit_name` is the unit's identity here, the same value the roster calls `name`.
  */
@@ -172,7 +176,7 @@ const otherCurrencies = computed(() =>
   background-color: var(--color-bg-elevated);
 }
 
-.verdict.agrees { border-left-color: var(--color-positive); }
+/* no `agrees` rule: a reconciliation that passed renders nothing at all, so the tone never occurs */
 .verdict.disagrees { border-left-color: var(--color-error); }
 .verdict.unchecked { border-left-color: var(--color-error); }
 
@@ -181,7 +185,6 @@ const otherCurrencies = computed(() =>
   font-size: var(--font-size-lg);
 }
 
-.verdict.agrees .verdict-mark { color: var(--color-positive); }
 .verdict.disagrees .verdict-mark,
 .verdict.unchecked .verdict-mark { color: var(--color-error); }
 

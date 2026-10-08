@@ -464,7 +464,7 @@ describe('ScenarioRosterPanel', () => {
       expect(rows['Opened with']).toBe('10,000.00 USD')
       expect(rows['Balance']).toBe('9,993.36 USD')
       expect(rows['Final equity']).toBe('9,987.26 USD')
-      expect(rows['Unrealised']).toBe('-6.10 USD')
+      expect(rows['Unrealized']).toBe('-6.10 USD')
       expect(rows['Spread']).toBe('2.74 USD')
     })
 

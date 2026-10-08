@@ -348,10 +348,17 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
       tone: signClass(trade.net_pnl),
     },
     {
+      // `total_fees` is commission plus swap and nothing else — measured over 1,591 trade rows,
+      // 1,563 of which carry a non-zero spread. Listing the spread as a third part of it printed
+      // `Fees 0.00 · spread 1.30` on a trade whose spread WAS the whole cost. So the spread stands
+      // on its own below, the way the aggregated panel has always listed it.
       label: t('Fees'),
-      value: `${amount(trade.total_fees, trade.currency)} · ${t('spread')} `
-        + `${trade.spread_cost.toFixed(2)} · ${t('commission')} `
+      value: `${amount(trade.total_fees, trade.currency)} · ${t('commission')} `
         + `${trade.commission_cost.toFixed(2)} · ${t('swap')} ${trade.swap_cost.toFixed(2)}`,
+    },
+    {
+      label: t('Spread'),
+      value: amount(trade.spread_cost, trade.currency),
     },
     {
       label: t('Slippage'),
