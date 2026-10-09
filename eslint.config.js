@@ -16,6 +16,13 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**'],
+    /*
+     * Built output and anything a test RUN leaves behind. The last two are not housekeeping:
+     * Playwright writes `playwright-report/` only when a run fails, and it contains its own
+     * bundled viewer — measured 2026-10-08, one failing browser run turned `lint:check` into
+     * 17,416 errors from vendored JavaScript nobody here wrote. A hygiene check that drowns the
+     * moment a test fails is a hygiene check that stops being run.
+     */
+    ignores: ['dist/**', 'node_modules/**', 'playwright-report/**', 'test-results/**'],
   },
 ]

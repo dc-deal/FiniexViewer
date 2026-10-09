@@ -472,8 +472,11 @@ function card(trade: TradeRow): ListCard {
 
       <!-- the rank on every cell is the one its own column declares, and each of these lists
            asserts the two agree: the list owns the tracks, this template owns the cells -->
-      <template #default="{ row: trade }">
+      <template #default="{ row: trade, marker }">
         <span :data-rank="3" class="trade-position" :title="partsOf(trade) || trade.position_id">
+          <!-- the fills opened with no glyph at all until 2026-10-08, so nothing said the row
+               could be opened. The LIST decides the shape; this only places it. -->
+          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
           <!-- a link only where there is an Orders panel to land in -->
           <button
             v-if="link.canJumpTo('orders')"

@@ -11,6 +11,8 @@ import broker from './fixtures/broker.json'
 import aggregated from './fixtures/aggregated_portfolio.json'
 import pending from './fixtures/pending_orders.json'
 import history from './fixtures/order_history.json'
+import events from './fixtures/order_events.json'
+import eventsLive from './fixtures/order_events_live.json'
 import warningsErrors from './fixtures/warnings_errors.json'
 import configLive from './fixtures/run_config_live.json'
 import configSimulation from './fixtures/run_config_simulation.json'
@@ -22,6 +24,7 @@ import type {
   AggregatedPortfolioReport,
   BookingPeriodsReport,
   BrokerReport,
+  OrderEventsReport,
   OrderHistoryReport,
   PendingOrdersReport,
   PortfolioReport,
@@ -47,7 +50,7 @@ import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 23
+const EXPECTED_CONTRACT = 25
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -72,6 +75,10 @@ const EXPECTED_KEYS = {
   // one field is enough: a unit name IS a scenario name, and a set with a repeated name is refused
   pendingUnits: ['name'],
   brokers: ['broker_type'],
+  // the stream declares a key PER LIST and both read the same: `seq` counts one unit's lines
+  // and never repeats inside it, across both lists together
+  streamEvents: ['scenario_name', 'seq'],
+  streamBrokerTruth: ['scenario_name', 'seq'],
   // the portfolio's two lists — one row per scenario, one per account currency. `units` is what
   // the roster joins on, which is why it is a documented foreign key rather than a guess.
   portfolioUnits: ['name'],
@@ -314,6 +321,82 @@ describe('api contract', () => {
    * And `event_time` carries the contract-20 rename. Finding `execution_time` on these rows again
    * would mean a response from before it, which this mirror does not support (CLAUDE.md §21).
    */
+  /**
+   * The order event stream, and the four properties that make a faithful DISPLAY possible.
+   *
+   * Two captures, because one cannot carry both halves. The narrowed one is what the panel asks
+   * for — one position of the simulation — and a narrowed answer holds no `broker_truth` at all by
+   * design. The live one is unnarrowed, and it is the only place a venue was ever asked: a backtest
+   * has no venue to ask, its own book IS the venue.
+   */
+  /**
+   * The purpose vocabulary, because the run picker NAMES it rather than deriving it.
+   *
+   * The list opens with everything except `fixture`, and that default is written as the three
+   * values to keep. A fourth purpose would therefore be hidden silently — which is the kind of
+   * narrowing nobody notices. This is the guard: a word we do not know turns the suite red.
+   */
+  it('serves no run purpose the picker does not know', () => {
+    const typed: RunListResponse = runsList
+    const known = new Set(['regular', 'fixture', 'certificate'])
+    const unknown = [...new Set(typed.runs.map(row => row.run_purpose))]
+      .filter(value => value !== null && !known.has(value))
+    expect(unknown).toEqual([])
+    // and the three are not theoretical: the archive carries each of them
+    const served = new Set(typed.runs.map(row => row.run_purpose))
+    expect(served.has('fixture')).toBe(true)
+    expect(served.has('regular')).toBe(true)
+  })
+
+  it('the order event stream still satisfies the mirrored shape', () => {
+    const narrowed: OrderEventsReport = events
+    const live: OrderEventsReport = eventsLive
+
+    for (const typed of [narrowed, live]) {
+      expect(typed.events.length).toBeGreaterThan(0)
+      expect(typed.count).toBe(typed.events.length)
+      expect(typed.keys.events).toEqual(EXPECTED_KEYS.streamEvents)
+      expect(typed.keys.broker_truth).toEqual(EXPECTED_KEYS.streamBrokerTruth)
+      // nothing was cut off, so every assertion below reads a complete stream
+      expect(typed.truncated_tail).toBe(false)
+      // `seq` IS the order of the stream within a unit, and it is what a reader must be shown in
+      expect(typed.events.map(row => row.seq)).toEqual([...typed.events.map(row => row.seq)].sort(
+        (a, b) => a - b
+      ))
+      expect(typed.events.every(row => row.record_plane === 'bot')).toBe(true)
+    }
+
+    // ONE position, SEVERAL orders: `submitted_seq` is what identifies an order, and the partial
+    // close is the case that proves the difference — four orders under one position id, where
+    // `order_id` alone would have read as one thing.
+    const orders = new Set(narrowed.events.map(row => row.submitted_seq))
+    expect(orders.size).toBe(4)
+    expect(new Set(narrowed.events.map(row => row.order_id)).size).toBe(1)
+    expect(narrowed.broker_truth).toEqual([])
+
+    // WHY a reader must never be shown this sorted by time: a backtest takes and fills a market
+    // order in one instant, so the stamps repeat and a time sort would leave their order to chance.
+    const stamps = narrowed.events.map(row => row.event_time)
+    expect(new Set(stamps).size).toBeLessThan(stamps.length)
+
+    // A `denied` order was never submitted and carries no submission to belong to. Their sentence,
+    // and it is why the grouping has to survive a null rather than treat it as a missing value.
+    const denied = live.events.filter(row => row.event_type === 'denied')
+    expect(denied.length).toBeGreaterThan(0)
+    expect(denied.every(row => row.submitted_seq === null)).toBe(true)
+
+    // The venue's own lines, which exist on a live session only. A part has THREE states and the
+    // capture carries two of them: a value (`[]` — the venue holds no open order) and a null that
+    // means "this line does not read that part" — positions, on a spot account. The third, a null
+    // WITH the part named in `unread_parts`, has no case in this capture.
+    expect(live.broker_truth.length).toBeGreaterThan(0)
+    for (const row of live.broker_truth) {
+      expect(row.record_plane).toBe('broker_truth')
+      expect(['session_start', 'session_end', 'reconcile']).toContain(row.read_reason)
+      expect(row.unread_parts).toEqual([])
+    }
+  })
+
   it('the order history still satisfies the mirrored shape', () => {
     const typed: OrderHistoryReport = history
     expect(typed.orders.length).toBeGreaterThan(0)

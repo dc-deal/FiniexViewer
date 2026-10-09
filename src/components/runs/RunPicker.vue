@@ -31,7 +31,30 @@ const runsStore = useRunsStore()
 const { runs, selectedRun, selectedRunId, loadingRuns } = storeToRefs(runsStore)
 
 // the narrowing rides in the URL under `runf` / `runq` / `runsort`, so a filtered index is a link
-const { selection, search, sort } = useFacetQuery('run', 'newest')
+/**
+ * A run whose purpose nobody stated. OUR word, not theirs — the field is simply null, and a facet
+ * that offered no value for those rows would DROP them the moment the facet is used.
+ */
+const UNSTATED = 'unstated'
+
+/**
+ * What the list opens with: everything except the fixtures.
+ *
+ * Measured 2026-10-09 over 85 runs — 58 are `fixture`, runs whose numbers are built rather than
+ * earned, and they are not the operator's work. The remaining 27 are 19 `regular`, 2
+ * `certificate` and 6 that state nothing.
+ *
+ * **Not "only `regular`", and testingide warned about exactly that:** *"a list of only `regular`
+ * would also hide the real-money `certificate` runs and every run whose purpose is unknown."* The
+ * two certificates are the most expensive runs in the archive.
+ *
+ * The three values are named rather than derived, so a FOURTH purpose would be hidden here
+ * silently. `api_contract.test.ts` asserts the served vocabulary against this list for that
+ * reason: a new word turns the suite red instead of quietly shortening the list.
+ */
+const SHOWN_BY_DEFAULT = { purpose: ['regular', 'certificate', UNSTATED] }
+
+const { selection, search, sort } = useFacetQuery('run', 'newest', SHOWN_BY_DEFAULT)
 
 /** A value the row does not state is not offered — an empty option reads as a category. */
 function stated(value: string | null): string[] {
@@ -46,6 +69,12 @@ const facets: FacetDefinition<RunInfo>[] = [
   { id: 'reporting', label: 'Reporting', valuesOf: row => stated(row.reporting) },
   { id: 'origin', label: 'Origin', valuesOf: row => stated(row.parent_kind) },
   { id: 'version', label: 'Version', valuesOf: row => stated(row.app_version) },
+  /**
+   * What a run is FOR (contract 24), and the one facet that starts with a value picked. It never
+   * says whether money moved — `orders_to` does — so `certificate` is kept in view by default:
+   * those are the real-money field studies.
+   */
+  { id: 'purpose', label: 'Purpose', valuesOf: row => [row.run_purpose ?? UNSTATED] },
   /**
    * ONE axis where there were two, and it answers the question a reader actually arrives with:
    * *what ran clean, what ran but was flagged, what failed.*

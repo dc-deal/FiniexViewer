@@ -244,6 +244,19 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     }
   }
 
+  /**
+   * What is held for one position, and whether its request is in flight — read through functions so
+   * the key form never leaves this store. A second place building `scenario~order` is a second
+   * place to get it wrong.
+   */
+  function stepsFor(scenario: string, orderId: string): OrderEvent[] | null {
+    return orderEvents.value.get(`${scenario}~${orderId}`) ?? null
+  }
+
+  function stepsLoading(scenario: string, orderId: string): boolean {
+    return loadingOrderEvents.value.has(`${scenario}~${orderId}`)
+  }
+
   /** Booking periods carry the same 409 case as any other stored artifact. */
   async function loadBookingPeriods(runId: string): Promise<void> {
     loadingBookingPeriods.value = true
@@ -354,6 +367,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadPendingOrders,
     loadOrderHistory,
     loadOrderEvents,
+    stepsFor,
+    stepsLoading,
     loadBookingPeriods,
     loadConfig,
     loadTradeHistory,

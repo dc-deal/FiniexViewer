@@ -20,12 +20,13 @@ function makeRouter(query: Record<string, string> = {}): Router {
 async function mountBar(
   router: Router,
   prefix = 'run',
-  defaultSort = 'newest'
+  defaultSort = 'newest',
+  defaultSelection: Record<string, string[]> = {}
 ): Promise<FacetQuery> {
   let api: FacetQuery | null = null
   const Component = defineComponent({
     setup() {
-      api = useFacetQuery(prefix, defaultSort)
+      api = useFacetQuery(prefix, defaultSort, defaultSelection)
       return () => null
     },
   })
@@ -183,5 +184,50 @@ describe('patchQuery', () => {
     await flushPromises()
     expect(query(router)['broker']).toBe('kraken_spot')
     expect(query(router)['symbol']).toBe('ETHUSD')
+  })
+})
+
+describe('a default narrowing', () => {
+  const KEEP = { purpose: ['regular', 'certificate'] }
+
+  /**
+   * It is WRITTEN to the url, and that is the whole design. A default kept in memory would be an
+   * invisible filter — the thing our own rule about selection living in the url forbids, and the
+   * thing every product that does this avoids by spelling the default out (GitHub's `is:open`).
+   */
+  it('applies a default where the url names none, and puts it in the url', async () => {
+    const router = makeRouter()
+    const api = await mountBar(router, 'run', 'newest', KEEP)
+    await flushPromises()
+
+    expect(api.selection.value).toEqual(KEEP)
+    expect(query(router)['runf']).toBe('purpose:regular,certificate')
+  })
+
+  /** A link that names a facet is the reader's own word and outranks the default completely. */
+  it('leaves a url that names a facet alone', async () => {
+    const router = makeRouter({ runf: 'purpose:fixture' })
+    const api = await mountBar(router, 'run', 'newest', KEEP)
+    await flushPromises()
+
+    expect(api.selection.value).toEqual({ purpose: ['fixture'] })
+  })
+
+  /** And clearing really clears — the default is a starting value, never a floor. */
+  it('can be taken away', async () => {
+    const router = makeRouter()
+    const api = await mountBar(router, 'run', 'newest', KEEP)
+    await flushPromises()
+
+    api.selection.value = {}
+    await flushPromises()
+    expect(query(router)['runf']).toBeUndefined()
+  })
+
+  it('writes nothing where no default was given', async () => {
+    const router = makeRouter()
+    await mountBar(router)
+    await flushPromises()
+    expect(query(router)['runf']).toBeUndefined()
   })
 })

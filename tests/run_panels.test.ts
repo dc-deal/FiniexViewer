@@ -580,6 +580,11 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     group: 'simulation',
     artifacts: ['run_summary.json', 'portfolio.json'],
     stream_files: [],
+    // contracts 24 and 25: what the run is FOR, under which contract its reports
+    // were written, and whether it is still its catalog entry's current one
+    run_purpose: 'regular',
+    report_contract: 25,
+    fixture_superseded: null,
     name: 'multi_position_test',
     // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
     results: null,

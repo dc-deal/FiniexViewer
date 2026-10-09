@@ -98,6 +98,13 @@ interface ApiMockOptions {
 /** A number where a list belongs: `.filter` on it throws, which is how the original defect landed. */
 const WRONG_SHAPE = 0
 
+/** Only what the mock reads off the stream capture to decide which position it answers for. */
+interface StreamCapture {
+  events: { scenario_name: string, order_id: string }[]
+  broker_truth: unknown[]
+  count: number
+}
+
 /** Serves every `/api/v1/**` call from the captures. Anything unmapped fails loudly, never silently. */
 export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise<void> {
   await page.route('**/api/v1/**', async (route: Route) => {
@@ -108,6 +115,30 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
 
     if (path === '/api/v1/reports/runs') {
       return route.fulfill({ json: fixture('runs_list.json'), headers: CONTRACT })
+    }
+
+    /*
+     * The STREAM, which is the one report route that is NARROWED — it is asked for one position,
+     * not for the run. So the capture answers for that one position and an empty stream for any
+     * other, which keeps the mock coherent rather than convenient: serving one position's steps
+     * under every position would put the wrong order's life on screen and no assertion would say
+     * so. `broker_truth` is empty on a narrowed answer by design, and the capture carries that.
+     */
+    const stream = /^\/api\/v1\/reports\/runs\/([^/]+)\/order-events$/.exec(path)
+    if (stream) {
+      if (stream[1] !== FIXTURE_RUN) {
+        return route.fulfill(absent('run_not_found', `Only ${FIXTURE_RUN} is captured`))
+      }
+      const asked = new URL(route.request().url()).searchParams
+      const body = fixture('order_events.json') as StreamCapture
+      const first = body.events[0]
+      const mine = asked.get('scenario_name') === first?.scenario_name
+        && asked.get('order_id') === first?.order_id
+      if (mine) return route.fulfill({ json: body, headers: CONTRACT })
+      return route.fulfill({
+        json: { ...body, events: [], broker_truth: [], count: 0 },
+        headers: CONTRACT,
+      })
     }
 
     const report = /^\/api\/v1\/reports\/runs\/([^/]+)\/([a-z-]+)$/.exec(path)

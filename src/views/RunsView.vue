@@ -14,6 +14,7 @@ import {
   providePositionLink,
 } from '@/composables/use_position_link'
 import type { PositionRef } from '@/composables/use_position_link'
+import { provideOrderSteps } from '@/composables/use_order_steps'
 import { hasArtifact } from '@/api/report_artifacts'
 import { panelById } from '@/panel_registry'
 import RunPicker from '@/components/runs/RunPicker.vue'
@@ -83,6 +84,27 @@ providePositionLink({
     // the same record PanelColumn is handed, read by the source a descriptor declares
     const models = sources.value as Record<string, unknown>
     return models[descriptor.source] != null
+  },
+})
+
+/**
+ * The steps one position's orders went through, which the Orders panel asks for a position at a
+ * time rather than for the run.
+ *
+ * The VIEW owns it for the same reason it owns the jump: which run is selected, and whether that
+ * run wrote a stream at all, is the workspace's knowledge. **The gate is `stream_files`, not
+ * `artifacts`** — the stream is not a report artifact and appears in no run's artifact list, and
+ * the backend names it on the index row instead. Measured 2026-10-08: 51 of 52 runs carry
+ * `["order_events.jsonl"]` there and one carries `[]`. Without the gate the panel would offer a
+ * reader a disclosure that can only answer 404.
+ */
+provideOrderSteps({
+  available: () => (selectedRun.value?.stream_files.length ?? 0) > 0,
+  heldFor: (ref: PositionRef) => reportsStore.stepsFor(ref.scenario, ref.position),
+  loadingFor: (ref: PositionRef) => reportsStore.stepsLoading(ref.scenario, ref.position),
+  askFor: (ref: PositionRef) => {
+    const runId = selectedRunId.value
+    if (runId) void reportsStore.loadOrderEvents(runId, ref.scenario, ref.position)
   },
 })
 

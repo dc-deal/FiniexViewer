@@ -11,6 +11,11 @@ function header(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
   return {
     artifacts: ['run_summary.json'],
     stream_files: [],
+    // contracts 24 and 25: what the run is FOR, under which contract its reports
+    // were written, and whether it is still its catalog entry's current one
+    run_purpose: 'regular',
+    report_contract: 25,
+    fixture_superseded: null,
     has_reports: true,
     // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
     results: null,

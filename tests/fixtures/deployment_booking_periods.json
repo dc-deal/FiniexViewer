@@ -4,7 +4,7 @@
     "unit_name",
     "period_no"
   ],
-  "deployment_id": "deploy_20261008_110304",
+  "deployment_id": "deploy_20261008_232700",
   "periods": [
     {
       "unit_name": "demo_btcusd_bot",
@@ -26,7 +26,7 @@
       "min_equity": 9816.1684875,
       "max_equity": 10017.5684875,
       "max_drawdown": 201.40000000000146,
-      "run_id": "20261008_110304_2ed8912d"
+      "run_id": "20261008_232700_1a650ae9"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -48,7 +48,7 @@
       "min_equity": 9861.203849999998,
       "max_equity": 10062.69369375,
       "max_drawdown": 197.05526250000185,
-      "run_id": "20261008_110304_2ed8912d"
+      "run_id": "20261008_232700_1a650ae9"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -70,7 +70,7 @@
       "min_equity": 10000.0,
       "max_equity": 10000.0,
       "max_drawdown": 0.0,
-      "run_id": "20261008_110348_02db68e7"
+      "run_id": "20261008_232742_70c865cf"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -92,7 +92,7 @@
       "min_equity": 9523.168474999999,
       "max_equity": 10045.60345,
       "max_drawdown": 522.4349750000019,
-      "run_id": "20261008_110348_02db68e7"
+      "run_id": "20261008_232742_70c865cf"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -114,7 +114,7 @@
       "min_equity": 9745.410075,
       "max_equity": 10142.560075000001,
       "max_drawdown": 254.58992500000022,
-      "run_id": "20261008_110430_4b1365f3"
+      "run_id": "20261008_232824_28089007"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -136,7 +136,7 @@
       "min_equity": 9753.736406250002,
       "max_equity": 10124.810075000001,
       "max_drawdown": 371.07366874999934,
-      "run_id": "20261008_110430_4b1365f3"
+      "run_id": "20261008_232824_28089007"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -158,7 +158,7 @@
       "min_equity": 10000.0,
       "max_equity": 10000.0,
       "max_drawdown": 0.0,
-      "run_id": "20261008_110513_38569aa3"
+      "run_id": "20261008_232905_b5377c4f"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -180,7 +180,7 @@
       "min_equity": 9817.122725000001,
       "max_equity": 10000.572725000002,
       "max_drawdown": 183.45000000000073,
-      "run_id": "20261008_110513_38569aa3"
+      "run_id": "20261008_232905_b5377c4f"
     }
   ],
   "count": 8,

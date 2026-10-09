@@ -124,7 +124,12 @@ GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down 
 GET /api/v1/reports/runs/{run_id}/booking-periods     the bookkeeping stretches, plus a completeness check
 GET /api/v1/reports/runs/{run_id}/config              what the run was commissioned with
 GET /api/v1/reports/runs/{run_id}/trade-history       every closed position, with its excursions
-GET /api/v1/reports/runs/{run_id}/...                 10 further per-section reports (not yet consumed)
+GET /api/v1/reports/runs/{run_id}/broker              the venues, their symbols and their rules
+GET /api/v1/reports/runs/{run_id}/aggregated-portfolio  the fold, per account currency
+GET /api/v1/reports/runs/{run_id}/pending-orders      what became of a scenario's orders
+GET /api/v1/reports/runs/{run_id}/order-history       the orders themselves, as records
+GET /api/v1/reports/runs/{run_id}/order-events        the STEPS between those records
+GET /api/v1/reports/runs/{run_id}/...                 5 further per-section reports (not yet consumed)
 ```
 
 **Ledger plane** — a bot's life across its restarts, on its own grant surface `deployments`:
@@ -1269,34 +1274,38 @@ an entry rather than gaining one.
 
 **The join is the scenario name, and it holds by CONSTRUCTION.** `pending-orders.units[].name` and
 `order-history.orders[].scenario_name` are both written from the same run unit's name
-(FiniexTestingIDE, 2026-10-01). Two edges, both handled: a scenario whose every order was refused
-before the queue never enters the pending pipeline, so it has rows and no funnel; and an AutoTrader
-run serves no units at all, because that section is filled by the simulation only. In both the
-heading says so rather than drawing a funnel of zeroes, which would claim a measurement nobody made.
+(FiniexTestingIDE, 2026-10-01). One edge, and it is handled: a scenario whose every order was
+refused before the queue never enters the pending pipeline, so it has rows and no funnel, and the
+heading says so rather than drawing a funnel of zeroes that would claim a measurement nobody made.
+
+A SECOND edge stood here and was wrong — that an AutoTrader run serves no units at all. Measured
+2026-10-08: both stored AutoTrader runs carry one, the field study with 46 submitted and 46 timed
+in flight. The sentence came from an archive in which no such run had placed an order yet.
 
 **The question nothing else on the page can answer.** Every other section says what the run DID.
 Measured 2026-10-01 over 202 units across 20 runs, one unit **resolved 527 orders and filled none of
 them** — and every other panel of that run showed a normal-looking result.
 
-**The funnel's arithmetic, and the counter that does not mean what it says.** The backend stated it
-on 2026-10-05, after we measured it and could not reconcile it with the rows:
+**The funnel, in their own words since contract 23.** The heading reads submitted · accepted ·
+rejected · never confirmed · expired · avg in flight, and the last three appear only where they are
+not zero. The identity is theirs, and it is checked rather than assumed:
 
 ```
-total_resolved = the open/pending rows + the closes the ALGO sent itself
-                 (a close triggered by a stop or a take-profit never enters the in-flight queue)
-total_filled   = total_resolved − total_rejected − total_timed_out − total_force_closed
+total_submitted = total_accepted + total_rejected + total_never_confirmed + total_expired
 ```
 
-Both hold on 222 of 222 scenario units measured. Nothing is computed from them here.
+**Measured 2026-10-08 over 230 units: it holds on 230 of 230, without exception.** That settles a
+question carried here for a week — whether an order RESTING at data end is counted twice. Since the
+identity divides every submission over four endings, a resting order is already inside `accepted`: a
+subset, never a fifth bucket. Exactly one unit in the archive holds a resting order at all, and
+`total_expired` is zero there as everywhere, so the two are disjoint.
 
-**`total_filled` is drawn as `arrived`, which is THEIR word.** In a backtest the counter counts every
-order that arrived after its modelled delay, so one that merely began resting is counted and did not
-fill — `architecture_execution_layer.md:202`: *"the simulation resolves it when it ARRIVES … This is
-a known defect, not a design."* Our own `BTCUSD_blocks_02` became their worked example. Measured over
-the same 222 units, **23 report `filled ≥ 1` with no `open/executed` row at all**, and only 3 of
-those are the expired case their paragraph describes — the other 20 are collected as an open question.
-The caveat rides in the figure's own `title` rather than as a sentence on the page: a reader meets it
-where the number is, and a healthy funnel prints nothing extra.
+**What replaced the old arithmetic, and why it is GONE rather than maintained.** Until contract 22
+the heading read resolved · arrived · rejected · timed out · force closed, and `arrived` carried a
+tooltip explaining a defect of the backend's own: `total_filled` counted an order that had merely
+begun resting, and our `BTCUSD_blocks_02` was their worked example. They fixed it and named the field
+`total_accepted`. The paraphrase lost its subject, so it was deleted with it rather than kept out of
+attachment — a sentence describing behaviour nobody has any more is worse than no sentence.
 
 `arrived` is right for everything this panel can draw, because `units` is empty on an AutoTrader run
 and a session's counter means reported FILLS. The word splits by pipeline the day sessions carry
@@ -1355,6 +1364,60 @@ session the answer differs: an order left standing at the venue gets no `expired
 scenario is one symbol, so the parameter would narrow nothing a reader asked for. Before contract 20
 it was also unsafe: a rejected row had an empty symbol and the filter silently dropped every
 rejection.
+
+### The third level — what an order actually went through
+
+`GET /api/v1/reports/runs/{run_id}/order-events`, narrowed, rendered by `runs/OrderStepList.vue`
+inside a row of the Orders panel. Their own sentence for why it exists: *"[order history] keeps a row
+for each submission and one for every way an order ENDED. What happened in between is missing
+there."* This is that in-between — the venue taking the order, a stop triggering, every cancel asked
+for and how it was answered.
+
+**It hangs off the POSITION, not off a row, and that is forced rather than chosen.** An
+`order-history` row carries no `seq`, no `submitted_seq` and no `client_order_id`, so nothing on it
+says which order it belongs to. Measured on `pos_ethusd_1` of the field study: **three history rows
+against two stream orders.** So a reader opens a POSITION, and the ORDERS inside it come from the
+stream, which identifies its own.
+
+Confirmed by testingide on 2026-10-08, asked directly: *"the intended granularity for the join is the
+position: narrow `/order-events` by (`scenario_name`, `order_id`) and group by `submitted_seq`. Your
+position-level expansion is the correct build, not a workaround."* The row-level field is planned in
+testingide#557 and ships with a contract raise; clicking ONE history row becomes possible then, and
+not before.
+
+**`order_id` must never be the group key.** It is the POSITION and repeats across a position's open
+and its closes — one id covers two orders on the field study and four on the capture's partial close.
+`submitted_seq` identifies one order, and a `denied` order carries none because it was never
+submitted, so null is a VALUE here and gets its own group rather than one group per step.
+
+**Never sorted by time.** `seq` is the order of the stream, and several steps often share one instant
+@ a backtest takes and fills a market order at once. The captured response has fewer distinct
+`event_time` values than events, which is asserted rather than trusted.
+
+**One request per POSITION, not per run, and the host owns it.** The stream is the largest thing this
+API serves here — 1,025 events on one stored run against the four of a position a reader opened — and
+the route narrows itself, so one position costs 3 KB where its run costs 138 KB. `use_order_steps.ts`
+is the ambient capability, the same `provide`/`inject` channel the position link uses and for the
+same reason: a panel that reached for the store would stop being renderable from a different host.
+`run_reports_store.ts` keeps the answers per position and refuses a second request for one it already
+has — the panel asks on every opening and does not check first, because what is held is the store's
+knowledge and a second copy of that check is a second place to get it wrong.
+
+**The gate is `stream_files`, not `artifacts`.** The stream is not a report artifact and appears in no
+run's artifact list; the backend names it on the run index row instead. Measured 2026-10-08: 51 of 52
+runs carry `["order_events.jsonl"]` there and one carries `[]`. Without the gate the panel would
+offer a disclosure that can only ever answer 404.
+
+**`broker_truth` is deliberately not here.** A narrowed answer carries none, and their document says
+why: those lines are the venue's whole account at a moment, *"never a step of one order."* They are
+the subject of a venue-account panel, which is its own undertaking.
+
+**Its own component rather than a second list in the panel, and the reason is an instrument.**
+`scripts/check_terms.py` pairs ONE `ListColumn` array per file against that file's row template,
+positionally, and drops the pairing where the two disagree. A second array beside the first silently
+cost the Orders panel's eight labels their field mapping — measured 2026-10-08, `Lots` fell back to
+the trade history's reading and the check reported it as moved. One column array per file is a
+property the check depends on.
 
 ### The way between an order and its trade
 

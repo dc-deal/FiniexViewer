@@ -5,6 +5,7 @@ import { defineComponent, h } from 'vue'
 import OrdersPanel from '@/components/runs/OrdersPanel.vue'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestPositionLink } from './position_link_harness'
+import { provideTestOrderSteps, step } from './order_steps_harness'
 import type {
   OrderHistoryRow,
   OrderHistoryReport,
@@ -213,7 +214,7 @@ describe('OrdersPanel', () => {
       const wrapper = mountPanel(model([order()], [unit({
         avg_in_flight_ms: 0, min_in_flight_ms: 0, max_in_flight_ms: 0, in_flight_count: 0,
       })]))
-      expect(heading(wrapper)).toContain('in flight n/a')
+      expect(heading(wrapper)).toContain('avg in flight n/a')
     })
 
     /**
@@ -223,7 +224,7 @@ describe('OrdersPanel', () => {
      * only kind of run where orders rest long enough for the figure to be interesting.
      */
     it('names what the duration measures rather than printing a bare number', () => {
-      expect(heading(mountPanel(model([order()])))).toContain('in flight 60 ms')
+      expect(heading(mountPanel(model([order()])))).toContain('avg in flight 60 ms')
     })
 
     /**
@@ -564,6 +565,245 @@ describe('OrdersPanel', () => {
   })
 
   /** Read-only: these are records of what happened, with nothing to choose. */
+  /**
+   * The THIRD level: what the orders of one position went through, from the event stream.
+   *
+   * It hangs off the POSITION and not off a row, and that is forced rather than chosen: an
+   * `order-history` row carries no `seq`, `submitted_seq` or `client_order_id`, so nothing on it
+   * says which order it belongs to (testingide#557). The stream identifies its own orders, so the
+   * order level comes from there.
+   */
+  /**
+   * Two orders both `cancelled` are not the same event, and the list showed them as one. Measured
+   * on the field study: `pos_ethusd_44` was taken back by the strategy, `protect_pos_ethusd_41`
+   * released by the framework — same word, different thing, and nothing on the row said which.
+   */
+  it('says WHO ended an order beside the status, and nothing where the record is silent', () => {
+    const byStrategy = mountPanel(model([order({ status: 'cancelled', initiator: 'strategy' })]))
+    expect(byStrategy.find('.order-list .record-row').text()).toContain('cancelled · strategy')
+
+    const byFramework = mountPanel(model([order({ status: 'cancelled', initiator: 'framework' })]))
+    expect(byFramework.find('.order-list .record-row').text()).toContain('cancelled · framework')
+
+    // and a record that names nobody says nobody — the separator appears with the name, not before
+    const plain = mountPanel(model([order({ status: 'executed', initiator: null })]))
+    expect(plain.find('.order-list .record-row').text()).toContain('executed')
+    expect(plain.find('.order-list .record-row').text()).not.toContain('·')
+  })
+
+  describe('the steps of a position', () => {
+    function mountStepped(
+      value: ReturnType<typeof model>,
+      held: Parameters<typeof provideTestOrderSteps>[0] = {},
+      available: Parameters<typeof provideTestOrderSteps>[1] = true,
+      reading: Parameters<typeof provideTestOrderSteps>[2] = []
+    ) {
+      let state!: ReturnType<typeof provideTestOrderSteps>
+      const Host = defineComponent({
+        setup() {
+          provideTestPositionLink(null, [])
+          state = provideTestOrderSteps(held, available, reading)
+          return () => h(OrdersPanel, { model: value })
+        },
+      })
+      const wrapper = mount(Host, { global: { plugins: [createPinia()] } })
+      return { wrapper, state }
+    }
+
+    /** The reader clicks the LINE, which is what they tried first and what the list now offers. */
+    async function openPosition(wrapper: ReturnType<typeof mountStepped>['wrapper']) {
+      await wrapper.find('.order-list .record-row.starts-position').trigger('click')
+    }
+
+    const TWO_ROWS = model([
+      order({ order_id: 'pos_1', status: 'pending' }),
+      order({ order_id: 'pos_1', status: 'executed' }),
+    ])
+
+    /**
+     * On the row that STARTS a position and nowhere else. The rows beneath it are the same
+     * position, so a second disclosure would ask for the same thing twice over — and the list
+     * cannot make one row interactive and another not, which is why the control sits inside the
+     * cell rather than on the row.
+     */
+    it('makes the row that names a position the control, and the rows under it not', () => {
+      const { wrapper } = mountStepped(TWO_ROWS)
+      const rows = wrapper.findAll('.order-list .record-row')
+      expect(rows).toHaveLength(2)
+      // the row that STARTS the position is a button; the row carrying it on is a plain div
+      expect(rows[0]!.element.tagName).toBe('BUTTON')
+      expect(rows[1]!.element.tagName).toBe('DIV')
+      expect(rows[1]!.classes()).toContain('inert')
+      // and the glyph says it opens something, drawn by the LIST rather than by this panel
+      expect(wrapper.findAll('.record-marker')).toHaveLength(1)
+      expect(rows[0]!.attributes('aria-expanded')).toBe('false')
+    })
+
+    /** The glyph turns with the state, which is the half a reader checks after clicking. */
+    it('turns the glyph and the announcement when the row is opened', async () => {
+      const { wrapper } = mountStepped(TWO_ROWS, { [SCENARIO + '~pos_1']: [step()] })
+      expect(wrapper.find('.record-marker').text()).toBe('▸')
+      await openPosition(wrapper)
+      expect(wrapper.find('.record-marker').text()).toBe('▾')
+      expect(wrapper.find('.order-list .record-row').attributes('aria-expanded')).toBe('true')
+    })
+
+    /**
+     * A run that wrote no stream gets no disclosure at all. The gate is `stream_files` on the run
+     * index row, answered by the host — offering a control that can only ever answer 404 is the
+     * defect class this project cares most about.
+     */
+    it('draws nothing where the run wrote no stream', () => {
+      const { wrapper } = mountStepped(TWO_ROWS, {}, false)
+      // no glyph, and no row is a control: a disclosure that can only answer 404 is not offered
+      expect(wrapper.findAll('.record-marker')).toHaveLength(0)
+      expect(wrapper.findAll('.order-list .record-row button')).toHaveLength(0)
+      expect(wrapper.find('.order-list .record-row').element.tagName).toBe('DIV')
+    })
+
+    /** Asked for on OPENING, never on mount: a run holds hundreds of positions. */
+    it('asks for that one position, and only when it is opened', async () => {
+      const { wrapper, state } = mountStepped(TWO_ROWS)
+      expect(state.asked).toEqual([])
+      await openPosition(wrapper)
+      expect(state.asked).toEqual([{ scenario: SCENARIO, position: 'pos_1' }])
+    })
+
+    it('says it is reading rather than claiming the stream is empty', async () => {
+      const { wrapper } = mountStepped(TWO_ROWS, {}, true, [SCENARIO + '~pos_1'])
+      await openPosition(wrapper)
+      expect(wrapper.find('.step-state').text()).toContain('Reading the stream')
+    })
+
+    it('states an empty stream as an absence rather than drawing an empty list', async () => {
+      const { wrapper } = mountStepped(TWO_ROWS, { [SCENARIO + '~pos_1']: [] })
+      await openPosition(wrapper)
+      expect(wrapper.find('.step-state').text()).toContain('records no step')
+      expect(wrapper.find('.step-list').exists()).toBe(false)
+    })
+
+    /**
+     * ONE position, SEVERAL orders, grouped by `submitted_seq` — their instruction, and the reason
+     * is that `order_id` repeats across a position's open and its closes. Grouped by `order_id`
+     * these five steps would read as one order.
+     */
+    it('groups the steps into the orders they belong to', async () => {
+      const held = { [SCENARIO + '~pos_1']: [
+        step({ seq: 2, submitted_seq: 2, event_type: 'submitted', action: 'open' }),
+        step({ seq: 3, submitted_seq: 2, event_type: 'accepted', action: 'open', in_flight_ms: 503 }),
+        step({ seq: 4, submitted_seq: 2, event_type: 'filled', action: 'open', fill_price: 2573.6 }),
+        step({ seq: 9, submitted_seq: 9, event_type: 'submitted', action: 'close' }),
+        step({ seq: 10, submitted_seq: 9, event_type: 'cancelled', action: 'close',
+          initiator: 'strategy', end_reason: 'cancel_requested' }),
+      ] }
+      const { wrapper } = mountStepped(TWO_ROWS, held)
+      await openPosition(wrapper)
+
+      const groups = wrapper.findAll('.step-group')
+      expect(groups).toHaveLength(2)
+      expect(groups[0]!.text()).toContain('order 2')
+      expect(groups[1]!.text()).toContain('order 9')
+      // what the order WAS, stated once on the heading rather than down every step
+      expect(groups[0]!.text()).toContain('limit open long')
+      expect(wrapper.findAll('.step-list .record-row')).toHaveLength(5)
+    })
+
+    /**
+     * The order of the STREAM, never of the clock. A backtest takes and fills a market order in one
+     * instant, so the stamps repeat and sorting by time would leave their order to chance.
+     */
+    it('keeps the steps in the order the stream wrote them', async () => {
+      const same = '2026-10-08T10:36:27.000000+00:00'
+      const held = { [SCENARIO + '~pos_1']: [
+        step({ seq: 7, event_type: 'submitted', event_time: same }),
+        step({ seq: 8, event_type: 'accepted', event_time: same }),
+        step({ seq: 9, event_type: 'filled', event_time: same }),
+      ] }
+      const { wrapper } = mountStepped(TWO_ROWS, held)
+      await openPosition(wrapper)
+      const rows = wrapper.findAll('.step-list .record-row').map(row => row.text())
+      expect(rows[0]).toContain('submitted')
+      expect(rows[1]).toContain('accepted')
+      expect(rows[2]).toContain('filled')
+    })
+
+    /** A denied order was never submitted, so it is named by that rather than by a number. */
+    it('names an order that was never submitted rather than inventing a number', async () => {
+      const held = { [SCENARIO + '~pos_1']: [
+        step({ seq: 5, submitted_seq: null, event_type: 'denied',
+          rejection_reason: 'invalid_lot_size', message: 'Lot size 1e-05 below minimum 0.001' }),
+      ] }
+      const { wrapper } = mountStepped(TWO_ROWS, held)
+      await openPosition(wrapper)
+      expect(wrapper.find('.step-group').text()).toContain('never submitted')
+      // and the backend's own sentence is the detail, never our paraphrase of it
+      expect(wrapper.find('.step-detail').text()).toContain('Lot size 1e-05 below minimum 0.001')
+    })
+
+    /**
+     * One thing per step, in their order of weight: why it was refused, who ended it and why, how
+     * long the venue took, the price where one was reached. A step carries at most one.
+     */
+    it('says the one thing each step adds', async () => {
+      const held = { [SCENARIO + '~pos_1']: [
+        step({ seq: 1, event_type: 'accepted', in_flight_ms: 503 }),
+        step({ seq: 2, event_type: 'cancelled', initiator: 'strategy',
+          end_reason: 'cancel_requested' }),
+        step({ seq: 3, event_type: 'filled', fill_price: 2573.6 }),
+      ] }
+      const { wrapper } = mountStepped(TWO_ROWS, held)
+      await openPosition(wrapper)
+      const notes = wrapper.findAll('.step-detail').map(cell => cell.text())
+      expect(notes[0]).toBe('in flight 503 ms')
+      expect(notes[1]).toContain('strategy')
+      expect(notes[1]).toContain('cancel_requested')
+      // the price carries its word too, like the duration above it
+      expect(notes[2]).toBe('at 2573.60000')
+    })
+
+    /**
+     * Opening and closing is the panel's own state, and asking is all it does about the data.
+     *
+     * It asks on EVERY opening and deliberately does not check first: what is held and what is in
+     * flight is the store's knowledge, and the store already refuses a second request for a
+     * position it has (`run_reports_store.test.ts`, *does not ask twice for a position it already
+     * holds*). A panel repeating that check would be a second place to get it wrong.
+     */
+    /**
+     * The way back out, and it exists only while there is a way back out. Where everything is
+     * fine nothing is printed — with nothing expanded there is nothing to close.
+     *
+     * Not called "collapse all": that name belongs to the app bar's control over the PANELS, and
+     * a second one meaning something else is a trap rather than a convenience.
+     */
+    it('offers a way to close everything, and only while something is open', async () => {
+      const held = { [SCENARIO + '~pos_1']: [step()] }
+      const { wrapper } = mountStepped(TWO_ROWS, held)
+      expect(wrapper.find('.steps-open').exists()).toBe(false)
+
+      await openPosition(wrapper)
+      expect(wrapper.find('.steps-open').text()).toContain('1 position open')
+      expect(wrapper.find('.step-list').exists()).toBe(true)
+
+      await wrapper.find('.close-steps').trigger('click')
+      expect(wrapper.find('.step-list').exists()).toBe(false)
+      expect(wrapper.find('.steps-open').exists()).toBe(false)
+    })
+
+    it('closes again, and leaves the de-duplication to the one place that can do it', async () => {
+      const held = { [SCENARIO + '~pos_1']: [step()] }
+      const { wrapper, state } = mountStepped(TWO_ROWS, held)
+      await openPosition(wrapper)
+      expect(wrapper.find('.step-list').exists()).toBe(true)
+      await openPosition(wrapper)
+      expect(wrapper.find('.step-list').exists()).toBe(false)
+      await openPosition(wrapper)
+      expect(wrapper.find('.step-list').exists()).toBe(true)
+      // the same position both times, never another one
+      expect(new Set(state.asked.map(ref => ref.position))).toEqual(new Set(['pos_1']))
+    })
+  })
+
   it('offers nothing to click but the group headings', () => {
     const wrapper = mountPanel({ pending: PENDING, history: HISTORY, trades: null })
     const buttons = wrapper.findAll('button')

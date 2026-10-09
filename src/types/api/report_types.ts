@@ -69,6 +69,37 @@ export interface RunInfo {
    * it at all.
    */
   stream_files: string[]
+  /**
+   * What the run is FOR, new in contract 24. `regular` — somebody's own run; `fixture` — a test's
+   * run or one a consumer pins, whose numbers are BUILT rather than earned; `certificate` — a
+   * release-gate run whose record becomes a certificate, the real-money field study among them.
+   *
+   * **It never says whether money moved** — `orders_to` does, and only `venue` there means it did.
+   * So hiding test material means leaving out `fixture`, NEVER keeping only `regular`: that would
+   * hide the certificate runs, which are the most expensive runs in the archive, and every run
+   * whose purpose could not be read.
+   *
+   * Null where no configuration can be read — the old demo-deployment sessions, whose profiles
+   * were temporary. A run recorded before the field was filled in from its configuration when the
+   * index was rebuilt.
+   */
+  run_purpose: string | null
+  /**
+   * The contract the run's REPORTS were written under, new in contract 24. Compare it with
+   * `GET /api/v1/contract`: a figure a later contract added reads `0` or `null` on an older run,
+   * and this is how an OLD run is told from a WRONG one. Null on every run recorded before it.
+   */
+  report_contract: number | null
+  /**
+   * Whether this run is still the one to pin, new in contract 25. `false` for a run of its catalog
+   * entry's CURRENT production, `true` for an older production or one that failed its check, and
+   * null for every run no catalog production made — ordinary runs, test runs, and the runs pinned
+   * before the catalog existed.
+   *
+   * Derived by them each time the list is served; nothing inside a run changes. A replaced run
+   * that passed its check stays on disk until they release it, so a pin on it keeps working.
+   */
+  fixture_superseded: boolean | null
   // Derived from `artifacts` being non-empty, so the two cannot disagree. False means the run
   // exists as LOGS ONLY and every report route answers 404 — a normal state, not a fault.
   has_reports: boolean
@@ -1372,37 +1403,92 @@ export interface OrderEvent {
   lost_request: string | null
 }
 
+/** One order the venue reports as open, in its own terms — including orders this session never placed. */
+export interface VenueOrder {
+  /** The venue's handle for the order. Always present. */
+  broker_ref: string
+  /** Our own wire key, where the order carries one. */
+  client_order_id: string | null
+  symbol: string
+  direction: string
+  // `market` · `limit` · `stop` · `stop_limit` · `trailing_stop` · `iceberg` · `unknown`
+  order_type: string
+  /** The size as ASKED, never what remains of it. */
+  lots: number
+  /** What has executed so far, `0.0` where nothing has. */
+  filled_lots: number
+  /** The price it would fill at, null where the order has none. */
+  limit_price: number | null
+  /** The price that activates it, null where the order has none. */
+  stop_price: number | null
+  // `pending` · `filled` · `partially_filled` · `rejected` · `cancelled` · `expired` ~
+  // `unresolved` · `unknown`
+  status: string
+}
+
+/** One position the venue reports. A MARGIN account only — a spot account holds no positions. */
+export interface VenuePosition {
+  symbol: string
+  direction: string
+  lots: number
+  entry_price: number
+  /** Where the venue names the position itself. */
+  broker_ref: string | null
+}
+
+/**
+ * Where the session's picture of the venue and the venue's own disagree. On a `divergent`
+ * reconcile line and nowhere else.
+ *
+ * Six lists of identities, each possibly empty, and the sides are NOT interchangeable: the first
+ * three hold the VENUE's references for orders this session cannot place, the last three hold this
+ * session's own order ids that the venue does not show or shows differently. Positions are counted
+ * rather than named.
+ */
+export interface ReconcileDivergence {
+  ghost_orders: string[]
+  abandoned_orders: string[]
+  foreign_session_orders: string[]
+  unconfirmed_orders: string[]
+  orphan_orders: string[]
+  stale_orders: string[]
+  ghost_positions: number
+  orphan_positions: number
+  stale_positions: number
+}
+
 /**
  * What the venue said when the session asked it: its whole account at that moment, and never a step
  * of one order. A backtest has none, and a request narrowed to one order returns none.
  *
- * **A part has THREE states and collapsing them loses the distinction that matters.** A value - an
- * empty one included - is what the venue holds, so `[]` means "no open order". `null` WITH the part
- * named in `unread_parts` means the venue could not be read. `null` without the name means this
- * line does not read that part at all: positions on a spot account, balances on a `reconcile` line
- * that did not turn.
+ * **A part has THREE states and collapsing them loses the distinction that matters.** A value — an
+ * empty one included — is what the venue holds, so `[]` means "no open order". `null` WITH the part
+ * named in `unread_parts` means the read gave up on that part mid-read, a transport fault. `null`
+ * without the name means this line does not read that part at all: positions on a spot account,
+ * balances on a `reconcile` line that did not turn.
  *
- * The three collections are typed no deeper than measured. Their rows are the subject of the
- * `venue-account` panel, which is its own undertaking, and a shape nobody has seen is not mirrored.
+ * **A `reconcile` line is written only where the picture CHANGES** — a divergence starting or
+ * ending — so a session whose venue never disagrees writes none. That is every session in our
+ * archive, and testingide said on 2026-10-08 that it cannot be arranged at a real venue on
+ * request: *"stop waiting for an instance."* The shapes above are therefore typed from their
+ * document (`order-events`, section *The venue parts, field by field*), which they wrote for
+ * exactly this — *"type them from here rather than from an instance."*
  */
 export interface BrokerTruthRow {
   scenario_name: string
   seq: number
   /** `broker_truth` on every line of this list. */
   record_plane: string
-  /** `session_start` / `session_end` / `reconcile` - what made the session ask. */
+  // `session_start` · `session_end` · `reconcile` — what made the session ask
   read_reason: string
   /** `clean` or `divergent`, on a `reconcile` line and nowhere else. */
   reconcile_state: string | null
-  /** The named members where the picture turned divergent - ghost, abandoned, orphan, stale. */
-  divergence: Record<string, unknown> | null
-  /** Every order the venue reports as open, including orders this session did not place. */
-  venue_orders: unknown[] | null
-  /** The venue's balance sheet, every asset, the quote currency included. */
+  divergence: ReconcileDivergence | null
+  venue_orders: VenueOrder[] | null
+  /** The venue's balance sheet: every asset it reports, the quote currency included. */
   venue_balances: Record<string, number> | null
-  /** A margin account only. */
-  venue_positions: unknown[] | null
-  /** Which parts could not be read - what separates an absence from an unread part. */
+  venue_positions: VenuePosition[] | null
+  /** Which parts could not be read — what separates an absence from an unread part. */
   unread_parts: string[]
   event_time: string | null
   ts_init: string | null

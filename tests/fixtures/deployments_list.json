@@ -5,6 +5,74 @@
   ],
   "deployments": [
     {
+      "deployment_id": "deploy_20261008_233012",
+      "sessions": 1,
+      "first_started": "2026-10-08T23:30:12.989739Z",
+      "last_started": "2026-10-08T23:30:12.989739Z",
+      "net_pnl": 0.0,
+      "max_drawdown": 539.5252187500009,
+      "max_drawdown_pct": 5.3616380978097675,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": null,
+      "changed": false,
+      "orders_to": [
+        "simulated"
+      ]
+    },
+    {
+      "deployment_id": "deploy_20261008_232700",
+      "sessions": 4,
+      "first_started": "2026-10-08T23:27:00.759194Z",
+      "last_started": "2026-10-08T23:29:05.990944Z",
+      "net_pnl": 23.035074999999978,
+      "max_drawdown": 539.5252187500009,
+      "max_drawdown_pct": 5.3616380978097675,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": 0.001732156111111111,
+      "changed": true,
+      "orders_to": [
+        "simulated"
+      ]
+    },
+    {
+      "deployment_id": "deploy_20261008_222953",
+      "sessions": 1,
+      "first_started": "2026-10-08T22:29:53.865196Z",
+      "last_started": "2026-10-08T22:29:53.865196Z",
+      "net_pnl": 0.0,
+      "max_drawdown": 619.3916000000027,
+      "max_drawdown_pct": 6.106856606417513,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": null,
+      "changed": false,
+      "orders_to": [
+        "simulated"
+      ]
+    },
+    {
+      "deployment_id": "deploy_20261008_222638",
+      "sessions": 4,
+      "first_started": "2026-10-08T22:26:38.879412Z",
+      "last_started": "2026-10-08T22:28:46.770191Z",
+      "net_pnl": 23.035074999999978,
+      "max_drawdown": 619.3916000000027,
+      "max_drawdown_pct": 6.106856606417513,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": 0.001770175277777778,
+      "changed": true,
+      "orders_to": [
+        "simulated"
+      ]
+    },
+    {
       "deployment_id": "deploy_20261008_110623",
       "sessions": 1,
       "first_started": "2026-10-08T11:06:23.257396Z",
@@ -56,5 +124,5 @@
       ]
     }
   ],
-  "count": 3
+  "count": 7
 }

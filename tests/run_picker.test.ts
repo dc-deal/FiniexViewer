@@ -51,6 +51,11 @@ const BASE: RunInfo = {
   size_bytes: 1,
   artifacts: [],
   stream_files: [],
+  // contracts 24 and 25: what the run is FOR, under which contract its reports
+  // were written, and whether it is still its catalog entry's current one
+  run_purpose: 'regular',
+  report_contract: 25,
+  fixture_superseded: null,
 }
 
 function run(overrides: Partial<RunInfo> = {}): RunInfo {
@@ -324,6 +329,48 @@ describe('RunPicker', () => {
     it('leaves the Tier-2 log count off the row', () => {
       const wrapper = mountPicker([run({ run_id: 'noisy', log_warning_count: 547 })])
       expect(figuresFor(wrapper, 'noisy')).not.toContain('547')
+    })
+
+    /**
+     * What a run is FOR (contract 24), and the ONE facet that starts with values picked.
+     *
+     * Measured 2026-10-09 over 85 runs: 58 are `fixture`, whose numbers are built rather than
+     * earned. They are not the operator's work and they are two thirds of the list.
+     *
+     * **Everything except `fixture`, never "only `regular`"** — testingide warned about exactly
+     * that mistake, and it would hide the two real-money `certificate` runs along with every run
+     * whose purpose could not be read.
+     */
+    it('opens without the fixtures, and keeps the certificates and the unstated', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'mine', run_purpose: 'regular' }),
+        run({ run_id: 'built', run_purpose: 'fixture' }),
+        run({ run_id: 'gate', run_purpose: 'certificate' }),
+        run({ run_id: 'nameless', run_purpose: null }),
+      ])
+      await flushPromises()
+
+      const shown = rowTexts(wrapper).join(' ')
+      expect(shown).toContain('mine')
+      expect(shown).toContain('gate')
+      expect(shown).toContain('nameless')
+      expect(shown).not.toContain('built')
+      // and the bar says what it left out rather than shortening in silence
+      expect(wrapper.text()).toContain('3 of 4')
+    })
+
+    /** It is a starting value, not a floor: the reader can ask for the fixtures back. */
+    it('gives the fixtures back when the facet is cleared', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'mine', run_purpose: 'regular' }),
+        run({ run_id: 'built', run_purpose: 'fixture' }),
+      ])
+      await flushPromises()
+      expect(rowTexts(wrapper).join(' ')).not.toContain('built')
+
+      await wrapper.find('.facet-clear').trigger('click')
+      await flushPromises()
+      expect(rowTexts(wrapper).join(' ')).toContain('built')
     })
 
     it('offers the outcome as a facet, and an unrecorded one is not a category', () => {

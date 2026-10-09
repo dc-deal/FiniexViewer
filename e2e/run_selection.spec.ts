@@ -15,7 +15,10 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('a chosen run and scenario survive a reload', async ({ page }) => {
-  await page.goto('/runs')
+  // The list opens WITHOUT the fixture runs, and the run every capture was taken from is itself a
+  // fixture — so this spec asks for them, the way a reader would by picking the value. It is not
+  // a workaround: it is the default behaving, and `run_picker.test.ts` asserts the default itself.
+  await page.goto('/runs?runf=purpose:fixture')
 
   // Found by the id cell's TITLE, not by the row's text: the cell shows only the timestamp part,
   // since the eight hex characters after it separate two runs of the same second and nothing else.

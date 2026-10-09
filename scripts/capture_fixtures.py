@@ -54,7 +54,7 @@ BASE = 'http://localhost:5173/api/v1'
 # something that can vanish with the next archive wipe. Measured: four order statuses with 35
 # refusals, two account currencies, `close_type` full AND partial with `position_closes` up to 3,
 # a scenario absent with its error, `run_outcome: failed`.
-RUN = '20261008_103627_ffcd6c2d'
+RUN = '20261008_222620_70191690'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -73,7 +73,7 @@ LIVE_RUN = '20261007_152959_0275a107'
 #
 # Reproducible: `python python/experiments/generate_demo_deployment/generate_demo_deployment.py` on
 # their side, about four minutes, and each run adds two NEW histories rather than replacing these.
-DEPLOY = 'deploy_20261008_110304'
+DEPLOY = 'deploy_20261008_232700'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),
@@ -288,6 +288,15 @@ if len(served) > 1:
     sys.exit(f'NOTHING WRITTEN - mixed contracts across the captures: {sorted(served)}. '
              'The backend changed version mid-capture; run it again.')
 
+# The BEFORE reading has to be taken while the old fixtures are still on disk. It used to sit
+# beside the comparison below, AFTER the write loop, so `old_fixture()` re-read the files that
+# had just been written and every property compared equal to itself. The warning was therefore
+# silent on every real capture and worked only under `--dry`, which is the one case where it is
+# not needed. Found 2026-10-08.
+before = measure(old_fixture('run_summary.json'), old_fixture('warnings_errors.json'),
+                 old_fixture('order_history.json'), old_fixture('trade_history.json'),
+                 old_fixture('pending_orders.json'))
+
 for name, _ in TARGETS:
     body = bodies[name]
     old = old_fixture(name)
@@ -325,10 +334,6 @@ if not dry:
 now = measure(bodies['run_summary.json'], bodies['warnings_errors.json'],
               bodies['order_history.json'], bodies['trade_history.json'],
               bodies['pending_orders.json'])
-before = measure(old_fixture('run_summary.json'), old_fixture('warnings_errors.json'),
-                 old_fixture('order_history.json'), old_fixture('trade_history.json'),
-                 old_fixture('pending_orders.json'))
-
 moved = [(key, before.get(key), value) for key, value in now.items() if before.get(key) != value]
 if moved:
     print()

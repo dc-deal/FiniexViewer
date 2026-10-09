@@ -12,6 +12,7 @@ import brokerFixture from './fixtures/broker.json'
 import aggregatedFixture from './fixtures/aggregated_portfolio.json'
 import pendingFixture from './fixtures/pending_orders.json'
 import historyFixture from './fixtures/order_history.json'
+import eventsFixture from './fixtures/order_events.json'
 import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
 import * as apiClient from '@/api/api_client'
@@ -25,6 +26,7 @@ vi.mock('@/api/api_client', () => ({
   getBroker: vi.fn(),
   getAggregatedPortfolio: vi.fn(),
   getOrderHistory: vi.fn(),
+  getOrderEvents: vi.fn(),
   getPendingOrders: vi.fn(),
   getBookingPeriods: vi.fn(),
   getRunConfig: vi.fn(),
@@ -501,6 +503,71 @@ describe('useRunReportsStore — portfolio section', () => {
       await store.loadConfig(runConfigFixture.run_id)
       store.clear()
       expect(store.config).toBeNull()
+    })
+  })
+
+  /**
+   * The ONE section that is not loaded per run. The stream is the largest thing this API serves
+   * here — 1,025 events on one stored run — and a reader opens one position at a time, so the
+   * route's own narrowing is used and the answers are kept per position.
+   */
+  describe('the order event stream', () => {
+    const SCENARIO = 'EURGBP_partial_close'
+    const POSITION = 'pos_eurgbp_1'
+    const KEY = `${SCENARIO}~${POSITION}`
+
+    beforeEach(() => { vi.mocked(apiClient.getOrderEvents).mockReset() })
+
+    it('asks for ONE position and keeps its steps under that position', async () => {
+      vi.mocked(apiClient.getOrderEvents).mockResolvedValue(eventsFixture)
+      const store = useRunReportsStore()
+      await store.loadOrderEvents(eventsFixture.run_id, SCENARIO, POSITION)
+      expect(apiClient.getOrderEvents)
+        .toHaveBeenCalledWith(eventsFixture.run_id, SCENARIO, POSITION)
+      expect(store.orderEvents.get(KEY)?.length).toBe(eventsFixture.events.length)
+      expect(store.loadingOrderEvents.has(KEY)).toBe(false)
+    })
+
+    /** Reopening a position costs nothing: the answer is already held, so no second request. */
+    it('does not ask twice for a position it already holds', async () => {
+      vi.mocked(apiClient.getOrderEvents).mockResolvedValue(eventsFixture)
+      const store = useRunReportsStore()
+      await store.loadOrderEvents(eventsFixture.run_id, SCENARIO, POSITION)
+      await store.loadOrderEvents(eventsFixture.run_id, SCENARIO, POSITION)
+      expect(apiClient.getOrderEvents).toHaveBeenCalledTimes(1)
+    })
+
+    /**
+     * A run that wrote no stream answers 404, which is an absence rather than a failure — every run
+     * from before the stream existed, and a backtest whose scenarios never placed an order. It is
+     * kept as an EMPTY list, not in `absences`: that map is keyed by the slot a PANEL would fill,
+     * and this is a row inside one.
+     */
+    it('holds an absence as an empty list rather than as a failure', async () => {
+      vi.mocked(apiClient.getOrderEvents).mockResolvedValue(ABSENT)
+      const store = useRunReportsStore()
+      await store.loadOrderEvents('20260615_130000', SCENARIO, POSITION)
+      expect(store.orderEvents.get(KEY)).toEqual([])
+      expect(store.errors[`orderEvents:${KEY}`]).toBeUndefined()
+      expect(store.absences['orderEvents']).toBeUndefined()
+    })
+
+    /** A failure is recorded per POSITION, so one that fails cannot silence another. */
+    it('records a failure under the position it belongs to', async () => {
+      vi.mocked(apiClient.getOrderEvents).mockRejectedValue(new Error('gateway timed out'))
+      const store = useRunReportsStore()
+      await store.loadOrderEvents('20260615_130000', SCENARIO, POSITION)
+      expect(store.errors[`orderEvents:${KEY}`]).toContain('gateway timed out')
+      expect(store.orderEvents.has(KEY)).toBe(false)
+      expect(store.loadingOrderEvents.has(KEY)).toBe(false)
+    })
+
+    it('is dropped with every other section when the run changes', async () => {
+      vi.mocked(apiClient.getOrderEvents).mockResolvedValue(eventsFixture)
+      const store = useRunReportsStore()
+      await store.loadOrderEvents(eventsFixture.run_id, SCENARIO, POSITION)
+      store.clear()
+      expect(store.orderEvents.size).toBe(0)
     })
   })
 

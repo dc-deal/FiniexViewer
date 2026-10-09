@@ -99,6 +99,16 @@ const props = defineProps<{
    * does nothing is the same defect as a control that looks disabled and works.
    */
   inert?: boolean
+  /**
+   * Which rows are controls, where only SOME of them are. Without it every row is one (or none,
+   * under `inert`), which is what every list needed until the orders list: there a row that starts
+   * a position opens that position's steps, and the rows carrying it on have nothing to open.
+   *
+   * The whole row rather than a glyph inside it, because that is what a reader tries first @
+   * reported 2026-10-08 after a disclosure triangle went unnoticed. `inert` still wins: it says no
+   * row is a control, and this says which of them are.
+   */
+  canPick?: (row: T) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -107,8 +117,11 @@ const emit = defineEmits<{
 }>()
 
 defineSlots<{
-  /** The row's cells, in column order — exactly `columns.length` of them. */
-  default: (props: { row: T }) => unknown
+  /**
+   * The row's cells, in column order — exactly `columns.length` of them. `marker` is the
+   * disclosure glyph where the row opens children, and '' where it does not.
+   */
+  default: (props: { row: T, marker: string }) => unknown
   /** The spanning second line, drawn only where `hasDetail` says so. */
   detail?: (props: { row: T }) => unknown
   /** The spanning line BEFORE a row, drawn only where `hasLead` says so. */
@@ -234,13 +247,41 @@ function headTitle(column: ListColumn): string {
 
 const grouped = computed(() => props.groupBy !== undefined)
 
+/**
+ * Is THIS row a control? `inert` answers for the whole list, `canPick` per row, and a list that
+ * gives neither has rows that are all controls — which is what every list did before the orders
+ * list needed some of its rows read-only and the rest not.
+ */
+function isControl(row: T): boolean {
+  if (props.inert) return false
+  return props.canPick?.(row) ?? true
+}
+
 /** Declared once so the three branches of the row — inert, carded and bare — cannot drift apart. */
 function rowAttrs(row: T): Record<string, unknown> {
   const picked = props.isPicked?.(row)
+  // the read-only LOOK follows the row's own answer, not the list's: a row that cannot be picked
+  // must not offer a pointer or a hover, whether the whole list is inert or only that row is
+  const quiet = !isControl(row)
   return {
-    class: ['record-row', props.rowClass?.(row), { picked, grouped: grouped.value, inert: props.inert }],
-    ...(picked === undefined || props.inert ? {} : { 'aria-pressed': picked }),
+    class: ['record-row', props.rowClass?.(row), { picked, grouped: grouped.value, inert: quiet }],
+    ...(picked === undefined || quiet ? {} : { 'aria-pressed': picked }),
+    // a row that OPENS something says so, the way the group heading already does. Automatic
+    // rather than per caller: the Trade History opened its fills with no announcement at all.
+    ...(props.showsChildren && !quiet ? { 'aria-expanded': props.showsChildren(row) } : {}),
   }
+}
+
+/**
+ * The disclosure glyph for a row, or '' where the row opens nothing.
+ *
+ * The LIST owns it, and that is the point. Two panels wrote `group.open ? '▾' : '▸'` by
+ * hand with a `.group-marker` rule each, a third opened its fills with no glyph at all, and the
+ * operator could not find the disclosure on screen (2026-10-08). A reader learns one shape once.
+ */
+function markerFor(row: T): string {
+  if (!props.showsChildren || !isControl(row)) return ''
+  return props.showsChildren(row) ? '▾' : '▸'
 }
 
 /**
@@ -336,7 +377,7 @@ const sections = computed<ListGroup<T>[]>(() => {
           that can be chosen is a toggle, and a reader who cannot see the marked edge has nothing
           else to tell a chosen row from an unchosen one.
         -->
-        <div v-if="inert" v-bind="rowAttrs(row)"><slot :row="row" /></div>
+        <div v-if="!isControl(row)" v-bind="rowAttrs(row)"><slot :row="row" marker="" /></div>
         <HoverCard
           v-else-if="rowCard?.(row)"
           :title="rowCard(row)!.title"
@@ -344,11 +385,11 @@ const sections = computed<ListGroup<T>[]>(() => {
           side="top"
         >
           <button type="button" v-bind="rowAttrs(row)" @click="emit('pick', row)">
-            <slot :row="row" />
+            <slot :row="row" :marker="markerFor(row)" />
           </button>
         </HoverCard>
         <button v-else type="button" v-bind="rowAttrs(row)" @click="emit('pick', row)">
-          <slot :row="row" />
+          <slot :row="row" :marker="markerFor(row)" />
         </button>
         <p v-if="hasDetail?.(row)" class="record-detail">
           <slot name="detail" :row="row" />
@@ -369,6 +410,17 @@ const sections = computed<ListGroup<T>[]>(() => {
 .record-shell {
   container-type: inline-size;
   container-name: record-list;
+  /*
+   * ONE step for every level of nesting, and nothing indents by anything else.
+   *
+   * There were four scales before: a grouped row's first cell stepped by `space-lg`, the detail
+   * line by `space-lg`, a continuation glyph added `space-sm` of its own and a nested list's leg
+   * `space-xs`. Each was reasonable alone and together they were not a ladder — reported on screen
+   * 2026-10-08, *"keine einheitlichen Einrückungen an den Aufklapp-Stufen, das schadet der
+   * Übersicht"*. A reader follows a left edge to see what belongs to what, so the edges have to
+   * form a sequence rather than a set of opinions.
+   */
+  --record-step: var(--space-lg);
 }
 
 .record-list {
@@ -567,6 +619,33 @@ const sections = computed<ListGroup<T>[]>(() => {
   background-color: var(--color-bg-elevated);
 }
 
+/*
+ * The disclosure glyph, styled once here rather than in every panel that draws one.
+ *
+ * It sits IN the indent a grouped row already has, and therefore costs the cell no width. That is
+ * not neatness: a first cell clips (`overflow: hidden`), so content it cannot hold does not merely
+ * look cramped — it pushes a button inside that cell past the visible edge, and a click aimed at
+ * that button's centre then lands on the cell instead. Measured 2026-10-08, the browser suite
+ * reporting *"span.trade-position intercepts pointer events"* on a jump that had worked for weeks.
+ */
+.record-row > :first-child {
+  position: relative;
+}
+
+/*
+ * `:deep`, and it is not decoration. The glyph is rendered by the PANEL inside this component's
+ * slot, so it carries the panel's scope attribute and a plain `.record-marker` rule here never
+ * matched it — the span stayed unstyled, took inline width, and pushed the jump button inside a
+ * clipping cell past its visible edge until a click aimed at the button landed on the cell.
+ * Measured 2026-10-08: *"span.trade-position intercepts pointer events"*, a jump that had worked
+ * for weeks, and two wrong explanations before the experiment of removing the glyph found it.
+ */
+.record-row :deep(.record-marker) {
+  position: absolute;
+  left: 0;
+  color: var(--color-text-secondary);
+}
+
 /* a read-only row claims nothing: no pointer, and no hover that suggests one */
 .record-row.inert {
   cursor: default;
@@ -579,7 +658,7 @@ const sections = computed<ListGroup<T>[]>(() => {
 /* Only the FIRST cell is indented, never the row: padding on the row would shift every column out
    of the alignment the whole component exists to produce. */
 .record-row.grouped > :first-child {
-  padding-left: var(--space-lg);
+  padding-left: var(--record-step);
 }
 
 /* A boundary in the list, in the annotation role and DASHED — it marks that the thing changed
@@ -599,7 +678,8 @@ const sections = computed<ListGroup<T>[]>(() => {
 .record-detail {
   grid-column: 1 / -1;
   margin: 0;
-  padding: 0 var(--space-sm) var(--space-xs) var(--space-lg);
+  /* the row's own content, one step in — it speaks ABOUT that row */
+  padding: 0 var(--space-sm) var(--space-xs) var(--record-step);
   border-bottom: 1px solid var(--color-border);
   font-family: monospace;
   font-size: var(--font-size-sm);
@@ -609,7 +689,8 @@ const sections = computed<ListGroup<T>[]>(() => {
 /* records of ANOTHER kind, with their own columns — so they get their own box rather than tracks */
 .record-children {
   grid-column: 1 / -1;
-  padding: 0 var(--space-sm) var(--space-xs) var(--space-lg);
+  /* one step in from the row that holds them, and the list inside steps once more from here */
+  padding: 0 var(--space-sm) var(--space-xs) var(--record-step);
   border-bottom: 1px solid var(--color-border);
 }
 

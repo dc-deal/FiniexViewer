@@ -2,11 +2,15 @@
 import { computed, ref, watch } from 'vue'
 import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import OrderStepList from '@/components/runs/OrderStepList.vue'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
+import type { PositionRef } from '@/composables/use_position_link'
+import { useOrderSteps } from '@/composables/use_order_steps'
 import { utcInstant } from '@/components/runs/report_format'
 import type { ListColumn } from '@/types/list_types'
 import type {
+  OrderEvent,
   OrderHistoryRow,
   OrderHistoryReport,
   PendingOrderUnit,
@@ -25,8 +29,10 @@ import { plural, t } from '@/translate'
  * scenario's orders, `order-history` the orders themselves — and the join is the scenario name,
  * which both sides write from the same run unit.
  *
- * A row is a LIFECYCLE RECORD, not an order: one order appears as several rows. That is why the
- * list is two levels and not three — there is no field identifying an order until testingide#557.
+ * A row is a LIFECYCLE RECORD, not an order: one order appears as several rows, and nothing on a
+ * row says WHICH order ` the history carries no `seq`, `submitted_seq` or `client_order_id`, which
+ * is testingide#557 and still open. So the third level does not hang off a row. It hangs off the
+ * POSITION, and the ORDERS inside it come from the stream, which identifies them itself.
  *
  * **The funnel's arithmetic, and contract 23 made it simpler than it was:**
  * `submitted = accepted + rejected + never_confirmed + expired`, measured 2026-10-08 on **all 230
@@ -203,8 +209,8 @@ function inFlight(unit: PendingOrderUnit): string {
   // the WORD travels with the figure, like every other item in the heading. It did not, and the
   // heading read `submitted 46 - accepted 46 - rejected 0 - 1438 ms`: a reader meeting a bare
   // duration there cannot tell what was timed. Found on screen 2026-10-08.
-  if (!unit.in_flight_count) return `${t('in flight')} ${t('n/a')}`
-  return `${t('in flight')} ${unit.avg_in_flight_ms.toFixed(0)} ms`
+  if (!unit.in_flight_count) return `${t('avg in flight')} ${t('n/a')}`
+  return `${t('avg in flight')} ${unit.avg_in_flight_ms.toFixed(0)} ms`
 }
 
 function inFlightSpread(unit: PendingOrderUnit): string {
@@ -301,16 +307,32 @@ function reasonOf(order: OrderHistoryRow): string {
   return message ?? reason ?? ''
 }
 
-/** A status that went the wrong way wears the polarity of one, and only where it did. */
+/**
+ * A status that went the wrong way is marked, and only where it did.
+ *
+ * **All FOUR refusals, not just the venue's.** Contract 23 split one status into two — `rejected`
+ * narrowed to the venue's refusals and `denied` took the half refused before anything was sent `
+ * and only the first kept the tone, so half the refusals on screen read like ordinary rows.
+ * `undelivered` and `unaccounted` are listed with them deliberately: neither has a case in any
+ * stored run, and leaving them out is how `denied` came to be missed in the first place.
+ *
+ * `cancelled` is NOT here. A cancel is something that was asked for — `initiator: strategy` on 32
+ * of the 33 on the field study — so it is an ordinary ending rather than a refusal.
+ */
 function statusTone(order: OrderHistoryRow): string {
-  if (order.status === 'rejected') return 'negative'
+  if (REFUSED.has(order.status)) return 'negative'
   if (order.status === 'expired') return 'warned'
   return ''
 }
 
+const REFUSED = new Set(['rejected', 'denied', 'undelivered', 'unaccounted'])
+
 const collapsed = ref(new Set<string>())
 
-watch(() => props.model.history.run_id, () => collapsed.value = new Set())
+watch(() => props.model.history.run_id, () => {
+  collapsed.value = new Set()
+  opened.value = new Set()
+})
 
 function isExpanded(scenario: string): boolean {
   return !collapsed.value.has(scenario)
@@ -322,6 +344,60 @@ function toggleGroup(scenario: string): void {
   else next.add(scenario)
   collapsed.value = next
 }
+
+/**
+ * The third level: what the orders of ONE position actually went through.
+ *
+ * `order-history` keeps a row for the submission and one for each way an order ended; their own
+ * words for what is between them are *"what happened in between is missing there"*. This is that,
+ * and it is asked for one position at a time rather than per run — the stream is the largest thing
+ * this API serves here.
+ *
+ * The capability is AMBIENT, the way the position link is: whether this run wrote a stream, and
+ * which run is selected at all, is the workspace's knowledge and not a panel's.
+ */
+const steps = useOrderSteps()
+
+const opened = ref(new Set<string>())
+
+/** A position, named the only way it can be: `order_id` IS the position (their glossary). */
+function refOf(order: OrderHistoryRow): PositionRef {
+  return { scenario: order.scenario_name, position: positionOf(order) }
+}
+
+function keyOf(order: OrderHistoryRow): string {
+  return `${order.scenario_name}~${positionOf(order)}`
+}
+
+/** Only a row that STARTS a position can open one — the rows under it are the same position. */
+function canShowSteps(order: OrderHistoryRow): boolean {
+  return steps.available() && startsPosition(order)
+}
+
+function showsSteps(order: OrderHistoryRow): boolean {
+  return canShowSteps(order) && opened.value.has(keyOf(order))
+}
+
+function toggleSteps(order: OrderHistoryRow): void {
+  const key = keyOf(order)
+  const next = new Set(opened.value)
+  if (next.has(key)) next.delete(key)
+  else {
+    next.add(key)
+    // asked for on OPENING, never on mount: a run has hundreds of positions and a reader opens one
+    steps.askFor(refOf(order))
+  }
+  opened.value = next
+}
+
+function closeAllSteps(): void {
+  opened.value = new Set()
+}
+
+function stepsOf(order: OrderHistoryRow): OrderEvent[] {
+  return steps.heldFor(refOf(order)) ?? []
+}
+
 </script>
 
 <template>
@@ -332,6 +408,18 @@ function toggleGroup(scenario: string): void {
         : t('This run placed no order') }}
     </div>
     <template v-else>
+    <!--
+      Only where something is OPEN. Where everything is fine, nothing is printed — with nothing
+      expanded there is nothing to close, so the line does not exist. It also states the number a
+      reader would otherwise have to count, and it is not called "collapse all": that name belongs
+      to the app bar's control over the PANELS, and two of them would be a trap.
+    -->
+    <p v-if="opened.size" class="steps-open">
+      {{ plural(opened.size, t('position open'), t('positions open')) }}
+      <button type="button" class="close-steps" @click="closeAllSteps()">
+        {{ t('close all') }}
+      </button>
+    </p>
     <!-- said where there is something to explain: a run with no trade history draws no link -->
     <HintLine v-if="link.canJumpTo('trade-history')" id="position-link" />
     <RecordList
@@ -343,8 +431,10 @@ function toggleGroup(scenario: string): void {
       :group-by="order => order.scenario_name"
       :is-open="isExpanded"
       :has-detail="hasReason"
+      :shows-children="showsSteps"
+      :can-pick="canShowSteps"
       @toggle="toggleGroup"
-      inert
+      @pick="toggleSteps"
     >
       <!--
         The scenario, and what became of its orders — the served funnel, not a count of the rows
@@ -388,9 +478,12 @@ function toggleGroup(scenario: string): void {
 
       <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
            this template owns the cells -->
-      <template #default="{ row: order }">
+      <template #default="{ row: order, marker }">
         <span :data-rank="1" class="order-id" :title="order.order_id">
           <template v-if="startsPosition(order)">
+            <!-- the glyph the LIST decided on, and the ROW is the control — a reader clicks the
+                 line, not a triangle, and on 2026-10-08 the triangle went unnoticed entirely -->
+            <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
             <!-- a LINK only where there is somewhere to go: a position that produced no trade, and
                  a run that serves no trade history, both draw the id as the plain text it is -->
             <button
@@ -398,7 +491,7 @@ function toggleGroup(scenario: string): void {
               type="button"
               class="to-trades"
               :title="t('Show this position in the trade history')"
-              @click="jumpToTrades(order)"
+              @click.stop="jumpToTrades(order)"
             >{{ order.order_id }} ↗</button>
             <template v-else>{{ order.order_id }}</template>
           </template>
@@ -406,7 +499,17 @@ function toggleGroup(scenario: string): void {
         </span>
         <span :data-rank="3">{{ word(order.action) }}</span>
         <span :data-rank="3">{{ word(order.order_type) }}</span>
-        <span :data-rank="1" :class="statusTone(order)">{{ order.status }}</span>
+        <!--
+          WHO ended it, beside the status and only where the record says so. Two orders both
+          `cancelled` read as one thing without it: a strategy taking its own limit back and the
+          framework releasing a protective order are different events. Reported on screen
+          2026-10-08 against `pos_ethusd_44` (strategy) and `protect_pos_ethusd_41` (framework).
+
+          WHO and not why — `end_reason` draws the same distinction in more characters
+          (`cancel_requested` against `protection_released`) and the steps below carry both.
+        -->
+        <span :data-rank="1" :class="statusTone(order)"
+          >{{ order.status }}<template v-if="order.initiator"> · {{ order.initiator }}</template></span>
         <span :data-rank="4">{{ word(order.direction) }}</span>
         <span :data-rank="2" class="figure-cell">{{ figure(order.executed_lots ?? order.requested_lots) }}</span>
         <span :data-rank="2" class="figure-cell">{{ figure(order.executed_price, 5) }}</span>
@@ -417,6 +520,22 @@ function toggleGroup(scenario: string): void {
       <template #detail="{ row: order }">
         <span class="reason-mark" aria-hidden="true">└─</span>
         {{ reasonOf(order) }}
+      </template>
+
+      <!--
+        The STEPS, grouped into the orders they belong to. `order_id` is the position and repeats
+        across its open and its closes, so the group key is `submitted_seq` — their instruction,
+        and the list groups by key rather than by runs of it, which is what survives two orders of
+        one position overlapping.
+      -->
+      <template #children="{ row: order }">
+        <p v-if="steps.loadingFor(refOf(order))" class="step-state">
+          {{ t('Reading the stream for this position') }}
+        </p>
+        <p v-else-if="!stepsOf(order).length" class="step-state">
+          {{ t('The stream records no step for these orders') }}
+        </p>
+        <OrderStepList v-else :steps="stepsOf(order)" />
       </template>
     </RecordList>
     </template>
@@ -462,9 +581,9 @@ function toggleGroup(scenario: string): void {
   background-color: var(--color-bg-raised);
 }
 
+/* the glyph sits AT the cell's edge, never a step of its own: the ladder is the list's (--record-step) */
 .carries-on {
   color: var(--color-text-secondary);
-  padding-left: var(--space-sm);
 }
 
 /* the boundary between two positions, on the row that opens one. The first row of a group needs
@@ -478,8 +597,41 @@ function toggleGroup(scenario: string): void {
   border-top: none;
 }
 
+/* the one line that says what is open, and takes it back */
+.steps-open {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-text-secondary);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.close-steps {
+  margin-left: var(--space-sm);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.close-steps:hover,
+.close-steps:focus-visible {
+  text-decoration: underline;
+}
+
 .negative { color: var(--color-negative); }
 .warned { color: var(--color-warning); }
+
+/* while it is being read, and where there is nothing to read — both are sentences, not rows */
+.step-state {
+  margin: 0;
+  padding: var(--space-xs) 0;
+  color: var(--color-text-secondary);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
 
 /* the heading is a boundary and a summary in one row, never a control over the figures */
 .group-name {
