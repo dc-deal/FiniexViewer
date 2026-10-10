@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { orderKeyOf } from '@/composables/use_order_steps'
 import { utcInstant } from '@/components/runs/report_format'
@@ -20,7 +21,7 @@ import { plural, t } from '@/translate'
  * `Lots` fell back to the trade history's reading and the check reported it as moved. One column
  * array per file is a property the instrument depends on.
  */
-defineProps<{
+const props = defineProps<{
   steps: OrderEvent[]
 }>()
 
@@ -35,6 +36,29 @@ const columns: ListColumn[] = [
   { label: t('When'), width: 'minmax(0, 12fr)' },
   { label: t('Detail'), width: 'minmax(0, 18fr)' },
 ]
+
+/**
+ * Which orders of this position are folded away.
+ *
+ * Worth having rather than tidy: the capture's partial close is four orders of three steps, and
+ * the field study has one position of five — sixteen lines to read past when only one of them is
+ * the question. The heading was a button that emitted into nothing until 2026-10-09, which is
+ * what made this necessary rather than optional.
+ */
+const folded = ref(new Set<string>())
+
+watch(() => props.steps, () => folded.value = new Set())
+
+function isOrderOpen(key: string): boolean {
+  return !folded.value.has(key)
+}
+
+function toggleOrder(key: string): void {
+  const next = new Set(folded.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  folded.value = next
+}
 
 /** A value the stream never held reads as absent, never as a zero nobody recorded. */
 function figure(value: number | null, digits = 2): string {
@@ -112,11 +136,14 @@ const DEFERRED = new Set(['expired', 'cancel_deferred'])
     :columns="columns"
     :row-key="step => String(step.seq)"
     :group-by="orderKeyOf"
+    :is-open="isOrderOpen"
     hide-head
     inert
+    @toggle="toggleOrder"
   >
-    <template #group="{ group }">
+    <template #group="{ group, marker }">
       <span class="step-group">
+        <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
         {{ orderName(group.rows[0]) }}
         <span class="step-shape">{{ orderShape(group.rows[0]) }}</span>
       </span>

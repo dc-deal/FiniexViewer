@@ -92,9 +92,12 @@ export interface RunInfo {
   report_contract: number | null
   /**
    * Whether this run is still the one to pin, new in contract 25. `false` for a run of its catalog
-   * entry's CURRENT production, `true` for an older production or one that failed its check, and
-   * null for every run no catalog production made — ordinary runs, test runs, and the runs pinned
-   * before the catalog existed.
+   * entry's CURRENT production, `true` for an older production, one that failed its check, or
+   * — widened in contract 26 — a run of an entry they no longer declare at all; and null for every
+   * run no catalog production made: ordinary runs, test runs, and the runs pinned before the
+   * catalog existed.
+   *
+   * Measured 2026-10-09 over 85 runs: true 15 · false 18 · null 52.
    *
    * Derived by them each time the list is served; nothing inside a run changes. A replaced run
    * that passed its check stays on disk until they release it, so a pin on it keeps working.
@@ -116,6 +119,30 @@ export interface RunInfo {
    *                The id addresses GET /api/v1/deployments/{id} directly.
    */
   parent_id: string | null
+  /**
+   * WHO STARTED THE RUN (contract 26) — the header's `origin` block flattened onto the index row.
+   * Their documents keep the word `origin` for this and nothing else, decided 2026-10-09 after we
+   * counted our own uses of it.
+   *
+   * The labels are theirs, taken from `run-header`, which says to use them as written:
+   * `Started via` · `Client` · `Started for` · `Host`. The whole block, and the code identity
+   * beside it, is served on `GET /reports/runs/{run_id}/header`; these four ride on the index row.
+   *
+   * Measured over the 85 runs served 2026-10-09:
+   *
+   * ```
+   * origin_channel     cli 72 · sweep 13
+   * origin_client      console 85
+   * origin_principal   operator 85
+   * origin_host        h_x29og8 85
+   * ```
+   *
+   * `origin.allow_dirty` is NOT among them: it is on the header and not on the index row.
+   */
+  origin_channel: string | null
+  origin_client: string | null
+  origin_principal: string | null
+  origin_host: string | null
   // What kind of family parent_id names, null whenever parent_id is. Read this rather than
   // deriving it from `group`: the two axes were one field once and could not express both.
   parent_kind: string | null

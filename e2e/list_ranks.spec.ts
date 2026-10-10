@@ -233,6 +233,33 @@ test('every ranked list gives columns up as it narrows', async ({ page }) => {
  * And the reason a rank is defensible at all: the figure a column gave up is still on the row, in
  * its card. A column hidden with nowhere else to read it would be a loss rather than a priority.
  */
+/**
+ * **Opening a family must not move the columns.** The run list declares `auto` tracks, and an
+ * `auto` track is sized from the cells that are IN the grid — a closed family contributes none,
+ * so a family holding the widest cell of a column would let that track shrink while it is closed
+ * and slide every heading sideways the moment a reader opens it. The architecture note states the
+ * rule: a grouped list declares proportional tracks.
+ *
+ * Measured 2026-10-09 against the captured index of 85 runs: the eight drawn tracks are identical
+ * to the pixel, closed and open, because no folded run is wider than the widest standing one. That
+ * is the DATA, not a guarantee — which is why this stands here rather than in a comment. The day
+ * it stops holding, this says so instead of the operator's eye.
+ */
+test('opening a family leaves the run list columns where they were', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('/runs')
+  await page.locator('.run-list').waitFor()
+
+  const tracks = () => page.locator('.run-list .record-list')
+    .evaluate(list => getComputedStyle(list).gridTemplateColumns)
+
+  const closed = await tracks()
+  await page.locator('.run-list .record-group').first().click()
+  // the family really opened, or this would compare one state with itself
+  await expect(page.locator('.run-list .record-group').first()).toHaveAttribute('aria-expanded', 'true')
+  expect(await tracks()).toBe(closed)
+})
+
 test('the run list keeps its card at the narrowest tier', async ({ page }) => {
   await page.setViewportSize({ width: 620, height: 1200 })
   await openEverything(page)

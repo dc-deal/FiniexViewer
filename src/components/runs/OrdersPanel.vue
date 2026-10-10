@@ -117,9 +117,35 @@ const narrowing = useScenarioSelection()
  * It narrows the ORDERS. A scenario the narrowing drops takes its funnel with it, because the
  * heading belongs to the group and the group is gone.
  */
-const shown = computed(() =>
-  props.model.history.orders.filter(order => showsUnit(narrowing.units.value, order.scenario_name))
-)
+/**
+ * The records a reader sees, with ONE POSITION'S RECORDS TOGETHER.
+ *
+ * They do not arrive that way. A scenario's records are in the order they happened, so a position
+ * submitted at 23:57:00 and cancelled at 23:57:06 has two other positions between its two records
+ * — and the panel reads a position from the row ABOVE, so the second record started a position all
+ * over again. Measured 2026-10-08 on the field study: **6 of 41 positions** came apart like that,
+ * the id appeared twice, and expanding both copies drew the SAME order's steps twice.
+ *
+ * Arranging is ours to do — *the viewer renders what the API states and arranges what the user
+ * chose*. Nothing is dropped, nothing is summed, and the order WITHIN a position is theirs
+ * untouched; only the position's records are brought together, each position keeping the place of
+ * its first record. The clock is still on every row for a reader who wants the global order.
+ */
+function positionKey(order: OrderHistoryRow): string {
+  return `${order.scenario_name}~${positionOf(order)}`
+}
+
+const shown = computed(() => {
+  const rows = props.model.history.orders
+    .filter(order => showsUnit(narrowing.units.value, order.scenario_name))
+  const byPosition = new Map<string, OrderHistoryRow[]>()
+  for (const order of rows) {
+    const held = byPosition.get(positionKey(order))
+    if (held) held.push(order)
+    else byPosition.set(positionKey(order), [order])
+  }
+  return [...byPosition.values()].flat()
+})
 
 const narrowed = computed(() => narrowing.units.value.length > 0)
 
@@ -365,27 +391,37 @@ function refOf(order: OrderHistoryRow): PositionRef {
   return { scenario: order.scenario_name, position: positionOf(order) }
 }
 
-function keyOf(order: OrderHistoryRow): string {
-  return `${order.scenario_name}~${positionOf(order)}`
+/**
+ * The position a GROUP key names. `~` separates the halves because neither can contain one — a
+ * scenario name is a configured unit name and a position is `pos_<symbol>_<n>`, which is the same
+ * reasoning `use_position_link` states for the url form.
+ */
+function refOfKey(key: string): PositionRef {
+  const at = key.lastIndexOf('~')
+  return { scenario: key.slice(0, at), position: key.slice(at + 1) }
 }
 
-/** Only a row that STARTS a position can open one — the rows under it are the same position. */
-function canShowSteps(order: OrderHistoryRow): boolean {
-  return steps.available() && startsPosition(order)
+function showsStepsFor(key: string): boolean {
+  return opened.value.has(key)
 }
 
-function showsSteps(order: OrderHistoryRow): boolean {
-  return canShowSteps(order) && opened.value.has(keyOf(order))
-}
+/**
+ * The capability, or UNDEFINED where this run wrote no stream.
+ *
+ * Undefined matters: the list makes a heading a control wherever it is given, so handing it a
+ * function that always answers false would leave a position heading wearing the pointer, the
+ * hover and the press while doing nothing. That is the defect this project has paid for most, and
+ * the step list had it until 2026-10-09 — repeating it one level up the same day would be poor.
+ */
+const positionOpens = computed(() => (steps.available() ? showsStepsFor : undefined))
 
-function toggleSteps(order: OrderHistoryRow): void {
-  const key = keyOf(order)
+function toggleStepsFor(key: string): void {
   const next = new Set(opened.value)
   if (next.has(key)) next.delete(key)
   else {
     next.add(key)
     // asked for on OPENING, never on mount: a run has hundreds of positions and a reader opens one
-    steps.askFor(refOf(order))
+    steps.askFor(refOfKey(key))
   }
   opened.value = next
 }
@@ -394,8 +430,21 @@ function closeAllSteps(): void {
   opened.value = new Set()
 }
 
-function stepsOf(order: OrderHistoryRow): OrderEvent[] {
-  return steps.heldFor(refOf(order)) ?? []
+function stepsFor(key: string): OrderEvent[] {
+  return steps.heldFor(refOfKey(key)) ?? []
+}
+
+/**
+ * What the position WAS, read off its first record — the kind, the action, the side and the size
+ * sit on every record of it, so the heading states them once instead of repeating them down the
+ * group. Not what it BECAME: that would be reading the last record and calling it the position's
+ * state, which is inferring a category rather than rendering one.
+ */
+function shapeOf(order: OrderHistoryRow | undefined): string {
+  if (!order) return ''
+  const parts = [order.order_type, order.action, order.direction].filter(Boolean)
+  const size = order.requested_lots === null ? '' : ` ${order.requested_lots}`
+  return `${parts.join(' ')}${size}`.trim()
 }
 
 </script>
@@ -428,22 +477,23 @@ function stepsOf(order: OrderHistoryRow): OrderEvent[] {
       :columns="columns"
       :row-key="order => marks.get(order)?.key ?? order.order_id"
       :row-class="rowClass"
-      :group-by="order => order.scenario_name"
-      :is-open="isExpanded"
+      :outer-by="order => order.scenario_name"
+      :is-outer-open="isExpanded"
+      :group-by="positionKey"
       :has-detail="hasReason"
-      :shows-children="showsSteps"
-      :can-pick="canShowSteps"
-      @toggle="toggleGroup"
-      @pick="toggleSteps"
+      :shows-group-children="positionOpens"
+      @toggle-outer="toggleGroup"
+      @toggle="toggleStepsFor"
+      inert
     >
       <!--
         The scenario, and what became of its orders — the served funnel, not a count of the rows
         beneath it. Two cells counted from the END of the tracks, so a rank that gives a column up
         cannot leave the heading spanning tracks the grid no longer has.
       -->
-      <template #group="{ group }">
+      <template #outer="{ group, marker }">
         <span class="group-name" :title="group.key">
-          <span class="group-marker">{{ group.open ? '▾' : '▸' }}</span>
+          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
           {{ group.key }}
           <span class="group-meta">
             <!--
@@ -476,26 +526,52 @@ function stepsOf(order: OrderHistoryRow): OrderEvent[] {
         <span class="group-count">{{ plural(group.rows.length, t('record'), t('records')) }}</span>
       </template>
 
+      <!--
+        The POSITION, on a line of its own. It used to ride on its first RECORD, and that record's
+        status then read as the position's: `pos_ethusd_44` showed `pending` while its second row
+        said `cancelled`, and `protect_pos_ethusd_41` showed `cancelled` because it has no
+        submission record at all. Reported on screen 2026-10-09 — *"was soll ich nun glauben?"*
+
+        What it says is read off its first record and never computed: the kind, the action, the
+        side and the size are on every record of the position. What it does NOT say is how the
+        position ENDED — that would be reading the last record and calling it the position's
+        state, which is inferring a category. Asked of the backend instead.
+      -->
+      <template #group="{ group, marker }">
+        <span class="position-name" :title="group.key">
+          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+          <!-- a LINK only where there is somewhere to go: a position that produced no trade, and
+               a run that serves no trade history, both draw the id as the plain text it is -->
+          <button
+            v-if="group.rows[0] && hasTrades(group.rows[0])"
+            type="button"
+            class="to-trades"
+            :title="t('Show this position in the trade history')"
+            @click.stop="jumpToTrades(group.rows[0]!)"
+          >{{ positionOf(group.rows[0]!) }} ↗</button>
+          <template v-else>{{ group.rows[0] ? positionOf(group.rows[0]!) : group.key }}</template>
+          <span class="position-shape">{{ shapeOf(group.rows[0]) }}</span>
+        </span>
+        <span class="group-count">{{ plural(group.rows.length, t('record'), t('records')) }}</span>
+      </template>
+
+      <!-- the stream's steps belong to the POSITION, not to any one of its records -->
+      <template #groupChildren="{ group }">
+        <p v-if="group.rows[0] && steps.loadingFor(refOf(group.rows[0]!))" class="step-state">
+          {{ t('Reading the stream for this position') }}
+        </p>
+        <p v-else-if="!stepsFor(group.key).length" class="step-state">
+          {{ t('The stream records no step for these orders') }}
+        </p>
+        <OrderStepList v-else :steps="stepsFor(group.key)" />
+      </template>
+
       <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
            this template owns the cells -->
-      <template #default="{ row: order, marker }">
-        <span :data-rank="1" class="order-id" :title="order.order_id">
-          <template v-if="startsPosition(order)">
-            <!-- the glyph the LIST decided on, and the ROW is the control — a reader clicks the
-                 line, not a triangle, and on 2026-10-08 the triangle went unnoticed entirely -->
-            <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
-            <!-- a LINK only where there is somewhere to go: a position that produced no trade, and
-                 a run that serves no trade history, both draw the id as the plain text it is -->
-            <button
-              v-if="hasTrades(order)"
-              type="button"
-              class="to-trades"
-              :title="t('Show this position in the trade history')"
-              @click.stop="jumpToTrades(order)"
-            >{{ order.order_id }} ↗</button>
-            <template v-else>{{ order.order_id }}</template>
-          </template>
-          <span v-else class="carries-on" aria-hidden="true">└─</span>
+      <template #default="{ row: order }">
+        <!-- the position is named on the heading above, so a record only says it carries on -->
+        <span :data-rank="1" class="order-id">
+          <span class="carries-on" aria-hidden="true">└─</span>
         </span>
         <span :data-rank="3">{{ word(order.action) }}</span>
         <span :data-rank="3">{{ word(order.order_type) }}</span>
@@ -522,21 +598,6 @@ function stepsOf(order: OrderHistoryRow): OrderEvent[] {
         {{ reasonOf(order) }}
       </template>
 
-      <!--
-        The STEPS, grouped into the orders they belong to. `order_id` is the position and repeats
-        across its open and its closes, so the group key is `submitted_seq` — their instruction,
-        and the list groups by key rather than by runs of it, which is what survives two orders of
-        one position overlapping.
-      -->
-      <template #children="{ row: order }">
-        <p v-if="steps.loadingFor(refOf(order))" class="step-state">
-          {{ t('Reading the stream for this position') }}
-        </p>
-        <p v-else-if="!stepsOf(order).length" class="step-state">
-          {{ t('The stream records no step for these orders') }}
-        </p>
-        <OrderStepList v-else :steps="stepsOf(order)" />
-      </template>
     </RecordList>
     </template>
   </div>
@@ -640,11 +701,6 @@ function stepsOf(order: OrderHistoryRow): OrderEvent[] {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--color-text-primary);
-}
-
-.group-marker {
-  color: var(--color-text-secondary);
-  margin-right: var(--space-xs);
 }
 
 .group-meta {

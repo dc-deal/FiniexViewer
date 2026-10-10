@@ -42,7 +42,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trend_channel_reference_sweep_base.json",
       "reporting": "expected",
-      "size_bytes": 279344,
+      "size_bytes": 279347,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -59,6 +59,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -110,7 +114,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trend_channel_reference_sweep_base.json",
       "reporting": "expected",
-      "size_bytes": 279328,
+      "size_bytes": 279331,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -127,6 +131,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -178,7 +186,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trend_channel_reference_sweep_base.json",
       "reporting": "expected",
-      "size_bytes": 258739,
+      "size_bytes": 258742,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -195,6 +203,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -246,7 +258,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trend_channel_reference_sweep_base.json",
       "reporting": "expected",
-      "size_bytes": 459910,
+      "size_bytes": 459913,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -263,6 +275,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -314,7 +330,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trend_channel_reference_sweep_base.json",
       "reporting": "expected",
-      "size_bytes": 459893,
+      "size_bytes": 459896,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -331,6 +347,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -382,7 +402,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trend_channel_reference_sweep_base.json",
       "reporting": "expected",
-      "size_bytes": 459713,
+      "size_bytes": 459716,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -399,6 +419,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -450,7 +474,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trend_channel_reference_sweep_base.json",
       "reporting": "expected",
-      "size_bytes": 406383,
+      "size_bytes": 406386,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -467,6 +491,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -518,7 +546,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trend_channel_reference_sweep_base.json",
       "reporting": "expected",
-      "size_bytes": 406362,
+      "size_bytes": 406365,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -535,6 +563,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -586,7 +618,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trend_channel_reference_sweep_base.json",
       "reporting": "expected",
-      "size_bytes": 406305,
+      "size_bytes": 406308,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -603,6 +635,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -652,7 +688,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "partial_close_lifecycle.json",
       "reporting": "expected",
-      "size_bytes": 68047,
+      "size_bytes": 76377,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -664,6 +700,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -713,7 +753,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "tp_triggered_test.json",
       "reporting": "expected",
-      "size_bytes": 43875,
+      "size_bytes": 50768,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -725,6 +765,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -774,7 +818,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s6.json",
       "reporting": "expected",
-      "size_bytes": 44741,
+      "size_bytes": 51036,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -786,6 +830,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -817,7 +865,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s5.json",
       "reporting": "expected",
-      "size_bytes": 0,
+      "size_bytes": 21425,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -829,6 +877,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": null,
       "run_outcome": null,
@@ -872,7 +924,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s4.json",
       "reporting": "expected",
-      "size_bytes": 44292,
+      "size_bytes": 50587,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -884,6 +936,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -933,7 +989,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s3.json",
       "reporting": "expected",
-      "size_bytes": 54880,
+      "size_bytes": 62596,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -945,6 +1001,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -994,7 +1054,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s2.json",
       "reporting": "expected",
-      "size_bytes": 55940,
+      "size_bytes": 63653,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1006,6 +1066,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -1055,7 +1119,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s1.json",
       "reporting": "expected",
-      "size_bytes": 62006,
+      "size_bytes": 69697,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1067,6 +1131,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -1116,7 +1184,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "tp_triggered_test.json",
       "reporting": "expected",
-      "size_bytes": 44247,
+      "size_bytes": 51323,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1128,6 +1196,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1177,7 +1249,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "partial_close_lifecycle.json",
       "reporting": "expected",
-      "size_bytes": 68321,
+      "size_bytes": 76835,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1189,6 +1261,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1238,7 +1314,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "trade_lifecycle_test.json",
       "reporting": "expected",
-      "size_bytes": 41990,
+      "size_bytes": 48201,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1250,6 +1326,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1301,7 +1381,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "btcusd_mini_set.json",
       "reporting": "expected",
-      "size_bytes": 428654,
+      "size_bytes": 428657,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1313,6 +1393,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1364,7 +1448,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "btcusd_mini_set.json",
       "reporting": "expected",
-      "size_bytes": 428657,
+      "size_bytes": 428660,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1376,6 +1460,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1427,7 +1515,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "btcusd_mini_set.json",
       "reporting": "expected",
-      "size_bytes": 420650,
+      "size_bytes": 420653,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1439,6 +1527,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1490,7 +1582,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "btcusd_mini_set.json",
       "reporting": "expected",
-      "size_bytes": 428331,
+      "size_bytes": 428334,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1502,6 +1594,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1551,7 +1647,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "margin_safety_test.json",
       "reporting": "expected",
-      "size_bytes": 54969,
+      "size_bytes": 62284,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1563,6 +1659,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1612,7 +1712,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "partial_close_lifecycle.json",
       "reporting": "expected",
-      "size_bytes": 68322,
+      "size_bytes": 76836,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1624,6 +1724,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1673,7 +1777,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s6.json",
       "reporting": "expected",
-      "size_bytes": 44541,
+      "size_bytes": 50838,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1685,6 +1789,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1716,7 +1824,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s5.json",
       "reporting": "expected",
-      "size_bytes": 0,
+      "size_bytes": 21130,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1728,6 +1836,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": null,
       "run_outcome": null,
@@ -1771,7 +1883,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s4.json",
       "reporting": "expected",
-      "size_bytes": 44278,
+      "size_bytes": 50575,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1783,6 +1895,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1832,7 +1948,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s3.json",
       "reporting": "expected",
-      "size_bytes": 56267,
+      "size_bytes": 63984,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1844,6 +1960,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1893,7 +2013,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s2.json",
       "reporting": "expected",
-      "size_bytes": 56645,
+      "size_bytes": 64359,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1905,6 +2025,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -1954,7 +2078,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "demo_btcusd_bot_s1.json",
       "reporting": "expected",
-      "size_bytes": 61512,
+      "size_bytes": 69387,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1966,6 +2090,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": true,
       "results": [
         {
@@ -2017,7 +2145,7 @@
       "git_commit": "3b31c84a",
       "config_snapshot": "report_coverage_reference.json",
       "reporting": "expected",
-      "size_bytes": 979855,
+      "size_bytes": 979858,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2054,6 +2182,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": 25,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": false,
       "results": [
         {
@@ -2108,7 +2240,7 @@
       "git_commit": "4e616994",
       "config_snapshot": "demo_s6.json",
       "reporting": "expected",
-      "size_bytes": 49868,
+      "size_bytes": 49871,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2120,6 +2252,10 @@
       ],
       "run_purpose": null,
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2151,7 +2287,7 @@
       "git_commit": "4e616994",
       "config_snapshot": "demo_s5.json",
       "reporting": "expected",
-      "size_bytes": 20362,
+      "size_bytes": 20365,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2163,6 +2299,10 @@
       ],
       "run_purpose": null,
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": null,
       "run_outcome": null,
@@ -2206,7 +2346,7 @@
       "git_commit": "4e616994",
       "config_snapshot": "demo_s4.json",
       "reporting": "expected",
-      "size_bytes": 49519,
+      "size_bytes": 49522,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2218,6 +2358,10 @@
       ],
       "run_purpose": null,
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2267,7 +2411,7 @@
       "git_commit": "4e616994",
       "config_snapshot": "demo_s3.json",
       "reporting": "expected",
-      "size_bytes": 62918,
+      "size_bytes": 62921,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2279,6 +2423,10 @@
       ],
       "run_purpose": null,
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2328,7 +2476,7 @@
       "git_commit": "4e616994",
       "config_snapshot": "demo_s2.json",
       "reporting": "expected",
-      "size_bytes": 62395,
+      "size_bytes": 62398,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2340,6 +2488,10 @@
       ],
       "run_purpose": null,
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2389,7 +2541,7 @@
       "git_commit": "4e616994",
       "config_snapshot": "demo_s1.json",
       "reporting": "expected",
-      "size_bytes": 67453,
+      "size_bytes": 67456,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2401,6 +2553,10 @@
       ],
       "run_purpose": null,
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2452,7 +2608,7 @@
       "git_commit": "4e616994",
       "config_snapshot": "report_coverage_reference.json",
       "reporting": "expected",
-      "size_bytes": 978386,
+      "size_bytes": 978389,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2489,6 +2645,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2543,7 +2703,7 @@
       "git_commit": "8b7a6cfa",
       "config_snapshot": "kraken_spot_ethusd_field_study.json",
       "reporting": "expected",
-      "size_bytes": 352482,
+      "size_bytes": 352485,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -2555,6 +2715,10 @@
       ],
       "run_purpose": "certificate",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2606,7 +2770,7 @@
       "git_commit": "8b7a6cfa",
       "config_snapshot": "report_coverage_reference.json",
       "reporting": "expected",
-      "size_bytes": 905743,
+      "size_bytes": 905746,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2633,6 +2797,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2687,7 +2855,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "kraken_spot_ethusd_field_study.json",
       "reporting": "expected",
-      "size_bytes": 270343,
+      "size_bytes": 270346,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -2699,6 +2867,10 @@
       ],
       "run_purpose": "certificate",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2748,7 +2920,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "trade_lifecycle_test.json",
       "reporting": "expected",
-      "size_bytes": 46369,
+      "size_bytes": 46372,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2760,6 +2932,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2809,7 +2985,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "tp_triggered_test.json",
       "reporting": "expected",
-      "size_bytes": 49105,
+      "size_bytes": 49108,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2821,6 +2997,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2870,7 +3050,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "tick_outage_stress_test.json",
       "reporting": "expected",
-      "size_bytes": 42792,
+      "size_bytes": 42795,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2882,6 +3062,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2931,7 +3115,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "sl_triggered_test.json",
       "reporting": "expected",
-      "size_bytes": 49308,
+      "size_bytes": 49311,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2943,6 +3127,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -2992,7 +3180,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "session_end_test.json",
       "reporting": "expected",
-      "size_bytes": 608520,
+      "size_bytes": 608523,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3004,6 +3192,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3053,7 +3245,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "sentiment_outage_test.json",
       "reporting": "expected",
-      "size_bytes": 47640,
+      "size_bytes": 47643,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3065,6 +3257,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3114,7 +3310,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "sentiment_mock_test.json",
       "reporting": "expected",
-      "size_bytes": 44958,
+      "size_bytes": 44961,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3126,6 +3322,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3175,7 +3375,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "partial_close_lifecycle.json",
       "reporting": "expected",
-      "size_bytes": 75165,
+      "size_bytes": 75168,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3187,6 +3387,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3236,7 +3440,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "partial_close_lifecycle.json",
       "reporting": "expected",
-      "size_bytes": 74610,
+      "size_bytes": 74613,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3248,6 +3452,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3297,7 +3505,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "mock_session_test.json",
       "reporting": "expected",
-      "size_bytes": 49021,
+      "size_bytes": 49024,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3309,6 +3517,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3358,7 +3570,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "mock_session_test.json",
       "reporting": "expected",
-      "size_bytes": 48827,
+      "size_bytes": 48830,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3370,6 +3582,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3419,7 +3635,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "mock_session_test.json",
       "reporting": "expected",
-      "size_bytes": 48030,
+      "size_bytes": 48033,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3431,6 +3647,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3480,7 +3700,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "mock_session_test.json",
       "reporting": "expected",
-      "size_bytes": 48165,
+      "size_bytes": 48168,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3492,6 +3712,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3541,7 +3765,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "market_data_outage_test.json",
       "reporting": "expected",
-      "size_bytes": 45399,
+      "size_bytes": 45402,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3553,6 +3777,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3602,7 +3830,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "field_study_mock.json",
       "reporting": "expected",
-      "size_bytes": 96819,
+      "size_bytes": 96822,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3614,6 +3842,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3663,7 +3895,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "event_channel_lifecycle.json",
       "reporting": "expected",
-      "size_bytes": 50722,
+      "size_bytes": 50725,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3675,6 +3907,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3724,7 +3960,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "eurusd_aggressive_trend_mock.json",
       "reporting": "expected",
-      "size_bytes": 23372336,
+      "size_bytes": 23372339,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3736,6 +3972,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3785,7 +4025,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "diagnostics_probe_test.json",
       "reporting": "expected",
-      "size_bytes": 34529,
+      "size_bytes": 34532,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3797,6 +4037,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3846,7 +4090,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "deployment_continuity_test.json",
       "reporting": "expected",
-      "size_bytes": 38549,
+      "size_bytes": 38552,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3858,6 +4102,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3907,7 +4155,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "btcusd_mock_safety.json",
       "reporting": "expected",
-      "size_bytes": 47596,
+      "size_bytes": 47599,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3919,6 +4167,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -3968,7 +4220,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "aggressive_trend_mock.json",
       "reporting": "expected",
-      "size_bytes": 5997991,
+      "size_bytes": 5997994,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3980,6 +4232,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -4029,7 +4285,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "aggressive_trend_mock.json",
       "reporting": "expected",
-      "size_bytes": 5998980,
+      "size_bytes": 5998983,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4041,6 +4297,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -4090,7 +4350,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "aggressive_trend_mock.json",
       "reporting": "expected",
-      "size_bytes": 5997832,
+      "size_bytes": 5997835,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4102,6 +4362,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -4153,7 +4417,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "tunnel_swing_v_m30tunnel.json",
       "reporting": "expected",
-      "size_bytes": 1812358,
+      "size_bytes": 1812361,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4290,6 +4554,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -4341,7 +4609,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "tunnel_swing_v_m30trend.json",
       "reporting": "expected",
-      "size_bytes": 3440762,
+      "size_bytes": 3440765,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4478,6 +4746,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -4530,7 +4802,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "tunnel_swing_robustness.json",
       "reporting": "expected",
-      "size_bytes": 6101865,
+      "size_bytes": 6101868,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4717,6 +4989,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -4768,7 +5044,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "tunnel_swing_forex_multi.json",
       "reporting": "expected",
-      "size_bytes": 1035800,
+      "size_bytes": 1035803,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4815,6 +5091,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -4866,7 +5146,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "tunnel_swing_forex.json",
       "reporting": "expected",
-      "size_bytes": 184451,
+      "size_bytes": 184454,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4883,6 +5163,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -4934,7 +5218,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "touch_and_turn_gbpusd.json",
       "reporting": "expected",
-      "size_bytes": 18727696,
+      "size_bytes": 18727699,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -5516,6 +5800,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -5567,7 +5855,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "touch_and_turn_eurusd.json",
       "reporting": "expected",
-      "size_bytes": 23602642,
+      "size_bytes": 23602645,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6044,6 +6332,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6095,7 +6387,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "sentiment_realdata_demo.json",
       "reporting": "expected",
-      "size_bytes": 115694,
+      "size_bytes": 115697,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6112,6 +6404,10 @@
       ],
       "run_purpose": "fixture",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6163,7 +6459,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "cautious_macd_sandbox.json",
       "reporting": "expected",
-      "size_bytes": 114371,
+      "size_bytes": 114374,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6185,6 +6481,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6236,7 +6536,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "eurusd_3_windows_sandbox.json",
       "reporting": "expected",
-      "size_bytes": 868155,
+      "size_bytes": 868158,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6268,6 +6568,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6319,7 +6623,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "eurusd_3_windows_reference.json",
       "reporting": "expected",
-      "size_bytes": 6309929,
+      "size_bytes": 6309932,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6341,6 +6645,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6392,7 +6700,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "eurusd_3_windows_reference.json",
       "reporting": "expected",
-      "size_bytes": 6309941,
+      "size_bytes": 6309944,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6414,6 +6722,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6465,7 +6777,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "eurusd_3_windows_reference.json",
       "reporting": "expected",
-      "size_bytes": 6309944,
+      "size_bytes": 6309947,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6487,6 +6799,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6538,7 +6854,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "EURGBP_stress_test_config.json",
       "reporting": "expected",
-      "size_bytes": 3018130,
+      "size_bytes": 3018133,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6610,6 +6926,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6662,7 +6982,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "ETHUSD_blocks_robustness_20260624_2028.json",
       "reporting": "expected",
-      "size_bytes": 2277752,
+      "size_bytes": 2277755,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6719,6 +7039,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6771,7 +7095,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "ETHUSD_blocks_robustness_20260624_2028.json",
       "reporting": "expected",
-      "size_bytes": 2277753,
+      "size_bytes": 2277756,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6828,6 +7152,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6880,7 +7208,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "ETHUSD_blocks_robustness_20260624_2028.json",
       "reporting": "expected",
-      "size_bytes": 2277753,
+      "size_bytes": 2277756,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -6937,6 +7265,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -6989,7 +7321,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "ETHUSD_blocks_robustness_20260624_2028.json",
       "reporting": "expected",
-      "size_bytes": 2277752,
+      "size_bytes": 2277755,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -7046,6 +7378,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {
@@ -7095,7 +7431,7 @@
       "git_commit": "68cf6362",
       "config_snapshot": "BTCUSD_sandbox.json",
       "reporting": "expected",
-      "size_bytes": 72205,
+      "size_bytes": 72208,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -7112,6 +7448,10 @@
       ],
       "run_purpose": "regular",
       "report_contract": null,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
       "fixture_superseded": null,
       "results": [
         {

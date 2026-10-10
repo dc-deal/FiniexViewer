@@ -598,6 +598,11 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     start_time: '2026-08-30T14:58:19.182635+00:00',
     parent_id: null,
     parent_kind: null,
+    // contract 26 — who started the run, the header's origin block flattened
+    origin_channel: 'cli',
+    origin_client: 'console',
+    origin_principal: 'operator',
+    origin_host: 'h_x29og8',
     config_id: '',
     reporting: 'expected',
     size_bytes: 0,

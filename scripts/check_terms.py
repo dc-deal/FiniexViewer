@@ -198,7 +198,11 @@ def our_pairs():
                 match = LABEL.search(line)
                 if match:
                     found = fields_in(declared_window(lines, index, match.end()))
-                    rank = RANK_ON_COLUMN.search(' '.join(lines[index:index + 3]))
+                    # the rank sits in the column's OWN entry, which is the window the
+                    # fields already use — a fixed three lines missed every column carrying a
+                    # `hint`, because the hint pushes `rank` to the fourth line. Measured
+                    # 2026-10-09: `Order id` and `Type` of the orders list, silently unresolved.
+                    rank = RANK_ON_COLUMN.search(declared_window(lines, index, match.end()))
                     if found:
                         pairs.setdefault(match.group(1), found)
                     else:

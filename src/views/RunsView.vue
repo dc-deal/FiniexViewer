@@ -282,10 +282,12 @@ const showPanels = computed(() =>
           {{ t('This link names a run that is no longer in the index') }}: {{ unknownRunId }}
         </span>
       </div>
-      <div v-else-if="!selectedRun" class="state-overlay">
-        <span class="hint">{{ t('Select group, scenario and run to continue') }}</span>
-      </div>
-      <template v-else>
+      <!-- No sentence where no run is chosen. It read "Select group, scenario and run" — the
+           vocabulary of the cascade this view has not had since 2026-09-27 — and it stood in a
+           half-empty page beneath the list it was describing. The list is the instruction. -->
+      <!-- named rather than `v-else`: the branch that used to stand between them was a sentence,
+           and its removal left the compiler no way to know a run had been chosen -->
+      <template v-else-if="selectedRun">
         <!-- a missing or unreadable section does not hide the ones that are there -->
         <p v-if="!selectedRun.has_reports" class="notice">
           {{ t('This run exists as logs only — it carries no report artifacts') }}

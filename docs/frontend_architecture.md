@@ -165,7 +165,7 @@ The report plane is model-fed on the backend: one canonical model per section, d
 
 Six consequences the frontend is built around:
 
-- **The index row carries the whole run header**, so the picker, its facets and the Run Header panel are all built from one request: `run_id`, `group`, `name`, `has_reports`, `start_time`, `parent_id` and the provenance triple `app_version` / `git_commit` / `config_snapshot`. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here, and the Run Header panel needs no request at all because its model IS this row.
+- **The index row carries the whole run header**, so the picker, its facets and the Run Header panel are all built from one request: `run_id`, `group`, `name`, `has_reports`, `start_time`, `parent_id` and the provenance triple `app_version` / `git_commit` / `config_snapshot`. No follow-up request per run — an N+1 against `run-summary` would be the obvious mistake here. Since contract 26 the header is ALSO a route of its own (`/reports/runs/{id}/header`), carrying what the index row cannot: who started the run, and the code identity of every component that ran. The row stays the source for the list and its facets; the route is the source for a panel that shows the whole header.
 - **A 404 on a report section is an absence, not a failure.** A run can exist without carrying a given artifact. `getRunSummary` maps that to `null`, and the view says the artifact is missing instead of showing an error.
 - **Every report body names the run it was built from**, and `api_client` asserts it against what was requested (`RunIdMismatchError`). This is the only defence a client has against an ambiguous id: a duplicate passes every membership check, the route resolves it to whichever run it finds first, and nothing else in the payload would give that away. It has happened — three runs once shared one id here.
 - **A 409 is a third thing again: the artifact is there and cannot be parsed**, because it was written by an older schema and the run has to be repeated. `getWarningsErrors` raises `ArtifactUnreadableError` carrying the backend's own detail text, and the view shows it as a notice *beside* the panels rather than instead of them — one unreadable section must not hide the readable ones. Three distinct answers, three distinct states: 404 absent, 409 stale, anything else an outage.
@@ -622,6 +622,34 @@ Cloning the slot's vnodes to stamp both `rank` and `figure` from the column list
 duplications at once — recorded as a direction, not taken, because it would change how all five
 callers are written.
 
+**A list can group TWICE, and a group may state nothing at all.** `outerBy` puts a second level
+above `groupBy`, because the orders list has rows that belong to a scenario AND to a position and
+each level needs its own heading. `showsGroupHead` lets the caller refuse a heading for a given
+group: the run list folds 85 lines into 42, but 28 of those groups hold one run, and a heading over
+one row is a line, a glyph and a click to disclose what is already on screen. A group with no
+heading is never closed — nothing could open it again.
+
+**ONE disclosure glyph, and the list decides it.** Two panels wrote `group.open ? '▾' : '▸'` by
+hand, a third opened its fills with no glyph at all, and the operator could not find the disclosure
+on screen (2026-10-08). The glyph now travels as a slot prop — `marker` — exactly as a row's does:
+the list decides the SHAPE and the STATE, the caller decides which cell it sits in, because the
+caller owns the cells. The intermediate form, where the list drew its own glyph beside the slot,
+cost its own defect: a position heading carried TWO triangles, and the unit test read the first of
+them and passed. The heading's cells are placed on explicit tracks, so a glyph of the list's own
+would be auto-placed onto a row of its own.
+
+**ONE indentation step, and it means UNDER A HEADING.** `--record-step` is the single rung: a row
+whose group states itself sits one step in, a row whose group states nothing stays level with the
+headings. Both halves matter — the first version gave every row of a grouping list the step, which
+is no ladder at all, and the operator said so on sight.
+
+The step is RESERVED on every row of such a list and taken back with a `transform` from the rows
+that stand alone, because a transform moves the ink without moving the box. An `auto` track is
+sized from its cells, so a step only some rows carry sizes the column differently depending on
+which groups are open: measured 2026-10-10, opening one family grew the run list's first track by
+exactly one step and pushed the column beside it 24 px sideways. A list that scrolls also reserves
+its scrollbar gutter, or the bar appearing on a click takes 15 px from the proportional column.
+
 **A GROUP and a CHILD are different things, kept apart on purpose.** A group is a partition of the
 same row kind: no columns of its own, only a heading over rows that already fit. A child is a record
 of ANOTHER kind that a row owns — a trade's fills — with its own columns. Serving both from one
@@ -923,8 +951,8 @@ things while the one above it held 29 — and the question a reader actually arr
 I did on Thursday*, is navigation by TIME, which a name cascade cannot answer at all.
 
 It is now the same `FacetBar` the scenario roster uses over a `RecordList` — the shared list surface
-— pointed at `RunInfo`: facets for group, set, artifacts, reporting, origin, version, outcome and
-trouble, sorted newest-first by default, with a search over the run id and the set name. Both
+— pointed at `RunInfo`: facets for run type, artifacts, reporting, parent, version, purpose, money
+and outcome, sorted newest-first by default, with a search over the run id and the set name. Both
 components are generic and hold no state, so this cost the facet definitions and ten column
 declarations.
 
@@ -972,9 +1000,40 @@ view now says what such a run is and the store asks the backend for nothing, so 
 be clicked would only look broken. And the list **collapses to one line once a run is chosen**,
 because forty rows above the panels would push every one of them off the screen.
 
-**The picker's own facet state is local, not in the URL** — the same as the scenario roster's. The
-URL carries the SELECTION (`?run=`, `?unit=`), which is what makes a shared link mean something; a
-readable encoding for arbitrary facet state is a separate design and neither list has one yet.
+**The narrowing rides in the URL too**, under `runf` / `runq` / `runsort` — a filtered index is a
+link. `Purpose` is the one facet that opens with a value picked, and the default is WRITTEN into
+the url rather than applied behind it, so from that moment it is an ordinary selection: a chip
+shows it, `clear` removes it, and a shared link means the same to everyone. That shape is GitHub's
+`is:issue state:open`.
+
+**The list GROUPS by family, and a family of one stays a plain row.** Measured 2026-10-09 over 85
+runs: 42 lines instead of 85, 14 of them a family and 28 a run standing alone.
+
+```
+[Search ...] [Run type v] [Artifacts v] ... [Money v] [Outcome v]        27 of 85
+
+  Oct 08, 13:06  demo_btcusd_bot            24.3 h  OK success    0.00 USD   0 trades  deployment
+> deployment deploy_20261008_110304   5 runs - Oct 08, 13:05
+> kraken_spot_ethusd_field_study      2 runs - Oct 08, 01:43
+  Oct 07, 17:06  eurusd_aggressive_trend_mock  48.0 h  OK success  -359.85 USD  335 trades
+```
+
+The key is the PARENT where the backend states one and the set name otherwise, and the measurement
+is what decided that: **the set name alone folds no sweep**, because a sweep's children each carry
+their own (`..._c000` through `..._c008`), so the thirteen sweep runs stayed thirteen lines @
+exactly the complaint. By set name, meanwhile, eighteen `demo_btcusd_bot` runs fold under one
+heading although they are six separate deployment sessions.
+
+Three consequences. Families start CLOSED, because the fold is the point. A family stands at its
+TOP run and says that run's stamp, so "sort by time" keeps meaning time whatever the sort is — the
+list keeps groups in the order their first row appears, so the reader's sort orders the families
+too. And the `Set` FACET fell away: the grouping is that partition, and on a sweep the facet
+offered thirteen values matching one run each, which is a second search line. The search still
+reads the set name.
+
+The kind badge (`deployment`, `sweep`) is on the heading, and a row inside a family no longer
+carries it — five identical badges under one heading that says the word is the noise this project's
+own rule forbids. A run standing alone keeps its badge, because nothing above it says what it is.
 
 ### Panels — a registry, a shell, one persisted layout
 

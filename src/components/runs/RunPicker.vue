@@ -32,10 +32,14 @@ const { runs, selectedRun, selectedRunId, loadingRuns } = storeToRefs(runsStore)
 
 // the narrowing rides in the URL under `runf` / `runq` / `runsort`, so a filtered index is a link
 /**
- * A run whose purpose nobody stated. OUR word, not theirs — the field is simply null, and a facet
- * that offered no value for those rows would DROP them the moment the facet is used.
+ * A run whose purpose nobody stated. **THEIR word since 2026-10-09**, decided on their side after
+ * we asked: *"`unstated` → `unknown`. It is the word our documents already use for exactly this."*
+ * It was ours until then, and the asking is what replaced it.
+ *
+ * The value exists at all because the field is simply null on such a run, and a facet that offered
+ * those rows no value would DROP them the moment it is used.
  */
-const UNSTATED = 'unstated'
+const UNKNOWN = 'unknown'
 
 /**
  * What the list opens with: everything except the fixtures.
@@ -52,7 +56,7 @@ const UNSTATED = 'unstated'
  * silently. `api_contract.test.ts` asserts the served vocabulary against this list for that
  * reason: a new word turns the suite red instead of quietly shortening the list.
  */
-const SHOWN_BY_DEFAULT = { purpose: ['regular', 'certificate', UNSTATED] }
+const SHOWN_BY_DEFAULT = { purpose: ['regular', 'certificate', UNKNOWN] }
 
 const { selection, search, sort } = useFacetQuery('run', 'newest', SHOWN_BY_DEFAULT)
 
@@ -63,18 +67,50 @@ function stated(value: string | null): string[] {
 
 const facets: FacetDefinition<RunInfo>[] = [
   { id: 'group', label: 'Run type', valuesOf: row => stated(row.group) },
-  { id: 'set', label: 'Set', valuesOf: row => stated(row.name) },
+  // no `Set` facet: the list GROUPS by set, so the facet would offer the same partition twice @
+  // and on a sweep it offered 13 values matching one run each, which is a second search line.
+  // The search still reads the set name, so hunting one by hand is a word rather than a menu.
   // the one facet built rather than read: it is the presence of a field, which has two names
   { id: 'artifacts', label: 'Artifacts', valuesOf: row => [row.has_reports ? 'reports' : 'logs only'] },
   { id: 'reporting', label: 'Reporting', valuesOf: row => stated(row.reporting) },
-  { id: 'origin', label: 'Origin', valuesOf: row => stated(row.parent_kind) },
+  /**
+   * The family a run belongs to. **`Parent`, by their decision of 2026-10-09**, not `Origin`:
+   * they asked where we used that word, we counted, and the count settled it on their side @
+   * *"the word `origin` keeps exactly one meaning, who started a run"*. This renders `parent_kind`
+   * and they call the relation the run's parent, so this takes their word.
+   *
+   * We had been about to put the run header's `origin` block on the same screen, which would have
+   * meant two unrelated `Origin` in one window. Nobody noticed until the counting.
+   */
+  { id: 'parent', label: 'Parent', valuesOf: row => stated(row.parent_kind) },
   { id: 'version', label: 'Version', valuesOf: row => stated(row.app_version) },
   /**
    * What a run is FOR (contract 24), and the one facet that starts with a value picked. It never
    * says whether money moved — `orders_to` does — so `certificate` is kept in view by default:
    * those are the real-money field studies.
    */
-  { id: 'purpose', label: 'Purpose', valuesOf: row => [row.run_purpose ?? UNSTATED] },
+  { id: 'purpose', label: 'Purpose', valuesOf: row => [row.run_purpose ?? UNKNOWN] },
+  /**
+   * Did money move? **`orders_to` answers it and nothing else does** — their sentence: *"`venue`
+   * on `orders_to` is the only value that means money moved, and it is worth branching on
+   * explicitly rather than deriving it from anything else."* So this reads one served field and
+   * infers nothing: not from `group`, not from `ticks_from`, not from `run_purpose`.
+   *
+   * `real money` is THEIR phrase, used throughout their prose for exactly this. A bare *live* is
+   * forbidden vocabulary on both sides, and *live trading* means this and only this.
+   *
+   * A run that states no `orders_to` gets NO value rather than `simulated`: reading an absence as
+   * "no money moved" is the one mistake here that could matter. Measured 2026-10-09 over 85 runs,
+   * none is absent — 83 `simulated`, and the two field studies.
+   */
+  {
+    id: 'money',
+    label: 'Money',
+    valuesOf: row => {
+      if (!row.orders_to) return []
+      return [row.orders_to === 'venue' ? 'real money' : 'simulated']
+    },
+  },
   /**
    * ONE axis where there were two, and it answers the question a reader actually arrives with:
    * *what ran clean, what ran but was flagged, what failed.*
@@ -93,13 +129,20 @@ const facets: FacetDefinition<RunInfo>[] = [
    * Three values, and each is a mechanical reading rather than a judgement:
    *   - not `success` → the backend's OWN grade, by its own word, so `finished_with_errors` appears
    *     as itself rather than folded into `failed` (§15)
-   *   - `success` with a warning counted → `flagged`
-   *   - `success` with none → `clean`
+   *   - `success` with a warning counted → `with warnings`
+   *   - `success` with none → `no warnings`
    *
-   * `clean` and `flagged` are OURS, and deliberately not their words: calling the first `success`
-   * would put a count of 21 under a chip whose column says `success` on 37 rows, which is the worse
-   * confusion. Contract 15 — a run the ledger holds nothing for states no outcome, and an absence is
-   * not a category, so it is offered as nothing to pick.
+   * **`no warnings` and `with warnings` are THEIR words, decided 2026-10-09 after we asked.** Ours
+   * were `clean` and `flagged`, and each collided with a word they already use for something else:
+   * `clean` is a `reconcile_state` (`order-events`, `venue-account`), `flagged` is a staleness
+   * threshold elapsing (`feed-stability`). Neither meets our sense on a screen today, and both
+   * would the moment either panel exists. Their replacement takes the word from the served field
+   * itself: *"the word is the served field's own: `warning_count`, the findings a validator
+   * decided — not the log's warnings, which are `log_warning_count`."*
+   *
+   * Calling the first `success` was never an option: it would put a count of 21 under a chip whose
+   * column says `success` on 37 rows. Contract 15 — a run the ledger holds nothing for states no
+   * outcome, and an absence is not a category, so it is offered as nothing to pick.
    */
   {
     id: 'outcome',
@@ -107,7 +150,7 @@ const facets: FacetDefinition<RunInfo>[] = [
     valuesOf: row => {
       if (!row.run_outcome) return []
       if (row.run_outcome !== 'success') return [row.run_outcome]
-      return [row.warning_count ? 'flagged' : 'clean']
+      return [row.warning_count ? 'with warnings' : 'no warnings']
     },
   },
 ]
@@ -235,6 +278,72 @@ const shown = computed(() => sortRows(
 ))
 
 /**
+ * What binds several runs into ONE line — and it is not what my own sketch assumed.
+ *
+ * `parent_id` where the backend states one, the set name otherwise. Measured 2026-10-09 over the
+ * 85 stored runs, and the measurement is what decided it:
+ *
+ * ```
+ * by set name alone             48 lines   10 groups   biggest 18
+ * parent where there is one     42 lines   14 groups   biggest  9
+ * ```
+ *
+ * **The set name alone does not fold a sweep, which was the whole complaint.** A sweep child
+ * carries its own set name — `..._c000` through `..._c008` — so the 13 sweep runs stayed 13
+ * separate lines, exactly the eight-identical-rows the operator saw on screen. What binds them is
+ * the sweep, and the backend states it: `parent_id`, with `parent_kind` saying what kind of parent
+ * it is. By set name, meanwhile, the 18 `demo_btcusd_bot` runs fold under ONE heading although
+ * they are six separate deployment sessions — measured, 6 distinct `parent_id`.
+ *
+ * Nothing is computed from the id: it is the key AND the heading. A sweep's own name is served on
+ * another route, and merging two responses into a third thing is not ours — viewer#32 is where a
+ * sweep gets a name of its own.
+ */
+function familyOf(run: RunInfo): string {
+  return run.parent_id ?? run.name
+}
+
+/** How many runs each family holds, which is all a heading needs in order to decide to exist. */
+const familySizes = computed(() => {
+  const sizes = new Map<string, number>()
+  for (const run of shown.value) {
+    const key = familyOf(run)
+    sizes.set(key, (sizes.get(key) ?? 0) + 1)
+  }
+  return sizes
+})
+
+/**
+ * A family of ONE states nothing. Its run is already a row, and a heading over it would cost a
+ * line, a glyph and a click to disclose what is on screen — 28 of the 42 lines are of that kind.
+ */
+function showsFamilyHead(key: string): boolean {
+  return (familySizes.value.get(key) ?? 0) > 1
+}
+
+/**
+ * Which families are open. They start CLOSED, because the fold is the point: a list that opens
+ * with every family expanded has folded nothing and is the 85 rows it was.
+ *
+ * Session state rather than stored: it is not what the reader is looking at (that is the run, and
+ * it rides in the url) and not an arrangement they made of the workspace.
+ */
+const opened = ref(new Set<string>())
+
+function isFamilyOpen(key: string): boolean {
+  // the chosen run stays reachable: its family is open whether or not anyone opened it
+  if (selectedRun.value && familyOf(selectedRun.value) === key) return true
+  return opened.value.has(key)
+}
+
+function toggleFamily(key: string): void {
+  const next = new Set(opened.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  opened.value = next
+}
+
+/**
  * When the run started, in the reader's own zone. The id encodes the same instant, but nobody
  * reads `20260925_095227` as a date at a glance — which is the whole reason this column exists.
  *
@@ -286,6 +395,15 @@ function card(run: RunInfo): ListCard {
   if (run.parent_id) {
     details.push({ label: run.parent_kind ?? t('Parent'), value: run.parent_id })
   }
+  // WHO STARTED IT (contract 26). Every label here is THEIR word, taken from `run-header`, which
+  // says to use them as written: *"do not coin another — the label is how a reader finds the term
+  // in these documents."* Each appears only where the run states it, which is the card's own rule.
+  // The whole block — with the code identity beside it — is served on its own route and belongs in
+  // a Run Header panel; these four ride on the index row and so cost nothing here.
+  if (run.origin_channel) details.push({ label: t('Started via'), value: run.origin_channel })
+  if (run.origin_client) details.push({ label: t('Client'), value: run.origin_client })
+  if (run.origin_principal) details.push({ label: t('Started for'), value: run.origin_principal })
+  if (run.origin_host) details.push({ label: t('Host'), value: run.origin_host })
   details.push(
     // a FILE NAME, which is what the backend's own entry says it is — and the configuration ITSELF
     // is a different field served on another route. `Config file` beside `Config id` below says
@@ -376,13 +494,43 @@ watch(selectedRunId, runId => { open.value = runId === null })
       <RecordList
         v-else
         class="run-list"
+        :class="{ roomy: !selectedRunId }"
         :rows="shown"
         :columns="columns"
         :row-key="run => run.run_id"
         :is-picked="run => run.run_id === selectedRunId"
         :row-card="card"
+        :group-by="familyOf"
+        :is-open="isFamilyOpen"
+        :shows-group-head="showsFamilyHead"
+        @toggle="toggleFamily"
         @pick="run => runsStore.selectRun(run.run_id)"
       >
+        <!--
+          The family, on a line of its own, and it says the three things a closed line has to: WHAT
+          it is, HOW MANY runs are inside, and WHEN the one at the top of it ran.
+
+          The stamp is the top row's own `Started`, which is why the group stands where it does:
+          the list keeps families in the order their first row appears, so the sort the reader
+          chose orders the families too. Not a span and not a range — two edges straddle a stretch,
+          and the runs between them are one click away.
+        -->
+        <template #group="{ group, marker }">
+          <span class="family-name" :title="group.key">
+            <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+            <!-- their word for what the parent is, where there is one: a sweep and a deployment
+                 are different things and a reader should not have to read the id to tell -->
+            <span v-if="group.rows[0]?.parent_kind" class="family-kind"
+              >{{ group.rows[0]!.parent_kind }}</span>
+            {{ group.key }}
+            <span class="family-meta">
+              {{ plural(group.rows.length, t('run'), t('runs')) }}
+              <template v-if="group.rows[0]">
+                · {{ startedAt(group.rows[0]!.start_time) || t('no date') }}
+              </template>
+            </span>
+          </span>
+        </template>
         <!-- A logs-only run is chosen like any other: the view says what it is, and the store asks
              for nothing. A row that cannot be clicked is the look of a broken control. -->
         <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
@@ -426,7 +574,13 @@ watch(selectedRunId, runId => { open.value = runId === null })
           <!-- one cell, however many marks: two spans of their own would push the id column to a
                different place on every row, which is what made the list look ragged -->
           <span :data-rank="2" class="run-marks">
-            <span v-if="run.parent_kind" class="run-mark">{{ run.parent_kind }}</span>
+            <!-- the kind only where the row STANDS ALONE. Inside a family the heading above says
+                 it once, and the mark was then repeating it on every row beneath — five identical
+                 badges under one `deployment` heading, seen on screen 2026-10-09. -->
+            <span
+              v-if="run.parent_kind && !showsFamilyHead(familyOf(run))"
+              class="run-mark"
+            >{{ run.parent_kind }}</span>
             <span v-if="!run.has_reports" class="run-mark logs">{{ t('logs only') }}</span>
           </span>
         </template>
@@ -479,12 +633,51 @@ watch(selectedRunId, runId => { open.value = runId === null })
   font-size: var(--font-size-sm);
 }
 
-/* the list is the way in, so it gets room — but never more than a third of the window, or the
+/* the list is the way in, so it gets room — but never more than a third of the window ONCE a run is chosen, or the
    panels it leads to are never on screen at the same time. Everything else about its shape —
    the tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`. */
 .run-list {
   max-height: 33vh;
   overflow-y: auto;
+  /* The gutter is reserved whether or not a bar is in it. Opening a family can push the list past
+     its cap, and the bar then appears and takes 15 px of width from the `1fr` column — measured
+     2026-10-10, the `Set` column jumped sideways on a click that had nothing to do with it. */
+  scrollbar-gutter: stable;
+}
+
+/* Nothing is below it yet, so the third of a window is a window onto a void: the list was capped
+   at 33vh while the rest of the page held one sentence. Reported on screen 2026-10-10. It still
+   scrolls inside itself rather than growing past the viewport — the view hides its own overflow,
+   so a header taller than the window would put its last rows out of reach. */
+.run-list.roomy {
+  max-height: calc(100vh - 14rem);
+}
+
+/* ONE cell over every track. The other lists split their heading in two so a count can sit at the
+   right edge; here the count belongs beside the name — it says how many runs the line stands for,
+   which is part of what the line IS rather than a measured column. */
+.family-name {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+}
+
+/* their word for the kind of parent, boxed like the row's own mark so the two read as the same
+   fact at two levels — and never in the link colour, which would read as clickable */
+.family-kind {
+  margin-right: var(--space-xs);
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+}
+
+.family-meta {
+  margin-left: var(--space-sm);
+  color: var(--color-text-secondary);
 }
 
 /* the chosen row is marked by a rule AND by colour, never by colour alone */

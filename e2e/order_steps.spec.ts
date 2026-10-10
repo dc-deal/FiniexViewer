@@ -46,9 +46,15 @@ function narrowedTo(scenario: string): string {
   return `/runs?run=${FIXTURE_RUN}&unit=${encodeURIComponent(scenario)}`
 }
 
-/** The row that starts the captured position, inside the one scenario the capture is about. */
+/**
+ * The HEADING of the captured position, inside the one scenario the capture is about.
+ *
+ * The position has a line of its own since 2026-10-09 — it used to ride on its first record, and
+ * that record's status then read as the position's. The heading is the control; the records
+ * beneath it are evidence and are not clickable at all.
+ */
 function positionRow(page: import('@playwright/test').Page) {
-  return page.locator('.order-list .record-row.starts-position', { hasText: CAPTURED.order_id })
+  return page.locator('.order-list .record-group:not(.outer)', { hasText: CAPTURED.order_id })
     .first()
 }
 
@@ -56,8 +62,8 @@ test('a position opens the steps its orders went through', async ({ page }) => {
   await page.goto(narrowedTo(CAPTURED.scenario_name))
   await openOrders(page)
 
-  // every position that starts one carries the glyph, because the run wrote a stream
-  const disclosures = page.locator('.order-list .record-marker')
+  // every position carries the glyph on its heading, because the run wrote a stream
+  const disclosures = page.locator('.order-list .record-group .record-marker')
   expect(await disclosures.count()).toBeGreaterThan(0)
 
   const row = positionRow(page)
@@ -105,7 +111,7 @@ test('a position with no steps says so instead of opening an empty list', async 
   await page.goto(`/runs?run=${FIXTURE_RUN}`)
   await openOrders(page)
 
-  const other = page.locator('.order-list .record-row.starts-position')
+  const other = page.locator('.order-list .record-group:not(.outer)')
     .filter({ hasNotText: CAPTURED.order_id })
     .first()
   await other.click()

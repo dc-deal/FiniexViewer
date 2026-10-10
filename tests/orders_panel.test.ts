@@ -322,45 +322,77 @@ describe('OrdersPanel', () => {
       order({ order_id: 'pos_2', status: 'pending' }),
     ])
 
-    it('names the position once and carries the following rows on', () => {
-      const ids = mountPanel(LIFECYCLE).findAll('.order-list .record-row')
-        .map(row => row.find('.order-id').text())
-      expect(ids).toEqual(['pos_1', '└─', '└─', 'pos_2'])
+    /**
+     * **The position has a LINE OF ITS OWN**, and its records carry on beneath it.
+     *
+     * It used to ride on its first record, and that record's status then read as the position's:
+     * `pos_ethusd_44` showed `pending` while its second row said `cancelled`, and
+     * `protect_pos_ethusd_41` showed `cancelled` because it has no submission record at all.
+     * Reported on screen 2026-10-09 — *"was soll ich nun glauben?"*
+     */
+    it('gives the position its own line and carries its records beneath it', () => {
+      const wrapper = mountPanel(LIFECYCLE)
+      const positions = wrapper.findAll('.order-list .position-name').map(node => node.text())
+      expect(positions.some(text => text.includes('pos_1'))).toBe(true)
+      expect(positions.some(text => text.includes('pos_2'))).toBe(true)
+      expect(positions).toHaveLength(2)
+
+      // and no record names a position any more — each one only says it carries on
+      const ids = wrapper.findAll('.order-list .record-row').map(row => row.find('.order-id').text())
+      expect(ids).toEqual(['└─', '└─', '└─', '└─'])
     })
 
-    it('marks the row that opens a position, so the boundary is on the row and not in a line', () => {
-      const starts = mountPanel(LIFECYCLE).findAll('.order-list .record-row')
-        .map(row => row.classes().includes('starts-position'))
-      expect(starts).toEqual([true, false, false, true])
+    /** What the position WAS, stated once, read off its first record and never computed. */
+    it('says what the position was, and nothing about what it became', () => {
+      const shown = mountPanel(LIFECYCLE).find('.order-list .position-name').text()
+      expect(shown).toContain('market open long')
+      // the last record is `executed`; the heading must not claim that as the position's state
+      expect(shown).not.toContain('executed')
+      expect(shown).not.toContain('pending')
     })
 
     /**
-     * Measured 2026-10-05: 2 of 246 scenario groups interleave two positions, both in a scenario
-     * named `partial_close_lifecycle`. The continuation is read from the row ABOVE, so an
-     * alternating pair simply shows its id again — correct, and no case of its own.
+     * **Two positions that alternate are brought TOGETHER, and this test used to assert the
+     * opposite.** It read `pos_1, pos_2, pos_1, pos_2` and called that correct: the continuation
+     * is read from the row above, so an alternating pair simply showed its id again, and for a
+     * flat list of records that was true and needed no case of its own.
+     *
+     * It stopped being true when a position gained CHILDREN. Measured 2026-10-08 on the field
+     * study, 6 of 41 positions arrive apart, and each copy of the id then carried its own
+     * disclosure that opened the SAME order's steps — the same four lines twice on one screen,
+     * reported by the operator. The records are now arranged so a position holds one place in the
+     * list, which is ours to do and drops nothing: the clock is still on every row.
      */
-    it('shows the id again where two positions alternate', () => {
+    it('brings two alternating positions together rather than naming each twice', () => {
       const ids = mountPanel(model([
         order({ order_id: 'pos_1', status: 'pending' }),
         order({ order_id: 'pos_2', status: 'pending' }),
         order({ order_id: 'pos_1', status: 'executed' }),
         order({ order_id: 'pos_2', status: 'executed' }),
-      ])).findAll('.order-list .record-row').map(row => row.find('.order-id').text())
-      expect(ids).toEqual(['pos_1', 'pos_2', 'pos_1', 'pos_2'])
+      ])).findAll('.order-list .position-name').map(node => node.text())
+      // each position is named once, on its own line, whatever the clock did between its records
+      expect(ids).toHaveLength(2)
+      expect(ids[0]).toContain('pos_1')
+      expect(ids[1]).toContain('pos_2')
     })
 
     /** The continuation belongs to what the READER sees, so a narrowing rebuilds it. */
-    it('reads the row above from the narrowed list rather than from the whole run', () => {
-      const ids = mountPanel(model(
+    /**
+     * The same position id in TWO scenarios is two positions, and the group key says so: it is
+     * `(scenario, position)` and never the id alone, because every scenario counts from
+     * `pos_<symbol>_1`.
+     */
+    it('tells the same position id in two scenarios apart', () => {
+      const positions = mountPanel(model(
         [
           order({ order_id: 'pos_1', scenario_name: 'a', status: 'pending' }),
           order({ order_id: 'pos_1', scenario_name: 'b', status: 'pending' }),
           order({ order_id: 'pos_1', scenario_name: 'b', status: 'executed' }),
         ],
         [unit({ name: 'a' }), unit({ name: 'b' })],
-      )).findAll('.order-list .record-row').map(row => row.find('.order-id').text())
-      // the same id in two scenarios: each group starts its own
-      expect(ids).toEqual(['pos_1', 'pos_1', '└─'])
+      )).findAll('.order-list .position-name')
+      // two positions, under two scenarios, from three records
+      expect(positions).toHaveLength(2)
     })
   })
 
@@ -591,6 +623,25 @@ describe('OrdersPanel', () => {
     expect(plain.find('.order-list .record-row').text()).not.toContain('·')
   })
 
+  /**
+   * ONE POSITION, ONE PLACE IN THE LIST. Their records arrive in the order things happened, so a
+   * position submitted and cancelled six seconds later has other positions between its two rows
+   * — and the panel reads a position from the row ABOVE, so the second record started the
+   * position all over again. Measured 2026-10-08 on the field study: 6 of 41 positions came apart
+   * that way, the id was drawn twice, and opening both copies drew the same steps twice.
+   */
+  it('keeps the records of one position together, however the clock interleaved them', () => {
+    const wrapper = mountPanel(model([
+      order({ order_id: 'pos_1', status: 'pending' }),
+      order({ order_id: 'pos_2', status: 'pending' }),
+      order({ order_id: 'pos_1', status: 'cancelled' }),
+    ]))
+    // two positions, so two headings — not three
+    const positions = wrapper.findAll('.order-list .position-name').map(node => node.text())
+    expect(positions).toHaveLength(2)
+    expect(positions.filter(text => text.includes('pos_1'))).toHaveLength(1)
+  })
+
   describe('the steps of a position', () => {
     function mountStepped(
       value: ReturnType<typeof model>,
@@ -612,7 +663,7 @@ describe('OrdersPanel', () => {
 
     /** The reader clicks the LINE, which is what they tried first and what the list now offers. */
     async function openPosition(wrapper: ReturnType<typeof mountStepped>['wrapper']) {
-      await wrapper.find('.order-list .record-row.starts-position').trigger('click')
+      await wrapper.find('.order-list .record-group:not(.outer)').trigger('click')
     }
 
     const TWO_ROWS = model([
@@ -626,26 +677,33 @@ describe('OrdersPanel', () => {
      * cannot make one row interactive and another not, which is why the control sits inside the
      * cell rather than on the row.
      */
-    it('makes the row that names a position the control, and the rows under it not', () => {
+    /**
+     * The POSITION HEADING is the control, and its records are not. A reader clicks the line that
+     * names the thing, which is what the heading is — and the records beneath it are evidence
+     * rather than controls.
+     */
+    it('makes the position heading the control, and its records not', () => {
       const { wrapper } = mountStepped(TWO_ROWS)
+      const heading = wrapper.find('.order-list .record-group:not(.outer)')
+      expect(heading.element.tagName).toBe('BUTTON')
+      expect(heading.attributes('aria-expanded')).toBe('false')
+
       const rows = wrapper.findAll('.order-list .record-row')
       expect(rows).toHaveLength(2)
-      // the row that STARTS the position is a button; the row carrying it on is a plain div
-      expect(rows[0]!.element.tagName).toBe('BUTTON')
-      expect(rows[1]!.element.tagName).toBe('DIV')
-      expect(rows[1]!.classes()).toContain('inert')
-      // and the glyph says it opens something, drawn by the LIST rather than by this panel
-      expect(wrapper.findAll('.record-marker')).toHaveLength(1)
-      expect(rows[0]!.attributes('aria-expanded')).toBe('false')
+      expect(rows.every(row => row.element.tagName === 'DIV')).toBe(true)
     })
 
     /** The glyph turns with the state, which is the half a reader checks after clicking. */
-    it('turns the glyph and the announcement when the row is opened', async () => {
+    it('turns the glyph and the announcement when the position is opened', async () => {
       const { wrapper } = mountStepped(TWO_ROWS, { [SCENARIO + '~pos_1']: [step()] })
-      expect(wrapper.find('.record-marker').text()).toBe('▸')
+      const heading = () => wrapper.find('.order-list .record-group:not(.outer)')
+      // ONE glyph. The list draws it for every disclosure heading, so a panel that also writes
+      // its own puts two triangles on the line.
+      expect(heading().findAll('.record-marker')).toHaveLength(1)
+      expect(heading().find('.record-marker').text()).toBe('▸')
       await openPosition(wrapper)
-      expect(wrapper.find('.record-marker').text()).toBe('▾')
-      expect(wrapper.find('.order-list .record-row').attributes('aria-expanded')).toBe('true')
+      expect(heading().find('.record-marker').text()).toBe('▾')
+      expect(heading().attributes('aria-expanded')).toBe('true')
     })
 
     /**
@@ -653,12 +711,15 @@ describe('OrdersPanel', () => {
      * index row, answered by the host — offering a control that can only ever answer 404 is the
      * defect class this project cares most about.
      */
-    it('draws nothing where the run wrote no stream', () => {
+    it('draws no control at all where the run wrote no stream', () => {
       const { wrapper } = mountStepped(TWO_ROWS, {}, false)
-      // no glyph, and no row is a control: a disclosure that can only answer 404 is not offered
-      expect(wrapper.findAll('.record-marker')).toHaveLength(0)
-      expect(wrapper.findAll('.order-list .record-row button')).toHaveLength(0)
-      expect(wrapper.find('.order-list .record-row').element.tagName).toBe('DIV')
+      // no glyph, and the position heading is a plain heading rather than a button: a disclosure
+      // that can only ever answer 404 is not offered. The SCENARIO heading above it keeps its own,
+      // which is why this counts inside the position's line rather than across the panel.
+      expect(wrapper.findAll('.record-group:not(.outer) .record-marker')).toHaveLength(0)
+      const heading = wrapper.find('.order-list .record-group:not(.outer)')
+      expect(heading.element.tagName).toBe('DIV')
+      expect(heading.classes()).toContain('quiet')
     })
 
     /** Asked for on OPENING, never on mount: a run holds hundreds of positions. */
@@ -776,6 +837,27 @@ describe('OrdersPanel', () => {
      * Not called "collapse all": that name belongs to the app bar's control over the PANELS, and
      * a second one meaning something else is a trap rather than a convenience.
      */
+    /**
+     * An order's heading FOLDS it, and it is a control because it can act. It was a button that
+     * emitted into nothing — the step list gave no open state — so it wore the pointer, the hover
+     * and the press while doing nothing at all. Found on screen 2026-10-09.
+     */
+    it('folds one order of a position, and leaves the others alone', async () => {
+      const held = { [SCENARIO + '~pos_1']: [
+        step({ seq: 2, submitted_seq: 2, event_type: 'submitted' }),
+        step({ seq: 3, submitted_seq: 2, event_type: 'filled' }),
+        step({ seq: 9, submitted_seq: 9, event_type: 'submitted' }),
+      ] }
+      const { wrapper } = mountStepped(TWO_ROWS, held)
+      await openPosition(wrapper)
+      expect(wrapper.findAll('.step-list .record-row')).toHaveLength(3)
+
+      await wrapper.findAll('.step-list .record-group')[0]!.trigger('click')
+      // the first order's two steps are away, the second order's one remains
+      expect(wrapper.findAll('.step-list .record-row')).toHaveLength(1)
+      expect(wrapper.findAll('.step-group')[0]!.text()).toContain('▸')
+    })
+
     it('offers a way to close everything, and only while something is open', async () => {
       const held = { [SCENARIO + '~pos_1']: [step()] }
       const { wrapper } = mountStepped(TWO_ROWS, held)
@@ -804,9 +886,14 @@ describe('OrdersPanel', () => {
     })
   })
 
-  it('offers nothing to click but the group headings', () => {
+  /**
+   * Nothing is clickable but the two headings. The records are evidence; without a stream and
+   * without a trade history even the position heading is a plain line.
+   */
+  it('offers nothing to click but the two headings', () => {
     const wrapper = mountPanel({ pending: PENDING, history: HISTORY, trades: null })
-    const buttons = wrapper.findAll('button')
-    expect(buttons.length).toBe(wrapper.findAll('.group-name').length)
+    // no host supplies the step capability here, so a position heading opens nothing
+    expect(wrapper.findAll('.order-list .record-row button')).toHaveLength(0)
+    expect(wrapper.findAll('button').length).toBe(wrapper.findAll('.group-name').length)
   })
 })

@@ -34,6 +34,11 @@ function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
     start_time: '2026-06-15T12:00:00+00:00',
     parent_id: null,
     parent_kind: null,
+    // contract 26 — who started the run, the header's origin block flattened
+    origin_channel: 'cli',
+    origin_client: 'console',
+    origin_principal: 'operator',
+    origin_host: 'h_x29og8',
     config_id: '',
     reporting: 'expected',
     size_bytes: 0,

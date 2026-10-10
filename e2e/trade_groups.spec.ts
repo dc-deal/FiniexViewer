@@ -46,12 +46,12 @@ test('past the threshold the groups start closed and a click opens one', async (
   await openTradeHistory(page)
 
   const group = page.locator('.trade-history .record-group').first()
-  await expect(group.locator('.group-marker')).toHaveText('▸')
+  await expect(group.locator('.record-marker')).toHaveText('▸')
   expect(await tradeRows(page).count()).toBe(0)
 
   await group.click()
 
-  await expect(group.locator('.group-marker')).toHaveText('▾')
+  await expect(group.locator('.record-marker')).toHaveText('▾')
   expect(await tradeRows(page).count()).toBeGreaterThan(0)
 })
 
@@ -60,12 +60,12 @@ test('below the threshold they start open and a click closes one', async ({ page
   await openTradeHistory(page)
 
   const group = page.locator('.trade-history .record-group').first()
-  await expect(group.locator('.group-marker')).toHaveText('▾')
+  await expect(group.locator('.record-marker')).toHaveText('▾')
   const before = await tradeRows(page).count()
 
   await group.click()
 
-  await expect(group.locator('.group-marker')).toHaveText('▸')
+  await expect(group.locator('.record-marker')).toHaveText('▸')
   expect(await tradeRows(page).count()).toBeLessThan(before)
 })
 

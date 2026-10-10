@@ -447,13 +447,13 @@ function card(trade: TradeRow): ListCard {
         SERVED `scenario_totals`, looked up by name — and the net still lands under its own heading,
         so a reader runs down the one column and meets both the trades and their totals.
       -->
-      <template #group="{ group }">
+      <template #group="{ group, marker }">
         <!-- TWO cells, counted from the end: everything but the last track, then the last track.
              The old three-cell form was fixed at eight columns and a rank that gives one up would
              leave it spanning tracks the grid no longer has. The count and the fees ride inside the
              name — they are a note ABOUT the group, never values of a column. -->
         <span class="group-name" :title="group.key">
-          <span class="group-marker">{{ group.open ? '▾' : '▸' }}</span>
+          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
           {{ group.key }}
           <span class="group-meta">
             {{ plural(group.rows.length, t('trade'), t('trades')) }}
@@ -613,12 +613,6 @@ function card(trade: TradeRow): ListCard {
 .group-net {
   grid-column: -2 / -1;
   text-align: right;
-}
-
-.group-marker {
-  display: inline-block;
-  width: 1em;
-  color: var(--color-text-secondary);
 }
 
 /* the count and the fees are a NOTE about the group, not values of any column — so they read on

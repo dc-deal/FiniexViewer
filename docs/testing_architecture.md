@@ -23,7 +23,11 @@ out of use.
 Two properties are deliberate. `retries: 0`, because a test that goes green on the third attempt
 is flaky and we would never see it. And **the mocked responses come from the unit fixtures**
 (`e2e/api_mock.ts` reads the same captures), never hand-written in a spec: a second mirror of the
-HTTP contract goes stale in silence, which has already happened once here.
+HTTP contract goes stale in silence, which has already happened once here. For the same reason a spec
+DERIVES what it needs from the capture rather than transcribing it: `api_mock.ts` exports
+`FIXTURE_RUN`, `FIXTURE_DEPLOYMENT` and `FIXTURE_FAMILY` — the last being the family line the run
+list now folds the fixture run behind, with `revealFixtureRun(page)` to open it. A spec that
+CLICKS a run calls that first; one that reaches a run by url does not.
 
 **What the browser tier is for, concretely.** `run_selection.spec.ts` holds the reload and the URL
 — a real `localStorage`, a real history entry. `trade_groups.spec.ts` holds the open/closed regimes
@@ -46,7 +50,10 @@ The healthy panel count is measured in the same test rather than written down, s
 a run carries is a property of the captures. Two moments, because they fail differently:
 `warnings-errors` is open by default and throws at FIRST PAINT, which is the shape that cost eleven
 panels at once; the Orders panel is folded and throws when the reader opens it, so the mark also has
-to survive folding it again. `list_ranks.spec.ts` holds the ranks, and it is the ONLY instrument for them: jsdom evaluates no
+to survive folding it again. `list_ranks.spec.ts` holds the ranks — and, since
+2026-10-09, that **opening a group does not move the columns**, which is the `auto`-track hazard
+the architecture note describes: measured identical to the pixel on the captured index, and a test
+rather than a comment because that is a property of the DATA. It is the ONLY instrument for them: jsdom evaluates no
 container queries at all, so the unit suites can assert only that each list declares the same rank
 twice — on the column and on the cell. Whether the browser then acts on it needs a browser. FIVE
 widths — one on each side of every rung, because a rung nothing measures is a rung nobody knows is

@@ -1,5 +1,5 @@
 import { test, expect } from './cdp_fixture'
-import { mockApi, FIXTURE_RUN } from './api_mock'
+import { mockApi, FIXTURE_RUN, revealFixtureRun } from './api_mock'
 
 /**
  * The URL round-trip, which is the thing jsdom can only approximate.
@@ -19,6 +19,10 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
   // fixture — so this spec asks for them, the way a reader would by picking the value. It is not
   // a workaround: it is the default behaving, and `run_picker.test.ts` asserts the default itself.
   await page.goto('/runs?runf=purpose:fixture')
+
+  // The list groups runs by family and a family of several opens closed, so the run is behind one
+  // heading — opened here the way a reader opens it.
+  await revealFixtureRun(page)
 
   // Found by the id cell's TITLE, not by the row's text: the cell shows only the timestamp part,
   // since the eight hex characters after it separate two runs of the same second and nothing else.

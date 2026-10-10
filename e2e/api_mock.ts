@@ -48,6 +48,33 @@ export const FIXTURE_RUN = (fixture('scenario_details.json') as { run_id: string
  * The deployment the ledger captures belong to, read from the capture rather than transcribed —
  * the same rule the run id follows, so a re-capture cannot strand it.
  */
+/**
+ * The FAMILY line the fixture run sits behind, or '' where it stands alone.
+ *
+ * The run list groups by family — the parent where the backend states one, the set name otherwise
+ * — and a family of several opens CLOSED. So the run a spec wants is not in the document until its
+ * heading is clicked, which is exactly what a reader does. Derived from the captured index rather
+ * than transcribed, so a re-capture that moves the run between families cannot strand it.
+ */
+export const FIXTURE_FAMILY = (() => {
+  const rows = (fixture('runs_list.json') as {
+    runs: { run_id: string, name: string, parent_id: string | null }[]
+  }).runs
+  const mine = rows.find(row => row.run_id === FIXTURE_RUN)
+  if (!mine) return ''
+  const key = mine.parent_id ?? mine.name
+  return rows.filter(row => (row.parent_id ?? row.name) === key).length > 1 ? key : ''
+})()
+
+/**
+ * Puts the fixture run's row in the document, opening its family where it has one. A spec that
+ * CLICKS a run calls this first; one that reaches a run by url does not need it.
+ */
+export async function revealFixtureRun(page: Page): Promise<void> {
+  if (!FIXTURE_FAMILY) return
+  await page.locator('.run-list .record-group', { hasText: FIXTURE_FAMILY }).first().click()
+}
+
 export const FIXTURE_DEPLOYMENT =
   (fixture('deployment_detail.json') as { deployment_id: string }).deployment_id
 
