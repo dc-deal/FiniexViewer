@@ -249,8 +249,11 @@ Both are in place. The proxy path is primary; the CORS middleware is the safety 
 
 ## Related Files
 
-- [../../docker-compose.override.yml](../../docker-compose.override.yml) — lives in the FiniexTestingIDE repo, provides the dev integration (gitignored, local-only).
-- [../HANDOFF_INITIAL_SETUP.md](../HANDOFF_INITIAL_SETUP.md) — bootstrap context for this repo.
+- `docker-compose.override.yml` — named rather than linked, because it lives in the
+  FiniexTestingIDE repository and is gitignored there: a link from here can never resolve. The
+  dual-container setup it belongs to is documented in that repository, under
+  `docs/user_guides/finiexviewer_setup.md`.
+- The two documents in this folder: this one and [testing_architecture.md](testing_architecture.md).
 
 ---
 
