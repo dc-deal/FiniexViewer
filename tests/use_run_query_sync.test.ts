@@ -10,6 +10,12 @@ import type { RunInfo } from '@/types/api/report_types'
 function header(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' | 'name'>): RunInfo {
   return {
     artifacts: ['run_summary.json'],
+    stream_files: [],
+    // contracts 24 and 25: what the run is FOR, under which contract its reports
+    // were written, and whether it is still its catalog entry's current one
+    run_purpose: 'regular',
+    report_contract: 25,
+    fixture_superseded: null,
     has_reports: true,
     // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
     results: null,
@@ -21,6 +27,11 @@ function header(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
     start_time: '2026-06-15T12:00:00+00:00',
     parent_id: null,
     parent_kind: null,
+    // contract 26 — who started the run, the header's origin block flattened
+    origin_channel: 'cli',
+    origin_client: 'console',
+    origin_principal: 'operator',
+    origin_host: 'h_x29og8',
     config_id: '',
     reporting: 'expected',
     size_bytes: 0,

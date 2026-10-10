@@ -93,6 +93,20 @@ function earned(row: ScenarioRow): PortfolioUnitRow | null {
 }
 
 /**
+ * Why the `Fees` column can read less than the venue took, said only where it does.
+ *
+ * `total_fees` is attributed the way `net_pnl` is — the trades this unit CLOSED — and
+ * `fees_charged` counts every order, so the two differ by what the still-open positions cost.
+ * Empty where they agree: a hover that always fires explains nothing.
+ */
+function feesTitle(row: ScenarioRow): string {
+  const unit = earned(row)
+  if (!unit || unit.fees_charged === unit.total_fees) return ''
+  return t('Charged in all: {amount} — the figure shown is what the CLOSED trades cost.')
+    .replace('{amount}', amount(unit.fees_charged, unit.currency))
+}
+
+/**
  * The two facets that answer the questions an operator actually arrives with — *did anything
  * happen* and *did it go wrong* — rather than describing the configuration, which the five above
  * already do.
@@ -204,7 +218,7 @@ const columns: ListColumn[] = [
   { label: t('Ticks'), width: 'minmax(0, 9fr)', figure: true, rank: 3 },
   { label: t('Took'), width: 'minmax(0, 7fr)', figure: true, rank: 5 },
   { label: t('Trades'), width: 'minmax(0, 10fr)', figure: true, rank: 2 },
-  { label: t('Win Rate'), width: 'minmax(0, 7fr)', figure: true, rank: 4 },
+  { label: t('Win rate'), width: 'minmax(0, 7fr)', figure: true, rank: 4 },
   { label: t('Net P&L'), width: 'minmax(0, 10fr)', figure: true, rank: 1 },
   { label: t('PF'), width: 'minmax(0, 5fr)', figure: true, rank: 4 },
   // the three the portfolio panel carried and nothing else did — per UNIT, not per run
@@ -259,7 +273,21 @@ function card(row: ScenarioRow): ListCard | null {
         : t('The valuation did not succeed — this is not the same as an equity of zero.'),
       tone: unit.final_equity_valued ? '' : 'warning',
     },
-    { label: t('Unrealised'), value: money(unit.unrealized_pnl), tone: signClass(unit.unrealized_pnl) },
+    { label: t('Unrealized'), value: money(unit.unrealized_pnl), tone: signClass(unit.unrealized_pnl) },
+    /*
+     * What the venue CHARGED, where it differs from what the closed trades cost — the same figure
+     * and the same condition the Executive Summary has carried since contract 18.
+     *
+     * Measured 2026-10-08: on a spot unit the `Fees` column read `0.00` while the venue had taken
+     * 2.35 in taker fees, because `total_fees` is attributed like `net_pnl` — the trades the unit
+     * CLOSED — while `fees_charged` counts every order. The gap is exactly what the still-open
+     * positions cost, and a column reading `0.00` without it says the scenario was free.
+     */
+    ...(unit.fees_charged === unit.total_fees ? [] : [{
+      label: t('Charged'),
+      value: money(unit.fees_charged),
+      title: t('What this scenario was charged in all, open positions included. The fees in the row are what its CLOSED trades cost; the difference is what is still open.'),
+    }]),
     { label: t('Max equity'), value: money(unit.max_equity) },
     {
       label: t('Deepest drawdown'),
@@ -443,7 +471,8 @@ const chosenLabel = computed(() =>
             {{ magnitude(earned(row)!.account_max_drawdown, earned(row)!.currency) }}
           </template>
         </span>
-        <span :data-rank="4" class="figure-cell">
+        <!-- the hover says what was CHARGED where that differs; the card behind the row shows it -->
+        <span :data-rank="4" class="figure-cell" :title="feesTitle(row)">
           <template v-if="earned(row)">
             {{ amount(earned(row)!.total_fees, earned(row)!.currency) }}
           </template>

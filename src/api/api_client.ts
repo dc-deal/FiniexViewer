@@ -15,6 +15,8 @@ import type {
   TradeHistoryReport,
   AggregatedPortfolioReport,
   BrokerReport,
+  OrderEventsReport,
+  OrderHistoryReport,
   PendingOrdersReport,
   PortfolioReport,
   RunInfo,
@@ -176,6 +178,63 @@ export async function getPendingOrders(
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    throw error
+  }
+}
+
+/**
+ * Every order a run placed, as the lifecycle records they are. The companion to `pending-orders`:
+ * that route states what became of a scenario's orders, this one states the orders themselves.
+ *
+ * Deliberately UNFILTERED. The route takes a `symbol`, and the panel groups by scenario — one
+ * scenario is one symbol, so the parameter would narrow nothing a reader asked for.
+ */
+export async function getOrderHistory(
+  runId: string
+): Promise<OrderHistoryReport | SectionAbsence> {
+  try {
+    const response = await http.get<OrderHistoryReport>(`/reports/runs/${runId}/order-history`)
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    throw error
+  }
+}
+
+/**
+ * The STEPS of an order, which `order-history` does not keep: it has a row for the submission and
+ * one for each way an order ended, and their own words for the difference are *"what happened in
+ * between is missing there"*.
+ *
+ * NARROWED on purpose, and it is the route itself that offers it. One position costs 3 KB where
+ * the whole run costs 138 KB (measured 2026-10-08 on the field study), and a reader opens one
+ * position at a time. A narrowed answer also carries no `broker_truth` - no line of that list is
+ * about one order - which is correct rather than a loss.
+ *
+ * Two refusals, both ordinary: 404 where the run wrote no stream, which is every run from before
+ * the stream existed and every backtest whose scenarios never placed an order, and 409 where the
+ * stream is in an older form and the run has to be repeated.
+ */
+export async function getOrderEvents(
+  runId: string,
+  scenarioName: string,
+  orderId: string
+): Promise<OrderEventsReport | SectionAbsence> {
+  try {
+    const response = await http.get<OrderEventsReport>(
+      `/reports/runs/${runId}/order-events`,
+      { params: { scenario_name: scenarioName, order_id: orderId } }
+    )
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    if (!axios.isAxiosError(error)) throw error
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    if (error.response?.status === 409) {
+      const body = error.response.data as { detail?: string } | undefined
+      throw new ArtifactUnreadableError(body?.detail ?? 'The stream could not be read')
+    }
     throw error
   }
 }

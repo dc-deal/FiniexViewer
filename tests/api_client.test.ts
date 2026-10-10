@@ -23,6 +23,8 @@ import {
   getPortfolio,
   getBroker,
   getAggregatedPortfolio,
+  getOrderHistory,
+  getOrderEvents,
   getPendingOrders,
   getBookingPeriods,
   getDeployments,
@@ -47,6 +49,8 @@ import tradeHistoryFixture from './fixtures/trade_history.json'
 import brokerFixture from './fixtures/broker.json'
 import aggregatedFixture from './fixtures/aggregated_portfolio.json'
 import pendingFixture from './fixtures/pending_orders.json'
+import historyFixture from './fixtures/order_history.json'
+import eventsFixture from './fixtures/order_events.json'
 import { isAbsent } from '@/types/api/absence_types'
 
 describe('api_client', () => {
@@ -297,6 +301,80 @@ describe('api_client', () => {
     it('refuses a body belonging to another run', async () => {
       mockGet.mockResolvedValue({ data: { run_id: '20260615_999999', currencies: [] } })
       await expect(getAggregatedPortfolio('20260615_130000'))
+        .rejects.toBeInstanceOf(RunIdMismatchError)
+    })
+  })
+
+  describe('getOrderHistory', () => {
+    it('calls the order-history endpoint with the run id in the path', async () => {
+      mockGet.mockResolvedValue({ data: historyFixture })
+      const result = await getOrderHistory(historyFixture.run_id)
+      expect(mockGet).toHaveBeenCalledWith(`/reports/runs/${historyFixture.run_id}/order-history`)
+      expect(result).toEqual(historyFixture)
+    })
+
+    /** The `symbol` parameter is deliberately never sent — see the function's own note. */
+    it('asks for the whole run rather than narrowing the request', async () => {
+      mockGet.mockResolvedValue({ data: historyFixture })
+      await getOrderHistory(historyFixture.run_id)
+      expect(mockGet).toHaveBeenCalledWith(expect.not.stringContaining('symbol'))
+    })
+
+    it('carries the cause of a missing section rather than a bare absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it' } } })
+      expect(await getOrderHistory('20260615_130000')).toEqual({
+        absent: true,
+        cause: 'artifact_not_produced',
+        detail: 'This kind of run does not produce it',
+      })
+    })
+  })
+
+  describe('getOrderEvents', () => {
+    /**
+     * NARROWED, unlike every other report call, and it is the route that offers it. One position
+     * costs 3 KB where the whole run costs 138 KB, measured on the field study of 2026-10-07, and
+     * a reader opens one position at a time.
+     */
+    it('asks for ONE position, by scenario and order id', async () => {
+      mockGet.mockResolvedValue({ data: eventsFixture })
+      const result = await getOrderEvents(
+        eventsFixture.run_id, 'EURGBP_partial_close', 'pos_eurgbp_1'
+      )
+      expect(mockGet).toHaveBeenCalledWith(
+        `/reports/runs/${eventsFixture.run_id}/order-events`,
+        { params: { scenario_name: 'EURGBP_partial_close', order_id: 'pos_eurgbp_1' } }
+      )
+      expect(result).toEqual(eventsFixture)
+    })
+
+    /**
+     * Two ordinary refusals. A run from before the stream existed has none, and so does a backtest
+     * whose scenarios never placed an order — their words, and both arrive as a 404 that names the
+     * cause.
+     */
+    it('carries the cause of a missing stream rather than a bare absence', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: {
+        error: 'stream_not_produced', detail: 'This run wrote no order event stream' } } })
+      expect(await getOrderEvents('20260615_130000', 'unit', 'pos_1')).toEqual({
+        absent: true,
+        cause: 'stream_not_produced',
+        detail: 'This run wrote no order event stream',
+      })
+    })
+
+    /** A stream written in an earlier FORM is there and cannot be parsed — the run has to repeat. */
+    it('reports a stream in an older form as unreadable rather than absent', async () => {
+      mockGet.mockRejectedValue({ response: { status: 409, data: {
+        detail: 'The stream predates the venue lines' } } })
+      await expect(getOrderEvents('20260615_130000', 'unit', 'pos_1'))
+        .rejects.toBeInstanceOf(ArtifactUnreadableError)
+    })
+
+    it('refuses a body that names a different run', async () => {
+      mockGet.mockResolvedValue({ data: { run_id: '20260615_999999', events: [] } })
+      await expect(getOrderEvents('20260615_130000', 'unit', 'pos_1'))
         .rejects.toBeInstanceOf(RunIdMismatchError)
     })
   })

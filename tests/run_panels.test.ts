@@ -51,8 +51,15 @@ const UNDEFINED_VALUES: RunSummaryCurrency = {
 function summaryWith(row: RunSummaryCurrency, overrides: Partial<RunSummary> = {}): RunSummary {
   return {
     run_id: '20260615_130000',
+    keys: { currencies: ['currency'], units_absent: ['name'] },
     currencies: [row],
-    orders_sent: 1,
+    orders_submitted: 1,
+    orders_adopted: 0,
+    orders_denied: 0,
+    orders_cancelled: 0,
+    orders_expired: 0,
+    orders_undelivered: 0,
+    orders_unaccounted: 0,
     orders_executed: 1,
     orders_rejected: 0,
     sl_tp_triggered: 0,
@@ -112,6 +119,29 @@ describe('ExecutivePanel', () => {
     expect(mount(ExecutivePanel, { props: { model: summaryWith(MEASURED) } }).find('.scope').exists()).toBe(false)
   })
 
+  /**
+   * An artifact written before these fields existed serves all four of them as NULL, and nothing
+   * back-fills a stored run. `units_absent.length` on null throws inside a computed, which kills the
+   * render effect — and with it the WHOLE panel column, not just this panel.
+   *
+   * Measured in a browser 2026-10-01 against `20260925_101700_e63e3980`: fourteen page errors and
+   * zero panels drawn. The two counts beside it were guarded from the start; the list was not.
+   */
+  it('survives an older artifact that recorded none of the four scope fields', () => {
+    const older = summaryWith(MEASURED, {
+      units_declared: null,
+      units_disabled: null,
+      units_absent: null,
+      signal_fresh_ratio: null,
+    })
+    const wrapper = mount(ExecutivePanel, { props: { model: older } })
+
+    // it renders, and it says only what the artifact actually recorded
+    expect(wrapper.text()).toContain('Scenarios')
+    expect(wrapper.text()).not.toContain('Declared')
+    expect(wrapper.text()).not.toContain('Produced nothing')
+  })
+
   it('renders measured values with their units', () => {
     const f = figures(MEASURED)
     expect(f['Net P&L']).toBe('-50.60 USD')
@@ -143,14 +173,14 @@ describe('ExecutivePanel', () => {
     const f = figures(open)
     expect(f['Final equity']).toBe('9,949.40 USD')
     expect(f['Still open']).toBe('2')
-    expect(f['Unrealised']).toBe('-12.50 USD')
+    expect(f['Unrealized']).toBe('-12.50 USD')
   })
 
   // An unrealised 0.00 beside "0 open" reads as a figure somebody measured. Neither line appears.
   it('leaves out what is open where nothing is', () => {
     const f = figures({ ...MEASURED, open_position_count: 0, unrealized_pnl: 0 })
     expect(f['Still open']).toBeUndefined()
-    expect(f['Unrealised']).toBeUndefined()
+    expect(f['Unrealized']).toBeUndefined()
   })
 
   /**
@@ -549,6 +579,12 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     run_id: '20260830_145819_af372b28',
     group: 'simulation',
     artifacts: ['run_summary.json', 'portfolio.json'],
+    stream_files: [],
+    // contracts 24 and 25: what the run is FOR, under which contract its reports
+    // were written, and whether it is still its catalog entry's current one
+    run_purpose: 'regular',
+    report_contract: 25,
+    fixture_superseded: null,
     name: 'multi_position_test',
     // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
     results: null,
@@ -562,6 +598,11 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     start_time: '2026-08-30T14:58:19.182635+00:00',
     parent_id: null,
     parent_kind: null,
+    // contract 26 — who started the run, the header's origin block flattened
+    origin_channel: 'cli',
+    origin_client: 'console',
+    origin_principal: 'operator',
+    origin_host: 'h_x29og8',
     config_id: '',
     reporting: 'expected',
     size_bytes: 0,

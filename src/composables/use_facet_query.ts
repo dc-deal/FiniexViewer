@@ -68,7 +68,22 @@ export function formatFacets(selection: FacetSelection): string {
  * @param prefix Names the bar's three params: `<prefix>f`, `<prefix>q`, `<prefix>sort`.
  * @param defaultSort Written only when the reader has chosen something else.
  */
-export function useFacetQuery(prefix: string, defaultSort: string): FacetQuery {
+/**
+ * `defaultSelection` is applied ONLY where the url names no facet of this bar, and it is written
+ * straight back into the url — from that moment it is an ordinary selection: a chip shows it, the
+ * count says what it leaves out, `clear` removes it, and a shared link means the same to everyone.
+ *
+ * That shape is not invented here. GitHub opens its issue list with `is:issue state:open` spelled
+ * out in the search box, Jira names the saved filter above the board, Kibana shows the view's
+ * query — every product with noisy rows applies a default, and every one of them expresses it in
+ * the SAME visible, removable mechanism as the reader's own narrowing. What none of them does is
+ * filter invisibly, which is what our own rule about selection living in the url already forbids.
+ */
+export function useFacetQuery(
+  prefix: string,
+  defaultSort: string,
+  defaultSelection: FacetSelection = {}
+): FacetQuery {
   const router = useRouter()
   const route = useRoute()
 
@@ -81,12 +96,19 @@ export function useFacetQuery(prefix: string, defaultSort: string): FacetQuery {
   onMounted(async () => {
     await router.isReady()
     const params = readQuery(route.query)
-    if (params[`${prefix}f`]) selection.value = parseFacets(params[`${prefix}f`]!)
+    const named = Boolean(params[`${prefix}f`])
+    if (named) selection.value = parseFacets(params[`${prefix}f`]!)
     if (params[`${prefix}q`]) search.value = params[`${prefix}q`]!
     if (params[`${prefix}sort`]) sort.value = params[`${prefix}sort`]!
-    // No write on arrival, deliberately. A link that names no facet is not WRONG about one, so
-    // there is nothing to repair — unlike `run`, whose old cascade params had to be cleaned away.
+    // No write on arrival for a link that names a facet: it is not WRONG about one, so there is
+    // nothing to repair — unlike `run`, whose old cascade params had to be cleaned away.
     _ready = true
+    // ...but a default IS written, and the order matters: assigning after `_ready` is what lets
+    // the watcher below put it in the url. Seeded silently it would be the invisible filter this
+    // whole arrangement exists to avoid.
+    if (!named && Object.keys(defaultSelection).length) {
+      selection.value = { ...defaultSelection }
+    }
   })
 
   watch([selection, search, sort], () => {

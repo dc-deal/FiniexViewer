@@ -1,5 +1,5 @@
 import { test, expect } from './cdp_fixture'
-import { mockApi, FIXTURE_RUN } from './api_mock'
+import { mockApi, FIXTURE_RUN, revealFixtureRun } from './api_mock'
 
 /**
  * The URL round-trip, which is the thing jsdom can only approximate.
@@ -15,7 +15,14 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('a chosen run and scenario survive a reload', async ({ page }) => {
-  await page.goto('/runs')
+  // The list opens WITHOUT the fixture runs, and the run every capture was taken from is itself a
+  // fixture — so this spec asks for them, the way a reader would by picking the value. It is not
+  // a workaround: it is the default behaving, and `run_picker.test.ts` asserts the default itself.
+  await page.goto('/runs?runf=purpose:fixture')
+
+  // The list groups runs by family and a family of several opens closed, so the run is behind one
+  // heading — opened here the way a reader opens it.
+  await revealFixtureRun(page)
 
   // Found by the id cell's TITLE, not by the row's text: the cell shows only the timestamp part,
   // since the eight hex characters after it separate two runs of the same second and nothing else.
@@ -105,4 +112,30 @@ test('the run, the scenario and both bars ride in one url', async ({ page }) => 
   await expect(page).toHaveURL(new RegExp(`run=${FIXTURE_RUN}`))
   await expect(page).toHaveURL(/runsort=oldest/)
   await expect(page).toHaveURL(/unitsort=ticks/)
+})
+
+/**
+ * THE BAR DOES NOT MOVE WHEN IT IS USED. This is the one dimension jsdom cannot judge, and it is
+ * where both reports of this defect came from: a chip changed width or appeared mid-bar, and the
+ * chips to its right slid out from under the pointer mid-click.
+ *
+ * Two causes, both now closed — a facet that could no longer narrow used to be dropped, and the
+ * count badge used to be drawn only once something was picked. The assertion is deliberately the
+ * SYMPTOM rather than either cause: every chip's left edge, before and after a pick.
+ */
+test('picking a value leaves every chip exactly where it was', async ({ page }) => {
+  await page.goto('/runs')
+  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+
+  const chips = page.locator('.facet-trigger')
+  const edges = () => chips.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().x))
+  const before = await edges()
+  expect(before.length).toBeGreaterThan(1)
+
+  // the panel is portalled out of the bar, so opening it cannot be what moves anything
+  await chips.first().click()
+  await page.locator('.facet-option').first().click()
+  await expect(page).toHaveURL(/runf=/)
+
+  expect(await edges()).toEqual(before)
 })

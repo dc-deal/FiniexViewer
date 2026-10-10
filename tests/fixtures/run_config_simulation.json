@@ -1,18 +1,13 @@
 {
-  "run_id": "20260927_132124_10c3d2c7",
-  "config_snapshot": "ETHUSD_blocks_robustness_20260624_2028.json",
-  "config_id": "6c7a3adf00b0d0f8819b176bd78cf4eef12c753099f771a49760ad15f379714b",
+  "run_id": "20261008_222620_70191690",
+  "config_snapshot": "report_coverage_reference.json",
+  "config_id": "76988fb0d45da74a48c37ae0ce3a72daa54f66aa6f2c75f6a9d22d9a4e2dc4fe",
   "config": {
-    "created": "2026-06-24T20:28:56.933987+00:00",
+    "created": "2026-10-07T22:40:00+00:00",
     "global": {
-      "data_mode": "realistic",
       "execution_config": {},
       "strategy_config": {
-        "decision_logic_config": {
-          "min_confidence": 0.6,
-          "rsi_buy_threshold": 35,
-          "rsi_sell_threshold": 65
-        },
+        "_comment": "The thresholds stand in each scenario that trades this logic, not here: a scenario's strategy is merged INTO this block, so one that brings its own logic would inherit them and be refused for parameters it does not know.",
         "decision_logic_type": "CORE/aggressive_trend",
         "worker_instances": {
           "bollinger_main": "CORE/bollinger",
@@ -22,7 +17,7 @@
           "bollinger_main": {
             "deviation": 2.0,
             "periods": {
-              "M30": 20
+              "M5": 20
             }
           },
           "rsi_fast": {
@@ -32,133 +27,212 @@
           }
         }
       },
-      "stress_test_config": {},
-      "trade_simulator_config": {
-        "balances": {
-          "USD": 10000.0
-        }
-      }
+      "trade_simulator_config": {}
     },
-    "robustness": {
-      "disposition_trust_pct": 25.0,
-      "enabled": true,
-      "metric": "expectancy",
-      "min_windows": 3,
-      "oos_split": 0.3,
-      "overfit_wfe_threshold": 0.5,
-      "robust_wfe_threshold": 0.8
-    },
-    "scenario_set_name": "ETHUSD_blocks_robustness_20260624_2028",
+    "run_purpose": "fixture",
+    "scenario_set_name": "report_coverage_reference",
     "scenarios": [
       {
-        "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
+        "_comment": "Refusals of both kinds: the stress test has the simulated venue refuse 70 % of the opens (rejected), and the order guard's cooldown then refuses the orders that follow before they are sent (denied). The window of EURGBP_balanced_02 in EURGBP_stress_test_config.json.",
+        "data_broker_type": "mt5",
         "enabled": true,
-        "end_date": "2026-01-24T20:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_01",
-        "role": "in_sample",
-        "start_date": "2026-01-24T14:20:00+00:00",
-        "symbol": "ETHUSD"
+        "end_date": "2025-10-31T06:00:00+00:00",
+        "execution_config": {},
+        "max_ticks": 1883,
+        "scenario_name": "EURGBP_refusals_01",
+        "start_date": "2025-10-31T05:00:00+00:00",
+        "strategy_config": {
+          "decision_logic_config": {
+            "min_confidence": 0.6,
+            "rsi_buy_threshold": 30,
+            "rsi_sell_threshold": 70
+          }
+        },
+        "stress_test_config": {
+          "reject_open_order": {
+            "enabled": true,
+            "probability": 0.7,
+            "seed": 999
+          }
+        },
+        "symbol": "EURGBP",
+        "trade_simulator_config": {
+          "balances": {
+            "EUR": 10000
+          }
+        }
       },
       {
-        "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
+        "_comment": "The same refusals in a second window — the one of EURGBP_balanced_04.",
+        "data_broker_type": "mt5",
         "enabled": true,
-        "end_date": "2026-01-25T02:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_02",
-        "role": "in_sample",
-        "start_date": "2026-01-24T20:20:00+00:00",
-        "symbol": "ETHUSD"
+        "end_date": "2025-10-10T07:00:00+00:00",
+        "execution_config": {},
+        "max_ticks": 2445,
+        "scenario_name": "EURGBP_refusals_02",
+        "start_date": "2025-10-10T06:00:00+00:00",
+        "strategy_config": {
+          "decision_logic_config": {
+            "min_confidence": 0.6,
+            "rsi_buy_threshold": 30,
+            "rsi_sell_threshold": 70
+          }
+        },
+        "stress_test_config": {
+          "reject_open_order": {
+            "enabled": true,
+            "probability": 0.7,
+            "seed": 999
+          }
+        },
+        "symbol": "EURGBP",
+        "trade_simulator_config": {
+          "balances": {
+            "EUR": 10000
+          }
+        }
       },
       {
+        "_comment": "A second account currency beside EUR, and two balances on one scenario: a spot account funded in the base and in the quote asset.",
         "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
         "enabled": true,
-        "end_date": "2026-01-25T08:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_03",
-        "role": "in_sample",
-        "start_date": "2026-01-25T02:20:00+00:00",
-        "symbol": "ETHUSD"
+        "end_date": "2026-02-10T20:00:00+00:00",
+        "execution_config": {},
+        "max_ticks": 20000,
+        "scenario_name": "ETHUSD_spot_two_balances",
+        "start_date": "2026-02-10T10:00:00+00:00",
+        "strategy_config": {
+          "decision_logic_config": {
+            "min_confidence": 0.6,
+            "rsi_buy_threshold": 30,
+            "rsi_sell_threshold": 70
+          }
+        },
+        "symbol": "ETHUSD",
+        "trade_simulator_config": {
+          "account_currency": "USD",
+          "balances": {
+            "ETH": 0.5,
+            "USD": 2000
+          }
+        }
       },
       {
-        "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
+        "_comment": "A DELIBERATE failure: the window lies before the archive begins, so preparation refuses the scenario by name and the run reports it as absent, with its error, while the others run. Switched ON on purpose — a run that carries a refused scenario is what this set exists to produce.",
+        "data_broker_type": "mt5",
         "enabled": true,
-        "end_date": "2026-01-25T14:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_04",
-        "role": "in_sample",
-        "start_date": "2026-01-25T08:20:00+00:00",
-        "symbol": "ETHUSD"
+        "end_date": "2024-01-10T11:00:00+00:00",
+        "execution_config": {},
+        "max_ticks": 2000,
+        "scenario_name": "EURGBP_before_the_archive",
+        "start_date": "2024-01-10T10:00:00+00:00",
+        "strategy_config": {
+          "decision_logic_config": {
+            "min_confidence": 0.6,
+            "rsi_buy_threshold": 30,
+            "rsi_sell_threshold": 70
+          }
+        },
+        "symbol": "EURGBP",
+        "trade_simulator_config": {
+          "balances": {
+            "EUR": 10000
+          }
+        }
       },
       {
-        "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
+        "_comment": "A position left open: a deterministic probe opens pos_eurgbp_1 and holds it past the end of the data, so its order is executed and no trade closes it. The other EURGBP scenarios traded the same position id — a link from an order into the trade history must be drawn there and absent here. The window of EURGBP_refusals_02.",
+        "data_broker_type": "mt5",
         "enabled": true,
-        "end_date": "2026-01-25T20:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_05",
-        "role": "in_sample",
-        "start_date": "2026-01-25T14:20:00+00:00",
-        "symbol": "ETHUSD"
+        "end_date": "2025-10-10T07:00:00+00:00",
+        "execution_config": {},
+        "max_ticks": 2445,
+        "scenario_name": "EURGBP_left_open",
+        "start_date": "2025-10-10T06:00:00+00:00",
+        "strategy_config": {
+          "decision_logic_config": {
+            "trade_sequence": [
+              {
+                "direction": "LONG",
+                "hold_ticks": 100000,
+                "lot_size": 0.01,
+                "tick_number": 100
+              }
+            ]
+          },
+          "decision_logic_type": "CORE/test_probes/multi_position_probe",
+          "worker_instances": {
+            "probe_worker": "CORE/test_probes/sample_probe_worker"
+          },
+          "workers": {
+            "probe_worker": {
+              "bar_snapshot_checks": [],
+              "periods": {
+                "M30": 20,
+                "M5": 14
+              }
+            }
+          }
+        },
+        "symbol": "EURGBP",
+        "trade_simulator_config": {
+          "balances": {
+            "EUR": 10000
+          }
+        }
       },
       {
-        "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
+        "_comment": "A partial close: a deterministic probe opens 0.03 lots, closes 0.01 of them twice and the rest when its hold ends, so the trade history carries partial rows beside a full one. The same window as EURGBP_refusals_01.",
+        "data_broker_type": "mt5",
         "enabled": true,
-        "end_date": "2026-01-26T02:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_06",
-        "role": "in_sample",
-        "start_date": "2026-01-25T20:20:00+00:00",
-        "symbol": "ETHUSD"
-      },
-      {
-        "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
-        "enabled": true,
-        "end_date": "2026-01-26T08:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_07",
-        "role": "in_sample",
-        "start_date": "2026-01-26T02:20:00+00:00",
-        "symbol": "ETHUSD"
-      },
-      {
-        "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
-        "enabled": true,
-        "end_date": "2026-01-26T14:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_08",
-        "role": "out_of_sample",
-        "start_date": "2026-01-26T08:20:00+00:00",
-        "symbol": "ETHUSD"
-      },
-      {
-        "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
-        "enabled": true,
-        "end_date": "2026-01-26T20:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_09",
-        "role": "out_of_sample",
-        "start_date": "2026-01-26T14:20:00+00:00",
-        "symbol": "ETHUSD"
-      },
-      {
-        "data_broker_type": "kraken_spot",
-        "data_mode": "realistic",
-        "enabled": true,
-        "end_date": "2026-01-27T02:20:00+00:00",
-        "max_ticks": null,
-        "name": "ETHUSD_blocks_10",
-        "role": "out_of_sample",
-        "start_date": "2026-01-26T20:20:00+00:00",
-        "symbol": "ETHUSD"
+        "end_date": "2025-10-31T06:00:00+00:00",
+        "execution_config": {},
+        "max_ticks": 1883,
+        "scenario_name": "EURGBP_partial_close",
+        "start_date": "2025-10-31T05:00:00+00:00",
+        "strategy_config": {
+          "decision_logic_config": {
+            "partial_close_sequence": [
+              {
+                "close_lots": 0.01,
+                "position_index": 0,
+                "tick_number": 600
+              },
+              {
+                "close_lots": 0.01,
+                "position_index": 0,
+                "tick_number": 1100
+              }
+            ],
+            "trade_sequence": [
+              {
+                "direction": "LONG",
+                "hold_ticks": 1500,
+                "lot_size": 0.03,
+                "tick_number": 100
+              }
+            ]
+          },
+          "decision_logic_type": "CORE/test_probes/multi_position_probe",
+          "worker_instances": {
+            "probe_worker": "CORE/test_probes/sample_probe_worker"
+          },
+          "workers": {
+            "probe_worker": {
+              "bar_snapshot_checks": [],
+              "periods": {
+                "M30": 20,
+                "M5": 14
+              }
+            }
+          }
+        },
+        "symbol": "EURGBP",
+        "trade_simulator_config": {
+          "balances": {
+            "EUR": 10000
+          }
+        }
       }
     ],
     "version": "1.0"

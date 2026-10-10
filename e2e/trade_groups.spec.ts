@@ -46,12 +46,12 @@ test('past the threshold the groups start closed and a click opens one', async (
   await openTradeHistory(page)
 
   const group = page.locator('.trade-history .record-group').first()
-  await expect(group.locator('.group-marker')).toHaveText('▸')
+  await expect(group.locator('.record-marker')).toHaveText('▸')
   expect(await tradeRows(page).count()).toBe(0)
 
   await group.click()
 
-  await expect(group.locator('.group-marker')).toHaveText('▾')
+  await expect(group.locator('.record-marker')).toHaveText('▾')
   expect(await tradeRows(page).count()).toBeGreaterThan(0)
 })
 
@@ -60,12 +60,12 @@ test('below the threshold they start open and a click closes one', async ({ page
   await openTradeHistory(page)
 
   const group = page.locator('.trade-history .record-group').first()
-  await expect(group.locator('.group-marker')).toHaveText('▾')
+  await expect(group.locator('.record-marker')).toHaveText('▾')
   const before = await tradeRows(page).count()
 
   await group.click()
 
-  await expect(group.locator('.group-marker')).toHaveText('▸')
+  await expect(group.locator('.record-marker')).toHaveText('▸')
   expect(await tradeRows(page).count()).toBeLessThan(before)
 })
 
@@ -91,7 +91,7 @@ test('the group heading stands on the same columns as the rows beneath it', asyn
   // `.trade-list` is the caller's class and now lands on the list's SHELL — the box the container
   // queries measure, since an element cannot query its own width. The grid is the `<ul>` inside it.
   const tracks = (await columnsOf('.trade-history .trade-list .record-list')).split(' ')
-  expect(tracks).toHaveLength(8)
+  expect(tracks).toHaveLength(9)
   expect(tracks.every(track => parseFloat(track) > 0)).toBe(true)
 
   // and the heading stands on those same tracks rather than on eight of its own

@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_DEPLOYMENT } from './api_mock'
+import { expectHeadingsReadable } from './list_geometry'
 
 /**
  * The LEDGER view, which had no browser coverage at all until 2026-10-01 — `api_mock.ts` served
@@ -54,42 +55,6 @@ async function expectFiguresRightAligned(page: Page, selector: string): Promise<
     return out
   })
   expect(wrong, `${selector}: a figure cell is not right-aligned under its heading`).toEqual([])
-}
-
-/**
- * A HEADING never overprints its neighbour, and its word is always reachable.
- *
- * `.record-head > span` is `white-space: nowrap`; without an overflow rule a heading wider than its
- * column spilled over the one beside it and the two words overprinted. Measured 2026-10-01:
- * `Win Rate` took 68 px of a 66 px track at 1920 px on the deployment view. The stem clips them now
- * and carries the whole label in a title, which is what this asserts — the clip makes overprinting
- * impossible, the title makes the clip survivable.
- *
- * Whether a heading truncates at all is deliberately NOT asserted here. Every way of measuring that
- * from script disagreed with the screen: `scrollWidth` counts padding differently once a box clips,
- * and a Range over right-aligned text reports the line box rather than the ink. Two of four
- * "truncated" headings were complete on screen. A column that must stay legible says so with a
- * FLOOR in its own track instead — five of the booking periods carry one for exactly this.
- */
-async function expectHeadingsReadable(page: Page, selector: string): Promise<void> {
-  const heads = await page.locator(selector).first().evaluate(shell => {
-    const list = shell.querySelector('.record-list')!
-    return ([...list.querySelectorAll('.record-head > span')] as HTMLElement[])
-      .filter(head => getComputedStyle(head).display !== 'none')
-      .map(head => ({
-        label: head.textContent?.trim() ?? '',
-        title: head.getAttribute('title') ?? '',
-        clipped: getComputedStyle(head).overflow !== 'visible',
-      }))
-  })
-
-  expect(heads.length, `${selector} draws no heading at all`).toBeGreaterThan(0)
-  for (const head of heads) {
-    expect(head.title, `${selector}: the heading "${head.label}" carries no title`)
-      .toBe(head.label)
-    expect(head.clipped, `${selector}: the heading "${head.label}" can overprint its neighbour`)
-      .toBe(true)
-  }
 }
 
 async function openLedger(page: Page): Promise<void> {

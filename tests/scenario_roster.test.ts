@@ -136,7 +136,7 @@ function earning(name: string, overrides: Partial<PortfolioUnitRow> = {}): Portf
 }
 
 function portfolio(units: PortfolioUnitRow[]): PortfolioReport {
-  return { run_id: 'r', units, aggregates: [] }
+  return { run_id: 'r', keys: { units: ['name'], aggregates: ['currency'] }, units, aggregates: [] }
 }
 
 function rowNames(wrapper: VueWrapper): string[] {
@@ -286,32 +286,41 @@ describe('ScenarioRosterPanel', () => {
 
     /**
      * `market_type` is empty on every run recorded before the backend added it. An empty string in
-     * a dropdown reads as a category of its own, so the facet is dropped rather than offering one.
+     * a dropdown reads as a category of its own, so the facet is DISABLED rather than offering one.
+     *
+     * It used to be dropped, and the bar then changed shape on every click — see
+     * `FacetBar.vue`'s own note and the sibling case in `deployment_picker.test.ts`.
      */
-    it('drops a facet no row states a value for', async () => {
-      // the symbols DIFFER so that facet can still narrow — otherwise it would be dropped too,
+    it('disables a facet no row states a value for', async () => {
+      // the symbols DIFFER so that facet can still narrow — otherwise it would be disabled too,
       // by the rule below, and this test would stop proving what it is about
       const wrapper = mountPanel(report([
         row({ name: 'old_a', symbol: 'ETHUSD', market_type: '' }),
         row({ name: 'old_b', symbol: 'BTCUSD', market_type: '' }),
       ]))
-      const labels = wrapper.findAll('.facet-trigger').map(node => node.text())
-      expect(labels.some(label => label.includes('Symbol'))).toBe(true)
-      expect(labels.some(label => label.includes('Market'))).toBe(false)
+      const triggers = wrapper.findAll('.facet-trigger')
+      expect(triggers.find(node => node.text().includes('Symbol'))!.attributes('disabled'))
+        .toBeUndefined()
+      const market = triggers.find(node => node.text().includes('Market'))
+      expect(market, 'it keeps its slot in the bar').toBeDefined()
+      expect(market!.attributes('disabled')).toBeDefined()
     })
 
     /**
      * A control that does nothing is worse than one that is missing, because it looks like it
-     * works. Measured over the 40 runs on this machine: `reporting` reads `expected` on all forty
-     * and `app_version` reads `1.4.0` on all forty — two dropdowns that could never narrow.
+     * works — so it wears the disabled look and keeps its place. Measured over the 40 runs then on
+     * this machine: `reporting` read `expected` on all forty and `app_version` read `1.4.0` on all
+     * forty, two dropdowns that could never narrow.
      */
-    it('drops a facet whose single value every row already carries', () => {
+    it('disables a facet whose single value every row already carries', () => {
       const wrapper = mountPanel(report([
         row({ name: 'a', account_currency: 'USD' }),
         row({ name: 'b', account_currency: 'USD' }),
       ]))
-      const labels = wrapper.findAll('.facet-trigger').map(node => node.text())
-      expect(labels.some(label => label.includes('Currency'))).toBe(false)
+      const currency = wrapper.findAll('.facet-trigger')
+        .find(node => node.text().includes('Currency'))
+      expect(currency).toBeDefined()
+      expect(currency!.attributes('disabled')).toBeDefined()
     })
 
     // One value that only SOME rows carry still narrows — to exactly those rows.
@@ -461,11 +470,46 @@ describe('ScenarioRosterPanel', () => {
         (card.props('details') as { label: string, value: string }[])
           .map(pair => [pair.label, pair.value])
       )
-      expect(rows['Opened with']).toBe('10,000.00 USD')
-      expect(rows['Balance']).toBe('9,993.36 USD')
-      expect(rows['Final equity']).toBe('9,987.26 USD')
-      expect(rows['Unrealised']).toBe('-6.10 USD')
-      expect(rows['Spread']).toBe('2.74 USD')
+      expect(rows['Opened with']).toBe('10,000.00 EUR')
+      expect(rows['Balance']).toBe('9,993.36 EUR')
+      expect(rows['Final equity']).toBe('9,987.26 EUR')
+      expect(rows['Unrealized']).toBe('-6.10 EUR')
+      expect(rows['Spread']).toBe('2.74 EUR')
+    })
+
+    /**
+     * What the venue CHARGED, where the `Fees` column cannot show it.
+     *
+     * `total_fees` is attributed like `net_pnl` — the trades this unit CLOSED — while
+     * `fees_charged` counts every order, so a unit holding an open position was charged more than
+     * the column says. Measured 2026-10-08 on a spot unit: the column read `0.00` while the venue
+     * had taken 2.35 in taker fees, which reads as *this scenario was free*.
+     *
+     * Asserted in both directions, because the figure appearing on every row would be noise: on a
+     * forex run the two agree and the card has nothing to add.
+     */
+    it('names what the venue charged where it exceeds what the closed trades cost', () => {
+      const cardOf = (unit: PortfolioUnitRow) => {
+        const card = mountPanel(view(ROSTER, portfolio([unit])))
+          .findAllComponents(HoverCard)[0]!
+        return Object.fromEntries(
+          (card.props('details') as { label: string, value: string }[])
+            .map(pair => [pair.label, pair.value])
+        )
+      }
+
+      const differs = cardOf(earning('winner', {
+        total_trades: 3, total_fees: 0, fees_charged: 2.36, taker_fee: 2.36,
+      }))
+      expect(differs['Charged']).toBe('2.36 EUR')
+
+      // and absent where they agree: a figure on every row would be noise, and on a forex run the
+      // two are equal. The captured fixture is itself the differing case, which is why this half
+      // needs a unit built for it.
+      const agrees = cardOf(earning('winner', {
+        total_trades: 3, total_fees: 1.5, fees_charged: 1.5, taker_fee: 0,
+      }))
+      expect(agrees).not.toHaveProperty('Charged')
     })
 
     /** A scenario the portfolio has no row for has no account to describe. */
@@ -498,7 +542,7 @@ describe('ScenarioRosterPanel', () => {
       // the W/L split rides in the same cell: contract 18 counts a trade that realised exactly
       // nothing as neither, so the two need not add up to the total
       expect(cells['Trades']).toContain('3')
-      expect(cells['Net P&L']).toBe('12.50 USD')
+      expect(cells['Net P&L']).toBe('12.50 EUR')
       expect(cells['PF']).toBe('2.40')
       // and what it WAS, on the same line
       expect(cells['Symbol']).toBe('ETHUSD')
@@ -513,7 +557,7 @@ describe('ScenarioRosterPanel', () => {
     it('states a count as a bare figure under its own heading', () => {
       const cells = cellsFor(mountPanel(view(ROSTER, EARNED)), 'loser')
       expect(cells['Trades']).toContain('1')
-      expect(cells['Net P&L']).toBe('-4.25 USD')
+      expect(cells['Net P&L']).toBe('-4.25 EUR')
     })
 
     it('shows NO earned figures for a unit the portfolio has no row for', () => {
@@ -631,11 +675,13 @@ describe('ScenarioRosterPanel', () => {
       expect(labels.some(l => l.includes('Result'))).toBe(true)
     })
 
-    it('drops the result facet where no unit traded', () => {
+    it('disables the result facet where no unit traded', () => {
       const idle = portfolio([earning('winner'), earning('loser')])
       const wrapper = mountPanel(view(ROSTER, idle))
-      const labels = wrapper.findAll('.facet-trigger').map(node => node.text())
-      expect(labels.some(l => l.includes('Result'))).toBe(false)
+      const result = wrapper.findAll('.facet-trigger')
+        .find(node => node.text().includes('Result'))
+      expect(result, 'it keeps its slot rather than vanishing').toBeDefined()
+      expect(result!.attributes('disabled')).toBeDefined()
     })
   })
 })

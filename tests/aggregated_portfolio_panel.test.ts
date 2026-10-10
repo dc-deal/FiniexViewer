@@ -6,6 +6,7 @@ import type {
   AggregatedCurrency,
   AggregatedPortfolioReport,
 } from '@/types/api/report_types'
+import type { Figure } from '@/types/figure_types'
 import aggregatedFixture from './fixtures/aggregated_portfolio.json'
 
 /**
@@ -20,11 +21,30 @@ function mountPanel(model: AggregatedPortfolioReport = REPORT) {
   return mount(AggregatedPortfolioPanel, { props: { model } })
 }
 
-/** Every figure the panel drew, across its blocks, as label -> value. */
-function figures(wrapper: ReturnType<typeof mountPanel>): Record<string, string> {
-  const pairs = wrapper.findAllComponents(FigureBlock)
+/**
+ * Every figure the panel drew for ONE currency, as label -> value.
+ *
+ * **Scoped to a single `.aggregate` section, and that is not tidiness.** It used to flatten every
+ * FigureBlock in the panel, which was correct only while the captured run held ONE currency. The
+ * 2026-10-08 capture holds two, and `Object.fromEntries` then let the last section win per label —
+ * so the helper returned a MIXTURE: `Highest equity` from EUR beside `Maker / taker` from USD,
+ * silently, with every assertion still reading like a statement about one account.
+ */
+/**
+ * The figures of ONE currency section, found through the TYPED wrapper and narrowed by containment.
+ *
+ * Going through the section's DOM wrapper instead would lose the component typing and make every
+ * callback an implicit `any` — the opposite of what this file is for.
+ */
+function figurePairs(wrapper: ReturnType<typeof mountPanel>, at = 0): Figure[] {
+  const section = wrapper.findAll('.aggregate')[at]!.element
+  return wrapper.findAllComponents(FigureBlock)
+    .filter(block => section.contains(block.element))
     .flatMap(block => block.props('figures') ?? [])
-  return Object.fromEntries(pairs.map(pair => [pair.label, pair.value]))
+}
+
+function figures(wrapper: ReturnType<typeof mountPanel>, at = 0): Record<string, string> {
+  return Object.fromEntries(figurePairs(wrapper, at).map(pair => [pair.label, pair.value]))
 }
 
 function withRow(changes: Partial<AggregatedCurrency>): AggregatedPortfolioReport {
@@ -37,8 +57,8 @@ function withFold(changes: Partial<AggregatedCurrency['combined']>): AggregatedP
 
 describe('AggregatedPortfolioPanel', () => {
   it('names the currency and how many scenarios were folded into it', () => {
-    expect(mountPanel().find('.scope').text()).toContain('USD')
-    expect(mountPanel().find('.scope').text()).toContain('8 scenarios')
+    expect(mountPanel().find('.scope').text()).toContain('EUR')
+    expect(mountPanel().find('.scope').text()).toContain('4 scenarios')
   })
 
   /**
@@ -48,24 +68,23 @@ describe('AggregatedPortfolioPanel', () => {
   describe('what the run paid', () => {
     it('shows the split rather than only the total', () => {
       const shown = figures(mountPanel())
-      expect(shown['Spread']).toBe('0.00 USD')
-      expect(shown['Commission']).toBe('0.00 USD')
-      expect(shown['Swap']).toBe('0.00 USD')
+      expect(shown['Spread']).toBe('7.82 EUR')
+      expect(shown['Commission']).toBe('0.00 EUR')
+      expect(shown['Swap']).toBe('0.00 EUR')
     })
 
     /** Two zeroes on a forex run are noise; on a spot run they are the whole cost. */
     it('shows the maker and taker halves only where a fee of that kind was charged', () => {
-      expect(figures(mountPanel())['Maker / taker']).toBe('0.00 USD / 16.22 USD')
-      const none = figures(mountPanel(withFold({ maker_fee: 0, taker_fee: 0 })))
-      expect(none['Maker / taker']).toBeUndefined()
+      // the captured run holds BOTH cases, one per currency: the forex EUR account was
+      // charged neither, the spot USD account was charged a taker fee
+      expect(figures(mountPanel(), 0)['Maker / taker']).toBeUndefined()
+      expect(figures(mountPanel(), 1)['Maker / taker']).toBe('0.00 USD / 33.89 USD')
     })
 
     /** A price-unit figure, and it says so rather than wearing a currency it does not have. */
     it('keeps the average spread out of the account currency', () => {
-      const pairs = mountPanel().findAllComponents(FigureBlock)
-        .flatMap(block => block.props('figures') ?? [])
-      const spread = pairs.find(pair => pair.label === 'Avg spread')
-      expect(spread?.value).not.toContain('USD')
+      const spread = figurePairs(mountPanel()).find(pair => pair.label === 'Avg spread')
+      expect(spread?.value).not.toContain('EUR')
       expect(spread?.title).toContain('price units')
     })
   })
@@ -77,31 +96,27 @@ describe('AggregatedPortfolioPanel', () => {
      * numbers about different things, and only this one names where it happened.
      */
     it('tells the highest peak from the deepest account own peak', () => {
-      const pairs = mountPanel().findAllComponents(FigureBlock)
-        .flatMap(block => block.props('figures') ?? [])
-      const peak = pairs.find(pair => pair.label === 'Highest equity')
-      expect(peak?.value).toBe('10,004.46 USD')
+      const peak = figurePairs(mountPanel()).find(pair => pair.label === 'Highest equity')
+      expect(peak?.value).toBe('10,003.11 EUR')
       expect(peak?.title).toContain('fell deepest')
-      expect(figures(mountPanel())['Reached by']).toBe('ETHUSD_blocks_06')
+      expect(figures(mountPanel())['Reached by']).toBe('EURGBP_refusals_02')
     })
 
     /** Realised against valued: the two differ by exactly the unrealised movement. */
     it('puts the realised balance beside its own caveat', () => {
-      const pairs = mountPanel().findAllComponents(FigureBlock)
-        .flatMap(block => block.props('figures') ?? [])
-      const balance = pairs.find(pair => pair.label === 'Final balance')
-      expect(balance?.value).toBe('79,113.84 USD')
+      const balance = figurePairs(mountPanel()).find(pair => pair.label === 'Final balance')
+      expect(balance?.value).toBe('40,003.74 EUR')
       expect(balance?.title).toContain('Realised only')
     })
 
     it('carries the balance change as a magnitude and a percentage together', () => {
-      expect(figures(mountPanel())['Balance change']).toBe('-886.16 USD (-1.11%)')
+      expect(figures(mountPanel())['Balance change']).toBe('3.74 EUR (0.01%)')
     })
 
     it('shows the averages behind the profit factor, and the direction split', () => {
       const shown = figures(mountPanel())
-      expect(shown['Avg win / loss']).toBe('2.16 USD / 0.88 USD')
-      expect(shown['Long / short']).toBe('2 / 0')
+      expect(shown['Avg win / loss']).toBe('0.64 EUR / 0.06 EUR')
+      expect(shown['Long / short']).toBe('6 / 2')
     })
 
     /** Undefined rather than zero: a run with no decline has nothing to recover from. */
@@ -118,9 +133,10 @@ describe('AggregatedPortfolioPanel', () => {
      * word stays on screen.
      */
     it('says the worth of a spot account is estimated', () => {
-      const shown = figures(mountPanel())
-      expect(shown['Estimated now']).toBe('79,981.37 USD')
-      expect(shown['At the start']).toBe('80,000.00 USD')
+      // section 1, because the captured run's FIRST currency is a forex account now
+      const shown = figures(mountPanel(), 1)
+      expect(shown['Estimated now']).toBe('2,978.40 USD')
+      expect(shown['At the start']).toBe('3,003.88 USD')
       expect(shown['Base asset held']).toBe('yes')
     })
 
@@ -128,7 +144,7 @@ describe('AggregatedPortfolioPanel', () => {
       const shown = figures(mountPanel(withRow({ is_spot: false })))
       expect(shown['Estimated now']).toBeUndefined()
       // and what is not about the account model is unaffected
-      expect(shown['Highest equity']).toBe('10,004.46 USD')
+      expect(shown['Highest equity']).toBe('10,003.11 EUR')
     })
   })
 
@@ -156,7 +172,7 @@ describe('AggregatedPortfolioPanel', () => {
   describe('what it leaves out', () => {
     it('repeats no figure the executive summary already states', () => {
       const shown = figures(mountPanel())
-      for (const label of ['Net P&L', 'Win Rate', 'Profit Factor', 'Max equity', 'Trades']) {
+      for (const label of ['Net P&L', 'Win rate', 'Profit Factor', 'Max equity', 'Trades']) {
         expect(shown[label]).toBeUndefined()
       }
     })

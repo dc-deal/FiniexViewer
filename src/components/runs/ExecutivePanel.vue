@@ -4,7 +4,7 @@ import FigureBlock from '@/components/base/FigureBlock.vue'
 import type { RunSummary, RunSummaryCurrency } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 import {
-  amount, magnitude, marketSpan, numberOrNa, percent, percentFigure, percentOrNa, rValue,
+  amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, rValue,
   signClass,
 } from '@/components/runs/report_format'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
@@ -156,7 +156,7 @@ function account(row: RunSummaryCurrency): Figure[] {
     figures.push(
       { label: t('Still open'), value: `${row.open_position_count}` },
       {
-        label: t('Unrealised'),
+        label: t('Unrealized'),
         value: amount(row.unrealized_pnl, row.currency),
         tone: signClass(row.unrealized_pnl),
       },
@@ -208,44 +208,69 @@ const marketTime = computed<Figure[]>(() => {
 })
 
 /**
- * What was ATTEMPTED. Kept here as well as above the trade rows on purpose: there it says what the
- * rows beneath it were drawn from, here it is a property of the run — and a low execution rate
- * changes how every figure on this panel reads.
+ * What was ATTEMPTED — one count per way an order started or ended (contract 23).
+ *
+ * **Every counter appears only where it is NOT ZERO, and that is what makes the block honest rather
+ * than tidy.** The old shape printed `Executed x/y` as a pair, which read `Executed 22/undefined`
+ * the moment `orders_sent` was removed — and had the pair simply been renamed it would have read
+ * `0/307` on every run recorded before the contract, a plausible lie and worse than the undefined.
+ * A run that counted nothing shows nothing; a run that counted shows exactly what it counted. No
+ * branch on a contract number anywhere (CLAUDE.md §21).
+ *
+ * **`Denied` stands beside `Rejected` and the two must not be separated.** Contract 23 narrowed
+ * `orders_rejected` to the VENUE's refusals and gave the other half its own name: a refusal before
+ * anything was sent is `orders_denied`. Showing one alone understates what was turned away, and
+ * nothing on the screen would say so.
+ *
+ * **No rate.** `execution_rate_pct` is served on `aggregated-portfolio` and not here — measured,
+ * `run-summary` carries no `rate` or `pct` field at all — so it is rendered in Run Totals where its
+ * model lives. Computing it here would be the second source of truth this project refuses.
  */
 const orders = computed<Figure[]>(() => {
   const summary = props.model
-  const rate = summary.orders_sent > 0 ? summary.orders_executed / summary.orders_sent : null
-  return [
-    {
-      label: t('Executed'),
-      value: rate === null
-        ? `${summary.orders_executed}/${summary.orders_sent}`
-        : `${summary.orders_executed}/${summary.orders_sent} (${percent(rate)})`,
-    },
-    {
-      label: t('Rejected'),
-      value: `${summary.orders_rejected}`,
-      tone: summary.orders_rejected > 0 ? 'warning' : '',
-    },
-    { label: t('Closed by SL/TP'), value: `${summary.sl_tp_triggered}` },
+  const counted: [string, number][] = [
+    ['Submitted', summary.orders_submitted],
+    ['Adopted', summary.orders_adopted],
+    ['Executed', summary.orders_executed],
+    ['Denied', summary.orders_denied],
+    ['Rejected', summary.orders_rejected],
+    ['Cancelled', summary.orders_cancelled],
+    ['Expired', summary.orders_expired],
+    ['Undelivered', summary.orders_undelivered],
+    ['Unaccounted', summary.orders_unaccounted],
+    ['Closed by SL/TP', summary.sl_tp_triggered],
   ]
+  // the refusals carry the warning tone, the rest are plain counts
+  const refusals = new Set(['Denied', 'Rejected', 'Undelivered', 'Unaccounted'])
+  return counted
+    .filter(([, value]) => value)
+    .map(([label, value]) => ({
+      label: t(label),
+      value: `${value}`,
+      tone: refusals.has(label) ? 'warning' : '',
+    }))
 })
 
 /**
  * Declared · ran · disabled · absent — the four counts that say whether this summary is about the
- * run somebody configured. `units_declared` is null on an artifact written before the field
- * existed, and a null is left out rather than shown as a zero nobody reported.
+ * run somebody configured. All FOUR are null on an artifact written before the field existed, the
+ * list included, and a null is left out rather than shown as a zero nobody reported.
  */
 const scope = computed<Figure[]>(() => {
   const summary = props.model
-  const figures: Figure[] = [{ label: t('Units with results'), value: `${summary.unit_count}` }]
+  // THEIR word for `unit_count` — their own executive printout says `Scenarios` for this field, and
+  // it reads with the two beside it rather than against them: Scenarios · Declared · Disabled. It
+  // also ends a double labelling, because the ACCOUNT block above names the same field `Accounts`,
+  // which is a deliberate reframing there: that block is about balances, and a backtest of N
+  // scenarios is N independent accounts with one balance each.
+  const figures: Figure[] = [{ label: t('Scenarios'), value: `${summary.unit_count}` }]
   if (summary.units_declared !== null) {
     figures.push({ label: t('Declared'), value: `${summary.units_declared}` })
   }
   if (summary.units_disabled !== null) {
     figures.push({ label: t('Disabled'), value: `${summary.units_disabled}` })
   }
-  if (summary.units_absent.length) {
+  if (summary.units_absent?.length) {
     figures.push({
       label: t('Produced nothing'),
       value: `${summary.units_absent.length}`,

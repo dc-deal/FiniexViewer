@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_RUN } from './api_mock'
+import { expectHeadingsReadable } from './list_geometry'
 
 /**
  * The columns a ranked list gives up as it narrows — measured in a browser, because nothing else
@@ -132,47 +133,13 @@ async function expectFiguresRightAligned(page: Page, selector: string): Promise<
   expect(wrong, `${selector}: a figure cell is not right-aligned under its heading`).toEqual([])
 }
 
-/**
- * A HEADING never overprints its neighbour, and its word is always reachable.
- *
- * `.record-head > span` is `white-space: nowrap`; without an overflow rule a heading wider than its
- * column spilled over the one beside it and the two words overprinted. Measured 2026-10-01:
- * `Win Rate` took 68 px of a 66 px track at 1920 px on the deployment view. The stem clips them now
- * and carries the whole label in a title, which is what this asserts — the clip makes overprinting
- * impossible, the title makes the clip survivable.
- *
- * Whether a heading truncates at all is deliberately NOT asserted here. Every way of measuring that
- * from script disagreed with the screen: `scrollWidth` counts padding differently once a box clips,
- * and a Range over right-aligned text reports the line box rather than the ink. Two of four
- * "truncated" headings were complete on screen. A column that must stay legible says so with a
- * FLOOR in its own track instead — five of the booking periods carry one for exactly this.
- */
-async function expectHeadingsReadable(page: Page, selector: string): Promise<void> {
-  const heads = await page.locator(selector).first().evaluate(shell => {
-    const list = shell.querySelector('.record-list')!
-    return ([...list.querySelectorAll('.record-head > span')] as HTMLElement[])
-      .filter(head => getComputedStyle(head).display !== 'none')
-      .map(head => ({
-        label: head.textContent?.trim() ?? '',
-        title: head.getAttribute('title') ?? '',
-        clipped: getComputedStyle(head).overflow !== 'visible',
-      }))
-  })
-
-  expect(heads.length, `${selector} draws no heading at all`).toBeGreaterThan(0)
-  for (const head of heads) {
-    expect(head.title, `${selector}: the heading "${head.label}" carries no title`)
-      .toBe(head.label)
-    expect(head.clipped, `${selector}: the heading "${head.label}" can overprint its neighbour`)
-      .toBe(true)
-  }
-}
-
 // every list a run view draws, and each one declares its own ranks
-const RUN_LISTS = ['.run-list', '.roster-list', '.trade-list', '.periods-list']
+// `.order-list` joined on 2026-10-05, and its absence until then was a real gap: the panel it
+// replaced was never swept either, so a ranked list of this app went unmeasured at every width.
+const RUN_LISTS = ['.run-list', '.roster-list', '.trade-list', '.periods-list', '.order-list']
 
 /** The panels those lists live in. Closed by default, so each has to be asked for. */
-const PANELS = ['Scenarios', 'Trade History', 'Booking Periods']
+const PANELS = ['Scenarios', 'Trade History', 'Booking Periods', 'Orders']
 
 // 1800 is above the 80rem rung and 1300 is below it — without a width on each side the fifth
 // tier is never exercised, and a rung nothing measures is a rung nobody knows is broken
@@ -266,6 +233,33 @@ test('every ranked list gives columns up as it narrows', async ({ page }) => {
  * And the reason a rank is defensible at all: the figure a column gave up is still on the row, in
  * its card. A column hidden with nowhere else to read it would be a loss rather than a priority.
  */
+/**
+ * **Opening a family must not move the columns.** The run list declares `auto` tracks, and an
+ * `auto` track is sized from the cells that are IN the grid — a closed family contributes none,
+ * so a family holding the widest cell of a column would let that track shrink while it is closed
+ * and slide every heading sideways the moment a reader opens it. The architecture note states the
+ * rule: a grouped list declares proportional tracks.
+ *
+ * Measured 2026-10-09 against the captured index of 85 runs: the eight drawn tracks are identical
+ * to the pixel, closed and open, because no folded run is wider than the widest standing one. That
+ * is the DATA, not a guarantee — which is why this stands here rather than in a comment. The day
+ * it stops holding, this says so instead of the operator's eye.
+ */
+test('opening a family leaves the run list columns where they were', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('/runs')
+  await page.locator('.run-list').waitFor()
+
+  const tracks = () => page.locator('.run-list .record-list')
+    .evaluate(list => getComputedStyle(list).gridTemplateColumns)
+
+  const closed = await tracks()
+  await page.locator('.run-list .record-group').first().click()
+  // the family really opened, or this would compare one state with itself
+  await expect(page.locator('.run-list .record-group').first()).toHaveAttribute('aria-expanded', 'true')
+  expect(await tracks()).toBe(closed)
+})
+
 test('the run list keeps its card at the narrowest tier', async ({ page }) => {
   await page.setViewportSize({ width: 620, height: 1200 })
   await openEverything(page)
@@ -276,7 +270,7 @@ test('the run list keeps its card at the narrowest tier', async ({ page }) => {
   const card = page.locator('.hover-card').first()
   await expect(card).toBeVisible()
   // the fields no column carries at any width, let alone this one
-  await expect(card).toContainText('Configuration')
+  await expect(card).toContainText('Config file')
   await expect(card).toContainText('Size')
 })
 

@@ -15,10 +15,18 @@ import brokerFixture from './fixtures/broker.json'
  * multi-broker case is built by hand here: no fixture run has two, and the sentence it produces is
  * the whole point of the panel, so it cannot go untested.
  */
-const SPOT: BrokerUnit = brokerFixture.units[0] as BrokerUnit
+/**
+ * Found by BROKER TYPE, never by index. The 2026-10-08 capture carries two units where the earlier
+ * one carried a single spot broker, and `units[0]` silently became the forex one — which made this
+ * constant name a lie and four assertions fail for a reason that had nothing to do with them.
+ */
+const SPOT: BrokerUnit = brokerFixture.units
+  .find(unit => unit.broker_type === 'kraken_spot') as BrokerUnit
 
 const MARGIN: BrokerUnit = {
   broker_type: 'mt5',
+  // empty on a simulation unit, which is every unit in the archive — see the field's own note
+  broker_config_id: '',
   market_type: 'forex',
   company: 'Vantage International Group Limited',
   server: 'VantageInternational-Demo',

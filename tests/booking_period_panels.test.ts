@@ -86,6 +86,19 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
     expect(wrapper.find('.footnote .scope').text()).toBe('whole run')
   })
 
+  /**
+   * A run that booked no period at all states no figure in its currency, and the backend serves
+   * `total_final_equity` as null there. `Intl.NumberFormat` formats null as `0.00` without
+   * complaining, so the footnote printed a closing equity nobody reported. Measured 2026-10-01 on
+   * `20260924_165923_4d6c2f5f` — one run of 45, which is exactly how long such a figure survives.
+   */
+  it('leaves out a closing equity the run never reported, rather than printing it as zero', () => {
+    const wrapper = mountPanel(report({ total_final_equity: null }))
+    const footnote = wrapper.find('.footnote').text()
+    expect(footnote).toContain('Deepest period drawdown')
+    expect(footnote).not.toContain('Final equity')
+  })
+
   it('draws the lanes of every chosen scenario, not just the first', () => {
     const wrapper = mountNarrowed(MIXED, ['unit_a', 'unit_b'])
     const labels = wrapper.findAll('.lane-label').map(node => node.text())
@@ -211,18 +224,24 @@ describe('BookingPeriodTable', () => {
 
   /**
    * Three more columns on a table that already carries fourteen would cost more than they tell,
-   * so the split rides in the title of the figure it adds up to.
+   * so the split rides in the title of the fee.
+   *
+   * The numbers are the SERVED arithmetic and not a convenient sum: `total_fees` is commission plus
+   * swap, and the spread is a cost beside it rather than a third term. Measured 2026-10-08 over
+   * 1,044 booking periods — the two-term identity held on all of them. This case carried
+   * `total_fees: 14.04` for 9.04 + 1.00 + 4.00 until then, a shape the API never serves.
    */
   it('keeps the fee breakdown one hover from the fee', () => {
     const wrapper = mountTable([period({
-      total_fees: 14.04, commission_cost: 9.04, swap_cost: 1.0, spread_cost: 4.0,
+      total_fees: 10.04, commission_cost: 9.04, swap_cost: 1.0, spread_cost: 4.0,
     })])
     // by POSITION, not by "the first cell with a title": four cells carry one now, because at this
     // width the unit name, both stamps and the equity band all truncate
     const labels = wrapper.findAll('.record-head > span').map(node => node.text())
     const fees = wrapper.find('.record-row').findAll(':scope > span')[labels.indexOf('Fees')]!
-    expect(fees.text()).toContain('14.04')
-    expect(fees.attributes('title')).toBe('commission 9.04 · swap 1.00 · spread 4.00')
+    expect(fees.text()).toContain('10.04')
+    expect(fees.attributes('title'))
+      .toBe('commission 9.04 · swap 1.00 — spread 4.00 besides, not part of this total')
   })
 
   it('shows the run column only where the rows span several runs', () => {
@@ -267,7 +286,7 @@ describe('BookingPeriodTable', () => {
       period({ unit_name: 'a', net_pnl: -1.75 }),
       period({ unit_name: 'b', net_pnl: 4.2 }),
     ])
-    expect(wrapper.find('.periods-summary').text()).toContain('figures in USD')
+    expect(wrapper.find('.periods-summary').text()).toContain('figures in EUR')
     const cells = wrapper.find('.record-row').findAll(':scope > span').map(node => node.text())
     expect(cells).toContain('-1.75')
     expect(cells.some(cell => cell.includes('USD'))).toBe(false)

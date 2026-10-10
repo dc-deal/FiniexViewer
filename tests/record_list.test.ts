@@ -41,6 +41,10 @@ function groupOf(scope: unknown): ListGroup<Row> {
   return (scope as { group: ListGroup<Row> }).group
 }
 
+function markerOf(scope: unknown): string {
+  return (scope as { marker: string }).marker
+}
+
 interface ListProps {
   hideHead?: boolean
   inert?: boolean
@@ -49,7 +53,9 @@ interface ListProps {
   hasDetail?: (row: unknown) => boolean
   groupBy?: (row: unknown) => string
   isOpen?: (key: string) => boolean
+  showsGroupHead?: (key: string) => boolean
   showsChildren?: (row: unknown) => boolean
+  rowClass?: (row: unknown) => string | undefined
   bands?: ListBand[]
   columns?: ListColumn[]
 }
@@ -73,6 +79,42 @@ describe('RecordList — the flat list', () => {
     expect(wrapper.findAll('.record-head')).toHaveLength(1)
     expect(wrapper.findAll('.record-row')).toHaveLength(3)
     expect(wrapper.findAll('.record-group')).toHaveLength(0)
+  })
+
+  /**
+   * A heading wider than its column is CLIPPED, so its title is how it can still be read in full.
+   * Where a column declares a `hint` the meaning follows the label rather than replacing it — a
+   * field whose own name misleads needs both, and the clipping affordance must survive.
+   */
+  /**
+   * One class the caller puts on a row, for a distinction only it can see. The list keeps its own
+   * states beside it rather than handing the class list over.
+   */
+  it('lets the caller mark a row without losing the list`s own states', () => {
+    const wrapper = mountList({ rowClass: (row: unknown) => asRow(row).net > 0 ? 'up' : undefined })
+    const rows = wrapper.findAll('.record-row')
+    expect(rows[0]!.classes()).toContain('up')
+    expect(rows[1]!.classes()).not.toContain('up')
+    // the list's own class is still there
+    expect(rows[0]!.classes()).toContain('record-row')
+  })
+
+  describe('what a heading says on hover', () => {
+    it('is the label alone where the column declares no hint', () => {
+      const heads = mountList().findAll('.record-head > span')
+      expect(heads[0]!.attributes('title')).toBe('Unit')
+    })
+
+    it('puts a hint AFTER the label rather than in place of it', () => {
+      const heads = mountList({
+        columns: [
+          { label: 'Order id', hint: 'the id of the POSITION, not of the order', width: 'auto' },
+          { label: 'Net', width: 'auto', figure: true },
+        ],
+      }).findAll('.record-head > span')
+      expect(heads[0]!.attributes('title')).toBe('Order id — the id of the POSITION, not of the order')
+      expect(heads[1]!.attributes('title')).toBe('Net')
+    })
   })
 
   /**
@@ -153,7 +195,13 @@ describe('RecordList — the card beside a row', () => {
 
 describe('RecordList — groups', () => {
   const groupBy = (row: unknown) => asRow(row).unit
-  const groupSlot = { group: (scope: unknown) => h('span', groupOf(scope).key) }
+  /** Mirrors a panel: the list decides the glyph and its state, the caller places it in a cell. */
+  const groupSlot = {
+    group: (scope: unknown) => h('span', [
+      markerOf(scope) ? h('span', { class: 'record-marker' }, markerOf(scope)) : null,
+      groupOf(scope).key,
+    ]),
+  }
 
   /**
    * Groups appear in the order their FIRST row does, so the sort the reader chose above the list
@@ -176,9 +224,24 @@ describe('RecordList — groups', () => {
   })
 
   it('reports the clicked heading by its key, holding no state of its own', async () => {
-    const wrapper = mountList({ groupBy }, groupSlot)
+    const wrapper = mountList({ groupBy, isOpen: () => true }, groupSlot)
     await wrapper.findAll('.record-group')[1]!.trigger('click')
     expect(wrapper.emitted('toggle')?.[0]?.[0]).toBe('beta')
+  })
+
+  /**
+   * And a heading is a control ONLY where the caller tracks the open state. Without `isOpen` a
+   * click emits into nothing, and the heading still wore the pointer, the hover and the press — a
+   * control that looks like one and does nothing, which is the defect class this project has paid
+   * for most. Found on screen 2026-10-09 in the order step list: *"warum kann man das klicken?"*
+   */
+  it('draws a plain heading where the caller cannot act on it', async () => {
+    const wrapper = mountList({ groupBy }, groupSlot)
+    const heading = wrapper.find('.record-group')
+    expect(heading.element.tagName).toBe('DIV')
+    expect(heading.classes()).toContain('quiet')
+    await heading.trigger('click')
+    expect(wrapper.emitted('toggle')).toBeUndefined()
   })
 
   /**
@@ -188,7 +251,7 @@ describe('RecordList — groups', () => {
    * lives — and `aria-expanded` is coverage the old `<tr>` never had at all.
    */
   it('makes the heading a control the platform already knows how to operate', () => {
-    const heading = mountList({ groupBy }, groupSlot).find('.record-group')
+    const heading = mountList({ groupBy, isOpen: () => true }, groupSlot).find('.record-group')
     expect(heading.element.tagName).toBe('BUTTON')
     expect(heading.attributes('aria-expanded')).toBe('true')
   })
@@ -199,12 +262,74 @@ describe('RecordList — groups', () => {
   })
 
   /**
+   * ONE glyph, drawn by the LIST. Two panels wrote their own and a third had none, and the
+   * half-measure then cost its own defect: the list drew a heading's glyph as well, so a position
+   * heading carried TWO triangles — measured 2026-10-09, and invisible in a test that read the
+   * first of them.
+   */
+  it('draws exactly one disclosure glyph on a heading that opens something', () => {
+    const wrapper = mountList({ groupBy, isOpen: () => true }, groupSlot)
+    expect(wrapper.find('.record-group').findAll('.record-marker')).toHaveLength(1)
+  })
+
+  it('draws no glyph on a heading that opens nothing', () => {
+    const wrapper = mountList({ groupBy }, groupSlot)
+    expect(wrapper.find('.record-group').findAll('.record-marker')).toHaveLength(0)
+  })
+
+  /**
+   * **A group may state nothing at all.** The run list is the case: grouping folds 85 lines into
+   * 42, but 28 of those groups hold ONE row, and a heading over one row is a line, a glyph and a
+   * click to disclose what is already on screen.
+   */
+  it('draws no heading for a group the caller does not name', () => {
+    const wrapper = mountList(
+      { groupBy, isOpen: () => true, showsGroupHead: (key: string) => key === 'alpha' },
+      groupSlot,
+    )
+    const headings = wrapper.findAll('.record-group')
+    expect(headings).toHaveLength(1)
+    expect(headings[0]!.text()).toContain('alpha')
+    // every row is still drawn, the silent group's included
+    expect(wrapper.findAll('.record-row')).toHaveLength(3)
+  })
+
+  /**
+   * And it cannot be closed. Nothing can open it again, so a caller answering false for the
+   * heading AND false for the open state would leave rows nobody can reach.
+   */
+  it('keeps a group with no heading open whatever the caller says about its state', () => {
+    const wrapper = mountList(
+      { groupBy, isOpen: () => false, showsGroupHead: (key: string) => key === 'alpha' },
+      groupSlot,
+    )
+    // `alpha` has a heading and is closed, so only the rows of the silent group are drawn
+    expect(wrapper.findAll('.record-group')).toHaveLength(1)
+    expect(wrapper.findAll('.record-row')).toHaveLength(1)
+  })
+
+  /**
    * Indenting the ROW would move every column out of the alignment this component exists to
    * produce, so only the first cell moves.
    */
   it('indents a grouped row by its first cell, never by the row', () => {
     const wrapper = mountList({ groupBy }, groupSlot)
     expect(wrapper.find('.record-row').classes()).toContain('grouped')
+  })
+
+  /**
+   * The step means UNDER A HEADING, not "the list groups". A group that states nothing leaves its
+   * rows at the heading level — otherwise every row is indented by one step, which is no ladder at
+   * all. Reported on screen 2026-10-10: *"die unterebenen sind nicht eingerückt"*.
+   */
+  it('indents only the rows that sit under a heading', () => {
+    const wrapper = mountList(
+      { groupBy, isOpen: () => true, showsGroupHead: (key: string) => key === 'alpha' },
+      groupSlot,
+    )
+    const stepped = wrapper.findAll('.record-row').map(row => row.classes().includes('grouped'))
+    // two rows under `alpha`'s heading, one standing alone under a group that states nothing
+    expect(stepped).toEqual([true, true, false])
   })
 
   it('stays flat, with no heading at all, where no grouping was asked for', () => {

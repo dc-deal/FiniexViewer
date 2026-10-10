@@ -17,6 +17,12 @@ vi.mock('@/api/api_client', () => ({
 function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' | 'name'>): RunInfo {
   return {
     artifacts: ['run_summary.json'],
+    stream_files: [],
+    // contracts 24 and 25: what the run is FOR, under which contract its reports
+    // were written, and whether it is still its catalog entry's current one
+    run_purpose: 'regular',
+    report_contract: 25,
+    fixture_superseded: null,
     has_reports: true,
     // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
     results: null,
@@ -28,6 +34,11 @@ function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
     start_time: '2026-06-15T12:00:00+00:00',
     parent_id: null,
     parent_kind: null,
+    // contract 26 — who started the run, the header's origin block flattened
+    origin_channel: 'cli',
+    origin_client: 'console',
+    origin_principal: 'operator',
+    origin_host: 'h_x29og8',
     config_id: '',
     reporting: 'expected',
     size_bytes: 0,
@@ -53,6 +64,7 @@ const RUNS: RunInfo[] = [
 
 const SUMMARY: RunSummary = {
   run_id: '20260615_130000',
+  keys: { currencies: ['currency'], units_absent: ['name'] },
   currencies: [{
     ...(runSummaryFixture.currencies[0] as RunSummaryCurrency),
     currency: 'USD',
@@ -71,7 +83,13 @@ const SUMMARY: RunSummary = {
     r_win_count: 13,
     r_loss_count: 8,
   }],
-  orders_sent: 25,
+  orders_submitted: 25,
+  orders_adopted: 0,
+  orders_denied: 0,
+  orders_cancelled: 0,
+  orders_expired: 0,
+  orders_undelivered: 0,
+  orders_unaccounted: 0,
   orders_executed: 21,
   orders_rejected: 4,
   sl_tp_triggered: 6,

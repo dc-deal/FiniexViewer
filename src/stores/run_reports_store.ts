@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getAggregatedPortfolio, getBookingPeriods, getBroker, getPendingOrders, getPortfolio,
+  getAggregatedPortfolio, getBookingPeriods, getBroker, getOrderEvents, getOrderHistory,
+  getPendingOrders,
+  getPortfolio,
   getRunConfig, getScenarioDetails, getTradeHistory, getWarningsErrors,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
@@ -11,6 +13,8 @@ import type {
   AggregatedPortfolioReport,
   BookingPeriodsReport,
   BrokerReport,
+  OrderEvent,
+  OrderHistoryReport,
   PendingOrdersReport,
   RunConfigReport,
   TradeHistoryReport,
@@ -31,15 +35,28 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const broker = ref<BrokerReport | null>(null)
   const aggregated = ref<AggregatedPortfolioReport | null>(null)
   const pendingOrders = ref<PendingOrdersReport | null>(null)
+  const orderHistory = ref<OrderHistoryReport | null>(null)
   const bookingPeriods = ref<BookingPeriodsReport | null>(null)
   const config = ref<RunConfigReport | null>(null)
   const tradeHistory = ref<TradeHistoryReport | null>(null)
   const scenarios = ref<ScenarioDetailsReport | null>(null)
+  /**
+   * The STEPS of one order, keyed `scenario~position`, and per position rather than per run.
+   *
+   * Every other section is one request for the whole run; this one is not, because the stream is
+   * the largest thing the API serves here - 1,025 events on one stored run against 4 for the
+   * position a reader opened. The route narrows on `(scenario_name, order_id)`, so the request a
+   * reader causes is the one they asked for, and the answer is kept so reopening costs nothing.
+   */
+  const orderEvents = ref(new Map<string, OrderEvent[]>())
+  /** Which positions are in flight, by the same key - several may load at once. */
+  const loadingOrderEvents = ref(new Set<string>())
   const loadingWarningsErrors = ref(false)
   const loadingPortfolio = ref(false)
   const loadingBroker = ref(false)
   const loadingAggregated = ref(false)
   const loadingPendingOrders = ref(false)
+  const loadingOrderHistory = ref(false)
   const loadingBookingPeriods = ref(false)
   const loadingConfig = ref(false)
   const loadingTradeHistory = ref(false)
@@ -71,10 +88,13 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     broker.value = null
     aggregated.value = null
     pendingOrders.value = null
+    orderHistory.value = null
     bookingPeriods.value = null
     config.value = null
     tradeHistory.value = null
     scenarios.value = null
+    orderEvents.value = new Map()
+    loadingOrderEvents.value = new Set()
     absences.value = {}
     errors.value = {}
     unreadable.value = null
@@ -177,6 +197,66 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     }
   }
 
+  /**
+   * Every order the run placed, as lifecycle records. The companion to the one above: that states
+   * what BECAME of a scenario's orders, this states the orders themselves, and the Orders panel
+   * joins them on the scenario name.
+   */
+  async function loadOrderHistory(runId: string): Promise<void> {
+    loadingOrderHistory.value = true
+    orderHistory.value = null
+    try {
+      const answer = await getOrderHistory(runId)
+      if (isAbsent(answer)) absences.value['orderHistory'] = answer
+      else orderHistory.value = answer
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      errors.value['orderHistory'] = `${t('Could not load the order history')}: ${detail}`
+    } finally {
+      loadingOrderHistory.value = false
+    }
+  }
+
+  /**
+   * The steps of ONE position's orders. Keyed per position, so a reader opening a second one does
+   * not disturb the first, and already-held events are not fetched twice.
+   *
+   * An absence is kept here as an EMPTY list rather than in `absences`: that map is keyed by the
+   * slot a panel would have filled, and this is a row inside a panel, not a section of its own.
+   * A run with no stream at all is a different statement and the run list already carries it, in
+   * `stream_files`.
+   */
+  async function loadOrderEvents(runId: string, scenario: string, orderId: string): Promise<void> {
+    const key = `${scenario}~${orderId}`
+    if (orderEvents.value.has(key) || loadingOrderEvents.value.has(key)) return
+    loadingOrderEvents.value = new Set(loadingOrderEvents.value).add(key)
+    try {
+      const answer = await getOrderEvents(runId, scenario, orderId)
+      const events = isAbsent(answer) ? [] : answer.events
+      orderEvents.value = new Map(orderEvents.value).set(key, events)
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      errors.value[`orderEvents:${key}`] = `${t('Could not load the order steps')}: ${detail}`
+    } finally {
+      const next = new Set(loadingOrderEvents.value)
+      next.delete(key)
+      loadingOrderEvents.value = next
+    }
+  }
+
+  /**
+   * What is held for one position, and whether its request is in flight — read through functions so
+   * the key form never leaves this store. A second place building `scenario~order` is a second
+   * place to get it wrong.
+   */
+  function stepsFor(scenario: string, orderId: string): OrderEvent[] | null {
+    return orderEvents.value.get(`${scenario}~${orderId}`) ?? null
+  }
+
+  function stepsLoading(scenario: string, orderId: string): boolean {
+    return loadingOrderEvents.value.has(`${scenario}~${orderId}`)
+  }
+
   /** Booking periods carry the same 409 case as any other stored artifact. */
   async function loadBookingPeriods(runId: string): Promise<void> {
     loadingBookingPeriods.value = true
@@ -261,6 +341,9 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     broker,
     aggregated,
     pendingOrders,
+    orderHistory,
+    orderEvents,
+    loadingOrderEvents,
     bookingPeriods,
     config,
     tradeHistory,
@@ -269,6 +352,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingBroker,
     loadingAggregated,
     loadingPendingOrders,
+    loadingOrderHistory,
     loadingBookingPeriods,
     loadingConfig,
     loadingTradeHistory,
@@ -281,6 +365,10 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadBroker,
     loadAggregated,
     loadPendingOrders,
+    loadOrderHistory,
+    loadOrderEvents,
+    stepsFor,
+    stepsLoading,
     loadBookingPeriods,
     loadConfig,
     loadTradeHistory,

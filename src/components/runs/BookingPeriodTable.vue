@@ -74,14 +74,18 @@ function opening(period: PeriodRow): string {
 }
 
 /**
- * The three parts `total_fees` adds up to, one hover away rather than three more columns on a
- * table that already carries fourteen. Attributed as `net_pnl` is — the costs of the trades this
- * period CLOSED, never a swap still accruing on an open position.
+ * What the period PAID, one hover away rather than three more columns on a table that already
+ * carries fourteen. Attributed as `net_pnl` is — the costs of the trades this period CLOSED, never
+ * a swap still accruing on an open position.
+ *
+ * The SPREAD is named apart from the sum, because it is not in it: `total_fees` is commission plus
+ * swap, measured over 1,044 periods. Reading the three as one total showed `0.00` beside a stated
+ * spread of `2.96` on a period that really cost that much.
  */
 function feeSplit(period: PeriodRow): string {
   return `${t('commission')} ${money(period.commission_cost, period)}`
     + ` · ${t('swap')} ${money(period.swap_cost, period)}`
-    + ` · ${t('spread')} ${money(period.spread_cost, period)}`
+    + ` — ${t('spread')} ${money(period.spread_cost, period)} ${t('besides, not part of this total')}`
 }
 
 /** Columns under the identity group, which has no heading of its own. */
@@ -105,14 +109,25 @@ function feeSplit(period: PeriodRow): string {
  * divide what is left, which is what they are good at.
  *
  * The four that go FIRST are the ratios and the two other views of the account movement, and the
- * data says why: over ten drawn periods, eight had no trades at all, so `Win Rate` and `PF` read
+ * data says why: over ten drawn periods, eight had no trades at all, so `Win rate` and `PF` read
  * `n/a` on eight of ten rows. `Opening` and `Equity band` describe the same movement that
  * `Final equity` closes, and that one is rank 1.
  */
 const columns = computed<ListColumn[]>(() => [
   { label: t('Unit'), width: 'minmax(8rem, 16fr)', rank: 1 },
   ...(props.showRun ? [{ label: t('Run'), width: 'minmax(0, 16fr)', rank: 4 } as ListColumn] : []),
-  { label: t('No'), width: 'minmax(2.5rem, 3fr)', figure: true, rank: 4 },
+  {
+    /*
+     * Not renamed, explained. Under the `Period` group heading this reads as the period's number,
+     * which is right — what their documentation warns against is reading it as a position in the
+     * list, and that warning belongs in a hint rather than in a heading nobody has room for.
+     */
+    label: t('No'),
+    hint: t('A per-bot counter that continues across restarts — not a position in this list.'),
+    width: 'minmax(2.5rem, 3fr)',
+    figure: true,
+    rank: 4,
+  },
   { label: t('Opened'), width: 'minmax(10.5rem, 17fr)', rank: 1 },
   { label: t('Closed'), width: 'minmax(10.5rem, 17fr)', rank: 2 },
   { label: t('Reason'), width: 'minmax(0, 9fr)', rank: 4 },
@@ -121,7 +136,7 @@ const columns = computed<ListColumn[]>(() => [
   // 9fr, not 7: measured at 1920 px on the DEPLOYMENT view, where `showRun` adds a fifteenth
   // column and takes share from the rest, the heading needed 68 px of a 66 px track and
   // overflowed into `PF` beside it
-  { label: t('Win Rate'), width: 'minmax(0, 9fr)', figure: true, rank: 5 },
+  { label: t('Win rate'), width: 'minmax(0, 9fr)', figure: true, rank: 5 },
   { label: t('PF'), width: 'minmax(0, 6fr)', figure: true, rank: 5 },
   { label: t('Fees'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
   { label: t('Max DD'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },

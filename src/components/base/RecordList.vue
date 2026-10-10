@@ -34,6 +34,16 @@ const props = defineProps<{
   columns: ListColumn[]
   /** What makes a row unique — the list's declared key, never guessed. */
   rowKey: (row: T) => string
+  /**
+   * One class the CALLER puts on a row, for a distinction only it can see. The list owns the row's
+   * own states — picked, grouped, inert — and never writes this one.
+   *
+   * It exists for a BOUNDARY inside a group: the Orders panel marks the row that starts a new
+   * position, so a scenario's records read as the positions they belong to rather than as one flat
+   * run of lines. A lead line (`hasLead`) would say it in words and take a row to do it; a rule
+   * belongs on the row it precedes.
+   */
+  rowClass?: (row: T) => string | undefined
   /** The row currently chosen, if the caller has such a notion. */
   isPicked?: (row: T) => boolean
   /**
@@ -89,24 +99,82 @@ const props = defineProps<{
    * does nothing is the same defect as a control that looks disabled and works.
    */
   inert?: boolean
+  /**
+   * Which rows are controls, where only SOME of them are. Without it every row is one (or none,
+   * under `inert`), which is what every list needed until the orders list: there a row that starts
+   * a position opens that position's steps, and the rows carrying it on have nothing to open.
+   *
+   * The whole row rather than a glyph inside it, because that is what a reader tries first @
+   * reported 2026-10-08 after a disclosure triangle went unnoticed. `inert` still wins: it says no
+   * row is a control, and this says which of them are.
+   */
+  canPick?: (row: T) => boolean
+  /**
+   * A GROUP's child records, spanning every track beneath its rows — where `showsChildren` does
+   * the same for one row.
+   *
+   * It exists because some children belong to the group and not to any one of its rows. The orders
+   * list groups by POSITION and the stream's steps are the position's, not one record's: hanging
+   * them off a record would pick one arbitrarily, and where a position's records are not adjacent
+   * (6 of 41 measured on the field study) it drew the same steps twice.
+   *
+   * Given, it also makes the heading a control: its `aria-expanded` then says whether the children
+   * are open rather than whether the rows are.
+   */
+  showsGroupChildren?: (key: string) => boolean
+  /**
+   * An OUTER grouping above `groupBy`, where a list has two levels.
+   *
+   * The orders list is the case and it is not a luxury: its rows belong to a scenario AND to a
+   * position, and each level needs its own heading. The scenario's is the served pending funnel,
+   * which is a statement about the SCENARIO and reads as a lie on anything smaller; the position's
+   * names the position and carries the stream's steps, which belong to no single record of it.
+   * Expressed with one level, one of the two has to give up its heading — measured as three bad
+   * options on 2026-10-09, the best of them at 45 %.
+   *
+   * Absent, the list behaves exactly as it did: one outer section with no heading at all.
+   */
+  outerBy?: (row: T) => string
+  isOuterOpen?: (key: string) => boolean
+  /**
+   * Which groups state themselves. A group this answers false for draws NO heading: its rows
+   * stand in the list where the group would have, and nothing can collapse them.
+   *
+   * The run list is the case. Grouping it folds 85 lines into 42, but 28 of those groups hold a
+   * single run, and a heading over one row is a disclosure that discloses what is already on
+   * screen — plus a second line, a second glyph and a second click for nothing. Where there is
+   * nothing to choose there is nothing to open.
+   *
+   * Absent, every group states itself, which is what the orders list wants: a position's heading
+   * carries its identity and its stream, so it earns a line even with one record under it.
+   */
+  showsGroupHead?: (key: string) => boolean
 }>()
 
 const emit = defineEmits<{
   pick: [T]
   toggle: [string]
+  toggleOuter: [string]
 }>()
 
 defineSlots<{
-  /** The row's cells, in column order — exactly `columns.length` of them. */
-  default: (props: { row: T }) => unknown
+  /**
+   * The row's cells, in column order — exactly `columns.length` of them. `marker` is the
+   * disclosure glyph where the row opens children, and '' where it does not.
+   */
+  default: (props: { row: T, marker: string }) => unknown
   /** The spanning second line, drawn only where `hasDetail` says so. */
   detail?: (props: { row: T }) => unknown
   /** The spanning line BEFORE a row, drawn only where `hasLead` says so. */
   lead?: (props: { row: T }) => unknown
   /** The group heading's cells, in column order. Drawn only where `groupBy` is given. */
-  group?: (props: { group: ListGroup<T> }) => unknown
+  group?: (props: { group: ListGroup<T>, marker: string }) => unknown
   /** A row's child records, spanning every track. Drawn only where `showsChildren` says so. */
   children?: (props: { row: T }) => unknown
+  /** A GROUP's child records. Drawn only where `showsGroupChildren` says so. */
+  groupChildren?: (props: { group: ListGroup<T> }) => unknown
+  /** The OUTER heading's cells. Drawn only where `outerBy` is given. */
+  outer?: (props: { group: ListGroup<T>, marker: string }) => unknown
 }>()
 
 /**
@@ -213,15 +281,76 @@ const bandSpans = computed<DrawnBand[] | null>(() => {
   return drawn
 })
 
-const grouped = computed(() => props.groupBy !== undefined)
+/**
+ * What a heading says on hover. The LABEL comes first and always: a heading wider than its column
+ * is clipped, and the title is how it can still be read in full. A `hint` follows it where the
+ * column declares one, for a field whose own name misleads.
+ */
+function headTitle(column: ListColumn): string {
+  return column.hint ? `${column.label} — ${column.hint}` : column.label
+}
+
+/** Does this list partition at all? The indent is reserved only where it can be earned. */
+const grouping = computed(() => props.groupBy !== undefined)
+
+/**
+ * Does this row sit UNDER A HEADING? That is what the indent step means, and it is not the same
+ * as "the list is grouped": `showsGroupHead` lets a group state nothing, and its rows then stand
+ * at the heading level rather than one step in.
+ *
+ * Got wrong on 2026-10-09 and reported on screen the next morning — *"die unterebenen sind nicht
+ * eingerückt"*. Every row carried the class, so the whole run list was indented by one step and
+ * the ladder had no rung at all.
+ */
+function isUnderHead(row: T): boolean {
+  const by = props.groupBy
+  return by !== undefined && hasHead(by(row))
+}
+
+
+/**
+ * Is THIS row a control? `inert` answers for the whole list, `canPick` per row, and a list that
+ * gives neither has rows that are all controls — which is what every list did before the orders
+ * list needed some of its rows read-only and the rest not.
+ */
+function isControl(row: T): boolean {
+  if (props.inert) return false
+  return props.canPick?.(row) ?? true
+}
 
 /** Declared once so the three branches of the row — inert, carded and bare — cannot drift apart. */
 function rowAttrs(row: T): Record<string, unknown> {
   const picked = props.isPicked?.(row)
+  // the read-only LOOK follows the row's own answer, not the list's: a row that cannot be picked
+  // must not offer a pointer or a hover, whether the whole list is inert or only that row is
+  const quiet = !isControl(row)
   return {
-    class: ['record-row', { picked, grouped: grouped.value, inert: props.inert }],
-    ...(picked === undefined || props.inert ? {} : { 'aria-pressed': picked }),
+    class: ['record-row', props.rowClass?.(row), { picked, grouped: isUnderHead(row), inert: quiet }],
+    ...(picked === undefined || quiet ? {} : { 'aria-pressed': picked }),
+    // a row that OPENS something says so, the way the group heading already does. Automatic
+    // rather than per caller: the Trade History opened its fills with no announcement at all.
+    ...(props.showsChildren && !quiet ? { 'aria-expanded': props.showsChildren(row) } : {}),
   }
+}
+
+/**
+ * The disclosure glyph for a row, or '' where the row opens nothing.
+ *
+ * The LIST owns it, for rows and for both kinds of heading, and that is the point. Two panels
+ * wrote the glyph by hand with a `.group-marker` rule each, a third opened its fills with no glyph
+ * at all, and the operator could not find the disclosure on screen (2026-10-08). The half-measure
+ * then cost its own defect: the list drew a heading's glyph as well, so a position heading carried
+ * TWO triangles — measured 2026-10-09, and invisible in a test that read the first of them.
+ * A reader learns one shape once.
+ */
+function markerFor(row: T): string {
+  if (!props.showsChildren || !isControl(row)) return ''
+  return glyph(props.showsChildren(row))
+}
+
+/** The one shape, in one place. '' where nothing opens, so a caller can draw it unconditionally. */
+function glyph(open: boolean): string {
+  return open ? '▾' : '▸'
 }
 
 /**
@@ -229,24 +358,58 @@ function rowAttrs(row: T): Record<string, unknown> {
  * heading. That keeps the row, its detail and its children written once rather than in two branches
  * that drift apart.
  */
-const sections = computed<ListGroup<T>[]>(() => {
-  const by = props.groupBy
-  if (!by) return [{ key: '', rows: props.rows, open: true }]
-
-  const order: string[] = []
+/** First-appearance buckets, which is what keeps a list in the order its rows arrived. */
+function bucket(rows: T[], by: (row: T) => string): Map<string, T[]> {
   const buckets = new Map<string, T[]>()
-  for (const row of props.rows) {
-    const key = by(row)
-    if (!buckets.has(key)) {
-      buckets.set(key, [])
-      order.push(key)
-    }
-    buckets.get(key)!.push(row)
+  for (const row of rows) {
+    const held = buckets.get(by(row))
+    if (held) held.push(row)
+    else buckets.set(by(row), [row])
   }
-  return order.map(key => ({
+  return buckets
+}
+
+/** Does this group state itself? Every group does unless the caller says otherwise. */
+function hasHead(key: string): boolean {
+  return props.showsGroupHead?.(key) ?? true
+}
+
+/**
+ * Is a heading's disclosure open? Its CHILDREN where it has them, its ROWS otherwise. One answer
+ * for the glyph and for `aria-expanded`, so what a reader sees and what a screen reader hears
+ * cannot disagree.
+ */
+function groupShown(section: ListGroup<T>): boolean {
+  return props.showsGroupChildren ? props.showsGroupChildren(section.key) : section.open
+}
+
+function sectionsOf(rows: T[]): ListGroup<T>[] {
+  const by = props.groupBy
+  if (!by) return [{ key: '', rows, open: true }]
+  return [...bucket(rows, by)].map(([key, held]) => ({
     key,
-    rows: buckets.get(key) ?? [],
-    open: props.isOpen?.(key) ?? true,
+    rows: held,
+    // a group with no heading has nothing to open it, so it is never closed — the alternative is
+    // rows that cannot be reached and a list that is quietly short
+    open: hasHead(key) ? (props.isOpen?.(key) ?? true) : true,
+  }))
+}
+
+/**
+ * ONE shape for one level and for two: without `outerBy` the whole list is a single outer section
+ * that draws no heading, exactly as `groupBy`'s own absence already works. That keeps the row, its
+ * detail and its children written once rather than in branches that drift apart.
+ */
+const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
+  const by = props.outerBy
+  if (!by) {
+    return [{ key: '', rows: props.rows, open: true, groups: sectionsOf(props.rows) }]
+  }
+  return [...bucket(props.rows, by)].map(([key, held]) => ({
+    key,
+    rows: held,
+    open: props.isOuterOpen?.(key) ?? true,
+    groups: sectionsOf(held),
   }))
 })
 </script>
@@ -255,7 +418,7 @@ const sections = computed<ListGroup<T>[]>(() => {
   <div class="record-shell">
   <ul
     class="record-list"
-    :class="{ ranked: deepestRank > 1 }"
+    :class="{ ranked: deepestRank > 1, grouping }"
     :style="{
       '--list-tracks': tracks,
       '--list-head-top': bandSpans ? bandHeight : '0px',
@@ -284,20 +447,51 @@ const sections = computed<ListGroup<T>[]>(() => {
         :key="`${column.label}-${index}`"
         :class="{ 'head-figure': column.figure }"
         :data-rank="column.rank ?? 1"
-        :title="column.label"
+        :title="headTitle(column)"
       >{{ column.label }}</span>
     </li>
 
-    <template v-for="section in sections" :key="section.key">
-      <li v-if="grouped">
+    <template v-for="outer in layout" :key="outer.key">
+      <!--
+        The OUTER heading, where a list has two levels. Same two branches as the inner one: a
+        button where the caller tracks its open state, a plain heading otherwise.
+      -->
+      <li v-if="outerBy">
         <button
+          v-if="isOuterOpen"
+          type="button"
+          class="record-group outer"
+          :aria-expanded="outer.open"
+          @click="emit('toggleOuter', outer.key)"
+        >
+          <slot name="outer" :group="outer" :marker="glyph(outer.open)" />
+        </button>
+        <div v-else class="record-group outer quiet">
+          <slot name="outer" :group="outer" marker="" />
+        </div>
+      </li>
+
+    <template v-for="section in (outer.open ? outer.groups : [])" :key="section.key">
+      <!--
+        A BUTTON only where the caller tracks the open state, a plain heading otherwise. Without
+        `isOpen` a click emits `toggle` into nothing, and the heading still wore the pointer, the
+        hover and the press — a control that looks like one and does nothing, which is the defect
+        class this project has paid for most. Found on screen 2026-10-09: *"warum kann man das
+        klicken?"* about an order heading in the step list.
+      -->
+      <li v-if="groupBy && hasHead(section.key)">
+        <button
+          v-if="isOpen || showsGroupChildren"
           type="button"
           class="record-group"
-          :aria-expanded="section.open"
+          :aria-expanded="groupShown(section)"
           @click="emit('toggle', section.key)"
         >
-          <slot name="group" :group="section" />
+          <slot name="group" :group="section" :marker="glyph(groupShown(section))" />
         </button>
+        <div v-else class="record-group quiet">
+          <slot name="group" :group="section" marker="" />
+        </div>
       </li>
 
       <li v-for="row in (section.open ? section.rows : [])" :key="rowKey(row)">
@@ -317,7 +511,7 @@ const sections = computed<ListGroup<T>[]>(() => {
           that can be chosen is a toggle, and a reader who cannot see the marked edge has nothing
           else to tell a chosen row from an unchosen one.
         -->
-        <div v-if="inert" v-bind="rowAttrs(row)"><slot :row="row" /></div>
+        <div v-if="!isControl(row)" v-bind="rowAttrs(row)"><slot :row="row" marker="" /></div>
         <HoverCard
           v-else-if="rowCard?.(row)"
           :title="rowCard(row)!.title"
@@ -325,11 +519,11 @@ const sections = computed<ListGroup<T>[]>(() => {
           side="top"
         >
           <button type="button" v-bind="rowAttrs(row)" @click="emit('pick', row)">
-            <slot :row="row" />
+            <slot :row="row" :marker="markerFor(row)" />
           </button>
         </HoverCard>
         <button v-else type="button" v-bind="rowAttrs(row)" @click="emit('pick', row)">
-          <slot :row="row" />
+          <slot :row="row" :marker="markerFor(row)" />
         </button>
         <p v-if="hasDetail?.(row)" class="record-detail">
           <slot name="detail" :row="row" />
@@ -338,6 +532,14 @@ const sections = computed<ListGroup<T>[]>(() => {
           <slot name="children" :row="row" />
         </div>
       </li>
+
+      <!-- the GROUP's own children, beneath its rows rather than beneath one of them -->
+      <li v-if="showsGroupChildren?.(section.key)">
+        <div class="record-children">
+          <slot name="groupChildren" :group="section" />
+        </div>
+      </li>
+    </template>
     </template>
   </ul>
   </div>
@@ -350,6 +552,17 @@ const sections = computed<ListGroup<T>[]>(() => {
 .record-shell {
   container-type: inline-size;
   container-name: record-list;
+  /*
+   * ONE step for every level of nesting, and nothing indents by anything else.
+   *
+   * There were four scales before: a grouped row's first cell stepped by `space-lg`, the detail
+   * line by `space-lg`, a continuation glyph added `space-sm` of its own and a nested list's leg
+   * `space-xs`. Each was reasonable alone and together they were not a ladder — reported on screen
+   * 2026-10-08, *"keine einheitlichen Einrückungen an den Aufklapp-Stufen, das schadet der
+   * Übersicht"*. A reader follows a left edge to see what belongs to what, so the edges have to
+   * form a sequence rather than a set of opinions.
+   */
+  --record-step: var(--space-lg);
 }
 
 .record-list {
@@ -548,6 +761,54 @@ const sections = computed<ListGroup<T>[]>(() => {
   background-color: var(--color-bg-elevated);
 }
 
+/* the OUTER heading is the stronger boundary of the two, so it takes the rule and the weight */
+.record-group.outer {
+  border-top: 1px solid var(--color-border);
+  font-weight: 600;
+}
+
+/* a heading nobody can act on claims nothing: no pointer, no hover, no press */
+.record-group.quiet {
+  cursor: default;
+}
+
+.record-group.quiet:hover,
+.record-group.quiet:active {
+  background-color: var(--color-bg-elevated);
+}
+
+/*
+ * The disclosure glyph, styled once here rather than in every panel that draws one.
+ *
+ * It sits IN the indent a grouped row already has, and therefore costs the cell no width. That is
+ * not neatness: a first cell clips (`overflow: hidden`), so content it cannot hold does not merely
+ * look cramped — it pushes a button inside that cell past the visible edge, and a click aimed at
+ * that button's centre then lands on the cell instead. Measured 2026-10-08, the browser suite
+ * reporting *"span.trade-position intercepts pointer events"* on a jump that had worked for weeks.
+ */
+.record-row > :first-child {
+  position: relative;
+}
+
+/*
+ * `:deep`, and it is not decoration. The glyph is rendered by the PANEL inside this component's
+ * slot, so it carries the panel's scope attribute and a plain `.record-marker` rule here never
+ * matched it — the span stayed unstyled, took inline width, and pushed the jump button inside a
+ * clipping cell past its visible edge until a click aimed at the button landed on the cell.
+ * Measured 2026-10-08: *"span.trade-position intercepts pointer events"*, a jump that had worked
+ * for weeks, and two wrong explanations before the experiment of removing the glyph found it.
+ */
+.record-group :deep(.record-marker) {
+  margin-right: var(--space-xs);
+  color: var(--color-text-secondary);
+}
+
+.record-row :deep(.record-marker) {
+  position: absolute;
+  left: 0;
+  color: var(--color-text-secondary);
+}
+
 /* a read-only row claims nothing: no pointer, and no hover that suggests one */
 .record-row.inert {
   cursor: default;
@@ -559,8 +820,27 @@ const sections = computed<ListGroup<T>[]>(() => {
 
 /* Only the FIRST cell is indented, never the row: padding on the row would shift every column out
    of the alignment the whole component exists to produce. */
-.record-row.grouped > :first-child {
-  padding-left: var(--space-lg);
+.record-list.grouping .record-row > :first-child {
+  padding-left: var(--record-step);
+}
+
+/*
+ * The step is RESERVED on every row and taken back VISUALLY from the rows that stand on their own.
+ * A transform moves the ink without moving the box, and that is the whole point: an `auto` track
+ * is sized from its cells, so a step only SOME rows carry sizes the column differently depending
+ * on which groups happen to be open. Measured 2026-10-10 on the run list — opening one family grew
+ * the first track by exactly one step and pushed the `Set` column 24 px sideways. The invariant is
+ * held by `e2e/list_ranks.spec.ts`, which is the only instrument that can see it.
+ *
+ * Both rules are scoped to a list that GROUPS: a flat list has no step to reserve, and reserving
+ * one there would take 24 px from its first cell for nothing — an ellipsised name would start
+ * truncating earlier for a ladder that does not exist.
+ *
+ * The disclosure glyph lives in that step (below), so a list that gives SOME rows a marker and
+ * leaves others ungrouped would carry the marker out of the row with the shift. No list does today.
+ */
+.record-list.grouping .record-row:not(.grouped) > :first-child {
+  transform: translateX(calc(-1 * var(--record-step)));
 }
 
 /* A boundary in the list, in the annotation role and DASHED — it marks that the thing changed
@@ -580,7 +860,8 @@ const sections = computed<ListGroup<T>[]>(() => {
 .record-detail {
   grid-column: 1 / -1;
   margin: 0;
-  padding: 0 var(--space-sm) var(--space-xs) var(--space-lg);
+  /* the row's own content, one step in — it speaks ABOUT that row */
+  padding: 0 var(--space-sm) var(--space-xs) var(--record-step);
   border-bottom: 1px solid var(--color-border);
   font-family: monospace;
   font-size: var(--font-size-sm);
@@ -590,7 +871,8 @@ const sections = computed<ListGroup<T>[]>(() => {
 /* records of ANOTHER kind, with their own columns — so they get their own box rather than tracks */
 .record-children {
   grid-column: 1 / -1;
-  padding: 0 var(--space-sm) var(--space-xs) var(--space-lg);
+  /* one step in from the row that holds them, and the list inside steps once more from here */
+  padding: 0 var(--space-sm) var(--space-xs) var(--record-step);
   border-bottom: 1px solid var(--color-border);
 }
 

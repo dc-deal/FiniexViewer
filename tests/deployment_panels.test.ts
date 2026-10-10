@@ -27,6 +27,8 @@ const ADVISORY: DeploymentAdvisory = {
   strategy_stands: 2,
   operation_stands: 1,
   longest_gap_hours: 93.4,
+  // a rehearsal throughout: the advisory fires on a MIX and this is not one
+  orders_to: ['simulated'],
 }
 
 function session(overrides: Partial<DeploymentSessionRow> = {}): DeploymentSessionRow {

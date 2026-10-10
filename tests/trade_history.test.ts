@@ -5,6 +5,7 @@ import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { provideTestSelection } from './scenario_selection_harness'
+import { provideTestPositionLink } from './position_link_harness'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings } from '@/types/settings_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
@@ -182,9 +183,33 @@ describe('TradeHistoryPanel', () => {
     it('carries what the row has no width for', () => {
       const rows = cardRows(mountPanel(report()))
       expect(rows).toHaveProperty('Fees')
+      expect(rows).toHaveProperty('Spread')
       expect(rows).toHaveProperty('Slippage')
       expect(rows).toHaveProperty('Ticks')
       expect(rows).toHaveProperty('Best in favour')
+    })
+
+    /**
+     * The spread stands APART from the fee, because the served `total_fees` does not contain it —
+     * commission plus swap and nothing else, measured 2026-10-08 over 1,591 trade rows of which
+     * 1,563 carry a non-zero spread.
+     *
+     * Held as a test because the defect it replaces was invisible in the arithmetic and loud on
+     * screen: the card printed `Fees 0.00 · spread 1.30` on a trade whose spread was the entire
+     * cost. The assertion that `Fees` does NOT mention the spread is the one that would catch it
+     * coming back.
+     */
+    it('keeps the spread out of the fee, because the served total does not contain it', () => {
+      const rows = cardRows(mountPanel(report({
+        trades: [trade({
+          total_fees: 1.75, commission_cost: 1.25, swap_cost: 0.5, spread_cost: 1.3,
+        })],
+      })))
+      expect(rows['Fees']).toContain('1.75')
+      expect(rows['Fees']).toContain('commission 1.25')
+      expect(rows['Fees']).toContain('swap 0.50')
+      expect(rows['Fees']).not.toContain('spread')
+      expect(rows['Spread']).toContain('1.30')
     })
 
     // the excursion is given three ways by the backend and the question decides which one answers
@@ -461,7 +486,7 @@ describe('TradeHistoryPanel', () => {
       expect(fills.findAll('.record-row')).toHaveLength(2)
       expect(fills.text()).toContain('in')
       expect(fills.text()).toContain('out')
-      expect(fills.text()).toContain('SYNTH-pos_ethusd_1-000001')
+      expect(fills.text()).toContain('SYNTH-pos_eurgbp_1-000001')
 
       await tradeRows(wrapper)[0]!.trigger('click')
       expect(wrapper.find('.fill-list').exists()).toBe(false)
@@ -523,7 +548,7 @@ describe('TradeHistoryPanel', () => {
       const cells = wrapper.find('.record-row').findAll(':scope > span')
         .map(node => node.attributes('data-rank'))
 
-      expect(heads).toHaveLength(8)
+      expect(heads).toHaveLength(9)
       expect(cells).toEqual(heads)
       // which trade, and what it came to: Symbol, Opened, Net P&L
       expect(heads.filter(rank => rank === '1')).toHaveLength(3)
@@ -546,7 +571,140 @@ describe('TradeHistoryPanel', () => {
       const wrapper = mountPanel(report({ trades: [trade()] }))
       const heads = wrapper.find('.trade-list').findAll('.record-head > span').map(n => n.text())
       expect(heads[heads.length - 1]).toBe('Net P&L')
-      expect(heads.slice(3)).toEqual(['Opened', 'Held', 'Worst against', 'Best in favour', 'Net P&L'])
+      expect(heads.slice(4)).toEqual(['Opened', 'Held', 'Worst against', 'Best in favour', 'Net P&L'])
+    })
+
+  })
+
+  /**
+   * The way back from a trade to the orders of its position. A trade is one CLOSE, so several
+   * trades can lead to the same orders — correct, not a collision: "what happened on the way to
+   * this position" has one answer whichever close the reader came from.
+   */
+  /**
+   * The partial is the COMMON case — 952 of the 1,556 trades in the archive belong to a position
+   * closed in parts — and until this mark the only sign was one click down in the fills. The
+   * operator met it as `0.02` on a position they opened at `0.10` and could not tell why.
+   *
+   * It is READ, never counted: `entry_executions[0].shared_by` is the backend's own statement, and
+   * it equalled the number of trades of that position on 1,556 of 1,556 measured. Counting the rows
+   * would derive what they already state — and would be wrong the moment a narrowing or the visible
+   * cap hides one of them.
+   */
+  describe('a position closed in parts', () => {
+    /**
+     * `position_closes` and `entry_lots` on the ROW since contract 23, which is why this builder
+     * no longer reaches into `entry_executions[0]`. The old `[0]` was safe only while every
+     * execution list was 1-element; the fields say the same thing without indexing a list.
+     */
+    function shared(times: number, overrides: Partial<TradeRow> = {}): TradeRow {
+      return {
+        ...trade(),
+        position_closes: times,
+        entry_lots: 0.1,
+        close_type: times > 1 ? 'partial' : 'full',
+        ...overrides,
+      }
+    }
+
+    it('says on the row that the position was closed in parts', () => {
+      const wrapper = mountPanel(report({ trades: [shared(3, { lots: 0.02 })] }))
+      expect(wrapper.find('.in-parts').text()).toBe('of 3')
+    })
+
+    it('says nothing where the position was closed whole', () => {
+      const wrapper = mountPanel(report({ trades: [shared(1)] }))
+      expect(wrapper.find('.in-parts').exists()).toBe(false)
+    })
+
+    /** The three served figures, in the backend's own wording, one hover away. */
+    it('carries what this trade took of the whole, on the hover', () => {
+      const wrapper = mountPanel(report({ trades: [shared(3, { lots: 0.02 })] }))
+      const title = wrapper.find('.trade-position').attributes('title') ?? ''
+      expect(title).toContain('closed in parts')
+      expect(title).toContain('0.02')
+      expect(title).toContain('0.1')
+      expect(title).toContain('over 3 records')
+      // and WHICH record ended the chain, which `shared_by` could never say
+      expect(title).toContain('it stayed open after this')
+    })
+
+    /** Two partial closes of one position differ in their exit, not in their size — they look alike
+     *  because they ARE alike, and the mark is what explains the pair. */
+    it('marks every trade of the position, not just the first', () => {
+      const wrapper = mountPanel(report({
+        trades: [
+          shared(2, { lots: 0.02, exit_tick_index: 1 }),
+          shared(2, { lots: 0.08, exit_tick_index: 2 }),
+        ],
+      }))
+      expect(wrapper.findAll('.in-parts').map(node => node.text())).toEqual(['of 2', 'of 2'])
+    })
+  })
+
+  describe('the way back to the orders', () => {
+    function mountLinked(
+      history: TradeHistoryReport,
+      marked: Parameters<typeof provideTestPositionLink>[0] = null,
+      reachable: Parameters<typeof provideTestPositionLink>[1] = 'all'
+    ) {
+      let state!: ReturnType<typeof provideTestPositionLink>
+      const Host = defineComponent({
+        setup() {
+          state = provideTestPositionLink(marked, reachable)
+          return () => h(TradeHistoryPanel, { model: history })
+        },
+      })
+      return { wrapper: mount(Host), state }
+    }
+
+    it('names the panel and the POSITION, never the position id alone', async () => {
+      const row = trade()
+      const { wrapper, state } = mountLinked(report({ trades: [row] }))
+      await wrapper.find('.to-orders').trigger('click')
+      expect(state.jumps).toEqual([
+        { panelId: 'orders', ref: { scenario: row.scenario_name, position: row.position_id } },
+      ])
+    })
+
+    /** No Orders panel in the workspace means no way back — not a link that lands nowhere. */
+    it('draws no way back where the target panel is not in the workspace', () => {
+      const { wrapper } = mountLinked(report({ trades: [trade()] }), null, ['trade-history'])
+      expect(wrapper.find('.to-orders').exists()).toBe(false)
+      // the position is still DATA, it is part of the trade's own key
+      expect(wrapper.find('.record-row').text()).toContain(trade().position_id)
+    })
+
+    /** A partial close books one trade more, so the mark covers several rows of one position. */
+    it('marks every trade of the position, because a partial close books more than one', () => {
+      const row = trade()
+      const { wrapper } = mountLinked(
+        report({
+          trades: [
+            { ...row, exit_tick_index: 1 },
+            { ...row, exit_tick_index: 2 },
+            { ...row, position_id: 'pos_other', exit_tick_index: 3 },
+          ],
+        }),
+        { scenario: row.scenario_name, position: row.position_id },
+      )
+      const marked = wrapper.findAll('.trade-list .record-row')
+        .map(node => node.classes().includes('marked'))
+      expect(marked).toEqual([true, true, false])
+    })
+  })
+
+  describe('what a narrow list keeps again', () => {
+    /**
+     * The POSITION leads the row — the trade's own key field, and the way back to its orders. It is
+     * leftmost in both panels on purpose, so the two lists read as two views of one thing.
+     */
+    it('leads the row with the position, which is part of the trade`s own key', () => {
+      const wrapper = mountPanel(report({ trades: [trade()] }))
+      const heads = wrapper.find('.trade-list').findAll('.record-head > span').map(n => n.text())
+      expect(heads[0]).toBe('Position')
+      const first = wrapper.find('.record-row').findAll(':scope > span')[0]!
+      expect(first.text()).toContain(trade().position_id)
     })
   })
 })

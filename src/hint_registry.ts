@@ -17,6 +17,10 @@ const HINTS: HintDefinition[] = [
     id: 'scenario-pick',
     text: t('Click a scenario to show only its trades and booking periods. Pick several to compare.'),
   },
+  {
+    id: 'position-link',
+    text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back. A partial close books several trades of one position, so all of them are marked.'),
+  },
 ]
 
 /** The hint with this id, or null where none is registered — an unknown id renders nothing. */

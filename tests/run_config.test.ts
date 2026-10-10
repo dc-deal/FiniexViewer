@@ -69,6 +69,44 @@ describe('config_shape', () => {
     })
 
     /**
+     * The spelling this suite was blind to. Every fixture above writes `name`, while 363 of the
+     * 420 scenario objects in the stored archive write `scenario_name` — so the suite stayed green
+     * while the panel printed an invented ordinal on every run recorded from 2026-09-29 onward.
+     */
+    it('reads the name under the spelling the newer artifacts use', () => {
+      const config = { scenarios: [{ scenario_name: 'EURGBP_balanced_10', strategy_config: { x: 1 } }] }
+      expect(scenarioOverrides(config)).toEqual([
+        { name: 'EURGBP_balanced_10', keys: ['strategy_config'] },
+      ])
+    })
+
+    /** Both spellings are in the archive, split by artifact age, so an older run still reads. */
+    it('reads the name an older artifact wrote', () => {
+      const config = { scenarios: [{ name: 'ETHUSD_blocks_01', execution_config: { x: 1 } }] }
+      expect(scenarioOverrides(config)).toEqual([
+        { name: 'ETHUSD_blocks_01', keys: ['execution_config'] },
+      ])
+    })
+
+    /**
+     * Never a counter. A scenario that names itself not at all reads as ABSENT: its drawing
+     * position is not its identity, and printing it as one invents a number the document does not
+     * keep — the same lesson as the deployment session index.
+     */
+    it('reports no name rather than inventing one from the drawing position', () => {
+      const config = {
+        scenarios: [
+          { symbol: 'EURUSD', strategy_config: { x: 1 } },
+          { symbol: 'GBPUSD', execution_config: { y: 2 } },
+        ],
+      }
+      expect(scenarioOverrides(config)).toEqual([
+        { name: null, keys: ['strategy_config'] },
+        { name: null, keys: ['execution_config'] },
+      ])
+    })
+
+    /**
      * The line this whole panel is drawn on: THAT an override exists is readable, what it resolves
      * to is not. The cascade is the backend's — two levels for strategy, three for execution, and
      * the third of those is not even in this document. Nothing here computes an effective value.
@@ -87,7 +125,7 @@ describe('config_shape', () => {
   // two maps over the same keys; shown apart, the reader does the join by hand
   it('joins an instance to its type and its parameters', () => {
     const rows = workersOf(strategyOf(LIVE.config)!)
-    const rsi = rows.find(row => row.instance === 'rsi_fast')
+    const rsi = rows.find(row => row.instance === 'pipeline_rsi')
     expect(rsi?.type).toBe('CORE/rsi')
     expect(rsi?.parameters).toHaveProperty('periods')
   })
@@ -123,7 +161,7 @@ describe('ConfigPanel', () => {
 
   it('shows each worker instance with its type and its tuning on one row', () => {
     const text = mountPanel(LIVE).text()
-    expect(text).toContain('rsi_fast')
+    expect(text).toContain('pipeline_rsi')
     expect(text).toContain('CORE/rsi')
   })
 
@@ -151,7 +189,7 @@ describe('ConfigPanel', () => {
    */
   it('keeps a long worker type reachable', () => {
     const row = mountPanel(LIVE).findAll('.record-row')
-      .find(node => node.text().includes('rsi_fast'))!
+      .find(node => node.text().includes('pipeline_rsi'))!
     const cells = row.findAll(':scope > span')
     expect(cells[1]?.attributes('title')).toBe('CORE/rsi')
     expect(cells[2]?.attributes('title')).toContain('periods')
@@ -217,6 +255,30 @@ describe('ConfigPanel', () => {
     expect(notice.text()).toContain('⚠')
     expect(wrapper.text()).toContain('w2')
     expect(wrapper.text()).toContain('strategy_config')
+  })
+
+  /**
+   * What the reader was actually shown. Measured 2026-10-05 across all 48 stored runs: 21 of the
+   * 31 override rows this panel draws carried a fabricated number — `#10` where the response
+   * stated `EURGBP_balanced_10` — because only the older spelling was read.
+   */
+  it('names an overriding scenario under either spelling, and invents nothing for one with no name', () => {
+    const wrapper = mountPanel({
+      ...SIM,
+      config: {
+        ...SIM.config,
+        scenarios: [
+          { scenario_name: 'EURGBP_balanced_10', strategy_config: { min_confidence: 0.7 } },
+          { symbol: 'GBPUSD', execution_config: { slippage: 2 } },
+        ],
+      },
+    })
+    const rows = wrapper.findAll('.override-list li')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]?.text()).toContain('EURGBP_balanced_10')
+    // absent, not the drawing position
+    expect(rows[1]?.find('.scenario').text()).toBe('—')
+    expect(wrapper.text()).not.toContain('#2')
   })
 
   /**

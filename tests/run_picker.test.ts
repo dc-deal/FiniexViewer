@@ -42,6 +42,11 @@ const BASE: RunInfo = {
   config_id: 'abc',
   parent_kind: null,
   parent_id: null,
+  // contract 26 — who started the run, the header's origin block flattened
+  origin_channel: 'cli',
+  origin_client: 'console',
+  origin_principal: 'operator',
+  origin_host: 'h_x29og8',
   app_version: '1.4.0',
   git_commit: '7faec171',
   // null on every run recorded before contract 12 — unknown, never guessed
@@ -50,10 +55,20 @@ const BASE: RunInfo = {
   data_windows: null,
   size_bytes: 1,
   artifacts: [],
+  stream_files: [],
+  // contracts 24 and 25: what the run is FOR, under which contract its reports
+  // were written, and whether it is still its catalog entry's current one
+  run_purpose: 'regular',
+  report_contract: 25,
+  fixture_superseded: null,
 }
 
 function run(overrides: Partial<RunInfo> = {}): RunInfo {
-  return { ...BASE, ...overrides }
+  const made = { ...BASE, ...overrides }
+  // ONE run per set unless a test says otherwise. The list groups by family and a family of
+  // several opens CLOSED, so runs sharing `BASE.name` would draw a single heading and no rows at
+  // all — which is the grouping working, not the fixture.
+  return overrides.name === undefined ? { ...made, name: `set_${made.run_id}` } : made
 }
 
 /** Seeds the store the way a loaded index would. There is no cascade to descend any more. */
@@ -160,13 +175,15 @@ describe('RunPicker', () => {
    * The whole reason the cascade went. Measured over the real index: 40 runs in 29 (group, set)
    * pairs, so a set dropdown held 29 entries while the run dropdown below it held one to six.
    */
-  it('lists every run flat, whatever group or set it belongs to', () => {
+  it('reaches every run without descending anything, whatever group it belongs to', () => {
     const wrapper = mountPicker([
       run({ run_id: 'a', group: 'live', name: 'profile_one' }),
       run({ run_id: 'b', group: 'simulation', name: 'set_two' }),
       run({ run_id: 'c', group: 'simulation', name: 'set_three' }),
     ])
+    // three sets of one, so three plain rows: no heading, no click, nothing to descend
     expect(rowTexts(wrapper)).toHaveLength(3)
+    expect(wrapper.findAll('.record-group')).toHaveLength(0)
   })
 
   // Newest first by default: the run someone wants is nearly always the one they just made.
@@ -191,6 +208,163 @@ describe('RunPicker', () => {
     ])
     // 11:00+02:00 is 09:00Z, so the UTC stamp is the later of the two; the broken one sorts last
     expect(rowIds(wrapper)).toEqual(['utc', 'shifted', 'broken'])
+  })
+
+  /**
+   * **The families the list folds**, and what decides where each one stands.
+   *
+   * Measured 2026-10-09 over the 85 stored runs: 42 lines instead of 85, 14 of them a family and
+   * 28 a run standing alone. The key is the PARENT where the backend states one and the set name
+   * otherwise — measured, because the set name alone folds nothing on a sweep: its children each
+   * carry their own (`..._c000` through `..._c008`).
+   */
+  describe('the families it folds', () => {
+    it('folds a set into one line and gives its runs back on a click', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'late', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
+        run({ run_id: 'early', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
+      ])
+      const heading = wrapper.find('.record-group')
+      expect(heading.exists()).toBe(true)
+      // CLOSED to begin with: the fold is the point, and a list that opens expanded folded nothing
+      expect(heading.attributes('aria-expanded')).toBe('false')
+      expect(rowIds(wrapper)).toEqual([])
+
+      await heading.trigger('click')
+      expect(rowIds(wrapper)).toEqual(['late', 'early'])
+      expect(wrapper.find('.record-group').attributes('aria-expanded')).toBe('true')
+    })
+
+    it('leaves a set of one a plain row, with nothing to open', () => {
+      const wrapper = mountPicker([run({ run_id: 'alone', name: 'once' })])
+      expect(wrapper.findAll('.record-group')).toHaveLength(0)
+      expect(rowIds(wrapper)).toEqual(['alone'])
+    })
+
+    /**
+     * The sweep case, and the one that refuted grouping by set name alone: nine runs with nine
+     * different set names, bound by one `parent_id`.
+     */
+    it('binds runs by their parent even where every set name differs', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'c1', name: 'base__sweep_1_c001', parent_id: 'sweep_1', parent_kind: 'sweep' }),
+        run({ run_id: 'c2', name: 'base__sweep_1_c002', parent_id: 'sweep_1', parent_kind: 'sweep' }),
+        run({ run_id: 'solo', name: 'unrelated' }),
+      ])
+      const headings = wrapper.findAll('.record-group')
+      expect(headings).toHaveLength(1)
+      // the heading is the parent itself, in their word for what it is
+      expect(headings[0]!.text()).toContain('sweep_1')
+      expect(headings[0]!.text()).toContain('sweep')
+      // the run outside the sweep is untouched by it
+      expect(rowIds(wrapper)).toEqual(['solo'])
+      await headings[0]!.trigger('click')
+      expect(rowIds(wrapper)).toEqual(['c1', 'c2', 'solo'])
+    })
+
+    /**
+     * How many, and WHEN the run at the top of it ran. The stamp is that row's own `Started`, which
+     * is what makes the family stand where it does: the list keeps families in the order their
+     * first row appears, so the sort the reader chose orders the families too.
+     */
+    it('says how many runs a family holds and when its top one ran', () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'b', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
+        run({ run_id: 'a', name: 'nightly', start_time: '2026-09-25T08:30:00+00:00' }),
+      ])
+      const heading = wrapper.find('.record-group').text()
+      expect(heading).toContain('2 runs')
+      // the newest of the two, since the list opens newest-first
+      expect(heading).toContain('Sep 25')
+      expect(heading).not.toContain('Sep 24')
+    })
+
+    /**
+     * Where a family STANDS, which was the decision of 2026-10-09: at its top run, so that
+     * "sort by time" keeps meaning time. The alternative was grouping only under the name sort,
+     * which is two lists.
+     */
+    it('orders families by the run each one stands at', () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'old_pair', name: 'older_set', start_time: '2026-09-20T10:00:00+00:00' }),
+        run({ run_id: 'old_pair_2', name: 'older_set', start_time: '2026-09-19T10:00:00+00:00' }),
+        run({ run_id: 'newest_alone', name: 'single', start_time: '2026-09-26T10:00:00+00:00' }),
+        run({ run_id: 'new_pair', name: 'newer_set', start_time: '2026-09-25T10:00:00+00:00' }),
+        run({ run_id: 'new_pair_2', name: 'newer_set', start_time: '2026-09-18T10:00:00+00:00' }),
+      ])
+      // the lines in the order they are drawn: a family stands at its top run, so `newer_set`
+      // comes above `older_set` although it also holds the oldest run of all
+      // read from the cell's own title, not out of the running text: the heading now carries
+      // the list's disclosure glyph as its first token
+      const lines = wrapper.findAll('.record-group, .record-row')
+        .map(node => node.find('.family-name').exists()
+          ? node.find('.family-name').attributes('title')
+          : node.find('.run-id').attributes('title'))
+      expect(lines).toEqual(['newest_alone', 'newer_set', 'older_set'])
+    })
+
+    /**
+     * The kind is said ONCE. A family states it on its heading, so the rows beneath carried five
+     * identical `deployment` badges until this — seen on screen 2026-10-09, not reasoned about.
+     */
+    it('marks the kind on a run that stands alone, and not under a heading that says it', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'alone', name: 'solo', parent_id: 'deploy_9', parent_kind: 'deployment' }),
+        run({ run_id: 'held_1', name: 'pair', parent_id: 'deploy_1', parent_kind: 'deployment' }),
+        run({ run_id: 'held_2', name: 'pair', parent_id: 'deploy_1', parent_kind: 'deployment' }),
+      ])
+      // the lone run keeps its badge: nothing above it says what kind of run it is
+      expect(wrapper.findAll('.run-marks').map(node => node.text())).toEqual(['deployment'])
+
+      await wrapper.find('.record-group').trigger('click')
+      // opened, the family's two rows carry no badge at all — the heading carries it
+      expect(wrapper.findAll('.record-row')).toHaveLength(3)
+      // the lone run is first (all three share a stamp, so the order is the one they arrived in)
+      expect(wrapper.findAll('.run-marks').map(node => node.text())).toEqual(['deployment', '', ''])
+    })
+
+    /**
+     * **The list takes the room while nothing is below it.** It was capped at a third of the
+     * window whether or not panels followed, so an unchosen run left a short list over an empty
+     * page — reported on screen 2026-10-10.
+     */
+    it('gives the list the room while no run is chosen, and the cap back once one is', async () => {
+      const wrapper = mountPicker([run({ run_id: 'a' }), run({ run_id: 'b' })])
+      expect(wrapper.find('.run-list').classes()).toContain('roomy')
+
+      useRunsStore().selectedRunId = 'a'
+      await flushPromises()
+      await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
+      expect(wrapper.find('.run-list').classes()).not.toContain('roomy')
+    })
+
+    /**
+     * The `Set` facet is GONE, and the grouping is why: it offered the same partition a second
+     * time, and on a sweep it offered thirteen values matching one run each.
+     */
+    it('offers no Set facet, because the grouping is one', () => {
+      const wrapper = mountPicker([run({ run_id: 'a' }), run({ run_id: 'b' })])
+      const offered = wrapper.findAll('.facet-trigger').map(node => node.text())
+      expect(offered.some(text => text.includes('Set'))).toBe(false)
+      // the ones that stayed, so this cannot pass by the bar being absent altogether
+      expect(offered.some(text => text.includes('Run type'))).toBe(true)
+      expect(offered.some(text => text.includes('Purpose'))).toBe(true)
+    })
+
+    /** A chosen run must never sit inside a fold nobody opened — it would be out of reach. */
+    it('keeps the family of the chosen run open', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'pickedone', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
+        run({ run_id: 'other', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
+      ])
+      expect(rowIds(wrapper)).toEqual([])
+      useRunsStore().selectedRunId = 'pickedone'
+      await flushPromises()
+      // the list collapses to one line once a run is chosen, so it is reopened the way a reader
+      // reopens it
+      await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
+      expect(rowIds(wrapper)).toEqual(['pickedone', 'other'])
+    })
   })
 
   it('narrows the list by a facet, and says how many of how many are left', async () => {
@@ -325,6 +499,79 @@ describe('RunPicker', () => {
       expect(figuresFor(wrapper, 'noisy')).not.toContain('547')
     })
 
+    /**
+     * What a run is FOR (contract 24), and the ONE facet that starts with values picked.
+     *
+     * Measured 2026-10-09 over 85 runs: 58 are `fixture`, whose numbers are built rather than
+     * earned. They are not the operator's work and they are two thirds of the list.
+     *
+     * **Everything except `fixture`, never "only `regular`"** — testingide warned about exactly
+     * that mistake, and it would hide the two real-money `certificate` runs along with every run
+     * whose purpose could not be read.
+     */
+    /**
+     * Did money move? The operator went looking for this filter and there was none: *"ich wollte
+     * die field study suchen, indem ich einfach real money filtere — keinen filter gesehen."*
+     *
+     * `orders_to` answers it and nothing else does, which is their own instruction. Measured over
+     * 85 runs: 83 `simulated`, and the two field studies at `venue`.
+     */
+    it('tells a run that moved money from one that did not, and never guesses', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'study', orders_to: 'venue', run_purpose: 'certificate' }),
+        run({ run_id: 'mock', orders_to: 'simulated', run_purpose: 'regular' }),
+        run({ run_id: 'silent', orders_to: null, run_purpose: 'regular' }),
+      ])
+      await flushPromises()
+      const trigger = wrapper.findAll('.facet-trigger').find(n => n.text().includes('Money'))!
+      await trigger.trigger('click')
+      await flushPromises()
+      const offered = [...document.querySelectorAll<HTMLElement>('.facet-option')]
+        .map(node => node.textContent ?? '')
+
+      expect(offered.some(text => text.includes('real money'))).toBe(true)
+      expect(offered.some(text => text.includes('simulated'))).toBe(true)
+      // the run that states nothing is NOT claimed as simulated — reading an absence as
+      // "no money moved" is the one mistake here that could actually matter
+      expect(offered).toHaveLength(2)
+
+      // the panel is TELEPORTED to the document and outlives the wrapper, so a later test that
+      // counts `.facet-option` would count these too. Unmounting is what takes it back.
+      wrapper.unmount()
+    })
+
+    it('opens without the fixtures, and keeps the certificates and the unknown', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'mine', run_purpose: 'regular' }),
+        run({ run_id: 'built', run_purpose: 'fixture' }),
+        run({ run_id: 'gate', run_purpose: 'certificate' }),
+        run({ run_id: 'nameless', run_purpose: null }),
+      ])
+      await flushPromises()
+
+      const shown = rowTexts(wrapper).join(' ')
+      expect(shown).toContain('mine')
+      expect(shown).toContain('gate')
+      expect(shown).toContain('nameless')
+      expect(shown).not.toContain('built')
+      // and the bar says what it left out rather than shortening in silence
+      expect(wrapper.text()).toContain('3 of 4')
+    })
+
+    /** It is a starting value, not a floor: the reader can ask for the fixtures back. */
+    it('gives the fixtures back when the facet is cleared', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'mine', run_purpose: 'regular' }),
+        run({ run_id: 'built', run_purpose: 'fixture' }),
+      ])
+      await flushPromises()
+      expect(rowTexts(wrapper).join(' ')).not.toContain('built')
+
+      await wrapper.find('.facet-clear').trigger('click')
+      await flushPromises()
+      expect(rowTexts(wrapper).join(' ')).toContain('built')
+    })
+
     it('offers the outcome as a facet, and an unrecorded one is not a category', () => {
       const wrapper = mountPicker([
         run({ run_id: 'a', run_outcome: 'success' }),
@@ -333,6 +580,49 @@ describe('RunPicker', () => {
       ])
       const labels = wrapper.findAll('.facet-trigger').map(node => node.text())
       expect(labels.some(label => label.includes('Outcome'))).toBe(true)
+    })
+
+    /**
+     * ONE axis with three values, replacing an `Outcome` facet and a `Trouble` facet.
+     *
+     * The second could not do its job: it offered `error` from `error_count`, which is 0 on all 46
+     * stored runs including the nine graded `failed` — one of them reporting four errors, because
+     * `errors[]` holds scenarios that failed VALIDATION and never ran while `error_count` counts
+     * runtime errors. A run with errors is a run graded `failed`, so the grade already is that
+     * filter.
+     *
+     * Each value is a mechanical reading: a grade that is not `success` appears under the backend's
+     * OWN word, and the two success states split on whether a warning was counted.
+     */
+    it('splits the outcome by warnings counted, and keeps the grade itself', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'quiet', run_outcome: 'success', warning_count: 0 }),
+        run({ run_id: 'noisy', run_outcome: 'success', warning_count: 3 }),
+        run({ run_id: 'broken', run_outcome: 'failed', warning_count: 2 }),
+        // a grade of theirs we have never seen keeps its own word rather than becoming `failed`
+        run({ run_id: 'partial', run_outcome: 'finished_with_errors', warning_count: 0 }),
+        // nobody graded it, so it answers no question about the outcome at all
+        run({ run_id: 'ungraded', run_outcome: null, warning_count: 9 }),
+      ])
+      // the options are TELEPORTED to the document, so they are read there and not in the wrapper
+      await wrapper.findAll('.facet-trigger')
+        .find(node => node.text().includes('Outcome'))!
+        .trigger('click')
+      await flushPromises()
+      const offered = [...document.querySelectorAll<HTMLElement>('.facet-option')]
+        .map(node => node.textContent ?? '')
+
+      // THEIR words since 2026-10-09, taken from the served field: `warning_count`
+      expect(offered.some(text => text.includes('no warnings'))).toBe(true)
+      expect(offered.some(text => text.includes('with warnings'))).toBe(true)
+      expect(offered.some(text => text.includes('failed'))).toBe(true)
+      expect(offered.some(text => text.includes('finished_with_errors'))).toBe(true)
+      // `ungraded` states no outcome, so it is offered as nothing to pick
+      expect(offered).toHaveLength(4)
+      // the two values the old pair offered and this one must not: `warning` as an axis of its own,
+      // and `error`, which no stored run could ever produce
+      expect(offered.some(text => text.trim() === 'warning')).toBe(false)
+      expect(offered.some(text => text.trim() === 'error')).toBe(false)
     })
   })
   /**
@@ -374,7 +664,7 @@ describe('RunPicker', () => {
         git_commit: '7faec171',
         size_bytes: 23878038,
       })]))
-      expect(rows['Configuration']).toBe('ETHUSD_blocks.json')
+      expect(rows['Config file']).toBe('ETHUSD_blocks.json')
       expect(rows['Config id']).toBe(`${'c'.repeat(12)}…`)
       expect(rows['Version']).toBe('1.4.0 · 7faec171')
       expect(rows['Size']).toBe('23.9 MB')

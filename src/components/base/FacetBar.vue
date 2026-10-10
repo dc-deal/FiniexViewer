@@ -42,25 +42,36 @@ const input = computed(() => ({
 const shownCount = computed(() => applyFacets(input.value).length)
 
 /**
- * Each facet, dropped where it cannot narrow anything.
+ * Every facet, always — and DISABLED where it cannot narrow anything.
  *
- * No options at all is the obvious case — an empty dropdown is a control that looks broken. The
- * second case is a facet offering ONE value that every row already carries: picking it changes
- * nothing, so it is a control that does nothing, which is worse, because it looks like it works.
- * Measured 2026-09-28 over the 40 runs on this machine: `reporting` reads `expected` on all forty
- * and `app_version` reads `1.4.0` on all forty.
+ * A facet that cannot narrow is still a control that does nothing: no options at all is an empty
+ * dropdown, and ONE value that every row already carries changes nothing when picked. Measured
+ * 2026-09-28 over the 40 runs then on this machine, `reporting` read `expected` on all forty and
+ * `app_version` read `1.4.0` on all forty.
+ *
+ * **But dropping it was worse than showing it dead, and the reason is the SELECTION.** Whether a
+ * facet can narrow depends on what is already picked, so the set of drawn chips changed on every
+ * click: picking `clean` left 25 rows that disagree about `reporting` and `app_version`, so two
+ * chips appeared IN THE MIDDLE of the bar and pushed the open dropdown out from under the pointer.
+ * Measured on screen 2026-10-08 — the operator clicked a value and the menu they were reading
+ * moved.
+ *
+ * So the bar keeps its shape and the dead facet wears the disabled look, which is the same decision
+ * `AppBar.vue` already made for a section this run does not have: *an inventory that silently
+ * shortens is not one*.
  *
  * The count matters, and it is why this is not simply `options.length > 1`. One option that only
  * SOME rows carry still narrows — to exactly those rows — which is how `market_type` behaves while
- * older artifacts leave it empty. Such a facet stays.
+ * older artifacts leave it empty. And a facet HOLDING a selection is never disabled, whatever its
+ * options now say: the control that put a narrowing in place has to be able to take it back.
  */
 const drawn = computed(() =>
-  props.facets
-    .map(facet => ({ facet, options: facetOptions(input.value, facet.id) }))
-    .filter(entry => entry.options.length > 0)
-    .filter(entry =>
-      entry.options.length > 1 || entry.options[0]!.count < props.rows.length
-    )
+  props.facets.map(facet => {
+    const options = facetOptions(input.value, facet.id)
+    const narrows = options.length > 1
+      || (options.length === 1 && options[0]!.count < props.rows.length)
+    return { facet, options, narrows: narrows || pickedCount(facet.id) > 0 }
+  })
 )
 
 const narrowed = computed(() => isNarrowed(props.selection, props.search))
@@ -97,11 +108,22 @@ function clear(): void {
              the control is a disclosure and `aria-pressed` beside its `aria-expanded` would claim
              two roles. The badge says the same thing in words, which is what is read aloud. -->
         <PopoverTrigger as-child>
-          <AppButton class="facet-trigger" size="compact" :marked="pickedCount(entry.facet.id) > 0">
+          <AppButton
+            class="facet-trigger"
+            size="compact"
+            :marked="pickedCount(entry.facet.id) > 0"
+            :disabled="!entry.narrows"
+            :title="entry.narrows
+              ? undefined
+              : t('Every run shown agrees on this, so there is nothing to narrow by')"
+          >
             {{ t(entry.facet.label) }}
-            <span v-if="pickedCount(entry.facet.id)" class="facet-badge">
-              {{ pickedCount(entry.facet.id) }}
-            </span>
+            <!-- ALWAYS drawn, empty or not, because the slot has to be reserved. A badge that
+                 only appears once something is picked makes its chip WIDER at that moment, and
+                 every chip to its right slides along the bar. Measured on screen 2026-10-08: the
+                 operator picked a value and the chips behind it moved. Same symptom as the facet
+                 that used to be dropped, a second cause — the bar must not move when it is used. -->
+            <span class="facet-badge">{{ pickedCount(entry.facet.id) || '' }}</span>
             <span class="facet-caret">▾</span>
           </AppButton>
         </PopoverTrigger>
@@ -188,6 +210,9 @@ function clear(): void {
    contract drifts the moment the first one changes. */
 
 .facet-badge {
+  /* two digits wide whatever it holds, so a count from 1 to 99 never resizes the chip */
+  min-width: 2ch;
+  text-align: center;
   color: var(--color-text-primary);
 }
 

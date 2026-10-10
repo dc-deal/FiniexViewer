@@ -29,6 +29,31 @@ describe('AppBar', () => {
   })
 
   /**
+   * Pinning lifts a panel into a second CATEGORY rather than letting its toggle wander. The line
+   * is what makes the move legible: the bubble did not run away, it crossed a boundary that is
+   * drawn. Without it, pinning reorders the bar and nothing on screen says why.
+   */
+  it('draws the pinned boundary on the first toggle after the group', () => {
+    const store = useLayoutStore()
+    expect(mountBar(allSources()).findAll('.bar-toggle.group-start')).toHaveLength(0)
+
+    store.togglePin(allPanels()[3]!.id)
+    const toggles = mountBar(allSources()).findAll('.bar-toggle')
+    const marked = toggles.filter(node => node.classes('group-start'))
+    expect(marked).toHaveLength(1)
+    // the pinned one leads, so the line sits on the second toggle
+    expect(toggles[0]!.text()).toContain(allPanels()[3]!.title)
+    expect(marked[0]!.text()).toBe(toggles[1]!.text())
+  })
+
+  /** Nothing to separate, nothing drawn — the same rule that keeps a passing check silent. */
+  it('draws no boundary when every panel is pinned', () => {
+    const store = useLayoutStore()
+    for (const panel of allPanels()) store.togglePin(panel.id)
+    expect(mountBar(allSources()).findAll('.bar-toggle.group-start')).toHaveLength(0)
+  })
+
+  /**
    * The bar and the column must agree about ORDER. A reader who drags a panel to the top and then
    * finds its toggle still sixth in the bar has two arrangements to hold in their head — and the
    * bar is the thing they navigate by, so the arrangement decides and the registry does not.
@@ -44,17 +69,19 @@ describe('AppBar', () => {
   })
 
   /**
-   * A panel that is switched OFF has no place in the arrangement — hiding removes it from the
-   * column — so the hidden ones follow at the end in the registry's order, which is also where a
-   * reader looks for something they turned off.
+   * A switched-off panel keeps its PLACE. The bar is where a reader goes to bring something back,
+   * and a toggle that moves when you flip it is a control that runs away from the finger. This is
+   * the behaviour `hidden` became a flag for: it was appended at the end before, so switching one
+   * panel off reordered the whole bar under the hand that did it.
    */
-  it('keeps a hidden panel listed, after everything still arranged', () => {
-    const first = allPanels()[0]!
-    useLayoutStore().hide(first.id)
+  it('keeps a hidden panel listed, in its own place', () => {
+    const subject = allPanels()[2]!
+    const before = mountBar(allSources()).findAll('.bar-toggle').map(node => node.text())
+    useLayoutStore().hide(subject.id)
 
-    const titles = mountBar(allSources()).findAll('.bar-toggle').map(node => node.text())
-    expect(titles).toHaveLength(allPanels().length)
-    expect(titles[titles.length - 1]).toContain(first.title)
+    const after = mountBar(allSources()).findAll('.bar-toggle').map(node => node.text())
+    expect(after).toHaveLength(allPanels().length)
+    expect(after).toEqual(before)
   })
 
   /**
