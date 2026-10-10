@@ -56,7 +56,7 @@ export const FIXTURE_RUN = (fixture('scenario_details.json') as { run_id: string
  * heading is clicked, which is exactly what a reader does. Derived from the captured index rather
  * than transcribed, so a re-capture that moves the run between families cannot strand it.
  */
-export const FIXTURE_FAMILY = (() => {
+const FIXTURE_FAMILY = (() => {
   const rows = (fixture('runs_list.json') as {
     runs: { run_id: string, name: string, parent_id: string | null }[]
   }).runs

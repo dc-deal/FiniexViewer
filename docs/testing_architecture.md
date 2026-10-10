@@ -25,7 +25,7 @@ is flaky and we would never see it. And **the mocked responses come from the uni
 (`e2e/api_mock.ts` reads the same captures), never hand-written in a spec: a second mirror of the
 HTTP contract goes stale in silence, which has already happened once here. For the same reason a spec
 DERIVES what it needs from the capture rather than transcribing it: `api_mock.ts` exports
-`FIXTURE_RUN`, `FIXTURE_DEPLOYMENT` and `FIXTURE_FAMILY` — the last being the family line the run
+`FIXTURE_RUN` and `FIXTURE_DEPLOYMENT`, and keeps the family key it derives to itself — the last being the family line the run
 list now folds the fixture run behind, with `revealFixtureRun(page)` to open it. A spec that
 CLICKS a run calls that first; one that reaches a run by url does not.
 
