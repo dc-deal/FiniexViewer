@@ -534,8 +534,21 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
 
         What it says is read off its first record and never computed: the kind, the action, the
         side and the size are on every record of the position. What it does NOT say is how the
-        position ENDED — that would be reading the last record and calling it the position's
-        state, which is inferring a category. Asked of the backend instead.
+        position ENDED, and their answer of 2026-10-09 is explicit about why: *"The last record is
+        not the position's outcome — do not render it as one. A row is one step of one ORDER, and
+        the rows under an `order_id` are the position's own orders: its entry and its closes."*
+
+        **Where the outcome IS served, by their answer:** each closed part in `trade-history`
+        (`close_type`, `position_closes`), and a position still open at the end in `portfolio`
+        under `open_positions`. A position whose entry never executed appears in neither @
+        `pos_ethusd_44` is a cancelled limit entry, so no position ever existed. **A served
+        per-position outcome does not exist today**, which is why this heading states what the
+        position WAS and nothing about what it became.
+
+        `protect_pos_ethusd_41` was the other half of the same question and turned out to be their
+        documentation rather than their data: a protective order carries an `order_id` of its own
+        (`protect_` and the position's id), is NOT booked pending when it is placed — its placement
+        is in the stream — and the history records only how it ended. Both documents now say so.
       -->
       <template #group="{ group, marker }">
         <span class="position-name" :title="group.key">

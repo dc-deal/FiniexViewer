@@ -89,6 +89,32 @@ transform pulled it back on screen but not in layout, so a panel offered 67 px o
 nothing. Both are geometry, so jsdom cannot see either. `performance.spec.ts` is excluded from the
 ordinary run (`npm run test:perf`, one worker) because its budgets fail under contention.
 
+**A long run inside the container gets a DEADLINE, and `scripts/run.sh` is how.** A `docker exec`
+that times out is not stopped — only the host side of it is: the process inside keeps its CPU and
+its heap, and nothing reports that it is still there. That is how the container reached 27.28 GB at
+1300 % CPU on 2026-09-29 and starved the Docker API into answering 500, with a `knip` call
+abandoned at a 300 s timeout still running an hour later. The script puts the deadline INSIDE
+(`timeout -k 10 N`), and a trap kills whatever the deadline left, the same way `e2e.sh` kills the
+browser:
+
+```bash
+bash scripts/run.sh test        # the unit suite, 420 s
+bash scripts/run.sh lint        # 300 s
+bash scripts/run.sh build       # 600 s
+bash scripts/run.sh knip        # 600 s
+bash scripts/run.sh -- <cmd>    # anything, at the default deadline
+```
+
+A deadline reads as exit **143**, not as a failing test — BusyBox `timeout` lets the signal kill the
+child rather than returning GNU's 124. The script says so in words and then prints the container's
+largest and oldest processes, because `etime` is the column that names an orphan.
+
+Two traps it was built around, both measured 2026-10-10 and both self-inflicted: a matcher whose
+own command line contains the word it searches for finds ITSELF (`pkill -f vitest` killed its own
+parent), and a ZOMBIE answers a `pkill` with success although nothing happens — the container has
+no init to reap, so it carried 33 of them and the trap announced a cleanup after every single run.
+Every pattern therefore carries a bracket, and the probe ignores anything in state `Z`.
+
 **The browser is not in the container.** The image is Alpine on musl and Playwright's browsers are
 glibc builds, so the runner connects over CDP to a browser on the developer's machine —
 **`e2e/order_steps.spec.ts` is the newest, and it says why a browser spec earns its place.** The
