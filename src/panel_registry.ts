@@ -162,13 +162,21 @@ const PANELS: PanelDescriptor[] = [
     defaultOpen: false,
   },
   {
-    // Identity and provenance, from the run index row the store already holds — no request of
-    // its own, and the one section that answers for a run carrying no report artifacts at all.
+    /*
+     * Identity and provenance, from TWO sources that answer different questions. The index row is
+     * always there. The served header (contract 26) adds the two things the row cannot carry:
+     * which code ran — every repository's commit and dirtiness, every worker's version — and
+     * whether uncommitted code was explicitly allowed to place real orders.
+     *
+     * It remains the one section that answers for a run carrying no report artifacts at all, and
+     * that is now true of the ROUTE as well: measured 2026-10-10 on all three logs-only runs here,
+     * the header answers 200 while `artifacts` is empty.
+     */
     id: 'run-header',
     title: 'Run Header',
     icon: '🏷',
     component: RunHeaderPanel,
-    source: 'runInfo',
+    source: 'header',
     // Provenance rather than a headline: which artifact am I looking at. Folded by default —
     // the reader who needs it opens it, and the one who never does hides it from the bar.
     defaultOpen: false,

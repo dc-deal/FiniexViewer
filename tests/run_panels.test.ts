@@ -8,6 +8,7 @@ import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import type {
   RunInfo,
+  RunHeader,
   RunSummary,
   RunSummaryCurrency,
   WarningsErrorsReport,
@@ -618,9 +619,54 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
 }
 
 describe('RunHeaderPanel', () => {
+  /**
+   * TWO models. The index ROW is never absent; the served HEADER may be, and the panel then draws
+   * what the row knows and nothing more — which is the case a run recorded before contract 26.
+   */
+  function headerModel(info: Partial<RunInfo> = {}, served: RunHeader | null = null) {
+    return { info: runInfo(info), served }
+  }
+
+  function header(overrides: Partial<RunHeader> = {}): RunHeader {
+    return {
+      run_id: '20260830_145819_af372b28',
+      start_time: '2026-08-30T14:58:19Z',
+      run_type: 'simulation',
+      run_name: 'ETHUSD_blocks',
+      parent_id: null,
+      parent_kind: null,
+      config_snapshot: 'ETHUSD_blocks.json',
+      config_id: 'abc',
+      rendered_config_id: '',
+      app_version: '1.4.0',
+      git_commit: '56b2677',
+      reporting: 'expected',
+      origin: {
+        channel: 'cli', client: 'console', principal: 'operator',
+        host: 'h_x29og8', allow_dirty: false,
+      },
+      code_identity: null,
+      ticks_from: 'archive',
+      orders_to: 'simulated',
+      data_windows: null,
+      run_purpose: 'regular',
+      report_contract: 26,
+      ...overrides,
+    }
+  }
+
+  function repository(overrides = {}) {
+    return {
+      root: '.', in_repository: true, commit: '3b31c84a', branch: 'dev-v-1-4',
+      dirty: false, uncommitted_count: 0, changes: [], diff_hash: null,
+      patch_ref: null, patch_excluded: [], restorable: true,
+      ...overrides,
+    }
+  }
+
   it('renders identity, start time and provenance from the index row', () => {
     const wrapper = mount(RunHeaderPanel, {
-      props: { model: runInfo() },
+      props: { model: headerModel() },
       global: { stubs: { RouterLink: RouterLinkStub } },
     })
     const text = wrapper.text()
@@ -633,7 +679,7 @@ describe('RunHeaderPanel', () => {
 
   it('says nothing about a family when the run stands alone', () => {
     const wrapper = mount(RunHeaderPanel, {
-      props: { model: runInfo() },
+      props: { model: headerModel() },
       global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(wrapper.text()).not.toContain('sweep')
@@ -642,7 +688,7 @@ describe('RunHeaderPanel', () => {
 
   it('names a sweep combination for what it is — an alternative among alternatives', () => {
     const wrapper = mount(RunHeaderPanel, {
-      props: { model: runInfo({
+      props: { model: headerModel({
         group: 'simulation',
         name: 'btcusd_mini_set__sweep_20260830_154907_c001',
         parent_id: 'sweep_20260830_154907',
@@ -658,7 +704,7 @@ describe('RunHeaderPanel', () => {
     // same field, different meaning: ranking sessions would be meaningless, they are a sequence.
     // parent_kind now SAYS which, so nothing is inferred from `group` any more.
     const wrapper = mount(RunHeaderPanel, {
-      props: { model: runInfo({
+      props: { model: headerModel({
         group: 'live',
         name: 'deployment_continuity_test',
         parent_id: 'deploy_20260922_121648',
@@ -672,7 +718,7 @@ describe('RunHeaderPanel', () => {
 
   it('turns a deployment parent into a way in, because the id addresses a route', () => {
     const wrapper = mount(RunHeaderPanel, {
-      props: { model: runInfo({
+      props: { model: headerModel({
         group: 'live',
         parent_id: 'deploy_20260922_121648',
         parent_kind: 'deployment',
@@ -686,9 +732,115 @@ describe('RunHeaderPanel', () => {
     })
   })
 
+  /**
+   * **The row alone still answers.** A run recorded before contract 26 has no header block, and
+   * this panel is the one section that speaks for a run carrying no report artifacts at all — so
+   * an absent header must cost it nothing it already had.
+   */
+  it('draws from the index row alone where no header was served', () => {
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: headerModel() },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    const text = wrapper.text()
+    expect(text).toContain('20260830_145819_af372b28')
+    expect(text).toContain('1.4.0')
+    // and nothing is claimed about who started it or which code ran
+    expect(text).not.toContain('Started via')
+    expect(text).not.toContain('Code')
+  })
+
+  /** Every label here is THEIRS, from `run-header`, which says to use them as written. */
+  it('says who started the run, in the words their document prescribes', () => {
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header()) },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    const text = wrapper.text()
+    expect(text).toContain('Started via')
+    expect(text).toContain('cli')
+    expect(text).toContain('Started for')
+    expect(text).toContain('operator')
+    expect(text).toContain('h_x29og8')
+  })
+
+  /**
+   * `allow_dirty` says real orders were explicitly allowed from code that was not committed. True
+   * is a thing to weigh before trusting the figures beside it; false is the ordinary case and
+   * states nothing — where everything is fine, nothing is printed.
+   */
+  it('flags allowed uncommitted code, and says nothing where it was not allowed', () => {
+    const quiet = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header()) },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    expect(quiet.text()).not.toContain('Uncommitted code allowed')
+
+    const loud = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        origin: { channel: 'cli', client: 'console', principal: 'operator', host: 'h', allow_dirty: true },
+      })) },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    expect(loud.text()).toContain('Uncommitted code allowed')
+    expect(loud.find('.flagged').exists()).toBe(true)
+  })
+
+  /**
+   * **The count is `uncommitted_count`, never the length of `changes`.** Measured 2026-10-10 on
+   * the fixture run: 20 entries served against a count of 118, because the list is the FIRST of
+   * them. Reading the list as the count would understate it by eighty-eight.
+   */
+  it('states the served change count rather than the length of the sample', () => {
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        code_identity: {
+          framework: repository({ dirty: true, uncommitted_count: 118, changes: [' M a.py', ' M b.py'] }),
+          repositories: [],
+          components: [],
+        },
+      })) },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    expect(wrapper.text()).toContain('118 uncommitted changes')
+    expect(wrapper.text()).not.toContain('2 uncommitted changes')
+    // the sample is one hover away rather than two lines on the panel
+    expect(wrapper.find('.flagged').attributes('title')).toContain('M a.py')
+  })
+
+  it('names every repository and every component that ran', () => {
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        code_identity: {
+          framework: repository(),
+          repositories: [repository({ root: 'user_algos', commit: 'ff01', branch: 'main' })],
+          components: [
+            {
+              role: 'decision', name: 'CORE/aggressive_trend', type: 'CORE/aggressive_trend',
+              version: '1.1.0', source_path: 'python/x.py', repository: '.', package_digest: null,
+            },
+            {
+              role: 'worker', name: 'rsi_fast', type: 'RSI', version: '1.0.0',
+              source_path: 'user_algos/rsi.py', repository: 'user_algos', package_digest: 'ab12',
+            },
+          ],
+        },
+      })) },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    expect(wrapper.findAll('.repo')).toHaveLength(2)
+    expect(wrapper.text()).toContain('user_algos')
+    const components = wrapper.findAll('.component')
+    expect(components).toHaveLength(2)
+    expect(components[1]!.text()).toContain('rsi_fast')
+    expect(components[1]!.text()).toContain('1.0.0')
+    // the file it came from is a hover, not a column: it is a path and paths are long
+    expect(components[1]!.find('.mono').attributes('title')).toContain('user_algos/rsi.py')
+  })
+
   it('shows a membership of an unknown kind without claiming what it means', () => {
     const wrapper = mount(RunHeaderPanel, {
-      props: { model: runInfo({ parent_id: 'something_new', parent_kind: 'cohort' }) },
+      props: { model: headerModel({ parent_id: 'something_new', parent_kind: 'cohort' }) },
       global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(wrapper.text()).toContain('something_new')

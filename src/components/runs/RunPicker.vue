@@ -66,7 +66,14 @@ function stated(value: string | null): string[] {
 }
 
 const facets: FacetDefinition<RunInfo>[] = [
-  { id: 'group', label: 'Run type', valuesOf: row => stated(row.group) },
+  /**
+   * **THEIR word, not ours.** `run-header` prescribes the label `Pipeline` for this value and
+   * `run-kinds` carries a section called *"`group` is the pipeline, never the nesting"*. Ours was
+   * `Run type`, which sat beside a `Purpose` facet meaning what the run is FOR — nobody can tell
+   * "type" from "purpose" by the words alone. Renamed 2026-10-10; the facet's id stays `group`,
+   * so a shared link is unaffected.
+   */
+  { id: 'group', label: 'Pipeline', valuesOf: row => stated(row.group) },
   // no `Set` facet: the list GROUPS by set, so the facet would offer the same partition twice @
   // and on a sweep it offered 13 values matching one run each, which is a second search line.
   // The search still reads the set name, so hunting one by hand is a word rather than a menu.
@@ -200,7 +207,7 @@ const columns: ListColumn[] = [
   // instead of 22. `auto` needs the cell to stay on one line, which `.run-when` declares — the
   // 13rem it replaces was chosen because the old stamp wrapped at 11.
   { label: t('Started'), width: 'auto', rank: 1 },
-  { label: t('Run type'), width: '7rem', rank: 5 },
+  { label: t('Pipeline'), width: '7rem', rank: 5 },
   // a floor as well as the slack: the set NAMES the run, and with a bare `1fr` the columns added
   // since squeezed it to `EU…` — the one cell on the row a reader actually recognises
   { label: t('Set'), width: 'minmax(7rem, 1fr)', rank: 1 },

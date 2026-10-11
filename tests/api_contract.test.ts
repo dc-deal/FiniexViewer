@@ -8,6 +8,7 @@ import runBookingPeriods from './fixtures/run_booking_periods.json'
 import runSummary from './fixtures/run_summary.json'
 import portfolio from './fixtures/portfolio.json'
 import broker from './fixtures/broker.json'
+import runHeader from './fixtures/run_header.json'
 import aggregated from './fixtures/aggregated_portfolio.json'
 import pending from './fixtures/pending_orders.json'
 import history from './fixtures/order_history.json'
@@ -24,6 +25,7 @@ import type {
   AggregatedPortfolioReport,
   BookingPeriodsReport,
   BrokerReport,
+  RunHeader,
   OrderEventsReport,
   OrderHistoryReport,
   PendingOrdersReport,
@@ -203,6 +205,36 @@ describe('api contract', () => {
     expect(typed.aggregates[0]?.account_max_drawdown).toBeGreaterThanOrEqual(0)
     expect(typed.keys.units).toEqual(EXPECTED_KEYS.portfolioUnits)
     expect(typed.keys.aggregates).toEqual(EXPECTED_KEYS.portfolioAggregates)
+  })
+
+  /**
+   * The record a run writes before it does anything else (contract 26). Two properties are asserted
+   * here rather than in a component, because both are properties of the CONTRACT:
+   *
+   * `changes` is a SAMPLE and `uncommitted_count` is the number — measured on this capture, 20
+   * entries against 118. A panel that rendered the list's length as the count would understate it
+   * by eighty-eight, and nothing on screen would say so.
+   *
+   * And the header carries what the index row cannot: `code_identity`. If that ever arrives null
+   * on a run that HAS reports, the panel's central block silently empties, so the fixture holds
+   * the populated case on purpose.
+   */
+  it('the run header still carries the code identity, and a sample that is not a count', () => {
+    const typed: RunHeader = runHeader
+    // derived from another capture of the SAME run rather than transcribed:
+    // a re-capture that moves the pin cannot strand this
+    expect(typed.run_id).toBe((scenarioDetails as { run_id: string }).run_id)
+    expect(typed.origin).not.toBeNull()
+    expect(typed.code_identity).not.toBeNull()
+
+    const framework = typed.code_identity!.framework
+    expect(framework.dirty).toBe(true)
+    expect(framework.uncommitted_count).toBeGreaterThan(framework.changes.length)
+    expect(typed.code_identity!.components.length).toBeGreaterThan(0)
+    // every component says which repository it came from, or a source path means nothing
+    for (const component of typed.code_identity!.components) {
+      expect(component.repository.length).toBeGreaterThan(0)
+    }
   })
 
   /**

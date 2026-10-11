@@ -18,6 +18,105 @@ export interface DataWindow {
 }
 
 /** Single run entry from GET /api/v1/reports/runs — identity only, no report content */
+/**
+ * WHICH CODE RAN, for one repository (contract 26, inside the run header).
+ *
+ * Every path in it is relative to a repository the run recorded, and no path of the machine it ran
+ * on is served — their words. `root` is `.` for the framework itself, the path inside it for a
+ * repository within it (`user_algos`), and a directory name alone for one outside.
+ *
+ * `changes` is a SAMPLE and `uncommitted_count` is the number: measured 2026-10-10 on the fixture
+ * run, 20 entries against a count of 118. Rendering the length of the list as the count would
+ * understate it by eighty-eight.
+ */
+export interface RepositoryIdentity {
+  root: string
+  // false also for a directory the repository around it ignores; null where version control
+  // could not be asked at all
+  in_repository: boolean | null
+  commit: string | null
+  branch: string | null
+  dirty: boolean
+  uncommitted_count: number
+  changes: string[]
+  diff_hash: string | null
+  // where the patch restoring those changes was kept, relative as above; null when none was
+  patch_ref: string | null
+  // changed paths deliberately left out, such as credential files
+  patch_excluded: string[]
+  restorable: boolean
+}
+
+/** One decision logic or worker the run was given, and where it came from. */
+export interface ComponentIdentity {
+  role: string
+  // a decision's name IS its type, which may be a path
+  name: string
+  type: string
+  version: string
+  source_path: string
+  repository: string
+  // a hash over the files of a user's own component; null for one of theirs
+  package_digest: string | null
+}
+
+export interface CodeIdentity {
+  framework: RepositoryIdentity
+  repositories: RepositoryIdentity[]
+  components: ComponentIdentity[]
+}
+
+/**
+ * WHO STARTED THE RUN. `origin` keeps exactly this one meaning on their side since 2026-10-09,
+ * and the first four are flattened onto the index row as `origin_*`. `allow_dirty` is NOT — it is
+ * on the header alone, and it says whether real orders were explicitly allowed from code that was
+ * not committed.
+ */
+export interface RunOrigin {
+  channel: string
+  client: string
+  principal: string
+  host: string
+  allow_dirty: boolean
+}
+
+/**
+ * The record every run writes BEFORE it does anything else (contract 26).
+ *
+ * Seventeen of its nineteen keys are on the index row already. The two that are not are the point:
+ * `code_identity` — which code ran, down to each worker's version and the commit it came from @
+ * and `origin.allow_dirty`.
+ *
+ * **It answers for a run that carries no report artifacts at all.** Measured 2026-10-10 on all
+ * three logs-only runs in the archive: the route answers 200 while `artifacts` is empty, which is
+ * why it is loaded ungated rather than behind `hasArtifact`. `header` is not listed as an artifact.
+ */
+export interface RunHeader {
+  run_id: string
+  start_time: string
+  run_type: string
+  run_name: string
+  parent_id: string | null
+  parent_kind: string | null
+  config_snapshot: string
+  config_id: string
+  // empty on a backtest, on a session that predates the field, and on one whose profile could not
+  // be rendered
+  rendered_config_id: string
+  app_version: string
+  git_commit: string
+  reporting: string
+  // null on a run that predates the block
+  origin: RunOrigin | null
+  // null on a run that predates the block, or one not commissioned to report
+  code_identity: CodeIdentity | null
+  ticks_from: string | null
+  orders_to: string | null
+  data_windows: DataWindow[] | null
+  run_purpose: string | null
+  report_contract: number | null
+}
+
 export interface RunInfo {
   run_id: string
   /**

@@ -954,7 +954,7 @@ things while the one above it held 29 — and the question a reader actually arr
 I did on Thursday*, is navigation by TIME, which a name cascade cannot answer at all.
 
 It is now the same `FacetBar` the scenario roster uses over a `RecordList` — the shared list surface
-— pointed at `RunInfo`: facets for run type, artifacts, reporting, parent, version, purpose, money
+— pointed at `RunInfo`: facets for pipeline, artifacts, reporting, parent, version, purpose, money
 and outcome, sorted newest-first by default, with a search over the run id and the set name. Both
 components are generic and hold no state, so this cost the facet definitions and ten column
 declarations.
@@ -965,7 +965,7 @@ The row says what the run DID, from the index response itself and without a requ
 Search runs by id or set   Group ▾  Set ▾  Artifacts ▾  …        12 of 46
 Sort by  [newest]  oldest  market time  name
 
-Started        Run type    Set                       Run id            Market time  Outcome    Net P&L      Trades
+Started        Pipeline    Set                       Run id            Market time  Outcome    Net P&L      Trades
 Sep 25, 11:52  simulation  ETHUSD_blocks_robustness  20260925_095227…     464.0 h  ✓ success  −317.36 USD  85 trades
 ```
 
@@ -1013,7 +1013,7 @@ shows it, `clear` removes it, and a shared link means the same to everyone. That
 runs: 42 lines instead of 85, 14 of them a family and 28 a run standing alone.
 
 ```
-[Search ...] [Run type v] [Artifacts v] ... [Money v] [Outcome v]        27 of 85
+[Search ...] [Pipeline v] [Artifacts v] ... [Money v] [Outcome v]        27 of 85
 
   Oct 08, 13:06  demo_btcusd_bot            24.3 h  OK success    0.00 USD   0 trades  deployment
 > deployment deploy_20261008_110304   5 runs - Oct 08, 13:05
@@ -1524,6 +1524,45 @@ not there.
 position that produced no trade (55 measured), a run that serves no trade history (10 measured), and
 a panel this run has no model for. The position id is still printed in all three — it is data, part
 of the trade's own declared key.
+
+### Run Header — which artifact am I looking at, and which code made it
+
+The one section that answers for a run carrying **no report artifacts at all**, and since contract
+26 that is true of the route as well: measured 2026-10-10 on all three logs-only runs in the
+archive, `/reports/runs/{id}/header` answers 200 while `artifacts` is empty. It is therefore loaded
+UNGATED, the way the configuration is — `header` is not in a run's artifact list, so gating on it
+would ask for nothing and show nothing.
+
+**Two models, and neither replaces the other.** The index ROW is always there; the served HEADER
+carries the two things the row cannot. Composed in `RunsView` as `{ info, served }`, the same shape
+the Orders panel uses, because the panel contract takes one model and a second source would have
+had to rebuild it.
+
+```
+info     always      identity, membership, version, configuration file
+served   may be null who started the run, and WHICH CODE RAN
+```
+
+**The second is the point.** `code_identity` names every repository the run recorded — its commit,
+its branch, whether the tree was dirty and whether the code can be put back exactly — and every
+decision logic and worker with its version and the file it came from. A reader who finds a result
+surprising can now ask *was this even reproducible* and get an answer.
+
+**One number in it is a trap, and the mirror says so in both places.** `changes` is a SAMPLE and
+`uncommitted_count` is the count: measured on the fixture run, 20 entries served against 118.
+Rendering the list's length as the count would understate it by eighty-eight and nothing on screen
+would say so, which is why `api_contract.test.ts` asserts `uncommitted_count > changes.length`
+rather than the component asserting it.
+
+**Every label here is THEIRS**, taken from the `run-header` document as they instructed: *"Use it
+as written — do not coin another: the label is how a reader finds the term in these documents."*
+That is also why the run list's `Run type` became `Pipeline` in the same change — one field, one
+word, and ours sat beside a `Purpose` facet it could not be told apart from.
+
+What the panel does NOT print: a clean tree states nothing beyond its commit, and `allow_dirty`
+appears only when it is true, in the warning role with its glyph and its word. It says real orders
+were explicitly allowed from code that was not committed, which is a thing to weigh before
+trusting the figures beside it.
 
 ### Broker — the conditions a run traded under
 

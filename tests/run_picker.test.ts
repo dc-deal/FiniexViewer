@@ -347,7 +347,7 @@ describe('RunPicker', () => {
       const offered = wrapper.findAll('.facet-trigger').map(node => node.text())
       expect(offered.some(text => text.includes('Set'))).toBe(false)
       // the ones that stayed, so this cannot pass by the bar being absent altogether
-      expect(offered.some(text => text.includes('Run type'))).toBe(true)
+      expect(offered.some(text => text.includes('Pipeline'))).toBe(true)
       expect(offered.some(text => text.includes('Purpose'))).toBe(true)
     })
 

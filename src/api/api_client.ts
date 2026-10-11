@@ -20,6 +20,7 @@ import type {
   PendingOrdersReport,
   PortfolioReport,
   RunInfo,
+  RunHeader,
   RunListResponse,
   RunSummary,
   WarningsErrorsReport,
@@ -235,6 +236,27 @@ export async function getOrderEvents(
       const body = error.response.data as { detail?: string } | undefined
       throw new ArtifactUnreadableError(body?.detail ?? 'The stream could not be read')
     }
+    throw error
+  }
+}
+
+/**
+ * The record a run wrote before it did anything else. **The one route that answers for a run
+ * carrying no report artifacts at all** — measured 2026-10-10 on all three logs-only runs here,
+ * 200 with an empty `artifacts`. It is therefore asked for ungated, the way the configuration is,
+ * rather than behind the artifact list, which does not name it.
+ *
+ * `run_header_missing` (404) is its own absence: the index lists the run and the file is gone.
+ * `artifact_unreadable` (409) keeps its one meaning — the file is there and no longer matches
+ * their model — and on this route its detail names the failing fields.
+ */
+export async function getRunHeader(runId: string): Promise<RunHeader | SectionAbsence> {
+  try {
+    const response = await http.get<RunHeader>(`/reports/runs/${runId}/header`)
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
     throw error
   }
 }

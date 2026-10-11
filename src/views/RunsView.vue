@@ -32,6 +32,7 @@ const {
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
 const {
+  runHeader,
   warningsErrors, portfolio, broker, aggregated, pendingOrders, orderHistory, bookingPeriods,
   config,
   tradeHistory, scenarios,
@@ -149,9 +150,18 @@ const unknownUnits = computed(() => {
 // enough sections to justify the plumbing — see viewer#21.
 watch(selectedRunId, runId => {
   reportsStore.clear()
-  // a logs-only run is skipped here for the same reason the store skips the summary
   const run = selectedRun.value
-  if (!runId || !run?.has_reports) return
+  if (!runId || !run) return
+
+  /**
+   * The HEADER first, and ungated. It is not in a run's `artifacts` and it answers even where that
+   * list is empty — measured 2026-10-10 on all three logs-only runs here. It is the one section a
+   * run without reports still has, which is exactly what the Run Header panel is for.
+   */
+  reportsStore.loadRunHeader(runId)
+
+  // a logs-only run stops here, for the same reason the store skips the summary
+  if (!run.has_reports) return
 
   /**
    * Only the sections this run actually wrote. The index row lists them, and the two pipelines
@@ -176,7 +186,15 @@ watch(selectedRunId, runId => {
 
 // the models the panels render, keyed by the source each descriptor declares
 const sources = computed(() => ({
-  runInfo: selectedRun.value,
+  /**
+   * TWO models in one, and both halves are needed. The index ROW is always there and answers for
+   * a run with no artifacts at all; the served HEADER carries the two things the row cannot @
+   * which code ran, and whether uncommitted code was explicitly allowed to place real orders. The
+   * row is never absent, so the panel always draws; the header may be, and then it draws less.
+   */
+  header: selectedRun.value
+    ? { info: selectedRun.value, served: runHeader.value }
+    : null,
   runSummary: summary.value,
   feedHealth: feedHealth.value,
   warningsErrors: warningsErrors.value,

@@ -77,6 +77,10 @@ DEPLOY = 'deploy_20261008_232700'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),
+    # The record a run writes BEFORE anything else. Captured from the simulation run
+    # because its tree was dirty at the time — 118 uncommitted changes against a served
+    # sample of 20 — which is the case the panel has to get right.
+    ('run_header.json', f'reports/runs/{RUN}/header'),
     ('run_summary.json', f'reports/runs/{RUN}/run-summary'),
     ('portfolio.json', f'reports/runs/{RUN}/portfolio'),
     ('run_booking_periods.json', f'reports/runs/{RUN}/booking-periods'),

@@ -1,0 +1,141 @@
+{
+  "run_id": "20261008_222620_70191690",
+  "start_time": "2026-10-08T22:26:20.156924Z",
+  "run_type": "simulation",
+  "run_name": "report_coverage_reference",
+  "parent_id": null,
+  "parent_kind": null,
+  "config_snapshot": "report_coverage_reference.json",
+  "config_id": "76988fb0d45da74a48c37ae0ce3a72daa54f66aa6f2c75f6a9d22d9a4e2dc4fe",
+  "rendered_config_id": "",
+  "app_version": "1.4.0",
+  "git_commit": "3b31c84a",
+  "reporting": "expected",
+  "origin": {
+    "channel": "cli",
+    "client": "console",
+    "principal": "operator",
+    "host": "h_x29og8",
+    "allow_dirty": false
+  },
+  "code_identity": {
+    "framework": {
+      "root": ".",
+      "in_repository": true,
+      "commit": "3b31c84a",
+      "branch": "dev-v-1-4",
+      "dirty": true,
+      "uncommitted_count": 118,
+      "changes": [
+        " M .vscode/launch.json",
+        " M configs/autotrader_profiles/field_study/kraken_spot_btcusd_field_study.json",
+        " M configs/autotrader_profiles/field_study/kraken_spot_ethusd_field_study.json",
+        " M configs/autotrader_profiles/mock/aggressive_trend_mock.json",
+        " M configs/autotrader_profiles/mock/btcusd_mock_safety.json",
+        " M configs/autotrader_profiles/mock/cautious_macd_mock.json",
+        " M configs/autotrader_profiles/mock/deployment_continuity_test.json",
+        " M configs/autotrader_profiles/mock/diagnostics_probe_test.json",
+        " M configs/autotrader_profiles/mock/duplicate_signal_guard_test.json",
+        " M configs/autotrader_profiles/mock/event_channel_lifecycle.json",
+        " M configs/autotrader_profiles/mock/field_study_mock.json",
+        " M configs/autotrader_profiles/mock/margin_safety_test.json",
+        " M configs/autotrader_profiles/mock/market_data_outage_test.json",
+        " M configs/autotrader_profiles/mock/minimal_warmup_test.json",
+        " M configs/autotrader_profiles/mock/mock_session_test.json",
+        " M configs/autotrader_profiles/mock/partial_close_lifecycle.json",
+        " M configs/autotrader_profiles/mock/sentiment_mock_test.json",
+        " M configs/autotrader_profiles/mock/sentiment_outage_test.json",
+        " M configs/autotrader_profiles/mock/session_end_test.json",
+        " M configs/autotrader_profiles/mock/sl_triggered_test.json"
+      ],
+      "diff_hash": "8057e0227ccb397e524264b3b7d881a18113292adb6a70fd5597da8c11799062",
+      "patch_ref": "run_patches/1e1328a0bfac0e61732b1097e81b0f28bdc30d1608799a583bb1bd6802ef6036.patch",
+      "patch_excluded": [],
+      "restorable": true
+    },
+    "repositories": [],
+    "components": [
+      {
+        "role": "decision",
+        "name": "CORE/aggressive_trend",
+        "type": "CORE/aggressive_trend",
+        "version": "1.1.0",
+        "source_path": "python/framework/decision_logic/core/aggressive_trend.py",
+        "repository": ".",
+        "package_digest": null
+      },
+      {
+        "role": "worker",
+        "name": "rsi_fast",
+        "type": "CORE/rsi",
+        "version": "1.0.0",
+        "source_path": "python/framework/workers/core/rsi_worker.py",
+        "repository": ".",
+        "package_digest": null
+      },
+      {
+        "role": "worker",
+        "name": "bollinger_main",
+        "type": "CORE/bollinger",
+        "version": "1.1.0",
+        "source_path": "python/framework/workers/core/bollinger_worker.py",
+        "repository": ".",
+        "package_digest": null
+      },
+      {
+        "role": "decision",
+        "name": "CORE/test_probes/multi_position_probe",
+        "type": "CORE/test_probes/multi_position_probe",
+        "version": "0.0.0",
+        "source_path": "python/framework/decision_logic/core/test_probes/multi_position_probe.py",
+        "repository": ".",
+        "package_digest": null
+      },
+      {
+        "role": "worker",
+        "name": "probe_worker",
+        "type": "CORE/test_probes/sample_probe_worker",
+        "version": "0.0.0",
+        "source_path": "python/framework/workers/core/test_probes/sample_probe_worker.py",
+        "repository": ".",
+        "package_digest": null
+      }
+    ]
+  },
+  "ticks_from": "archive",
+  "orders_to": "simulated",
+  "data_windows": [
+    {
+      "unit_name": "EURGBP_refusals_01",
+      "start_date": "2025-10-31T05:00:00+00:00",
+      "end_date": "2025-10-31T06:00:00+00:00"
+    },
+    {
+      "unit_name": "EURGBP_refusals_02",
+      "start_date": "2025-10-10T06:00:00+00:00",
+      "end_date": "2025-10-10T07:00:00+00:00"
+    },
+    {
+      "unit_name": "ETHUSD_spot_two_balances",
+      "start_date": "2026-02-10T10:00:00+00:00",
+      "end_date": "2026-02-10T20:00:00+00:00"
+    },
+    {
+      "unit_name": "EURGBP_before_the_archive",
+      "start_date": "2024-01-10T10:00:00+00:00",
+      "end_date": "2024-01-10T11:00:00+00:00"
+    },
+    {
+      "unit_name": "EURGBP_left_open",
+      "start_date": "2025-10-10T06:00:00+00:00",
+      "end_date": "2025-10-10T07:00:00+00:00"
+    },
+    {
+      "unit_name": "EURGBP_partial_close",
+      "start_date": "2025-10-31T05:00:00+00:00",
+      "end_date": "2025-10-31T06:00:00+00:00"
+    }
+  ],
+  "run_purpose": "fixture",
+  "report_contract": 25
+}

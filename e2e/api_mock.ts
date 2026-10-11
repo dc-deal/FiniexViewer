@@ -28,6 +28,7 @@ export function fixture(name: string): unknown {
 }
 
 const REPORTS: Record<string, string> = {
+  'header': 'run_header.json',
   'run-summary': 'run_summary.json',
   'warnings-errors': 'warnings_errors.json',
   'portfolio': 'portfolio.json',
