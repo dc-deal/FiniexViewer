@@ -52,7 +52,7 @@ import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 26
+const EXPECTED_CONTRACT = 28
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -447,6 +447,51 @@ describe('api contract', () => {
       expect(row).toHaveProperty('event_time')
       expect(row).not.toHaveProperty('execution_time')
     }
+  })
+
+  /**
+   * Where each fee came from (contracts 27 and 28), and three properties of the contract.
+   *
+   * A source is stated exactly where something EXECUTED — on the order history's executed rows and
+   * on the stream's fills — and is null everywhere else. The simulation capture is a backtest, so
+   * every stated source is `estimate`: a backtest has no venue to ask.
+   *
+   * A stored artifact keeps the values it was written with (CLAUDE.md §21). The live capture predates
+   * contract 27, so its fills carry a fee and a NULL source — the same shape, older data, and a
+   * reader must be told nothing rather than `estimate`.
+   *
+   * And a fee of 0.0 under a source is a VALUE: a spread broker charges no fee per fill, so the EUR
+   * accounts in this capture fill several times for 0.0 in fees. An empty map is the absence; a zero
+   * inside one is not.
+   */
+  it('states a fee source exactly where something executed', () => {
+    const orders: OrderHistoryReport = history
+    for (const row of orders.orders) {
+      expect(row.fee_source).toBe(row.status === 'executed' ? 'estimate' : null)
+    }
+
+    const narrowed: OrderEventsReport = events
+    for (const row of narrowed.events) {
+      expect(row.fee_source).toBe(row.fill_price === null ? null : 'estimate')
+    }
+    const live: OrderEventsReport = eventsLive
+    const liveFills = live.events.filter(row => row.fill_price !== null)
+    expect(liveFills.length).toBeGreaterThan(0)
+    expect(liveFills.every(row => row.fee !== null && row.fee_source === null)).toBe(true)
+
+    const typed: PortfolioReport = portfolio
+    const fold: AggregatedPortfolioReport = aggregated
+    const maps = [
+      ...typed.units.map(row => row.fill_fees_by_source),
+      ...typed.aggregates.map(row => row.fill_fees_by_source),
+      ...fold.currencies.map(row => row.combined.headline.fill_fees_by_source),
+    ]
+    for (const map of maps) {
+      expect(Object.keys(map)).toEqual(['estimate'])
+      expect(map.estimate!.fill_count).toBeGreaterThan(0)
+    }
+    const free = typed.aggregates.find(row => row.fill_fees_by_source.estimate?.fill_fees === 0)
+    expect(free?.fill_fees_by_source.estimate?.fill_count).toBeGreaterThan(0)
   })
 
   it('the warnings and errors section still satisfies the mirrored shape', () => {

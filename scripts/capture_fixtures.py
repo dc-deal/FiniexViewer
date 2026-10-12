@@ -54,7 +54,11 @@ BASE = 'http://localhost:5173/api/v1'
 # something that can vanish with the next archive wipe. Measured: four order statuses with 35
 # refusals, two account currencies, `close_type` full AND partial with `position_closes` up to 3,
 # a scenario absent with its error, `run_outcome: failed`.
-RUN = '20261008_222620_70191690'
+#
+# Re-pinned 2026-10-12 to the fixture catalog's `report_coverage` entry for contract 28, the id
+# FiniexTestingIDE named in its announcement. A dry run against it moved no measured property and
+# left no requirement unmet: the catalog reproduces the case rather than replacing it.
+RUN = '20261012_074826_88026ae2'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -73,7 +77,10 @@ LIVE_RUN = '20261007_152959_0275a107'
 #
 # Reproducible: `python python/experiments/generate_demo_deployment/generate_demo_deployment.py` on
 # their side, about four minutes, and each run adds two NEW histories rather than replacing these.
-DEPLOY = 'deploy_20261008_232700'
+#
+# Re-pinned 2026-10-12 to the catalog's `demo_deployment` entry for contract 28: the main history,
+# whose last session is again killed before its close.
+DEPLOY = 'deploy_20261012_074850'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),

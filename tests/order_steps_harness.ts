@@ -70,6 +70,7 @@ export function step(overrides: Partial<OrderEvent> = {}): OrderEvent {
     trigger_price: null,
     fee: null,
     fee_currency: null,
+    fee_source: null,
     submission_mid: null,
     submission_time_msc: null,
     in_flight_ms: null,

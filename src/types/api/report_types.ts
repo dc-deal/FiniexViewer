@@ -652,7 +652,28 @@ export interface PortfolioUnitRow {
   total_swap: number
   maker_fee: number
   taker_fee: number
+  fill_fees_by_source: FillFeesBySource
 }
+
+/** The fills of one fee source, and what their fees came to in the row's account currency. */
+export interface FillFees {
+  fill_count: number
+  fill_fees: number
+}
+
+/**
+ * A row's fills split by where each fee came from (contract 28), keyed by the fee source:
+ * `venue` — the figure the venue reported for that fill, in a mock session the mock venue's — or
+ * `estimate` — the fee model's, the declared rate times the order's value. A backtest has only
+ * `estimate`: it has no venue to ask.
+ *
+ * ONE key per source that occurred, so a missing key means no fill carried it, and an EMPTY object
+ * means the unit executed nothing or the run was recorded before contract 28 — an absence either
+ * way, never a zero. It is neither of the two fee totals beside it: swap is not a fill's fee, and a
+ * close the venue executed for a position no longer held here is in it although no fee total holds
+ * that fee.
+ */
+export type FillFeesBySource = Record<string, FillFees | undefined>
 
 /** Run totals for one account currency — the units above, summed. */
 export interface PortfolioAggregateRow {
@@ -687,6 +708,7 @@ export interface PortfolioAggregateRow {
    */
   total_fees: number
   fees_charged: number
+  fill_fees_by_source: FillFeesBySource
   unrealized_pnl: number
   /** One account's closing equity, `null` over several — see the note on its per-currency twin. */
   final_equity: number | null
@@ -1172,6 +1194,7 @@ export interface AggregatedHeadline {
   account_max_drawdown_unit: string
   total_fees: number
   fees_charged: number
+  fill_fees_by_source: FillFeesBySource
   unrealized_pnl: number
   // ONE account's figure, null over several — the same rule run-summary states
   final_equity: number | null
@@ -1427,6 +1450,9 @@ export interface OrderHistoryRow {
    */
   event_time: string | null
   commission: number
+  // where `commission` came from (contract 28): `venue` or `estimate`, and a backtest's is always
+  // `estimate`. Null where nothing executed or the row predates the field.
+  fee_source: string | null
   // `market` · `limit` · `stop` · `stop_limit` — what was asked for, new in contract 23
   order_type: string | null
   // `partial` or `full` on a closing row: WHICH part ended the position's chain. The question we
@@ -1507,6 +1533,12 @@ export interface OrderEvent {
   trigger_price: number | null
   fee: number | null
   fee_currency: string | null
+  /**
+   * Where `fee` came from (contract 27): `venue` or `estimate`, as on `FillFeesBySource`. Null on an
+   * event that executed nothing, on a fill nothing could be booked for, and on every event recorded
+   * before the field existed.
+   */
+  fee_source: string | null
   submission_mid: number | null
   submission_time_msc: number | null
   /**

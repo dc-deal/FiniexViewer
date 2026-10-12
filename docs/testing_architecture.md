@@ -248,10 +248,16 @@ Refresh them only deliberately, and read `GET /api/v1/contract` when you do — 
 says what moved. Then raise `EXPECTED_CONTRACT` in `api_contract.test.ts` in the same change:
 
 ```bash
-P=http://localhost:5173/api/v1
-curl -s "$P/deployments" -o tests/fixtures/deployments_list.json
-curl -s -D - -o /dev/null "$P/reports/runs" | grep -i '^x-api-contract:'
+python scripts/capture_fixtures.py --dry   # what would move, nothing written
+python scripts/capture_fixtures.py         # all nineteen, or nothing
 ```
+
+**When a refresh is needed, and when it is not.** It is needed when the contract changes SHAPE — a
+field added, removed or renamed — because every fixture is assigned to its mirrored interface and a
+new required field fails the type-check against an old capture; making the field optional instead
+would be the compatibility shim §21 forbids. It is also needed when a pinned source is gone, or when
+FiniexTestingIDE names new ids for its fixture catalog. A change of MEANING alone, with the same
+fields, needs none. Measured 2026-10-12: a capture takes about 47 s and prints one line per file.
 
 ---
 
@@ -359,7 +365,7 @@ automated; its instrument is a browser and a deliberate look. Two scripts suppor
   stored run produces any more is recorded UNCOVERED rather than dropped, because an uncovered case
   is the one that breaks unseen. Measured 2026-09-30 over 46 runs, three cases are uncovered: two
   account currencies in one run, a unit ERROR, and a scenario with two portfolio rows.
-- **`scripts/capture_fixtures.py`** re-cuts the sixteen fixtures from their source runs. The
+- **`scripts/capture_fixtures.py`** re-cuts the nineteen fixtures from their source runs. The
   contract moved through seven versions in five days and each time the mirror, the fixtures and
   `EXPECTED_CONTRACT` move together (§21) — by hand that is where one capture gets forgotten.
   **The sources are pinned by id, and what QUALIFIES each one stands beside it as code rather than

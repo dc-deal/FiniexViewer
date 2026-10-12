@@ -93,6 +93,12 @@ function orderShape(step: OrderEvent | undefined): string {
  * refused, who ended it and why, how long the venue took to answer, and the price where one was
  * reached. Never all four — a step carries at most one of them.
  *
+ * **And the backend's sentence BESIDE it, never instead of it.** `message` is *"the sentence that
+ * goes with it, for a person to read"* — not a refusal reason, although a refusal is where it used
+ * to appear. Since contract 27 a step of a venue-held protective order carries its own fill price
+ * AND a sentence saying it settled an earlier estimated fee; read as a refusal, the sentence would
+ * have replaced the price.
+ *
  * **Every figure here carries its WORD, and the price is why that is written down.** One column
  * holds four unrelated kinds of thing, so a bare number in it says only that something was
  * measured. `in flight 60 ms` was added on 2026-10-08 after the scenario heading printed a bare
@@ -100,7 +106,11 @@ function orderShape(step: OrderEvent | undefined): string {
  * list rather than at the code. Second instance of one defect, so it is a rule now and not a fix.
  */
 function noteOf(step: OrderEvent): string {
-  const refusal = [step.rejection_reason, step.venue_reason, step.message].filter(Boolean)
+  return [mainNoteOf(step), step.message].filter(Boolean).join(' · ')
+}
+
+function mainNoteOf(step: OrderEvent): string {
+  const refusal = [step.rejection_reason, step.venue_reason].filter(Boolean)
   if (refusal.length) return refusal.join(' · ')
   const ended = [step.initiator, step.end_reason].filter(Boolean)
   if (ended.length) return ended.join(' · ')

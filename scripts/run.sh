@@ -59,7 +59,15 @@ RUNNERS='vites[t] kni[p] esl[i]nt playwrigh[t] vue-ts[c]'
 # container held 33 of them (measured 2026-10-10, and the container has no init to reap them; the
 # backend has been asked for `init: true`). A line that is always there teaches nobody, so the
 # probe looks for a LIVE match first and the trap speaks only then.
-PROBE='ps -A -o stat,args | grep -v "^ *Z" | grep -oE "vites[t]|kni[p]|esl[i]nt|playwrigh[t]|vue-ts[c]" | sort -u | tr "\n" " "'
+#
+# The deadline's own WATCHDOG is not a runaway either. BusyBox `timeout` runs the command itself
+# and leaves a sleeping child to enforce the deadline, and that child outlives the command by a
+# moment: under a second after `sleep 1`, more than two seconds after `knip` (both measured
+# 2026-10-12 — the watchdog alone, PPID 1, after knip had exited 0). The trap's probe runs in
+# exactly that moment, and the watchdog's command line carries `npm run knip`, so every `knip` run
+# ended in "a run was still alive". It holds nothing and ends by itself, so it is skipped; the
+# command it watches is still matched, because its own command line does not begin with `timeout`.
+PROBE='ps -A -o stat,args | grep -v "^ *Z" | grep -vE "^ *[^ ]+ +timeout " | grep -oE "vites[t]|kni[p]|esl[i]nt|playwrigh[t]|vue-ts[c]" | sort -u | tr "\n" " "'
 
 clean_up() {
     local alive
