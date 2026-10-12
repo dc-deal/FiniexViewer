@@ -1,17 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount, type VueWrapper } from '@vue/test-utils'
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import CandleChart from '@/components/CandleChart.vue'
 import type { ChartBar } from '@/types/api/bar_types'
 
 /**
  * The chart library itself is replaced: what is under test is WHEN the component builds, fits and
- * resizes a chart, which the library cannot report from inside jsdom (it measures nothing there).
+ * resizes a chart, and what it paints with — which the library cannot report from inside jsdom (it
+ * measures nothing there).
  */
 const lw = vi.hoisted(() => {
   const fitContent = vi.fn()
   const setData = vi.fn<(data: unknown[]) => void>()
+  const series = { setData, applyOptions: vi.fn<(options: Record<string, unknown>) => void>() }
   const chart = {
-    addCandlestickSeries: vi.fn(() => ({ setData })),
+    addCandlestickSeries: vi.fn<(options: Record<string, unknown>) => typeof series>(() => series),
+    applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
     timeScale: vi.fn(() => ({ fitContent })),
     resize: vi.fn<(width: number, height: number) => void>(),
     remove: vi.fn(),
@@ -19,7 +22,7 @@ const lw = vi.hoisted(() => {
   const createChart = vi.fn<(container: HTMLElement, options: Record<string, unknown>) => typeof chart>(
     () => chart
   )
-  return { chart, setData, fitContent, createChart }
+  return { chart, series, setData, fitContent, createChart }
 })
 
 vi.mock('lightweight-charts', () => ({
@@ -161,5 +164,111 @@ describe('CandleChart', () => {
     fireResize()
     expect(lw.setData.mock.calls[0]![0]).toHaveLength(2)
     expect(lw.fitContent).toHaveBeenCalledTimes(1)
+  })
+
+  /**
+   * A canvas is painted with values, so the theme cannot reach it the way it reaches every other
+   * surface. Two themes with values nobody would choose, under the token names the chart reads: a
+   * value that arrives in the chart can only have come from the token it names.
+   */
+  describe('colours', () => {
+    const THEMES = `
+      :root[data-theme='dark'] {
+        --color-bg-base: #000001; --color-text-secondary: #000002; --color-border: #000003;
+        --color-accent: #000004; --color-positive: #000005; --color-negative: #000006;
+      }
+      :root[data-theme='light'] {
+        --color-bg-base: #ffff01; --color-text-secondary: #ffff02; --color-border: #ffff03;
+        --color-accent: #ffff04; --color-positive: #ffff05; --color-negative: #ffff06;
+      }
+    `
+    let sheet: HTMLStyleElement | null = null
+
+    beforeEach(() => {
+      sheet = document.createElement('style')
+      sheet.textContent = THEMES
+      document.head.appendChild(sheet)
+      document.documentElement.dataset.theme = 'dark'
+    })
+
+    // unmounted FIRST, so a chart still observing the document never sees the theme taken down
+    afterEach(() => {
+      mounted?.unmount()
+      mounted = null
+      sheet?.remove()
+      sheet = null
+      document.documentElement.removeAttribute('data-theme')
+    })
+
+    it('paints with the tokens of the theme the document shows', () => {
+      size = { width: 800, height: 400 }
+      mountChart()
+
+      expect(lw.chart.applyOptions).toHaveBeenCalledWith({
+        layout: { background: { type: 'solid', color: '#000001' }, textColor: '#000002' },
+        grid: { vertLines: { color: '#000003' }, horzLines: { color: '#000003' } },
+        crosshair: { vertLine: { color: '#000004' }, horzLine: { color: '#000004' } },
+        rightPriceScale: { borderColor: '#000003' },
+        timeScale: { borderColor: '#000003' },
+      })
+      expect(lw.chart.addCandlestickSeries).toHaveBeenCalledWith({
+        borderVisible: false,
+        upColor: '#000005',
+        downColor: '#000006',
+        wickUpColor: '#000005',
+        wickDownColor: '#000006',
+      })
+    })
+
+    it('repaints when the theme changes, without being built again', async () => {
+      size = { width: 800, height: 400 }
+      mountChart()
+
+      document.documentElement.dataset.theme = 'light'
+      await flushPromises()
+
+      expect(lw.chart.applyOptions.mock.lastCall![0]).toMatchObject({
+        layout: { background: { color: '#ffff01' }, textColor: '#ffff02' },
+        crosshair: { vertLine: { color: '#ffff04' } },
+      })
+      expect(lw.series.applyOptions).toHaveBeenCalledWith({
+        upColor: '#ffff05',
+        downColor: '#ffff06',
+        wickUpColor: '#ffff05',
+        wickDownColor: '#ffff06',
+      })
+      expect(lw.createChart).toHaveBeenCalledTimes(1)
+    })
+
+    /** A theme switched while the chart waits for a size is the one it is built in. */
+    it('is built in the theme the document shows by then', async () => {
+      mountChart()
+      document.documentElement.dataset.theme = 'light'
+      await flushPromises()
+      expect(lw.chart.applyOptions).not.toHaveBeenCalled()
+
+      size = { width: 800, height: 400 }
+      fireResize()
+      expect(lw.chart.applyOptions.mock.lastCall![0]).toMatchObject({
+        layout: { background: { color: '#ffff01' } },
+      })
+      expect(lw.chart.addCandlestickSeries.mock.lastCall![0]).toMatchObject({ upColor: '#ffff05' })
+    })
+
+    /** A chart that is gone must not be painted: the library refuses a removed chart. */
+    it('stops following the theme once it is unmounted', async () => {
+      const release = vi.spyOn(MutationObserver.prototype, 'disconnect')
+      size = { width: 800, height: 400 }
+      mountChart()
+      mounted!.unmount()
+      mounted = null
+      expect(release).toHaveBeenCalled()
+      const painted = lw.chart.applyOptions.mock.calls.length
+
+      document.documentElement.dataset.theme = 'light'
+      await flushPromises()
+      expect(lw.chart.applyOptions).toHaveBeenCalledTimes(painted)
+      expect(lw.series.applyOptions).not.toHaveBeenCalled()
+    })
   })
 })

@@ -9,7 +9,8 @@ const { settings } = storeToRefs(useSettingsStore())
 const callerStore = useCallerStore()
 
 // The one place the theme reaches the document. Panels never receive it — they read the tokens the
-// attribute selects, which is why a theme change needs no re-render anywhere else.
+// attribute selects, which is why a theme change needs no re-render anywhere else. The exception is
+// a canvas, painted with values: `CandleChart.vue` observes the attribute and repaints itself.
 watchEffect(() => {
   document.documentElement.dataset.theme = settings.value.theme
 })

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { createChart, ColorType } from 'lightweight-charts'
-import type { IChartApi, ISeriesApi, UTCTimestamp } from 'lightweight-charts'
+import type {
+  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, UTCTimestamp,
+} from 'lightweight-charts'
 import type { ChartBar } from '@/types/api/bar_types'
 
 const props = defineProps<{
@@ -12,6 +14,66 @@ const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
 let series: ISeriesApi<'Candlestick'> | null = null
 let resizeObserver: ResizeObserver | null = null
+let themeObserver: MutationObserver | null = null
+
+/** What the chart paints with — each one a token, in its role where `tokens.css` names one. */
+interface ChartColours {
+  surface: string
+  text: string
+  rule: string
+  focus: string
+  rise: string
+  fall: string
+}
+
+/**
+ * The chart's colours, read from the theme tokens rather than written here.
+ *
+ * A canvas is painted with VALUES, so the theme cannot reach it through CSS the way it reaches every
+ * other surface — the chart reads the tokens itself, when it is built and whenever it repaints.
+ */
+function readColours(): ChartColours {
+  const style = getComputedStyle(document.documentElement)
+  const token = (name: string): string => style.getPropertyValue(name).trim()
+  return {
+    surface: token('--color-bg-base'),
+    text: token('--color-text-secondary'),
+    rule: token('--color-border'),
+    // the crosshair follows the pointer: interactive focus, the accent's second role
+    focus: token('--color-accent'),
+    // a candle's direction is the polarity of a figure
+    rise: token('--color-positive'),
+    fall: token('--color-negative'),
+  }
+}
+
+function chartColours(colours: ChartColours): DeepPartial<ChartOptions> {
+  return {
+    layout: {
+      background: { type: ColorType.Solid, color: colours.surface },
+      textColor: colours.text,
+    },
+    grid: {
+      vertLines: { color: colours.rule },
+      horzLines: { color: colours.rule },
+    },
+    crosshair: {
+      vertLine: { color: colours.focus },
+      horzLine: { color: colours.focus },
+    },
+    rightPriceScale: { borderColor: colours.rule },
+    timeScale: { borderColor: colours.rule },
+  }
+}
+
+function candleColours(colours: ChartColours): CandlestickSeriesPartialOptions {
+  return {
+    upColor: colours.rise,
+    downColor: colours.fall,
+    wickUpColor: colours.rise,
+    wickDownColor: colours.fall,
+  }
+}
 
 /**
  * The size the chart can be drawn at, or null while the container has none.
@@ -29,32 +91,26 @@ function drawableSize(): { width: number, height: number } | null {
 function initChart(size: { width: number, height: number }): void {
   if (!container.value) return
 
+  const colours = readColours()
   chart = createChart(container.value, {
     width: size.width,
     height: size.height,
-    layout: {
-      background: { type: ColorType.Solid, color: '#0d0d0f' },
-      textColor: '#888888',
-    },
-    grid: {
-      vertLines: { color: '#2a2a2e' },
-      horzLines: { color: '#2a2a2e' },
-    },
-    crosshair: {
-      vertLine: { color: '#4aaeff' },
-      horzLine: { color: '#4aaeff' },
-    },
-    rightPriceScale: { borderColor: '#2a2a2e' },
-    timeScale: { borderColor: '#2a2a2e', timeVisible: true },
+    timeScale: { timeVisible: true },
   })
+  chart.applyOptions(chartColours(colours))
 
-  series = chart.addCandlestickSeries({
-    upColor: '#26a69a',
-    downColor: '#ef5350',
-    borderVisible: false,
-    wickUpColor: '#26a69a',
-    wickDownColor: '#ef5350',
-  })
+  series = chart.addCandlestickSeries({ borderVisible: false, ...candleColours(colours) })
+}
+
+/**
+ * Repaint in the theme the document now shows. Called by the observer on `data-theme`, the
+ * attribute `App.vue` sets; a chart not built yet reads the theme when it is built.
+ */
+function repaint(): void {
+  if (!chart || !series) return
+  const colours = readColours()
+  chart.applyOptions(chartColours(colours))
+  series.applyOptions(candleColours(colours))
 }
 
 function showData(data: ChartBar[]): void {
@@ -79,10 +135,13 @@ onMounted(() => {
   onResize()
   resizeObserver = new ResizeObserver(onResize)
   if (container.value) resizeObserver.observe(container.value)
+  themeObserver = new MutationObserver(repaint)
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
 })
 
 onUnmounted(() => {
   resizeObserver?.disconnect()
+  themeObserver?.disconnect()
   chart?.remove()
 })
 

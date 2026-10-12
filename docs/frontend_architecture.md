@@ -312,7 +312,7 @@ and `mergeConfig` cannot merge a function — the env is therefore loaded at mod
 
 ### Theming — CSS Custom Properties
 
-All colors, spacing, and type scale are defined as CSS custom properties in `src/styles/tokens.css`. Dark mode is the default; light mode overrides the same variables under `[data-theme='light']`. The active theme is controlled by a `data-theme` attribute on `<html>`, written in exactly one place — `App.vue` watches the settings store and sets the attribute. No panel receives the theme as a prop; it reads the tokens the attribute selects, which is why a theme change needs no re-render anywhere else.
+All colors, spacing, and type scale are defined as CSS custom properties in `src/styles/tokens.css`. Dark mode is the default; light mode overrides the same variables under `[data-theme='light']`. The active theme is controlled by a `data-theme` attribute on `<html>`, written in exactly one place — `App.vue` watches the settings store and sets the attribute. No panel receives the theme as a prop; it reads the tokens the attribute selects, which is why a theme change needs no re-render anywhere else. The one exception is a canvas, which is painted with values: `CandleChart.vue` reads the tokens itself and repaints through a `MutationObserver` on the attribute (see *Chart Engine*). A future canvas layer — an indicator, the signal overlay, an algo's drawings — takes the same path.
 
 This avoids a CSS-in-JS dependency, works natively in every browser, and is trivially inspectable in DevTools. Reka UI (headless component layer) is deferred — no concrete accessibility need has surfaced yet.
 
@@ -1737,6 +1737,18 @@ A container of 0×0 is a panel not yet laid out or not in view; a chart created 
 size keeps a collapsed time scale, and resized to it, loses its place. So nothing is drawn until
 the container has a size, bars that arrived earlier are handed over and fitted when it does, and a
 later 0×0 leaves the chart as it was until the next real size.
+
+**The chart paints with the theme tokens, and repaints when the theme changes** (`CandleChart.vue`).
+Every other surface follows a theme switch on its own — `App.vue` sets `data-theme` on the document
+and the tokens follow — but a canvas is painted with values. So the chart reads `--color-bg-base`,
+`--color-text-secondary` and `--color-border` for its surface, text and rules, `--color-accent` for
+the crosshair's lines (interactive focus) and `--color-positive` / `--color-negative` for the
+candles (a candle's direction is a polarity), and a `MutationObserver` on `data-theme` repaints it
+without building it again. Until 2026-10-12 the colours were written into the component as the
+dark theme's values, so the light theme showed a dark chart; the dark theme is pixel-identical to
+before, measured on the canvas. The crosshair's two axis labels keep the library's own dark label
+(`#131722`, its text chosen for contrast) in both themes, deliberately: it reads on both surfaces,
+and it is how TradingView draws it.
 
 ### Testing Strategy
 
