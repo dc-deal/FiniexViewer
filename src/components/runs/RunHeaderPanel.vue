@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { RouteLocationRaw } from 'vue-router'
+import JumpLink from '@/components/base/JumpLink.vue'
+import { useOpenInContext } from '@/composables/use_open_in_context'
 import type { ComponentIdentity, RepositoryIdentity, RunHeader, RunInfo } from '@/types/api/report_types'
 import { utcInstant } from '@/components/runs/report_format'
 import { plural, t } from '@/translate'
@@ -21,19 +22,20 @@ const props = defineProps<{
 
 const info = computed(() => props.model.info)
 const served = computed(() => props.model.served)
+const { openDeployment, canOpen } = useOpenInContext()
 
 interface Membership {
   label: string
   id: string
-  /** Where the family can be opened, or null where nothing addresses it yet. */
-  target: RouteLocationRaw | null
+  /** Opens the family, or null where nothing can open it yet. */
+  open: (() => void) | null
 }
 
 /**
  * What the run belongs to, named for what that membership MEANS. `parent_id` carries two kinds of
  * parent — a sweep's children are alternatives that get ranked, a deployment's are consecutive
  * sessions of one bot's life — and `parent_kind` now SAYS which, so nothing here infers it from
- * `group` any more. A deployment id addresses a route, which turns the membership into a way in.
+ * `group` any more. A deployment's history can be opened, which turns the membership into a way in.
  */
 const belongsTo = computed<Membership | null>(() => {
   const parentId = info.value.parent_id
@@ -42,14 +44,14 @@ const belongsTo = computed<Membership | null>(() => {
     return {
       label: t('Session of deployment'),
       id: parentId,
-      target: { name: 'deployments', query: { deployment: parentId } },
+      open: canOpen ? () => openDeployment(parentId) : null,
     }
   }
   if (info.value.parent_kind === 'sweep') {
-    return { label: t('Combination in sweep'), id: parentId, target: null }
+    return { label: t('Combination in sweep'), id: parentId, open: null }
   }
   // a kind we do not know is still a membership — shown without claiming what it means
-  return { label: t('Belongs to'), id: parentId, target: null }
+  return { label: t('Belongs to'), id: parentId, open: null }
 })
 
 /**
@@ -117,12 +119,11 @@ function componentTitle(component: ComponentIdentity): string {
     <template v-if="belongsTo">
       <dt>{{ belongsTo.label }}</dt>
       <dd class="mono">
-        <RouterLink
-          v-if="belongsTo.target"
-          class="parent-link"
-          :to="belongsTo.target"
+        <JumpLink
+          v-if="belongsTo.open"
           :title="t('Open the deployment history')"
-        >{{ belongsTo.id }} ↗</RouterLink>
+          @click="belongsTo.open?.()"
+        >{{ belongsTo.id }}</JumpLink>
         <template v-else>{{ belongsTo.id }}</template>
       </dd>
     </template>
@@ -204,15 +205,6 @@ function componentTitle(component: ComponentIdentity): string {
 </template>
 
 <style scoped>
-.parent-link {
-  color: var(--color-accent);
-  text-decoration: none;
-}
-
-.parent-link:hover {
-  text-decoration: underline;
-}
-
 .meta {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -227,6 +219,13 @@ function componentTitle(component: ComponentIdentity): string {
 
 .meta dd {
   margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* a value here wraps rather than widening the list, and a deployment id is no exception — the
+   jump would keep its name on one line, so the name is let to wrap like every value beside it */
+.meta dd :deep(.jump-name) {
+  white-space: normal;
   overflow-wrap: anywhere;
 }
 

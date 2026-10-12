@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { mount, RouterLinkStub } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
 import { provideTestSelection } from './scenario_selection_harness'
+import { provideTestOpenInContext } from './open_in_context_harness'
+import type { TestOpenInContext } from './open_in_context_harness'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
 import type { BookingPeriodRow, BookingPeriodsReport } from '@/types/api/report_types'
@@ -23,7 +25,6 @@ function period(overrides: Partial<BookingPeriodRow> = {}): BookingPeriodRow {
 function mountPanel(model: BookingPeriodsReport) {
   return mount(BookingPeriodsPanel, {
     props: { model },
-    global: { stubs: { RouterLink: RouterLinkStub } },
   })
 }
 
@@ -35,7 +36,7 @@ function mountNarrowed(model: BookingPeriodsReport, unit: string[]) {
       return () => h(BookingPeriodsPanel, { model })
     },
   })
-  return mount(Host, { global: { stubs: { RouterLink: RouterLinkStub } } })
+  return mount(Host)
 }
 
 describe('BookingPeriodsPanel — narrowed to one scenario', () => {
@@ -194,9 +195,41 @@ describe('BookingPeriodTable', () => {
   function mountTable(periods: BookingPeriodRow[], showRun = false) {
     return mount(BookingPeriodTable, {
       props: { periods, keyFields: ['unit_name', 'period_no'], showRun },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
   }
+
+  /** Where the rows span several runs, a row's run is the way into it — given a host to go to. */
+  it('opens the run a period belongs to', async () => {
+    let way!: TestOpenInContext
+    const Host = defineComponent({
+      setup() {
+        way = provideTestOpenInContext()
+        return () => h(BookingPeriodTable, {
+          periods: [{ ...period(), run_id: 'run_b' }],
+          keyFields: ['run_id', 'unit_name', 'period_no'],
+          showRun: true,
+        })
+      },
+    })
+    await mount(Host).find('.jump-link').trigger('click')
+    expect(way.opened).toEqual([{ what: 'run', id: 'run_b' }])
+  })
+
+  it('names a period\'s run as plain text where nothing can open it', () => {
+    const Host = defineComponent({
+      setup() {
+        provideTestOpenInContext(false)
+        return () => h(BookingPeriodTable, {
+          periods: [{ ...period(), run_id: 'run_b' }],
+          keyFields: ['run_id', 'unit_name', 'period_no'],
+          showRun: true,
+        })
+      },
+    })
+    const wrapper = mount(Host)
+    expect(wrapper.find('.jump-link').exists()).toBe(false)
+    expect(wrapper.findAll('.text-cell').map(cell => cell.text())).toContain('run_b')
+  })
 
   /**
    * The sign of a drawdown is not reliable across the archive: stored artifacts keep the negative
@@ -410,6 +443,44 @@ describe('BookingPeriodTimeline — what a lane is', () => {
     expect(wrapper.findAll('.lane-row')).toHaveLength(3)
     expect(wrapper.findAll('.span')).toHaveLength(3)
     expect(wrapper.text()).toContain('run_b')
+  })
+
+  /** A session lane names a run, so its label is the way into that run. */
+  it('opens the run a session lane names', async () => {
+    let way!: TestOpenInContext
+    const Host = defineComponent({
+      setup() {
+        way = provideTestOpenInContext()
+        return () => h(BookingPeriodTimeline, {
+          periods: sessions(),
+          keyFields: ['run_id', 'unit_name', 'period_no'],
+          sessions: ledger(),
+          order: 'time',
+        })
+      },
+    })
+    const links = mount(Host).findAll('.lane-label .jump-link')
+    expect(links).toHaveLength(3)
+    await links.find(link => link.find('.jump-name').text() === 'run_b')!.trigger('click')
+    expect(way.opened).toEqual([{ what: 'run', id: 'run_b' }])
+  })
+
+  it('names a session lane\'s run as plain text where nothing can open it', () => {
+    const Host = defineComponent({
+      setup() {
+        provideTestOpenInContext(false)
+        return () => h(BookingPeriodTimeline, {
+          periods: sessions(),
+          keyFields: ['run_id', 'unit_name', 'period_no'],
+          sessions: ledger(),
+          order: 'time',
+        })
+      },
+    })
+    const wrapper = mount(Host)
+    expect(wrapper.find('.lane-label .jump-link').exists()).toBe(false)
+    expect(wrapper.findAll('.lane-label').map(label => label.text()).sort())
+      .toEqual(['run_a', 'run_b', 'run_c'])
   })
 
   /**

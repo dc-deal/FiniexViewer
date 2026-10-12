@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Every button in the app, in two shapes.
+ * Every button in the app, in three shapes.
  *
  * Built after a settings button was read as greyed out and unclickable although it worked. The
  * cause was not a missing state but a WRONG one: it wore `text-secondary` on a raised surface,
@@ -22,9 +22,11 @@
 withDefaults(defineProps<{
   /**
    * `solid` is a control with a surface of its own. `quiet` is an action inside a line of text —
-   * it has no surface until pointed at, so it does not stamp a box into a sentence.
+   * it has no surface until pointed at, so it does not stamp a box into a sentence. `link` is a
+   * jump to another place, worn as a link: no padding and the font of the line it sits in, so its
+   * text stays exactly where text would stand in a table cell (`JumpLink` is its one user).
    */
-  variant?: 'solid' | 'quiet'
+  variant?: 'solid' | 'quiet' | 'link'
   /**
    * How much room the control takes. `compact` is for a row of them — a facet bar carries six or
    * more side by side, and density is a requirement of these views rather than a preference. It
@@ -91,6 +93,16 @@ withDefaults(defineProps<{
   color: var(--color-accent);
 }
 
+/* no padding and no border, so nothing moves its text off the column it belongs to — the hover
+   surface hugs the text instead of standing around it */
+.app-button.link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+}
+
 /* after both variants, because it has to win their padding on source order */
 .app-button.solid.compact,
 .app-button.quiet.compact {
@@ -102,8 +114,16 @@ withDefaults(defineProps<{
   border-color: var(--color-accent);
 }
 
-.app-button.quiet:hover:not(:disabled) {
+.app-button.quiet:hover:not(:disabled),
+.app-button.link:hover:not(:disabled) {
   text-decoration: underline;
+}
+
+/* a table cell that cuts its text off also cuts a ring drawn outside the link, so the link shows
+   focus INSIDE its own box as well, where no clip reaches: the underline and the surface */
+.app-button.link:focus-visible {
+  text-decoration: underline;
+  background-color: var(--color-bg-hover);
 }
 
 /* the press: the surface sinks and the control goes with it */

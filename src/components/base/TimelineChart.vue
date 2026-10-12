@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import HoverCard from '@/components/base/HoverCard.vue'
+import JumpLink from '@/components/base/JumpLink.vue'
 import type { TimelineLane } from '@/types/timeline_types'
 
 /**
@@ -362,13 +363,12 @@ const drawn = computed(() =>
     </div>
 
     <div v-for="lane in drawn" :key="lane.id" class="lane-row">
-      <RouterLink
-        v-if="lane.to"
-        class="lane-label lane-link"
-        :to="lane.to"
-        :title="lane.label"
-      >{{ lane.label }} ↗</RouterLink>
-      <span v-else class="lane-label" :title="lane.label">{{ lane.label }}</span>
+      <!-- the label column keeps its width, its small font and its clip; the jump inside it takes
+           that font and shortens itself, the way it does in a table cell -->
+      <span class="lane-label" :title="lane.label">
+        <JumpLink v-if="lane.open" @click="lane.open?.()">{{ lane.label }}</JumpLink>
+        <template v-else>{{ lane.label }}</template>
+      </span>
       <div class="lane">
         <span
           v-for="gap in axis.breaks"
@@ -475,15 +475,6 @@ const drawn = computed(() =>
 
 .stem.row-0 { top: 0.95rem; height: 1.3rem; }
 .stem.row-1 { top: 2rem; height: 0.25rem; }
-
-.lane-link {
-  color: var(--color-accent);
-  text-decoration: none;
-}
-
-.lane-link:hover {
-  text-decoration: underline;
-}
 
 .lane {
   position: relative;

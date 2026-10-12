@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { mount, RouterLinkStub } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import { provideTestSelection } from './scenario_selection_harness'
+import { provideTestOpenInContext } from './open_in_context_harness'
+import type { TestOpenInContext } from './open_in_context_harness'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
@@ -667,7 +669,6 @@ describe('RunHeaderPanel', () => {
   it('renders identity, start time and provenance from the index row', () => {
     const wrapper = mount(RunHeaderPanel, {
       props: { model: headerModel() },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     const text = wrapper.text()
     expect(text).toContain('20260830_145819_af372b28')
@@ -680,7 +681,6 @@ describe('RunHeaderPanel', () => {
   it('says nothing about a family when the run stands alone', () => {
     const wrapper = mount(RunHeaderPanel, {
       props: { model: headerModel() },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(wrapper.text()).not.toContain('sweep')
     expect(wrapper.text()).not.toContain('Fragment')
@@ -694,7 +694,6 @@ describe('RunHeaderPanel', () => {
         parent_id: 'sweep_20260830_154907',
         parent_kind: 'sweep',
       }) },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(wrapper.text()).toContain('Combination in sweep')
     expect(wrapper.text()).toContain('sweep_20260830_154907')
@@ -710,26 +709,53 @@ describe('RunHeaderPanel', () => {
         parent_id: 'deploy_20260922_121648',
         parent_kind: 'deployment',
       }) },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(wrapper.text()).toContain('Session of deployment')
     expect(wrapper.text()).not.toContain('Combination in sweep')
   })
 
-  it('turns a deployment parent into a way in, because the id addresses a route', () => {
-    const wrapper = mount(RunHeaderPanel, {
-      props: { model: headerModel({
-        group: 'live',
-        parent_id: 'deploy_20260922_121648',
-        parent_kind: 'deployment',
-      }) },
-      global: { stubs: { RouterLink: RouterLinkStub } },
+  /** The header mounted under a host — one that can send the reader somewhere, unless told not to. */
+  function mountWithWayOut(info: Partial<RunInfo>, canOpen = true) {
+    let way!: TestOpenInContext
+    const Host = defineComponent({
+      setup() {
+        way = provideTestOpenInContext(canOpen)
+        return () => h(RunHeaderPanel, { model: headerModel(info) })
+      },
     })
-    const link = wrapper.findComponent(RouterLinkStub)
-    expect(link.props('to')).toEqual({
-      name: 'deployments',
-      query: { deployment: 'deploy_20260922_121648' },
+    return { wrapper: mount(Host), way }
+  }
+
+  it('turns a deployment parent into a way in, because its history can be opened', async () => {
+    const { wrapper, way } = mountWithWayOut({
+      group: 'live',
+      parent_id: 'deploy_20260922_121648',
+      parent_kind: 'deployment',
     })
+    await wrapper.find('.jump-link').trigger('click')
+    expect(way.opened).toEqual([{ what: 'deployment', id: 'deploy_20260922_121648' }])
+  })
+
+  it('names the deployment as plain text where nothing can open it', () => {
+    const { wrapper } = mountWithWayOut({
+      group: 'live',
+      parent_id: 'deploy_20260922_121648',
+      parent_kind: 'deployment',
+    }, false)
+    expect(wrapper.find('.jump-link').exists()).toBe(false)
+    const value = wrapper.findAll('dd').find(node => node.text().includes('deploy_20260922_121648'))
+    expect(value!.text()).toBe('deploy_20260922_121648')
+  })
+
+  /** A sweep has no view of its own yet, so its id is named and not offered as a way in. */
+  it('offers no way into a sweep, which nothing can open yet', () => {
+    const { wrapper } = mountWithWayOut({
+      group: 'simulation',
+      parent_id: 'sweep_20260830_154907',
+      parent_kind: 'sweep',
+    })
+    expect(wrapper.text()).toContain('sweep_20260830_154907')
+    expect(wrapper.find('.jump-link').exists()).toBe(false)
   })
 
   /**
@@ -740,7 +766,6 @@ describe('RunHeaderPanel', () => {
   it('draws from the index row alone where no header was served', () => {
     const wrapper = mount(RunHeaderPanel, {
       props: { model: headerModel() },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     const text = wrapper.text()
     expect(text).toContain('20260830_145819_af372b28')
@@ -754,7 +779,6 @@ describe('RunHeaderPanel', () => {
   it('says who started the run, in the words their document prescribes', () => {
     const wrapper = mount(RunHeaderPanel, {
       props: { model: headerModel({}, header()) },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     const text = wrapper.text()
     expect(text).toContain('Started via')
@@ -772,7 +796,6 @@ describe('RunHeaderPanel', () => {
   it('flags allowed uncommitted code, and says nothing where it was not allowed', () => {
     const quiet = mount(RunHeaderPanel, {
       props: { model: headerModel({}, header()) },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(quiet.text()).not.toContain('Uncommitted code allowed')
 
@@ -780,7 +803,6 @@ describe('RunHeaderPanel', () => {
       props: { model: headerModel({}, header({
         origin: { channel: 'cli', client: 'console', principal: 'operator', host: 'h', allow_dirty: true },
       })) },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(loud.text()).toContain('Uncommitted code allowed')
     expect(loud.find('.flagged').exists()).toBe(true)
@@ -800,7 +822,6 @@ describe('RunHeaderPanel', () => {
           components: [],
         },
       })) },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(wrapper.text()).toContain('118 uncommitted changes')
     expect(wrapper.text()).not.toContain('2 uncommitted changes')
@@ -826,7 +847,6 @@ describe('RunHeaderPanel', () => {
           ],
         },
       })) },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(wrapper.findAll('.repo')).toHaveLength(2)
     expect(wrapper.text()).toContain('user_algos')
@@ -841,7 +861,6 @@ describe('RunHeaderPanel', () => {
   it('shows a membership of an unknown kind without claiming what it means', () => {
     const wrapper = mount(RunHeaderPanel, {
       props: { model: headerModel({ parent_id: 'something_new', parent_kind: 'cohort' }) },
-      global: { stubs: { RouterLink: RouterLinkStub } },
     })
     expect(wrapper.text()).toContain('something_new')
     expect(wrapper.text()).not.toContain('Combination in sweep')

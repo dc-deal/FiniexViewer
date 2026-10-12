@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import HintLine from '@/components/base/HintLine.vue'
+import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import OrderStepList from '@/components/runs/OrderStepList.vue'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
@@ -555,13 +556,12 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
           <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
           <!-- a LINK only where there is somewhere to go: a position that produced no trade, and
                a run that serves no trade history, both draw the id as the plain text it is -->
-          <button
+          <JumpLink
             v-if="group.rows[0] && hasTrades(group.rows[0])"
-            type="button"
             class="to-trades"
             :title="t('Show this position in the trade history')"
             @click.stop="jumpToTrades(group.rows[0]!)"
-          >{{ positionOf(group.rows[0]!) }} ↗</button>
+          >{{ positionOf(group.rows[0]!) }}</JumpLink>
           <template v-else>{{ group.rows[0] ? positionOf(group.rows[0]!) : group.key }}</template>
           <span class="position-shape">{{ shapeOf(group.rows[0]) }}</span>
         </span>
@@ -633,28 +633,19 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
   color: var(--color-text-primary);
 }
 
-/* a row that carries a position on says so by NOT repeating its id — the mark takes the place the
-   id had, so the column still reads as one thing down the group */
-/* interactive text wears the link role; the four states come from the one button style */
-.to-trades {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: var(--color-accent);
-  cursor: pointer;
-}
-
-.to-trades:hover,
-.to-trades:focus-visible {
-  text-decoration: underline;
-}
-
 /* the whole lifecycle of the position a reader jumped to, not one row of it */
 .order-list :deep(.record-row.marked) {
   background-color: var(--color-bg-raised);
 }
 
+/* the position's shape is the second word after its id, never glued to it: the template keeps no
+   whitespace between the two elements, so the gap has to be drawn */
+.position-shape {
+  margin-left: var(--space-xs);
+}
+
+/* a row that carries a position on says so by NOT repeating its id — the mark takes the place the
+   id had, so the column still reads as one thing down the group */
 /* the glyph sits AT the cell's edge, never a step of its own: the ladder is the list's (--record-step) */
 .carries-on {
   color: var(--color-text-secondary);

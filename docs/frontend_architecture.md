@@ -184,6 +184,12 @@ Six consequences the frontend is built around:
 
 The distinction is not cosmetic. A sweep's children are **alternatives** — contemporaneous answers to "what if the parameters were these", so ranking them is the whole point. A deployment's children are a **sequence** — consecutive sessions of one bot's life across its restarts, where a ranking would be meaningless. And the parents differ too: neither is a run, but a sweep is *defined* by the runs naming it, while a deployment has its own rows in the ledger and its own routes.
 
+**A family heading prints the kind word although the id repeats it** — `deployment
+deploy_20261008_110304`. A parent id is as opaque as a `run_id`: the timestamp in it is for a person
+reading a directory listing, and nothing may parse it, so the kind comes from `parent_kind` and the
+repeated word is the price of not deriving. Settled by FiniexTestingIDE on 2026-10-12, which keeps
+the id format as it is.
+
 A **sweep combination is structurally an ordinary run**: measured against a standalone run, all fourteen report routes answer with identical field sets, so the existing panels render one without a change. What a sweep adds is not a report shape but a level above it — the ranking of its combinations by the objective it declared, and the parameters that were varied. Those live on `GET /api/v1/sweeps` and `GET /api/v1/sweeps/{sweep_id}`, which are known and not yet consumed.
 
 **Not every report route answers for every run.** `group` decides:
@@ -347,10 +353,10 @@ although it worked. That is not a misreading — it is the correct reading of a 
 
 ### Buttons — `AppButton`, and why the states are the component
 
-`base/AppButton.vue` is every button in two shapes: `solid` has a surface of its own, `quiet` is an
-action inside a line of text and stays flat until pointed at. Before it existed there were two
-bespoke button styles and five one-off text actions, and none of them had a hover or a pressed
-state — a click produced no feedback at the control itself.
+`base/AppButton.vue` is every button in three shapes: `solid` has a surface of its own, `quiet` is an
+action inside a line of text and stays flat until pointed at, and `link` is a jump to another place
+(below). Before it existed there were two bespoke button styles and five one-off text actions, and
+none of them had a hover or a pressed state — a click produced no feedback at the control itself.
 
 **Each state carries two channels, so none depends on one.** Hover lifts the surface *and* takes
 the interactive border; the press sinks the surface *and* moves the control down a pixel. The
@@ -381,6 +387,25 @@ disclosure behaviour while `AppButton` carries the look, and the duplicate contr
 second copy drifts the moment the first one changes. Measured after the change: the chips are still
 20 px tall with `2px 8px` of padding, so nothing got less dense. The same pattern already held the
 dialog's close button.
+
+**`link` is the third shape, and `base/JumpLink.vue` its one user.** A jump to another place — a
+run id in a session row, a position id in a group header, a lane's label — is worn as a link:
+accent ink, no padding and the font of its line, so its text stands exactly where text would stand
+in a table cell. It keeps the four states: hover lifts a surface *and* underlines, the press sinks
+it *and* moves it a pixel, and focus draws the ring — and also underlines and lifts the surface,
+because a cell that cuts its text off cuts a ring drawn outside the link too, and focus must show
+inside the link's own box where no clip reaches. `JumpLink` adds the arrow that says the jump
+leaves the panel — hidden from a screen reader, which hears the name — and shortens the name
+itself: a table cell cuts the text inside it with an ellipsis, but a button is one box to the
+cell, which could only clip it whole. Where a place lets its values wrap instead (the run header's
+definition list), it lets the name wrap too. Until 2026-10-12 the same look stood in six
+components — four `RouterLink`s underlined on hover and nothing else, two jump buttons underlined
+on hover and focus.
+
+**A jump sits INSIDE the element that owns a column, never on it.** The timeline's label column is
+a `span` holding the `JumpLink`, not a `JumpLink` carrying the column's class: put on the button,
+the class lost to the link shape's inherited font, and the run ids were drawn at 16 px beside a
+13.6 px axis caption, with a hover surface the width of the whole column.
 
 **What is still not an `AppButton`:** the app bar, the accordion header, the JSON fold, and the
 option rows inside a facet's popover. Those are menu items and disclosure headers rather than
@@ -1100,7 +1125,21 @@ The two DEPLOYMENT routes deliberately keep `| null`: an unknown deployment id i
 
 **Pin anchors, lock protects — and pinning makes a second CATEGORY rather than a quiet reshuffle.** Pin moves a panel into the first group and opens it once; afterwards open/closed stays free. Lock exempts a panel from *collapse all* (and later from width-driven auto-collapse). The two groups are separated by a DRAWN line in both orientations — `pinnedBoundary()` is the one rule and each orientation applies it to what it actually draws, so the index differs between the bar and the column and nothing else does. The line wears the `annotation` role and is dashed, because it marks a division rather than something to weigh; it is absent when every panel is pinned or none is, there being nothing to separate. Without it, pinning reorders both views and nothing on screen says why. Hiding needs no confirmation: the bar always shows what is switched off, in its own place.
 
-**From a report row into the chart.** The portfolio panel links a unit's symbol to `/viewer?broker=<data_source>&symbol=<symbol>` — the two views share one query namespace (see `query_param_utils`), so the link is a normal `RouterLink` and needs no store to carry the hand-over. It works because `data_source` holds the same broker keys `GET /brokers` returns (`mt5`). Live runs leave `data_source` empty and get plain text instead: `broker_name` is a display name (`Kraken`) and is not addressable, and guessing the key from it would invent a mapping the backend owns. The timeframe is deliberately not passed — the chart keeps whichever one the user last chose.
+**From a panel into another view — `use_open_in_context.ts`.** The sibling of the position link,
+one level up: a panel names WHAT to open (`openRun(id)`, `openDeployment(id)`) and the host decides
+HOW. Today `AppShell` goes to the view with the param that view restores; once the views are docked
+panels (viewer#31) it sets a link's context instead, and no panel changes. `canOpen` is false where
+no host supplied the channel, and a panel then draws the name as plain text rather than a way in
+that leads nowhere. Four places use it, each through `JumpLink`: a session's run (`SessionsTable`),
+a period's run on the deployment side (`BookingPeriodTable`), a session lane's label
+(`BookingPeriodTimeline` hands `TimelineChart` an `open` per lane — what a lane MEANS stays the
+caller's) and a run's deployment (`RunHeaderPanel`). No panel holds a route or a `RouteLocationRaw`
+any more. Opening one of them in a new tab went with the `RouterLink`, which is accepted: the URL
+stops carrying selection with viewer#31, and a second tab shares the one layout.
+
+**The jump from a report row into the chart is not built.** The portfolio row that linked a unit's
+symbol into the chart was deleted, and the jump with it; it returns with the run-bound chart of
+viewer#31 — an `openChart` on this channel, added when a caller exists.
 
 ### Deployments — a second view, deliberately not a panel workspace
 

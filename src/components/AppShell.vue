@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import { Splitpanes, Pane } from 'splitpanes'
 import { useBrokerStore } from '@/stores/broker_store'
 import { useSymbolStore } from '@/stores/symbol_store'
 import { useSelectionStore } from '@/stores/selection_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import { useQuerySync } from '@/composables/use_query_sync'
+import { provideOpenInContext } from '@/composables/use_open_in_context'
 import AppSelect from '@/components/base/AppSelect.vue'
 import TopMenu from '@/components/TopMenu.vue'
 import { t } from '@/translate'
@@ -26,6 +28,22 @@ const currentSymbols = computed(() =>
 )
 
 useQuerySync()
+
+/**
+ * The way out of a panel, while the views are still routes: a run or a deployment is opened by
+ * going to its view with the param that view restores. Once the views are docked panels it becomes
+ * setting a link's context instead — and no panel changes.
+ */
+const router = useRouter()
+provideOpenInContext({
+  openRun: (runId: string) => {
+    void router.push({ name: 'runs', query: { run: runId } })
+  },
+  openDeployment: (deploymentId: string) => {
+    void router.push({ name: 'deployments', query: { deployment: deploymentId } })
+  },
+  canOpen: true,
+})
 
 onMounted(async () => {
   await brokerStore.loadBrokers()

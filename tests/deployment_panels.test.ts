@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { mount, RouterLinkStub } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
@@ -8,6 +9,8 @@ import type {
   DeploymentRow,
   DeploymentSessionRow,
 } from '@/types/api/deployment_types'
+import { provideTestOpenInContext } from './open_in_context_harness'
+import type { TestOpenInContext } from './open_in_context_harness'
 
 import detailFixture from './fixtures/deployment_detail.json'
 import listFixture from './fixtures/deployments_list.json'
@@ -35,20 +38,31 @@ function session(overrides: Partial<DeploymentSessionRow> = {}): DeploymentSessi
   return { ...BASE_SESSION, ...overrides }
 }
 
-function mountSessions(sessions: DeploymentSessionRow[]) {
-  return mount(SessionsTable, {
-    props: { sessions, keyFields: ['run_id', 'currency'] },
-    global: { stubs: { RouterLink: RouterLinkStub } },
+/** Where the last mounted table tried to send the reader. */
+let way!: TestOpenInContext
+
+function mountSessions(sessions: DeploymentSessionRow[], canOpen = true) {
+  const Host = defineComponent({
+    setup() {
+      way = provideTestOpenInContext(canOpen)
+      return () => h(SessionsTable, { sessions, keyFields: ['run_id', 'currency'] })
+    },
   })
+  return mount(Host)
 }
 
 describe('SessionsTable', () => {
-  it('opens a session through the run it is', () => {
+  it('opens a session through the run it is', async () => {
     const wrapper = mountSessions([session()])
-    expect(wrapper.findComponent(RouterLinkStub).props('to')).toEqual({
-      name: 'runs',
-      query: { run: BASE_SESSION.run_id },
-    })
+    await wrapper.find('.session-run .jump-link').trigger('click')
+    expect(way.opened).toEqual([{ what: 'run', id: BASE_SESSION.run_id }])
+  })
+
+  /** With nowhere to send the reader the run is named as the text it is, never a dead way in. */
+  it('names the run as plain text where nothing can open it', () => {
+    const wrapper = mountSessions([session()], false)
+    expect(wrapper.find('.session-run .jump-link').exists()).toBe(false)
+    expect(wrapper.find('.session-run').text()).toBe(BASE_SESSION.run_id)
   })
 
   /**

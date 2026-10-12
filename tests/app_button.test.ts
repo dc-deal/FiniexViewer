@@ -18,6 +18,16 @@ describe('AppButton', () => {
   })
 
   /**
+   * `link` is a jump worn as a link: no padding and the font of its line, so in a table cell its
+   * text stands where text would. The four states stay the shared ones.
+   */
+  it('takes the link shape where it is a jump', () => {
+    const wrapper = mount(AppButton, { props: { variant: 'link' } })
+    expect(wrapper.classes()).toContain('link')
+    expect(wrapper.classes()).not.toContain('solid')
+  })
+
+  /**
    * `aria-pressed` turns a button into a TOGGLE for a screen reader. A plain button that carries
    * it claims a state it does not have, so it is present only where `active` is actually used.
    */

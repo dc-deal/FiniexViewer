@@ -47,6 +47,37 @@ describe('TimelineChart', () => {
     expect(labels).toEqual(['first', 'second'])
   })
 
+  /**
+   * What a lane MEANS is the caller's: the chart draws a way in only where the caller handed it
+   * something to open, and runs that on a click without knowing what it opens.
+   */
+  it('puts a way in into a label only where the lane can be opened', async () => {
+    let opened = 0
+    const wrapper = mountChart([
+      { ...lane('session', [[0, 10]]), open: () => { opened += 1 } },
+      lane('unit', [[10, 20]]),
+    ])
+    const [session, unit] = wrapper.findAll('.lane-label')
+    expect(session!.find('.jump-link').exists()).toBe(true)
+    expect(unit!.find('.jump-link').exists()).toBe(false)
+    expect(unit!.text()).toBe('unit')
+
+    await session!.find('.jump-link').trigger('click')
+    expect(opened).toBe(1)
+  })
+
+  /**
+   * The label column keeps its own element, so its width, small font and clip stay the column's.
+   * Put on the jump itself, the class lost to the link shape's inherited font — measured
+   * 2026-10-12: run ids drawn at 16 px beside a 13.6 px axis caption.
+   */
+  it('keeps the label column as its own element around the jump', () => {
+    const wrapper = mountChart([{ ...lane('session', [[0, 10]]), open: () => {} }])
+    const label = wrapper.find('.lane-label')
+    expect(label.element.tagName).toBe('SPAN')
+    expect(label.classes()).not.toContain('jump-link')
+  })
+
   // A span outside the scale is a caller error, and drawing it off the edge hides it instead of
   // showing it wrong. Clamped, so it stays visible at the boundary it exceeded.
   it('clamps a span that reaches past the scale rather than drawing it off the edge', () => {
