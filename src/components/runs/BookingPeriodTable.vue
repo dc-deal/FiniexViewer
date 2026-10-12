@@ -235,7 +235,8 @@ const bands = computed<ListBand[]>(() => [
 /* only what the shared list does not own: it carries the tracks, the bands, the headings and the
    read-only rows */
 .periods-list {
-  max-height: 50vh;
+  /* of the view that holds the table, not of the browser window */
+  max-height: 50cqh;
   overflow-y: auto;
 }
 

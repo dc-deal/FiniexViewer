@@ -17,7 +17,7 @@ reload.
 
 ![The run list, folded by family, over the trade history and the orders of one run](docs/images/runs_overview_dark.png)
 
-**A run, from the list down to one order.** The list folds eighty-five runs into forty-two lines @
+**A run, from the list down to one order.** The list folds eighty-five runs into forty-two lines —
 the children of one sweep or one deployment session stand under a single heading — and a chosen run
 opens the panels beneath it.
 

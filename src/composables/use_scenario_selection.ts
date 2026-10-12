@@ -14,6 +14,13 @@ export interface ScenarioSelection {
 const SCENARIO_SELECTION: InjectionKey<ScenarioSelection> = Symbol('scenario-selection')
 
 /**
+ * The prefix of the scenario roster's facet bar, named after the unit it narrows. Declared here,
+ * beside the narrowing the roster writes, because a second writer needs it too: a new run clears
+ * the roster's facets and search (`use_run_query_sync`), and two spellings of one word drift.
+ */
+export const ROSTER_FACET_PREFIX = 'unit'
+
+/**
  * The host supplies the narrowing for everything it renders.
  *
  * Ambient rather than a prop, for the same reason the display preferences are: it applies to every

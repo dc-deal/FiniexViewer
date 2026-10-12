@@ -13,12 +13,25 @@ let chart: IChartApi | null = null
 let series: ISeriesApi<'Candlestick'> | null = null
 let resizeObserver: ResizeObserver | null = null
 
-function initChart(): void {
+/**
+ * The size the chart can be drawn at, or null while the container has none.
+ *
+ * A container of 0×0 is a panel not yet laid out or not in view. A chart created at that size, or
+ * fitted to it, keeps a collapsed time scale; resized to it, it loses its place. So nothing is drawn
+ * or resized until there is a real size, and the bars are fitted to the first one.
+ */
+function drawableSize(): { width: number, height: number } | null {
+  const element = container.value
+  if (!element || element.clientWidth === 0 || element.clientHeight === 0) return null
+  return { width: element.clientWidth, height: element.clientHeight }
+}
+
+function initChart(size: { width: number, height: number }): void {
   if (!container.value) return
 
   chart = createChart(container.value, {
-    width: container.value.clientWidth,
-    height: container.value.clientHeight,
+    width: size.width,
+    height: size.height,
     layout: {
       background: { type: ColorType.Solid, color: '#0d0d0f' },
       textColor: '#888888',
@@ -44,19 +57,27 @@ function initChart(): void {
   })
 }
 
-onMounted(() => {
-  initChart()
+function showData(data: ChartBar[]): void {
+  if (!series) return
+  series.setData(data.map(b => ({ ...b, time: b.time as UTCTimestamp })))
+  chart?.timeScale().fitContent()
+}
 
-  if (props.data.length && series) {
-    series.setData(props.data.map(b => ({ ...b, time: b.time as UTCTimestamp })))
-    chart?.timeScale().fitContent()
+/** Build at the first real size, follow every later one, and ignore a collapse to nothing. */
+function onResize(): void {
+  const size = drawableSize()
+  if (!size) return
+  if (!chart) {
+    initChart(size)
+    if (props.data.length) showData(props.data)
+    return
   }
+  chart.resize(size.width, size.height)
+}
 
-  resizeObserver = new ResizeObserver(() => {
-    if (container.value && chart) {
-      chart.resize(container.value.clientWidth, container.value.clientHeight)
-    }
-  })
+onMounted(() => {
+  onResize()
+  resizeObserver = new ResizeObserver(onResize)
   if (container.value) resizeObserver.observe(container.value)
 })
 
@@ -65,14 +86,8 @@ onUnmounted(() => {
   chart?.remove()
 })
 
-watch(
-  () => props.data,
-  (newData) => {
-    if (!series) return
-    series.setData(newData.map(b => ({ ...b, time: b.time as UTCTimestamp })))
-    chart?.timeScale().fitContent()
-  }
-)
+// bars that arrive before the chart has a size wait for it: onResize hands them over at build time
+watch(() => props.data, newData => showData(newData))
 </script>
 
 <template>

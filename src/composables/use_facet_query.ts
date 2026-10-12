@@ -36,6 +36,16 @@ const FACET_SEPARATOR = ';'
 const VALUE_SEPARATOR = ','
 const PAIR_SEPARATOR = ':'
 
+/**
+ * The three params ONE bar owns, built from its prefix — the only place their names are put
+ * together. A writer that must clear another bar's narrowing asks for the keys rather than spelling
+ * them: a new run clears the roster's facets and search (`use_run_query_sync`), and a literal
+ * `unitf` there would silently stop matching the day this scheme changed.
+ */
+export function facetParamKeys(prefix: string): { facets: string, search: string, sort: string } {
+  return { facets: `${prefix}f`, search: `${prefix}q`, sort: `${prefix}sort` }
+}
+
 export interface FacetQuery {
   selection: Ref<FacetSelection>
   search: Ref<string>
@@ -86,6 +96,7 @@ export function useFacetQuery(
 ): FacetQuery {
   const router = useRouter()
   const route = useRoute()
+  const keys = facetParamKeys(prefix)
 
   const selection = ref<FacetSelection>({})
   const search = ref('')
@@ -96,10 +107,10 @@ export function useFacetQuery(
   onMounted(async () => {
     await router.isReady()
     const params = readQuery(route.query)
-    const named = Boolean(params[`${prefix}f`])
-    if (named) selection.value = parseFacets(params[`${prefix}f`]!)
-    if (params[`${prefix}q`]) search.value = params[`${prefix}q`]!
-    if (params[`${prefix}sort`]) sort.value = params[`${prefix}sort`]!
+    const named = Boolean(params[keys.facets])
+    if (named) selection.value = parseFacets(params[keys.facets]!)
+    if (params[keys.search]) search.value = params[keys.search]!
+    if (params[keys.sort]) sort.value = params[keys.sort]!
     // No write on arrival for a link that names a facet: it is not WRONG about one, so there is
     // nothing to repair — unlike `run`, whose old cascade params had to be cleaned away.
     _ready = true
@@ -115,9 +126,9 @@ export function useFacetQuery(
     if (!_ready) return
     const facets = formatFacets(selection.value)
     patchQuery(router, {
-      [`${prefix}f`]: facets || null,
-      [`${prefix}q`]: search.value.trim() || null,
-      [`${prefix}sort`]: sort.value === defaultSort ? null : sort.value,
+      [keys.facets]: facets || null,
+      [keys.search]: search.value.trim() || null,
+      [keys.sort]: sort.value === defaultSort ? null : sort.value,
     })
   }, { deep: true })
 

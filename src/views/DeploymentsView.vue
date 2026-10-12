@@ -132,12 +132,16 @@ const showDeployment = computed(() =>
 </template>
 
 <style scoped>
+/* A SIZE container for the same reason as the runs view: the deployment list and the period table
+   cap themselves against THIS view, which a panel later shares with others, not against the
+   browser window. */
 .deployments-view {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  container-type: size;
 }
 
 .deployments-header {

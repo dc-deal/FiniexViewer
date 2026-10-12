@@ -324,10 +324,11 @@ const chosen = computed(() =>
   font-size: var(--font-size-sm);
 }
 
-/* never more than a third of the window: the history the list leads to has to fit beside it.
-   Everything else about its shape belongs to `base/RecordList.vue`. */
+/* never more than a third of the view: the history the list leads to has to fit beside it.
+   Everything else about its shape belongs to `base/RecordList.vue`. Measured against the view
+   (`cqh`), not the browser window. */
 .deployment-list {
-  max-height: 33vh;
+  max-height: 33cqh;
   overflow-y: auto;
 }
 

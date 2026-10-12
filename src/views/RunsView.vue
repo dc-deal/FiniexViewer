@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
@@ -9,6 +9,7 @@ import { useRunQuerySync } from '@/composables/use_run_query_sync'
 import { patchQuery } from '@/composables/query_param_utils'
 import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import {
+  POSITION_PARAM,
   formatPositionRef,
   parsePositionRef,
   providePositionLink,
@@ -68,16 +69,17 @@ const router = useRouter()
 const layoutStore = useLayoutStore()
 
 providePositionLink({
-  marked: computed(() => parsePositionRef(
-    typeof route.query['position'] === 'string' ? route.query['position'] : undefined
-  )),
+  marked: computed(() => {
+    const value = route.query[POSITION_PARAM]
+    return parsePositionRef(typeof value === 'string' ? value : undefined)
+  }),
   jumpTo: (panelId: string, ref: PositionRef) => {
-    patchQuery(router, { position: formatPositionRef(ref) })
+    const written = patchQuery(router, { [POSITION_PARAM]: formatPositionRef(ref) })
     // a hidden panel is not in the column at all, and a folded one draws nothing — the jump has to
     // make the target reachable before it can scroll to it
     layoutStore.show(panelId)
     layoutStore.setOpen(panelId, true)
-    void scrollToMark(panelId)
+    void scrollToMark(panelId, written)
   },
   canJumpTo: (panelId: string) => {
     const descriptor = panelById(panelId)
@@ -109,18 +111,28 @@ provideOrderSteps({
   },
 })
 
+// the view's own root, so the jump below searches THIS view and never the whole document
+const viewRoot = ref<HTMLElement | null>(null)
+
 /**
  * Scroll the marked row into view, once it exists.
  *
- * Two ticks rather than one: the first lets the layout store's change reach the column, the second
- * lets the panel that was just opened render its rows. A row still absent after that is one the
- * target panel does not draw — beyond its visible cap, or in a group it folded — and the jump then
- * leaves the mark where it is rather than scrolling to nothing.
+ * It waits for the URL first: the rows read their mark FROM the URL, and the router writes it some
+ * ticks after the click. Two fixed ticks found no marked row at all, so the jump opened its panel and
+ * scrolled nowhere — unnoticed from 2026-10-05 to 2026-10-12, because the trades of the first order
+ * are on screen anyway. One tick after the write lets the rows take the mark; the panel opened above
+ * has drawn them by then. A row still absent after that is one the target panel does not draw —
+ * beyond its visible cap, or in a group it folded — and the jump then leaves the mark where it is
+ * rather than scrolling to nothing.
+ *
+ * Searched inside THIS view, never the whole document: once the views are panels that can stand
+ * side by side, a second copy of a panel would otherwise answer first and the jump would scroll a
+ * view the reader is not looking at.
  */
-async function scrollToMark(panelId: string): Promise<void> {
+async function scrollToMark(panelId: string, written: Promise<void>): Promise<void> {
+  await written
   await nextTick()
-  await nextTick()
-  const row = document.querySelector(`[data-panel="${panelId}"] .record-row.marked`)
+  const row = viewRoot.value?.querySelector(`[data-panel="${panelId}"] .record-row.marked`)
   row?.scrollIntoView({ block: 'center', behavior: 'smooth' })
 }
 
@@ -184,48 +196,64 @@ watch(selectedRunId, runId => {
   reportsStore.loadConfig(runId)
 }, { immediate: true })
 
+/*
+ * The three COMPOSED models, each its own computed. Built inside the one `sources` literal below,
+ * every one of them was a new object whenever ANY section arrived, and a panel that watched its
+ * model handed a reader's choices back: the roster cleared its narrowing as the trade history or
+ * the configuration landed, neither of which it even reads. Apart, a composed model changes only
+ * when one of its OWN parts does — and since those still arrive one by one, a panel that resets on
+ * a new run watches the run's id, never the model (OrdersPanel, ScenarioRosterPanel,
+ * TradeHistoryPanel).
+ */
+
+/**
+ * TWO models in one, and both halves are needed. The index ROW is always there and answers for
+ * a run with no artifacts at all; the served HEADER carries the two things the row cannot —
+ * which code ran, and whether uncommitted code was explicitly allowed to place real orders. The
+ * row is never absent, so the panel always draws; the header may be, and then it draws less.
+ */
+const headerModel = computed(() => selectedRun.value
+  ? { info: selectedRun.value, served: runHeader.value }
+  : null)
+
+// composed rather than served: `pending-orders` says what BECAME of a scenario's orders and
+// `order-history` carries the orders themselves. Joined on the scenario name, which both sides
+// write from the same run unit. The history is what the panel needs — a run with a funnel and no
+// orders has nothing to show — so the pending half may be null and the panel says so.
+const ordersModel = computed(() => orderHistory.value
+  ? {
+      pending: pendingOrders.value,
+      history: orderHistory.value,
+      // the TRADES too, and only so a link can be absent where it would lead nowhere: 55 of the
+      // measured positions opened and never closed, so they produced no trade at all
+      trades: tradeHistory.value,
+    }
+  : null)
+
+// composed rather than served: the roster says what was DECLARED, the portfolio what it EARNED
+// and warnings-errors what WENT WRONG — three responses, one question a reader scans forty rows
+// with. Joined on the unit name, which is one identity across all three.
+const rosterModel = computed(() => scenarios.value
+  ? {
+      scenarios: scenarios.value,
+      portfolio: portfolio.value,
+      warningsErrors: warningsErrors.value,
+    }
+  : null)
+
 // the models the panels render, keyed by the source each descriptor declares
 const sources = computed(() => ({
-  /**
-   * TWO models in one, and both halves are needed. The index ROW is always there and answers for
-   * a run with no artifacts at all; the served HEADER carries the two things the row cannot @
-   * which code ran, and whether uncommitted code was explicitly allowed to place real orders. The
-   * row is never absent, so the panel always draws; the header may be, and then it draws less.
-   */
-  header: selectedRun.value
-    ? { info: selectedRun.value, served: runHeader.value }
-    : null,
+  header: headerModel.value,
   runSummary: summary.value,
   feedHealth: feedHealth.value,
   warningsErrors: warningsErrors.value,
   portfolio: portfolio.value,
   broker: broker.value,
   aggregated: aggregated.value,
-  // composed rather than served: `pending-orders` says what BECAME of a scenario's orders and
-  // `order-history` carries the orders themselves. Joined on the scenario name, which both sides
-  // write from the same run unit. The history is what the panel needs — a run with a funnel and no
-  // orders has nothing to show — so the pending half may be null and the panel says so.
-  orders: orderHistory.value
-    ? {
-        pending: pendingOrders.value,
-        history: orderHistory.value,
-        // the TRADES too, and only so a link can be absent where it would lead nowhere: 55 of the
-        // measured positions opened and never closed, so they produced no trade at all
-        trades: tradeHistory.value,
-      }
-    : null,
+  orders: ordersModel.value,
   bookingPeriods: bookingPeriods.value,
   config: config.value,
-  // composed rather than served: the roster says what was DECLARED, the portfolio what it EARNED
-  // and warnings-errors what WENT WRONG — three responses, one question a reader scans forty rows
-  // with. Joined on the unit name, which is one identity across all three.
-  scenarioRoster: scenarios.value
-    ? {
-        scenarios: scenarios.value,
-        portfolio: portfolio.value,
-        warningsErrors: warningsErrors.value,
-      }
-    : null,
+  scenarioRoster: rosterModel.value,
   tradeHistory: tradeHistory.value,
 }))
 
@@ -279,7 +307,7 @@ const showPanels = computed(() =>
 </script>
 
 <template>
-  <div class="runs-view">
+  <div ref="viewRoot" class="runs-view">
     <header class="runs-header">
       <RunPicker />
       <AppBar v-if="showPanels" :sources="sources" />
@@ -351,12 +379,17 @@ const showPanels = computed(() =>
 </template>
 
 <style scoped>
+/* A SIZE container, so the lists inside measure their caps against this view and not against the
+   browser window. With `vh` a view given half the screen still sized its run list for the whole
+   of it, and the rows past the view's own hidden overflow could not be reached. The view is sized
+   by what holds it and never by its content, which is what size containment requires. */
 .runs-view {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  container-type: size;
 }
 
 .runs-header {

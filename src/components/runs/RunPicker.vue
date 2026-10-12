@@ -74,7 +74,7 @@ const facets: FacetDefinition<RunInfo>[] = [
    * so a shared link is unaffected.
    */
   { id: 'group', label: 'Pipeline', valuesOf: row => stated(row.group) },
-  // no `Set` facet: the list GROUPS by set, so the facet would offer the same partition twice @
+  // no `Set` facet: the list GROUPS by set, so the facet would offer the same partition twice —
   // and on a sweep it offered 13 values matching one run each, which is a second search line.
   // The search still reads the set name, so hunting one by hand is a word rather than a menu.
   // the one facet built rather than read: it is the presence of a field, which has two names
@@ -82,7 +82,7 @@ const facets: FacetDefinition<RunInfo>[] = [
   { id: 'reporting', label: 'Reporting', valuesOf: row => stated(row.reporting) },
   /**
    * The family a run belongs to. **`Parent`, by their decision of 2026-10-09**, not `Origin`:
-   * they asked where we used that word, we counted, and the count settled it on their side @
+   * they asked where we used that word, we counted, and the count settled it on their side —
    * *"the word `origin` keeps exactly one meaning, who started a run"*. This renders `parent_kind`
    * and they call the relation the run's parent, so this takes their word.
    *
@@ -640,11 +640,12 @@ watch(selectedRunId, runId => { open.value = runId === null })
   font-size: var(--font-size-sm);
 }
 
-/* the list is the way in, so it gets room — but never more than a third of the window ONCE a run is chosen, or the
+/* the list is the way in, so it gets room — but never more than a third of the view ONCE a run is chosen, or the
    panels it leads to are never on screen at the same time. Everything else about its shape —
-   the tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`. */
+   the tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`.
+   Measured against the VIEW (`cqh`, the runs view is a size container), not the browser window. */
 .run-list {
-  max-height: 33vh;
+  max-height: 33cqh;
   overflow-y: auto;
   /* The gutter is reserved whether or not a bar is in it. Opening a family can push the list past
      its cap, and the bar then appears and takes 15 px of width from the `1fr` column — measured
@@ -654,10 +655,14 @@ watch(selectedRunId, runId => { open.value = runId === null })
 
 /* Nothing is below it yet, so the third of a window is a window onto a void: the list was capped
    at 33vh while the rest of the page held one sentence. Reported on screen 2026-10-10. It still
-   scrolls inside itself rather than growing past the viewport — the view hides its own overflow,
-   so a header taller than the window would put its last rows out of reach. */
+   scrolls inside itself rather than growing past the view — the view hides its own overflow,
+   so a header taller than the view would put its last rows out of reach. */
+/* 11.5rem is the rest of the view above and below the list, so the list ends at the view's edge.
+   (It was `100vh - 14rem`, which also had to take out the 2.5rem shell header above the view; that
+   header is not inside `100cqh`.) The floor is the third the list keeps once a run is chosen: in a
+   short view the subtraction alone would leave less than one row, or nothing. */
 .run-list.roomy {
-  max-height: calc(100vh - 14rem);
+  max-height: max(33cqh, calc(100cqh - 11.5rem));
 }
 
 /* ONE cell over every track. The other lists split their heading in two so a count can sit at the

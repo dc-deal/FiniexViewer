@@ -84,7 +84,7 @@ export interface RunOrigin {
  * The record every run writes BEFORE it does anything else (contract 26).
  *
  * Seventeen of its nineteen keys are on the index row already. The two that are not are the point:
- * `code_identity` — which code ran, down to each worker's version and the commit it came from @
+ * `code_identity` — which code ran, down to each worker's version and the commit it came from —
  * and `origin.allow_dirty`.
  *
  * **It answers for a run that carries no report artifacts at all.** Measured 2026-10-10 on all

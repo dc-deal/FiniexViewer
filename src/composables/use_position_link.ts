@@ -78,6 +78,9 @@ export function marksPosition(
  */
 const SEPARATOR = '~'
 
+/** The query param the mark rides in — read and written by the run view, cleared by a new run. */
+export const POSITION_PARAM = 'position'
+
 export function formatPositionRef(ref: PositionRef): string {
   return `${ref.scenario}${SEPARATOR}${ref.position}`
 }

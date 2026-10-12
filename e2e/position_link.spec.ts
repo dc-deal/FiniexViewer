@@ -6,8 +6,9 @@ import { mockApi, fixture, FIXTURE_RUN } from './api_mock'
  *
  * Everything the unit suite can reach is already covered — the affordance, its three absences, the
  * mark, what the panels ask for. What it cannot reach is the half that lives in the VIEW: a param
- * in the address bar, a panel that was CLOSED being opened, a panel that was HIDDEN coming back, and
- * the mark surviving a real reload. Each of those has been a defect class here before.
+ * in the address bar, a panel that was CLOSED being opened, a panel that was HIDDEN coming back, the
+ * scroll that brings the mark on screen, and the mark surviving a real reload. Each of those has
+ * been a defect class here before.
  *
  * The capture makes the trap concrete, and NOTHING here transcribes it. Every scenario counts its
  * positions from `pos_<symbol>_1`, so one id belongs to several positions and a mark that keys on
@@ -96,6 +97,26 @@ test('a jump opens the closed target, marks the position and rides in the url', 
   const marked = page.locator('.trade-list .record-row.marked')
   await expect(marked).toHaveCount(tradesOf(jumped[0]!, jumped[1]!))
   await expect(marked.first()).toBeVisible()
+})
+
+/**
+ * Drawn is not SEEN: the jump also scrolls to the mark, and only a jump from far down the orders
+ * needs that. Trade History stands ABOVE Orders in the column, so the trades of the first link are
+ * on screen anyway — an assertion on them stayed green with the scroll removed, measured
+ * 2026-10-12. The scroll searches the run view's own root, so a broken root lands nowhere.
+ */
+test('a jump from far down the orders scrolls its trades into view', async ({ page }) => {
+  await page.goto(`/runs?run=${FIXTURE_RUN}`)
+  await openPanel(page, 'Orders')
+
+  const link = page.locator('.order-list .to-trades').last()
+  await link.scrollIntoViewIfNeeded()
+  // the case itself: a reader scrolled away from the top, where the trades are about to open
+  const scrolled = await page.locator('.runs-body').evaluate(element => element.scrollTop)
+  expect(scrolled).toBeGreaterThan(0)
+
+  await link.click()
+  await expect(page.locator('.trade-list .record-row.marked').first()).toBeInViewport()
 })
 
 test('a hidden target comes back rather than the jump landing nowhere', async ({ page }) => {

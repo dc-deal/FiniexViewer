@@ -38,8 +38,10 @@ replaced counted `<th>` against the group row's `colspan`; after the migration b
 would have passed for ever on a subject that no longer exists. `position_link.spec.ts` holds the jump between an
 order and its trade, and every part of it lives in the VIEW rather than in a panel: a CLOSED target
 panel being opened, a HIDDEN one coming back rather than the jump landing nowhere, the position
-reaching the address bar, and the mark surviving a real reload without the page scrolling on its
-own. The fixtures make the trap concrete — `pos_ethusd_1` appears in five scenarios of the order
+reaching the address bar, a jump from far down the orders SCROLLING its trades into view, and the
+mark surviving a real reload without the page scrolling on its own. The scroll test jumps from the
+LAST link on purpose: the trades of the first one are on screen anyway, so a test on them stayed
+green with the scroll removed (2026-10-12). The fixtures make the trap concrete — `pos_ethusd_1` appears in five scenarios of the order
 history and two of them produced a trade, so the link is drawn twice and the mark lands in one
 scenario rather than in every row carrying that id. `panel_boundary.spec.ts` holds the one claim the
 unit suite cannot reach, because it is about the WORKSPACE and not about a panel: a section that
@@ -86,7 +88,12 @@ and a poor everyday state, because the moment it engages the panel's leftmost co
 view and nothing says so. Two defects of exactly that shape reached the screen in one week — a
 56-character worker type pushing the configuration table past its column, and an axis label whose
 transform pulled it back on screen but not in layout, so a panel offered 67 px of scrollbar for
-nothing. Both are geometry, so jsdom cannot see either. `performance.spec.ts` is excluded from the
+nothing. Both are geometry, so jsdom cannot see either. `view_heights.spec.ts` holds that **a list
+caps its height against its VIEW, not the window**: the run list ends inside a view given half the
+window's height, and keeps at least a row in a very short one. Its first version ran at full height
+and stayed green with the size container removed — the budget around the list holds more slack
+than the gap between window and view — so the view is now shrunk, and both tests were seen to fail
+once with the container, and once with the floor, taken away. `performance.spec.ts` is excluded from the
 ordinary run (`npm run test:perf`, one worker) because its budgets fail under contention.
 
 **A long run inside the container gets a DEADLINE, and `scripts/run.sh` is how.** A `docker exec`
@@ -167,10 +174,10 @@ tests/
   bars_store.test.ts        — coverage validation, window calculation, timeframe mismatch, error handling
   use_query_sync.test.ts    — URL-first priority, localStorage fallback, _ready guard, URL write-back
   runs_store.test.ts        — run index loading, the flat index, missing-artifact flag, error handling, and the scenario narrowing: several at once, one taken back out, no duplicates, dropped whenever the run below it changes
-  use_run_query_sync.test.ts — the run restored from the URL, a link saved under the old cascade opened and its dead params cleaned away, merge with foreign params, and the scenario narrowing: restored AFTER the run that clears it, several names comma separated, a hand-edited param with blanks, ignored without a run, written and removed again
+  use_run_query_sync.test.ts — the run restored from the URL, a link saved under the old cascade opened and its dead params cleaned away, merge with foreign params, and the scenario narrowing: restored AFTER the run that clears it, several names comma separated, a hand-edited param with blanks, ignored without a run, written and removed again; and what a NEW run takes with it — the position mark and the roster's narrowing, never on a restore and never on a mere narrowing; a run the reader picks while a link is still restoring counts as new
   translate.test.ts         — the marker returns its input; the count agrees with its noun, zero reads as plural, a large count stays grouped
   query_param_utils.test.ts — query reading (string-only), param write and delete
-  use_facet_query.test.ts   — the facet encoding round trip and its stable order, a group it cannot read, a value with a space; seeding a bar from the URL, writing nothing while untouched, keeping another view's params, two bars in one URL; and `patchQuery` keeping both writers of one tick
+  use_facet_query.test.ts   — the facet encoding round trip and its stable order, a group it cannot read, a value with a space; seeding a bar from the URL, writing nothing while untouched, keeping another view's params, two bars in one URL; and `patchQuery` keeping both writers of one tick and resolving only once the URL carries all of them
   run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the narrowing (a unit's errors, a run-wide warning kept while another unit's drops, the outcome counts marked as the run's), the executive figures marked as the run's, the portfolio breakdown incl. the chart link and the narrowed unit MARKED rather than filtered (the run-wide total stays), and the run header incl. the two kinds of parent, MARKET TIME (covered in days past two, the summed span only where the units overlap, n/a where the run never recorded it), the two excursions, what the account started from, and a run of several accounts saying how many and which one fell deepest
   app_bar.test.ts           — the inventory of sections: a toggle per registered panel, an absent section LISTED and disabled rather than hidden, and the ORDER — the reader's arrangement rather than the registry's, with a switched-off panel still listed but after everything still arranged
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
@@ -180,7 +187,7 @@ tests/
   record_list.test.ts         — the shared list stem: the flat list unchanged (one row per record under one set of headings, the TRACKS owned by the list rather than by a row), groups (partitioned in the order the rows arrive and never alphabetically, a closed group's heading drawn without its rows, the click reported as a key so the component holds no state, the first cell indented and never the row, the heading a native button carrying aria-expanded), the card beside a row (wrapped by the list, absent where the caller answers null, and NO tooltip machinery mounted at all where no card was offered), nested read-only use (no headings, and a row that is a div rather than a button that ignores its click), a chosen row announced as chosen and only where rows can be chosen, and BANDS: their spans must cover the columns exactly or none are drawn, each band carries the span it KEEPS at every rank tier (the declared span counts the widest tier only), and a band that would lose every column when narrow is reported rather than patched to one; and what a heading says on hover — the label alone, or the label THEN the column's hint, never the hint in place of it; and one class the CALLER puts on a row, kept beside the list's own states rather than replacing them
   facet_filter.test.ts      — OR within a facet and AND across facets, a facet counting against the OTHERS and not itself, a picked value kept listed at zero, a row that states no value never claimed by one, and that nothing is mutated
   run_picker.test.ts        — the flat list on the shared stem (every run whatever its group), newest first, sorting on the INSTANT rather than the text of the stamp, a damaged stamp shown as no date rather than Invalid Date, the stamp read from its OWN cell since the id beside it also begins with the year, the year dropped inside the current one and kept outside it, a logs-only run marked but still selectable, narrowing by facet, the list collapsing once a run is chosen, what the row says the run DID (one figure per account currency and never folded, an outcome shown only where the run recorded one, the trouble count silent at zero, the id shortened with the whole value in its title, how much market time it covered), and the RANKS with the card that makes them defensible: every cell carrying the rank its own column declares, a card on every row, the configuration and provenance and weight, `ticks_from` stated only where the run recorded it, the artifacts counted with their names in the title, the Tier-2 log count present only where it is not zero, and a run whose stamp is not a date still drawn
-  scenario_roster.test.ts   — the complete roster incl. the scenarios that produced nothing and their reason, the notice above the filter, narrowing by facet and by search, the honest count, a facet dropped where no row states a value, and CHOOSING scenarios (click narrows, a second click takes one back out, several collected at once, a failed scenario choosable like any other, inert without a host, the hint that says what a click does and the state that replaces it). Its figures are read CELL BY CELL against the column headings since the twelve-column migration — as running text, a probe for the currency an amount is IN matched the currency a scenario merely declares
+  scenario_roster.test.ts   — the complete roster incl. the scenarios that produced nothing and their reason, the notice above the filter, narrowing by facet and by search, the honest count, a facet dropped where no row states a value, and CHOOSING scenarios (click narrows, a second click takes one back out, several collected at once, a failed scenario choosable like any other, inert without a host, the hint that says what a click does and the state that replaces it). Its figures are read CELL BY CELL against the column headings since the twelve-column migration — as running text, a probe for the currency an amount is IN matched the currency a scenario merely declares. A narrowing survives a section of the SAME run that arrives late and is forgotten for a different run — told apart by the run id, never by the identity of the composed model
   run_reports_store.test.ts — section loading (warnings/errors, portfolio, broker, aggregated), error text KEYED BY SECTION so a concurrent load cannot drop a sibling's failure, clearing on run change, and the ABSENCE as a value — the cause kept beside the empty slot, two sections missing for different reasons, an absence that is not an error, and every reason forgotten on a selection change
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 / 409 / 403 mapping
   api_contract.test.ts      — the captured fixtures against the contract they were taken under, and each list's declared row key
@@ -202,6 +209,7 @@ tests/
   report_format.test.ts     — the three formatters worth testing apart from the panels that use them: the canonical UTC clock, and a stamp that is NOT a date giving nothing rather than throwing (Intl raises on an invalid date, so one damaged field took down the whole list it was in); the byte steps, named after the step they actually divided by; a long hash shortened to the part that distinguishes it
   path_label.test.ts        — the whole path comes out whole, the name told from the folders, a break offered at every separator, and the full value kept in the title
   timeline_chart.test.ts    — scale and clamping, the broken axis and its length-preserving property, staggered labels
+  candle_chart.test.ts      — the chart built at its first real size and never at 0×0, bars that arrived earlier handed over and fitted, a collapse to nothing ignored and the next real size followed; the chart library and the ResizeObserver are replaced, because WHEN is what is under test
   deployment_panels.test.ts — the change marks between rows, drawn as a line ABOVE the session that starts the new stand and never as a row of the list (against the produced four-session history), the absent idle stretch, the upper-bound gap, the missing totals row, the identity that does not move, the advisory wording
 
 tests/fixtures/            — responses captured from the running backend, plus the contract manifest
@@ -324,6 +332,8 @@ way.
 
 Stubs there stand in for interfaces jsdom does not implement — never for behaviour under test, because a stub that answered differently from a browser would make the suite agree with itself. `ResizeObserver` and the pointer-capture methods exist because reka-ui's floating layer measures its trigger. `Blob.prototype.text` is implemented over `FileReader`, which jsdom does have, so a layout-import test still proves the file's own bytes reach the importer. FileReader resolves on a TASK, so such a test needs one turn of the macrotask queue (`setTimeout(…, 0)`) and not only `flushPromises()`.
 
+The `ResizeObserver` stub never calls back, which is right for a component that only needs the API to exist. A suite whose subject IS the callback replaces it for its own file — `candle_chart.test.ts` does, with `vi.stubGlobal` — and undoes that in `afterEach`.
+
 ### Vue Router (use_query_sync tests)
 
 A real `createRouter` instance is created per test with `createWebHashHistory()` (no browser navigation needed). The router is passed as a plugin when mounting the test component.
@@ -419,3 +429,9 @@ code.
     with it. `record_list.test.ts` narrows that at ONE documented place rather than at each of six
     slots. A host `.vue` would be cleaner and is not available: `tsconfig.tests.json` compiles only
     `tests/**/*.ts`.
+11. **A component that waits for a real size gets one on purpose.** jsdom lays nothing out, so every
+    element measures 0×0 and the shared `ResizeObserver` stub never fires — a component that builds
+    only at a real size then never leaves its unsized state, and a test of "nothing happens at 0×0"
+    passes for the wrong reason. Give the size with `vi.spyOn(Element.prototype, 'clientWidth' |
+    'clientHeight', 'get')` and a firing observer with `vi.stubGlobal('ResizeObserver', …)`, unmount,
+    then undo both in `afterEach`. `candle_chart.test.ts` is the model.

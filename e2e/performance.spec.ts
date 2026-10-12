@@ -1,5 +1,5 @@
 import { test, expect } from './cdp_fixture'
-import { mockApi, FIXTURE_RUN } from './api_mock'
+import { mockApi, revealFixtureRun, FIXTURE_RUN } from './api_mock'
 
 /**
  * How long the views take to become USABLE.
@@ -73,8 +73,14 @@ test('the run list is usable quickly', async ({ page }) => {
 })
 
 test('a run opens its panels quickly', async ({ page }) => {
-  await page.goto('/runs')
+  // The run every capture was taken from is a FIXTURE, which the list hides by default, and it sits
+  // folded inside its family — so the list is opened on the fixtures and the family unfolded BEFORE
+  // the clock starts, the way `run_selection.spec.ts` reaches it. Without both, the click found no
+  // row: this spec runs only on a perf pass, so it went unnoticed from the day the default filter
+  // and the folding arrived until 2026-10-12.
+  await page.goto('/runs?runf=purpose:fixture')
   await page.locator('.run-list .record-row').first().waitFor({ state: 'visible' })
+  await revealFixtureRun(page)
 
   const ms = await timed('run chosen to panels drawn', async () => {
     // by the id cell's TITLE, not by the row's text: the cell shows only the timestamp part, so

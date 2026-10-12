@@ -540,7 +540,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
 
         **Where the outcome IS served, by their answer:** each closed part in `trade-history`
         (`close_type`, `position_closes`), and a position still open at the end in `portfolio`
-        under `open_positions`. A position whose entry never executed appears in neither @
+        under `open_positions`. A position whose entry never executed appears in neither —
         `pos_ethusd_44` is a cancelled limit entry, so no position ever existed. **A served
         per-position outcome does not exist today**, which is why this heading states what the
         position WAS and nothing about what it became.

@@ -34,25 +34,32 @@ export function writeParam(query: Record<string, string>, key: string, value: st
  * once a navigation RESOLVES, so two writers firing in the same flush both read the state before
  * either wrote, and the second one's object — built without the first one's key — wins.
  *
- * That is reachable, not theoretical: choosing a run writes `run`, and the same change clears the
- * roster's facets, which writes `unitf`. Whichever lost would have dropped the other's param.
+ * The case it was built for: choosing a run writes `run`, and the same change reset the roster's
+ * facets, which wrote `unitf` — whichever lost would have dropped the other's param. Since
+ * 2026-10-12 a new run clears the roster's narrowing in its OWN patch (`use_run_query_sync`), so
+ * today that change has one writer; the two-writer case returns as soon as a roster stays mounted
+ * across a run change, which the docked panels of viewer#31 make the normal case.
  *
  * So writers state a PATCH and this applies them together, against the live query, once per tick.
  * A later patch for the same key wins, which is what a caller means by writing twice.
+ *
+ * The promise resolves once the URL carries the patch — the same one for every writer of the tick —
+ * for a caller that acts on what the URL then says: the jump between orders and trades scrolls to
+ * the row the URL marks, and the router writes that mark some ticks after the click.
  */
 let _pending: Record<string, string | null> = {}
-let _scheduled = false
+let _written: Promise<void> | null = null
 
-export function patchQuery(router: Router, patch: Record<string, string | null>): void {
+export function patchQuery(router: Router, patch: Record<string, string | null>): Promise<void> {
   Object.assign(_pending, patch)
-  if (_scheduled) return
-  _scheduled = true
-  void nextTick(() => {
+  if (_written) return _written
+  _written = nextTick(async () => {
     const applied = _pending
     _pending = {}
-    _scheduled = false
+    _written = null
     const query = readQuery(router.currentRoute.value.query)
     for (const [key, value] of Object.entries(applied)) writeParam(query, key, value)
-    void router.replace({ query })
+    await router.replace({ query })
   })
+  return _written
 }

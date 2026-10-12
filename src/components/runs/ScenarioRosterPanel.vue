@@ -6,7 +6,7 @@ import AppButton from '@/components/base/AppButton.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetQuery } from '@/composables/use_facet_query'
-import { useScenarioSelection } from '@/composables/use_scenario_selection'
+import { ROSTER_FACET_PREFIX, useScenarioSelection } from '@/composables/use_scenario_selection'
 import {
   amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
@@ -70,10 +70,18 @@ const warnedUnits = computed(() => {
 
 // the narrowing rides in the URL under `unitf` / `unitq` / `unitsort` — the same two words the
 // `run=` and `unit=` params already use
-const { selection, search, sort } = useFacetQuery('unit', 'name')
+const { selection, search, sort } = useFacetQuery(ROSTER_FACET_PREFIX, 'name')
 
-// a different run is a different roster, so a narrowing made for the old one means nothing
-watch(() => props.model, () => {
+/**
+ * A different run is a different roster, so a narrowing made for the old one means nothing.
+ *
+ * Watched by the run's OWN id, never by `props.model` — the lesson `TradeHistoryPanel` learned
+ * first. The model is composed from three sections that arrive one by one, so its identity changes
+ * as the portfolio and the warnings land, and watching it cleared a reader's narrowing under them
+ * on a run that had not changed at all. A run change that unmounts this panel is cleared by the
+ * run's own cascade instead (`use_run_query_sync`).
+ */
+watch(() => props.model.scenarios.run_id, () => {
   selection.value = {}
   search.value = ''
 })
@@ -512,7 +520,8 @@ const chosenLabel = computed(() =>
 /* only what the shared list does NOT own: it carries the tracks, the row states, the picked edge
    and the spanning reason line */
 .roster-list {
-  max-height: 60vh;
+  /* of the view that holds the panel, not of the browser window */
+  max-height: 60cqh;
   overflow-y: auto;
 }
 

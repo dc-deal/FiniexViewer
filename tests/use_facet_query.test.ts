@@ -152,8 +152,9 @@ describe('useFacetQuery', () => {
  * RESOLVES, so two writers firing in the same flush both read the state before either wrote — and
  * the second one's freshly built object, which never contained the first one's key, wins.
  *
- * It is reachable rather than theoretical: choosing a run writes `run`, and the same change clears
- * the roster's facets, which writes `unitf`.
+ * The case it was built for: choosing a run writes `run`, and the same change reset the roster's
+ * facets, which wrote `unitf`. A new run now clears them in its own patch, so the case returns with
+ * a roster that stays mounted across a run change — the docked panels of viewer#31.
  */
 describe('patchQuery', () => {
   it('keeps both writers of one tick', async () => {
@@ -184,6 +185,24 @@ describe('patchQuery', () => {
     await flushPromises()
     expect(query(router)['broker']).toBe('kraken_spot')
     expect(query(router)['symbol']).toBe('ETHUSD')
+  })
+
+  // The jump between orders and trades scrolls to the row the url marks. It waited a fixed two
+  // ticks, which is shorter than a navigation, and found no marked row.
+  it('resolves once the url carries the patch', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    await patchQuery(router, { position: 'EURGBP_partial_close~pos_eurgbp_1' })
+    expect(query(router)['position']).toBe('EURGBP_partial_close~pos_eurgbp_1')
+  })
+
+  it('resolves for every writer of the tick only once all of them are written', async () => {
+    const router = makeRouter()
+    await router.isReady()
+    void patchQuery(router, { position: 'EURGBP_partial_close~pos_eurgbp_1' })
+    await patchQuery(router, { run: '20260929_080044' })
+    expect(query(router)['position']).toBe('EURGBP_partial_close~pos_eurgbp_1')
+    expect(query(router)['run']).toBe('20260929_080044')
   })
 })
 

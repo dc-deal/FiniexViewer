@@ -388,10 +388,10 @@ buttons — a different control type with a different shape, not the same one wr
 
 ### URL Query State — `use_query_sync` / `use_run_query_sync` / `use_facet_query`
 
-Every user-selectable option on a page is stored in the URL as a query param, so any view is a shareable link that survives reload. Three composables own disjoint sets of params:
+Every user-selectable option on a page is stored in the URL as a query param, so any view is a shareable link that survives reload. Three composables own their params, and one of them also CLEARS params others own — a new run takes the position mark and the roster's narrowing with it — taking their names from those owners (`POSITION_PARAM`, `facetParamKeys(ROSTER_FACET_PREFIX)`) rather than spelling them:
 
 - `use_query_sync.ts` — the chart selection (`?broker=...&symbol=...&timeframe=...`), activated in `AppShell`.
-- `use_run_query_sync.ts` — the run and the scenarios narrowed to (`?run=...&unit=...`), activated in `RunsView`. `unit` is one step BELOW the run and selecting a run clears it, so it is applied after the run resolves — read first, it is silently dropped and a shared link loses its narrowing. `?group=` and `?name=` were the old cascade's params and are actively REMOVED from a link that still carries them, rather than left to look meaningful.
+- `use_run_query_sync.ts` — the run and the scenarios narrowed to (`?run=...&unit=...`), activated in `RunsView`. `unit` is one step BELOW the run and selecting a run clears it, so it is applied after the run resolves — read first, it is silently dropped and a shared link loses its narrowing. `?group=` and `?name=` were the old cascade's params and are actively REMOVED from a link that still carries them, rather than left to look meaningful. A NEW run — never a restore, never a narrowing — also clears `position` and the roster's `unitf`/`unitq`; a run the reader picks while a link is still restoring counts as new.
 - `use_facet_query.ts` — a facet bar's narrowing, ordering and search, one instance per bar.
 
 Priority on load: **URL params > localStorage > null**. All three wait for `router.isReady()` before reading params, to avoid a race with the initial navigation, then watch their state and write on every change. For the chart selection, localStorage is a write-through cache; the run selection has no cache, because the run index is live data.
@@ -399,13 +399,19 @@ Priority on load: **URL params > localStorage > null**. All three wait for `rout
 **One writer, because four owners of one query cannot each rebuild it.** `router.replace({ query })`
 with a freshly built object drops every param the others own — and `route.query` only updates once
 a navigation RESOLVES, so two writers firing in the same flush both read the state before either
-wrote and the second one wins. That is reachable rather than theoretical: choosing a run writes
-`run`, and the same change clears the roster's facets, which writes `unitf`.
+wrote and the second one wins. The case it was built for: choosing a run wrote `run` while the
+roster reset its own facets and wrote `unitf`. Since 2026-10-12 a new run clears the roster's
+narrowing in its own patch, so today that change has one writer — and the two-writer case returns
+as soon as a roster stays mounted across a run change, which the docked panels of viewer#31 make
+the normal case.
 
-`query_param_utils.ts` therefore holds `patchQuery(router, patch)`: writers state what THEIR keys
-should become, and one navigation per tick applies them together against the live query. A later
-patch for the same key wins, which is what writing twice means. `readQuery` and `writeParam` remain
-underneath it.
+`query_param_utils.ts` therefore holds `patchQuery(router, patch)`: writers state what their keys —
+and, for a new run, the keys it invalidates — should become, and one navigation per tick applies
+them together against the live query. A later patch for the same key wins, which is what writing
+twice means. It returns a promise that resolves once the URL carries the patch — the same one for
+every writer of the tick — so a caller that acts on what the URL then says waits for the write
+rather than for a guessed number of ticks: the jump between orders and trades, below. `readQuery`
+and `writeParam` remain underneath it.
 
 #### A facet bar in the URL
 
@@ -1023,7 +1029,7 @@ runs: 42 lines instead of 85, 14 of them a family and 28 a run standing alone.
 
 The key is the PARENT where the backend states one and the set name otherwise, and the measurement
 is what decided that: **the set name alone folds no sweep**, because a sweep's children each carry
-their own (`..._c000` through `..._c008`), so the thirteen sweep runs stayed thirteen lines @
+their own (`..._c000` through `..._c008`), so the thirteen sweep runs stayed thirteen lines —
 exactly the complaint. By set name, meanwhile, eighteen `demo_btcusd_bot` runs fold under one
 heading although they are six separate deployment sessions.
 
@@ -1053,6 +1059,22 @@ finish last while the other failures vanished. Same shape as `absences` beside i
 reason. The run view prints one line per failure.
 
 **A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a streamed frame later (testingide#379/#380) without being written twice. The rule is about DATA: presentation preferences reach a panel ambiently instead (see *Settings* above), which ties it to no source.
+
+**A composed model is its own computed, so it keeps its identity while unrelated sections arrive.**
+Three panels read a model `RunsView` composes from several responses — the Run Header, the Orders
+and the Scenarios. Built inside the one `sources` literal, each was a new object whenever ANY
+section landed, and a panel that watched its model handed a reader's choices back: the roster
+cleared its narrowing as the trade history or the configuration arrived, neither of which it reads.
+Apart, a composed model changes only with its OWN parts — and since those still arrive one by one,
+a panel that resets on a new run watches the run's id, never the model's identity (`OrdersPanel`,
+`ScenarioRosterPanel`, `TradeHistoryPanel`).
+
+**A list caps its height against the VIEW it sits in, never against the browser window.** The run
+and deployment views are CSS size containers (`container-type: size`), and the lists inside them —
+the run list, the deployment list, the scenario roster, the booking-period table — measure their
+`max-height` in `cqh`. With `vh` a view given half the screen still sized its run list for the whole
+of it, and the rows past the view's own hidden overflow could not be reached. Dialogs and hover
+cards stay in `vh`: they float over the whole screen, so the window IS their measure.
 
 **Two stores, two questions.** `runs_store` answers *which* run is selected — the index, the chosen run and the scenarios narrowed to. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
 
@@ -1513,12 +1535,22 @@ channel and the panels only read the mark and ask for the jump. The channel carr
 | `jumpTo(panelId, ref)` | write the param · `show` the panel · `setOpen` it · scroll to the marked row |
 | `canJumpTo(panelId)` | does that panel have a model at all — the HOST's knowledge, read from the same `sources` record `PanelColumn` is handed |
 
+**A new run drops the mark; a restore keeps it.** A position id is a counter per unit —
+`pos_eurgbp_1` exists in every run that traded EURGBP — so a mark carried into the next run marks a
+DIFFERENT position under the same name. `use_run_query_sync` therefore clears `position`, and the
+roster's narrowing (`unitf`, `unitq`) beside it, in the same patch that writes a new `run`; a link
+that ARRIVES with a mark keeps it, because a restore is not a new run. The scroll is looked for
+inside the run view's own root rather than the whole document, so a second copy of a panel can
+never answer first. Both fixed 2026-10-12: until then the mark of one run survived into the next.
+
 **The mark is in the URL and the SCROLL is not.** A shared link puts the reader on the same position
 (§23), and a page that jumps on every reload is a page that moved while nobody was looking. The
-scroll waits two ticks — one for the layout store's change to reach the column, one for the panel it
-just opened to render — and where the row is still absent it does nothing rather than scrolling to
-nothing: a target beyond the trade list's visible cap, or inside a group it folded, is a row that is
-not there.
+scroll waits for the URL write that `patchQuery` resolves, then one tick for the rows to take the
+mark — and where the row is still absent it does nothing rather than scrolling to nothing: a target
+beyond the trade list's visible cap, or inside a group it folded, is a row that is not there. It
+waited a fixed two ticks until 2026-10-12, which is shorter than a navigation, so it never found a
+NEW mark and scrolled nowhere. Nobody saw it: Trade History stands above Orders, and the trades of
+the first order are on screen without a scroll. Only a jump from far down the orders needs one.
 
 **Three absences draw no link at all**, which is the difference between a jump and a dead end: a
 position that produced no trade (55 measured), a run that serves no trade history (10 measured), and
@@ -1699,6 +1731,12 @@ No tool enforces the marker — it is carried by review.
 - **Custom WebGL/Canvas** — full control but months of work with no financial primitives.
 
 Lightweight Charts becomes limiting if we need complex multi-pane indicator layouts or a professional trading UI. For v0.1–v0.2 scope (read-only candle display), it is the right choice.
+
+**The chart is built at its first REAL size, and a collapse to nothing is ignored** (`CandleChart.vue`).
+A container of 0×0 is a panel not yet laid out or not in view; a chart created or fitted at that
+size keeps a collapsed time scale, and resized to it, loses its place. So nothing is drawn until
+the container has a size, bars that arrived earlier are handed over and fitted when it does, and a
+later 0×0 leaves the chart as it was until the next real size.
 
 ### Testing Strategy
 

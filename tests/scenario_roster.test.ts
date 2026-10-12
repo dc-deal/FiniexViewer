@@ -285,6 +285,22 @@ describe('ScenarioRosterPanel', () => {
     })
 
     /**
+     * The narrowing outlives the sections that arrive after it. The host composes this model from
+     * three responses that land one by one, so the object is new whenever the portfolio or the
+     * warnings arrive — and watching that identity cleared a reader's narrowing on a run that had
+     * not changed. Found 2026-10-12; the reset follows the run's own id now.
+     */
+    it('keeps the narrowing while the rest of the same run arrives', async () => {
+      const wrapper = mountPanel()
+      await wrapper.find('.facet-search').setValue('broken')
+      await flushPromises()
+
+      await wrapper.setProps({ model: view(MIXED, portfolio([earning('eth_a')])) })
+      await flushPromises()
+      expect(rowNames(wrapper)).toEqual(['eth_broken'])
+    })
+
+    /**
      * `market_type` is empty on every run recorded before the backend added it. An empty string in
      * a dropdown reads as a category of its own, so the facet is DISABLED rather than offering one.
      *
@@ -339,7 +355,10 @@ describe('ScenarioRosterPanel', () => {
       await flushPromises()
       expect(rowNames(wrapper)).toHaveLength(1)
 
-      await wrapper.setProps({ model: view(report([row({ name: 'fresh_one' })])) })
+      // a different RUN, said by its id: a new roster object of the same run is only a section
+      // arriving late, and that must keep the narrowing (see the test above)
+      const another = { ...report([row({ name: 'fresh_one' })]), run_id: '20261012_074826_88026ae2' }
+      await wrapper.setProps({ model: view(another) })
       await flushPromises()
       expect(rowNames(wrapper)).toEqual(['fresh_one'])
     })

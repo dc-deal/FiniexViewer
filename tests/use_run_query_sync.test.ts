@@ -250,6 +250,106 @@ describe('useRunQuerySync', () => {
     })
   })
 
+  /**
+   * A position id is a counter per unit — `pos_eurgbp_1` exists in every run that traded EURGBP —
+   * so a mark carried into the next run marks a DIFFERENT position under the same name. Until
+   * 2026-10-12 nothing removed it; the roster's narrowing stayed behind the same way, because the
+   * roster is unmounted between two runs and its own reset never ran.
+   */
+  it('a new run drops the mark and the roster narrowing of the old one', async () => {
+    const router = makeRouter({
+      run: '20260615_120000', position: 'ETHUSD_blocks_03~pos_ethusd_1', unitf: 'symbol:ETHUSD',
+      unitq: 'blocks', unitsort: 'ticks',
+    })
+    await router.isReady()
+    mount(TestComponent, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    const replaceSpy = vi.spyOn(router, 'replace')
+    await useRunsStore().selectRun('20260615_130000')
+    await flushPromises()
+
+    const query = (replaceSpy.mock.calls.at(-1)?.[0] as { query: Record<string, string> }).query
+    expect(query['run']).toBe('20260615_130000')
+    expect(query['position']).toBeUndefined()
+    expect(query['unitf']).toBeUndefined()
+    expect(query['unitq']).toBeUndefined()
+    // the sort is a preference about the list, not a narrowing made for the old run
+    expect(query['unitsort']).toBe('ticks')
+  })
+
+  /**
+   * A restore is not a new run: a link that arrives with a mark and a roster narrowing keeps both.
+   * The `unit` param matters here — restoring it is the one restore whose own change reaches the
+   * watch after init, so it is the path that would clear the link if the two were confused.
+   */
+  it('keeps the mark and the roster narrowing a link arrives with', async () => {
+    const router = makeRouter({
+      run: '20260615_120000', unit: 'ETHUSD_blocks_03', position: 'ETHUSD_blocks_03~pos_ethusd_1',
+      unitf: 'symbol:ETHUSD', unitq: 'blocks',
+    })
+    await router.isReady()
+    mount(TestComponent, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    const query = router.currentRoute.value.query
+    expect(query['unit']).toBe('ETHUSD_blocks_03')
+    expect(query['position']).toBe('ETHUSD_blocks_03~pos_ethusd_1')
+    expect(query['unitf']).toBe('symbol:ETHUSD')
+    expect(query['unitq']).toBe('blocks')
+  })
+
+  /** Narrowing stays within the run, so it leaves the mark and the roster narrowing alone. */
+  it('keeps the mark and the roster narrowing while the run only narrows', async () => {
+    const router = makeRouter({
+      run: '20260615_120000', position: 'ETHUSD_blocks_03~pos_ethusd_1',
+      unitf: 'symbol:ETHUSD', unitq: 'blocks',
+    })
+    await router.isReady()
+    mount(TestComponent, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    useRunsStore().toggleUnit('ETHUSD_blocks_03')
+    await flushPromises()
+    const query = router.currentRoute.value.query
+    expect(query['position']).toBe('ETHUSD_blocks_03~pos_ethusd_1')
+    expect(query['unitf']).toBe('symbol:ETHUSD')
+    expect(query['unitq']).toBe('blocks')
+  })
+
+  /**
+   * A run picked while a link is still restoring is a NEW run. The link's summary takes a request,
+   * and a reader can click another run before it answers; the link's narrowing and mark belong to
+   * the run it named and must not be handed to the one the reader chose.
+   */
+  it('treats a run picked while the link restores as a new run', async () => {
+    let answer!: (value: SectionAbsence) => void
+    vi.mocked(apiClient.getRunSummary).mockImplementation(runId => runId === '20260615_120000'
+      ? new Promise<SectionAbsence>(resolve => { answer = resolve })
+      : Promise.resolve(ABSENT))
+    const router = makeRouter({
+      run: '20260615_120000', unit: 'ETHUSD_blocks_03', position: 'ETHUSD_blocks_03~pos_ethusd_1',
+      unitf: 'symbol:ETHUSD',
+    })
+    await router.isReady()
+    mount(TestComponent, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+
+    // the linked run's summary is still out — the reader picks another run
+    const store = useRunsStore()
+    await store.selectRun('20260615_130000')
+    answer(ABSENT)
+    await flushPromises()
+
+    expect(store.selectedRunId).toBe('20260615_130000')
+    expect(store.selectedUnits).toEqual([])
+    const query = router.currentRoute.value.query
+    expect(query['run']).toBe('20260615_130000')
+    expect(query['unit']).toBeUndefined()
+    expect(query['position']).toBeUndefined()
+    expect(query['unitf']).toBeUndefined()
+  })
+
   it('drops the run param again when the run is cleared', async () => {
     const router = makeRouter({ run: '20260615_130000' })
     await router.isReady()

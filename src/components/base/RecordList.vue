@@ -104,7 +104,7 @@ const props = defineProps<{
    * under `inert`), which is what every list needed until the orders list: there a row that starts
    * a position opens that position's steps, and the rows carrying it on have nothing to open.
    *
-   * The whole row rather than a glyph inside it, because that is what a reader tries first @
+   * The whole row rather than a glyph inside it, because that is what a reader tries first —
    * reported 2026-10-08 after a disclosure triangle went unnoticed. `inert` still wins: it says no
    * row is a control, and this says which of them are.
    */
