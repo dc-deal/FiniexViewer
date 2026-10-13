@@ -43,7 +43,7 @@ function mountWith(content: unknown, resetOn: unknown = 'run-a') {
   return mount(AccordionPanel, {
     props: {
       title: 'Executive Summary',
-      icon: '📊',
+      icon: 'kind-executive',
       open: true,
       pinned: false,
       locked: false,
@@ -52,6 +52,13 @@ function mountWith(content: unknown, resetOn: unknown = 'run-a') {
     slots: { default: () => h(content as never) },
   })
 }
+
+describe('AccordionPanel header', () => {
+  /** The header is the other place a panel kind is drawn; the meaning rides on the element. */
+  it('draws its kind\'s icon', () => {
+    expect(mountWith(Fine).find('.panel-trigger [data-icon="kind-executive"]').exists()).toBe(true)
+  })
+})
 
 describe('AccordionPanel as an error boundary', () => {
   beforeEach(() => {

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useLayoutStore, pinnedBoundary } from '@/stores/layout_store'
 import { allPanels } from '@/panel_registry'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { t } from '@/translate'
 
 /**
@@ -86,7 +87,7 @@ function toggle(id: string, shown: boolean): void {
           : t(panel.title)"
         @click="toggle(panel.id, panel.shown)"
       >
-        <span class="bar-icon">{{ panel.icon }}</span>
+        <AppIcon :name="panel.icon" class="bar-icon" />
         <span class="bar-label">{{ t(panel.title) }}</span>
       </button>
     </div>
@@ -187,7 +188,6 @@ function toggle(id: string, shown: boolean): void {
 
 /* the icon recedes on a section the reader has put away — their doing, not the run's */
 .bar-toggle:not(.shown):not(.absent) .bar-icon {
-  filter: grayscale(1);
   opacity: 0.6;
 }
 
@@ -198,7 +198,6 @@ function toggle(id: string, shown: boolean): void {
 }
 
 .bar-toggle.absent .bar-icon {
-  filter: grayscale(1);
   opacity: 0.35;
 }
 

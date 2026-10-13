@@ -45,7 +45,7 @@ const PANELS: PanelDescriptor[] = [
   {
     id: 'executive',
     title: 'Executive Summary',
-    icon: '📊',
+    icon: 'kind-executive',
     component: ExecutivePanel,
     source: 'runSummary',
     defaultOpen: true,
@@ -59,7 +59,7 @@ const PANELS: PanelDescriptor[] = [
      */
     id: 'broker',
     title: 'Broker',
-    icon: '🏦',
+    icon: 'kind-broker',
     component: BrokerPanel,
     source: 'broker',
     defaultOpen: true,
@@ -70,7 +70,7 @@ const PANELS: PanelDescriptor[] = [
     // no scenario grid, so the source is absent and the panel is dropped.
     id: 'scenario-roster',
     title: 'Scenarios',
-    icon: '🗂️',
+    icon: 'kind-scenario-roster',
     component: ScenarioRosterPanel,
     source: 'scenarioRoster',
     defaultOpen: false,
@@ -81,7 +81,7 @@ const PANELS: PanelDescriptor[] = [
     // the panel rather than showing it empty.
     id: 'booking-periods',
     title: 'Booking Periods',
-    icon: '📅',
+    icon: 'kind-booking-periods',
     component: BookingPeriodsPanel,
     source: 'bookingPeriods',
     defaultOpen: true,
@@ -98,7 +98,7 @@ const PANELS: PanelDescriptor[] = [
      */
     id: 'aggregated-portfolio',
     title: 'Run Totals',
-    icon: 'Σ',
+    icon: 'kind-aggregated-portfolio',
     component: AggregatedPortfolioPanel,
     source: 'aggregated',
     defaultOpen: false,
@@ -108,7 +108,7 @@ const PANELS: PanelDescriptor[] = [
     // them. Absent on a run that closed no position.
     id: 'trade-history',
     title: 'Trade History',
-    icon: '📒',
+    icon: 'kind-trade-history',
     component: TradeHistoryPanel,
     source: 'tradeHistory',
     defaultOpen: false,
@@ -126,7 +126,7 @@ const PANELS: PanelDescriptor[] = [
      */
     id: 'orders',
     title: 'Orders',
-    icon: '⏳',
+    icon: 'kind-orders',
     component: OrdersPanel,
     source: 'orders',
     defaultOpen: false,
@@ -136,7 +136,7 @@ const PANELS: PanelDescriptor[] = [
     // gates reading the numbers below it, and a screen is not read top-to-bottom like a printout.
     id: 'warnings-errors',
     title: 'Warnings & Errors',
-    icon: '⚠️',
+    icon: 'kind-warnings-errors',
     component: WarningsErrorsPanel,
     source: 'warningsErrors',
     defaultOpen: true,
@@ -144,7 +144,7 @@ const PANELS: PanelDescriptor[] = [
   {
     id: 'feed-health',
     title: 'Feed Health',
-    icon: '📡',
+    icon: 'kind-feed-health',
     component: FeedHealthPanel,
     // its own source, not the shared summary: the store answers null where neither half of this
     // panel has anything to say, and PanelColumn then drops it like any absent section
@@ -156,7 +156,7 @@ const PANELS: PanelDescriptor[] = [
     // run-config store. Closed by default — reference material rather than a headline.
     id: 'config',
     title: 'Configuration',
-    icon: '⚙',
+    icon: 'kind-config',
     component: ConfigPanel,
     source: 'config',
     defaultOpen: false,
@@ -174,7 +174,7 @@ const PANELS: PanelDescriptor[] = [
      */
     id: 'run-header',
     title: 'Run Header',
-    icon: '🏷',
+    icon: 'kind-run-header',
     component: RunHeaderPanel,
     source: 'header',
     // Provenance rather than a headline: which artifact am I looking at. Folded by default —

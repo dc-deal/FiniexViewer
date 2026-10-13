@@ -19,6 +19,7 @@
     "test:perf": "PERF=1 playwright test e2e/performance.spec.ts --workers=1"
   },
   "dependencies": {
+    "@tabler/icons-vue": "3.49.0",
     "axios": "^1.7.9",
     "lightweight-charts": "^4.2.0",
     "pinia": "^2.2.6",

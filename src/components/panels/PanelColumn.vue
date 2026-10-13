@@ -8,6 +8,7 @@ import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { panelById } from '@/panel_registry'
 import AccordionPanel from '@/components/panels/AccordionPanel.vue'
 import type { PanelState } from '@/types/panel_types'
+import type { IconName } from '@/types/icon_types'
 
 const props = defineProps<{
   /** Models keyed by the `source` a panel descriptor declares — panels never fetch their own. */
@@ -24,7 +25,7 @@ provideDisplaySettings(storeToRefs(useSettingsStore()).display)
 interface RenderedPanel {
   state: PanelState
   title: string
-  icon: string
+  icon: IconName
   component: unknown
   model: unknown
 }

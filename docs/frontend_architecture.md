@@ -411,6 +411,37 @@ the class lost to the link shape's inherited font, and the run ids were drawn at
 option rows inside a facet's popover. Those are menu items and disclosure headers rather than
 buttons — a different control type with a different shape, not the same one written twice.
 
+### Icons — `AppIcon` and the registry
+
+**An icon is named by what it MEANS, and one registry decides how it is drawn.**
+`src/icon_registry.ts` maps each meaning to a drawing — Tabler Icons (MIT), pinned exactly as
+`@tabler/icons-vue` 3.49.0, stroke 2 — and `base/AppIcon.vue` draws one by name. A caller never
+names a drawing, so one meaning has one icon everywhere and a wrong name is a type error rather
+than an empty square. The names are the `IconName` union in `src/types/icon_types.ts`, and the
+compiler holds the registry to it in both directions. The word is *icon* on purpose: a *symbol*
+here is a traded instrument, and the *register* is the term map `scripts/check_terms.py` reads.
+
+**Colour and size come from where the icon sits.** It draws in `currentColor`, the colour of the
+element it is placed in — in a panel header that is the trigger's primary ink, a step stronger
+than the secondary title beside it, as the emoji before it was. Its size is `1.2em`: about 16 px in
+a panel header, the size stroke 2 was chosen for because a thinner line on secondary ink reads as
+faint, and about 14 px in the app bar, whose small text is applied twice. It is hidden from a
+screen reader, because an icon travels with a word and the word is what is read out.
+
+**One naming scheme, checked rather than trusted** (`tests/icon_registry.test.ts`): `form-*` the
+shape a panel takes, `kind-*` a panel kind — named after the panel's id — `status-*` a state,
+`action-*` a control and `nav-*` where a panel belongs. The check fails on a meaning nothing draws,
+on two meanings that share a drawing, on a name outside the scheme, and on a panel whose icon is
+not `kind-<its id>`. It reads the source as text: a name in quotes of either kind counts, and the
+registry is left out by what it says rather than by its path, so moving the file cannot silence
+the check. Today the registry holds the eleven panel kinds, which replaced the emoji in the panel
+headers and the app bar; an emoji kept its own colours, so the app bar greyed it out for a hidden
+panel, and a line icon in the element's colour needs only the fading. The app's other glyphs
+follow in a sweep of their own.
+
+**The browser tab carries the same library's `chart-candle`** (`public/favicon.svg`), in the two
+accent values chosen by the browser's own colour scheme — a favicon cannot read the app's tokens.
+
 ### URL Query State — `use_query_sync` / `use_run_query_sync` / `use_facet_query`
 
 Every user-selectable option on a page is stored in the URL as a query param, so any view is a shareable link that survives reload. Three composables own their params, and one of them also CLEARS params others own — a new run takes the position mark and the roster's narrowing with it — taking their names from those owners (`POSITION_PARAM`, `facetParamKeys(ROSTER_FACET_PREFIX)`) rather than spelling them:
@@ -1073,7 +1104,7 @@ own rule forbids. A run standing alone keeps its badge, because nothing above it
 
 The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
 
-- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon, component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset layout* carries it into an arrangement somebody already made.
+- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset layout* carries it into an arrangement somebody already made.
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). **The bar is the column turned on its side: ONE arrangement drawn twice**, horizontally and vertically, and it renders from `arrangedPanels` — every panel, switched-off ones included, in the order the reader made. It rendered `allPanels()` until 2026-09-30, so dragging Broker to the top left its toggle sixth in the bar; it appended the switched-off ones until 2026-10-07, so flipping a toggle moved it. The two orientations now differ in exactly one thing: the column leaves out what is switched off and what this run does not carry, so the pinned boundary lands on a different index in each. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 - **`src/stores/layout_store.ts`** — the arrangement, persisted under the single versioned key `layout.v1`.
 

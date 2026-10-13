@@ -117,6 +117,7 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | HTTP client | **axios** |
 | Layout | **splitpanes**, **vue-draggable-plus** for the panel order |
 | Headless components | **Reka UI** — collapsible, toggle group, popover, hover card |
+| Icons | **Tabler Icons** — drawn by meaning through one registry |
 | Theme | CSS Custom Properties token system, dark/light mode |
 | Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` + `@stylistic` |
 | Dead code | **knip** — unreferenced files, exports and dependencies |

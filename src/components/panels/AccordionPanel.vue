@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onErrorCaptured, ref, watch } from 'vue'
 import { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent } from 'reka-ui'
+import AppIcon from '@/components/base/AppIcon.vue'
+import type { IconName } from '@/types/icon_types'
 import { t } from '@/translate'
 
 const props = defineProps<{
   title: string
-  icon: string
+  icon: IconName
   open: boolean
   pinned: boolean
   locked: boolean
@@ -57,7 +59,7 @@ watch(() => props.resetOn, () => {
     <div class="panel-header">
       <CollapsibleTrigger class="panel-trigger">
         <span class="panel-chevron" :class="{ expanded: open }">▸</span>
-        <span class="panel-icon">{{ icon }}</span>
+        <AppIcon :name="icon" />
         <span class="panel-title">{{ t(title) }}</span>
         <span v-if="failed" class="panel-failed-mark" :title="t('This section could not be drawn')">⚠</span>
       </CollapsibleTrigger>

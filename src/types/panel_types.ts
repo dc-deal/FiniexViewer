@@ -1,4 +1,5 @@
 import type { Component } from 'vue'
+import type { IconName } from '@/types/icon_types'
 
 /**
  * What a panel declares about itself. A panel is presentation only: it receives its model as a
@@ -8,7 +9,7 @@ import type { Component } from 'vue'
 export interface PanelDescriptor {
   id: string
   title: string
-  icon: string
+  icon: IconName
   component: Component
   /** Key into the model record the host supplies — the panel never fetches its own data. */
   source: string

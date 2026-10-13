@@ -28,6 +28,14 @@ describe('AppBar', () => {
     expect(mountBar(allSources()).findAll('.bar-toggle')).toHaveLength(allPanels().length)
   })
 
+  /** The registry says what a panel kind looks like; the bar is one of the two places that draw it. */
+  it('draws every panel\'s icon on its toggle', () => {
+    const wrapper = mountBar(allSources())
+    const missing = allPanels().filter(panel =>
+      !toggleFor(wrapper, panel.title).find(`[data-icon="kind-${panel.id}"]`).exists())
+    expect(missing.map(panel => panel.id)).toEqual([])
+  })
+
   /**
    * Pinning lifts a panel into a second CATEGORY rather than letting its toggle wander. The line
    * is what makes the move legible: the bubble did not run away, it crossed a boundary that is
