@@ -20,6 +20,12 @@ export const useBarsStore = defineStore('bars', () => {
   const chartData = ref<ChartBar[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  /**
+   * The chosen timeframe is not in the symbol's coverage. SAID, not acted on: what to do about it
+   * is a decision about the selection, which is the chart's to make (`use_chart_binding`) — a data
+   * store that reset it wrote into a selection it only reads.
+   */
+  const timeframeUncovered = ref(false)
 
   const selectionStore = useSelectionStore()
   const timeframeStore = useTimeframeStore()
@@ -31,12 +37,13 @@ export const useBarsStore = defineStore('bars', () => {
     loading.value = true
     error.value = null
     chartData.value = []
+    timeframeUncovered.value = false
 
     try {
       const coverage = await getCoverage(broker, symbol)
 
       if (!coverage.timeframes.includes(timeframe)) {
-        selectionStore.resetTimeframe()
+        timeframeUncovered.value = true
         return
       }
 
@@ -67,5 +74,5 @@ export const useBarsStore = defineStore('bars', () => {
     { immediate: true }
   )
 
-  return { chartData, loading, error }
+  return { chartData, loading, error, timeframeUncovered }
 })

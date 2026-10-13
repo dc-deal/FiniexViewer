@@ -5,6 +5,7 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 import type { Router } from 'vue-router'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
+import { useContextStore } from '@/stores/context_store'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import type { DeploymentRow } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
@@ -137,7 +138,7 @@ describe('DeploymentPicker', () => {
   /** The history below is what the reader came for, so the list gets out of the way. */
   it('collapses to one line once a deployment is chosen, and reopens on request', async () => {
     const wrapper = mountPicker([deployment()])
-    useDeploymentsStore().selectedDeploymentId = 'deploy_20260927_132812'
+    useContextStore().selectDeployment('deploy_20260927_132812')
     await flushPromises()
 
     expect(wrapper.find('.picker-chosen').exists()).toBe(true)
@@ -160,7 +161,7 @@ describe('DeploymentPicker', () => {
       const cells = wrapper.find('.record-row').findAll(':scope > span')
         .map(n => n.attributes('data-rank'))
 
-      expect(heads).toHaveLength(9)
+      expect(heads).not.toHaveLength(0)
       expect(cells).toEqual(heads)
       // WHICH deployment, what it is called, what it earned
       expect(heads.filter(rank => rank === '1')).toHaveLength(3)

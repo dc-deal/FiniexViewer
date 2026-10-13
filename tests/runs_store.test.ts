@@ -258,15 +258,16 @@ describe('useRunsStore', () => {
     })
 
     it('never requests a run the index does not contain', async () => {
-      // a link or a reloaded URL can name a run whose artifacts were removed since — asking for
-      // it produces one 404 per section, which is not something the view can show
+      // a stored selection can name a run whose artifacts were removed since — asking for it
+      // produces one 404 per section, which is not something the view can show
       vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
       const store = useRunsStore()
       await store.loadRuns()
       await store.selectRun('20260829_200849')
       expect(apiClient.getRunSummary).not.toHaveBeenCalled()
       expect(store.unknownRunId).toBe('20260829_200849')
-      expect(store.selectedRunId).toBeNull()
+      // the choice is kept, so the view can say which run is gone; nothing resolves to it
+      expect(store.selectedRun).toBeNull()
       expect(store.error).toBeNull()
     })
 

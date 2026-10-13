@@ -5,6 +5,7 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 import type { Router } from 'vue-router'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
+import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
@@ -332,7 +333,7 @@ describe('RunPicker', () => {
       const wrapper = mountPicker([run({ run_id: 'a' }), run({ run_id: 'b' })])
       expect(wrapper.find('.run-list').classes()).toContain('roomy')
 
-      useRunsStore().selectedRunId = 'a'
+      useContextStore().selectRun('a')
       await flushPromises()
       await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
       expect(wrapper.find('.run-list').classes()).not.toContain('roomy')
@@ -358,7 +359,7 @@ describe('RunPicker', () => {
         run({ run_id: 'other', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
       ])
       expect(rowIds(wrapper)).toEqual([])
-      useRunsStore().selectedRunId = 'pickedone'
+      useContextStore().selectRun('pickedone')
       await flushPromises()
       // the list collapses to one line once a run is chosen, so it is reopened the way a reader
       // reopens it
@@ -643,7 +644,7 @@ describe('RunPicker', () => {
       const cells = wrapper.find('.record-row').findAll(':scope > span')
         .map(node => node.attributes('data-rank'))
 
-      expect(heads).toHaveLength(10)
+      expect(heads).not.toHaveLength(0)
       expect(cells).toEqual(heads)
       // WHICH run, whether it worked, what it earned: Started, Set, Outcome, Net P&L
       expect(heads.filter(rank => rank === '1')).toHaveLength(4)

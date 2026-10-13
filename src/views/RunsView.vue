@@ -1,20 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useLayoutStore } from '@/stores/layout_store'
-import { useRunQuerySync } from '@/composables/use_run_query_sync'
-import { patchQuery } from '@/composables/query_param_utils'
+import { useRunBinding } from '@/composables/use_run_binding'
 import { provideScenarioSelection } from '@/composables/use_scenario_selection'
-import {
-  POSITION_PARAM,
-  formatPositionRef,
-  parsePositionRef,
-  providePositionLink,
-} from '@/composables/use_position_link'
-import type { PositionRef } from '@/composables/use_position_link'
+import { providePositionLink } from '@/composables/use_position_link'
+import type { PositionRef } from '@/types/context_types'
 import { provideOrderSteps } from '@/composables/use_order_steps'
 import { hasArtifact } from '@/api/report_artifacts'
 import { panelById } from '@/panel_registry'
@@ -41,8 +35,8 @@ const {
   unreadable, errors: sectionErrors,
 } = storeToRefs(reportsStore)
 
-// loads the run index and restores the cascade from the URL
-useRunQuerySync()
+// loads the run index and brings back the run the reader had open
+useRunBinding()
 
 // The narrowing is ambient for the same reason the display preferences are — see the composable.
 // The view owns it rather than PanelColumn, which draws a deployment's panels too and has no
@@ -60,26 +54,22 @@ provideScenarioSelection({
  * the WORKSPACE, which a panel must not know. Two panels act on it — the orders and the trades —
  * and both only read the mark and ask for the jump.
  *
- * The mark rides in the URL so a link carries it (§23). The SCROLL does not: it happens on the
- * click, never on a restore, because a page that jumps on every reload is a page that moved while
- * the reader was not looking.
+ * The mark is part of the run's context, so a reload brings it back. The SCROLL is not: it happens
+ * on the click, never on a restore, because a page that jumps on every reload is a page that moved
+ * while the reader was not looking.
  */
-const route = useRoute()
-const router = useRouter()
+const context = useContextStore()
 const layoutStore = useLayoutStore()
 
 providePositionLink({
-  marked: computed(() => {
-    const value = route.query[POSITION_PARAM]
-    return parsePositionRef(typeof value === 'string' ? value : undefined)
-  }),
+  marked: computed(() => context.main.run.position),
   jumpTo: (panelId: string, ref: PositionRef) => {
-    const written = patchQuery(router, { [POSITION_PARAM]: formatPositionRef(ref) })
+    context.mark(ref)
     // a hidden panel is not in the column at all, and a folded one draws nothing — the jump has to
     // make the target reachable before it can scroll to it
     layoutStore.show(panelId)
     layoutStore.setOpen(panelId, true)
-    void scrollToMark(panelId, written)
+    void scrollToMark(panelId)
   },
   canJumpTo: (panelId: string) => {
     const descriptor = panelById(panelId)
@@ -117,20 +107,18 @@ const viewRoot = ref<HTMLElement | null>(null)
 /**
  * Scroll the marked row into view, once it exists.
  *
- * It waits for the URL first: the rows read their mark FROM the URL, and the router writes it some
- * ticks after the click. Two fixed ticks found no marked row at all, so the jump opened its panel and
- * scrolled nowhere — unnoticed from 2026-10-05 to 2026-10-12, because the trades of the first order
- * are on screen anyway. One tick after the write lets the rows take the mark; the panel opened above
- * has drawn them by then. A row still absent after that is one the target panel does not draw —
- * beyond its visible cap, or in a group it folded — and the jump then leaves the mark where it is
- * rather than scrolling to nothing.
+ * The mark and the opened panel are both set at the click, so one tick later the rows carry the
+ * mark. While the mark rode in the URL, the router wrote it some ticks after the click and two
+ * fixed ticks found no marked row at all — unnoticed from 2026-10-05 to 2026-10-12, because the
+ * trades of the first order are on screen anyway. A row still absent after the tick is one the
+ * target panel does not draw — beyond its visible cap, or in a group it folded — and the jump then
+ * leaves the mark where it is rather than scrolling to nothing.
  *
  * Searched inside THIS view, never the whole document: once the views are panels that can stand
  * side by side, a second copy of a panel would otherwise answer first and the jump would scroll a
  * view the reader is not looking at.
  */
-async function scrollToMark(panelId: string, written: Promise<void>): Promise<void> {
-  await written
+async function scrollToMark(panelId: string): Promise<void> {
   await nextTick()
   const row = viewRoot.value?.querySelector(`[data-panel="${panelId}"] .record-row.marked`)
   row?.scrollIntoView({ block: 'center', behavior: 'smooth' })
@@ -160,7 +148,10 @@ const unknownUnits = computed(() => {
 
 // One request per section per run. Lazy loading on first expand is deferred until there are
 // enough sections to justify the plumbing — see viewer#21.
-watch(selectedRunId, runId => {
+//
+// Keyed on the RESOLVED run, not on the chosen id: after a reload the id is back before the index
+// is, so a watch on the id fired once with no run to load and never again.
+watch(() => selectedRun.value?.run_id ?? null, runId => {
   reportsStore.clear()
   const run = selectedRun.value
   if (!runId || !run) return
@@ -325,7 +316,7 @@ const showPanels = computed(() =>
       </div>
       <div v-else-if="unknownRunId" class="state-overlay">
         <span class="hint">
-          {{ t('This link names a run that is no longer in the index') }}: {{ unknownRunId }}
+          {{ t('The run you had open is no longer in the index') }}: {{ unknownRunId }}
         </span>
       </div>
       <!-- No sentence where no run is chosen. It read "Select group, scenario and run" — the

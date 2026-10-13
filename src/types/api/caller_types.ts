@@ -16,7 +16,12 @@ export interface CallerIdentity {
   /** The consumer the token authenticates as. */
   client: string | null
   account: string | null
-  account_kind: AccountKind | null
+  /**
+   * `person` | `service` today (`server` document). A plain string rather than a closed union: the
+   * vocabulary is the backend's, and a third value would arrive as itself instead of making the
+   * mirror silently wrong.
+   */
+  account_kind: string | null
   display_name: string | null
   /**
    * What the token holds, as INFORMATION for the reader — never a capability list. Settled with the
@@ -28,5 +33,3 @@ export interface CallerIdentity {
   /** Free text the operator attached to the token. */
   note: string | null
 }
-
-export type AccountKind = 'person' | 'service'

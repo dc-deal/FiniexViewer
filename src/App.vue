@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useArrangementStore } from '@/stores/arrangement_store'
 import { useCallerStore } from '@/stores/caller_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import AppShell from '@/components/AppShell.vue'
 
 const { settings } = storeToRefs(useSettingsStore())
 const callerStore = useCallerStore()
+
+// created here, at the root, so every view mounts onto the selection the reader left behind
+useArrangementStore()
 
 // The one place the theme reaches the document. Panels never receive it — they read the tokens the
 // attribute selects, which is why a theme change needs no re-render anywhere else. The exception is

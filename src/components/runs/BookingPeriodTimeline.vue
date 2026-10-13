@@ -58,6 +58,10 @@ const emit = defineEmits<{ 'update:order': [LaneOrder] }>()
 
 const { openRun, canOpen } = useOpenInContext()
 
+/**
+ * `NaN` where a stamp cannot be read, which `usable` below drops. Not the pickers' `sortInstant`:
+ * a sort needs a number for every row, a drawing must not place a broken row at 1970.
+ */
 function instant(iso: string): number {
   return new Date(iso).getTime()
 }

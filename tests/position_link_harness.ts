@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { providePositionLink } from '@/composables/use_position_link'
-import type { PositionRef } from '@/composables/use_position_link'
+import type { PositionRef } from '@/types/context_types'
 
 /** What a test host hands the panels, and what it records about what they asked for. */
 export interface TestPositionLink {

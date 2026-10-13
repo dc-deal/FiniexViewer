@@ -382,7 +382,7 @@ automated; its instrument is a browser and a deliberate look. Two scripts suppor
   stored run produces any more is recorded UNCOVERED rather than dropped, because an uncovered case
   is the one that breaks unseen. Measured 2026-09-30 over 46 runs, three cases are uncovered: two
   account currencies in one run, a unit ERROR, and a scenario with two portfolio rows.
-- **`scripts/capture_fixtures.py`** re-cuts the nineteen fixtures from their source runs. The
+- **`scripts/capture_fixtures.py`** re-cuts the fixtures from their source runs. The
   contract moved through seven versions in five days and each time the mirror, the fixtures and
   `EXPECTED_CONTRACT` move together, because the mirror follows one contract and never two — by
   hand that is where one capture gets forgotten.

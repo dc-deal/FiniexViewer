@@ -4,10 +4,10 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { Splitpanes, Pane } from 'splitpanes'
 import { useBrokerStore } from '@/stores/broker_store'
+import { useContextStore } from '@/stores/context_store'
 import { useSymbolStore } from '@/stores/symbol_store'
 import { useSelectionStore } from '@/stores/selection_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
-import { useQuerySync } from '@/composables/use_query_sync'
 import { provideOpenInContext } from '@/composables/use_open_in_context'
 import AppSelect from '@/components/base/AppSelect.vue'
 import TopMenu from '@/components/TopMenu.vue'
@@ -27,20 +27,21 @@ const currentSymbols = computed(() =>
   broker.value ? (symbolsByBroker.value[broker.value] ?? []) : []
 )
 
-useQuerySync()
-
 /**
- * The way out of a panel, while the views are still routes: a run or a deployment is opened by
- * going to its view with the param that view restores. Once the views are docked panels it becomes
- * setting a link's context instead — and no panel changes.
+ * The way out of a panel, while the views are still routes: the run or the deployment becomes the
+ * main link's, and the reader is taken to the view that shows it. Once the views are docked panels
+ * the second half falls away — and no panel changes.
  */
 const router = useRouter()
+const context = useContextStore()
 provideOpenInContext({
   openRun: (runId: string) => {
-    void router.push({ name: 'runs', query: { run: runId } })
+    context.selectRun(runId)
+    void router.push({ name: 'runs' })
   },
   openDeployment: (deploymentId: string) => {
-    void router.push({ name: 'deployments', query: { deployment: deploymentId } })
+    context.selectDeployment(deploymentId)
+    void router.push({ name: 'deployments' })
   },
   canOpen: true,
 })
@@ -48,6 +49,8 @@ provideOpenInContext({
 onMounted(async () => {
   await brokerStore.loadBrokers()
   timeframeStore.loadTimeframes()
+  // the broker came back with the stored selection, so its symbols are needed for the selector
+  if (broker.value) symbolStore.loadSymbols(broker.value)
 })
 
 function onBrokerChange(b: string): void {

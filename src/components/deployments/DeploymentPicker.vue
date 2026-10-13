@@ -10,7 +10,7 @@ import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetQuery } from '@/composables/use_facet_query'
 import { rowKey } from '@/api/list_key'
 import {
-  amount, duration, magnitude, percentFigure, signClass, utcInstant,
+  amount, duration, magnitude, percentFigure, signClass, sortInstant, utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { Figure } from '@/types/figure_types'
@@ -92,33 +92,28 @@ const columns: ListColumn[] = [
   { label: '', width: 'minmax(0, 10fr)', rank: 3 },
 ]
 
-function instant(iso: string): number {
-  const at = Date.parse(iso)
-  return Number.isNaN(at) ? 0 : at
-}
-
 const sorts: SortDefinition<DeploymentRow>[] = [
   {
     id: 'newest',
     label: 'newest',
-    compare: (a, b) => instant(b.last_started) - instant(a.last_started),
+    compare: (a, b) => sortInstant(b.last_started) - sortInstant(a.last_started),
   },
   {
     id: 'oldest',
     label: 'oldest',
-    compare: (a, b) => instant(a.first_started) - instant(b.first_started),
+    compare: (a, b) => sortInstant(a.first_started) - sortInstant(b.first_started),
   },
   {
     id: 'sessions',
     label: 'sessions',
-    compare: (a, b) => b.sessions - a.sessions || instant(b.last_started) - instant(a.last_started),
+    compare: (a, b) => b.sessions - a.sessions || sortInstant(b.last_started) - sortInstant(a.last_started),
   },
   {
     id: 'name',
     label: 'name',
     // within one bot the newest first, or several deployments of it sit in arbitrary order
     compare: (a, b) =>
-      a.bot.localeCompare(b.bot) || instant(b.last_started) - instant(a.last_started),
+      a.bot.localeCompare(b.bot) || sortInstant(b.last_started) - sortInstant(a.last_started),
   },
 ]
 

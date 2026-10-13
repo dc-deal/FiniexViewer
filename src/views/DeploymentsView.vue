@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useSettingsStore } from '@/stores/settings_store'
-import { useDeploymentQuerySync } from '@/composables/use_deployment_query_sync'
+import { useDeploymentBinding } from '@/composables/use_deployment_binding'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
@@ -22,8 +22,8 @@ const {
   loadingList, loadingDetail, error, forbiddenSurface, unknownDeploymentId,
 } = storeToRefs(store)
 
-// loads the ledger listing and restores the selection from the URL
-useDeploymentQuerySync()
+// loads the ledger listing and brings back the deployment the reader had open
+useDeploymentBinding()
 
 /**
  * One order for the chart and the table beneath it. Across a deployment a lane is the SESSION —
@@ -81,7 +81,7 @@ const showDeployment = computed(() =>
       </div>
       <div v-else-if="unknownDeploymentId" class="state-overlay">
         <span class="hint">
-          {{ t('This link names a deployment the ledger does not list') }}: {{ unknownDeploymentId }}
+          {{ t('The deployment you had open is no longer in the ledger') }}: {{ unknownDeploymentId }}
         </span>
       </div>
       <div v-else-if="!selectedDeploymentId" class="state-overlay">

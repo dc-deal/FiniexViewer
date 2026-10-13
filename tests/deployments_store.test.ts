@@ -147,7 +147,8 @@ describe('deployments_store', () => {
       await store.loadDeployments()
       await store.selectDeployment('deploy_that_never_existed')
       expect(store.unknownDeploymentId).toBe('deploy_that_never_existed')
-      expect(store.selectedDeploymentId).toBeNull()
+      // the choice is kept, so the view can say which deployment is gone; no row resolves to it
+      expect(store.selectedRows).toEqual([])
       expect(apiClient.getDeployment).not.toHaveBeenCalled()
     })
 

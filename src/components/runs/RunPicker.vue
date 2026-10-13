@@ -11,7 +11,7 @@ import { useFacetQuery } from '@/composables/use_facet_query'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListCard, ListColumn } from '@/types/list_types'
 import type { Figure } from '@/types/figure_types'
-import { amount, bytes, marketSpan, shortHash, utcInstant } from '@/components/runs/report_format'
+import { amount, bytes, marketSpan, shortHash, sortInstant, utcInstant } from '@/components/runs/report_format'
 import type { RunInfo, RunResult } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
 
@@ -240,35 +240,25 @@ function signOf(value: number): string {
   return value > 0 ? 'positive' : 'negative'
 }
 
-/**
- * Parsed rather than compared as text: `start_time` is ISO-8601 with an explicit offset, and two
- * offsets sort lexicographically in the wrong order. An unreadable stamp sorts last under
- * "newest" rather than jumping to the top.
- */
-function instant(iso: string): number {
-  const at = Date.parse(iso)
-  return Number.isNaN(at) ? 0 : at
-}
-
 /** A run that never recorded its span sorts last under "longest" rather than first. */
 function span(run: RunInfo): number {
   return run.tick_timespan_seconds ?? -1
 }
 
 const sorts: SortDefinition<RunInfo>[] = [
-  { id: 'newest', label: 'newest', compare: (a, b) => instant(b.start_time) - instant(a.start_time) },
-  { id: 'oldest', label: 'oldest', compare: (a, b) => instant(a.start_time) - instant(b.start_time) },
+  { id: 'newest', label: 'newest', compare: (a, b) => sortInstant(b.start_time) - sortInstant(a.start_time) },
+  { id: 'oldest', label: 'oldest', compare: (a, b) => sortInstant(a.start_time) - sortInstant(b.start_time) },
   {
     id: 'span',
     label: 'market time',
-    compare: (a, b) => span(b) - span(a) || instant(b.start_time) - instant(a.start_time),
+    compare: (a, b) => span(b) - span(a) || sortInstant(b.start_time) - sortInstant(a.start_time),
   },
   {
     id: 'name',
     label: 'name',
     // within one set the newest first, or a set of six runs is six rows in arbitrary order
     compare: (a, b) =>
-      a.name.localeCompare(b.name) || instant(b.start_time) - instant(a.start_time),
+      a.name.localeCompare(b.name) || sortInstant(b.start_time) - sortInstant(a.start_time),
   },
 ]
 

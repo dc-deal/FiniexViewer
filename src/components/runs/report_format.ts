@@ -93,6 +93,16 @@ export function utcInstant(iso: string | null): string {
   return `${part['year']}-${part['month']}-${part['day']} ${part['hour']}:${part['minute']}:${part['second']}Z`
 }
 
+/**
+ * An ISO-8601 stamp as a sort key. Parsed rather than compared as text: the stamps carry an
+ * explicit offset, and two offsets sort lexicographically in the wrong order. An unreadable stamp
+ * becomes `0`, so it sorts last under "newest" rather than jumping to the top.
+ */
+export function sortInstant(iso: string): number {
+  const at = Date.parse(iso)
+  return Number.isNaN(at) ? 0 : at
+}
+
 /** Sign class for P&L-denominated cells. Empty for zero — no colour claim on a flat result. */
 export function signClass(value: number): string {
   if (value > 0) return 'positive'

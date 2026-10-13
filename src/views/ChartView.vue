@@ -2,12 +2,15 @@
 import { storeToRefs } from 'pinia'
 import { useSelectionStore } from '@/stores/selection_store'
 import { useBarsStore } from '@/stores/bars_store'
+import { useChartBinding } from '@/composables/use_chart_binding'
 import CandleChart from '@/components/CandleChart.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import { t } from '@/translate'
 
 const { isReady } = storeToRefs(useSelectionStore())
 const { chartData, loading, error } = storeToRefs(useBarsStore())
+
+useChartBinding()
 </script>
 
 <template>
