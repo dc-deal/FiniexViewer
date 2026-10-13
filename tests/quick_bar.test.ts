@@ -29,7 +29,7 @@ describe('QuickBar', () => {
   })
 
   it('offers nothing for a panel that has no options, or where the group shows none', async () => {
-    expect(mount(QuickBar, { props: { kindId: 'runs' } }).html()).not.toContain('quick-bar')
+    expect(mount(QuickBar, { props: { kindId: 'deployments' } }).html()).not.toContain('quick-bar')
     expect(mount(QuickBar, { props: { kindId: null } }).html()).not.toContain('quick-bar')
     expect(mount(QuickBar, { props: { kindId: 'retired' } }).html()).not.toContain('quick-bar')
   })

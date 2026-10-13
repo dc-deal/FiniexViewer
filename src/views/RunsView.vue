@@ -15,7 +15,6 @@ import { panelById } from '@/panel_registry'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import AppBar from '@/components/panels/AppBar.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
-import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import { t } from '@/translate'
 
@@ -33,6 +32,8 @@ const {
   tradeHistory, scenarios,
   absences,
   unreadable, errors: sectionErrors,
+  loadingWarningsErrors, loadingPortfolio, loadingBroker, loadingAggregated, loadingOrderHistory,
+  loadingBookingPeriods, loadingConfig, loadingScenarios, loadingTradeHistory,
 } = storeToRefs(reportsStore)
 
 // loads the run index and brings back the run the reader had open
@@ -141,28 +142,6 @@ async function scrollToMark(panelId: string): Promise<void> {
   observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
 }
 
-/**
- * Names in the narrowing this run does not have — an edited link, or one saved before the set was
- * changed. Claimed ONLY where the roster actually arrived: `scenario-details` is built from the
- * batch and is backtest-only by construction, so its absence on a session says nothing about a
- * name and must not be reported as a bad one.
- */
-/**
- * The narrowing as a heading. Names while they still fit — a reader recognises the scenario they
- * clicked — and a count past that, because eleven names in one line is not something anyone reads.
- */
-const narrowingLabel = computed(() => {
-  const units = selectedUnits.value
-  if (units.length <= 3) return units.join(' · ')
-  return `${units.length} ${t('scenarios')}`
-})
-
-const unknownUnits = computed(() => {
-  const roster = scenarios.value
-  if (roster === null) return []
-  return selectedUnits.value.filter(unit => !roster.units.some(row => row.name === unit))
-})
-
 // One request per section per run. Lazy loading on first expand is deferred until there are
 // enough sections to justify the plumbing — see viewer#21.
 //
@@ -266,6 +245,27 @@ const sources = computed(() => ({
 }))
 
 /**
+ * Which sections are on their way for the run on screen, keyed like `sources`. A panel whose
+ * section is coming keeps its place and says so; it leaves the column only once the run is KNOWN
+ * not to carry it. Until 2026-10-13 a run change emptied every section at once and each panel left
+ * and came back on its own — the column collapsed and rebuilt itself piece by piece, and nothing
+ * said it was loading (a selection never moves the layout).
+ */
+const pending = computed<Record<string, boolean>>(() => ({
+  runSummary: loadingSummary.value,
+  feedHealth: loadingSummary.value,
+  warningsErrors: loadingWarningsErrors.value,
+  portfolio: loadingPortfolio.value,
+  broker: loadingBroker.value,
+  aggregated: loadingAggregated.value,
+  orders: loadingOrderHistory.value,
+  bookingPeriods: loadingBookingPeriods.value,
+  config: loadingConfig.value,
+  scenarioRoster: loadingScenarios.value,
+  tradeHistory: loadingTradeHistory.value,
+}))
+
+/**
  * What this run has no section for, said ONCE above the column instead of by eight silent gaps.
  *
  * Until the backend named the cause every missing section was the same blank space: a run still
@@ -308,9 +308,9 @@ const missingSections = computed(() => {
 // Once a run is chosen there is always something to show: the header panel reads the index row.
 // PanelColumn drops every panel whose model is absent, so a run without artifacts simply renders
 // fewer sections rather than nothing at all.
+// The summary loading does not hide them: its panel keeps its place like every other section.
 const showPanels = computed(() =>
-  !loadingRuns.value && !loadingSummary.value && !error.value
-  && !unknownRunId.value && selectedRun.value !== null
+  !loadingRuns.value && !error.value && !unknownRunId.value && selectedRun.value !== null
 )
 </script>
 
@@ -318,11 +318,11 @@ const showPanels = computed(() =>
   <div ref="viewRoot" class="runs-view">
     <header class="runs-header">
       <RunPicker />
-      <AppBar v-if="showPanels" :sources="sources" />
+      <AppBar v-if="showPanels" :sources="sources" :pending="pending" />
     </header>
 
     <div class="runs-body">
-      <div v-if="loadingRuns || loadingSummary" class="state-overlay">
+      <div v-if="loadingRuns" class="state-overlay">
         <AppSpinner />
       </div>
       <div v-else-if="error" class="state-overlay">
@@ -365,21 +365,10 @@ const showPanels = computed(() =>
         </p>
         <!-- the whole manipulated area is framed, so it can never be mistaken for the whole run.
              The frame is the second channel beside the colour: a reader who cannot separate the
-             hues still sees an edge that was not there before. -->
+             hues still sees an edge that was not there before. What is narrowed is said in the
+             quick bar beside the tab, where saying it moves nothing. -->
         <div class="panels" :class="{ narrowed: selectedUnits.length > 0 }">
-          <p v-if="selectedUnits.length" class="narrowed-head">
-            <span class="mark" aria-hidden="true">⌖</span>
-            <span>
-              {{ t('Showing only') }} <strong>{{ narrowingLabel }}</strong>
-              <template v-if="unknownUnits.length">
-                — {{ t('not in this run:') }} {{ unknownUnits.join(', ') }}
-              </template>
-            </span>
-            <AppButton variant="quiet" @click="runsStore.clearUnits()">
-              {{ t('Show all') }}
-            </AppButton>
-          </p>
-          <PanelColumn :sources="sources" />
+          <PanelColumn :sources="sources" :pending="pending" />
         </div>
       </template>
     </div>
@@ -448,33 +437,17 @@ const showPanels = computed(() =>
 
 /* a narrowed column is FRAMED, not merely announced: the edge says how far the manipulation
    reaches, which a sentence above it cannot. The colour is the annotation role — a marked
-   division — and the frame itself is the channel that survives without it. */
-.panels.narrowed {
-  border: 1px solid var(--color-annotation);
+   division — and the frame itself is the channel that survives without it. Its ROOM is always
+   there, transparent until a narrowing colours it: drawn only on a choice, its border and padding
+   indented every panel inside (a selection never moves the layout). */
+.panels {
+  border: 1px dashed transparent;
   border-radius: 4px;
   padding: var(--space-sm);
 }
 
-.narrowed-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-xs);
-  margin: 0 0 var(--space-sm);
-  color: var(--color-annotation);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.narrowed-head strong {
-  font-weight: normal;
-}
-
-.narrowed-head .mark {
-  flex-shrink: 0;
-}
-
-.narrowed-head .app-button {
-  margin-left: auto;
+.panels.narrowed {
+  border-color: var(--color-annotation);
 }
 
 .notice.absent strong {

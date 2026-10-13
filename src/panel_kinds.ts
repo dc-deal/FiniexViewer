@@ -43,6 +43,7 @@ export const PANEL_KINDS: PanelKind[] = [
     order: 2,
     opensByDefault: true,
     component: defineAsyncComponent(() => import('@/views/RunsView.vue')),
+    quickBar: defineAsyncComponent(() => import('@/components/RunsQuickBar.vue')),
     status: () => outcomeStatus(useRunsStore().selectedRun?.run_outcome ?? null),
   },
   {

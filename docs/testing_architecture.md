@@ -43,7 +43,10 @@ lay out at all: the first arrangement in the suggested order, a tab behind anoth
 it is shown, an arrangement that survives a reload, the way back to the suggested order, a closed
 panel brought back from the Panels menu, About opening as a dialog rather than as a tab, the quick
 bar holding the chart's selection only while the chart is in front, and the Runs tab carrying the
-grade of a run that did not succeed.
+grade of a run that did not succeed. `run_selection.spec.ts` also holds the rule that a selection
+never moves the layout — choosing a scenario leaves the executive panel's box and the row under the
+pointer exactly where they were — and a section still on its way keeping its panel standing with a
+loading line, the route held back on purpose.
 `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per tab,
 and to a frame that stays inside a small window with its content scrolling. `trade_groups.spec.ts` holds the open/closed regimes
 of the scenario groups, and two things only a browser can state: that the group heading resolves to
@@ -199,7 +202,8 @@ tests/
   runs_store.test.ts        — run index loading, the flat index, missing-artifact flag, error handling, and the scenario narrowing: several at once, one taken back out, no duplicates, dropped whenever the run below it changes; and a refresh that fetches again without a spinner in place of the list
   translate.test.ts         — the marker returns its input; the count agrees with its noun, zero reads as plural, a large count stays grouped
   run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the narrowing (a unit's errors, a run-wide warning kept while another unit's drops, the outcome counts marked as the run's), the executive figures marked as the run's, and the run header incl. the two kinds of parent (a deployment's history opened through the channel and named as plain text where nothing can open it, a sweep named and not offered as a way in), MARKET TIME (covered in days past two, the summed span only where the units overlap, n/a where the run never recorded it), the two excursions, what the account started from, and a run of several accounts saying how many and which one fell deepest
-  app_bar.test.ts           — the inventory of sections: a toggle per registered panel with that panel's icon drawn on it, an absent section LISTED and disabled rather than hidden, and the ORDER — the reader's arrangement rather than the registry's, with a switched-off panel still listed but after everything still arranged
+  app_bar.test.ts           — the inventory of sections: a toggle per registered panel with that panel's icon drawn on it, an absent section LISTED and disabled rather than hidden while one still on its way stays usable, and the ORDER — the reader's arrangement rather than the registry's, with a switched-off panel still listed but after everything still arranged
+  panel_column.test.ts      — a panel whose section the run does not carry left out, one still on its way kept in its place with a loading line saying so, and the room its content last took held while it loads
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
   settings_store.test.ts    — per-field reconciliation (unknown key dropped, missing key defaulted, out-of-range refused), the schema-version discard, setters that ignore rather than clamp, and the display subset handed to panels
   settings_menu.test.ts     — the three dialog tabs (display against the store, layout export/import incl. a bad file reported rather than swallowed, account in each of its four states), and the menu: the theme entry naming what it switches TO, the account name once the server reports one, and About opened from there as a dialog; the docked panels taken back to the suggested order from the layout tab
@@ -229,6 +233,7 @@ tests/
   app_menu_bar.test.ts      — the panels worked in, offered in the suggested order with their form icons, the chosen one handed to the dock, and no Layout menu of its own
   chart_quick_bar.test.ts   — what the three compact selects offer loaded when the chart comes to the front, the symbols of a broker the reader left selected, each select named for a screen reader and showing its name while nothing is chosen
   quick_bar.test.ts         — the chart's selection while the chart is the panel in front, nothing for a panel without options or a group that shows none
+  runs_quick_bar.test.ts    — silent while the whole run is shown, the scenarios on show named while they fit and counted past that, the names this run does not have said only once the roster arrived, and the way back to the whole run
   use_open_in_context.test.ts — no way out where no host supplied one, and no throw either; the host's way out handed to a panel. Its harness, `open_in_context_harness.ts`, RECORDS where a panel sent the reader instead of navigating
   position_link.test.ts     — the comparison of a position: matching BOTH halves — never the position id alone, never a row that has no position at all
   hints_store.test.ts       — reconciliation (a retired id dropped, an unknown version discarded, no duplicates), a dismissal that lasts the session and is never written down, a ban that outlives the visit, and the reset that undoes both

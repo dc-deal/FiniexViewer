@@ -89,7 +89,7 @@ test('About opens as a dialog from the application menu, not as a tab', async ({
 test('the quick bar holds the chart selection while the chart is in front', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
-  await expect(page.locator('[data-quick-bar]')).toHaveCount(0)
+  await expect(page.locator('[data-quick-bar="chart"]')).toHaveCount(0)
 
   await showPanel(page, 'Chart')
   const bar = page.locator('[data-quick-bar="chart"]')
@@ -97,7 +97,7 @@ test('the quick bar holds the chart selection while the chart is in front', asyn
   await expect(bar.locator('select[aria-label="Broker"]')).toBeVisible()
 
   await showPanel(page, 'Runs')
-  await expect(page.locator('[data-quick-bar]')).toHaveCount(0)
+  await expect(page.locator('[data-quick-bar="chart"]')).toHaveCount(0)
 })
 
 /**

@@ -52,6 +52,55 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
 })
 
 /**
+ * A SELECTION NEVER MOVES THE LAYOUT. Choosing a scenario frames the column and names the choice
+ * beside the tab; it used to indent every panel by the frame's border and padding and push the
+ * column down a line, so everything the reader was looking at slid away under the click.
+ *
+ * The executive figures are the run's and do not narrow, so their panel is the clean witness: any
+ * change to its box is a mark that took room. Panels below it narrow their CONTENT, which is the
+ * point of the click, so the row under the pointer is held by its own top instead.
+ */
+test('choosing a scenario moves nothing in the column', async ({ page }) => {
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await page.locator('.panel-trigger', { hasText: 'Scenarios' }).click()
+  const scenario = page.locator('.scenario-roster .record-row').first()
+  await expect(scenario).toBeVisible()
+
+  const executive = page.locator('[data-panel="executive"]')
+  const frame = async () => {
+    const box = (await executive.boundingBox())!
+    return { x: box.x, width: box.width, height: box.height }
+  }
+  const rowTop = async () => (await scenario.boundingBox())!.y
+  const before = { frame: await frame(), row: await rowTop() }
+  await scenario.click()
+  await expect(page.locator('.narrowed-head')).toBeVisible()
+  await expect(executive.locator('.scope-line')).toBeVisible()
+
+  expect(await frame()).toEqual(before.frame)
+  expect(await rowTop()).toBe(before.row)
+})
+
+/**
+ * A section on its way for the run on screen keeps its panel in place and says so. A run change
+ * used to empty the column behind one spinner, then let every panel come back on its own.
+ */
+test('a section still on its way keeps its panel standing, saying it loads', async ({ page }) => {
+  await page.route('**/api/v1/reports/runs/*/run-summary', async route => {
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    await route.fallback()
+  })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+
+  const executive = page.locator('[data-panel="executive"]')
+  await expect(executive.locator('.panel-loading')).toBeVisible()
+  await expect(page.locator('.app-bar')).toBeVisible()
+
+  await expect(executive.locator('.panel-loading')).toHaveCount(0)
+  await expect(executive).toContainText('Net P&L')
+})
+
+/**
  * A stored run the index no longer lists. The store refuses it rather than firing one 404 per
  * section, and the view says which id is gone — a blank page would leave the reader guessing
  * whether the app or their last visit was the broken part.

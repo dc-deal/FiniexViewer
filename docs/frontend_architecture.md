@@ -924,7 +924,8 @@ run 20260927_092959_cd1d9b1e · units ETHUSD_blocks_06, ETHUSD_blocks_09
   booking periods   narrowed
   warnings/errors   narrowed — but a RUN-scoped warning stays, it is still true
   portfolio         MARKED, never narrowed
-  RunsView          the whole column is FRAMED, headed "⌖ Showing only … Show all"
+  RunsView          the whole column is FRAMED, dashed
+  Runs quick bar    "⌖ Showing only … · Show all", beside the tabs
 ```
 
 **Several at once, because the question is usually a comparison.** The names are a list in the
@@ -933,7 +934,16 @@ exactly that, so no call site branches on it.
 
 **The narrowed column is framed, not merely announced.** A sentence above a list cannot say how far
 a manipulation reaches; an edge can. The frame wears the annotation role — a marked division — and
-is itself the channel that survives for a reader who cannot separate the hues.
+is dashed, the channel that survives for a reader who cannot separate the hues.
+
+**A selection never moves the layout.** The frame's room is always there, transparent until a
+narrowing colours it: drawn only on a choice, its border and padding indented every panel and the
+statement above it pushed the column down a line, so what the reader was looking at slid away under
+the click. The statement now sits in the Runs tab's quick bar (`RunsQuickBar`), and every run-wide
+label below is drawn inside a line that already exists — the executive scope in the first currency's
+title row, cut to one line with the whole sentence on its title, and the verdict's as a mark in its
+headline. `run_selection.spec.ts` holds it in a browser: the executive panel's box and the row under
+the pointer stay exactly where they were.
 
 **It lives in the run's context, because it is SELECTION.** Panel order and collapsed state are
 presentation and stay in the layout's own key; what the reader is looking at belongs to the link,
@@ -1205,6 +1215,8 @@ cards stay in `vh`: they float over the whole screen, so the window IS their mea
 **Two stores, two questions.** `runs_store` answers *which* run is selected — the index, the chosen run and the scenarios narrowed to. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
 
 **A section whose model this run does not carry is skipped, never shown empty.** `PanelColumn` drops a panel whose source is absent, which is how a 404 on a report route reaches the UI: not as an error, as a missing section.
+
+**One still on its way is neither, and keeps its place.** `RunsView` passes `pending` per source from the stores' loading flags. `PanelColumn` keeps such a panel where it stands with a loading line instead of its content, holding the height that content last had (one `ResizeObserver` over the panel bodies), and `AppBar` keeps its toggle usable rather than striking it through as absent. A run change used to empty the column behind one spinner and let each panel come back on its own, so the column collapsed and rebuilt piece by piece in front of the reader. The view-wide spinner now waits only for the run index.
 
 **And the absence now says WHY.** Until the backend named the cause (contract 5), every missing section answered `run_not_found` and this client collapsed it to `null` — so a run still going, a run started with `reporting: none`, and a run whose pipeline never writes that section all rendered as the same blank space. `getX` now answers `Report | SectionAbsence`, the store keeps the reason beside the empty slot in `absences`, and `RunsView` says it ONCE above the column, **grouped by cause** — a run that ended early is missing several sections for one reason, and naming it once is the point. The sentence shown is the backend's own `detail`: it is written for a reader and held that way by a test on their side, so replacing it with one of ours would be a second, worse copy.
 

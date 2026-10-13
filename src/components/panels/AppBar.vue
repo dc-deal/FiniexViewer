@@ -14,6 +14,8 @@ import { t } from '@/translate'
  */
 const props = defineProps<{
   sources: Record<string, unknown>
+  /** Sections on their way for this run — not absent, only not here yet. */
+  pending?: Record<string, boolean>
 }>()
 
 const layoutStore = useLayoutStore()
@@ -42,8 +44,9 @@ const toggles = computed(() => {
       ...panel,
       shown: !state.hidden,
       pinned: state.pinned,
-      // the run carries no such section — a state of the RUN, not of the reader's arrangement
-      absent: model === null || model === undefined,
+      // the run carries no such section — a state of the RUN, not of the reader's arrangement. One
+      // still on its way is not absent: it would flicker struck-through on every run change
+      absent: (model === null || model === undefined) && !props.pending?.[panel.source],
     }]
   })
 })

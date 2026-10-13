@@ -108,6 +108,21 @@ describe('AppBar', () => {
     expect(toggle.attributes('title')).toContain('carries no such section')
   })
 
+  /** A section on its way for a new run is not absent — it would flicker struck-through on every change. */
+  it('keeps the toggle of a section that is still on its way usable', () => {
+    const sources = allSources()
+    const scenarios = allPanels().find(panel => panel.source === 'scenarioRoster')!
+    delete sources['scenarioRoster']
+
+    const wrapper = mount(AppBar, {
+      props: { sources, pending: { scenarioRoster: true } },
+      global: { plugins: [createPinia()] },
+    })
+    const toggle = toggleFor(wrapper, scenarios.title)
+    expect(toggle.attributes('disabled')).toBeUndefined()
+    expect(toggle.classes()).not.toContain('absent')
+  })
+
   it('leaves the toggles of the sections that ARE there usable', () => {
     const sources = allSources()
     delete sources['scenarioRoster']

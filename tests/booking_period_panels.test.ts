@@ -68,12 +68,14 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
   // only where there IS a verdict: a check that passed renders nothing, so nothing can mislead
   it('keeps the verdict run-wide, and says so', () => {
     const wrapper = mountNarrowed({ ...MIXED, reconciles: false }, ['unit_a'])
-    expect(wrapper.find('.verdict-scope').text()).toContain('whole run')
+    const scope = wrapper.find('.verdict-text .scope')
+    expect(scope.text()).toBe('whole run')
+    expect(scope.attributes('title')).toContain('the periods below are the chosen scenarios')
   })
 
   it('says nothing about scope where nothing is narrowed', () => {
     const wrapper = mountNarrowed(MIXED, [])
-    expect(wrapper.find('.verdict-scope').exists()).toBe(false)
+    expect(wrapper.find('.verdict-text .scope').exists()).toBe(false)
     expect(wrapper.find('.footnote .scope').exists()).toBe(false)
   })
 
