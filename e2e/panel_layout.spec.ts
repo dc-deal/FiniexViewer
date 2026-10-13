@@ -64,3 +64,39 @@ for (const width of WIDTHS) {
     expect(overflowing, JSON.stringify(overflowing)).toEqual([])
   })
 }
+
+/**
+ * THE TOP OF THE RUNS PANEL STAYS TWO LINES, however narrow the panel. Measured 2026-10-13 at a
+ * panel 585 px wide: the run line took three lines and the section bar four, so a quarter of the
+ * panel's height went by before the first section. The bar is now one row with the rest behind
+ * `+N`, and the run line ends in an ellipsis.
+ */
+test('a narrow Runs panel keeps its run line and its section bar to one line each', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const row = page.locator('.app-bar .overflow-row')
+  await expect(row).toBeVisible()
+
+  const toggle = (await page.locator('.bar-toggle').first().boundingBox())!
+  expect((await row.boundingBox())!.height).toBeLessThan(toggle.height * 1.5)
+  const line = (await page.locator('.picker-chosen .chosen-id').boundingBox())!
+  expect((await page.locator('.picker-chosen').boundingBox())!.height).toBeLessThan(line.height * 1.5)
+
+  // what did not fit is one click away, and switching it there switches the section in the column
+  const more = page.locator('.overflow-more')
+  await expect(more).toHaveText(/^\+\d+ ▾$/)
+  await more.click()
+  const entry = page.locator('.bar-menu-toggle[data-state="checked"]').first()
+  const section = await entry.getAttribute('data-section')
+  await expect(page.locator(`.panels [data-panel="${section}"]`)).toHaveCount(1)
+  await entry.click()
+  await expect(page.locator(`.panels [data-panel="${section}"]`)).toHaveCount(0)
+})
+
+test('a wide Runs panel shows every section and no control to unfold', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await expect(page.locator('.app-bar .overflow-row')).toBeVisible()
+  await expect(page.locator('.overflow-more')).toBeHidden()
+  await expect(page.locator('.bar-toggle:visible')).toHaveCount(await page.locator('.bar-toggle').count())
+})

@@ -5,6 +5,7 @@ import { utcInstant } from '@/components/runs/report_format'
 import { rowKey } from '@/api/list_key'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { plural, t } from '@/translate'
+import AppIcon from '@/components/base/AppIcon.vue'
 
 const props = defineProps<{
   model: WarningsErrorsReport
@@ -76,11 +77,16 @@ const outcomeMark = computed(() => {
  * The shutdown mode, which is DETAIL and never a verdict. An operator stopping a healthy
  * session with Ctrl+C produces the same 'emergency' as a crash, so it is only alarming where the
  * run was graded failed. Absent on a simulation run, where it means not applicable.
+ *
+ * A session that REFUSED at its first tick is graded failed too, because a restart is the remedy,
+ * but nothing broke: it is marked as something to weigh rather than as an error, the way the
+ * backend's own console prints it.
  */
 const shutdown = computed(() => {
   const mode = props.model.outcome.shutdown_mode
   if (!mode) return null
-  return { mode, alarming: props.model.outcome.run_outcome === 'failed' }
+  const refused = props.model.outcome.refused_at_first_tick
+  return { mode, refused, alarming: props.model.outcome.run_outcome === 'failed' && !refused }
 })
 
 function hasDetail(row: UnitErrorRow): boolean {
@@ -106,12 +112,23 @@ function hasDetail(row: UnitErrorRow): boolean {
       <span v-if="model.outcome.first_failure_name" class="outcome-first">
         {{ t('first failure:') }} {{ model.outcome.first_failure_name }}
       </span>
-      <span v-if="shutdown" class="outcome-shutdown" :class="{ alarming: shutdown.alarming }">
+      <span
+        v-if="shutdown"
+        class="outcome-shutdown"
+        :class="{ alarming: shutdown.alarming, refused: shutdown.refused }"
+      >
         {{ t('shutdown:') }} {{ shutdown.mode }}
+        <template v-if="shutdown.refused">({{ t('refused at the first tick') }})</template>
       </span>
     </div>
 
-    <p v-if="model.outcome.emergency_reason" class="emergency">
+    <p v-if="model.outcome.emergency_reason && model.outcome.refused_at_first_tick" class="refused-line">
+      <!-- an icon in the line's own colour: an emoji brings its own red, which is the error role -->
+      <AppIcon name="status-warning" class="reason-mark" />
+      {{ t('Refused at the first tick:') }} {{ model.outcome.emergency_reason }}
+    </p>
+    <p v-else-if="model.outcome.emergency_reason" class="emergency">
+      <AppIcon name="status-error" class="reason-mark" />
       {{ t('Emergency:') }} {{ model.outcome.emergency_reason }}
     </p>
 
@@ -229,8 +246,26 @@ function hasDetail(row: UnitErrorRow): boolean {
   color: var(--color-error);
 }
 
+/* a status colour never travels alone: each reason carries its mark and its word */
+.emergency,
+.refused-line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
 .emergency {
   color: var(--color-error);
+}
+
+.refused-line {
+  color: var(--color-warning);
+}
+
+/* held on the FIRST line of a reason that wraps, where the words it belongs to begin */
+.reason-mark {
+  flex-shrink: 0;
+  margin-top: 0.15em;
 }
 
 .block-title {
@@ -321,6 +356,10 @@ function hasDetail(row: UnitErrorRow): boolean {
 
 .outcome-shutdown.alarming {
   color: var(--color-error);
+}
+
+.outcome-shutdown.refused {
+  color: var(--color-warning);
 }
 
 .hint {

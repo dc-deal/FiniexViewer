@@ -63,6 +63,16 @@ test('the run list is usable quickly', async ({ page }) => {
     await page.locator('.run-list .record-row').first().waitFor({ state: 'visible' })
   })
 
+  // The cold figure also carries the test browser's own stall before it asks for the page at all
+  // (measured 2026-10-13: 877 ms between fetchStart and requestStart, before any code of ours
+  // exists). Read on the page's own clock, from the document's arrival to the first row, it is the
+  // app alone.
+  const appOnly = await page.evaluate(() => {
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
+    return Math.round(performance.now() - navigation.responseStart)
+  })
+  timings.push({ label: 'run list — cold, app only (page clock)', ms: appOnly })
+
   const warm = await timed('run list — warm (the app itself)', async () => {
     await page.goto('/?reload=1')
     await page.locator('.run-list .record-row').first().waitFor({ state: 'visible' })
@@ -90,6 +100,9 @@ test('a run opens its panels quickly', async ({ page }) => {
       .filter({ has: page.locator(`.run-id[title="${FIXTURE_RUN}"]`) })
       .click()
     await page.locator('.panel-trigger').first().waitFor({ state: 'visible' })
+    // a panel keeps its place while its section loads, so a drawn frame is not yet a usable
+    // panel: the figure ends when the last loading line is gone
+    await expect(page.locator('.panel-loading')).toHaveCount(0)
   })
   expect(ms).toBeLessThan(3000)
 })

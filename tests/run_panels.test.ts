@@ -349,6 +349,7 @@ function report(overrides: Partial<WarningsErrorsReport> = {}): WarningsErrorsRe
       emergency_reason: '',
       shutdown_mode: 'normal',
       operator_interrupted: false,
+      refused_at_first_tick: false,
     },
     ...overrides,
   }
@@ -539,6 +540,42 @@ describe('WarningsErrorsPanel', () => {
     crashed.outcome.shutdown_mode = 'emergency'
     const loud = mount(WarningsErrorsPanel, { props: { model: crashed } })
     expect(loud.find('.outcome-shutdown').classes()).toContain('alarming')
+  })
+
+  /**
+   * A session that refused at its first tick is graded failed and reads 'emergency' like a crash,
+   * but nothing broke: its warmup history had a gap the venue could not fill yet. It is marked as
+   * something to weigh, never in the error role.
+   */
+  it('marks a refusal at the first tick as something to weigh, not as a crash', () => {
+    const refused = report()
+    refused.outcome.run_outcome = 'failed'
+    refused.outcome.shutdown_mode = 'emergency'
+    refused.outcome.refused_at_first_tick = true
+    refused.outcome.emergency_reason = 'The venue has not committed the period that ended since the boot read'
+    const wrapper = mount(WarningsErrorsPanel, { props: { model: refused } })
+
+    const shutdown = wrapper.find('.outcome-shutdown')
+    expect(shutdown.text()).toContain('emergency (refused at the first tick)')
+    expect(shutdown.classes()).toContain('refused')
+    expect(shutdown.classes()).not.toContain('alarming')
+    const line = wrapper.find('.refused-line')
+    expect(line.text()).toContain('Refused at the first tick: The venue has not committed')
+    // a status colour never travels alone: the mark and the words come with it
+    expect(line.find('[data-icon="status-warning"]').exists()).toBe(true)
+    expect(wrapper.find('.emergency').exists()).toBe(false)
+  })
+
+  it('keeps the reason of a crash in the error role', () => {
+    const crashed = report()
+    crashed.outcome.run_outcome = 'failed'
+    crashed.outcome.shutdown_mode = 'emergency'
+    crashed.outcome.emergency_reason = 'Connection to the venue lost'
+    const wrapper = mount(WarningsErrorsPanel, { props: { model: crashed } })
+
+    expect(wrapper.find('.emergency').text()).toBe('Emergency: Connection to the venue lost')
+    expect(wrapper.find('.emergency [data-icon="status-error"]').exists()).toBe(true)
+    expect(wrapper.find('.refused-line').exists()).toBe(false)
   })
 
   it('says nothing about a shutdown mode a simulation run does not have', () => {

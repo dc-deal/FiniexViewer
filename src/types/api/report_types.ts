@@ -518,6 +518,12 @@ export interface WarningsErrorsOutcome {
   // Resolves that ambiguity — but it is newer than most artifacts, which default it to false, so
   // it cannot be trusted on an older one. Mirrored, deliberately not rendered.
   operator_interrupted: boolean
+  // A live session that stopped at its first tick because its warmup history could not be
+  // completed there. Graded 'failed' with shutdown_mode 'emergency' like a crash, since a restart
+  // is the remedy, but nothing broke; emergency_reason says what was missing. False on a backtest,
+  // on every other run, and on runs recorded before the flag existed (warnings-errors document,
+  // "An emergency is not always a failure").
+  refused_at_first_tick: boolean
   /**
    * The same three counts the run index carries, counted once and the same way in both pipelines
    * (contract 15). The 39 stored artifacts written before that were back-filled from their own

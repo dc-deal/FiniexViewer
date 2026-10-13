@@ -367,6 +367,14 @@ function startedAt(iso: string): string {
   }).format(at)
 }
 
+/** The chosen run's pipeline, name and start — one line, cut short where the panel is narrow. */
+const chosenMeta = computed(() => {
+  const run = selectedRun.value
+  if (!run) return ''
+  const started = startedAt(run.start_time)
+  return [run.group, run.name, started].filter(Boolean).join(' · ')
+})
+
 /**
  * What the row has no width for — and on this list that is most of the index row.
  *
@@ -467,12 +475,9 @@ watch(selectedRunId, runId => { open.value = runId === null })
     <div v-else-if="!open" class="picker-chosen">
       <span class="chosen-label">{{ t('Run') }}</span>
       <span class="chosen-id">{{ selectedRun?.run_id }}</span>
-      <span class="chosen-meta">
-        {{ selectedRun?.group }} · {{ selectedRun?.name }}
-        <template v-if="selectedRun?.start_time">
-          · {{ startedAt(selectedRun.start_time) }}
-        </template>
-      </span>
+      <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
+           three lines above the sections -->
+      <span class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
       <AppButton variant="quiet" @click="open = true">{{ t('Change run') }}</AppButton>
     </div>
 
@@ -608,6 +613,7 @@ watch(selectedRunId, runId => { open.value = runId === null })
   display: flex;
   align-items: baseline;
   gap: var(--space-sm);
+  min-width: 0;
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
@@ -616,16 +622,29 @@ watch(selectedRunId, runId => { open.value = runId === null })
   color: var(--color-text-secondary);
 }
 
+.chosen-label,
+.chosen-id {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .chosen-id {
   color: var(--color-text-primary);
 }
 
 .chosen-meta {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--color-text-secondary);
 }
 
+/* a control whose name breaks over two lines reads as two controls */
 .picker-chosen .app-button {
   margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .picker-hint {

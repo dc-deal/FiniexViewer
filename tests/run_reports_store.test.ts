@@ -48,6 +48,7 @@ const REPORT: WarningsErrorsReport = {
     emergency_reason: '',
     shutdown_mode: 'normal',
     operator_interrupted: false,
+    refused_at_first_tick: false,
   error_count: null,
   warning_count: null,
   log_warning_count: null,

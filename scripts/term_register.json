@@ -116,6 +116,7 @@
   "Reached by": {"field": "highest_equity_scenario", "doc": "aggregated-portfolio", "their": null, "ours": null, "note": ""},
   "Reason": {"field": "reason", "doc": "gaps", "their": null, "ours": null, "note": ""},
   "Recovery factor": {"field": "recovery_factor", "doc": "aggregated-portfolio", "their": null, "ours": null, "note": ""},
+  "Refused at the first tick:": {"field": "emergency_reason", "doc": "warnings-errors", "their": null, "ours": null, "note": "shown in place of Emergency: where refused_at_first_tick is true; their console prints it as REFUSED AT THE FIRST TICK"},
   "Reporting": {"field": "reporting", "doc": "run-header", "their": null, "ours": null, "note": ""},
   "Result": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/runs/BookingPeriodTable.vue"},
   "Run": {"field": "run_id", "doc": "config", "their": null, "ours": null, "note": ""},

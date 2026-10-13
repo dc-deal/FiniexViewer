@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from 'reka-ui'
 import { useLayoutStore, pinnedBoundary } from '@/stores/layout_store'
 import { allPanels } from '@/panel_registry'
 import AppIcon from '@/components/base/AppIcon.vue'
+import HintLine from '@/components/base/HintLine.vue'
+import OverflowRow from '@/components/base/OverflowRow.vue'
+import type { PanelDescriptor } from '@/types/panel_types'
 import { t } from '@/translate'
 
 /**
@@ -58,6 +62,58 @@ const toggles = computed(() => {
  */
 const boundary = computed(() => pinnedBoundary(arrangedPanels.value))
 
+type BarToggle = PanelDescriptor & {
+  kind: 'toggle'
+  shown: boolean
+  pinned: boolean
+  absent: boolean
+  groupStart: boolean
+}
+
+interface BarAction {
+  kind: 'action'
+  id: string
+  label: string
+  run: () => void
+}
+
+type BarItem = BarToggle | BarAction
+
+const actions: BarAction[] = [
+  { kind: 'action', id: 'collapse-all', label: t('Collapse all'), run: () => layoutStore.collapseAll() },
+  { kind: 'action', id: 'reset-layout', label: t('Reset layout'), run: () => layoutStore.reset() },
+]
+
+/**
+ * ONE row, in the order things give way: the toggles in the reader's order, then the two actions.
+ * Those are used more rarely than any toggle, so they are the first to go behind the control, and
+ * while there is room they stand together at the row's end.
+ */
+const items = computed<BarItem[]>(() => [
+  ...toggles.value.map((panel, index) => ({ ...panel, kind: 'toggle' as const, groupStart: index === boundary.value })),
+  ...actions,
+])
+
+function hiddenToggles(hidden: BarItem[]): BarToggle[] {
+  return hidden.filter((item): item is BarToggle => item.kind === 'toggle')
+}
+
+function hiddenActions(hidden: BarItem[]): BarAction[] {
+  return hidden.filter((item): item is BarAction => item.kind === 'action')
+}
+
+/** The hint about the control speaks only while the control is there to be explained. */
+const overflowing = ref(false)
+
+function onOverflow(count: number): void {
+  overflowing.value = count > 0
+}
+
+/** Keeps the menu open, so several sections can be switched in one visit. */
+function stayOpen(event: Event): void {
+  event.preventDefault()
+}
+
 function toggle(id: string, shown: boolean): void {
   if (shown) {
     layoutStore.hide(id)
@@ -78,53 +134,79 @@ function toggle(id: string, shown: boolean): void {
       a disabled control, and with an actually-disabled state beside it the two would have been
       indistinguishable.
     -->
-    <div class="bar-toggles">
-      <button
-        v-for="(panel, index) in toggles"
-        :key="panel.id"
-        class="bar-toggle"
-        :class="{ shown: panel.shown, absent: panel.absent, 'group-start': index === boundary }"
-        :disabled="panel.absent"
-        :title="panel.absent
-          ? `${t(panel.title)} — ${t('this run carries no such section')}`
-          : t(panel.title)"
-        @click="toggle(panel.id, panel.shown)"
-      >
-        <AppIcon :name="panel.icon" class="bar-icon" />
-        <span class="bar-label">{{ t(panel.title) }}</span>
-      </button>
-    </div>
-    <!-- the two actions are ONE group and never split from each other — see the layout note -->
-    <div class="bar-actions">
-      <button class="bar-action" @click="layoutStore.collapseAll()">{{ t('Collapse all') }}</button>
-      <button class="bar-action" @click="layoutStore.reset()">{{ t('Reset layout') }}</button>
-    </div>
+    <OverflowRow
+      :items="items"
+      :item-key="(item) => item.id"
+      :end-from="toggles.length"
+      :more-label="t('More sections and layout actions')"
+      @overflow="onOverflow"
+    >
+      <template #item="{ item }">
+        <button
+          v-if="item.kind === 'toggle'"
+          class="bar-toggle"
+          :class="{ shown: item.shown, absent: item.absent, 'group-start': item.groupStart }"
+          :disabled="item.absent"
+          :title="item.absent
+            ? `${t(item.title)} — ${t('this run carries no such section')}`
+            : t(item.title)"
+          @click="toggle(item.id, item.shown)"
+        >
+          <AppIcon :name="item.icon" class="bar-icon" />
+          <span class="bar-label">{{ t(item.title) }}</span>
+        </button>
+        <button v-else class="bar-action" @click="item.run()">{{ item.label }}</button>
+      </template>
+
+      <!-- what waits behind the control keeps its state: ticked where shown, struck where the run
+           has no such section -->
+      <template #menu="{ hidden }">
+        <DropdownMenuCheckboxItem
+          v-for="item in hiddenToggles(hidden)"
+          :key="item.id"
+          class="menu-item bar-menu-toggle"
+          :class="{ absent: item.absent }"
+          :data-section="item.id"
+          :model-value="item.shown && !item.absent"
+          :disabled="item.absent"
+          @update:model-value="toggle(item.id, item.shown)"
+          @select="stayOpen"
+        >
+          <span class="bar-menu-check" aria-hidden="true">{{ item.shown && !item.absent ? '✓' : '' }}</span>
+          <AppIcon :name="item.icon" />
+          <span class="bar-label">{{ t(item.title) }}</span>
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuSeparator
+          v-if="hiddenToggles(hidden).length && hiddenActions(hidden).length"
+          class="menu-separator"
+        />
+        <DropdownMenuItem
+          v-for="action in hiddenActions(hidden)"
+          :key="action.id"
+          class="menu-item"
+          @select="action.run()"
+        >
+          {{ action.label }}
+        </DropdownMenuItem>
+      </template>
+    </OverflowRow>
+    <HintLine v-if="overflowing" id="bar-overflow" />
   </div>
 </template>
 
 <style scoped>
 /*
- * TWO groups, and that is the whole point: the toggles wrap among themselves while the two actions
- * stay together at the right. As one flat flex row the inventory and the actions wrapped against
- * each other — at ten panels `Reset layout` dropped to a second line ALONE, which reads as a
- * mistake rather than as a row that ran out of width.
+ * ONE row that never wraps. It wrapped until 2026-10-13, and in a panel 585 px wide the inventory
+ * took four rows — with the run line above it, a quarter of the panel's height before the first
+ * section. What does not fit now waits behind `+N` at the row's end, the actions first.
  */
 .app-bar {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: var(--space-xs);
   padding: var(--space-xs) 0;
   font-family: monospace;
   font-size: var(--font-size-sm);
-}
-
-/* the inventory takes the slack and wraps inside itself, however many panels there come to be */
-.bar-toggles {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  flex: 1;
 }
 
 /*
@@ -137,14 +219,6 @@ function toggle(id: string, shown: boolean): void {
   border-left: 1px dashed var(--color-annotation);
   padding-left: var(--space-sm);
   margin-left: var(--space-xs);
-}
-
-/* never wraps and never shrinks: two actions split over two lines look like a broken row */
-.bar-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  flex-shrink: 0;
 }
 
 .bar-toggle,
@@ -204,9 +278,23 @@ function toggle(id: string, shown: boolean): void {
   opacity: 0.35;
 }
 
-.bar-toggle.absent .bar-label {
+.bar-toggle.absent .bar-label,
+.bar-menu-toggle.absent .bar-label {
   text-decoration: line-through;
   text-decoration-thickness: 1px;
+}
+
+.bar-menu-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* the tick keeps its column whether or not it is drawn, so the icons stand in one line */
+.bar-menu-check {
+  display: inline-block;
+  width: 1em;
+  color: var(--color-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

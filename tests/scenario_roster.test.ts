@@ -593,7 +593,7 @@ describe('ScenarioRosterPanel', () => {
         outcome: {
           run_outcome: 'success', failed_count: 0, total_units: 3, failed_unit_names: [],
           first_failure_name: '', first_failure_error: '', emergency_reason: '',
-          shutdown_mode: '', operator_interrupted: false,
+          shutdown_mode: '', operator_interrupted: false, refused_at_first_tick: false,
           error_count: null, warning_count: null, log_warning_count: null,
         },
       }

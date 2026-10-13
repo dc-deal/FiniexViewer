@@ -385,6 +385,17 @@ describe('RunPicker', () => {
     expect(wrapper.find('.run-list').exists()).toBe(true)
   })
 
+  /** A narrow panel ends the line in an ellipsis instead of wrapping it over three; the whole is on hover. */
+  it('names the chosen run in one line, with the whole of it on hover', async () => {
+    const wrapper = mountPicker([run({ run_id: 'only_logs', group: 'simulation', name: 'set_x', start_time: '' })])
+    await rowFor(wrapper, 'only_logs').trigger('click')
+    await flushPromises()
+
+    const meta = wrapper.find('.picker-chosen .chosen-meta')
+    expect(meta.text()).toBe('simulation · set_x')
+    expect(meta.attributes('title')).toBe('simulation · set_x')
+  })
+
   /**
    * The id is shortened to the timestamp, because the eight hex characters after it separate two
    * runs of the same second and nothing else — and since the columns share one grid, their width
