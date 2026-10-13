@@ -21,7 +21,7 @@ import { mockApi } from './api_mock'
 test('the run list ends inside a view half the height of the window', async ({ page }) => {
   await page.setViewportSize({ width: 1300, height: 800 })
   await mockApi(page)
-  await page.goto('/runs')
+  await page.goto('/')
   await page.addStyleTag({ content: '.runs-view { height: 50% !important; }' })
   const list = page.locator('.run-list')
   await list.waitFor()
@@ -45,7 +45,7 @@ test('the run list ends inside a view half the height of the window', async ({ p
 test('the run list keeps at least a row in a very short window', async ({ page }) => {
   await page.setViewportSize({ width: 1300, height: 240 })
   await mockApi(page)
-  await page.goto('/runs')
+  await page.goto('/')
   const list = page.locator('.run-list')
   await list.waitFor()
 

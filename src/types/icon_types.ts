@@ -4,6 +4,10 @@
  * both directions — a name without a drawing and a drawing without a name are both errors.
  */
 export type IconName =
+  | 'form-list'
+  | 'form-sheet'
+  | 'form-chart'
+  | 'action-close'
   | 'kind-executive'
   | 'kind-broker'
   | 'kind-scenario-roster'

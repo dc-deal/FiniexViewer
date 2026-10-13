@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import TopMenu from '@/components/TopMenu.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import { useCallerStore } from '@/stores/caller_store'
+import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { hintIds } from '@/hint_registry'
@@ -334,5 +335,18 @@ describe('TopMenu', () => {
     await flushPromises()
     expect(panel('.settings-dialog')).not.toBeNull()
     expect(field('setting-theme')).toBeNull()
+  })
+
+  /** About is a panel like any other, reached here because it is about the application. */
+  it('opens the About panel from the application menu', async () => {
+    const dock = useDockStore()
+    const opened: string[] = []
+    dock.open = (kind: string) => { opened.push(kind) }
+    const wrapper = mountMenu()
+    await wrapper.find('.menu-trigger').trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    document.querySelector<HTMLElement>('.menu-item[data-action="about"]')!.click()
+    await flushPromises()
+    expect(opened).toEqual(['about'])
   })
 })

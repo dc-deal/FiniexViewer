@@ -18,7 +18,7 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
   // The list opens WITHOUT the fixture runs, and the run every capture was taken from is itself a
   // fixture — so this spec asks for them, the way a reader would by picking the value. It is not
   // a workaround: it is the default behaving, and `run_picker.test.ts` asserts the default itself.
-  await openWith(page, '/runs', FIXTURES_SHOWN)
+  await openWith(page, '/', FIXTURES_SHOWN)
 
   // The list groups runs by family and a family of several opens closed, so the run is behind one
   // heading — opened here the way a reader opens it.
@@ -57,14 +57,14 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
  * whether the app or their last visit was the broken part.
  */
 test('a stored run that is gone says so', async ({ page }) => {
-  await openWith(page, '/runs', { run: '20260101_000000_deadbeef' })
+  await openWith(page, '/', { run: '20260101_000000_deadbeef' })
 
   await expect(page.locator('.state-overlay')).toContainText('no longer in the index')
   await expect(page.locator('.state-overlay')).toContainText('20260101_000000_deadbeef')
 })
 
 test('a narrowed run list survives a reload', async ({ page }) => {
-  await page.goto('/runs')
+  await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
   const before = await page.locator('.run-list .record-row').count()
@@ -92,7 +92,7 @@ test('a narrowed run list survives a reload', async ({ page }) => {
  * SYMPTOM rather than either cause: every chip's left edge, before and after a pick.
  */
 test('picking a value leaves every chip exactly where it was', async ({ page }) => {
-  await page.goto('/runs')
+  await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
   const chips = page.locator('.facet-trigger')

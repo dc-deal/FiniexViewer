@@ -191,7 +191,7 @@ function earned(run: RunInfo): RunResult[] {
  * stating: it renders as the timestamp part of the id, which is the same instant `Started` already
  * shows in words. Two spellings of one fact are not two facts.
  *
- * Every rung of the ladder gives something up — 10 columns, then 8, 7, 6 and 4. A rank the list
+ * Every rung of the ladder gives something up — 10 columns, then 8, 7, 5 and 4. A rank the list
  * does not use makes a breakpoint that changes nothing, which reads as a broken one: the first
  * version of this declared no rank 4 at all and so held all ten columns down to 48rem, then dropped
  * six at once.
@@ -220,7 +220,10 @@ const columns: ListColumn[] = [
   { label: t('Outcome'), width: 'auto', rank: 1 },
   { label: t('Net P&L'), width: 'auto', figure: true, rank: 1 },
   { label: t('Trades'), width: 'auto', figure: true, rank: 3 },
-  { label: t('Trouble'), width: 'auto', figure: true, rank: 2 },
+  // Gives way at 48 rem rather than 34: measured 2026-10-13, once the docked panels gave the list
+  // the full width, it sat between the two rungs at 580 px and overflowed by 19 px. The count is in
+  // the row's card as well, silent at zero, and `Outcome` already says whether the run had trouble.
+  { label: t('Trouble'), width: 'auto', figure: true, rank: 3 },
   { label: '', width: 'auto', rank: 2 },
 ]
 
@@ -566,7 +569,7 @@ watch(selectedRunId, runId => { open.value = runId === null })
             </span>
           </span>
           <!-- one slot, present or not: a mark on some rows and not others moved the column -->
-          <span :data-rank="2" class="run-counts">
+          <span :data-rank="3" class="run-counts">
             <span v-if="run.error_count" class="run-mark error">✖ {{ run.error_count }}</span>
             <span v-if="run.warning_count" class="run-mark warned">⚠ {{ run.warning_count }}</span>
           </span>

@@ -27,4 +27,6 @@ export interface StoredArrangement {
   links: Record<string, LinkContext>
   bars: Record<string, StoredFacets>
   chart: StoredChart
+  /** Where the panels stand, as the dock serialised it — reconciled by `dock_layout.ts`, never here. */
+  dock: object | null
 }

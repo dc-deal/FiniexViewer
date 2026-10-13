@@ -159,7 +159,7 @@ test.beforeEach(async ({ page }) => {
  * gets it back.
  */
 async function openEverything(page: Page): Promise<void> {
-  await openWith(page, '/runs', { run: FIXTURE_RUN })
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('.panel-trigger').first()).toBeVisible()
   /*
    * By NAME, and each one waited for. Sweeping the bar by index looked equivalent and was not:
@@ -248,7 +248,7 @@ test('every ranked list gives columns up as it narrows', async ({ page }) => {
  */
 test('opening a family leaves the run list columns where they were', async ({ page }) => {
   await mockApi(page)
-  await page.goto('/runs')
+  await page.goto('/')
   await page.locator('.run-list').waitFor()
 
   const tracks = () => page.locator('.run-list .record-list')

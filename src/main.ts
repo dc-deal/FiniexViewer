@@ -2,11 +2,10 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import './styles/tokens.css'
 import './styles/base.css'
-import 'splitpanes/dist/splitpanes.css'
+import 'dockview-vue/dist/styles/dockview.css'
+import './styles/dock_theme.css'
 import App from './App.vue'
-import router from './router/index'
 
 const app = createApp(App)
 app.use(createPinia())
-app.use(router)
 app.mount('#app')

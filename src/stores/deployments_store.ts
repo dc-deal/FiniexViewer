@@ -78,9 +78,10 @@ export const useDeploymentsStore = defineStore('deployments', () => {
    * taking that one on its own side for every store index it has — inventing a different answer
    * here would just be a second opinion nobody asked for.
    */
+  /** @param refresh Fetch again a ledger already on screen — quietly, with no spinner in its place. */
   async function loadDeployments(refresh = false): Promise<void> {
     if (!refresh && deployments.value.length) return
-    loadingList.value = true
+    if (!refresh) loadingList.value = true
     error.value = null
     forbiddenSurface.value = null
     try {

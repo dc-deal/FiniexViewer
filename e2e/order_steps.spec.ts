@@ -61,7 +61,7 @@ function positionRow(page: import('@playwright/test').Page) {
 }
 
 test('a position opens the steps its orders went through', async ({ page }) => {
-  await openWith(page, '/runs', narrowedTo(CAPTURED.scenario_name))
+  await openWith(page, '/', narrowedTo(CAPTURED.scenario_name))
   await openOrders(page)
 
   // every position carries the glyph on its heading, because the run wrote a stream
@@ -89,7 +89,7 @@ test('a position opens the steps its orders went through', async ({ page }) => {
  */
 test('the steps do not scroll sideways inside the row that holds them', async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 1000 })
-  await openWith(page, '/runs', narrowedTo(CAPTURED.scenario_name))
+  await openWith(page, '/', narrowedTo(CAPTURED.scenario_name))
   await openOrders(page)
 
   await positionRow(page).click()
@@ -110,7 +110,7 @@ test('the steps do not scroll sideways inside the row that holds them', async ({
  * real route answers with when asked for a position whose orders left no step.
  */
 test('a position with no steps says so instead of opening an empty list', async ({ page }) => {
-  await openWith(page, '/runs', { run: FIXTURE_RUN })
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await openOrders(page)
 
   const other = page.locator('.order-list .record-group:not(.outer)')

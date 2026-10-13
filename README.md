@@ -12,8 +12,8 @@ a strategy submitted and what became of each one, the trades they produced, the 
 booked into, the warnings a validator raised, and the configuration it all ran under. Nothing is
 recomputed here — every figure is a field the API served, or it is asked for as one.
 
-The candle chart it started as is still there, and every view comes back as the reader left it
-after a reload.
+The candle chart it started as is still there. Deployments, runs and the chart are docked panels —
+tabs that split side by side — and every view comes back as the reader left it after a reload.
 
 ![The run list, folded by family, over the trade history and the orders of one run](docs/images/runs_overview_dark.png)
 
@@ -96,7 +96,7 @@ python python/cli/api_server_cli.py --reload   # inside FiniexTestingIDE
 npm run dev
 ```
 
-Open **[http://localhost:5173/viewer](http://localhost:5173/viewer)**.
+Open **[http://localhost:5173](http://localhost:5173)**.
 
 ### Docker Compose (dual-repo setup)
 
@@ -112,10 +112,10 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | Framework | **Vue 3** — Composition API, `<script setup>` |
 | Language | **TypeScript** |
 | State | **Pinia** |
-| Routing | **Vue Router 4** |
+| Docking | **dockview** — tabbed, docked panels; floating switched off |
 | Charts | **Lightweight Charts** (TradingView) |
 | HTTP client | **axios** |
-| Layout | **splitpanes**, **vue-draggable-plus** for the panel order |
+| Layout | **vue-draggable-plus** for the order of the report panels |
 | Headless components | **Reka UI** — collapsible, toggle group, popover, hover card |
 | Icons | **Tabler Icons** — drawn by meaning through one registry |
 | Theme | CSS Custom Properties token system, dark/light mode |

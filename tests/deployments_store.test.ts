@@ -117,6 +117,16 @@ describe('deployments_store', () => {
       expect(apiClient.getDeployments).toHaveBeenCalledTimes(2)
     })
 
+    /** A refresh replaces a ledger already on screen — it must not blank it with a spinner first. */
+    it('refreshes quietly, with no spinner in place of the ledger', async () => {
+      resolveAll()
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      const pending = store.loadDeployments(true)
+      expect(store.loadingList).toBe(false)
+      await pending
+    })
+
     // an empty ledger is not a cached answer — it has to stay askable
     it('asks again while the ledger has told us nothing', async () => {
       vi.mocked(apiClient.getDeployments).mockResolvedValue({

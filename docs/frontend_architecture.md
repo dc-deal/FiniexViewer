@@ -82,7 +82,7 @@ A production image for the Viewer (static build served by a lightweight HTTP ser
 
 Loading a candle chart for `mt5/EURUSD M30`:
 
-1. Browser calls `http://localhost:5173/viewer`.
+1. Browser calls `http://localhost:5173/` and opens the Chart panel.
 2. Vite serves the Vue SPA.
 3. On mount, the SPA calls `GET /api/v1/timeframes` once to populate the timeframe selector (result cached in `timeframe_store`, never re-fetched).
 4. After the user selects broker, symbol, and timeframe, the SPA calls `GET /api/v1/brokers/mt5/symbols/EURUSD/bars?timeframe=M30&from=...&to=...`.
@@ -1111,9 +1111,54 @@ The kind badge (`deployment`, `sweep`) is on the heading, and a row inside a fam
 carries it — five identical badges under one heading that says the word is the noise this project's
 own rule forbids. A run standing alone keeps its badge, because nothing above it says what it is.
 
+### Docked Panels — `PanelDock`, `panel_kinds` and the dock store
+
+**The application is a dock of panels, not a set of pages.** `PanelDock` wraps dockview (MIT,
+pinned exactly together with its two packages through `overrides`, because it is released weekly):
+tabs, groups and the seams between them. It knows PLACEMENT only — what a panel shows is its
+KIND's, what it is about is its link's (*Selection State*). Floating groups are switched off: a
+panel never floats over another (a non-goal, confirmed 2026-10-11). There is no router; the menu
+bar and the tabs are the way between the views.
+
+```
+AppMenuBar   FiniexViewer  Panels ▾  Layout ▾                                        ☰
+PanelDock    [☰ Deployments] [☰ Runs] [◫ Chart]
+               └─ PanelHost (kind: runs) → RunsView
+```
+
+- **`src/panel_kinds.ts`** — every kind in the SUGGESTED ORDER, from the general to the particular:
+  a deployment holds runs, a run has its chart (operator, 2026-10-13). A kind names its title, the
+  FORM its tab shows (`form-list`, `form-sheet`, `form-chart`), whether the first arrangement holds
+  it, and where its way in is — the Panels menu for a panel the reader works in, the application
+  menu for one about the application itself, About today. Each component is loaded on demand into
+  its own chunk, as the routes before them were.
+- **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: the suggested order in
+  one group, Runs in front. `open(kind)` brings a panel to the front, or opens it beside the active
+  one where the reader closed it; `reset()` goes back to the suggested order. The layout is written
+  into `arrangement.v1` once it has held still for 300 ms, and at once when the page goes.
+- **`src/components/dock/dock_layout.ts`** — the stored layout reconciled on load, never trusted. A
+  panel of a kind this version does not know is dropped from its group, an emptied group from the
+  grid, and floating and popout groups go. Where nothing usable is left — or dockview refuses what
+  was stored — the suggested order is laid out instead, never an empty screen.
+- **`PanelHost`** draws a panel the first time it is SHOWN and keeps it after: a tab behind another
+  costs nothing until it is picked, and a panel returned to finds its scroll where it left it. It is
+  the panel's error boundary, and it hands the panel its visibility — `onPanelShownAgain` fetches
+  the run index and the ledger afresh, quietly and without a spinner, whenever their panel comes
+  back, because a docked panel stays mounted where a route was entered anew.
+- **`PanelTab`** shows the form icon, the title and a close button. **`dock_theme.css`** gives
+  dockview's two themes this app's tokens: a tab behind another keeps the primary ink, because
+  muted ink means *disabled* here, and the front tab is marked by its surface AND an accent rule.
+
+**The chart's selectors sit in a row inside the chart panel** until the quick bar beside the tabs
+takes them; the sidebar that held them went with the routes.
+
+**Measured 2026-10-13:** the start bundle grew from 393 to 744 kB (gzip 130 → 210 kB), and that is
+dockview. The timing baseline taken the same day ran under load — FiniexTestingIDE at 267 % CPU —
+and is repeated on a quiet machine before it is compared with anything.
+
 ### Panels — a registry, a shell, one persisted layout
 
-The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
+These are the REPORT panels inside the Runs panel, the accordion column; viewer#31's next step makes each a docked panel of its own. The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
 
 - **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset layout* carries it into an arrangement somebody already made.
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). **The bar is the column turned on its side: ONE arrangement drawn twice**, horizontally and vertically, and it renders from `arrangedPanels` — every panel, switched-off ones included, in the order the reader made. It rendered `allPanels()` until 2026-09-30, so dragging Broker to the top left its toggle sixth in the bar; it appended the switched-off ones until 2026-10-07, so flipping a toggle moved it. The two orientations now differ in exactly one thing: the column leaves out what is switched off and what this run does not carry, so the pinned boundary lands on a different index in each. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
@@ -1169,8 +1214,8 @@ The two DEPLOYMENT routes deliberately keep `| null`: an unknown deployment id i
 
 **From a panel into another view — `use_open_in_context.ts`.** The sibling of the position link,
 one level up: a panel names WHAT to open (`openRun(id)`, `openDeployment(id)`) and the host decides
-HOW. Today `AppShell` sets the main link's context and goes to the view that shows it; once the views
-are docked panels (viewer#31) the second half falls away, and no panel changes. `canOpen` is false where
+HOW. The app root sets the main link's context and brings that panel to the front through the dock
+store (`dock.open`); no panel knows the dock, and none changed when the routes went. `canOpen` is false where
 no host supplied the channel, and a panel then draws the name as plain text rather than a way in
 that leads nowhere. Four places use it, each through `JumpLink`: a session's run (`SessionsTable`),
 a period's run on the deployment side (`BookingPeriodTable`), a session lane's label
@@ -1192,7 +1237,7 @@ a plain view rather than as panels:
 
 - **`src/views/DeploymentsView.vue`** with `src/components/deployments/` (`DeploymentPicker`,
   `DeploymentHeader`, `SessionsTable`, `AdvisoryNotice`) and `src/stores/deployments_store.ts`.
-- Route `/deployments`; the chosen deployment is the main link's (`deployment.id`), restored by
+- The `deployments` panel; the chosen deployment is the main link's (`deployment.id`), restored by
   `use_deployment_binding` once the ledger has loaded.
 
 **Why not panels.** The registry and the layout store are global: one `layout.v1`, and `AppBar`

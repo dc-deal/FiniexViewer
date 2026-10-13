@@ -7,10 +7,14 @@ import {
   IconBuildingBank,
   IconCalendarWeek,
   IconChartBar,
+  IconChartCandle,
+  IconFileText,
   IconHourglass,
+  IconList,
   IconStack2,
   IconSum,
   IconTag,
+  IconX,
 } from '@tabler/icons-vue'
 import type { IconName } from '@/types/icon_types'
 
@@ -26,6 +30,10 @@ import type { IconName } from '@/types/icon_types'
  * element they sit in. A panel kind is named after the panel's own id.
  */
 export const ICONS = {
+  'form-list': IconList,
+  'form-sheet': IconFileText,
+  'form-chart': IconChartCandle,
+  'action-close': IconX,
   'kind-executive': IconChartBar,
   'kind-broker': IconBuildingBank,
   'kind-scenario-roster': IconStack2,

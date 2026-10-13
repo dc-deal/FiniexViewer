@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_DEPLOYMENT } from './api_mock'
-import { openWith } from './arrangement_seed'
+import { openWith, showPanel } from './arrangement_seed'
 import { expectHeadingsReadable } from './list_geometry'
 
 /**
@@ -59,7 +59,8 @@ async function expectFiguresRightAligned(page: Page, selector: string): Promise<
 }
 
 async function openLedger(page: Page): Promise<void> {
-  await page.goto('/deployments')
+  await page.goto('/')
+  await showPanel(page, 'Deployments')
   await expect(page.locator('.deployment-list .record-row').first()).toBeVisible()
 }
 
@@ -99,7 +100,8 @@ test('a chosen deployment survives a reload', async ({ page }) => {
 })
 
 test('a stored deployment the ledger no longer lists says so', async ({ page }) => {
-  await openWith(page, '/deployments', { deployment: 'deploy_gone' })
+  await openWith(page, '/', { deployment: 'deploy_gone' })
+  await showPanel(page, 'Deployments')
   await expect(page.locator('.state-overlay')).toContainText('no longer in the ledger')
   await expect(page.locator('.state-overlay')).toContainText('deploy_gone')
 })

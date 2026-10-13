@@ -64,9 +64,13 @@ export const useRunsStore = defineStore('runs', () => {
     runs.value.find(run => run.run_id === selectedRunId.value) ?? null
   )
 
-  async function loadRuns(): Promise<void> {
+  /**
+   * @param quiet A refresh of a list already on screen — fetched again, but no spinner in its
+   *   place, or every return to the panel would blank the list for a moment.
+   */
+  async function loadRuns(quiet = false): Promise<void> {
     // deliberately not cached — new runs appear while the app is open
-    loadingRuns.value = true
+    if (!quiet) loadingRuns.value = true
     error.value = null
     try {
       // the index row carries run_id + group + name, so the cascade needs no request per run

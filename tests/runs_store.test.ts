@@ -142,6 +142,19 @@ describe('useRunsStore', () => {
       expect(apiClient.getRuns).toHaveBeenCalledTimes(2)
     })
 
+    /** A list already on screen is fetched again when its panel comes back — without blanking it. */
+    it('refreshes quietly, with no spinner in place of the list', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      const store = useRunsStore()
+      await store.loadRuns()
+      const seen: boolean[] = []
+      const pending = store.loadRuns(true)
+      seen.push(store.loadingRuns)
+      await pending
+      expect(seen).toEqual([false])
+      expect(apiClient.getRuns).toHaveBeenCalledTimes(2)
+    })
+
     it('surfaces a failure as an error message', async () => {
       vi.mocked(apiClient.getRuns).mockRejectedValue(new Error('network down'))
       const store = useRunsStore()

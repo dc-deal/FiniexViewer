@@ -1,6 +1,7 @@
 import { onMounted } from 'vue'
 import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
+import { onPanelShownAgain } from '@/composables/use_panel_visibility'
 
 /**
  * Loads the run index and brings back the run the reader had open.
@@ -19,4 +20,7 @@ export function useRunBinding(): void {
     const stored = context.main.run.id
     if (stored) await runsStore.loadRun(stored)
   })
+
+  // a docked panel stays mounted, so the index is fetched again whenever the panel comes back
+  onPanelShownAgain(() => { void runsStore.loadRuns(true) })
 }

@@ -28,7 +28,7 @@ const ON_OPENING = { section: 'order-history', field: 'orders' }
 
 test('a section that throws at first paint leaves every other panel standing', async ({ page }) => {
   await mockApi(page)
-  await openWith(page, '/runs', { run: FIXTURE_RUN })
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('.panel').first()).toBeVisible()
 
   const healthy = await page.locator('.panel').count()
@@ -50,7 +50,7 @@ test('a section that throws at first paint leaves every other panel standing', a
 
 test('a folded section that throws on opening marks its own header and no other', async ({ page }) => {
   await mockApi(page, { corrupt: ON_OPENING })
-  await openWith(page, '/runs', { run: FIXTURE_RUN })
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('.panel').first()).toBeVisible()
 
   const standing = await page.locator('.panel').count()

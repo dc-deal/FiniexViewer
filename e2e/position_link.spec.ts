@@ -59,7 +59,7 @@ async function openPanel(page: import('@playwright/test').Page, name: string): P
 }
 
 test('the link is drawn only where the position produced a trade', async ({ page }) => {
-  await openWith(page, '/runs', { run: FIXTURE_RUN })
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await openPanel(page, 'Orders')
 
   // Some of the positions, never all of them — the counts belong to the capture and move with it,
@@ -77,7 +77,7 @@ test('the link is drawn only where the position produced a trade', async ({ page
 })
 
 test('a jump opens the closed target, marks the position and stores the mark', async ({ page }) => {
-  await openWith(page, '/runs', { run: FIXTURE_RUN })
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await openPanel(page, 'Orders')
 
   // the target starts CLOSED — that is what the jump has to deal with
@@ -105,7 +105,7 @@ test('a jump opens the closed target, marks the position and stores the mark', a
  * 2026-10-12. The scroll searches the run view's own root, so a broken root lands nowhere.
  */
 test('a jump from far down the orders scrolls its trades into view', async ({ page }) => {
-  await openWith(page, '/runs', { run: FIXTURE_RUN })
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await openPanel(page, 'Orders')
 
   const link = page.locator('.order-list .to-trades').last()
@@ -119,7 +119,7 @@ test('a jump from far down the orders scrolls its trades into view', async ({ pa
 })
 
 test('a hidden target comes back rather than the jump landing nowhere', async ({ page }) => {
-  await openWith(page, '/runs', { run: FIXTURE_RUN })
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await openPanel(page, 'Orders')
 
   // switch Trade History off entirely — it leaves the column, not just the open state
@@ -135,7 +135,7 @@ test('a hidden target comes back rather than the jump landing nowhere', async ({
 })
 
 test('the mark survives a reload, and the page does not jump on its own', async ({ page }) => {
-  await openWith(page, '/runs', {
+  await openWith(page, '/', {
     run: FIXTURE_RUN,
     position: { scenario: TARGET.scenario_name, position: TARGET.position_id },
   })
@@ -158,7 +158,7 @@ test('the mark survives a reload, and the page does not jump on its own', async 
 })
 
 test('the way back from a trade reaches the orders of its position', async ({ page }) => {
-  await openWith(page, '/runs', { run: FIXTURE_RUN })
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await openPanel(page, 'Trade History')
 
   const orders = page.locator('.panel-trigger', { hasText: 'Orders' })

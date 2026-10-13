@@ -7,12 +7,14 @@ import {
 } from 'reka-ui'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import { useCallerStore } from '@/stores/caller_store'
+import { useDockStore } from '@/stores/dock_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import type { SettingsTab } from '@/types/settings_types'
 import { t } from '@/translate'
 
 const settingsStore = useSettingsStore()
 const callerStore = useCallerStore()
+const dock = useDockStore()
 const { settings } = storeToRefs(settingsStore)
 const { displayName, state } = storeToRefs(callerStore)
 
@@ -56,6 +58,11 @@ function openSettings(tab: SettingsTab): void {
           <DropdownMenuSeparator class="menu-separator" />
           <DropdownMenuItem class="menu-item" @select="openSettings('account')">
             👤 {{ accountLabel }}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator class="menu-separator" />
+          <!-- a panel like any other, reached from here because it is about the application -->
+          <DropdownMenuItem class="menu-item" data-action="about" @select="dock.open('about')">
+            ℹ️ {{ t('About FiniexViewer') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>

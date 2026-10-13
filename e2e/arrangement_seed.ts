@@ -72,3 +72,8 @@ export async function storedLink(page: Page): Promise<{
 export async function storedBar(page: Page, bar: string): Promise<SeedBar | undefined> {
   return page.evaluate(id => JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').bars?.[id], bar)
 }
+
+/** Brings a docked panel to the front the way a reader does: by its tab. */
+export async function showPanel(page: Page, title: string): Promise<void> {
+  await page.locator('.dv-tab', { hasText: title }).click()
+}

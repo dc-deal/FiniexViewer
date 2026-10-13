@@ -16,6 +16,27 @@ export interface PanelDescriptor {
   defaultOpen: boolean
 }
 
+/**
+ * What a DOCKED panel is: one entry per kind in `panel_kinds.ts`. Its tab shows the panel's FORM
+ * — a list, a sheet, a chart — never its content, which is the title's job.
+ */
+export interface PanelKind {
+  /** Also the panel's id while a kind has one panel only. */
+  id: string
+  title: string
+  icon: IconName
+  /** Its place in the suggested order — the first arrangement and a reset follow it. */
+  order: number
+  /** Part of the first arrangement, or opened from its menu only. */
+  opensByDefault: boolean
+  /**
+   * Where the way in is: the Panels menu for a panel the reader works in, the application menu for
+   * one about the application itself — About today, the settings later.
+   */
+  entry: 'panels' | 'application'
+  component: Component
+}
+
 /** Per-panel arrangement, the part the user controls and the part that is persisted. */
 export interface PanelState {
   id: string

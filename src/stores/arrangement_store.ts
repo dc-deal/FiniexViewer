@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, shallowRef, watch } from 'vue'
 import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext, PositionRef } from '@/types/context_types'
@@ -85,7 +85,8 @@ function readStored(): StoredArrangement | null {
     const bars: Record<string, StoredFacets> = {}
     for (const [id, facets] of Object.entries(record(parsed['bars']))) bars[id] = readFacets(facets)
     const chart: StoredChart = { timeframe: text(record(parsed['chart'])['timeframe']) }
-    return { version: SCHEMA_VERSION, links, bars, chart }
+    const dock = typeof parsed['dock'] === 'object' && parsed['dock'] !== null ? parsed['dock'] : null
+    return { version: SCHEMA_VERSION, links, bars, chart, dock }
   } catch {
     // a corrupt or unreadable entry is the same as none — never a broken start
     return null
@@ -116,6 +117,8 @@ export const useArrangementStore = defineStore('arrangement', () => {
 
   const bars = ref<Record<string, StoredFacets>>(stored?.bars ?? {})
   const chart = ref<StoredChart>(stored?.chart ?? { timeframe: null })
+  // the layout is large and replaced whole, never edited in place — no deep reactivity needed
+  const dock = shallowRef<object | null>(stored?.dock ?? null)
 
   function persist(): void {
     const arrangement: StoredArrangement = {
@@ -123,6 +126,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       links: context.links,
       bars: bars.value,
       chart: chart.value,
+      dock: dock.value,
     }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(arrangement))
@@ -132,6 +136,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
   }
 
   watch([() => context.links, bars, chart], persist, { deep: true })
+  watch(dock, persist)
 
   function setFacets(bar: string, facets: StoredFacets): void {
     bars.value = { ...bars.value, [bar]: facets }
@@ -141,5 +146,9 @@ export const useArrangementStore = defineStore('arrangement', () => {
     chart.value = { timeframe }
   }
 
-  return { bars, chart, setFacets, setTimeframe }
+  function setDock(layout: object | null): void {
+    dock.value = layout
+  }
+
+  return { bars, chart, dock, setFacets, setTimeframe, setDock }
 })

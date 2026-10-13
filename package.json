@@ -21,13 +21,12 @@
   "dependencies": {
     "@tabler/icons-vue": "3.49.0",
     "axios": "^1.7.9",
+    "dockview-vue": "8.5.1",
     "lightweight-charts": "^4.2.0",
     "pinia": "^2.2.6",
     "reka-ui": "^2.10.4",
-    "splitpanes": "^3.1.5",
     "vue": "^3.5.13",
-    "vue-draggable-plus": "^0.6.1",
-    "vue-router": "^4.4.5"
+    "vue-draggable-plus": "^0.6.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -45,5 +44,9 @@
     "vite": "^6.0.7",
     "vitest": "^3.1.0",
     "vue-tsc": "^2.2.0"
+  },
+  "overrides": {
+    "dockview": "8.5.1",
+    "dockview-core": "8.5.1"
   }
 }
