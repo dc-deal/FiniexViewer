@@ -21,12 +21,16 @@ const emit = defineEmits<{ 'update:open': [boolean] }>()
     @update:open="value => emit('update:open', value)"
   >
     <p class="about-version">v{{ pkg.version }}</p>
+    <!-- what the app does today, in the backend's own words; the README says the same at length -->
     <div class="about-body">
       <p>{{ t('Web companion for FiniexTestingIDE.') }}</p>
-      <p>{{ t('Connects to the FiniexTestingIDE API server and renders market data as interactive candle charts. Read-only — no trade execution.') }}</p>
+      <p>{{ t('Reads what a backtest or an AutoTrader session left behind — its orders and what became of them, its trades, its booking periods, its warnings and its configuration — and the sessions of a deployment across its restarts, beside a candle chart of the market data.') }}</p>
+      <p>{{ t('Read-only: every figure is a field the API served. Nothing is traded from here.') }}</p>
     </div>
     <div class="about-meta">
       <span>{{ t('Charts: TradingView Lightweight Charts (Apache 2.0)') }}</span>
+      <span>{{ t('Docked panels: dockview (MIT)') }}</span>
+      <span>{{ t('Icons: Tabler Icons (MIT)') }}</span>
       <span>{{ t('License:') }} {{ pkg.license }}</span>
     </div>
   </AppDialog>
