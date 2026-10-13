@@ -2,8 +2,8 @@
 
 > **Version:** v0.3.0 Pre-Alpha Showcase
 > **Status:** v0.3.0 — run inspection. Eleven report panels over a run's stored artifacts, a
-> deployment's session history, the candle chart, shareable links, 833 unit tests and a browser
-> suite.
+> deployment's session history, the candle chart, a selection restored on reload, 833 unit tests
+> and a browser suite.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
@@ -12,8 +12,8 @@ a strategy submitted and what became of each one, the trades they produced, the 
 booked into, the warnings a validator raised, and the configuration it all ran under. Nothing is
 recomputed here — every figure is a field the API served, or it is asked for as one.
 
-The candle chart it started as is still there, and the URL of any view is shareable and survives a
-reload.
+The candle chart it started as is still there, and every view comes back as the reader left it
+after a reload.
 
 ![The run list, folded by family, over the trade history and the orders of one run](docs/images/runs_overview_dark.png)
 
@@ -33,8 +33,8 @@ one series rather than adding them up — and the periods of all of them share o
 
 ![The candle chart](docs/images/viewer_chart_dark.png)
 
-**The chart.** Broker, symbol, timeframe; a default window per timeframe; the whole selection in
-the URL.
+**The chart.** Broker, symbol, timeframe; a default window per timeframe; the selection kept
+across a reload.
 
 ---
 
@@ -122,7 +122,7 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` + `@stylistic` |
 | Dead code | **knip** — unreferenced files, exports and dependencies |
 | Testing | **Vitest** + **Vue Test Utils** — unit tests, jsdom environment |
-| Browser tests | **Playwright** — a real reload, a real URL, real geometry; hygiene rather than a gate |
+| Browser tests | **Playwright** — a real reload, real storage, real geometry; hygiene rather than a gate |
 | CI | **GitHub Actions** — type-check + tests on every PR and push to master |
 
 Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_architecture.md)
@@ -140,7 +140,7 @@ Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_a
 │  - Candle chart         │                            │  - Bar index manager     │
 │  - Run report panels    │                            │  - Scenario engine       │
 │  - Deployment history   │                            │  - Run-results ledger    │
-│  - Shareable URL state  │                            │                          │
+│  - Restored selection   │                            │                          │
 └─────────────────────────┘                            └──────────────────────────┘
 ```
 

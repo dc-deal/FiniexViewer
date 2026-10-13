@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_RUN } from './api_mock'
+import { openWith } from './arrangement_seed'
 import { expectHeadingsReadable } from './list_geometry'
 
 /**
@@ -153,12 +154,12 @@ test.beforeEach(async ({ page }) => {
  * Opens every panel so all four lists are on screen at once, which is also the arrangement that
  * makes each panel column narrow enough for the lower tiers to engage.
  *
- * The picker needs asking back: it COLLAPSES to one line once a run is chosen, so a url carrying
- * `?run=` draws no run list at all. That is the picker working, and `Change run` is how a reader
+ * The picker needs asking back: it COLLAPSES to one line once a run is chosen, so a stored run
+ * draws no run list at all. That is the picker working, and `Change run` is how a reader
  * gets it back.
  */
 async function openEverything(page: Page): Promise<void> {
-  await page.goto(`/runs?run=${FIXTURE_RUN}`)
+  await openWith(page, '/runs', { run: FIXTURE_RUN })
   await expect(page.locator('.panel-trigger').first()).toBeVisible()
   /*
    * By NAME, and each one waited for. Sweeping the bar by index looked equivalent and was not:

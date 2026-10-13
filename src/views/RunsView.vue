@@ -104,24 +104,41 @@ provideOrderSteps({
 // the view's own root, so the jump below searches THIS view and never the whole document
 const viewRoot = ref<HTMLElement | null>(null)
 
+/** How long a jump waits for its marked row before it gives up. */
+const MARK_WAIT_MS = 2000
+
 /**
- * Scroll the marked row into view, once it exists.
+ * Scroll the marked row into view, once it exists — WAITED FOR, never guessed.
  *
- * The mark and the opened panel are both set at the click, so one tick later the rows carry the
- * mark. While the mark rode in the URL, the router wrote it some ticks after the click and two
- * fixed ticks found no marked row at all — unnoticed from 2026-10-05 to 2026-10-12, because the
- * trades of the first order are on screen anyway. A row still absent after the tick is one the
- * target panel does not draw — beyond its visible cap, or in a group it folded — and the jump then
- * leaves the mark where it is rather than scrolling to nothing.
+ * The mark is set at the click, so one tick later every row already drawn carries it. A panel the
+ * jump had to OPEN is not drawn by then, and no fixed number of ticks is right. Measured
+ * 2026-10-13: one tick found no row once the mark stopped riding in the URL, whose write had been
+ * slow enough to hide it. So the view is watched until the row appears.
+ * A row that never does is one the target panel does not draw — beyond its visible cap, or in a
+ * group it folded — and the jump then leaves the mark where it is rather than scrolling to nothing.
  *
  * Searched inside THIS view, never the whole document: once the views are panels that can stand
  * side by side, a second copy of a panel would otherwise answer first and the jump would scroll a
  * view the reader is not looking at.
  */
 async function scrollToMark(panelId: string): Promise<void> {
+  // one tick first, or a row still carrying the PREVIOUS mark would answer
   await nextTick()
-  const row = viewRoot.value?.querySelector(`[data-panel="${panelId}"] .record-row.marked`)
-  row?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  const root = viewRoot.value
+  if (!root) return
+  const scrolled = (): boolean => {
+    const row = root.querySelector(`[data-panel="${panelId}"] .record-row.marked`)
+    row?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    return row !== null
+  }
+  if (scrolled()) return
+  const observer = new MutationObserver(() => { if (scrolled()) stop() })
+  const timer = window.setTimeout(stop, MARK_WAIT_MS)
+  function stop(): void {
+    observer.disconnect()
+    window.clearTimeout(timer)
+  }
+  observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
 }
 
 /**

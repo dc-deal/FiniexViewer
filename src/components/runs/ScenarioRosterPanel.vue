@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import AppButton from '@/components/base/AppButton.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import { useFacetQuery } from '@/composables/use_facet_query'
-import { ROSTER_FACET_PREFIX, useScenarioSelection } from '@/composables/use_scenario_selection'
+import { useFacetState } from '@/composables/use_facet_state'
+import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import {
   amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
@@ -68,22 +68,17 @@ const warnedUnits = computed(() => {
   return counts
 })
 
-// the narrowing rides in the URL under `unitf` / `unitq` / `unitsort` — the same two words the
-// `run=` and `unit=` params already use
-const { selection, search, sort } = useFacetQuery(ROSTER_FACET_PREFIX, 'name')
-
 /**
- * A different run is a different roster, so a narrowing made for the old one means nothing.
+ * A different run is a different roster, so a narrowing made for the old one means nothing — the
+ * scope drops it, both when this panel mounts on another run and when the run changes under it.
  *
- * Watched by the run's OWN id, never by `props.model` — the lesson `TradeHistoryPanel` learned
+ * Scoped by the run's OWN id, never by `props.model` — the lesson `TradeHistoryPanel` learned
  * first. The model is composed from three sections that arrive one by one, so its identity changes
  * as the portfolio and the warnings land, and watching it cleared a reader's narrowing under them
- * on a run that had not changed at all. A run change that unmounts this panel is cleared by the
- * run's own cascade instead (`use_run_query_sync`).
+ * on a run that had not changed at all.
  */
-watch(() => props.model.scenarios.run_id, () => {
-  selection.value = {}
-  search.value = ''
+const { selection, search, sort } = useFacetState('scenario-roster', 'name', {
+  scope: () => props.model.scenarios.run_id,
 })
 
 /**

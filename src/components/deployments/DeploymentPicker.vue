@@ -7,7 +7,7 @@ import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import { useFacetQuery } from '@/composables/use_facet_query'
+import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
 import {
   amount, duration, magnitude, percentFigure, signClass, sortInstant, utcInstant,
@@ -44,8 +44,7 @@ const {
   deployments, deploymentsKey, selectedDeploymentId, loadingList,
 } = storeToRefs(store)
 
-// the narrowing rides in the URL under `depf` / `depq` / `depsort`, so a filtered ledger is a link
-const { selection, search, sort } = useFacetQuery('dep', 'newest')
+const { selection, search, sort } = useFacetState('deployment-picker', 'newest')
 
 /** A value the row does not state is not offered — an empty option reads as a category. */
 function stated(value: string | null): string[] {
@@ -193,9 +192,10 @@ function card(row: DeploymentRow): ListCard {
 /**
  * The list is the way in, so it is open until there is something to look at — and it collapses once
  * a deployment is chosen, the same as the run picker, because the history below it is what the
- * reader came for.
+ * reader came for. A deployment already chosen when the picker mounts collapses it from the start,
+ * since the watch below sees only a change.
  */
-const open = ref(true)
+const open = ref(selectedDeploymentId.value === null)
 
 watch(selectedDeploymentId, id => { open.value = id === null })
 

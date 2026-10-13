@@ -7,7 +7,7 @@ import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import { useFacetQuery } from '@/composables/use_facet_query'
+import { useFacetState } from '@/composables/use_facet_state'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListCard, ListColumn } from '@/types/list_types'
 import type { Figure } from '@/types/figure_types'
@@ -58,7 +58,7 @@ const UNKNOWN = 'unknown'
  */
 const SHOWN_BY_DEFAULT = { purpose: ['regular', 'certificate', UNKNOWN] }
 
-const { selection, search, sort } = useFacetQuery('run', 'newest', SHOWN_BY_DEFAULT)
+const { selection, search, sort } = useFacetState('run-picker', 'newest', { defaultSelection: SHOWN_BY_DEFAULT })
 
 /** A value the row does not state is not offered — an empty option reads as a category. */
 function stated(value: string | null): string[] {
@@ -445,9 +445,11 @@ function card(run: RunInfo): ListCard {
 
 /**
  * The list is the way in, so it is open until there is something to look at — and it collapses
- * once a run is chosen, or forty rows push every panel off the screen.
+ * once a run is chosen, or forty rows push every panel off the screen. A run already chosen when
+ * the picker mounts — the one the reader left open — collapses it from the start: the watch below
+ * sees only a CHANGE, and a restored selection is none.
  */
-const open = ref(true)
+const open = ref(selectedRunId.value === null)
 
 watch(selectedRunId, runId => { open.value = runId === null })
 </script>

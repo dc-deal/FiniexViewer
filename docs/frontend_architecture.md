@@ -169,7 +169,7 @@ Six consequences the frontend is built around:
 - **A 404 on a report section is an absence, not a failure.** A run can exist without carrying a given artifact. `getRunSummary` maps that to `null`, and the view says the artifact is missing instead of showing an error.
 - **Every report body names the run it was built from**, and `api_client` asserts it against what was requested (`RunIdMismatchError`). This is the only defence a client has against an ambiguous id: a duplicate passes every membership check, the route resolves it to whichever run it finds first, and nothing else in the payload would give that away. It has happened — three runs once shared one id here.
 - **A 409 is a third thing again: the artifact is there and cannot be parsed**, because it was written by an older schema and the run has to be repeated. `getWarningsErrors` raises `ArtifactUnreadableError` carrying the backend's own detail text, and the view shows it as a notice *beside* the panels rather than instead of them — one unreadable section must not hide the readable ones. Three distinct answers, three distinct states: 404 absent, 409 stale, anything else an outage.
-- **The index is the authority on which runs exist, and it is never bypassed.** A URL, a bookmark or a shared link can name a run whose artifacts were removed since. `selectRun` refuses an id the index does not contain, so a stale link produces no request at all rather than one 404 per section — the same rule the layout store applies to stored panel ids. An empty index is its own state (`{"runs": [], "count": 0}` is a normal 200), and the view says so instead of offering empty pickers with no explanation.
+- **The index is the authority on which runs exist, and it is never bypassed.** A stored selection can name a run whose artifacts were removed since. `loadRun` refuses an id the index does not contain, so a stale one produces no request at all rather than one 404 per section — the same rule the layout store applies to stored panel ids. An empty index is its own state (`{"runs": [], "count": 0}` is a normal 200), and the view says so instead of offering empty pickers with no explanation.
 - **`has_reports` on the index row decides whether a run is worth asking about.** `false` means the run exists as logs only and every report route answers 404 — a normal state, because a test session writes logs and no artifacts. It is neither a failure nor a reason to hide the run: the picker shows it marked `logs only`, and neither the store nor the view issues a request for it. It IS selectable — it was a disabled option once, but the run view now says what such a run is and the store asks the backend for nothing, so a row that cannot be clicked would only look broken. Hiding it instead would raise the question where the run went; asking anyway would be the 404 storm the rule above exists to prevent.
 
 **`run_id` is opaque, and stays that way.** It is minted as `<date>_<time>_<8 hex>` and the backend pins the character class to `[0-9a-f_]` with a test, so interpolating it into a URL path unencoded is safe by assertion rather than by hope. Nothing here parses it: no split, no date extracted for display, no sort. Ordering comes from the index, which is newest-first by contract.
@@ -442,68 +442,83 @@ follow in a sweep of their own.
 **The browser tab carries the same library's `chart-candle`** (`public/favicon.svg`), in the two
 accent values chosen by the browser's own colour scheme — a favicon cannot read the app's tokens.
 
-### URL Query State — `use_query_sync` / `use_run_query_sync` / `use_facet_query`
+### Selection State — `context_store` and `arrangement_store`
 
-Every user-selectable option on a page is stored in the URL as a query param, so any view is a shareable link that survives reload. Three composables own their params, and one of them also CLEARS params others own — a new run takes the position mark and the roster's narrowing with it — taking their names from those owners (`POSITION_PARAM`, `facetParamKeys(ROSTER_FACET_PREFIX)`) rather than spelling them:
+**The selection lives in a LINK, and the link lives in the context store.** `links.A` holds what the
+reader is looking at — `run {id, units, position}`, `deployment {id}`, `market {broker, symbol}` —
+and nothing outside a link carries a selection. Link A is the main one; more arrive with the docked
+panels of viewer#31, where a panel reads its own link's context. There is no URL state (operator,
+2026-10-12): a single-user, local-first viewer has no link to share yet, and a link command is
+cheap to add back because the context keys are the old query keys.
 
-- `use_query_sync.ts` — the chart selection (`?broker=...&symbol=...&timeframe=...`), activated in `AppShell`.
-- `use_run_query_sync.ts` — the run and the scenarios narrowed to (`?run=...&unit=...`), activated in `RunsView`. `unit` is one step BELOW the run and selecting a run clears it, so it is applied after the run resolves — read first, it is silently dropped and a shared link loses its narrowing. `?group=` and `?name=` were the old cascade's params and are actively REMOVED from a link that still carries them, rather than left to look meaningful. A NEW run — never a restore, never a narrowing — also clears `position` and the roster's `unitf`/`unitq`; a run the reader picks while a link is still restoring counts as new.
-- `use_facet_query.ts` — a facet bar's narrowing, ordering and search, one instance per bar.
+**Every write is an action, and an action applies its cascade.** A restore applies stored values
+as they are, without cascading:
 
-Priority on load: **URL params > localStorage > null**. All three wait for `router.isReady()` before reading params, to avoid a race with the initial navigation, then watch their state and write on every change. For the chart selection, localStorage is a write-through cache; the run selection has no cache, because the run index is live data.
+| Action | sets | clears |
+|---|---|---|
+| `selectRun(id)` | `run.id` | `run.units`, `run.position` |
+| `setUnits` · `toggleUnit` · `clearUnits` | `run.units` | — the mark stays, as it always did |
+| `mark(position)` | `run.position` | — |
+| `selectDeployment(id)` | `deployment.id` | — |
+| `setBroker(broker)` | `market.broker` | `market.symbol` |
+| `setSymbol(symbol)` | `market.symbol` | — |
+| `restore(stored)` | everything | nothing |
 
-**One writer, because four owners of one query cannot each rebuild it.** `router.replace({ query })`
-with a freshly built object drops every param the others own — and `route.query` only updates once
-a navigation RESOLVES, so two writers firing in the same flush both read the state before either
-wrote and the second one wins. The case it was built for: choosing a run wrote `run` while the
-roster reset its own facets and wrote `unitf`. Since 2026-10-12 a new run clears the roster's
-narrowing in its own patch, so today that change has one writer — and the two-writer case returns
-as soon as a roster stays mounted across a run change, which the docked panels of viewer#31 make
-the normal case.
-
-`query_param_utils.ts` therefore holds `patchQuery(router, patch)`: writers state what their keys —
-and, for a new run, the keys it invalidates — should become, and one navigation per tick applies
-them together against the live query. A later patch for the same key wins, which is what writing
-twice means. It returns a promise that resolves once the URL carries the patch — the same one for
-every writer of the tick — so a caller that acts on what the URL then says waits for the write
-rather than for a guessed number of ticks: the jump between orders and trades, below. `readQuery`
-and `writeParam` remain underneath it.
-
-#### A facet bar in the URL
-
-Three params per bar, prefixed with the thing the bar narrows — `run…` for the run index, `unit…`
-for the scenario roster, the same two words `run=` and `unit=` already use:
+**The arrangement store keeps it** under ONE versioned `localStorage` key, created in `App.vue` so
+every view mounts onto the restored selection:
 
 ```
-/runs?run=20260929_080044_c7cc7f14
-     &runf=group:simulation;artifacts:reports  &runsort=oldest  &runq=tunnel
-     &unitf=status:success;result:profit       &unitsort=pnl    &unitq=EUR
+arrangement.v1 = { version: 1,
+                   links: { A: { run: { id, units, position }, deployment: { id }, market: { broker, symbol } } },
+                   bars:  { 'run-picker': { selection, search, sort }, 'scenario-roster': { …, scope: <run id> } },
+                   chart: { timeframe } }
 ```
 
-A param is absent while its part of the bar is untouched, and the sort is written only when it is
-not the bar's default, so an ordinary link stays short. The facets are written sorted by id, so the
-same narrowing always produces the same link whatever order the chips were clicked in.
+It is reconciled field by field on load, never trusted: a field of the wrong shape is left empty,
+an entry of another schema version is REMOVED rather than converted, and a corrupt one counts as
+none. The timeframe belongs to the CHART, not to the link — it says how one chart is drawn, not what
+is selected. The chart selection's former keys (`sel.broker`, `sel.symbol`, `sel.timeframe`) are
+removed on start.
 
-**Why the search and the sort ride along.** A search REMOVES rows, so it is a filter. A sort does
-not change the set, but these sorts are analytical — *worst result first*, *longest tick timespan
-first* — and that is what a sender means to show. Panel order, collapsed sections and pinned panels
-stay in `localStorage`: those are how one reader arranged their screen, not what they are looking
-at.
+**The data stores are facades over it.** `runs_store.selectedRunId` / `selectedUnits`,
+`deployments_store.selectedDeploymentId` and `selection_store.broker` / `symbol` / `timeframe` are
+read from the context and the arrangement; `selectRun(id)` sets the context and loads. `loadRun`
+checks the id against the index, and an answer that arrives for a run no longer selected is
+discarded — the case a restore and a quick click produce together.
 
-**Separators: `facet:value,value;facet:value`.** Measured 2026-09-29 over 52 distinct facet values
-from the live run index and three scenario rosters — every one matches `[A-Za-z0-9_. ]`, so none
-collides. A value that ever carried `,` `;` or `:` would not survive the round trip; the answer then
-is repeated params rather than an escape scheme, the same conclusion the `unit` param reached.
+**Binders do the loading a view needs on mount:** `use_run_binding` and `use_deployment_binding`
+load the index, then the stored selection; `use_chart_binding` resets a timeframe the symbol has no
+coverage for. The bars store REPORTS that case (`timeframeUncovered`) and never writes a selection
+itself — a data store that changes what the reader chose is the defect this replaced.
+
+**A picker opens collapsed on a selection it finds at mount.** Its `watch` sees only a CHANGE, and a
+restored selection is none — measured 2026-10-13 in the browser, where every restored run opened
+with the whole list above it.
+
+#### A facet bar's state — `use_facet_state`
+
+Each bar keeps its narrowing, its search and its sort under its own entry in `bars`. A bar nobody
+touched stores nothing and opens on its defaults; an EMPTY selection means the reader cleared it,
+and that is kept — a reload shows what they last saw rather than handing the default back. A
+`scope` names what a narrowing was made FOR: the scenario roster's is the run, so a narrowing made
+for another run is dropped on the way in and when the run changes under a mounted roster, while the
+sort is kept.
+
+**Why the search and the sort are kept too.** A search REMOVES rows, so it narrows like a facet. A
+sort does not change the set, but these sorts are analytical — *worst result first*, *longest tick
+timespan first* — and that is part of what the reader was looking at. Panel order, collapsed
+sections and pinned panels stay in the layout's own key: those are how one reader arranged their
+screen, not what they are looking at.
 
 ### Settings — three kinds of state, and which one needs an account
 
 There are three kinds of state in this application and they do not share a home. Getting the line
-wrong is what makes a shared link meaningless or a preference travel to someone who did not ask
-for it:
+wrong is what makes a restored view show the wrong thing or a preference travel to someone who did
+not ask for it:
 
 | | What it is | Where it lives | Needs an account? |
 |---|---|---|---|
-| **Selection** | which run, scenario, symbol, timeframe, filter | URL query params | never |
+| **Selection** | which run, scenario, deployment, symbol, timeframe, filter | `arrangement.v1` in `localStorage` | never |
 | **Presentation** | panel order, collapsed state, theme, thresholds, caps | `localStorage` | no |
 | **Operation** | writing, triggering a run, changing a configuration | nowhere yet | **yes — and only this** |
 
@@ -890,13 +905,13 @@ file's name — a deliberate linkage, confirmed by the backend. But it answers *
 name lives today*: one moved, deleted or shadowed after the run gives a different answer than the
 run had, and no per-run origin is served. The label therefore describes the file, never the run.
 
-### Choosing scenarios — `?unit=`, and what must not be narrowed with them
+### Choosing scenarios — `run.units`, and what must not be narrowed with them
 
 A run holds up to forty scenarios, and the facet bar only narrows the ROSTER. The selection is the
 other half: scenarios are chosen, and the sections that are per-unit follow them.
 
 ```
-?run=20260927_092959_cd1d9b1e&unit=ETHUSD_blocks_06,ETHUSD_blocks_09
+run 20260927_092959_cd1d9b1e · units ETHUSD_blocks_06, ETHUSD_blocks_09
 
   roster            marks the rows; a click adds, a second click takes one out
   trade history     narrowed
@@ -906,20 +921,17 @@ other half: scenarios are chosen, and the sections that are per-unit follow them
   RunsView          the whole column is FRAMED, headed "⌖ Showing only … Show all"
 ```
 
-**Several at once, because the question is usually a comparison.** The names ride in one param,
-comma separated — measured 2026-09-27 over 58 real names from the roster, the run index and the
-portfolio: every one matches `[A-Za-z0-9_-]`, so nothing collides with the separator. A name that
-ever carries a comma would not survive the round trip, and the fix then is repeated params rather
-than an escape scheme. An EMPTY list means the whole run, never "nothing" — `showsUnit` encodes
+**Several at once, because the question is usually a comparison.** The names are a list in the
+run's context. An EMPTY list means the whole run, never "nothing" — `showsUnit` encodes
 exactly that, so no call site branches on it.
 
 **The narrowed column is framed, not merely announced.** A sentence above a list cannot say how far
 a manipulation reaches; an edge can. The frame wears the annotation role — a marked division — and
 is itself the channel that survives for a reader who cannot separate the hues.
 
-**It lives in the URL, because it is SELECTION.** Panel order and collapsed state are presentation
-and stay in `localStorage`; what the reader is looking at belongs in the query, or a shared link
-means something different for whoever opens it. It sits one step below the run and is
+**It lives in the run's context, because it is SELECTION.** Panel order and collapsed state are
+presentation and stay in the layout's own key; what the reader is looking at belongs to the link,
+so a second link (viewer#31) narrows its own run. It sits one step below the run and is
 dropped whenever the run above it changes — carried across, it would narrow a new run to a name
 that run may not have, or to one it does, which then reads as a choice nobody made.
 
@@ -1065,11 +1077,10 @@ view now says what such a run is and the store asks the backend for nothing, so 
 be clicked would only look broken. And the list **collapses to one line once a run is chosen**,
 because forty rows above the panels would push every one of them off the screen.
 
-**The narrowing rides in the URL too**, under `runf` / `runq` / `runsort` — a filtered index is a
-link. `Purpose` is the one facet that opens with a value picked, and the default is WRITTEN into
-the url rather than applied behind it, so from that moment it is an ordinary selection: a chip
-shows it, `clear` removes it, and a shared link means the same to everyone. That shape is GitHub's
-`is:issue state:open`.
+**The narrowing is kept too**, as the bar's entry in `arrangement.v1` (`use_facet_state`).
+`Purpose` is the one facet that opens with a value picked, and the default is applied as an
+ordinary selection rather than behind it: a chip shows it, `clear` removes it, and a cleared bar
+stays cleared after a reload. That shape is GitHub's `is:issue state:open`.
 
 **The list GROUPS by family, and a family of one stays a plain row.** Measured 2026-10-09 over 85
 runs: 42 lines instead of 85, 14 of them a family and 28 a run standing alone.
@@ -1106,7 +1117,7 @@ The viewer shows many small panels around one chart rather than one view per pag
 
 - **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset layout* carries it into an arrangement somebody already made.
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). **The bar is the column turned on its side: ONE arrangement drawn twice**, horizontally and vertically, and it renders from `arrangedPanels` — every panel, switched-off ones included, in the order the reader made. It rendered `allPanels()` until 2026-09-30, so dragging Broker to the top left its toggle sixth in the bar; it appended the switched-off ones until 2026-10-07, so flipping a toggle moved it. The two orientations now differ in exactly one thing: the column leaves out what is switched off and what this run does not carry, so the pinned boundary lands on a different index in each. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
-- **`src/stores/layout_store.ts`** — the arrangement, persisted under the single versioned key `layout.v1`.
+- **`src/stores/layout_store.ts`** — the panel column's order and state, persisted under its own versioned key `layout.v1` (the selection is in `arrangement.v1`, see *Selection State*).
 
 **A section that fails to load says so, and every one of them does.** `run_reports_store` keyed its
 failure messages by section on 2026-10-01; one ref served all seven until then, and they load
@@ -1158,15 +1169,15 @@ The two DEPLOYMENT routes deliberately keep `| null`: an unknown deployment id i
 
 **From a panel into another view — `use_open_in_context.ts`.** The sibling of the position link,
 one level up: a panel names WHAT to open (`openRun(id)`, `openDeployment(id)`) and the host decides
-HOW. Today `AppShell` goes to the view with the param that view restores; once the views are docked
-panels (viewer#31) it sets a link's context instead, and no panel changes. `canOpen` is false where
+HOW. Today `AppShell` sets the main link's context and goes to the view that shows it; once the views
+are docked panels (viewer#31) the second half falls away, and no panel changes. `canOpen` is false where
 no host supplied the channel, and a panel then draws the name as plain text rather than a way in
 that leads nowhere. Four places use it, each through `JumpLink`: a session's run (`SessionsTable`),
 a period's run on the deployment side (`BookingPeriodTable`), a session lane's label
 (`BookingPeriodTimeline` hands `TimelineChart` an `open` per lane — what a lane MEANS stays the
 caller's) and a run's deployment (`RunHeaderPanel`). No panel holds a route or a `RouteLocationRaw`
 any more. Opening one of them in a new tab went with the `RouterLink`, which is accepted: the URL
-stops carrying selection with viewer#31, and a second tab shares the one layout.
+carries no selection, and a second tab shares the one arrangement.
 
 **The jump from a report row into the chart is not built.** The portfolio row that linked a unit's
 symbol into the chart was deleted, and the jump with it; it returns with the run-bound chart of
@@ -1181,8 +1192,8 @@ a plain view rather than as panels:
 
 - **`src/views/DeploymentsView.vue`** with `src/components/deployments/` (`DeploymentPicker`,
   `DeploymentHeader`, `SessionsTable`, `AdvisoryNotice`) and `src/stores/deployments_store.ts`.
-- Route `/deployments`, selection carried in the URL as `?deployment=<id>` through
-  `use_deployment_query_sync`, merging with the query rather than replacing it.
+- Route `/deployments`; the chosen deployment is the main link's (`deployment.id`), restored by
+  `use_deployment_binding` once the ledger has loaded.
 
 **Why not panels.** The registry and the layout store are global: one `layout.v1`, and `AppBar`
 renders `allPanels()` unfiltered. Deployment panels in that registry would put their toggles into
@@ -1583,7 +1594,7 @@ row in BOTH lists, as a link, so the two read as two views of one thing.
 FiniexTestingIDE, 2026-10-02 — *"an executed order-history row's `(scenario_name, position_id)`
 names the same position as a trade-history row's, by construction"*. **Never the position id
 alone:** every scenario counts from `pos_<symbol>_1`, so two scenarios of one symbol both have a
-`pos_gbpusd_1`. Both halves travel together everywhere — in the URL, in the comparison, in the test.
+`pos_gbpusd_1`. Both halves travel together everywhere — in the stored mark, in the comparison, in the test.
 
 **The ROW level is deliberately shut, and the reason is theirs.** A close books exactly one trade
 and appends exactly one `close · executed` row; measured here, 1,554 of 1,554 pair exactly on
@@ -1596,30 +1607,32 @@ answer whichever close the reader came from.
 
 **`use_position_link.ts` is ambient, like the scenario narrowing, and for the same reason.** Making
 a sibling panel visible and scrolling to a row is about the WORKSPACE, which a panel must not know;
-writing a query param needs a router, which would tie a panel to one. `RunsView` provides the
+writing the mark into a context would tie a panel to one link. `RunsView` provides the
 channel and the panels only read the mark and ask for the jump. The channel carries three things:
 
 | | |
 |---|---|
-| `marked` | the position on show, parsed from the `position` query param |
-| `jumpTo(panelId, ref)` | write the param · `show` the panel · `setOpen` it · scroll to the marked row |
+| `marked` | the position on show — the run's `position` in its link's context |
+| `jumpTo(panelId, ref)` | `mark` it · `show` the panel · `setOpen` it · scroll to the marked row |
 | `canJumpTo(panelId)` | does that panel have a model at all — the HOST's knowledge, read from the same `sources` record `PanelColumn` is handed |
 
 **A new run drops the mark; a restore keeps it.** A position id is a counter per unit —
 `pos_eurgbp_1` exists in every run that traded EURGBP — so a mark carried into the next run marks a
-DIFFERENT position under the same name. `use_run_query_sync` therefore clears `position`, and the
-roster's narrowing (`unitf`, `unitq`) beside it, in the same patch that writes a new `run`; a link
-that ARRIVES with a mark keeps it, because a restore is not a new run. The scroll is looked for
+DIFFERENT position under the same name. `selectRun` therefore clears `position` and the units in
+the same action that sets the new run, and the roster's narrowing is scoped to its run
+(`use_facet_state`); a selection RESTORED with a mark keeps it, because a restore is not a new
+run. The scroll is looked for
 inside the run view's own root rather than the whole document, so a second copy of a panel can
 never answer first. Both fixed 2026-10-12: until then the mark of one run survived into the next.
 
-**The mark is in the URL and the SCROLL is not.** A shared link puts the reader on the same position,
-and a page that jumps on every reload is a page that moved while nobody was looking. The
-scroll waits for the URL write that `patchQuery` resolves, then one tick for the rows to take the
-mark — and where the row is still absent it does nothing rather than scrolling to nothing: a target
-beyond the trade list's visible cap, or inside a group it folded, is a row that is not there. It
-waited a fixed two ticks until 2026-10-12, which is shorter than a navigation, so it never found a
-NEW mark and scrolled nowhere. Nobody saw it: Trade History stands above Orders, and the trades of
+**The mark is stored and the SCROLL is not.** A reload puts the reader back on the same position,
+and a page that jumps on every reload is a page that moved while nobody was looking. The scroll
+waits one tick for drawn rows to take the mark, then watches the view until the marked row appears
+— a panel the jump had to open is not drawn yet — and gives up after two seconds rather than
+scrolling to nothing: a target beyond the trade list's visible cap, or inside a group it folded, is
+a row that is not there. A fixed number of ticks failed twice — two until 2026-10-12, shorter than
+the URL write the mark then waited for, and one on 2026-10-13, once the mark no longer rode in the
+URL. Nobody saw the first: Trade History stands above Orders, and the trades of
 the first order are on screen without a scroll. Only a jump from far down the orders needs one.
 
 **Three absences draw no link at all**, which is the difference between a jump and a dead end: a
@@ -1824,7 +1837,7 @@ and it is how TradingView draws it.
 
 Unit tests: **Vitest** + **Vue Test Utils**. Vitest runs in the same Vite context as the app — zero extra configuration. Vue Test Utils mounts components and stores in isolation. CI runs on every push and pull request via GitHub Actions.
 
-Priority targets: `selection_store` cascade logic, `timeframe_store` load-once cache and `minutesFor` lookup, `bars_store` coverage validation and window calculation, `use_query_sync` URL-priority behavior, `api_client` request construction. See issue #13.
+Priority targets: `selection_store` cascade logic, `timeframe_store` load-once cache and `minutesFor` lookup, `bars_store` coverage validation and window calculation, `context_store` cascades and `arrangement_store` reconciliation, `api_client` request construction. See issue #13.
 
 Browser-level verification is Playwright (viewer#23), in `e2e/`, run with `npm run test:e2e` and kept as hygiene rather than a gate. It needs no API server — the responses are replayed from the unit fixtures — and no browser in the container, which is Alpine on musl: the runner drives a browser on the developer's machine over CDP. See `docs/testing_architecture.md`.
 

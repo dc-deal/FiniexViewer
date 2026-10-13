@@ -1,5 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, fixture, FIXTURE_DEPLOYMENT } from './api_mock'
+import { openWith } from './arrangement_seed'
 
 /**
  * A panel sends the reader into ANOTHER view through one channel, and only a browser proves the
@@ -20,19 +21,19 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('a session opens the run it is', async ({ page }) => {
-  await page.goto(`/deployments?deployment=${FIXTURE_DEPLOYMENT}`)
+  await openWith(page, '/deployments', { deployment: FIXTURE_DEPLOYMENT })
   await page.locator('.sessions-list .jump-link', { hasText: FIRST_SESSION }).click()
 
-  await expect(page).toHaveURL(new RegExp(`/runs[?]run=${FIRST_SESSION}`))
+  await expect(page).toHaveURL(/[/]runs$/)
   await expect(page.locator('.runs-view .picker-chosen')).toContainText(FIRST_SESSION)
 })
 
 test('a run opens the deployment it was a session of', async ({ page }) => {
-  await page.goto(`/runs?run=${FIRST_SESSION}`)
+  await openWith(page, '/runs', { run: FIRST_SESSION })
   const header = page.locator('.panel-trigger', { hasText: 'Run Header' })
   if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click()
   await page.locator('.jump-link', { hasText: FIXTURE_DEPLOYMENT }).click()
 
-  await expect(page).toHaveURL(new RegExp(`/deployments[?]deployment=${FIXTURE_DEPLOYMENT}`))
+  await expect(page).toHaveURL(/[/]deployments$/)
   await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_DEPLOYMENT)
 })

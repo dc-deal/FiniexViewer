@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_RUN } from './api_mock'
+import { openWith } from './arrangement_seed'
 
 /**
  * Opening and closing a scenario's trades in the trade list.
@@ -23,7 +24,7 @@ async function withThreshold(page: Page, threshold: number): Promise<void> {
 }
 
 async function openTradeHistory(page: Page): Promise<void> {
-  await page.goto(`/runs?run=${FIXTURE_RUN}`)
+  await openWith(page, '/runs', { run: FIXTURE_RUN })
   await page.locator('.panel-trigger', { hasText: 'Trade History' }).click()
   await expect(page.locator('.trade-history .record-group').first()).toBeVisible()
 }

@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_DEPLOYMENT } from './api_mock'
+import { openWith } from './arrangement_seed'
 import { expectHeadingsReadable } from './list_geometry'
 
 /**
@@ -83,23 +84,24 @@ test('the picker lists the ledger and choosing one opens its history', async ({ 
 })
 
 /**
- * Selection goes in the URL — that is what makes a shared link mean something, and a reload is the
- * one thing jsdom can only approximate.
+ * The selection is stored with the arrangement, and a reload is the one thing jsdom can only
+ * approximate.
  */
-test('a chosen deployment survives a reload and stays a link', async ({ page }) => {
+test('a chosen deployment survives a reload', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
   await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
-  await expect(page).toHaveURL(new RegExp(`deployment=${FIXTURE_DEPLOYMENT}`))
+  await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_DEPLOYMENT)
 
   await page.reload()
   await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_DEPLOYMENT)
   await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
 })
 
-test('a link naming a deployment the ledger does not list says so', async ({ page }) => {
-  await page.goto('/deployments?deployment=deploy_gone')
-  await expect(page.locator('.state-overlay')).toContainText('does not list')
+test('a stored deployment the ledger no longer lists says so', async ({ page }) => {
+  await openWith(page, '/deployments', { deployment: 'deploy_gone' })
+  await expect(page.locator('.state-overlay')).toContainText('no longer in the ledger')
+  await expect(page.locator('.state-overlay')).toContainText('deploy_gone')
 })
 
 /**

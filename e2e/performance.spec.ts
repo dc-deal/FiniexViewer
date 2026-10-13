@@ -1,5 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, revealFixtureRun, FIXTURE_RUN } from './api_mock'
+import { openWith, FIXTURES_SHOWN } from './arrangement_seed'
 
 /**
  * How long the views take to become USABLE.
@@ -78,7 +79,7 @@ test('a run opens its panels quickly', async ({ page }) => {
   // the clock starts, the way `run_selection.spec.ts` reaches it. Without both, the click found no
   // row: this spec runs only on a perf pass, so it went unnoticed from the day the default filter
   // and the folding arrived until 2026-10-12.
-  await page.goto('/runs?runf=purpose:fixture')
+  await openWith(page, '/runs', FIXTURES_SHOWN)
   await page.locator('.run-list .record-row').first().waitFor({ state: 'visible' })
   await revealFixtureRun(page)
 
@@ -98,7 +99,7 @@ test('a run opens its panels quickly', async ({ page }) => {
  * has. It is also pure client work — no request leaves the page — so a slow one is entirely ours.
  */
 test('narrowing to a scenario is immediate', async ({ page }) => {
-  await page.goto(`/runs?run=${FIXTURE_RUN}`)
+  await openWith(page, '/runs', { run: FIXTURE_RUN })
   await page.locator('.panel-trigger', { hasText: 'Scenarios' }).click()
   await page.locator('.scenario-roster .record-row').first().waitFor({ state: 'visible' })
 
@@ -116,7 +117,7 @@ test('narrowing to a scenario is immediate', async ({ page }) => {
  * measures it rather than arguing about it.
  */
 test('the trade list draws within its row cap', async ({ page }) => {
-  await page.goto(`/runs?run=${FIXTURE_RUN}`)
+  await openWith(page, '/runs', { run: FIXTURE_RUN })
   await page.locator('.panel-trigger', { hasText: 'Trade History' }).click()
 
   const ms = await timed('trade history drawn', async () => {

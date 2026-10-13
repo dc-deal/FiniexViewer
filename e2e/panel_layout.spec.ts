@@ -1,5 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_RUN } from './api_mock'
+import { openWith } from './arrangement_seed'
 
 /**
  * No panel scrolls sideways.
@@ -32,7 +33,7 @@ test.beforeEach(async ({ page }) => {
 for (const width of WIDTHS) {
   test(`no panel scrolls sideways at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 })
-    await page.goto(`/runs?run=${FIXTURE_RUN}`)
+    await openWith(page, '/runs', { run: FIXTURE_RUN })
     await expect(page.locator('.panel-trigger').first()).toBeVisible()
 
     const triggers = page.locator('.panel-trigger:not([disabled])')

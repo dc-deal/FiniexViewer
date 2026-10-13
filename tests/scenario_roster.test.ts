@@ -4,8 +4,6 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
 import { setActivePinia, createPinia } from 'pinia'
-import { createRouter, createMemoryHistory } from 'vue-router'
-import type { Router } from 'vue-router'
 import { provideTestSelection } from './scenario_selection_harness'
 import type {
   ScenarioDetailsReport, ScenarioRosterView, ScenarioRow,
@@ -96,26 +94,11 @@ function asView(model: ScenarioDetailsReport | ScenarioRosterView): ScenarioRost
 }
 
 
-/**
- * A router, because the bar's narrowing rides in the URL (viewer#116) — `useFacetQuery` reads the
- * query on mount and writes it back. Without one the mounted hook throws, which Vue reports as a
- * warning beside a green test rather than as a failure.
- *
- * MEMORY history, not hash: every hash router in jsdom shares one `window.location`, so each test
- * would inherit whatever narrowing the previous one wrote — four tests failed exactly that way.
- */
-function testRouter(): Router {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [{ path: '/', component: { template: '<div/>' } }],
-  })
-}
-
 function mountPanel(model: ScenarioDetailsReport | ScenarioRosterView = MIXED) {
   mounted = mount(ScenarioRosterPanel, {
     props: { model: asView(model) },
     attachTo: document.body,
-    global: { plugins: [createPinia(), testRouter()] },
+    global: { plugins: [createPinia()] },
   })
   return mounted
 }
@@ -157,7 +140,7 @@ function mountWithSelection(
   })
   mounted = mount(Host, {
     attachTo: document.body,
-    global: { plugins: [createPinia(), testRouter()] },
+    global: { plugins: [createPinia()] },
   })
   return { wrapper: mounted, unit }
 }
