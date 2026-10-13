@@ -5,20 +5,20 @@ import {
   DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from 'reka-ui'
+import AboutDialog from '@/components/AboutDialog.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import { useCallerStore } from '@/stores/caller_store'
-import { useDockStore } from '@/stores/dock_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import type { SettingsTab } from '@/types/settings_types'
 import { t } from '@/translate'
 
 const settingsStore = useSettingsStore()
 const callerStore = useCallerStore()
-const dock = useDockStore()
 const { settings } = storeToRefs(settingsStore)
 const { displayName, state } = storeToRefs(callerStore)
 
 const settingsOpen = ref(false)
+const aboutOpen = ref(false)
 const settingsTab = ref<SettingsTab>('display')
 
 /** The entry names the theme it switches TO, so the symbol and the word say the same thing. */
@@ -60,8 +60,7 @@ function openSettings(tab: SettingsTab): void {
             👤 {{ accountLabel }}
           </DropdownMenuItem>
           <DropdownMenuSeparator class="menu-separator" />
-          <!-- a panel like any other, reached from here because it is about the application -->
-          <DropdownMenuItem class="menu-item" data-action="about" @select="dock.open('about')">
+          <DropdownMenuItem class="menu-item" data-action="about" @select="aboutOpen = true">
             ℹ️ {{ t('About FiniexViewer') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -69,6 +68,7 @@ function openSettings(tab: SettingsTab): void {
     </DropdownMenuRoot>
 
     <SettingsDialog v-model:open="settingsOpen" :tab="settingsTab" />
+    <AboutDialog v-model:open="aboutOpen" />
   </div>
 </template>
 

@@ -51,8 +51,11 @@ test('the arrangement survives a reload, and the suggested order comes back on r
   await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs'])
   await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Deployments')
 
-  await page.locator('.menu-bar-trigger', { hasText: 'Layout' }).click()
-  await page.locator('.menu-item[data-action="reset"]').click()
+  await page.locator('.menu-trigger').click()
+  await page.locator('.menu-item', { hasText: 'Settings' }).click()
+  await page.locator('.tab-trigger', { hasText: 'Layout' }).click()
+  await page.locator('[data-action="reset-dock"]').click()
+  await page.keyboard.press('Escape')
   await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Chart'])
   await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Runs')
 })
@@ -70,13 +73,14 @@ test('a closed panel comes back from the Panels menu', async ({ page }) => {
   expect(await tabTitles(page)).toContain('Chart')
 })
 
-/** About is about the application, so its way in is the application menu — and it opens as a panel. */
-test('About opens as a panel from the application menu', async ({ page }) => {
+/** About is read and closed, so it is a dialog over the dock — no tab is added for it. */
+test('About opens as a dialog from the application menu, not as a tab', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
   await page.locator('.menu-trigger').click()
   await page.locator('.menu-item[data-action="about"]').click()
 
-  await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('About')
+  await expect(page.locator('.about-dialog')).toBeVisible()
+  expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Chart'])
 })

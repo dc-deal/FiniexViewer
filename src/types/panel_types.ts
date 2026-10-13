@@ -27,13 +27,8 @@ export interface PanelKind {
   icon: IconName
   /** Its place in the suggested order — the first arrangement and a reset follow it. */
   order: number
-  /** Part of the first arrangement, or opened from its menu only. */
+  /** Part of the first arrangement, or opened from the Panels menu only. */
   opensByDefault: boolean
-  /**
-   * Where the way in is: the Panels menu for a panel the reader works in, the application menu for
-   * one about the application itself — About today, the settings later.
-   */
-  entry: 'panels' | 'application'
   component: Component
 }
 

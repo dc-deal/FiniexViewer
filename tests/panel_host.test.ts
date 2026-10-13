@@ -22,7 +22,7 @@ vi.mock('@/panel_kinds', () => {
   })
   const kinds: Record<string, object> = {
     probe: { id: 'probe', title: 'Probe', icon: 'form-list', order: 1, opensByDefault: true, component: Probe },
-    broken: { id: 'broken', title: 'Broken', icon: 'form-sheet', order: 2, opensByDefault: false, component: Broken },
+    broken: { id: 'broken', title: 'Broken', icon: 'form-list', order: 2, opensByDefault: false, component: Broken },
   }
   return { panelKind: (id: string) => kinds[id] ?? null }
 })

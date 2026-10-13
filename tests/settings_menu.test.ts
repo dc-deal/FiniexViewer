@@ -223,6 +223,17 @@ describe('SettingsDialog', () => {
       await pickFile(A_LAYOUT)
       await waitForPanelText('Layout replaced')
     })
+
+    /** The one way back to the suggested order — beside everything else about arrangement. */
+    it('takes the docked panels back to the suggested order', async () => {
+      const dock = useDockStore()
+      let resets = 0
+      dock.reset = () => { resets += 1 }
+      mountDialog('layout')
+      await flushPromises()
+      panel('[data-action="reset-dock"]')!.click()
+      expect(resets).toBe(1)
+    })
   })
 
   describe('the account tab', () => {
@@ -337,16 +348,14 @@ describe('TopMenu', () => {
     expect(field('setting-theme')).toBeNull()
   })
 
-  /** About is a panel like any other, reached here because it is about the application. */
-  it('opens the About panel from the application menu', async () => {
-    const dock = useDockStore()
-    const opened: string[] = []
-    dock.open = (kind: string) => { opened.push(kind) }
+  /** About is read and closed, so it is a dialog — no panel and no tab for it. */
+  it('opens About as a dialog from the application menu', async () => {
     const wrapper = mountMenu()
+    expect(panel('.about-dialog')).toBeNull()
     await wrapper.find('.menu-trigger').trigger('keydown', { key: 'Enter' })
     await flushPromises()
     document.querySelector<HTMLElement>('.menu-item[data-action="about"]')!.click()
     await flushPromises()
-    expect(opened).toEqual(['about'])
+    expect(panel('.about-dialog')?.textContent).toContain('About FiniexViewer')
   })
 })

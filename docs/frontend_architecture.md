@@ -538,11 +538,17 @@ does not allow (see *API Token* above, and issue #22).
 - **`src/types/settings_types.ts`** — the shape and `DEFAULT_SETTINGS` beside it, because a default
   that drifts from its type is the defect that placement prevents.
 - **`src/components/TopMenu.vue`** — the application menu in the shell header, behind one burger
-  trigger: settings, a theme entry that names the theme it switches TO, and an account entry that
-  carries the display name once the server has reported one. Both settings entries open the same
-  dialog on the tab they belong to, so there is one surface rather than two.
+  trigger: settings, a theme entry that names the theme it switches TO, an account entry that
+  carries the display name once the server has reported one, and About. Both settings entries open
+  the same dialog on the tab they belong to, so there is one surface rather than two.
 - **`src/components/SettingsDialog.vue`** — three tabs: **Display** (the preferences), **Layout**
-  (export and import, which have no other home) and **Account** (the identity below).
+  (the way back to the suggested order of the docked panels, and the export and import of the
+  report panels in Runs) and **Account** (the identity below).
+- **`src/components/base/AppDialog.vue`** — every dialog's frame: what is set or read and then
+  closed — the settings, About — rather than kept open beside the work, which is a panel. One
+  frame, so no dialog re-invents the overlay or the close: 80 % of the window caps both sides, the
+  content scrolls inside it, and a dialog whose content must not move the frame — the settings,
+  switching tabs — gets a fixed height. `AboutDialog.vue` is the second user.
 - **`src/stores/caller_store.ts`** — who the server takes this client to be.
 - **`src/composables/use_display_settings.ts`** — how a preference reaches a panel.
 
@@ -1121,20 +1127,21 @@ panel never floats over another (a non-goal, confirmed 2026-10-11). There is no 
 bar and the tabs are the way between the views.
 
 ```
-AppMenuBar   FiniexViewer  Panels ▾  Layout ▾                                        ☰
+AppMenuBar   FiniexViewer  Panels ▾                                                  ☰
 PanelDock    [☰ Deployments] [☰ Runs] [◫ Chart]
                └─ PanelHost (kind: runs) → RunsView
 ```
 
 - **`src/panel_kinds.ts`** — every kind in the SUGGESTED ORDER, from the general to the particular:
   a deployment holds runs, a run has its chart (operator, 2026-10-13). A kind names its title, the
-  FORM its tab shows (`form-list`, `form-sheet`, `form-chart`), whether the first arrangement holds
-  it, and where its way in is — the Panels menu for a panel the reader works in, the application
-  menu for one about the application itself, About today. Each component is loaded on demand into
-  its own chunk, as the routes before them were.
+  FORM its tab shows (`form-list`, `form-chart`) and whether the first arrangement holds it. What
+  is read or set and then closed — About, the settings — is a dialog and has no kind. Each component
+  is loaded on demand into its own chunk, as the routes before them were.
 - **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: the suggested order in
   one group, Runs in front. `open(kind)` brings a panel to the front, or opens it beside the active
-  one where the reader closed it; `reset()` goes back to the suggested order. The layout is written
+  one where the reader closed it; `reset()` goes back to the suggested order — offered in the
+  settings' Layout tab, beside everything else about arrangement, rather than as a menu of one
+  entry. The layout is written
   into `arrangement.v1` once it has held still for 300 ms, and at once when the page goes.
 - **`src/components/dock/dock_layout.ts`** — the stored layout reconciled on load, never trusted. A
   panel of a kind this version does not know is dropped from its group, an emptied group from the

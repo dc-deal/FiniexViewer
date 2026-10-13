@@ -25,6 +25,11 @@ function fakeDock(options: { refuse?: boolean } = {}) {
     panels.push({ id: spec.id, group, api: { setActive: () => { active = spec.id } } })
   }
 
+  function close(id: string): void {
+    panels.splice(panels.findIndex(p => p.id === id), 1)
+    if (active === id) active = panels[0]?.id ?? null
+  }
+
   const api = {
     get panels() { return panels },
     get activePanel() { return panels.find(p => p.id === active) },
@@ -51,6 +56,7 @@ function fakeDock(options: { refuse?: boolean } = {}) {
     groups: () => panels.map(p => p.group),
     active: () => active,
     restored,
+    close,
     change: () => changed?.(),
   }
 }
@@ -107,17 +113,18 @@ describe('useDockStore', () => {
     store.open('deployments')
     expect(dock.active()).toBe('deployments')
 
-    store.open('about')
-    expect(dock.ids()).toContain('about')
-    expect(dock.active()).toBe('about')
-    expect(dock.groups()[dock.ids().indexOf('about')]).toBe(dock.groups()[0])
+    dock.close('chart')
+    store.open('chart')
+    expect(dock.ids()).toContain('chart')
+    expect(dock.active()).toBe('chart')
+    expect(dock.groups()[dock.ids().indexOf('chart')]).toBe(dock.groups()[0])
   })
 
   it('goes back to the suggested order on reset, and keeps that', () => {
     const dock = fakeDock()
     const store = useDockStore()
     store.attach(dock.api)
-    store.open('about')
+    dock.close('chart')
 
     store.reset()
     expect(dock.ids()).toEqual(['deployments', 'runs', 'chart'])
@@ -133,11 +140,11 @@ describe('useDockStore', () => {
     store.attach(dock.api)
     const arrangement = useArrangementStore()
 
-    dock.api.addPanel({ id: 'about', component: 'host' })
+    dock.close('chart')
     dock.change()
-    expect(Object.keys((arrangement.dock as { panels: object }).panels)).not.toContain('about')
+    expect(Object.keys((arrangement.dock as { panels: object }).panels)).toContain('chart')
     vi.advanceTimersByTime(300)
-    expect(Object.keys((arrangement.dock as { panels: object }).panels)).toContain('about')
+    expect(Object.keys((arrangement.dock as { panels: object }).panels)).not.toContain('chart')
 
     dock.api.clear()
     dock.change()

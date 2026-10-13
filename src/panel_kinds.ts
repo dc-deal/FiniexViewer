@@ -10,9 +10,8 @@ import { t } from '@/translate'
  * Each is loaded on demand into its own chunk, the way the routes before them were: a reader
  * opening the run list does not pay for the charting library they have not asked for.
  *
- * Everything the reader keeps open is a panel — `About` included, the way an editor opens its
- * settings as a tab rather than in a window of its own kind. Its way in is the application menu,
- * though, beside the settings: it is about the application, not something to work in.
+ * Everything the reader keeps open is a panel. What is set or read and then closed — the settings,
+ * About — is a dialog instead, and has no kind here.
  */
 export const PANEL_KINDS: PanelKind[] = [
   {
@@ -21,7 +20,6 @@ export const PANEL_KINDS: PanelKind[] = [
     icon: 'form-list',
     order: 1,
     opensByDefault: true,
-    entry: 'panels',
     component: defineAsyncComponent(() => import('@/views/DeploymentsView.vue')),
   },
   {
@@ -30,7 +28,6 @@ export const PANEL_KINDS: PanelKind[] = [
     icon: 'form-list',
     order: 2,
     opensByDefault: true,
-    entry: 'panels',
     component: defineAsyncComponent(() => import('@/views/RunsView.vue')),
   },
   {
@@ -39,17 +36,7 @@ export const PANEL_KINDS: PanelKind[] = [
     icon: 'form-chart',
     order: 3,
     opensByDefault: true,
-    entry: 'panels',
     component: defineAsyncComponent(() => import('@/views/ChartView.vue')),
-  },
-  {
-    id: 'about',
-    title: t('About'),
-    icon: 'form-sheet',
-    order: 4,
-    opensByDefault: false,
-    entry: 'application',
-    component: defineAsyncComponent(() => import('@/views/AboutView.vue')),
   },
 ]
 

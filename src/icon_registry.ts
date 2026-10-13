@@ -8,7 +8,6 @@ import {
   IconCalendarWeek,
   IconChartBar,
   IconChartCandle,
-  IconFileText,
   IconHourglass,
   IconList,
   IconStack2,
@@ -31,7 +30,6 @@ import type { IconName } from '@/types/icon_types'
  */
 export const ICONS = {
   'form-list': IconList,
-  'form-sheet': IconFileText,
   'form-chart': IconChartCandle,
   'action-close': IconX,
   'kind-executive': IconChartBar,

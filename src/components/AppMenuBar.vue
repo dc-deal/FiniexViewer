@@ -9,16 +9,14 @@ import { useDockStore } from '@/stores/dock_store'
 import { t } from '@/translate'
 
 /**
- * The frame above the dock: the name, the way to every panel, the way back to the suggested
- * order, and the application menu. Frame rather than panel — it is never closed or moved.
+ * The frame above the dock: the name, the way to every panel the reader works in, and the
+ * application menu. Frame rather than panel — it is never closed or moved. The way back to the
+ * suggested order sits in the settings, beside everything else about arrangement.
  */
 const dock = useDockStore()
 
-/**
- * The panels the reader works in, in the suggested order, so the menu reads the way the first
- * arrangement does. A panel about the application itself is reached from the application menu.
- */
-const kinds = PANEL_KINDS.filter(kind => kind.entry === 'panels').sort((a, b) => a.order - b.order)
+/** In the suggested order, so the menu reads the way the first arrangement does. */
+const kinds = [...PANEL_KINDS].sort((a, b) => a.order - b.order)
 </script>
 
 <template>
@@ -37,17 +35,6 @@ const kinds = PANEL_KINDS.filter(kind => kind.entry === 'panels').sort((a, b) =>
             @select="dock.open(kind.id)"
           >
             <AppIcon :name="kind.icon" /> {{ kind.title }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenuRoot>
-
-    <DropdownMenuRoot>
-      <DropdownMenuTrigger class="menu-bar-trigger">{{ t('Layout') }} ▾</DropdownMenuTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuContent class="menu-content" :side-offset="4" align="start">
-          <DropdownMenuItem class="menu-item" data-action="reset" @select="dock.reset()">
-            {{ t('Back to the suggested order') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>

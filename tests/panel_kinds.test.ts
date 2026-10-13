@@ -8,12 +8,11 @@ describe('panel_kinds', () => {
   })
 
   /** From the general to the particular: a deployment holds runs, a run has its chart. */
-  it('opens the first arrangement as deployments, runs, chart — About from the menu only', () => {
+  it('opens the first arrangement as deployments, runs, chart', () => {
     const first = PANEL_KINDS.filter(kind => kind.opensByDefault)
       .sort((a, b) => a.order - b.order)
       .map(kind => kind.id)
     expect(first).toEqual(['deployments', 'runs', 'chart'])
-    expect(panelKind('about')?.opensByDefault).toBe(false)
   })
 
   it('opens on a tab the first arrangement holds', () => {
@@ -25,9 +24,10 @@ describe('panel_kinds', () => {
     expect(PANEL_KINDS.every(kind => kind.icon.startsWith('form-'))).toBe(true)
   })
 
-  /** About is ABOUT the application — reached beside the settings, not among the panels worked in. */
-  it('reaches About from the application menu and every other kind from the Panels menu', () => {
-    expect(PANEL_KINDS.filter(kind => kind.entry === 'application').map(kind => kind.id)).toEqual(['about'])
+  /** What is read or set and then closed is a dialog — nobody keeps About open beside the work. */
+  it('holds no kind for About or the settings', () => {
+    expect(panelKind('about')).toBeNull()
+    expect(panelKind('settings')).toBeNull()
   })
 
   it('knows nothing of a kind this version does not have', () => {

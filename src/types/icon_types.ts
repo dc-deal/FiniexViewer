@@ -5,7 +5,6 @@
  */
 export type IconName =
   | 'form-list'
-  | 'form-sheet'
   | 'form-chart'
   | 'action-close'
   | 'kind-executive'

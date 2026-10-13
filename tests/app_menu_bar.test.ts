@@ -43,14 +43,8 @@ describe('AppMenuBar', () => {
     expect(opened).toEqual(['chart'])
   })
 
-  it('goes back to the suggested order from the Layout menu', async () => {
-    const dock = useDockStore()
-    let resets = 0
-    dock.reset = () => { resets += 1 }
-
-    const items = await openMenu('Layout')
-    items.find(item => item.dataset['action'] === 'reset')!.click()
-    await flushPromises()
-    expect(resets).toBe(1)
+  /** One way back to the suggested order, and it lives in the settings — not a menu of one entry. */
+  it('offers no Layout menu of its own', () => {
+    expect(mounted!.findAll('.menu-bar-trigger').map(node => node.text())).toEqual(['Panels ▾'])
   })
 })
