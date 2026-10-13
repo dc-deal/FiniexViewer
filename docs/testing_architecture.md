@@ -41,7 +41,9 @@ by its tab, the way a reader does.
 `localStorage`, and a real boot from it. `dock.spec.ts` holds the docked panels, which jsdom cannot
 lay out at all: the first arrangement in the suggested order, a tab behind another drawn only once
 it is shown, an arrangement that survives a reload, the way back to the suggested order, a closed
-panel brought back from the Panels menu, and About opening as a dialog rather than as a tab.
+panel brought back from the Panels menu, About opening as a dialog rather than as a tab, the quick
+bar holding the chart's selection only while the chart is in front, and the Runs tab carrying the
+grade of a run that did not succeed.
 `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per tab,
 and to a frame that stays inside a small window with its content scrolling. `trade_groups.spec.ts` holds the open/closed regimes
 of the scenario groups, and two things only a browser can state: that the group heading resolves to
@@ -223,9 +225,10 @@ tests/
   dock_store.test.ts        — against a plain-data dock: the suggested order in one group with Runs in front and kept, a stored layout brought back reconciled, a layout the dock refuses answered with the suggested order, a panel brought to the front or opened beside the active one, a reset, and a layout written once it holds still or at once when flushed
   panel_host.test.ts        — a panel drawn the first time it is shown and never mounted twice, told when it is shown AGAIN and not on the first showing, a panel that throws stopped at its own frame with a sentence and the stack in the console, an unknown kind said so
   app_dialog.test.ts        — absent while closed; the title, the content and one way out, named for its caller; a fixed height only where one is given; the close button asking to close
-  panel_tab.test.ts         — the form icon and the kind's title, a close button that closes and stops its click there, named for a pointer and a screen reader, the stored title for an unknown kind
+  panel_tab.test.ts         — the run's grade on the Runs tab where it is not a success (failed in the error role, finished_with_errors in the warning role, nothing for a success or no run), the card saying what the panel is for and the status in words; the form icon and the kind's title, a close button that closes and stops its click there, named for a pointer and a screen reader, the stored title for an unknown kind
   app_menu_bar.test.ts      — the panels worked in, offered in the suggested order with their form icons, the chosen one handed to the dock, and no Layout menu of its own
-  chart_selectors.test.ts   — what the three selectors offer loaded when the chart is first shown, and the symbols of a broker the reader left selected
+  chart_quick_bar.test.ts   — what the three compact selects offer loaded when the chart comes to the front, the symbols of a broker the reader left selected, each select named for a screen reader and showing its name while nothing is chosen
+  quick_bar.test.ts         — the chart's selection while the chart is the panel in front, nothing for a panel without options or a group that shows none
   use_open_in_context.test.ts — no way out where no host supplied one, and no throw either; the host's way out handed to a panel. Its harness, `open_in_context_harness.ts`, RECORDS where a panel sent the reader instead of navigating
   position_link.test.ts     — the comparison of a position: matching BOTH halves — never the position id alone, never a row that has no position at all
   hints_store.test.ts       — reconciliation (a retired id dropped, an unknown version discarded, no duplicates), a dismissal that lasts the session and is never written down, a ban that outlives the visit, and the reset that undoes both

@@ -11,6 +11,10 @@ defineProps<{
   options: Option[]
   placeholder?: string
   disabled?: boolean
+  /** The quick bar's form: as wide as its value, in the link ink, framed only under the pointer. */
+  compact?: boolean
+  /** Its name for a screen reader where no visible label stands beside it. */
+  label?: string
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +29,8 @@ function onChange(event: Event): void {
 <template>
   <select
     class="app-select"
+    :class="{ compact }"
+    :aria-label="label"
     :value="modelValue ?? ''"
     :disabled="disabled"
     @change="onChange"
@@ -68,5 +74,25 @@ function onChange(event: Event): void {
 
 option {
   background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+/* A control in the link ink, like the menu bar's: its value is what it shows, and the arrow and
+   the frame under the pointer say that it opens — two channels, never the hue alone. */
+.app-select.compact {
+  width: auto;
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--color-accent);
+  padding: 1px var(--space-lg) 1px var(--space-xs);
+}
+
+.app-select.compact:hover:not(:disabled) {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-border);
+}
+
+.app-select.compact:focus-visible {
+  border-color: var(--color-accent);
 }
 </style>

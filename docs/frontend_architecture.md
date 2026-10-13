@@ -1152,12 +1152,19 @@ PanelDock    [☰ Deployments] [☰ Runs] [◫ Chart]
   the panel's error boundary, and it hands the panel its visibility — `onPanelShownAgain` fetches
   the run index and the ledger afresh, quietly and without a spinner, whenever their panel comes
   back, because a docked panel stays mounted where a route was entered anew.
-- **`PanelTab`** shows the form icon, the title and a close button. **`dock_theme.css`** gives
+- **`PanelTab`** shows the form icon, the title, ONE status where it says something, and a close
+  button; its card says what the panel is for and the status in words. The Runs tab carries the
+  backend's grade of the open run (`run_outcome`) where it is not `success` — the icon in the
+  warning or error role, its word read out with the tab and written in the card. Where everything
+  went well, the tab says nothing. **`dock_theme.css`** gives
   dockview's two themes this app's tokens: a tab behind another keeps the primary ink, because
   muted ink means *disabled* here, and the front tab is marked by its surface AND an accent rule.
 
-**The chart's selectors sit in a row inside the chart panel** until the quick bar beside the tabs
-takes them; the sidebar that held them went with the routes.
+**The quick bar beside a group's tabs** holds the few options of the panel in FRONT of that group
+(`QuickBar`, from the kind's `quickBar`): for the chart, its broker, symbol and timeframe as compact
+selects (`AppSelect` with `compact`) — the value is what shows, the name while nothing is chosen, and
+each carries its name for a screen reader. A panel without options leaves the bar empty, and two
+groups side by side each speak for their own front panel.
 
 **Measured 2026-10-13:** the start bundle grew from 393 to 744 kB (gzip 130 → 210 kB), and that is
 dockview. The timing baseline taken the same day ran under load — FiniexTestingIDE at 267 % CPU —

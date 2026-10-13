@@ -1,6 +1,18 @@
 import { defineAsyncComponent } from 'vue'
-import type { PanelKind } from '@/types/panel_types'
+import { useRunsStore } from '@/stores/runs_store'
+import type { PanelKind, TabStatus } from '@/types/panel_types'
 import { t } from '@/translate'
+
+/**
+ * The backend's grade of the open run where it is not a success — `run_outcome` as it is served,
+ * marked by the weight of its word. Where everything went well, the tab says nothing; a grade this
+ * version does not know is shown as itself, beside the warning mark.
+ */
+function outcomeStatus(outcome: string | null): TabStatus | null {
+  if (!outcome || outcome === 'success') return null
+  const failed = outcome === 'failed' || outcome === 'crashed'
+  return { icon: failed ? 'status-error' : 'status-warning', word: outcome, role: failed ? 'error' : 'warning' }
+}
 
 /**
  * Every kind of docked panel, in the SUGGESTED ORDER: from the general to the particular — a
@@ -17,6 +29,7 @@ export const PANEL_KINDS: PanelKind[] = [
   {
     id: 'deployments',
     title: t('Deployments'),
+    description: t('The sessions of a deployment, across its restarts'),
     icon: 'form-list',
     order: 1,
     opensByDefault: true,
@@ -25,18 +38,22 @@ export const PANEL_KINDS: PanelKind[] = [
   {
     id: 'runs',
     title: t('Runs'),
+    description: t('A run and the reports it left behind'),
     icon: 'form-list',
     order: 2,
     opensByDefault: true,
     component: defineAsyncComponent(() => import('@/views/RunsView.vue')),
+    status: () => outcomeStatus(useRunsStore().selectedRun?.run_outcome ?? null),
   },
   {
     id: 'chart',
     title: t('Chart'),
+    description: t('Candles of the market data, by broker, symbol and timeframe'),
     icon: 'form-chart',
     order: 3,
     opensByDefault: true,
     component: defineAsyncComponent(() => import('@/views/ChartView.vue')),
+    quickBar: defineAsyncComponent(() => import('@/components/ChartQuickBar.vue')),
   },
 ]
 

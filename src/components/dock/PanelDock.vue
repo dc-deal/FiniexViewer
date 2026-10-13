@@ -5,6 +5,7 @@ import { DockviewVue, themeDark, themeLight } from 'dockview-vue'
 import type { DockviewReadyEvent } from 'dockview-vue'
 import PanelHost from '@/components/dock/PanelHost.vue'
 import PanelTab from '@/components/dock/PanelTab.vue'
+import QuickBar from '@/components/dock/QuickBar.vue'
 import { useDockStore } from '@/stores/dock_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { t } from '@/translate'
@@ -50,6 +51,9 @@ onUnmounted(() => {
       </template>
       <template #defaultTab="{ params, api }">
         <PanelTab :kind-id="params.kind" :api="api" />
+      </template>
+      <template #rightHeaderActions="{ activePanel }">
+        <QuickBar :kind-id="activePanel?.params?.kind ?? null" />
       </template>
       <template #watermark>
         <div class="dock-empty">

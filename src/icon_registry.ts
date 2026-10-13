@@ -2,12 +2,14 @@ import type { Component } from 'vue'
 import {
   IconActivityHeartbeat,
   IconAdjustmentsHorizontal,
+  IconAlertCircle,
   IconAlertTriangle,
   IconBook,
   IconBuildingBank,
   IconCalendarWeek,
   IconChartBar,
   IconChartCandle,
+  IconCircleX,
   IconHourglass,
   IconList,
   IconStack2,
@@ -31,6 +33,8 @@ import type { IconName } from '@/types/icon_types'
 export const ICONS = {
   'form-list': IconList,
   'form-chart': IconChartCandle,
+  'status-warning': IconAlertCircle,
+  'status-error': IconCircleX,
   'action-close': IconX,
   'kind-executive': IconChartBar,
   'kind-broker': IconBuildingBank,

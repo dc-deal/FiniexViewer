@@ -97,6 +97,8 @@ defineProps<{
 
 .hover-card .card-rows dd.positive { color: var(--color-positive); }
 .hover-card .card-rows dd.negative { color: var(--color-negative); }
+.hover-card .card-rows dd.warning { color: var(--color-warning); }
+.hover-card .card-rows dd.error { color: var(--color-error); }
 
 .card-arrow {
   fill: var(--color-border);

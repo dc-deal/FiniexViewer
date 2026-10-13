@@ -9,9 +9,9 @@ import AppSelect from '@/components/base/AppSelect.vue'
 import { t } from '@/translate'
 
 /**
- * What the free chart shows: broker, symbol, timeframe. A row inside the chart panel for now —
- * the sidebar that held it went with the docked panels, and the quick bar beside the tabs, where
- * it belongs, is the next step.
+ * What the free chart shows — broker, symbol, timeframe — in the quick bar beside the tabs, while
+ * the chart is the panel in front. Each value is its own control, so the bar reads like the
+ * selection it is: `mt5 · EURUSD · H1`, or the three names while nothing is chosen.
  */
 const brokerStore = useBrokerStore()
 const symbolStore = useSymbolStore()
@@ -41,28 +41,33 @@ function onBrokerChange(b: string): void {
 </script>
 
 <template>
-  <div class="chart-selectors">
-    <label class="selector-label">{{ t('Broker') }}</label>
+  <div class="chart-quick-bar">
     <AppSelect
+      compact
+      :label="t('Broker')"
       :model-value="broker"
       :options="brokers.map(b => ({ value: b, label: b }))"
-      :placeholder="t('Select broker')"
+      :placeholder="t('Broker')"
       :disabled="brokersLoading"
       @update:model-value="onBrokerChange"
     />
-    <label class="selector-label">{{ t('Symbol') }}</label>
+    <span class="quick-separator" aria-hidden="true">·</span>
     <AppSelect
+      compact
+      :label="t('Symbol')"
       :model-value="symbol"
       :options="currentSymbols.map(s => ({ value: s.symbol, label: s.symbol }))"
-      :placeholder="t('Select symbol')"
+      :placeholder="t('Symbol')"
       :disabled="broker === null || symbolsLoading"
       @update:model-value="selectionStore.setSymbol"
     />
-    <label class="selector-label">{{ t('Timeframe') }}</label>
+    <span class="quick-separator" aria-hidden="true">·</span>
     <AppSelect
+      compact
+      :label="t('Timeframe')"
       :model-value="timeframe"
       :options="timeframes.map(tf => ({ value: tf, label: tf }))"
-      :placeholder="t('Select timeframe')"
+      :placeholder="t('Timeframe')"
       :disabled="symbol === null"
       @update:model-value="selectionStore.setTimeframe"
     />
@@ -70,23 +75,15 @@ function onBrokerChange(b: string): void {
 </template>
 
 <style scoped>
-.chart-selectors {
+.chart-quick-bar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  background-color: var(--color-bg-surface);
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
+  gap: var(--space-xs);
+  height: 100%;
+  padding: 0 var(--space-sm);
 }
 
-/* the select is built for a column and fills it — in a row it needs a width of its own */
-.chart-selectors .app-select {
-  width: 11rem;
-}
-
-.selector-label {
+.quick-separator {
   font-family: monospace;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);

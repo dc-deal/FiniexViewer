@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
-import { mockApi } from './api_mock'
-import { showPanel } from './arrangement_seed'
+import { mockApi, fixture, FIXTURE_RUN } from './api_mock'
+import { openWith, showPanel } from './arrangement_seed'
 
 /**
  * The docked panels, which only a browser can judge: dockview measures, drags and lays out, and
@@ -83,4 +83,33 @@ test('About opens as a dialog from the application menu, not as a tab', async ({
 
   await expect(page.locator('.about-dialog')).toBeVisible()
   expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Chart'])
+})
+
+/** The quick bar speaks for the panel in FRONT: the chart's selection while it is, nothing otherwise. */
+test('the quick bar holds the chart selection while the chart is in front', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+  await expect(page.locator('[data-quick-bar]')).toHaveCount(0)
+
+  await showPanel(page, 'Chart')
+  const bar = page.locator('[data-quick-bar="chart"]')
+  await expect(bar).toBeVisible()
+  await expect(bar.locator('select[aria-label="Broker"]')).toBeVisible()
+
+  await showPanel(page, 'Runs')
+  await expect(page.locator('[data-quick-bar]')).toHaveCount(0)
+})
+
+/**
+ * The backend's grade of the open run, where it is not a success, marks the Runs tab — read from
+ * the capture rather than transcribed, so a re-capture that grades the run anew cannot strand it.
+ */
+test('the Runs tab carries the grade of the open run where it did not succeed', async ({ page }) => {
+  const runs = (fixture('runs_list.json') as { runs: { run_id: string, run_outcome: string | null }[] }).runs
+  const outcome = runs.find(row => row.run_id === FIXTURE_RUN)?.run_outcome ?? null
+  test.skip(!outcome || outcome === 'success', 'the captured run succeeded, so its tab says nothing')
+
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const mark = page.locator('.dv-tab', { hasText: 'Runs' }).locator('.panel-tab-status')
+  await expect(mark).toHaveAttribute('aria-label', outcome!)
 })

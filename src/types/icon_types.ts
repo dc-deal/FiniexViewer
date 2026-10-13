@@ -6,6 +6,8 @@
 export type IconName =
   | 'form-list'
   | 'form-chart'
+  | 'status-warning'
+  | 'status-error'
   | 'action-close'
   | 'kind-executive'
   | 'kind-broker'

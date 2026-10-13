@@ -17,6 +17,18 @@ export interface PanelDescriptor {
 }
 
 /**
+ * A tab's one status, shown only where it says something. Its icon never travels alone: the word
+ * goes with it, read out with the tab and written in its card.
+ */
+export interface TabStatus {
+  icon: IconName
+  /** The backend's own word for the state, never a word of ours for it. */
+  word: string
+  /** A colour ROLE from the tokens, never a colour. */
+  role: 'warning' | 'error'
+}
+
+/**
  * What a DOCKED panel is: one entry per kind in `panel_kinds.ts`. Its tab shows the panel's FORM
  * — a list, a sheet, a chart — never its content, which is the title's job.
  */
@@ -24,12 +36,18 @@ export interface PanelKind {
   /** Also the panel's id while a kind has one panel only. */
   id: string
   title: string
+  /** What the panel is for, in one line — its tab's card says it. */
+  description: string
   icon: IconName
   /** Its place in the suggested order — the first arrangement and a reset follow it. */
   order: number
   /** Part of the first arrangement, or opened from the Panels menu only. */
   opensByDefault: boolean
   component: Component
+  /** What the quick bar beside the tabs offers while this panel is in front. */
+  quickBar?: Component
+  /** Its tab's status — called where the tab is drawn, so it may read a store. */
+  status?: () => TabStatus | null
 }
 
 /** Per-panel arrangement, the part the user controls and the part that is persisted. */
