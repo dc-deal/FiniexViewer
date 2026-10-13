@@ -35,7 +35,7 @@ const emit = defineEmits<{
  * take the other ten away.
  *
  * `false` stops the error here. The stack goes to the console for whoever is debugging; the reader
- * gets a sentence, because a stack trace on screen is not an explanation (§10).
+ * gets a sentence, because a stack trace on screen is not an explanation.
  */
 const failed = ref(false)
 

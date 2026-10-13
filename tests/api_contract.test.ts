@@ -351,7 +351,8 @@ describe('api contract', () => {
    * equality: a scenario whose every order was refused before the queue appears here and not there.
    *
    * And `event_time` carries the contract-20 rename. Finding `execution_time` on these rows again
-   * would mean a response from before it, which this mirror does not support (CLAUDE.md §21).
+   * would mean a response from before it, which this mirror does not support: it follows the
+   * current contract only.
    */
   /**
    * The order event stream, and the four properties that make a faithful DISPLAY possible.
@@ -456,8 +457,8 @@ describe('api contract', () => {
    * on the stream's fills — and is null everywhere else. The simulation capture is a backtest, so
    * every stated source is `estimate`: a backtest has no venue to ask.
    *
-   * A stored artifact keeps the values it was written with (CLAUDE.md §21). The live capture predates
-   * contract 27, so its fills carry a fee and a NULL source — the same shape, older data, and a
+   * A stored artifact keeps the values it was written with, and nothing back-fills it. The live
+   * capture predates contract 27, so its fills carry a fee and a NULL source — the same shape, older data, and a
    * reader must be told nothing rather than `estimate`.
    *
    * And a fee of 0.0 under a source is a VALUE: a spread broker charges no fee per fill, so the EUR

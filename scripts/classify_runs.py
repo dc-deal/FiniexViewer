@@ -6,10 +6,9 @@ answer.
 
     python scripts/classify_runs.py
 
-It feeds the case catalogue in INTERNAL_viewer_smoke_protocol.md, and it is a script rather than a
-table because the answer changes whenever the IDE produces or deletes a run. A situation that no
-stored run produces any more must be visible as UNCOVERED rather than quietly absent — an uncovered
-case is the one that breaks without anyone seeing it.
+It is a script rather than a table of cases because the answer changes whenever the IDE produces or
+deletes a run. A situation that no stored run produces any more must be visible as UNCOVERED rather
+than quietly absent — an uncovered case is the one that breaks without anyone seeing it.
 """
 import json
 import urllib.request

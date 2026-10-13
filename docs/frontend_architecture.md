@@ -1138,7 +1138,7 @@ cards stay in `vh`: they float over the whole screen, so the window IS their mea
 
 **And the absence now says WHY.** Until the backend named the cause (contract 5), every missing section answered `run_not_found` and this client collapsed it to `null` — so a run still going, a run started with `reporting: none`, and a run whose pipeline never writes that section all rendered as the same blank space. `getX` now answers `Report | SectionAbsence`, the store keeps the reason beside the empty slot in `absences`, and `RunsView` says it ONCE above the column, **grouped by cause** — a run that ended early is missing several sections for one reason, and naming it once is the point. The sentence shown is the backend's own `detail`: it is written for a reader and held that way by a test on their side, so replacing it with one of ours would be a second, worse copy.
 
-**A section that cannot be DRAWN is a finding about that section, not about the report.** Every panel renders inside an error boundary: `AccordionPanel` catches a render error from its own subtree, stops it there, and puts a sentence in the panel's place with a mark on its header, so the news survives the panel being folded. The stack goes to the console; a reader gets a sentence (§10).
+**A section that cannot be DRAWN is a finding about that section, not about the report.** Every panel renders inside an error boundary: `AccordionPanel` catches a render error from its own subtree, stops it there, and puts a sentence in the panel's place with a mark on its header, so the news survives the panel being folded. The stack goes to the console; a reader gets a sentence, because a stack trace on screen explains nothing to them.
 
 This exists because its absence emptied the workspace. Measured 2026-10-01: one field the backend serves as `null` on 17 of 45 stored runs was read as an array inside a computed, and Vue unwinds a render error to the nearest component that handles it — with nothing handling it, ELEVEN panels left the screen because one of them could not draw.
 
@@ -1613,8 +1613,8 @@ that ARRIVES with a mark keeps it, because a restore is not a new run. The scrol
 inside the run view's own root rather than the whole document, so a second copy of a panel can
 never answer first. Both fixed 2026-10-12: until then the mark of one run survived into the next.
 
-**The mark is in the URL and the SCROLL is not.** A shared link puts the reader on the same position
-(§23), and a page that jumps on every reload is a page that moved while nobody was looking. The
+**The mark is in the URL and the SCROLL is not.** A shared link puts the reader on the same position,
+and a page that jumps on every reload is a page that moved while nobody was looking. The
 scroll waits for the URL write that `patchQuery` resolves, then one tick for the rows to take the
 mark — and where the row is still absent it does nothing rather than scrolling to nothing: a target
 beyond the trade list's visible cap, or inside a group it folded, is a row that is not there. It

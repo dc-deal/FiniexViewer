@@ -127,15 +127,15 @@ const facets: FacetDefinition<RunInfo>[] = [
    * is 0 on all 46 stored runs** — including the nine graded `failed`, one of which reports FOUR
    * errors. The counts measure different things: `warnings-errors.errors[]` holds scenarios that
    * failed VALIDATION and therefore never ran, while `error_count` counts runtime errors, so a
-   * validation failure logs none. A facet offering a value it can never produce is the instrument
-   * CLAUDE.md §24 warns about — worse than none, because it is believed.
+   * validation failure logs none. A facet offering a value it can never produce is worse than
+   * no facet, because it is believed.
    *
    * And the `error` value was redundant besides: **a run with errors is a run the backend graded
    * `failed`**, so `run_outcome` already is the error filter.
    *
    * Three values, and each is a mechanical reading rather than a judgement:
    *   - not `success` → the backend's OWN grade, by its own word, so `finished_with_errors` appears
-   *     as itself rather than folded into `failed` (§15)
+   *     as itself rather than folded into `failed` — the label is the backend's word
    *   - `success` with a warning counted → `with warnings`
    *   - `success` with none → `no warnings`
    *

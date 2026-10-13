@@ -21,7 +21,7 @@ import type { FacetSelection } from '@/types/facet_types'
  * A param is absent while its part of the bar is untouched, so an ordinary link stays short.
  *
  * **Why these three and not only the facets.** A search REMOVES rows, so it is a filter and belongs
- * in the URL by the same rule (§23). A sort does not change the set, but the sorts here are
+ * in the URL by the same rule as a facet. A sort does not change the set, but the sorts here are
  * analytical — *worst result first*, *longest tick timespan first* — and that IS what a sender
  * means to show. Panel order, collapsed sections and pinned panels stay in `localStorage`, because
  * those are how one reader arranged their screen and not what they are looking at.

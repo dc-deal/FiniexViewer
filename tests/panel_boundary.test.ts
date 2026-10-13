@@ -93,7 +93,7 @@ describe('AccordionPanel as an error boundary', () => {
     expect(wrapper.find('.panel-failed-mark').exists()).toBe(true)
   })
 
-  /** Never on screen (§10) — but never swallowed either, or a defect becomes invisible. */
+  /** Never on screen — but never swallowed either, or a defect becomes invisible. */
   it('writes the error to the console and not into the page', async () => {
     const wrapper = mountWith(Exploding)
     await flushPromises()

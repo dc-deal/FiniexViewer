@@ -6,7 +6,7 @@ import { mockApi, revealFixtureRun, FIXTURE_RUN } from './api_mock'
  *
  * The API is mocked, deliberately: this measures OUR rendering and nothing else. A slow answer
  * from the backend is a different finding with a different owner, and mixing the two produces a
- * number nobody can act on — §14 already says to name whose slowness it is before reporting it.
+ * number nobody can act on: whose slowness it is has to be named before it is reported.
  *
  * What is measured is not a paint but the moment a reader can DO the next thing: the first run row
  * present, the panels present, the narrowing applied. That is the only definition that degrades
@@ -46,8 +46,8 @@ test.beforeEach(async ({ page }) => {
  * Cold and warm, separately — because the first navigation against the DEV SERVER is not a
  * measurement of this app. Vite serves every module unbundled and transforms on demand, so a cold
  * load pays for hundreds of requests that production never makes. Reporting the two as one number
- * would blame the app for the developer's tooling, which §14 exists to prevent: before calling
- * something slow, say whose slowness it is.
+ * would blame the app for the developer's tooling — and before calling something slow, the first
+ * thing to say is whose slowness it is.
  *
  * The production build is measurable too, and the difference is not small — measured 2026-09-30,
  * the warm run list is 209 ms against the preview bundle and 620 ms against the dev server:

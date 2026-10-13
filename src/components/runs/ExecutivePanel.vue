@@ -215,7 +215,7 @@ const marketTime = computed<Figure[]>(() => {
  * the moment `orders_sent` was removed — and had the pair simply been renamed it would have read
  * `0/307` on every run recorded before the contract, a plausible lie and worse than the undefined.
  * A run that counted nothing shows nothing; a run that counted shows exactly what it counted. No
- * branch on a contract number anywhere (CLAUDE.md §21).
+ * branch on a contract number anywhere: the mirror follows the current contract only.
  *
  * **`Denied` stands beside `Rejected` and the two must not be separated.** Contract 23 narrowed
  * `orders_rejected` to the VENUE's refusals and gave the other half its own name: a refusal before
