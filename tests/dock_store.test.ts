@@ -32,6 +32,7 @@ function fakeDock(options: { refuse?: boolean } = {}) {
 
   const api = {
     get panels() { return panels },
+    get totalPanels() { return panels.length },
     get activePanel() { return panels.find(p => p.id === active) },
     getPanel: (id: string) => panels.find(p => p.id === id),
     addPanel,
@@ -145,10 +146,24 @@ describe('useDockStore', () => {
     expect(Object.keys((arrangement.dock as { panels: object }).panels)).toContain('chart')
     vi.advanceTimersByTime(300)
     expect(Object.keys((arrangement.dock as { panels: object }).panels)).not.toContain('chart')
+  })
+
+  /**
+   * A dock with no panel is one being torn down, not an arrangement. Written, it handed the next
+   * start an empty layout, which reconciles to nothing and is replaced by the suggested order — so
+   * every hot reload during development lost the reader's arrangement (reproduced 2026-10-14).
+   */
+  it('never writes a dock that holds no panel, and keeps the arrangement it had', () => {
+    const dock = fakeDock()
+    const store = useDockStore()
+    store.attach(dock.api)
+    const arrangement = useArrangementStore()
+    const before = Object.keys((arrangement.dock as { panels: object }).panels)
+    expect(before.length).toBeGreaterThan(0)
 
     dock.api.clear()
     dock.change()
     store.flush()
-    expect(Object.keys((arrangement.dock as { panels: object }).panels)).toEqual([])
+    expect(Object.keys((arrangement.dock as { panels: object }).panels)).toEqual(before)
   })
 })

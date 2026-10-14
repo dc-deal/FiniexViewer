@@ -57,15 +57,17 @@ defineProps<{
 .hover-card {
   z-index: var(--z-card);
   min-width: 15rem;
+  /* a long value WRAPS rather than stretching the card across the screen — a token note did */
+  max-width: min(28rem, calc(100vw - 2rem));
   /* it can be taller than the screen on a rich row — scroll inside rather than truncate, because
      a card that hides a figure is worse than one that asks for a scroll */
   max-height: min(70vh, 28rem);
   overflow-y: auto;
   padding: var(--space-sm);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-overlay);
   border-radius: 4px;
-  background-color: var(--color-bg-surface);
-  box-shadow: 0 2px 10px rgb(0 0 0 / 40%);
+  background-color: var(--color-bg-overlay);
+  box-shadow: var(--shadow-overlay);
 }
 
 .hover-card .card-title {
@@ -92,7 +94,7 @@ defineProps<{
   margin: 0;
   text-align: right;
   color: var(--color-text-primary);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .hover-card .card-rows dd.positive { color: var(--color-positive); }
@@ -101,6 +103,6 @@ defineProps<{
 .hover-card .card-rows dd.error { color: var(--color-error); }
 
 .card-arrow {
-  fill: var(--color-border);
+  fill: var(--color-border-overlay);
 }
 </style>

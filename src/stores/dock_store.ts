@@ -50,11 +50,16 @@ export const useDockStore = defineStore('dock', () => {
     dock.getPanel(FIRST_ACTIVE_KIND)?.api.setActive()
   }
 
-  /** Writes the layout now — on the timer, or at once where the page is about to go. */
+  /**
+   * Writes the layout now — on the timer, or at once where the page is about to go. A dock holding
+   * no panel is never written: it is a dock being torn down, not an arrangement, and storing it
+   * would hand the next start an empty layout to replace with the suggested one.
+   */
   function flush(): void {
     if (timer) clearTimeout(timer)
     timer = null
-    if (api.value) arrangement.setDock(api.value.toJSON())
+    if (!api.value || api.value.totalPanels === 0) return
+    arrangement.setDock(api.value.toJSON())
   }
 
   function scheduleSave(): void {

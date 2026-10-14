@@ -318,7 +318,7 @@ and `mergeConfig` cannot merge a function — the env is therefore loaded at mod
 
 ### Theming — CSS Custom Properties
 
-All colors, spacing, and type scale are defined as CSS custom properties in `src/styles/tokens.css`. Dark mode is the default; light mode overrides the same variables under `[data-theme='light']`. The active theme is controlled by a `data-theme` attribute on `<html>`, written in exactly one place — `App.vue` watches the settings store and sets the attribute. No panel receives the theme as a prop; it reads the tokens the attribute selects, which is why a theme change needs no re-render anywhere else. The one exception is a canvas, which is painted with values: `CandleChart.vue` reads the tokens itself and repaints through a `MutationObserver` on the attribute (see *Chart Engine*). A future canvas layer — an indicator, the signal overlay, an algo's drawings — takes the same path.
+All colors, spacing, and type scale are defined as CSS custom properties in `src/styles/tokens.css`. The type sizes are in `rem`, so a small size inside a small size stays the same size — `--font-size-sm` was `0.85em` until 2026-10-14 and compounded, which set tab titles and the section toggles at 11.56 px under 13.6 px panel text. What floats over the page — a hover card, a menu, a filter popup — wears its own overlay surface, border and shadow (`--color-bg-overlay`, `--color-border-overlay`, `--shadow-overlay`): on the panel surface with the panel border a card could not be told from what it covered. The overlay surface stays a small step, because muted text has to keep 4.5:1 on it; the border and the shadow set it apart. The "whole run" mark beside a figure a narrowing cannot split is one component, `base/ScopeMark.vue`, drawn with an outline rather than a border so it takes no room in the line it stands in. Dark mode is the default; light mode overrides the same variables under `[data-theme='light']`. The active theme is controlled by a `data-theme` attribute on `<html>`, written in exactly one place — `App.vue` watches the settings store and sets the attribute. No panel receives the theme as a prop; it reads the tokens the attribute selects, which is why a theme change needs no re-render anywhere else. The one exception is a canvas, which is painted with values: `CandleChart.vue` reads the tokens itself and repaints through a `MutationObserver` on the attribute (see *Chart Engine*). A future canvas layer — an indicator, the signal overlay, an algo's drawings — takes the same path.
 
 This avoids a CSS-in-JS dependency, works natively in every browser, and is trivially inspectable in DevTools. Reka UI (headless component layer) is deferred — no concrete accessibility need has surfaced yet.
 
@@ -1163,7 +1163,10 @@ PanelDock    [☰ Deployments] [☰ Runs] [◫ Chart]
   one where the reader closed it; `reset()` goes back to the suggested order — offered in the
   settings' Layout tab, beside everything else about arrangement, rather than as a menu of one
   entry. The layout is written
-  into `arrangement.v1` once it has held still for 300 ms, and at once when the page goes.
+  into `arrangement.v1` once it has held still for 300 ms, and at once when the page goes or the dock
+  is about to unmount — BEFORE, while dockview still holds the panels: written after, it was empty,
+  and every hot reload during development replaced the reader's arrangement with the suggested one
+  (reproduced 2026-10-14). A dock holding no panel is never written.
 - **`src/components/dock/dock_layout.ts`** — the stored layout reconciled on load, never trusted. A
   panel of a kind this version does not know is dropped from its group, an emptied group from the
   grid, and floating and popout groups go. Where nothing usable is left — or dockview refuses what

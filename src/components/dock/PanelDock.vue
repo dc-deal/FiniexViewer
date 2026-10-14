@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { DockviewVue, themeDark, themeLight } from 'dockview-vue'
 import type { DockviewReadyEvent } from 'dockview-vue'
@@ -36,7 +36,12 @@ onMounted(() => {
   document.addEventListener('visibilitychange', flushWhenLeaving)
 })
 
-onUnmounted(() => {
+/**
+ * BEFORE unmount, while dockview still holds the panels. Vue unmounts the children first and runs
+ * `onUnmounted` after, so a layout written there was already empty — and every hot reload during
+ * development, which remounts the dock, replaced the reader's arrangement with the suggested one.
+ */
+onBeforeUnmount(() => {
   window.removeEventListener('pagehide', dock.flush)
   document.removeEventListener('visibilitychange', flushWhenLeaving)
   dock.detach()

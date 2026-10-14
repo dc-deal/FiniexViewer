@@ -94,7 +94,9 @@ test('a narrow Runs panel keeps its run line and its section bar to one line eac
 })
 
 test('a wide Runs panel shows every section and no control to unfold', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  // at the panels' type size the whole bar needs about 1670 px (measured 2026-10-14) — a wide
+  // screen with the Runs panel alone, not a split
+  await page.setViewportSize({ width: 1920, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('.app-bar .overflow-row')).toBeVisible()
   await expect(page.locator('.overflow-more')).toBeHidden()

@@ -60,10 +60,11 @@ const kinds = [...PANEL_KINDS].sort((a, b) => a.order - b.order)
   flex-shrink: 0;
 }
 
+/* the panels' own size: the frame names the app, it does not outrank what the panels show */
 .menu-bar-title {
   font-family: monospace;
   font-weight: bold;
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   color: var(--color-text-primary);
 }
 

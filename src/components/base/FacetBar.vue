@@ -240,9 +240,10 @@ function clear(): void {
   max-height: 18rem;
   overflow-y: auto;
   padding: var(--space-xs);
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-overlay);
+  border: 1px solid var(--color-border-overlay);
   border-radius: 4px;
+  box-shadow: var(--shadow-overlay);
 }
 
 .facet-option {
@@ -262,7 +263,7 @@ function clear(): void {
 
 .facet-option:hover,
 .facet-option:focus-visible {
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bg-hover);
   outline: none;
 }
 

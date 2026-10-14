@@ -30,6 +30,12 @@
  *
  * `text-secondary` on a surface is the look of a DISABLED control. Nothing that can be clicked may
  * wear it — a settings button did, and was read as greyed out by the first person to meet it.
+ *
+ * What FLOATS over the page — a hover card, a menu, a filter popup — has its own overlay surface,
+ * border and shadow. On the panel surface with the panel border a card sat flat on what it covered
+ * and could not be told from it (operator, 2026-10-14). The overlay surface is a small step too,
+ * because muted text has to stay readable on it: #888 holds 4.52:1 on the dark overlay, and one
+ * step lighter falls under AA. The border and the shadow are what set it apart.
  */
 :root[data-theme='dark'] {
   --color-bg-base:        #0d0d0f;
@@ -47,6 +53,9 @@
   --color-negative:       #ef5350;
   --color-border:         #2a2a2e;
   --color-tree-connector: #555555;
+  --color-bg-overlay:     #212127;
+  --color-border-overlay: #4a4a54;
+  --shadow-overlay:       0 8px 28px rgb(0 0 0 / 60%);
 }
 
 :root[data-theme='light'] {
@@ -72,6 +81,9 @@
   --color-negative:       #c62828;
   --color-border:         #dcdcdc;
   --color-tree-connector: #999999;
+  --color-bg-overlay:     #ffffff;
+  --color-border-overlay: #a9a9b3;
+  --shadow-overlay:       0 8px 24px rgb(0 0 0 / 22%);
 }
 
 :root {
@@ -81,7 +93,9 @@
   --space-lg: 1.5rem;
   --space-xl: 2rem;
 
-  --font-size-sm: 0.85em;
+  /* rem, not em: an em size compounds inside an element already at it, and tab titles and the
+     section toggles came out at 11.56 px under 13.6 px panel text (until 2026-10-14) */
+  --font-size-sm: 0.85rem;
   --font-size-md: 1rem;
   --font-size-lg: 1.25rem;
 

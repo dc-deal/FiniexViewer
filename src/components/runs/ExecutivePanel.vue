@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
+import ScopeMark from '@/components/base/ScopeMark.vue'
 import type { RunSummary, RunSummaryCurrency } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 import {
@@ -295,7 +296,7 @@ const scope = computed<Figure[]>(() => {
           class="scope-line"
           :title="t('These figures cover every scenario, not the ones you narrowed to')"
         >
-          <span class="scope">{{ t('whole run') }}</span>
+          <ScopeMark />
           <span class="scope-text">{{ t('These figures cover every scenario, not the ones you narrowed to') }}</span>
         </p>
       </div>
@@ -364,13 +365,6 @@ const scope = computed<Figure[]>(() => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.scope {
-  flex-shrink: 0;
-  padding: 0 var(--space-xs);
-  border: 1px dashed var(--color-annotation);
-  border-radius: 4px;
 }
 
 .hint {

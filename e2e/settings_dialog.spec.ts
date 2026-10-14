@@ -47,6 +47,23 @@ test('a dialog taller than the window scrolls inside, the close button in reach'
  * mark and a word, and the settings no longer have a tab for it. The mock serves a server that
  * verifies no token.
  */
+/** A long value wraps inside the card: a token note once stretched it across the whole screen. */
+test('the account card stays narrow however long the token note is', async ({ page }) => {
+  await page.route('**/api/v1/caller', route => route.fulfill({
+    json: {
+      enforced: true, client: 'viewer', account: 'viewer-op', account_kind: 'person', display_name: 'Viewer-Operator',
+      grants: ['brokers:*', 'bars:*', 'deployments:*', 'directory:*', 'docs:*', 'reports:*', 'sweeps:*'],
+      note: 'FiniexViewer — dev proxy holds it, browser never receives it. reports:* is conditional on the API being reachable on loopback only; re-decide before the viewer is served from anywhere else.',
+    },
+  }))
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.goto('/')
+  await page.locator('.account-status').hover()
+  const card = page.locator('.hover-card')
+  await expect(card).toContainText('re-decide before the viewer')
+  expect((await card.boundingBox())!.width).toBeLessThanOrEqual(28 * 16 + 1)
+})
+
 test('the account stands in the menu bar, and the settings carry no tab for it', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.menu-bar .account-status')).toContainText('no sign-in')

@@ -61,11 +61,12 @@ const themeSwitch = computed(() => settings.value.theme === 'dark'
   background-color: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
   border-radius: 4px;
-  color: var(--color-text-secondary);
+  /* the link ink: muted ink on a raised surface is what a DISABLED control looks like here */
+  color: var(--color-accent);
   cursor: pointer;
   padding: 2px var(--space-sm);
   font-family: monospace;
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   line-height: 1.2;
 }
 
@@ -87,9 +88,10 @@ const themeSwitch = computed(() => settings.value.theme === 'dark'
   display: flex;
   flex-direction: column;
   padding: var(--space-xs);
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-overlay);
+  border: 1px solid var(--color-border-overlay);
   border-radius: 4px;
+  box-shadow: var(--shadow-overlay);
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
@@ -103,8 +105,9 @@ const themeSwitch = computed(() => settings.value.theme === 'dark'
   user-select: none;
 }
 
+/* the lifting step: on the overlay surface the elevated one is the darker of the two */
 .menu-item[data-highlighted] {
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bg-hover);
 }
 
 .menu-item[data-disabled] {

@@ -6,6 +6,7 @@ import { rowKey } from '@/api/list_key'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { plural, t } from '@/translate'
 import AppIcon from '@/components/base/AppIcon.vue'
+import ScopeMark from '@/components/base/ScopeMark.vue'
 
 const props = defineProps<{
   model: WarningsErrorsReport
@@ -98,7 +99,7 @@ function hasDetail(row: UnitErrorRow): boolean {
   <div class="warnings-panel">
     <!-- the outcome counts every unit the run attempted, so it stays the RUN's under a narrowing -->
     <div class="outcome" :class="[model.outcome.run_outcome, { quiet }]">
-      <span v-if="narrowed" class="scope">{{ t('whole run') }}</span>
+      <ScopeMark v-if="narrowed" />
       <span v-if="outcomeRecorded" class="outcome-verdict">
         {{ outcomeMark }} {{ model.outcome.run_outcome }}
       </span>
@@ -203,14 +204,6 @@ function hasDetail(row: UnitErrorRow): boolean {
 }
 
 /* the scope of a count that cannot be split — marked, never filtered */
-.scope {
-  padding: 0 var(--space-xs);
-  border: 1px dashed var(--color-annotation);
-  border-radius: 4px;
-  color: var(--color-annotation);
-  font-size: var(--font-size-sm);
-}
-
 .outcome.failed {
   border-color: var(--color-error);
 }
