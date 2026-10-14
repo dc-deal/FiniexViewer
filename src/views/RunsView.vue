@@ -354,9 +354,9 @@ const showPanels = computed(() =>
             <template v-if="missing.detail"> — {{ missing.detail }}</template>
           </span>
         </p>
-        <!-- said ONCE above the column: every section below is narrowed, and a reader who forgot
-             would otherwise read a single scenario's figures as the run's -->
-        <p v-if="unreadable" class="notice">{{ unreadable }}</p>
+        <!-- a section whose artifact predates the current schema — a state of the run, one line
+             per section, and not a failure -->
+        <p v-for="(message, section) in unreadable" :key="section" class="notice">{{ message }}</p>
         <!-- EVERY section that failed says so, and the sections that did load stay visible. One
              line per failure: the sections load concurrently, so a single slot showed whichever
              finished last and silently dropped the rest. -->
