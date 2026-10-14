@@ -28,15 +28,15 @@ import type { PanelDescriptor } from '@/types/panel_types'
  * **Warnings & Errors reads eighth, and that is deliberate.** An aborted scenario mistaken for a
  * result is the misreading this project most fears, but a broken run is the EXCEPTION: the daily
  * work is reading balance sheets, and a default serves the rule. The exception needs a SIGNAL
- * rather than a position — see viewer#31, which also makes the bar able to carry one.
+ * rather than a position — see viewer#31, whose tabs carry one.
  *
  * Changed 2026-10-07 after days of use rather than from the armchair, and the order was measured
  * against its own principle first: Broker sat fifth, Feed Health last although it is a trust
  * question, and Orders separated the breakdown from itself.
  *
  * A plain declarative list rather than a register() call: with a static import graph the order is
- * explicit and cannot depend on which module happened to load first. The app bar renders from this
- * list, so a new panel is an entry here, not a rebuild.
+ * explicit and cannot depend on which module happened to load first. The column and the Panels menu
+ * render from this list, so a new panel is an entry here, not a rebuild.
  *
  * A STORED layout keeps its own order — reconciliation appends what is new rather than reshuffling
  * what the user arranged — so this order reaches an existing workspace only through Reset layout.
@@ -190,7 +190,7 @@ const PANELS: PanelDescriptor[] = [
     component: RunHeaderPanel,
     source: 'header',
     // Provenance rather than a headline: which artifact am I looking at. Folded by default —
-    // the reader who needs it opens it, and the one who never does hides it from the bar.
+    // the reader who needs it opens it, and the one who never does hides it.
     defaultOpen: false,
     narrowing: null,
   },

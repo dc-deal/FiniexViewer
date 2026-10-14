@@ -1,0 +1,52 @@
+import { computed, type ComputedRef } from 'vue'
+import { storeToRefs } from 'pinia'
+import { reportKindId } from '@/panel_kinds'
+import { allPanels } from '@/panel_registry'
+import { useDockStore } from '@/stores/dock_store'
+import { useLayoutStore } from '@/stores/layout_store'
+import { useRunsStore } from '@/stores/runs_store'
+import { useRunSectionsStore } from '@/stores/run_sections_store'
+import type { PanelDescriptor } from '@/types/panel_types'
+
+/** Where a section of the run report stands: in the column, open as a panel, or hidden. */
+export type SectionPlace = 'column' | 'panel' | 'hidden'
+
+export interface SectionState {
+  section: PanelDescriptor
+  place: SectionPlace
+  /**
+   * The chosen run carries no such section — a state of the RUN, not of the reader's arrangement.
+   * One still on its way is not absent: it would flicker struck-through on every run change. With
+   * no run chosen nothing is absent, because there is no run to lack anything.
+   */
+  absent: boolean
+}
+
+/**
+ * Every section of the run report, in the READER's order — the one the column draws — with where
+ * it stands and whether the chosen run has it. What the Panels menu lists.
+ *
+ * A hidden section keeps its place in that order: `hidden` is a flag, not a removal, so an entry
+ * that is switched off does not move away from the pointer that switched it.
+ */
+export function useSectionStates(): ComputedRef<SectionState[]> {
+  const { arrangedPanels } = storeToRefs(useLayoutStore())
+  const { openIds } = storeToRefs(useDockStore())
+  const { selectedRun } = storeToRefs(useRunsStore())
+  const { sources, pending } = storeToRefs(useRunSectionsStore())
+
+  return computed(() => {
+    const byId = new Map(allPanels().map(panel => [panel.id, panel]))
+    return arrangedPanels.value.flatMap(state => {
+      const section = byId.get(state.id)
+      if (!section) return []
+      const model = sources.value[section.source]
+      const place: SectionPlace = openIds.value.includes(reportKindId(section.id))
+        ? 'panel'
+        : state.hidden ? 'hidden' : 'column'
+      const absent = selectedRun.value !== null
+        && (model === null || model === undefined) && !pending.value[section.source]
+      return [{ section, place, absent }]
+    })
+  })
+}

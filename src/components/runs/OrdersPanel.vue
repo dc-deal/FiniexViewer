@@ -462,7 +462,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
       Only where something is OPEN. Where everything is fine, nothing is printed — with nothing
       expanded there is nothing to close, so the line does not exist. It also states the number a
       reader would otherwise have to count, and it is not called "collapse all": that name belongs
-      to the app bar's control over the PANELS, and two of them would be a trap.
+      to the Panels menu's control over the SECTIONS, and two of them would be a trap.
     -->
     <p v-if="opened.size" class="steps-open">
       {{ plural(opened.size, t('position open'), t('positions open')) }}

@@ -407,9 +407,9 @@ a `span` holding the `JumpLink`, not a `JumpLink` carrying the column's class: p
 the class lost to the link shape's inherited font, and the run ids were drawn at 16 px beside a
 13.6 px axis caption, with a hover surface the width of the whole column.
 
-**What is still not an `AppButton`:** the app bar, the accordion header, the JSON fold, and the
-option rows inside a facet's popover. Those are menu items and disclosure headers rather than
-buttons — a different control type with a different shape, not the same one written twice.
+**What is still not an `AppButton`:** the entries of a menu, the accordion header, the JSON fold,
+and the option rows inside a facet's popover. Those are menu items and disclosure headers rather
+than buttons — a different control type with a different shape, not the same one written twice.
 
 ### Icons — `AppIcon` and the registry
 
@@ -425,7 +425,7 @@ here is a traded instrument, and the *register* is the term map `scripts/check_t
 element it is placed in — in a panel header that is the trigger's primary ink, a step stronger
 than the secondary title beside it, as the emoji before it was. Its size is `1.2em`: about 16 px in
 a panel header, the size stroke 2 was chosen for because a thinner line on secondary ink reads as
-faint, and about 14 px in the app bar, whose small text is applied twice. It is hidden from a
+faint, and about 14 px in a menu or a tab, whose text is smaller. It is hidden from a
 screen reader, because an icon travels with a word and the word is what is read out.
 
 **One naming scheme, checked rather than trusted** (`tests/icon_registry.test.ts`): `form-*` the
@@ -435,8 +435,9 @@ on two meanings that share a drawing, on a name outside the scheme, and on a pan
 not `kind-<its id>`. It reads the source as text: a name in quotes of either kind counts, and the
 registry is left out by what it says rather than by its path, so moving the file cannot silence
 the check. Today the registry holds the eleven panel kinds, which replaced the emoji in the panel
-headers and the app bar; an emoji kept its own colours, so the app bar greyed it out for a hidden
-panel, and a line icon in the element's colour needs only the fading. The app's other glyphs
+headers and in the section bar the Panels menu has since replaced; an emoji kept its own colours, so
+that bar greyed it out for a hidden panel, and a line icon in the element's colour needs only the
+fading. The app's other glyphs
 follow in a sweep of their own.
 
 **The browser tab carries the same library's `chart-candle`** (`public/favicon.svg`), in the two
@@ -1204,8 +1205,9 @@ PanelDock    [☰ Deployments] [☰ Runs] [◫ Chart]
   is read or set and then closed — About, the settings — is a dialog and has no kind. Each component
   is loaded on demand into its own chunk, as the routes before them were.
 - **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: the suggested order in
-  one group, Runs in front. `open(kind)` brings a panel to the front, or opens it beside the active
-  one where the reader closed it; `reset()` goes back to the suggested order — offered in the
+  one group, Runs in front. `open(kind)` brings a panel to the front; a closed one opens where it
+  last stood (*Closing hides* below), and beside the active one where nothing it stood beside is
+  open. `reset()` goes back to the suggested order and forgets every place — offered in the
   settings' Layout tab, beside everything else about arrangement, rather than as a menu of one
   entry. The layout is written
   into `arrangement.v1` once it has held still for 300 ms, and at once when the page goes or the dock
@@ -1221,8 +1223,9 @@ PanelDock    [☰ Deployments] [☰ Runs] [◫ Chart]
   the panel's error boundary, and it hands the panel its visibility — `onPanelShownAgain` fetches
   the run index and the ledger afresh, quietly and without a spinner, whenever their panel comes
   back, because a docked panel stays mounted where a route was entered anew.
-- **`PanelTab`** shows the form icon, the title, ONE status where it says something, and a close
-  button; its card says what the panel is for and the status in words. The Runs tab carries the
+- **`PanelTab`** shows the form icon, the title, ONE status where it says something, and ✕, which
+  hides the panel; a section's tab also carries ⇲, back into the column. Its card says what the
+  panel is for and the status in words. The Runs tab carries the
   backend's grade of the open run (`run_outcome`) where it is not `success` — the icon in the
   warning or error role, its word read out with the tab and written in the card. Where everything
   went well, the tab says nothing. **`dock_theme.css`** gives
@@ -1232,19 +1235,21 @@ PanelDock    [☰ Deployments] [☰ Runs] [◫ Chart]
 **A section of the run report opens as a panel of its own** (viewer#31, decided 2026-10-14). The
 run report stays one column — the Runs panel — and a section the reader wants beside another is
 pulled out: the button among its header's controls (`action-open-panel`) opens it as a docked panel,
-and the ✕ on that panel's tab puts it back where it stood. A section is in one place at a time. An
+and ⇲ on that panel's tab (`action-back-into-column`) puts it back in the column. A section is in
+one place at a time. An
 AutoTrader session writes fewer sections than a backtest; the column absorbs that by growing
 shorter, where a grid of eleven panels would have left empty areas or moved.
 
 ```
 [☰ Deployments] [☰ Runs] [◫ Chart]        │ [☰ Trade History]
-  run list · section bar · the column      │   the section, with its own scroll
+  run list · the column                    │   the section, with its own scroll
   ▾ Executive Summary                  ⇱   │
   ▸ Orders                             ⇱   │
 ```
 
-- **One kind per section, `report-<section id>`** (`reportKindId` in `panel_kinds.ts`), kept OUT of
-  the Panels menu: a section is opened from its own header. Its tab shows the FORM — `form-list` for
+- **One kind per section, `report-<section id>`** (`reportKindId` in `panel_kinds.ts`), kept out of
+  the menu's top level: the Panels menu lists the sections in the submenu of the Runs panel. Its tab
+  shows the FORM — `form-list` for
   the four lists, `form-sheet` for the others — and the narrowing's quick bar (`RunsQuickBar`)
   stands beside a section panel where the narrowing reaches the section. The registry says how, in
   `narrowing`: `filters` (Trade History, Orders, Booking Periods, Warnings & Errors) draws only the
@@ -1261,18 +1266,48 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
   which is untrue of a list that still shows every row.
 - **Where a section stands is derived, never stored.** The dock store keeps `openIds` from
   dockview's own `onDidAddPanel` / `onDidRemovePanel`, and the column leaves out a section whose
-  panel is open; its place in `layout.v1` stays, so closing the panel restores it and a reset of the
-  dock gives every section back. `openSection(id)` brings an open section to the front, or opens it
-  — the first as a split to the right of the Runs panel, each further one as a tab beside the last,
-  so the screen is not cut thinner with every section.
-- **The bar marks a section open as a panel** (`action-open-panel` beside its name), and a click
-  leads to that panel instead of switching the section off — usable even where the run lacks the
-  section, since the panel says why. The lines above the column (absences, failures, older
-  schemas) leave out a slot whose every reader is open as a panel: that panel says it.
+  panel is open; its place in `layout.v1` stays, so ⇲ restores it and a reset of the dock gives
+  every section back. `openSection(id)` brings an open section to the front, or opens it — the
+  first as a split to the right of the Runs panel, each further one as a tab beside the last, so the
+  screen is not cut thinner with every section. The lines above the column (absences, failures,
+  older schemas) leave out a slot whose every reader is open as a panel: that panel says it.
 - **The jump lands where the section IS:** its own panel comes to the front and is searched for the
   marked row; for a section in the column, the Runs panel comes to the front first, since the jump
   may start in a section panel. A hint above the column (`open-as-panel`) says how a section comes
   out and goes back.
+
+**Closing hides, alike for every panel — and the Panels menu shows it again where it stood**
+(viewer#31, 2026-10-14). The section bar above the column is gone; the Panels menu took its place.
+A tick is a panel on show, a click hides it or shows it again, and the menu stays open so several
+can be switched in one visit. The run report's sections stand in the submenu of the Runs panel, in
+the column's order, each with where it is (`use_section_states.ts`): in the column, open as a panel
+(⇱), hidden, or struck where the chosen run has none — listed rather than left out, because an
+inventory that silently shortens is not one.
+
+```
+Panels ▾
+├ ✓ Deployments
+├   Runs ▸ ┬ ✓ Runs
+│          ├ ✓ Executive Summary          in the column
+│          ├ ✓ Trade History          ⇱   open as a panel
+│          ├   Feed Health                hidden
+│          ├   Scenarios                  struck: the run has none
+│          └ Collapse all · Reset column
+└ ✓ Chart
+```
+
+- **Where a panel stood is noted just BEFORE the layout changes** — dockview's `onWillMutateLayout`
+  fires while a panel about to be closed is still in place. A place names the panels it stood
+  beside, not its group, because dockview issues group ids anew: the tabs it shared a group with and
+  its index among them, or the panels of the neighbouring group (`adjacentGroupInDirection`), the
+  side, and the width or height its own group had. Kept as `places` in `arrangement.v1`, so a panel
+  hidden before a reload still comes back where it stood.
+- **Showing a panel again** uses its place while one of the panels it stood beside is still open,
+  at the size it had; otherwise a main panel opens beside the active one, and a section goes back
+  into the column, whose panel comes to the front.
+- **A section's panel closed is a section hidden** (`onDidRemovePanel`), however it was closed —
+  its tab's ✕ or the menu. Only ⇲ sends it into the column, which forgets its place; the column's own
+  ✕ goes the same way through `hideSection`. A rebuild of the dock — a reset — hides nothing.
 
 **The quick bar beside a group's tabs** holds the few options of the panel in FRONT of that group
 (`QuickBar`, from the kind's `quickBar`): for the chart, its broker, symbol and timeframe as compact
@@ -1295,10 +1330,8 @@ dockview. The timings, taken again the same day on a quiet machine, moved by not
 
 These are the REPORT panels inside the Runs panel, the accordion column; viewer#31's next step makes each a docked panel of its own. The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
 
-- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset layout* carries it into an arrangement somebody already made.
-- **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). **The bar is the column turned on its side: ONE arrangement drawn twice**, horizontally and vertically, and it renders from `arrangedPanels` — every panel, switched-off ones included, in the order the reader made. It rendered `allPanels()` until 2026-09-30, so dragging Broker to the top left its toggle sixth in the bar; it appended the switched-off ones until 2026-10-07, so flipping a toggle moved it. The two orientations now differ in exactly one thing: the column leaves out what is switched off and what this run does not carry, so the pinned boundary lands on a different index in each. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
-
-  **The bar is ONE row, however narrow the panel** (`base/OverflowRow.vue`, the rule in `base/overflow_fit.ts`). It wrapped until 2026-10-13, and in a Runs panel 585 px wide it took four rows — with the run line above it in three, a quarter of the panel's height went by before the first section. What does not fit now waits behind `+N ▾` at the row's end, in the order things give way: the two actions first, being the rarest, then the toggles from the end of the reader's order. The menu keeps each hidden toggle's state — ticked where shown, struck where the run has no such section — and stays open, so several can be switched in one visit. The wider the panel, the less waits behind the control, until nothing does and it is gone: the pattern GitHub's repository tabs and the actions above an editor in VS Code use. Items are measured where they stand — one behind the control stays in the row, unseen, inert and hidden from a screen reader, so its width is known the moment there is room for it again. `OverflowRow` is generic over its items and knows nothing about panels. The run line above it is one line too, ending in an ellipsis with the whole of it on hover, and `Change run` never breaks — and so is the deployment line on the Deployments side, with `Change deployment`.
+- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The column and the Panels menu render from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset column* (Panels ▸ Runs) carries it into an arrangement somebody already made.
+- **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus) and `PanelColumn` (the ordered stack, drag to reorder). The column renders from `arrangedPanels` — every panel, switched-off ones included, in the order the reader made — and leaves out what is switched off, what is open as a panel of its own and what this run does not carry. The Panels menu lists the same arrangement (see *Docked Panels*); the section bar that drew it on its side above the column retired on 2026-10-14. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 - **`src/stores/layout_store.ts`** — the panel column's order and state, persisted under its own versioned key `layout.v1` (the selection is in `arrangement.v1`, see *Selection State*).
 
 **A section that fails to load says so, and every one of them does.** `run_reports_store` keyed its
@@ -1331,7 +1364,7 @@ cards stay in `vh`: they float over the whole screen, so the window IS their mea
 
 **A section whose model this run does not carry is skipped, never shown empty.** `PanelColumn` drops a panel whose source is absent, which is how a 404 on a report route reaches the UI: not as an error, as a missing section.
 
-**One still on its way is neither, and keeps its place.** `run_sections_store` states `pending` per source from the stores' loading flags. `PanelColumn` keeps such a panel where it stands with a loading line instead of its content, holding the height that content last had (one `ResizeObserver` over the panel bodies), and `AppBar` keeps its toggle usable rather than striking it through as absent. A run change used to empty the column behind one spinner and let each panel come back on its own, so the column collapsed and rebuilt piece by piece in front of the reader. The view-wide spinner now waits only for the run index.
+**One still on its way is neither, and keeps its place.** `run_sections_store` states `pending` per source from the stores' loading flags. `PanelColumn` keeps such a panel where it stands with a loading line instead of its content, holding the height that content last had (one `ResizeObserver` over the panel bodies), and the Panels menu keeps its entry usable rather than striking it through as absent. A run change used to empty the column behind one spinner and let each panel come back on its own, so the column collapsed and rebuilt piece by piece in front of the reader. The view-wide spinner now waits only for the run index.
 
 **And the absence now says WHY.** Until the backend named the cause (contract 5), every missing section answered `run_not_found` and this client collapsed it to `null` — so a run still going, a run started with `reporting: none`, and a run whose pipeline never writes that section all rendered as the same blank space. `getX` now answers `Report | SectionAbsence`, the store keeps the reason beside the empty slot in `absences`, `run_sections_store` adds the summary's, and `RunsView` says it ONCE above the column, **grouped by cause** — a run that ended early is missing several sections for one reason, and naming it once is the point. The sentence shown is the backend's own `detail`: it is written for a reader and held that way by a test on their side, so replacing it with one of ours would be a second, worse copy.
 
@@ -1349,9 +1382,9 @@ The two DEPLOYMENT routes deliberately keep `| null`: an unknown deployment id i
 
 **An arrangement from an older SCHEMA is deleted, not converted.** `readStored` removes the key when `version` is not the current one. The project is alpha and the arrangement is a convenience: code that reads a shape nobody writes any more would outlive the day it was useful, and an entry left sitting in storage is the same artifact under another name. The cost is that a reader re-arranges once, which is why the key carries a version at all.
 
-**Hiding is a FLAG, not a removal — and that is the whole reason the bar works.** A switched-off panel keeps its place in the arrangement and only the column declines to draw it. Before 2026-10-07 hiding removed the panel and remembered its id in a separate list, so its toggle was appended at the end of the bar: switching one panel off reordered the bar under the hand that did it, and the control a reader would click to bring it back had moved. A toggle that moves when you flip it is a control that runs away from the finger.
+**Hiding is a FLAG, not a removal — and that is the whole reason the menu works.** A switched-off panel keeps its place in the arrangement and only the column declines to draw it. Before 2026-10-07 hiding removed the panel and remembered its id in a separate list, so its toggle was appended at the end of the section bar of the time: switching one panel off reordered the bar under the hand that did it, and the control a reader would click to bring it back had moved. A toggle that moves when you flip it is a control that runs away from the finger.
 
-**Pin anchors, lock protects — and pinning makes a second CATEGORY rather than a quiet reshuffle.** Pin moves a panel into the first group and opens it once; afterwards open/closed stays free. Lock exempts a panel from *collapse all* (and later from width-driven auto-collapse). The two groups are separated by a DRAWN line in both orientations — `pinnedBoundary()` is the one rule and each orientation applies it to what it actually draws, so the index differs between the bar and the column and nothing else does. The line wears the `annotation` role and is dashed, because it marks a division rather than something to weigh; it is absent when every panel is pinned or none is, there being nothing to separate. Without it, pinning reorders both views and nothing on screen says why. Hiding needs no confirmation: the bar always shows what is switched off, in its own place.
+**Pin anchors, lock protects — and pinning makes a second CATEGORY rather than a quiet reshuffle.** Pin moves a panel into the first group and opens it once; afterwards open/closed stays free. Lock exempts a panel from *collapse all* (and later from width-driven auto-collapse). The two groups are separated by a DRAWN line in the column — `pinnedBoundary()` is the rule, applied to what the column actually draws. The line wears the `annotation` role and is dashed, because it marks a division rather than something to weigh; it is absent when every panel is pinned or none is, there being nothing to separate. Without it, pinning reorders the column and nothing on screen says why. Hiding needs no confirmation: the Panels menu always shows what is switched off, in its own place.
 
 **From a panel into another view — `use_open_in_context.ts`.** The sibling of the position link,
 one level up: a panel names WHAT to open (`openRun(id)`, `openDeployment(id)`) and the host decides
@@ -1387,9 +1420,9 @@ a plain view rather than as panels:
 - The `deployments` panel; the chosen deployment is the main link's (`deployment.id`), restored by
   `use_deployment_binding` once the ledger has loaded.
 
-**Why not panels.** The registry and the layout store are global: one `layout.v1`, and `AppBar`
-renders `allPanels()` unfiltered. Deployment panels in that registry would put their toggles into
-the run view, where they can never render. Scoping the registry per view is foundation work that a
+**Why not panels.** The registry and the layout store are global: one `layout.v1`, and the Panels
+menu lists every entry of it under Runs. Deployment panels in that registry would put their entries
+among the run report's sections, where they can never render. Scoping the registry per view is foundation work that a
 list and a table do not need.
 
 **Choosing a deployment is a facet bar over a flat list**, the same `FacetBar` + `RecordList` the

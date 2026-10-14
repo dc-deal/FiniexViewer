@@ -21,7 +21,7 @@ const drawing = computed(() => ICONS[props.name])
 
 <style scoped>
 /* 1.2 times the text: about 16 px in a panel header, where stroke 2 was chosen so a line never reads
-   as faint, and about 14 px in the app bar, whose text is smaller still */
+   as faint, and about 14 px in a menu or a tab, whose text is smaller still */
 .app-icon {
   width: 1.2em;
   height: 1.2em;

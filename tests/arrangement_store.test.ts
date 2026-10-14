@@ -92,4 +92,30 @@ describe('useArrangementStore', () => {
     expect(reloaded.bars['run']!.selection).toEqual({})
     expect('selection' in reloaded.bars['dep']!).toBe(false)
   })
+
+  /** Where a hidden panel stood survives a reload, read field by field like everything else. */
+  it('keeps where each panel stood across a reload, and drops a place that names nothing', async () => {
+    const arrangement = useArrangementStore()
+    arrangement.setPlaces({
+      'report-orders': { besides: ['report-trade-history'], direction: 'within', index: 1 },
+      chart: { besides: ['runs'], direction: 'right', size: 520 },
+    })
+    await nextTick()
+    const raw = stored()
+    raw['places'] = {
+      ...(raw['places'] as object),
+      nowhere: { besides: [], direction: 'right' },
+      sideways: { besides: ['runs'], direction: 'diagonal' },
+      'odd-size': { besides: ['runs'], direction: 'left', size: -3 },
+    }
+    store(raw)
+
+    setActivePinia(createPinia())
+    const places = useArrangementStore().places
+    expect(places['report-orders']).toEqual({ besides: ['report-trade-history'], direction: 'within', index: 1 })
+    expect(places['chart']).toEqual({ besides: ['runs'], direction: 'right', size: 520 })
+    expect(places['nowhere']).toBeUndefined()
+    expect(places['sideways']).toBeUndefined()
+    expect(places['odd-size']).toEqual({ besides: ['runs'], direction: 'left' })
+  })
 })

@@ -244,8 +244,8 @@ describe('DeploymentPicker', () => {
      * It used to be dropped, and that was worse. Whether a facet can narrow depends on what is
      * already PICKED, so the set of chips changed on every click and the bar reflowed under an open
      * dropdown — measured on screen 2026-10-08, the operator clicked a value and the menu they were
-     * reading moved sideways. The bar keeps its shape now, which is the same decision `AppBar.vue`
-     * makes for a section a run does not have.
+     * reading moved sideways. The bar keeps its shape now, which is the same decision the Panels
+     * menu makes for a section a run does not have.
      */
     it('disables the currency facet where every deployment books in one, and keeps it in place', () => {
       const oneCurrency = [

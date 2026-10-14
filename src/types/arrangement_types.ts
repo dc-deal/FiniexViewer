@@ -21,6 +21,21 @@ export interface StoredChart {
   timeframe: string | null
 }
 
+/**
+ * Where a panel stood when it was last open — what brings it back to the same place. Anchored on
+ * the PANELS beside it rather than on its group, because the dock issues group ids anew.
+ */
+export interface DockPlace {
+  /** The panels it stood beside, in order of preference; the first one still open is used. */
+  besides: string[]
+  /** `within` their tab group, or as a split on that side of them. */
+  direction: 'within' | 'left' | 'right' | 'above' | 'below'
+  /** Its place among their tabs, where it shared their group. */
+  index?: number
+  /** The width or height of its own group, where it was a split. */
+  size?: number
+}
+
 /** Everything stored under the one versioned key. */
 export interface StoredArrangement {
   version: number
@@ -29,4 +44,6 @@ export interface StoredArrangement {
   chart: StoredChart
   /** Where the panels stand, as the dock serialised it — reconciled by `dock_layout.ts`, never here. */
   dock: object | null
+  /** Where each panel stood when it was last open, by panel id — a hidden one comes back there. */
+  places: Record<string, DockPlace>
 }

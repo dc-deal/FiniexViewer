@@ -57,8 +57,8 @@ const shownCount = computed(() => applyFacets(input.value).length)
  * moved.
  *
  * So the bar keeps its shape and the dead facet wears the disabled look, which is the same decision
- * `AppBar.vue` already made for a section this run does not have: *an inventory that silently
- * shortens is not one*.
+ * the Panels menu makes for a section this run does not have: *an inventory that silently shortens
+ * is not one*.
  *
  * The count matters, and it is why this is not simply `options.length > 1`. One option that only
  * SOME rows carry still narrows — to exactly those rows — which is how `market_type` behaves while

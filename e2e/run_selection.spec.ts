@@ -103,7 +103,7 @@ test('a section still on its way keeps its panel standing, saying it loads', asy
 
   const executive = page.locator('[data-panel="executive"]')
   await expect(executive.locator('.panel-loading')).toBeVisible()
-  await expect(page.locator('.app-bar')).toBeVisible()
+  await expect(page.locator('.panel-column')).toBeVisible()
 
   await expect(executive.locator('.panel-loading')).toHaveCount(0)
   await expect(executive).toContainText('Net P&L')

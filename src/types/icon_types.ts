@@ -13,6 +13,7 @@ export type IconName =
   | 'status-connecting'
   | 'action-close'
   | 'action-open-panel'
+  | 'action-back-into-column'
   | 'kind-executive'
   | 'kind-broker'
   | 'kind-scenario-roster'

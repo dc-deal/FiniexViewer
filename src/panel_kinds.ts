@@ -68,7 +68,7 @@ const LIST_SECTIONS = new Set(['scenario-roster', 'trade-history', 'orders', 'bo
 
 const REPORT_PREFIX = 'report-'
 
-/** A section's panel kind — one id scheme, so the column, the bar and the dock agree on it. */
+/** A section's panel kind — one id scheme, so the column, the Panels menu and the dock agree on it. */
 export function reportKindId(sectionId: string): string {
   return `${REPORT_PREFIX}${sectionId}`
 }
@@ -82,7 +82,7 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
   return {
     id: reportKindId(section.id),
     title: t(section.title),
-    description: t('A section of the run report as a panel of its own — closing it puts it back in the column'),
+    description: t('A section of the run report as a panel of its own — ⇲ puts it back in the column'),
     icon: LIST_SECTIONS.has(section.id) ? 'form-list' : 'form-sheet',
     order: PANEL_KINDS.length + 1 + index,
     opensByDefault: false,
@@ -104,8 +104,9 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
 /**
  * The run report's sections, each of which opens as a panel of its own beside the column — the
  * run report stays one column, and a section the reader wants beside another is pulled out
- * (viewer#31, decided 2026-10-14). Not in the Panels menu: a section is opened from its own header
- * in the column, and closing its panel puts it back there. A section is in one place at a time.
+ * (viewer#31, decided 2026-10-14). Not kinds of the menu's top level: the Panels menu lists them in
+ * the submenu of the panel their column stands in, with where each one is. A section is in one
+ * place at a time.
  */
 const REPORT_KINDS: PanelKind[] = allPanels().map(reportKind)
 

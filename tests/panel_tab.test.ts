@@ -4,6 +4,8 @@ import { setActivePinia, createPinia } from 'pinia'
 import type { DockviewPanelApi } from 'dockview-vue'
 import PanelTab from '@/components/dock/PanelTab.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
+import { reportKindId } from '@/panel_kinds'
+import { useDockStore } from '@/stores/dock_store'
 import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
@@ -45,11 +47,26 @@ describe('PanelTab', () => {
     expect(outside).not.toHaveBeenCalled()
   })
 
+  /** The ✕ hides, alike for every panel — the Panels menu shows it again where it stood. */
   it('names what the close button does, for a pointer and for a screen reader', () => {
     const wrapper = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
     const close = wrapper.find('.panel-tab-close')
-    expect(close.attributes('aria-label')).toBe('Close panel')
-    expect(close.attributes('title')).toBe('Close panel')
+    expect(close.attributes('aria-label')).toBe('Hide panel')
+    expect(close.attributes('title')).toBe('Hide — the Panels menu shows it again')
+  })
+
+  /** A section opened as a panel goes back into the column by its own control, not by its close. */
+  it('puts a section back into the column, and offers that on a section tab only', async () => {
+    const dock = useDockStore()
+    const back = vi.fn()
+    dock.backIntoColumn = back
+    const section = mount(PanelTab, { props: { kindId: reportKindId('orders'), api: fakeApi() as unknown as DockviewPanelApi } })
+    await section.find('.panel-tab-back').trigger('click')
+    expect(back).toHaveBeenCalledWith('orders')
+    expect(section.find('.panel-tab-back').attributes('aria-label')).toBe('Back into the run report')
+
+    const main = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
+    expect(main.find('.panel-tab-back').exists()).toBe(false)
   })
 
   it('falls back to the stored title for a kind it does not know', () => {

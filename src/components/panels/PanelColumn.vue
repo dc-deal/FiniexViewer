@@ -58,9 +58,9 @@ const rendered = computed<RenderedPanel[]>(() =>
 
 /*
  * Where the pinned group ends, over what this column actually DRAWS — not over the arrangement.
- * The bar shows every panel and the column leaves out what is switched off and what this run does
- * not carry, so the same rule lands on a different index in each. That is the only way the two
- * orientations differ.
+ * The arrangement holds every section, and the column leaves out what is switched off, what is
+ * open as a panel of its own and what this run does not carry, so the rule lands on the index of
+ * what is drawn.
  */
 const boundary = computed(() => pinnedBoundary(rendered.value.map(panel => panel.state)))
 
@@ -113,7 +113,7 @@ const order = computed({
       @update:open="value => layoutStore.setOpen(panel.state.id, value)"
       @toggle-pin="layoutStore.togglePin(panel.state.id)"
       @toggle-lock="layoutStore.toggleLock(panel.state.id)"
-      @hide="layoutStore.hide(panel.state.id)"
+      @hide="dock.hideSection(panel.state.id)"
       @open-as-panel="dock.openSection(panel.state.id)"
     >
       <div :ref="observe" class="panel-body" :data-height-of="panel.state.id">

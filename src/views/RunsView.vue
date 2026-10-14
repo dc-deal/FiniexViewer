@@ -8,7 +8,6 @@ import { useRunSectionsStore } from '@/stores/run_sections_store'
 import { onPanelShownAgain } from '@/composables/use_panel_visibility'
 import { reportKindId } from '@/panel_kinds'
 import RunPicker from '@/components/runs/RunPicker.vue'
-import AppBar from '@/components/panels/AppBar.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import HintLine from '@/components/base/HintLine.vue'
@@ -90,21 +89,12 @@ const missingSections = computed(() => {
   }
   return [...byCause.values()]
 })
-
-// Once a run is chosen there is always something to show: the header panel reads the index row.
-// PanelColumn drops every panel whose model is absent, so a run without artifacts simply renders
-// fewer sections rather than nothing at all.
-// The summary loading does not hide them: its panel keeps its place like every other section.
-const showPanels = computed(() =>
-  !loadingRuns.value && !error.value && !unknownRunId.value && selectedRun.value !== null
-)
 </script>
 
 <template>
   <div class="runs-view">
     <header class="runs-header">
       <RunPicker />
-      <AppBar v-if="showPanels" :sources="sources" :pending="pending" />
     </header>
 
     <div class="runs-body">

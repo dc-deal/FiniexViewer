@@ -1,52 +1,110 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import type { DockviewApi } from 'dockview-vue'
+import { nextTick } from 'vue'
 import { useDockStore } from '@/stores/dock_store'
 import { useArrangementStore } from '@/stores/arrangement_store'
+import { useLayoutStore } from '@/stores/layout_store'
+
+interface FakeGroup {
+  id: string
+  panels: FakePanel[]
+  api: { width: number, height: number }
+}
 
 interface FakePanel {
   id: string
-  group: string
-  api: { setActive: () => void }
+  group: FakeGroup
+  api: { setActive: () => void, close: () => void }
+}
+
+interface FakeAdd {
+  id: string
+  position?: { referencePanel: string, direction?: string, index?: number }
+  initialWidth?: number
 }
 
 /**
  * The part of dockview the store talks to, kept as plain data: which panels are open, in which
- * group, which one is in front. The real dock needs a browser to lay anything out.
+ * group, which one is in front. The groups stand in ONE row, left to right, which is all the
+ * placement here needs — a split goes beside its reference, a tab joins its group at an index. The
+ * real dock needs a browser to lay anything out.
  */
 function fakeDock(options: { refuse?: boolean } = {}) {
-  const panels: FakePanel[] = []
+  const row: FakeGroup[] = []
   let active: string | null = null
+  let groupCount = 0
   let changed: (() => void) | null = null
   const restored: unknown[] = []
-  // dockview's own announcements of a panel arriving or leaving
-  const arrived: (() => void)[] = []
-  const left: (() => void)[] = []
+  const added: FakeAdd[] = []
+  // dockview's own announcements: before the layout changes, and of a panel arriving or leaving
+  const willMutate: (() => void)[] = []
+  const arrived: ((panel: FakePanel) => void)[] = []
+  const left: ((panel: FakePanel) => void)[] = []
 
-  function addPanel(spec: { id: string, position?: { referencePanel: string, direction?: string } }): void {
-    const reference = spec.position ? panels.find(p => p.id === spec.position!.referencePanel)! : null
-    // a tab joins its reference's group; a split stands in a group of its own
-    const group = reference && (spec.position!.direction ?? 'within') === 'within' ? reference.group : `g${panels.length}`
-    panels.push({ id: spec.id, group, api: { setActive: () => { active = spec.id } } })
-    arrived.forEach(listener => listener())
+  const panels = () => row.flatMap(group => group.panels)
+  const find = (id: string) => panels().find(panel => panel.id === id)
+  const mutate = () => willMutate.forEach(listener => listener())
+
+  function newGroup(at: number): FakeGroup {
+    const group: FakeGroup = { id: `g${groupCount++}`, panels: [], api: { width: 400, height: 600 } }
+    row.splice(at, 0, group)
+    return group
+  }
+
+  function addPanel(spec: FakeAdd): void {
+    mutate()
+    added.push(spec)
+    const reference = spec.position ? find(spec.position.referencePanel) : undefined
+    const direction = spec.position?.direction ?? 'within'
+    let group: FakeGroup
+    if (reference && direction === 'within') group = reference.group
+    else if (reference) {
+      group = newGroup(row.indexOf(reference.group) + (direction === 'left' ? 0 : 1))
+      if (spec.initialWidth) group.api.width = spec.initialWidth
+    } else group = find(active ?? '')?.group ?? row[0] ?? newGroup(0)
+    const panel: FakePanel = {
+      id: spec.id,
+      group,
+      api: { setActive: () => { active = spec.id }, close: () => close(spec.id) },
+    }
+    const index = reference && direction === 'within' && spec.position?.index !== undefined
+      ? Math.min(spec.position.index, group.panels.length)
+      : group.panels.length
+    group.panels.splice(index, 0, panel)
+    arrived.forEach(listener => listener(panel))
   }
 
   function close(id: string): void {
-    panels.splice(panels.findIndex(p => p.id === id), 1)
-    left.forEach(listener => listener())
-    if (active === id) active = panels[0]?.id ?? null
+    const panel = find(id)
+    if (!panel) return
+    mutate()
+    const group = panel.group
+    group.panels.splice(group.panels.indexOf(panel), 1)
+    if (!group.panels.length) row.splice(row.indexOf(group), 1)
+    left.forEach(listener => listener(panel))
+    if (active === id) active = panels()[0]?.id ?? null
   }
 
   const api = {
-    get panels() { return panels },
-    get totalPanels() { return panels.length },
-    get activePanel() { return panels.find(p => p.id === active) },
-    getPanel: (id: string) => panels.find(p => p.id === id),
+    get panels() { return panels() },
+    get groups() { return row },
+    get totalPanels() { return panels().length },
+    get activePanel() { return find(active ?? '') },
+    getPanel: (id: string) => find(id),
     addPanel,
+    adjacentGroupInDirection: (group: FakeGroup, direction: string) => {
+      const at = row.indexOf(group)
+      if (direction === 'left') return row[at - 1]
+      if (direction === 'right') return row[at + 1]
+      return undefined
+    },
     clear: () => {
-      panels.length = 0
+      mutate()
+      const gone = panels()
+      row.length = 0
       active = null
-      left.forEach(listener => listener())
+      gone.forEach(panel => left.forEach(listener => listener(panel)))
     },
     fromJSON: (layout: { panels: Record<string, unknown> }) => {
       if (options.refuse) throw new Error('refused')
@@ -54,28 +112,41 @@ function fakeDock(options: { refuse?: boolean } = {}) {
       Object.keys(layout.panels).forEach(id => addPanel({ id }))
     },
     toJSON: () => ({
-      grid: { root: { type: 'leaf', data: { id: 'g', views: panels.map(p => p.id) } } },
-      panels: Object.fromEntries(panels.map(p => [p.id, { id: p.id, params: { kind: p.id } }])),
+      grid: { root: { type: 'leaf', data: { id: 'g', views: panels().map(p => p.id) } } },
+      panels: Object.fromEntries(panels().map(p => [p.id, { id: p.id, params: { kind: p.id } }])),
     }),
     onDidLayoutChange: (listener: () => void) => {
       changed = listener
       return { dispose: () => { changed = null } }
     },
-    onDidAddPanel: (listener: () => void) => {
+    onWillMutateLayout: (listener: () => void) => {
+      willMutate.push(listener)
+      return { dispose: () => { willMutate.splice(willMutate.indexOf(listener), 1) } }
+    },
+    onDidAddPanel: (listener: (panel: FakePanel) => void) => {
       arrived.push(listener)
       return { dispose: () => { arrived.splice(arrived.indexOf(listener), 1) } }
     },
-    onDidRemovePanel: (listener: () => void) => {
+    onDidRemovePanel: (listener: (panel: FakePanel) => void) => {
       left.push(listener)
       return { dispose: () => { left.splice(left.indexOf(listener), 1) } }
     },
   }
   return {
     api: api as unknown as DockviewApi,
-    ids: () => panels.map(p => p.id),
-    groups: () => panels.map(p => p.group),
+    ids: () => panels().map(p => p.id),
+    groups: () => panels().map(p => p.group.id),
+    /** The groups left to right, each as the ids of its tabs. */
+    rows: () => row.map(group => group.panels.map(p => p.id)),
+    width: (id: string) => find(id)?.group.api.width,
+    /** The reader drags a seam: the panel's group takes this width. */
+    resize: (id: string, width: number) => {
+      const panel = find(id)
+      if (panel) panel.group.api.width = width
+    },
     active: () => active,
     restored,
+    added,
     close,
     change: () => changed?.(),
   }
@@ -239,6 +310,135 @@ describe('useDockStore', () => {
       store.openSection('trade-history')
       store.reset()
       expect(store.openIds).toEqual(['deployments', 'runs', 'chart'])
+      // a rebuild is not the reader closing anything: the section is back, not hidden
+      expect(hidden('trade-history')).toBe(false)
+    })
+  })
+
+  /**
+   * Closing a panel HIDES it, alike for every panel (viewer#31, 2026-10-14): the Panels menu shows
+   * it again where it stood, beside the panels it stood beside while one of them is still open.
+   */
+  describe('closing hides, and the menu brings a panel back where it stood', () => {
+    function attached() {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      return { dock, store }
+    }
+
+    it('hides a section whose panel is closed, and keeps where it stood', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      dock.close('report-trade-history')
+
+      expect(hidden('trade-history')).toBe(true)
+      const place = useArrangementStore().places['report-trade-history']
+      expect(place?.direction).toBe('right')
+      expect(place?.besides).toContain('runs')
+    })
+
+    it('shows a hidden section again beside what it stood beside, at the size it had', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      dock.resize('report-trade-history', 520)
+      dock.close('report-trade-history')
+
+      store.showSection('trade-history')
+      expect(dock.rows()).toEqual([['deployments', 'runs', 'chart'], ['report-trade-history']])
+      expect(dock.width('report-trade-history')).toBe(520)
+      expect(hidden('trade-history')).toBe(false)
+      expect(dock.active()).toBe('report-trade-history')
+    })
+
+    it('puts a tab back among its tabs, at its index', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      store.openSection('orders')
+      store.openSection('booking-periods')
+      dock.close('report-orders')
+
+      store.showSection('orders')
+      expect(dock.rows()[1]).toEqual(['report-trade-history', 'report-orders', 'report-booking-periods'])
+    })
+
+    /** Where nothing it stood beside is left, the column is its place — and its panel comes forward. */
+    it('shows a section in the column where nothing it stood beside is open any more', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      dock.close('report-trade-history')
+      for (const id of ['deployments', 'runs', 'chart']) dock.close(id)
+
+      store.showSection('trade-history')
+      expect(dock.ids()).toEqual(['runs'])
+      expect(hidden('trade-history')).toBe(false)
+      expect(useArrangementStore().places['report-trade-history']).toBeUndefined()
+    })
+
+    it('sends a section back into the column by its own control — shown, its place forgotten', () => {
+      const { store } = attached()
+      store.openSection('trade-history')
+      store.backIntoColumn('trade-history')
+
+      expect(store.openIds).not.toContain('report-trade-history')
+      expect(hidden('trade-history')).toBe(false)
+      expect(useArrangementStore().places['report-trade-history']).toBeUndefined()
+    })
+
+    it('hides a section wherever it stands: through its panel, or in the column', () => {
+      const { dock, store } = attached()
+      store.openSection('orders')
+      store.hideSection('orders')
+      expect(dock.ids()).not.toContain('report-orders')
+      expect(hidden('orders')).toBe(true)
+
+      store.hideSection('config')
+      expect(hidden('config')).toBe(true)
+      expect(useArrangementStore().places['report-config']).toBeUndefined()
+    })
+
+    /** A main panel the same: closed, it opens again beside what it stood beside. */
+    it('brings a closed main panel back where it stood', () => {
+      const { dock, store } = attached()
+      // the reader dragged the chart into a split of its own, right of the others
+      dock.close('chart')
+      dock.api.addPanel({ id: 'chart', component: 'host', position: { referencePanel: 'runs', direction: 'right' } })
+      dock.close('chart')
+
+      store.open('chart')
+      expect(dock.rows()).toEqual([['deployments', 'runs'], ['chart']])
+      expect(dock.active()).toBe('chart')
+    })
+
+    it('forgets every place on reset, and hides nothing it removes', () => {
+      const { dock, store } = attached()
+      store.openSection('orders')
+      dock.close('chart')
+      expect(Object.keys(useArrangementStore().places).length).toBeGreaterThan(0)
+
+      store.reset()
+      expect(useArrangementStore().places).toEqual({})
+      expect(hidden('orders')).toBe(false)
+    })
+
+    it('still knows after a reload where a hidden section stood', async () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      dock.close('report-trade-history')
+      store.flush()
+      await nextTick()
+
+      setActivePinia(createPinia())
+      const again = fakeDock()
+      const reloaded = useDockStore()
+      reloaded.attach(again.api)
+      reloaded.showSection('trade-history')
+      expect(again.rows()).toEqual([['deployments', 'runs', 'chart'], ['report-trade-history']])
     })
   })
 })
+
+/** Whether the column has the section switched off. */
+function hidden(sectionId: string): boolean | undefined {
+  return useLayoutStore().arrangedPanels.find(panel => panel.id === sectionId)?.hidden
+}

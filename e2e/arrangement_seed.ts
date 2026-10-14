@@ -77,3 +77,13 @@ export async function storedBar(page: Page, bar: string): Promise<SeedBar | unde
 export async function showPanel(page: Page, title: string): Promise<void> {
   await page.locator('.dv-tab', { hasText: title }).click()
 }
+
+/**
+ * Opens the Panels menu's submenu of the run report — the panel its column stands in, its sections
+ * each with where they are — the way a reader does: the menu, then the entry.
+ */
+export async function openSectionMenu(page: Page): Promise<void> {
+  await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).click()
+  await page.locator('.menu-sub-trigger[data-area="runs"]').click()
+  await page.locator('.menu-toggle[data-section]').first().waitFor()
+}

@@ -22,12 +22,8 @@ const HINTS: HintDefinition[] = [
     text: t('The bar beside the tabs holds what the panel in front shows — for the chart, its broker, symbol and timeframe.'),
   },
   {
-    id: 'bar-overflow',
-    text: t('What does not fit in the bar waits behind the + at its end — the sections to switch on or off, and the layout actions.'),
-  },
-  {
     id: 'open-as-panel',
-    text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the column. The ✕ on the tab of that panel puts it back where it was.'),
+    text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the column. On the tab of that panel, ⇲ puts it back into the column and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
   },
   {
     id: 'position-link',

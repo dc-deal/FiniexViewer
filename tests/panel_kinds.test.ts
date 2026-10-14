@@ -35,8 +35,8 @@ describe('panel_kinds', () => {
     expect(panelKind('a-retired-kind')).toBeNull()
   })
 
-  /** Opened from its own header in the column — the Panels menu does not list the sections. */
-  it('knows a kind for every section of the run report, and keeps them out of the menu', () => {
+  /** Listed in the submenu of the panel their column stands in — never at the menu's top level. */
+  it('knows a kind for every section of the run report, and keeps them out of the top-level kinds', () => {
     for (const section of allPanels()) {
       const kind = panelKind(reportKindId(section.id))
       expect(kind?.title).toBe(section.title)

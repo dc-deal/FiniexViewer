@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import type { DockviewPanelApi } from 'dockview-vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
-import { panelKind } from '@/panel_kinds'
+import { panelKind, sectionOfKind } from '@/panel_kinds'
+import { useDockStore } from '@/stores/dock_store'
 import type { Figure } from '@/types/figure_types'
 import { t } from '@/translate'
 
@@ -12,13 +13,19 @@ import { t } from '@/translate'
  * icon is a list or a chart rather than the content, so two lists read alike and the title tells
  * them apart. Its card says what the panel is for, and the status in words.
  *
+ * Its ✕ HIDES the panel, alike for every panel — the Panels menu shows it again where it stood. A
+ * section of the run report opened as a panel also carries ⇲, which puts it back into the column.
+ *
  * @param kindId The panel's kind.
  * @param api The panel's own handle in the dock, which also closes it.
  */
 const props = defineProps<{ kindId: string, api: DockviewPanelApi }>()
 
+const dock = useDockStore()
 const kind = panelKind(props.kindId)
 const title = kind?.title ?? props.api.title ?? props.kindId
+/** The section this tab's panel shows, where it is one of the run report's. */
+const section = sectionOfKind(props.kindId)
 
 /** Read where the tab is drawn, so a status that follows a store follows it here too. */
 const status = computed(() => kind?.status?.() ?? null)
@@ -49,10 +56,20 @@ const details = computed<Figure[]>(() => [
         <AppIcon :name="status.icon" />
       </span>
       <button
+        v-if="section"
         type="button"
-        class="panel-tab-close"
-        :title="t('Close panel')"
-        :aria-label="t('Close panel')"
+        class="panel-tab-button panel-tab-back"
+        :title="t('Back into the run report')"
+        :aria-label="t('Back into the run report')"
+        @click.stop="dock.backIntoColumn(section)"
+      >
+        <AppIcon name="action-back-into-column" />
+      </button>
+      <button
+        type="button"
+        class="panel-tab-button panel-tab-close"
+        :title="t('Hide — the Panels menu shows it again')"
+        :aria-label="t('Hide panel')"
         @click.stop="api.close()"
       >
         <AppIcon name="action-close" />
@@ -90,7 +107,7 @@ const details = computed<Figure[]>(() => [
   color: var(--color-error);
 }
 
-.panel-tab-close {
+.panel-tab-button {
   display: inline-flex;
   align-items: center;
   padding: 1px;
@@ -103,18 +120,18 @@ const details = computed<Figure[]>(() => [
 }
 
 /* the same two channels every control here has: the surface AND the border, then the press */
-.panel-tab-close:hover {
+.panel-tab-button:hover {
   opacity: 1;
   background-color: var(--color-bg-hover);
   border-color: var(--color-border);
 }
 
-.panel-tab-close:active {
+.panel-tab-button:active {
   background-color: var(--color-bg-active);
   transform: translateY(1px);
 }
 
-.panel-tab-close:focus-visible {
+.panel-tab-button:focus-visible {
   opacity: 1;
   outline: 1px solid var(--color-accent);
 }
