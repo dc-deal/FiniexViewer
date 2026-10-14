@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getRuns, getRunSummary } from '@/api/api_client'
+import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { useContextStore } from '@/stores/context_store'
 import { isAbsent } from '@/types/api/absence_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
@@ -27,6 +28,8 @@ export const useRunsStore = defineStore('runs', () => {
   const summaryMissing = ref(false)
   /** Why the summary is not here, where it is not. */
   const summaryAbsence = ref<SectionAbsence | null>(null)
+  /** The summary is there and predates the current schema — the backend's sentence, as it came. */
+  const summaryUnreadable = ref<string | null>(null)
   // a run id the index does not contain — a link or a reloaded URL naming a run that is gone
   const unknownRunId = ref<string | null>(null)
   /**
@@ -86,6 +89,7 @@ export const useRunsStore = defineStore('runs', () => {
     summary.value = null
     summaryMissing.value = false
     summaryAbsence.value = null
+    summaryUnreadable.value = null
     unknownRunId.value = null
   }
 
@@ -110,6 +114,7 @@ export const useRunsStore = defineStore('runs', () => {
     summary.value = null
     summaryMissing.value = false
     summaryAbsence.value = null
+    summaryUnreadable.value = null
 
     try {
       const result = await getRunSummary(runId)
@@ -121,7 +126,12 @@ export const useRunsStore = defineStore('runs', () => {
       summary.value = isAbsent(result) ? null : result
       summaryAbsence.value = isAbsent(result) ? result : null
     } catch (e) {
-      if (selectedRunId.value === runId) error.value = describeFailure(e, t('Could not load the run summary'))
+      if (selectedRunId.value === runId) {
+        // a summary in an older schema is a state of the run like any section's, and it must not
+        // take the whole run view down with it the way an outage does
+        if (e instanceof ArtifactUnreadableError) summaryUnreadable.value = e.message
+        else error.value = describeFailure(e, t('Could not load the run summary'))
+      }
     } finally {
       if (selectedRunId.value === runId) loadingSummary.value = false
     }
@@ -168,6 +178,7 @@ export const useRunsStore = defineStore('runs', () => {
     feedHealth,
     summaryMissing,
     summaryAbsence,
+    summaryUnreadable,
     unknownRunId,
     loadingRuns,
     loadingSummary,

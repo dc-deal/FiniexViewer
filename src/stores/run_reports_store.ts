@@ -152,8 +152,6 @@ export const useRunReportsStore = defineStore('run_reports', () => {
    * @param loading The section's loading flag.
    * @param request The request, made at once.
    * @param failure What the reader is told when the request fails, ahead of the detail.
-   * @param meetsOlderSchema Whether an artifact in an older schema is a STATE of the run here
-   *   rather than a failure — true for the sections known to meet one.
    */
   async function loadSection<T>(
     slot: string,
@@ -161,7 +159,6 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loading: Ref<boolean>,
     request: () => Promise<T | SectionAbsence>,
     failure: string,
-    meetsOlderSchema = false,
   ): Promise<void> {
     const ticket = generation
     loading.value = true
@@ -175,7 +172,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     } catch (e) {
       if (ticket !== generation) return
       // an artifact from an older schema is a state of the run, not a failure of the request
-      if (meetsOlderSchema && e instanceof ArtifactUnreadableError) {
+      if (e instanceof ArtifactUnreadableError) {
         unreadable.value[slot] = e.message
       } else {
         const detail = e instanceof Error ? e.message : String(e)
@@ -188,7 +185,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
 
   function loadWarningsErrors(runId: string): Promise<void> {
     return loadSection('warningsErrors', warningsErrors, loadingWarningsErrors,
-      () => getWarningsErrors(runId), t('Could not load warnings and errors'), true)
+      () => getWarningsErrors(runId), t('Could not load warnings and errors'))
   }
 
   function loadPortfolio(runId: string): Promise<void> {
@@ -294,7 +291,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   /** Booking periods carry the same 409 case as any other stored artifact. */
   function loadBookingPeriods(runId: string): Promise<void> {
     return loadSection('bookingPeriods', bookingPeriods, loadingBookingPeriods,
-      () => getBookingPeriods(runId), t('Could not load the booking periods'), true)
+      () => getBookingPeriods(runId), t('Could not load the booking periods'))
   }
 
   /**

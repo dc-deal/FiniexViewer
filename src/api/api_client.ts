@@ -93,6 +93,19 @@ function absenceFrom(error: unknown): SectionAbsence | null {
   return { absent: true, cause: body?.error ?? 'unknown', detail: body?.detail ?? '' }
 }
 
+/**
+ * Turns a 409 into the STALE ARTIFACT it describes: the file is there and no longer matches the
+ * backend's model — usually its age — and the run has to be repeated. A state of the run, never an
+ * outage, and one the backend answers for ANY report artifact (`errors`: "a report artifact exists
+ * but no longer matches its model"). Three routes mapped it until 2026-10-14; on the others a 409
+ * read as a failure and showed `Request failed with status code 409` instead of their sentence.
+ */
+function raiseIfUnreadable(error: unknown, fallback = 'The artifact could not be read'): void {
+  if (!axios.isAxiosError(error) || error.response?.status !== 409) return
+  const body = error.response.data as { detail?: string } | undefined
+  throw new ArtifactUnreadableError(body?.detail ?? fallback)
+}
+
 export async function getRuns(): Promise<RunInfo[]> {
   const response = await http.get<RunListResponse>('/reports/runs')
   return response.data.runs
@@ -109,6 +122,7 @@ export async function getRunSummary(runId: string): Promise<RunSummary | Section
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -125,13 +139,9 @@ export async function getWarningsErrors(runId: string): Promise<WarningsErrorsRe
     )
     return assertBelongsTo(runId, response.data)
   } catch (error) {
-    if (!axios.isAxiosError(error)) throw error
     const absence = absenceFrom(error)
     if (absence) return absence
-    if (error.response?.status === 409) {
-      const body = error.response.data as { detail?: string } | undefined
-      throw new ArtifactUnreadableError(body?.detail ?? 'The artifact could not be read')
-    }
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -144,6 +154,7 @@ export async function getPortfolio(runId: string): Promise<PortfolioReport | Sec
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -163,6 +174,7 @@ export async function getAggregatedPortfolio(
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -180,6 +192,7 @@ export async function getPendingOrders(
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -200,6 +213,7 @@ export async function getOrderHistory(
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -230,13 +244,9 @@ export async function getOrderEvents(
     )
     return assertBelongsTo(runId, response.data)
   } catch (error) {
-    if (!axios.isAxiosError(error)) throw error
     const absence = absenceFrom(error)
     if (absence) return absence
-    if (error.response?.status === 409) {
-      const body = error.response.data as { detail?: string } | undefined
-      throw new ArtifactUnreadableError(body?.detail ?? 'The stream could not be read')
-    }
+    raiseIfUnreadable(error, 'The stream could not be read')
     throw error
   }
 }
@@ -258,6 +268,7 @@ export async function getRunHeader(runId: string): Promise<RunHeader | SectionAb
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -274,6 +285,7 @@ export async function getBroker(runId: string): Promise<BrokerReport | SectionAb
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -302,13 +314,9 @@ export async function getBookingPeriods(runId: string): Promise<BookingPeriodsRe
     return assertBelongsTo(runId, response.data)
   } catch (error) {
     raiseIfForbidden(error, 'reports')
-    if (!axios.isAxiosError(error)) throw error
     const absence = absenceFrom(error)
     if (absence) return absence
-    if (error.response?.status === 409) {
-      const body = error.response.data as { detail?: string } | undefined
-      throw new ArtifactUnreadableError(body?.detail ?? 'The artifact could not be read')
-    }
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -401,6 +409,7 @@ export async function getTradeHistory(runId: string): Promise<TradeHistoryReport
     raiseIfForbidden(error, 'reports')
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -419,6 +428,7 @@ export async function getScenarioDetails(runId: string): Promise<ScenarioDetails
     raiseIfForbidden(error, 'reports')
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }

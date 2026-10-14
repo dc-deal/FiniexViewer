@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo, RunSummary, RunSummaryCurrency } from '@/types/api/report_types'
 import * as apiClient from '@/api/api_client'
+import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import type { SectionAbsence } from '@/types/api/absence_types'
 
 // the captured shape as the base — see the note in run_panels.test.ts
@@ -258,6 +259,19 @@ describe('useRunsStore', () => {
       expect(store.summary).toBeNull()
       expect(store.summaryMissing).toBe(true)
       expect(store.error).toBeNull()
+    })
+
+    /** An outage takes the run view down; a summary in an older schema is a state, and does not. */
+    it('keeps a summary in an older schema as a state, never as the view-wide error', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      vi.mocked(apiClient.getRunSummary)
+        .mockRejectedValue(new ArtifactUnreadableError('Written by an older schema.'))
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260615_130000')
+      expect(store.summaryUnreadable).toBe('Written by an older schema.')
+      expect(store.error).toBeNull()
+      expect(store.loadingSummary).toBe(false)
     })
 
     it('surfaces a summary failure as an error message', async () => {

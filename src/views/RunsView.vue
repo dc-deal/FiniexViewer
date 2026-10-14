@@ -21,7 +21,7 @@ import { t } from '@/translate'
 const runsStore = useRunsStore()
 const reportsStore = useRunReportsStore()
 const {
-  runs, selectedRunId, selectedRun, selectedUnits, summary, feedHealth, summaryAbsence,
+  runs, selectedRunId, selectedRun, selectedUnits, summary, feedHealth, summaryAbsence, summaryUnreadable,
   unknownRunId,
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
@@ -289,6 +289,12 @@ const SECTION_TITLES: Record<string, string> = {
   scenarios: 'Scenarios',
 }
 
+/** One line per section whose artifact predates the current schema, the summary's among them. */
+const unreadableLines = computed<Record<string, string>>(() => ({
+  ...(summaryUnreadable.value ? { runSummary: summaryUnreadable.value } : {}),
+  ...unreadable.value,
+}))
+
 const missingSections = computed(() => {
   const all = { ...absences.value }
   if (summaryAbsence.value) all['runSummary'] = summaryAbsence.value
@@ -356,7 +362,7 @@ const showPanels = computed(() =>
         </p>
         <!-- a section whose artifact predates the current schema — a state of the run, one line
              per section, and not a failure -->
-        <p v-for="(message, section) in unreadable" :key="section" class="notice">{{ message }}</p>
+        <p v-for="(message, section) in unreadableLines" :key="section" class="notice">{{ message }}</p>
         <!-- EVERY section that failed says so, and the sections that did load stay visible. One
              line per failure: the sections load concurrently, so a single slot showed whichever
              finished last and silently dropped the rest. -->

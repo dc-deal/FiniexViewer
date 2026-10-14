@@ -703,6 +703,16 @@ describe('useRunReportsStore — an answer for a run no longer chosen', () => {
     expect(store.runHeader).toBeNull()
   })
 
+  /** Any section may meet an older schema — not only the two that were known to, until 2026-10-14. */
+  it('keeps an older schema as a state on every section, never as a failure', async () => {
+    vi.mocked(apiClient.getTradeHistory)
+      .mockRejectedValue(new ArtifactUnreadableError('Written by an older schema.'))
+    const store = useRunReportsStore()
+    await store.loadTradeHistory('20260615_130000')
+    expect(store.unreadable['tradeHistory']).toBe('Written by an older schema.')
+    expect(store.errors).toEqual({})
+  })
+
   /** Two sections in an older schema used to share one line, and the later one won it. */
   it('keeps an unreadable state per section', async () => {
     vi.mocked(apiClient.getWarningsErrors)

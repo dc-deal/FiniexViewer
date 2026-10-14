@@ -32,6 +32,8 @@ import {
   getDeploymentBookingPeriods,
   getRunConfig,
   getTradeHistory,
+  getRunHeader,
+  getScenarioDetails,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
@@ -507,6 +509,32 @@ describe('api_client', () => {
    * index just named — a disagreement between two indexes, which behind a blank panel would look
    * like a run that simply has no configuration.
    */
+  /**
+   * A 409 is a STALE ARTIFACT on every report route, not only on the three that mapped it first:
+   * the backend answers it for any report artifact that no longer matches its model. Before
+   * 2026-10-14 these routes turned it into a failure reading `Request failed with status code 409`.
+   */
+  describe('a stale artifact on every report route', () => {
+    const STALE = { response: { status: 409, data: { error: 'artifact_unreadable', detail: 'Written by an older schema.' } } }
+
+    it.each([
+      ['run-summary', getRunSummary],
+      ['portfolio', getPortfolio],
+      ['aggregated-portfolio', getAggregatedPortfolio],
+      ['pending-orders', getPendingOrders],
+      ['order-history', getOrderHistory],
+      ['header', getRunHeader],
+      ['broker', getBroker],
+      ['trade-history', getTradeHistory],
+      ['scenario-details', getScenarioDetails],
+    ] as const)('reads a 409 on %s as unreadable, with the backend sentence', async (_route, get) => {
+      mockGet.mockRejectedValue(STALE)
+      const answer = get('20260615_130000')
+      await expect(answer).rejects.toBeInstanceOf(ArtifactUnreadableError)
+      await expect(answer).rejects.toThrow('Written by an older schema.')
+    })
+  })
+
   describe('getRunConfig', () => {
     it('calls the config endpoint with the run id in the path', async () => {
       mockGet.mockResolvedValue({ data: runConfigFixture })
