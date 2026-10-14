@@ -33,15 +33,19 @@ const unknownUnits = computed(() => {
  * The narrowing as words: the one name where there is one — the scenario the reader clicked — and
  * a count from two on, with the names in the card behind it. Three names fitted beside a wide
  * panel's tabs and pushed a narrow panel's tabs into their overflow menu.
+ *
+ * `Only`, not `Showing only`: the text is what shortens when the panel is narrow, and the prefix
+ * said nothing the mark, the annotation colour and *Show all* beside it do not — while the count
+ * after it was the first thing cut.
  */
 const statement = computed(() => {
   const units = selectedUnits.value
   const shown = units.length === 1 ? units[0]! : `${units.length} ${t('scenarios')}`
   const unknown = unknownUnits.value
-  if (!unknown.length) return `${t('Showing only')} ${shown}`
+  if (!unknown.length) return `${t('Only')} ${shown}`
   // the one name is already in the line, so it is only said to be missing; several are counted
   const missing = units.length === 1 ? t('not in this run') : `${unknown.length} ${t('not in this run')}`
-  return `${t('Showing only')} ${shown} — ${missing}`
+  return `${t('Only')} ${shown} — ${missing}`
 })
 
 /** What the line cannot say: every name it counted, and which of them this run lacks. */

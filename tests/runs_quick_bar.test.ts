@@ -35,7 +35,7 @@ describe('RunsQuickBar', () => {
   it('names a single scenario in the line itself', () => {
     narrowTo(['EURUSD_a'])
     const wrapper = mount(RunsQuickBar)
-    expect(wrapper.text()).toContain('Showing only EURUSD_a')
+    expect(wrapper.text()).toContain('Only EURUSD_a')
     expect(cardRows(wrapper)).toBeNull()
   })
 
@@ -43,7 +43,7 @@ describe('RunsQuickBar', () => {
   it('counts from two scenarios on, and names them in the card behind the count', () => {
     narrowTo(['EURUSD_a', 'GBPUSD_b'])
     const wrapper = mount(RunsQuickBar)
-    expect(wrapper.text()).toContain('Showing only 2 scenarios')
+    expect(wrapper.text()).toContain('Only 2 scenarios')
     expect(wrapper.text()).not.toContain('EURUSD_a')
     expect(cardRows(wrapper)).toEqual([{ label: 'Showing only', value: 'EURUSD_a, GBPUSD_b' }])
   })
@@ -55,7 +55,7 @@ describe('RunsQuickBar', () => {
 
     useRunReportsStore().scenarios = { units: [{ name: 'EURUSD_a' }] } as unknown as ScenarioDetailsReport
     const wrapper = mount(RunsQuickBar)
-    expect(wrapper.text()).toContain('Showing only 2 scenarios — 1 not in this run')
+    expect(wrapper.text()).toContain('Only 2 scenarios — 1 not in this run')
     expect(cardRows(wrapper)).toContainEqual({ label: 'Not in this run', value: 'gone' })
   })
 
@@ -63,7 +63,7 @@ describe('RunsQuickBar', () => {
   it('says a single name is not in this run without naming it twice', () => {
     narrowTo(['gone'])
     useRunReportsStore().scenarios = { units: [{ name: 'EURUSD_a' }] } as unknown as ScenarioDetailsReport
-    expect(mount(RunsQuickBar).text()).toContain('Showing only gone — not in this run')
+    expect(mount(RunsQuickBar).text()).toContain('Only gone — not in this run')
   })
 
   it('shows the whole run again', async () => {

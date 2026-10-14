@@ -977,7 +977,7 @@ run 20260927_092959_cd1d9b1e · units ETHUSD_blocks_06, ETHUSD_blocks_09
   warnings/errors   narrowed — but a RUN-scoped warning stays, it is still true
   portfolio         MARKED, never narrowed
   RunsView          the whole column is FRAMED, dashed
-  Runs quick bar    "⌖ Showing only EURGBP_01 · Show all", beside the tabs —
+  Runs quick bar    "⌖ Only EURGBP_01 · Show all", beside the tabs —
                     from two on "2 scenarios", the names in the card behind it
 ```
 
@@ -1316,7 +1316,7 @@ each carries its name for a screen reader. A panel without options leaves the ba
 groups side by side each speak for their own front panel.
 
 **The quick bar gives way before a tab does.** The narrowing names a single scenario in the line and
-counts from two on (*Showing only 2 scenarios*), the names in the card behind the count, and the
+counts from two on (*Only 2 scenarios*), the names in the card behind the count, and the
 names a run lacks are counted there too. Three names once fitted beside a wide panel's tabs and
 pushed a narrow panel's tabs into their overflow menu. The line is a grid whose text track is
 `minmax(0, max-content)`, so the bar's least width is its mark and its button alone, and

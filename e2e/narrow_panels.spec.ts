@@ -33,7 +33,7 @@ test('the quick bar shortens its text before a tab goes into the overflow menu',
   await openWith(page, '/', { run: FIXTURE_RUN, units: TWO })
 
   const text = page.locator('[data-quick-bar] .narrowed-text')
-  await expect(text).toHaveText('Showing only 2 scenarios')
+  await expect(text).toHaveText('Only 2 scenarios')
 
   expect(await tabsOverflow(page)).toBe(false)
   // shortened, not gone: the text gave up room, and what it cannot lose is still whole
