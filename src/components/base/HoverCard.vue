@@ -15,8 +15,8 @@ import type { Figure } from '@/types/figure_types'
  * carries the accordion panel.
  */
 defineProps<{
-  /** One line naming the thing — the card's heading. */
-  title: string
+  /** One line naming the thing — the card's heading. Left out where the rows say it all. */
+  title?: string
   /** Already-rendered figures — the same pair a `FigureBlock` places. */
   details?: Figure[]
   /** Where it prefers to sit; it flips on its own when that side has no room. */
@@ -37,7 +37,7 @@ defineProps<{
           :side-offset="6"
           :collision-padding="12"
         >
-          <p class="card-title">{{ title }}</p>
+          <p v-if="title" class="card-title">{{ title }}</p>
           <dl v-if="details?.length" class="card-rows">
             <template v-for="row in details" :key="row.label">
               <dt>{{ row.label }}</dt>

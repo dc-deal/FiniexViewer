@@ -21,8 +21,11 @@ interface StatusView {
   word: string
   /** A colour role, or `quiet` where nothing is to be weighed. */
   role: 'quiet' | 'warning' | 'error'
-  /** The card's heading: what the state means, in a sentence. */
-  sentence: string
+  /**
+   * The card's heading: what the state means, in a sentence — none where everything is fine, since
+   * the rows below the name already say whose access this is.
+   */
+  sentence?: string
 }
 
 const view = computed<StatusView>(() => {
@@ -32,7 +35,6 @@ const view = computed<StatusView>(() => {
         icon: 'status-account',
         word: displayName.value ?? t('signed in'),
         role: 'quiet',
-        sentence: t('This viewer works as this account'),
       }
     // a 200 that proves nothing: with gating off the server verifies no token at all, so every
     // identity field is null even for a caller that sent a valid one
@@ -71,7 +73,8 @@ const details = computed<Figure[]>(() => {
     rows.push({ label: t('Grants'), value: who.grants?.join(' · ') || t('none') })
     if (who.note) rows.push({ label: t('Token note'), value: who.note })
   }
-  if (readAt.value) rows.push({ label: t('As of'), value: readAtLabel(readAt.value) })
+  // when the server was last asked: the identity is only ever as of that moment
+  if (readAt.value) rows.push({ label: t('Last checked'), value: readAtLabel(readAt.value) })
   return rows
 })
 </script>

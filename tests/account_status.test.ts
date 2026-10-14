@@ -59,8 +59,9 @@ describe('AccountStatus', () => {
   /** What the settings' Account tab listed, one hover away from the name. */
   it('hands its card the account, the client, the grants, the note and when it was read', () => {
     const { title, details } = cardOf(mountIn('ready', IDENTITY, new Date()))
-    expect(title).toContain('works as this account')
-    expect(details.map(row => row.label)).toEqual(['Account', 'Client', 'Grants', 'Token note', 'As of'])
+    // where everything is fine the rows say it all: no heading above them
+    expect(title).toBeUndefined()
+    expect(details.map(row => row.label)).toEqual(['Account', 'Client', 'Grants', 'Token note', 'Last checked'])
     expect(details.slice(0, 4).map(row => row.value))
       .toEqual(['viewer-op · person', 'viewer', 'brokers:* · reports:*', 'dev proxy holds it'])
   })

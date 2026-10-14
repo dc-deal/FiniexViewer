@@ -80,6 +80,7 @@ describe('MachineStatus', () => {
     const waiting = mountWith(null)
     expect(waiting.findAll('.machine-value').map(node => node.element.textContent!.trim())).toEqual(['—', '—'])
     expect(waiting.find('.machine-mark').exists()).toBe(false)
+    expect(cardOf(waiting).title).toBe('Asking the server how full the machine is')
     const failed = mountWith(null, true)
     expect(failed.find('.machine-mark').text()).toContain('no reading')
     expect(cardOf(failed).title).toBe('The machine could not be read')
@@ -89,9 +90,11 @@ describe('MachineStatus', () => {
   it('carries the limit, where it was read, the thresholds and the window on its card', () => {
     const wrapper = mountWith(READING)
     expect(detail(wrapper, 'Limit read from')?.value).toBe(READING.memory.limit_source)
-    expect(detail(wrapper, 'Graded')?.value).toContain('warn')
-    expect(detail(wrapper, 'Graded')?.value).toContain('critical')
-    expect(detail(wrapper, 'Pressure')?.value).toBe(READING.pressure_level)
+    expect(detail(wrapper, 'Thresholds')?.value).toContain('warn')
+    expect(detail(wrapper, 'Thresholds')?.value).toContain('critical')
+    expect(detail(wrapper, 'Memory pressure')?.value).toBe(READING.pressure_level)
+    // a reading says it all in its rows: no heading above them
+    expect(cardOf(wrapper).title).toBeUndefined()
     expect(detail(wrapper, 'Busy')?.value).toContain(' s')
   })
 

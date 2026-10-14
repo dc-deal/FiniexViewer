@@ -593,8 +593,11 @@ verb rather than one credential with more rights. None of that changes the heade
 
 `caller_store` reads the route and keeps a STATE rather than a message, so the wording stays in the
 component where the display-string marker reaches it. `AccountStatus` draws each state as a mark and
-a word, never a colour alone, and its hover card carries the sentence and — for an identity — the
-account, the client, the grants, the token's note and when it was read:
+a word, never a colour alone. Its hover card carries, for an identity, the account, the client, the
+grants, the token's note and when the server was last checked (*Last checked*); a sentence heads the
+card only where something is not fine — where everything is, the rows say it all (operator,
+2026-10-14). The machine's card follows the same rule, and names its grade *Memory pressure*, since
+the backend grades memory alone:
 
 | State | What it means | Menu bar: icon · word |
 |---|---|---|

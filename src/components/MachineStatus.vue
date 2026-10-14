@@ -60,9 +60,11 @@ const age = computed<Mark | null>(() => {
   return null
 })
 
-const title = computed(() => reading.value
-  ? t('How full the machine is — the one this server, its backtests and its sessions share')
-  : t('The machine could not be read'))
+/** No heading where there is a reading — the rows say it all; a sentence only where there is none. */
+const title = computed(() => {
+  if (reading.value) return undefined
+  return failed.value ? t('The machine could not be read') : t('Asking the server how full the machine is')
+})
 
 const details = computed<Figure[]>(() => {
   const answer = reading.value
@@ -70,7 +72,8 @@ const details = computed<Figure[]>(() => {
   const { cpu, memory } = answer
   const rows: Figure[] = [
     {
-      label: t('Pressure'),
+      // the backend's grade, and it grades memory ALONE — the label says which, the word is theirs
+      label: t('Memory pressure'),
       value: answer.pressure_level,
       ...(grade.value ? { tone: grade.value.role } : {}),
     },
@@ -81,7 +84,7 @@ const details = computed<Figure[]>(() => {
     },
     { label: t('Limit read from'), value: memory.limit_source },
     {
-      label: t('Graded'),
+      label: t('Thresholds'),
       value: `warn ${t('from')} ${percentFigure(memory.warn_at_pct)} · critical ${t('from')} ${percentFigure(memory.critical_at_pct)}`,
     },
     { label: t('Processors'), value: `${cpu.count} · ${t('read from')} ${cpu.count_source}` },
