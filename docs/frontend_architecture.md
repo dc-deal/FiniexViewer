@@ -987,8 +987,10 @@ how the chosen scenarios compare with the others.
 list entry and the first reader to see it could not tell that clicking did anything — the effect
 was real but happened below the fold, and the two panels nearest the click did not react at all.
 Four things fix that class of problem: the scenario name wears the interactive colour and the row
-has a hover surface; the state is repeated IN the roster, beside where the click happens; the
-column is framed; and a `HintLine` says what a click does while nothing is picked.
+has a hover surface; the choice is marked on its rows, beside where the click happens; the column
+is framed and the Runs quick bar says what is chosen; and a `HintLine` says what a click does. The
+hint STAYS after a pick: until 2026-10-14 a line naming the choice replaced it, and the swap moved
+the whole list under the pointer — a pixel with the hint showing, a line once it was dismissed.
 
 ### Hints — one registry, two levels of "go away"
 
@@ -1358,6 +1360,18 @@ slides the lane-label column out of view, which is how `GBPUSD_blocks_01` came t
 `locks_01`. The first label therefore hangs right of its mark and the last hangs left, whichever
 branch placed them, evenly spaced or one per kept piece. `e2e/panel_layout.spec.ts` holds it,
 because only a browser can measure it.
+
+**Once the browser has measured, every label is judged in PIXELS** (2026-10-14). The chart reads
+its own width and, from a hidden probe of ten characters, what one character takes — the labels are
+monospace, so a label's width is its length times that. A span shows its name where the name fits
+inside it, its short name where only that fits, and nothing otherwise; the whole name is on its card
+either way. Axis labels are placed the two ends first, then each on the first row where its box
+touches nothing, else the second, else not at all — a label that fits on neither row is dropped
+rather than overprinted — and a label that would reach past the axis is slid along it until it lies
+wholly on it, its pointer staying at the mark. Until then a share of the width decided, and in a
+narrow panel fourteen percent was a few pixels: `period 12` crowded into a bar 40 px wide and three
+stamps printed into one. Before a measurement exists — jsdom never makes one — the share rule
+still applies.
 
 **The table under the chart carries EVERY field a period has, and stays a table.** It once showed
 eleven of the fifteen the hover card shows, so the list meant to make periods comparable carried

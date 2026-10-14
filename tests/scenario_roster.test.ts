@@ -409,17 +409,15 @@ describe('ScenarioRosterPanel', () => {
       expect(wrapper.find('.hint-line').text()).toContain('Click a scenario')
     })
 
-    it('replaces that with the state once something is picked, and offers the way out', async () => {
-      const { wrapper, unit } = mountWithSelection(MIXED, ['eth_a'])
-      expect(wrapper.find('.hint-line').exists()).toBe(false)
-      const state = wrapper.find('.roster-picked')
-      // CHOSEN, not "showing only": the roster still lists all four, and the facet count beside
-      // it already means "how many rows are listed".
-      expect(state.text()).toContain('1 scenario chosen')
-      expect(state.text()).not.toContain('of 4')
-
-      await state.find('.app-button').trigger('click')
-      expect(unit.value).toEqual([])
+    /**
+     * A pick changes what is MARKED, never what stands where. Swapping the hint for a line naming the
+     * choice moved the whole list under the pointer; the choice is said once, in the Runs quick bar.
+     */
+    it('keeps the hint once something is picked, and marks the choice on its rows only', () => {
+      const { wrapper } = mountWithSelection(MIXED, ['eth_a'])
+      expect(wrapper.find('.hint-line').text()).toContain('Click a scenario')
+      expect(wrapper.findAll('.record-row.picked')).toHaveLength(1)
+      expect(wrapper.text()).not.toContain('scenario chosen')
     })
   })
 

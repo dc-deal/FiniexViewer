@@ -60,26 +60,35 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
  * change to its box is a mark that took room. Panels below it narrow their CONTENT, which is the
  * point of the click, so the row under the pointer is held by its own top instead.
  */
-test('choosing a scenario moves nothing in the column', async ({ page }) => {
-  await openWith(page, '/', { run: FIXTURE_RUN })
-  await page.locator('.panel-trigger', { hasText: 'Scenarios' }).click()
-  const scenario = page.locator('.scenario-roster .record-row').first()
-  await expect(scenario).toBeVisible()
+for (const hint of ['shown', 'dismissed'] as const) {
+  test(`choosing a scenario moves nothing in the column, the hint ${hint}`, async ({ page }) => {
+    // dismissed is the reader's usual state, and it is where the old state line moved the list by a
+    // whole line: it appeared where nothing stood
+    if (hint === 'dismissed') {
+      await page.addInitScript(() => {
+        window.localStorage.setItem('hints.v1', JSON.stringify({ version: 1, banned: ['scenario-pick'] }))
+      })
+    }
+    await openWith(page, '/', { run: FIXTURE_RUN })
+    await page.locator('.panel-trigger', { hasText: 'Scenarios' }).click()
+    const scenario = page.locator('.scenario-roster .record-row').first()
+    await expect(scenario).toBeVisible()
 
-  const executive = page.locator('[data-panel="executive"]')
-  const frame = async () => {
-    const box = (await executive.boundingBox())!
-    return { x: box.x, width: box.width, height: box.height }
-  }
-  const rowTop = async () => (await scenario.boundingBox())!.y
-  const before = { frame: await frame(), row: await rowTop() }
-  await scenario.click()
-  await expect(page.locator('.narrowed-head')).toBeVisible()
-  await expect(executive.locator('.scope-line')).toBeVisible()
+    const executive = page.locator('[data-panel="executive"]')
+    const frame = async () => {
+      const box = (await executive.boundingBox())!
+      return { x: box.x, width: box.width, height: box.height }
+    }
+    const rowTop = async () => (await scenario.boundingBox())!.y
+    const before = { frame: await frame(), row: await rowTop() }
+    await scenario.click()
+    await expect(page.locator('.narrowed-head')).toBeVisible()
+    await expect(executive.locator('.scope-line')).toBeVisible()
 
-  expect(await frame()).toEqual(before.frame)
-  expect(await rowTop()).toBe(before.row)
-})
+    expect(await frame()).toEqual(before.frame)
+    expect(await rowTop()).toBe(before.row)
+  })
+}
 
 /**
  * A section on its way for the run on screen keeps its panel in place and says so. A run change
