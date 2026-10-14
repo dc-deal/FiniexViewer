@@ -38,7 +38,10 @@ opens `/`, where Runs is the tab in front, and `showPanel(page, title)` brings a
 by its tab, the way a reader does.
 
 **What the browser tier is for, concretely.** `run_selection.spec.ts` holds the reload — a real
-`localStorage`, and a real boot from it. `dock.spec.ts` holds the docked panels, which jsdom cannot
+`localStorage`, and a real boot from it — and two tabs side by side: each keeps its own run and
+column across a reload, and a new one starts from the last saved. The column is asserted first,
+because a storage shared between tabs fails it every time, where it lost the run only when the other
+tab's delayed save landed in between. `dock.spec.ts` holds the docked panels, which jsdom cannot
 lay out at all: the first arrangement in the suggested order, a tab behind another drawn only once
 it is shown, an arrangement that survives a reload, the way back to the suggested order, a closed
 panel brought back from the Panels menu, About opening as a dialog rather than as a tab, the quick
@@ -212,6 +215,7 @@ tests/
   bars_store.test.ts        — coverage validation, window calculation, a timeframe outside the coverage REPORTED and the selection left alone, error handling
   context_store.test.ts     — the main link always there, the cascades (a new run takes the narrowing and the mark with it, a narrowing keeps the mark and drops duplicates, a new broker clears the symbol), and a restore that applies stored links without cascading
   arrangement_store.test.ts — the stored selection restored into the context on creation and every change written back, a damaged entry reconciled rather than trusted, another schema removed rather than converted, an unreadable entry the same as none, the retired chart keys removed, a cleared bar kept apart from an untouched one across a reload, and where each panel stood kept across a reload — a place naming nothing to stand beside, or a side that does not exist, dropped
+  tab_storage.test.ts       — what a browser tab keeps for itself: its own entry read before the one any tab saved last, a NEW tab starting from the last one saved and keeping it as its own — starting with nothing kept too — so another tab's later write never reaches it, every write to both and a removal from both, the shared entry still read where the tab's own storage is blocked, and blocked storage the same as none, never a throw
   use_run_binding.test.ts   — the run the reader had open brought back with its narrowing and its mark, a run gone from the index named, the index alone where nothing was open, and a run picked while the stored one is still loading kept — its late answer discarded
   use_deployment_binding.test.ts — the deployment brought back, and one the ledger no longer lists named
   use_chart_binding.test.ts — a timeframe the symbol has no coverage for cleared, a covered one kept
@@ -372,9 +376,9 @@ vi.mock('axios', () => ({
 
 `vi.mock` is hoisted by Vitest, so the mock is in place before `api_client.ts` is imported.
 
-### localStorage
+### localStorage and sessionStorage
 
-Available natively in the jsdom environment. Cleared in `beforeEach` with `localStorage.clear()` to prevent state leaking between tests.
+Both are available natively in the jsdom environment. `localStorage` is cleared in `beforeEach` with `localStorage.clear()` to prevent state leaking between tests. `sessionStorage` is cleared before EVERY test by `tests/setup.ts`: the arrangement and the column's layout are read from the tab's own `sessionStorage` first (`src/tab_storage.ts`), and jsdom keeps it across the tests of a file — without the clear, every test after the first would start as a reload of the one before it rather than as a new tab.
 
 ### Two tests carry a longer clock, and it is a finding rather than a fact
 
@@ -406,7 +410,7 @@ The `ResizeObserver` stub never calls back, which is right for a component that 
 
 Each test file that uses stores calls `setActivePinia(createPinia())` in `beforeEach`. This creates a fresh store registry for every test — no state bleeds between cases.
 
-A store that persists — the arrangement, the layout, the settings — reads `localStorage` when it is created, so such a file clears `localStorage` in the same `beforeEach`; otherwise one test's narrowing is the next test's starting point.
+A store that persists — the arrangement, the layout, the settings — reads its storage when it is created (the arrangement and the layout the tab's own first, see *localStorage and sessionStorage*), so such a file clears `localStorage` in the same `beforeEach`; otherwise one test's narrowing is the next test's starting point.
 
 ---
 

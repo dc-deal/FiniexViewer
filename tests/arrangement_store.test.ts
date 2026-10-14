@@ -8,7 +8,9 @@ const KEY = 'arrangement.v1'
 const RUN = '20261012_074826_88026ae2'
 const MARK = { scenario: 'EURGBP_partial_close', position: 'pos_eurgbp_1' }
 
+/** What a NEW tab finds: the last arrangement saved, and nothing of its own yet. */
 function store(value: unknown): void {
+  sessionStorage.removeItem(KEY)
   localStorage.setItem(KEY, JSON.stringify(value))
 }
 

@@ -166,3 +166,46 @@ test('picking a value leaves every chip exactly where it was', async ({ page }) 
 
   expect(await edges()).toEqual(before)
 })
+
+/**
+ * EACH BROWSER TAB KEEPS ITS OWN ARRANGEMENT (viewer#31, 2026-10-14) — which is what makes a second
+ * window the way to compare two runs. A new tab starts from the last one saved; from then on, what
+ * another tab saves never reaches it.
+ *
+ * While two tabs shared one `localStorage`, the column's layout came back from the other tab on every
+ * reload — it is written only when changed, and this tab had changed nothing. The run came back from
+ * the other tab only sometimes: a tab writes its arrangement again as it is left, and lost only when
+ * the other tab's delayed save landed between that write and the reload's read (measured both ways).
+ * So the column is asserted first: it fails for the old storage every time.
+ */
+test('each browser tab keeps its own run and column across a reload, a new one starts from the last saved', async ({ page, context }) => {
+  const tradesOf = (tab: typeof page) => tab.locator('.panel-trigger', { hasText: 'Trade History' })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await expect(page.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
+  await expect(tradesOf(page)).toHaveAttribute('aria-expanded', 'false')
+
+  // a second tab starts from the last arrangement saved: the first tab's run
+  const second = await context.newPage()
+  await mockApi(second)
+  await second.goto('/')
+  await expect(second.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
+
+  // it opens a section of the column, and picks another run — the fixture run is hidden in the list
+  // by default, so any visible row will do
+  await tradesOf(second).click()
+  await expect(tradesOf(second)).toHaveAttribute('aria-expanded', 'true')
+  await second.locator('.dv-tab', { has: second.locator('.panel-tab[data-kind="runs"]') }).click()
+  const other = second.locator('.run-list .record-row >> visible=true').first()
+  const otherId = await other.locator('.run-id').getAttribute('title')
+  expect(otherId).not.toBe(FIXTURE_RUN)
+  await other.click()
+  await expect(second.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(otherId!)
+
+  // the first tab, reloaded, still has its own column and its own run; the second its own run
+  await page.reload()
+  await expect(tradesOf(page)).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
+  await second.reload()
+  await expect(second.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(otherId!)
+  await second.close()
+})

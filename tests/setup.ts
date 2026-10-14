@@ -1,3 +1,14 @@
+import { beforeEach } from 'vitest'
+
+/**
+ * Every test starts as a NEW browser tab. The arrangement and the column's layout are read from the
+ * tab's `sessionStorage` first (`tab_storage.ts`), and jsdom keeps that across the tests of a file —
+ * which the `localStorage.clear()` each test does for itself does not reach.
+ */
+beforeEach(() => {
+  sessionStorage.clear()
+})
+
 /**
  * Browser interfaces jsdom does not implement, supplied so components that use them can be tested
  * at all. These stand in for MISSING APIs — they never replace behaviour under test: a stub that

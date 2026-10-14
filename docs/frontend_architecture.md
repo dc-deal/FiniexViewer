@@ -465,21 +465,34 @@ as they are, without cascading:
 | `setSymbol(symbol)` | `market.symbol` | — |
 | `restore(stored)` | everything | nothing |
 
-**The arrangement store keeps it** under ONE versioned `localStorage` key, created in `App.vue` so
-every view mounts onto the restored selection:
+**The arrangement store keeps it** under ONE versioned key — kept per browser tab, see below —
+created in `App.vue` so every view mounts onto the restored selection:
 
 ```
 arrangement.v1 = { version: 1,
                    links: { A: { run: { id, units, position }, deployment: { id }, market: { broker, symbol } } },
                    bars:  { 'run-picker': { selection, search, sort }, 'scenario-roster': { …, scope: <run id> } },
-                   chart: { timeframe } }
+                   chart: { timeframe },
+                   dock:  <dockview's toJSON()>,  places: { <panel id>: { besides, direction, index?, size? } } }
 ```
 
 It is reconciled field by field on load, never trusted: a field of the wrong shape is left empty,
 an entry of another schema version is REMOVED rather than converted, and a corrupt one counts as
 none. The timeframe belongs to the CHART, not to the link — it says how one chart is drawn, not what
 is selected. The chart selection's former keys (`sel.broker`, `sel.symbol`, `sel.timeframe`) are
-removed on start.
+removed on start. `dock` and `places` are the dock store's (see *Docked Panels*).
+
+**Each browser tab keeps its own** (`src/tab_storage.ts`, viewer#31, 2026-10-14) — the arrangement
+and the column's `layout.v1` alike, which is what makes a second window the way to compare two runs.
+A tab reads its own `sessionStorage` entry. A NEW tab has none: it adopts the last one any tab saved
+and keeps it as its own, so another tab's later write never reaches it, not even on a reload. Every
+write goes to both — the tab's own, and `localStorage` as the start of the next new tab. Settings
+and dismissed hints are the reader's, not the tab's, and stay in `localStorage` alone.
+
+**Adopted at the READ, not at the first write.** With one shared key, measured in the browser on
+2026-10-14, a reload brought back the column the OTHER window had changed every time — the column's
+layout is written only when it changes, and this tab had changed nothing — and the other window's
+run whenever its delayed save landed between this tab's leaving and its reading.
 
 **The data stores are facades over it.** `runs_store.selectedRunId` / `selectedUnits`,
 `deployments_store.selectedDeploymentId` and `selection_store.broker` / `symbol` / `timeframe` are
@@ -526,8 +539,8 @@ not ask for it:
 
 | | What it is | Where it lives | Needs an account? |
 |---|---|---|---|
-| **Selection** | which run, scenario, deployment, symbol, timeframe, filter | `arrangement.v1` in `localStorage` | never |
-| **Presentation** | panel order, collapsed state, theme, thresholds, caps | `localStorage` | no |
+| **Selection** | which run, scenario, deployment, symbol, timeframe, filter | `arrangement.v1`, per browser tab | never |
+| **Presentation** | panel order, collapsed state, theme, thresholds, caps | the column's `layout.v1` per browser tab; the settings in `localStorage` | no |
 | **Operation** | writing, triggering a run, changing a configuration | nowhere yet | **yes — and only this** |
 
 Two consequences follow. **A settings menu needs no user system**: everything it holds today is
@@ -1350,7 +1363,7 @@ These are the REPORT panels inside the Runs panel, the accordion column; viewer#
 
 - **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The column and the Panels menu render from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset column* (Panels ▸ Runs) carries it into an arrangement somebody already made.
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus) and `PanelColumn` (the ordered stack, drag to reorder). The column renders from `arrangedPanels` — every panel, switched-off ones included, in the order the reader made — and leaves out what is switched off, what is open as a panel of its own and what this run does not carry. The Panels menu lists the same arrangement (see *Docked Panels*); the section bar that drew it on its side above the column retired on 2026-10-14. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
-- **`src/stores/layout_store.ts`** — the panel column's order and state, persisted under its own versioned key `layout.v1` (the selection is in `arrangement.v1`, see *Selection State*).
+- **`src/stores/layout_store.ts`** — the panel column's order and state, persisted under its own versioned key `layout.v1`, per browser tab like the arrangement (the selection is in `arrangement.v1`, see *Selection State*).
 
 **A section that fails to load says so, and every one of them does.** `run_reports_store` keyed its
 failure messages by section on 2026-10-01; one ref served all seven until then, and they load

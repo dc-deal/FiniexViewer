@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef, watch } from 'vue'
 import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
+import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext, PositionRef } from '@/types/context_types'
 import type { DockPlace, StoredArrangement, StoredChart, StoredFacets } from '@/types/arrangement_types'
@@ -101,11 +102,11 @@ function readFacets(value: unknown): StoredFacets {
  */
 function readStored(): StoredArrangement | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readTabEntry(STORAGE_KEY)
     if (!raw) return null
     const parsed = record(JSON.parse(raw))
     if (parsed['version'] !== SCHEMA_VERSION) {
-      localStorage.removeItem(STORAGE_KEY)
+      removeTabAndShared(STORAGE_KEY)
       return null
     }
     const links: Record<string, LinkContext> = {}
@@ -160,11 +161,9 @@ export const useArrangementStore = defineStore('arrangement', () => {
       dock: dock.value,
       places: places.value,
     }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(arrangement))
-    } catch {
-      // a full or blocked storage must not break the app — the selection still works, unstored
-    }
+    // this tab's own, and the start of the next new one — a full or blocked storage must not break
+    // the app: the selection still works, unstored
+    writeTabAndShared(STORAGE_KEY, JSON.stringify(arrangement))
   }
 
   watch([() => context.links, bars, chart], persist, { deep: true })

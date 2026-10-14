@@ -13,7 +13,8 @@ project carries its meanings into the other.
 
 **arrangement** — Everything the viewer restores on a reload: what is chosen (the *links*), how
 each list is filtered and sorted, and where the panels are (the *placement*). Stored locally under
-one versioned key. Not *layout*, which is only a placement.
+one versioned key and kept per browser tab: a new tab starts from the last one saved. Not *layout*,
+which is only a placement.
 
 **bundle** — A panel whose content is other panels, its *members*, stacked one below the other: the
 run report is one, its report sections the members. Not *group* — in FiniexTestingIDE `group` is a

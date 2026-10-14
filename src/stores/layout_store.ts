@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { allPanels } from '@/panel_registry'
+import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { PanelState, WorkspaceState } from '@/types/panel_types'
 
 const STORAGE_KEY = 'layout.v1'
@@ -85,11 +86,11 @@ export function pinnedBoundary(panels: PanelState[]): number | null {
 
 function readStored(): WorkspaceState | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readTabEntry(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as WorkspaceState
     if (parsed?.version !== SCHEMA_VERSION) {
-      localStorage.removeItem(STORAGE_KEY)
+      removeTabAndShared(STORAGE_KEY)
       return null
     }
     return parsed
@@ -120,12 +121,9 @@ export const useLayoutStore = defineStore('layout', () => {
   /** The same arrangement minus what is switched off — which is all the COLUMN draws. */
   const visiblePanels = computed(() => arrangedPanels.value.filter(panel => !panel.hidden))
 
+  /** This tab's own, and the start of the next new one — like the arrangement beside it. */
   function persist(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace.value))
-    } catch {
-      // a full or blocked storage must not break the app — the arrangement is a convenience
-    }
+    writeTabAndShared(STORAGE_KEY, JSON.stringify(workspace.value))
   }
 
   function find(id: string): PanelState | undefined {
