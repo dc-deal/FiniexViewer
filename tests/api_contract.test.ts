@@ -52,7 +52,7 @@ import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 29
+const EXPECTED_CONTRACT = 31
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
