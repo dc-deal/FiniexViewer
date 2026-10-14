@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RunPicker from '@/components/runs/RunPicker.vue'
@@ -7,6 +7,14 @@ import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
+
+// Choosing a run loads its summary, and the picker is what is tested here, not the server. Without
+// this the click asked a real address from jsdom, and the refused connection was printed into the
+// suite's output as an `AggregateError` under whichever test happened to be running.
+vi.mock('@/api/api_client', () => ({
+  getRuns: vi.fn(async () => []),
+  getRunSummary: vi.fn(async () => ({ absent: true, cause: 'artifact_not_produced', detail: '' })),
+}))
 
 const BASE: RunInfo = {
   // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
