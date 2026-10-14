@@ -77,7 +77,7 @@ const differences = computed<string[]>(() => {
 /**
  * Whether this broker has a margin regime at all — **their condition, not one of ours**.
  *
- * `ide_docs/broker_config_guide.md` marks `margin_mode`, `margin_call_level` and `stopout_level`
+ * Their `docs/broker_config_guide.md` marks `margin_mode`, `margin_call_level` and `stopout_level`
  * as required *"If leverage > 1"*, and the adapter guide repeats it: a broker at leverage 1 is not
  * obliged to state any of the three, so what arrives there is a default and not a measurement. The
  * captured spot broker shows exactly that — `margin_mode: 'none'` with both levels at `0.0`, and

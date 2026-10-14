@@ -1059,8 +1059,8 @@ backtest-only, so its absence on a session says nothing about the name.
 
 ### The words — the backend's glossary, adopted here
 
-The API's vocabulary is fixed in `ide_docs/glossary.md`, and the four kinds of run in
-`ide_docs/introduction_to_the_ide.md` ("The kinds of run"). Every label on screen uses those words,
+The API's vocabulary is fixed in FiniexTestingIDE's `docs/glossary.md`, and the four kinds of run in
+its `docs/introduction_to_the_ide.md` ("The kinds of run"). Every label on screen uses those words,
 because a word invented here would mean something different from the same word in a report.
 
 | Kind | `group` | `ticks_from` | `orders_to` |
@@ -1887,7 +1887,7 @@ against each other. The advisory is built from the fields that actually DIFFER, 
 difference two brokers do not have, and it is silent on a run that used one broker.
 
 **The margin fields are gated on `leverage > 1`, which is the BACKEND's condition and not ours.**
-`ide_docs/broker_config_guide.md` marks `margin_mode`, `margin_call_level` and `stopout_level` as
+Their `docs/broker_config_guide.md` marks `margin_mode`, `margin_call_level` and `stopout_level` as
 required *"If leverage > 1"*, and the adapter guide repeats it. Below that a broker states none of
 them, so what arrives is a default: the captured spot broker reads `margin_mode: 'none'` with both
 levels at `0.0`, and rendering "margin call at 0.00%" says the opposite of what is true — that the

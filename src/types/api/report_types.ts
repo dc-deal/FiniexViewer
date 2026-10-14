@@ -1107,7 +1107,7 @@ export interface BrokerSymbol {
  * One broker a run traded through, with the scenarios that used it.
  *
  * `margin_mode`, `margin_call_level` and `stopout_level` are required only **where leverage > 1** —
- * stated in `ide_docs/broker_config_guide.md` and repeated in the adapter guide. Below that a
+ * stated in the backend's `docs/broker_config_guide.md` and repeated in the adapter guide. Below that a
  * broker states none of them, so what arrives is a default rather than a measurement: the captured
  * spot broker reads `margin_mode: 'none'` with both levels at `0.0`, and rendering that as "margin
  * call at 0%" says the opposite of what is true. The leverage is the gate, not the mode.
@@ -1156,7 +1156,7 @@ export interface BrokerReport {
 /**
  * One SPOT account of the run, as a quote balance plus a base-asset holding.
  *
- * A spot account is an inventory, not a balance with margin arithmetic (`ide_docs/glossary.md`,
+ * A spot account is an inventory, not a balance with margin arithmetic (the backend's glossary,
  * *account model*), so its worth is the quote balance plus the base holding valued at a price —
  * which is why `est_current` is an ESTIMATE and `last_price` is served beside it. Nothing here is
  * multiplied by us.
