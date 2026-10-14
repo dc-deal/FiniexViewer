@@ -7,38 +7,20 @@ import {
 } from 'reka-ui'
 import AboutDialog from '@/components/AboutDialog.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
-import { useCallerStore } from '@/stores/caller_store'
 import { useSettingsStore } from '@/stores/settings_store'
-import type { SettingsTab } from '@/types/settings_types'
 import { t } from '@/translate'
 
 const settingsStore = useSettingsStore()
-const callerStore = useCallerStore()
 const { settings } = storeToRefs(settingsStore)
-const { displayName, state } = storeToRefs(callerStore)
 
 const settingsOpen = ref(false)
 const aboutOpen = ref(false)
-const settingsTab = ref<SettingsTab>('display')
 
 /** The entry names the theme it switches TO, so the symbol and the word say the same thing. */
 const themeSwitch = computed(() => settings.value.theme === 'dark'
   ? { icon: '☀️', label: t('Light theme') }
   : { icon: '🌙', label: t('Dark theme') })
 
-/**
- * The menu says which access this viewer works under, as soon as the server tells it. Where there
- * is no identity — gating off, a refused token, an unreachable server — it stays the plain word,
- * because the dialog is where the reason belongs.
- */
-const accountLabel = computed(() =>
-  state.value === 'ready' && displayName.value ? displayName.value : t('Account')
-)
-
-function openSettings(tab: SettingsTab): void {
-  settingsTab.value = tab
-  settingsOpen.value = true
-}
 </script>
 
 <template>
@@ -49,15 +31,11 @@ function openSettings(tab: SettingsTab): void {
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
-          <DropdownMenuItem class="menu-item" @select="openSettings('display')">
+          <DropdownMenuItem class="menu-item" @select="settingsOpen = true">
             ⚙️ {{ t('Settings…') }}
           </DropdownMenuItem>
           <DropdownMenuItem class="menu-item" @select="settingsStore.toggleTheme()">
             {{ themeSwitch.icon }} {{ themeSwitch.label }}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator class="menu-separator" />
-          <DropdownMenuItem class="menu-item" @select="openSettings('account')">
-            👤 {{ accountLabel }}
           </DropdownMenuItem>
           <DropdownMenuSeparator class="menu-separator" />
           <DropdownMenuItem class="menu-item" data-action="about" @select="aboutOpen = true">
@@ -67,7 +45,7 @@ function openSettings(tab: SettingsTab): void {
       </DropdownMenuPortal>
     </DropdownMenuRoot>
 
-    <SettingsDialog v-model:open="settingsOpen" :tab="settingsTab" />
+    <SettingsDialog v-model:open="settingsOpen" />
     <AboutDialog v-model:open="aboutOpen" />
   </div>
 </template>

@@ -108,7 +108,14 @@ export const useDeploymentsStore = defineStore('deployments', () => {
    */
   async function loadDeployment(deploymentId: string): Promise<void> {
     clearLoaded()
-    if (!deployments.value.some(row => row.deployment_id === deploymentId)) {
+    const listed = () => deployments.value.some(row => row.deployment_id === deploymentId)
+    // one the ledger does not list YET is not one that is gone: a run can name a deployment newer
+    // than the ledger this panel loaded, so the ledger is asked once more before saying so
+    if (!listed()) {
+      await loadDeployments(true)
+      if (selectedDeploymentId.value !== deploymentId) return
+    }
+    if (!listed()) {
       unknownDeploymentId.value = deploymentId
       return
     }

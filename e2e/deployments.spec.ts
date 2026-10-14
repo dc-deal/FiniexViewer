@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './cdp_fixture'
-import { mockApi, FIXTURE_DEPLOYMENT } from './api_mock'
+import { mockApi, FIXTURE_DEPLOYMENT, fixture } from './api_mock'
 import { openWith, showPanel } from './arrangement_seed'
 import { expectHeadingsReadable } from './list_geometry'
 
@@ -88,6 +88,40 @@ test('the picker lists the ledger and choosing one opens its history', async ({ 
  * The selection is stored with the arrangement, and a reload is the one thing jsdom can only
  * approximate.
  */
+/**
+ * A run opened from the deployment shows ITS figures. The Runs panel stays mounted in the dock, and
+ * a jump that only changed the context reloaded the sections while the executive summary stayed on
+ * the run before — reported 2026-10-14 from a real screen. Each session's summary is answered with
+ * its own net P&L here, so the two runs cannot be mistaken for each other.
+ */
+test('each run opened from the deployment shows its own executive summary', async ({ page }) => {
+  const sessions = (fixture('deployment_detail.json') as { sessions: { run_id: string }[] }).sessions
+  const marks = new Map(sessions.slice(0, 2).map((session, index) => [session.run_id, index === 0 ? 111.11 : 222.22]))
+  await page.route('**/api/v1/reports/runs/*/run-summary', async route => {
+    const runId = new URL(route.request().url()).pathname.split('/').at(-2)!
+    const mark = marks.get(runId)
+    if (mark === undefined) return route.fallback()
+    const body = structuredClone(fixture('run_summary.json')) as { run_id: string, currencies: { net_pnl: number }[] }
+    body.run_id = runId
+    for (const row of body.currencies) row.net_pnl = mark
+    return route.fulfill({ json: body })
+  })
+
+  await page.setViewportSize({ width: 1500, height: 1000 })
+  await openLedger(page)
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  const links = page.locator('.sessions-list .session-run button')
+  const executive = page.locator('[data-panel="executive"]')
+
+  await links.nth(0).click()
+  await expect(executive).toContainText('111.11')
+
+  await showPanel(page, 'Deployments')
+  await links.nth(1).click()
+  await expect(executive).toContainText('222.22')
+  await expect(executive).not.toContainText('111.11')
+})
+
 test('a chosen deployment survives a reload', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)

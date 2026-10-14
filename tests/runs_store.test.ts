@@ -284,6 +284,19 @@ describe('useRunsStore', () => {
       expect(store.error).toBeNull()
     })
 
+    /** A deployment can name a session newer than the index the panel loaded — that run is not gone. */
+    it('asks the index once more before calling a run gone, and loads one that has arrived since', async () => {
+      const later = runRow({ run_id: '20261014_090000', group: 'autotrader', name: 'demo_btcusd_bot' })
+      vi.mocked(apiClient.getRuns).mockResolvedValueOnce(RUNS).mockResolvedValueOnce([...RUNS, later])
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue({ ...SUMMARY, run_id: later.run_id })
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun(later.run_id)
+      expect(apiClient.getRuns).toHaveBeenCalledTimes(2)
+      expect(store.unknownRunId).toBeNull()
+      expect(apiClient.getRunSummary).toHaveBeenCalledWith(later.run_id)
+    })
+
     it('never requests anything while the index is empty', async () => {
       vi.mocked(apiClient.getRuns).mockResolvedValue([])
       const store = useRunsStore()

@@ -87,7 +87,9 @@ export const FIXTURE_DEPLOYMENT =
 const SHELL: Record<string, unknown> = {
   '/api/v1/brokers': { brokers: [] },
   '/api/v1/timeframes': { timeframes: [] },
-  '/api/v1/caller': { authenticated: false, account: null, display_name: null, grants: [] },
+  '/api/v1/caller': {
+    enforced: false, client: null, account: null, account_kind: null, display_name: null, grants: null, note: null,
+  },
 }
 
 function absent(cause: string, detail: string) {

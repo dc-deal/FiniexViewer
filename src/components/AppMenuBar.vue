@@ -2,6 +2,7 @@
 import {
   DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger,
 } from 'reka-ui'
+import AccountStatus from '@/components/AccountStatus.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import TopMenu from '@/components/TopMenu.vue'
 import { PANEL_KINDS } from '@/panel_kinds'
@@ -9,9 +10,10 @@ import { useDockStore } from '@/stores/dock_store'
 import { t } from '@/translate'
 
 /**
- * The frame above the dock: the name, the way to every panel the reader works in, and the
- * application menu. Frame rather than panel — it is never closed or moved. The way back to the
- * suggested order sits in the settings, beside everything else about arrangement.
+ * The frame above the dock: the name, the way to every panel the reader works in, whose access the
+ * viewer works under, and the application menu. Frame rather than panel — it is never closed or
+ * moved. The way back to the suggested order sits in the settings, beside everything else about
+ * arrangement.
  */
 const dock = useDockStore()
 
@@ -41,6 +43,7 @@ const kinds = [...PANEL_KINDS].sort((a, b) => a.order - b.order)
     </DropdownMenuRoot>
 
     <div class="menu-bar-spacer" />
+    <AccountStatus />
     <TopMenu />
   </header>
 </template>

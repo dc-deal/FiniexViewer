@@ -30,7 +30,9 @@ export const useCallerStore = defineStore('caller', () => {
    * nothing on a response marks that restart, so re-reading is the only approximation available.
    */
   async function load(): Promise<void> {
-    state.value = 'loading'
+    // only the FIRST read is shown as one: a re-read on every return to the tab would otherwise
+    // turn the menu bar's account into "connecting" and back each time
+    if (state.value === 'idle') state.value = 'loading'
     try {
       const answer = await getCaller()
       identity.value = answer

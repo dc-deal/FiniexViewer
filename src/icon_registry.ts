@@ -9,12 +9,14 @@ import {
   IconCalendarWeek,
   IconChartBar,
   IconChartCandle,
+  IconCircleDashed,
   IconCircleX,
   IconHourglass,
   IconList,
   IconStack2,
   IconSum,
   IconTag,
+  IconUser,
   IconX,
 } from '@tabler/icons-vue'
 import type { IconName } from '@/types/icon_types'
@@ -35,6 +37,8 @@ export const ICONS = {
   'form-chart': IconChartCandle,
   'status-warning': IconAlertCircle,
   'status-error': IconCircleX,
+  'status-account': IconUser,
+  'status-connecting': IconCircleDashed,
   'action-close': IconX,
   'kind-executive': IconChartBar,
   'kind-broker': IconBuildingBank,

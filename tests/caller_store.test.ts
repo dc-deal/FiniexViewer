@@ -119,6 +119,27 @@ describe('useCallerStore', () => {
     expect(store.readAt!.getTime()).toBeGreaterThanOrEqual(before)
   })
 
+  /**
+   * Only the first read shows as one. Every return to the tab reads again, and the menu bar would
+   * otherwise turn the account into "connecting" and back each time.
+   */
+  it('shows the first read as loading and keeps the last answer while it reads again', async () => {
+    let answer!: (identity: CallerIdentity) => void
+    vi.mocked(apiClient.getCaller).mockReturnValue(new Promise(resolve => { answer = resolve }))
+    const store = useCallerStore()
+    const first = store.load()
+    expect(store.state).toBe('loading')
+    answer(ENFORCED)
+    await first
+
+    vi.mocked(apiClient.getCaller).mockReturnValue(new Promise(resolve => { answer = resolve }))
+    const again = store.load()
+    expect(store.state).toBe('ready')
+    answer(UNENFORCED)
+    await again
+    expect(store.state).toBe('unenforced')
+  })
+
   // nothing is cached: a re-read is what stands in for a server restart nobody can observe
   it('asks again on every load', async () => {
     vi.mocked(apiClient.getCaller).mockResolvedValue(ENFORCED)

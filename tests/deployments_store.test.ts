@@ -162,6 +162,21 @@ describe('deployments_store', () => {
       expect(apiClient.getDeployment).not.toHaveBeenCalled()
     })
 
+    /** A run can name a deployment newer than the ledger the panel loaded — that one is not gone. */
+    it('asks the ledger once more before calling a deployment gone, and loads one that has arrived since', async () => {
+      resolveAll()
+      const listed = deploymentsFixture.deployments as DeploymentRow[]
+      vi.mocked(apiClient.getDeployments)
+        .mockResolvedValueOnce({ ...deploymentsFixture, deployments: listed.filter(row => row.deployment_id !== ID) })
+        .mockResolvedValueOnce({ ...deploymentsFixture, deployments: listed })
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      await store.selectDeployment(ID)
+      expect(apiClient.getDeployments).toHaveBeenCalledTimes(2)
+      expect(store.unknownDeploymentId).toBeNull()
+      expect(apiClient.getDeployment).toHaveBeenCalledWith(ID)
+    })
+
     it('clears the previous deployment before loading the next', async () => {
       resolveAll()
       const store = useDeploymentsStore()

@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
-import { mockApi, FIXTURE_RUN } from './api_mock'
-import { openWith } from './arrangement_seed'
+import { mockApi, FIXTURE_RUN, FIXTURE_DEPLOYMENT } from './api_mock'
+import { openWith, showPanel } from './arrangement_seed'
 
 /**
  * No panel scrolls sideways.
@@ -99,4 +99,16 @@ test('a wide Runs panel shows every section and no control to unfold', async ({ 
   await expect(page.locator('.app-bar .overflow-row')).toBeVisible()
   await expect(page.locator('.overflow-more')).toBeHidden()
   await expect(page.locator('.bar-toggle:visible')).toHaveCount(await page.locator('.bar-toggle').count())
+})
+
+/** The same line on the deployment side: it took three lines and broke `Change deployment` in two. */
+test('a narrow Deployments panel keeps its deployment line to one line', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 900 })
+  await page.goto('/')
+  await showPanel(page, 'Deployments')
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  const line = page.locator('.deployment-picker .picker-chosen')
+  await expect(line).toBeVisible()
+  const id = (await line.locator('.chosen-id').boundingBox())!
+  expect((await line.boundingBox())!.height).toBeLessThan(id.height * 1.5)
 })

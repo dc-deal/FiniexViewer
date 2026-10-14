@@ -136,7 +136,14 @@ export const useRunsStore = defineStore('runs', () => {
    */
   async function loadRun(runId: string): Promise<void> {
     clearRun()
-    const run = runs.value.find(entry => entry.run_id === runId)
+    let run = runs.value.find(entry => entry.run_id === runId)
+    // a run the index does not know YET is not a run that is gone: a deployment can name a session
+    // newer than the index this panel loaded, so the index is asked once more before saying so
+    if (!run) {
+      await loadRuns(true)
+      if (selectedRunId.value !== runId) return
+      run = runs.value.find(entry => entry.run_id === runId)
+    }
     if (!run) {
       unknownRunId.value = runId
       return

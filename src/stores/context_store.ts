@@ -29,7 +29,11 @@ export const useContextStore = defineStore('context', () => {
 
   const main = computed(() => links.value[MAIN_LINK]!)
 
-  /** A new run: its narrowing and its mark start empty. */
+  /**
+   * A new run: its narrowing and its mark start empty. This only WRITES the context — a reader
+   * choosing a run goes through `useRunsStore().selectRun`, which loads it too. Docked views stay
+   * mounted, so a context changed here alone leaves the run's summary behind.
+   */
   function selectRun(id: string | null): void {
     main.value.run = { id, units: [], position: null }
   }
@@ -54,6 +58,7 @@ export const useContextStore = defineStore('context', () => {
     main.value.run.position = position
   }
 
+  /** Only writes the context — a reader choosing one goes through `useDeploymentsStore().selectDeployment`. */
   function selectDeployment(id: string | null): void {
     main.value.deployment = { id }
   }

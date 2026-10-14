@@ -43,6 +43,11 @@ describe('AppMenuBar', () => {
     expect(opened).toEqual(['chart'])
   })
 
+  /** Whose access the viewer works under is part of the frame, beside the application menu. */
+  it('carries the account status in the frame', () => {
+    expect(mounted!.find('.account-status').exists()).toBe(true)
+  })
+
   /** One way back to the suggested order, and it lives in the settings — not a menu of one entry. */
   it('offers no Layout menu of its own', () => {
     expect(mounted!.findAll('.menu-bar-trigger').map(node => node.text())).toEqual(['Panels ▾'])

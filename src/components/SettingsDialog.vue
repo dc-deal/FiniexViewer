@@ -5,8 +5,6 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import AppButton from '@/components/base/AppButton.vue'
 import AppDialog from '@/components/base/AppDialog.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
-import AppSpinner from '@/components/base/AppSpinner.vue'
-import { useCallerStore } from '@/stores/caller_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
 import { useLayoutStore } from '@/stores/layout_store'
@@ -18,8 +16,6 @@ import { t } from '@/translate'
 
 const props = defineProps<{
   open: boolean
-  /** Which tab to show when it opens — the menu points the account entry straight at its own. */
-  tab?: SettingsTab
 }>()
 const emit = defineEmits<{ 'update:open': [boolean] }>()
 
@@ -27,18 +23,16 @@ const settingsStore = useSettingsStore()
 const hintsStore = useHintsStore()
 const layoutStore = useLayoutStore()
 const dock = useDockStore()
-const callerStore = useCallerStore()
 const { settings } = storeToRefs(settingsStore)
-const { identity, state, readAt, displayName } = storeToRefs(callerStore)
 
-const activeTab = ref<SettingsTab>(props.tab ?? 'display')
+const activeTab = ref<SettingsTab>('display')
 const importInput = ref<HTMLInputElement | null>(null)
 const importNotice = ref<string | null>(null)
 
 // a fresh open honours the tab it was asked for, and drops a notice from the previous visit
 watch(() => props.open, isOpen => {
   if (!isOpen) return
-  activeTab.value = props.tab ?? 'display'
+  activeTab.value = 'display'
   importNotice.value = null
 })
 
@@ -79,9 +73,6 @@ async function onImportPicked(event: Event): Promise<void> {
 }
 
 /** Local time at the rendering edge — the identity is only ever as of the instant it was read. */
-function readAtLabel(at: Date): string {
-  return new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(at)
-}
 </script>
 
 <template>
@@ -98,7 +89,6 @@ function readAtLabel(at: Date): string {
       <TabsList class="tab-list">
         <TabsTrigger value="display" class="tab-trigger">🎚️ {{ t('Display') }}</TabsTrigger>
         <TabsTrigger value="layout" class="tab-trigger">🗂️ {{ t('Layout') }}</TabsTrigger>
-        <TabsTrigger value="account" class="tab-trigger">👤 {{ t('Account') }}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="display" class="tab-panel">
@@ -201,45 +191,6 @@ function readAtLabel(at: Date): string {
         >
         <p v-if="importNotice" class="setting-hint">{{ importNotice }}</p>
       </TabsContent>
-
-      <TabsContent value="account" class="tab-panel">
-        <AppSpinner v-if="state === 'loading' || state === 'idle'" />
-
-        <!-- a 200 here proves nothing: with gating off the server verifies no token at all,
-             so every identity field is null even for a caller that sent a valid one -->
-        <p v-else-if="state === 'unenforced'" class="account-notice warn">
-          <span class="mark">⚠</span>
-          {{ t('This server verifies no token — there is no identity to show') }}
-        </p>
-
-        <p v-else-if="state === 'unauthenticated'" class="account-notice warn">
-          <span class="mark">⚠</span>{{ t('The token was refused') }}
-        </p>
-
-        <p v-else-if="state === 'failed'" class="account-notice bad">
-          <span class="mark">✖</span>{{ t('The server did not answer') }}
-        </p>
-
-        <template v-else-if="identity">
-          <dl class="account-rows">
-            <dt>{{ t('Acting as') }}</dt>
-            <dd>{{ displayName }}</dd>
-            <dt>{{ t('Account') }}</dt>
-            <dd>{{ identity.account }} · {{ identity.account_kind }}</dd>
-            <dt>{{ t('Client') }}</dt>
-            <dd>{{ identity.client }}</dd>
-            <dt>{{ t('Grants') }}</dt>
-            <dd>{{ identity.grants?.join(' · ') || t('none') }}</dd>
-            <template v-if="identity.note">
-              <dt>{{ t('Token note') }}</dt>
-              <dd>{{ identity.note }}</dd>
-            </template>
-          </dl>
-          <p v-if="readAt" class="setting-hint">
-            {{ t('as of') }} {{ readAtLabel(readAt) }}
-          </p>
-        </template>
-      </TabsContent>
     </TabsRoot>
   </AppDialog>
 </template>
@@ -339,35 +290,6 @@ function readAtLabel(at: Date): string {
 .import-input {
   display: none;
 }
-
-.account-rows {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--space-xs) var(--space-sm);
-  margin: 0;
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.account-rows dt { color: var(--color-text-secondary); }
-
-.account-rows dd {
-  margin: 0;
-  color: var(--color-text-primary);
-  overflow-wrap: anywhere;
-}
-
-/* a status colour never travels alone — each carries its glyph and its sentence */
-.account-notice {
-  display: flex;
-  gap: var(--space-xs);
-  margin: 0;
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.account-notice.warn { color: var(--color-warning); }
-.account-notice.bad { color: var(--color-error); }
 
 /* the dialog only places its buttons; how a button looks belongs to AppButton */
 .app-button {

@@ -3,12 +3,11 @@ import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useCallerStore } from '@/stores/caller_store'
-import { useContextStore } from '@/stores/context_store'
-import { useDockStore } from '@/stores/dock_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { provideOpenInContext } from '@/composables/use_open_in_context'
 import AppMenuBar from '@/components/AppMenuBar.vue'
 import PanelDock from '@/components/dock/PanelDock.vue'
+import { openInDock } from '@/components/dock/open_in_dock'
 
 const { settings } = storeToRefs(useSettingsStore())
 const callerStore = useCallerStore()
@@ -16,24 +15,8 @@ const callerStore = useCallerStore()
 // created here, at the root, so every view mounts onto the selection the reader left behind
 useArrangementStore()
 
-/**
- * The way out of a panel: the run or the deployment becomes the main link's, and its panel comes
- * to the front — opened beside the active one where the reader had closed it. No panel knows the
- * dock; each asks this channel.
- */
-const context = useContextStore()
-const dock = useDockStore()
-provideOpenInContext({
-  openRun: (runId: string) => {
-    context.selectRun(runId)
-    dock.open('runs')
-  },
-  openDeployment: (deploymentId: string) => {
-    context.selectDeployment(deploymentId)
-    dock.open('deployments')
-  },
-  canOpen: true,
-})
+// the way out of a panel: what it names is chosen and loaded, and its panel comes to the front
+provideOpenInContext(openInDock())
 
 // The one place the theme reaches the document. Panels never receive it — they read the tokens the
 // attribute selects, which is why a theme change needs no re-render anywhere else. The exception is

@@ -136,6 +136,9 @@ describe('DeploymentPicker', () => {
 
     expect(wrapper.find('.picker-chosen').exists()).toBe(true)
     expect(wrapper.find('.picker-chosen').text()).toContain('demo_btcusd_bot')
+    // one line in a narrow panel, the whole of it on hover
+    const meta = wrapper.find('.picker-chosen .chosen-meta')
+    expect(meta.attributes('title')).toBe(meta.text())
     expect(rows(wrapper)).toHaveLength(0)
 
     await wrapper.find('.picker-chosen button').trigger('click')

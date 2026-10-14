@@ -18,7 +18,7 @@ test('the settings dialog keeps its size as the tabs are switched', async ({ pag
   await expect(dialog).toBeVisible()
 
   const sizes: string[] = []
-  for (const tab of ['Display', 'Layout', 'Account']) {
+  for (const tab of ['Display', 'Layout']) {
     await page.locator('.tab-trigger', { hasText: tab }).click()
     await expect(page.locator('.tab-trigger[data-state="active"]')).toContainText(tab)
     const box = await dialog.boundingBox()
@@ -40,4 +40,20 @@ test('a dialog taller than the window scrolls inside, the close button in reach'
   const scrolls = await page.locator('.tab-panel[data-state="active"]')
     .evaluate(element => element.scrollHeight > element.clientHeight)
   expect(scrolls).toBe(true)
+})
+
+/**
+ * Who the viewer works as is a fact to see, not a setting to open: it stands in the menu bar, as a
+ * mark and a word, and the settings no longer have a tab for it. The mock serves a server that
+ * verifies no token.
+ */
+test('the account stands in the menu bar, and the settings carry no tab for it', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('.menu-bar .account-status')).toContainText('no sign-in')
+
+  await page.locator('.menu-trigger').click()
+  await expect(page.locator('.menu-item', { hasText: 'Account' })).toHaveCount(0)
+  await page.locator('.menu-item', { hasText: 'Settings' }).click()
+  await expect(page.locator('.settings-dialog')).toBeVisible()
+  await expect(page.locator('.tab-trigger', { hasText: 'Account' })).toHaveCount(0)
 })

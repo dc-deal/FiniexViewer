@@ -203,6 +203,15 @@ watch(selectedDeploymentId, id => { open.value = id === null })
 const chosen = computed(() =>
   deployments.value.find(row => row.deployment_id === selectedDeploymentId.value) ?? null
 )
+
+/** Its bot, its sessions and its last start — one line, cut short where the panel is narrow. */
+const chosenMeta = computed(() => {
+  const row = chosen.value
+  if (!row) return ''
+  return [row.bot, plural(row.sessions, t('session'), t('sessions')), startedAt(row.last_started)]
+    .filter(Boolean)
+    .join(' · ')
+})
 </script>
 
 <template>
@@ -215,10 +224,9 @@ const chosen = computed(() =>
     <div v-else-if="!open" class="picker-chosen">
       <span class="chosen-label">{{ t('Deployment') }}</span>
       <span class="chosen-id">{{ selectedDeploymentId }}</span>
-      <span v-if="chosen" class="chosen-meta">
-        {{ chosen.bot }} · {{ plural(chosen.sessions, t('session'), t('sessions')) }}
-        · {{ startedAt(chosen.last_started) }}
-      </span>
+      <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
+           three lines above the history -->
+      <span v-if="chosen" class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
       <AppButton variant="quiet" @click="open = true">{{ t('Change deployment') }}</AppButton>
     </div>
 
@@ -295,6 +303,7 @@ const chosen = computed(() =>
   display: flex;
   align-items: baseline;
   gap: var(--space-sm);
+  min-width: 0;
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
@@ -304,12 +313,28 @@ const chosen = computed(() =>
   color: var(--color-text-secondary);
 }
 
+.chosen-label,
+.chosen-id {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .chosen-id {
   color: var(--color-text-primary);
 }
 
+.chosen-meta {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* a control whose name breaks over two lines reads as two controls */
 .picker-chosen .app-button {
   margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .picker-hint {

@@ -484,7 +484,10 @@ removed on start.
 `deployments_store.selectedDeploymentId` and `selection_store.broker` / `symbol` / `timeframe` are
 read from the context and the arrangement; `selectRun(id)` sets the context and loads. `loadRun`
 checks the id against the index, and an answer that arrives for a run no longer selected is
-discarded — the case a restore and a quick click produce together.
+discarded — the case a restore and a quick click produce together. An id the index does not know is
+asked for once more before it is called gone, because not known YET is not gone: a deployment can
+name a session newer than the index the Runs panel loaded. `loadDeployment` does the same against
+the ledger.
 
 **Binders do the loading a view needs on mount:** `use_run_binding` and `use_deployment_binding`
 load the index, then the stored selection; `use_chart_binding` resets a timeframe the symbol has no
@@ -538,12 +541,13 @@ does not allow (see *API Token* above, and issue #22).
 - **`src/types/settings_types.ts`** — the shape and `DEFAULT_SETTINGS` beside it, because a default
   that drifts from its type is the defect that placement prevents.
 - **`src/components/TopMenu.vue`** — the application menu in the shell header, behind one burger
-  trigger: settings, a theme entry that names the theme it switches TO, an account entry that
-  carries the display name once the server has reported one, and About. Both settings entries open
-  the same dialog on the tab they belong to, so there is one surface rather than two.
-- **`src/components/SettingsDialog.vue`** — three tabs: **Display** (the preferences), **Layout**
+  trigger: settings, a theme entry that names the theme it switches TO, and About.
+- **`src/components/SettingsDialog.vue`** — two tabs: **Display** (the preferences) and **Layout**
   (the way back to the suggested order of the docked panels, and the export and import of the
-  report panels in Runs) and **Account** (the identity below).
+  report panels in Runs). Every open starts on Display.
+- **`src/components/AccountStatus.vue`** — the identity below, in the menu bar beside the
+  application menu. Who the viewer works as is a fact to see at a glance rather than a setting to
+  open, so it left the settings' Account tab on 2026-10-13.
 - **`src/components/base/AppDialog.vue`** — every dialog's frame: what is set or read and then
   closed — the settings, About — rather than kept open beside the work, which is a panel. One
   frame, so no dialog re-invents the overlay or the close: 80 % of the window caps both sides, the
@@ -581,14 +585,21 @@ with **a separate token per verb**, so a write path means the dev proxy holds on
 verb rather than one credential with more rights. None of that changes the header the proxy sends.
 
 `caller_store` reads the route and keeps a STATE rather than a message, so the wording stays in the
-component where the display-string marker reaches it:
+component where the display-string marker reaches it. `AccountStatus` draws each state as a mark and
+a word, never a colour alone, and its hover card carries the sentence and — for an identity — the
+account, the client, the grants, the token's note and when it was read:
 
-| State | What it means |
-|---|---|
-| `ready` | gating is on and the identity is real |
-| `unenforced` | a 200 arrived and **proves nothing** — the server verifies no token, so every identity field is null even for a caller that sent a valid one |
-| `unauthenticated` | 401: the credential was refused |
-| `failed` | the server did not answer — a different problem with a different fix |
+| State | What it means | Menu bar: icon · word |
+|---|---|---|
+| `idle` / `loading` | the first read is under way | `status-connecting` · *connecting* |
+| `ready` | gating is on and the identity is real | `status-account` · the display name, quiet |
+| `unenforced` | a 200 arrived and **proves nothing** — the server verifies no token, so every identity field is null even for a caller that sent a valid one | `status-warning` · *no sign-in*, warning role |
+| `unauthenticated` | 401: the credential was refused | `status-warning` · *token refused*, warning role |
+| `failed` | the server did not answer — a different problem with a different fix | `status-error` · *server unreachable*, error role |
+
+Only the FIRST read shows as `loading`. Every return to the tab reads again, and a re-read keeps
+the last answer on show until the new one arrives — otherwise the menu bar would flicker through
+`connecting` each time.
 
 **`grants` is INFORMATION, never a capability list.** Settled with the backend on 2026-09-25: the
 list is displayed, every surface stays reachable, and a refusal is the 403 — which names the surface
@@ -600,8 +611,8 @@ that arrives as its own announced contract change.
 **The answer is never cached, because a restart is invisible from here.** An account or a grant
 takes effect on the backend only across a restart of its process, and no response carries a boot id
 or a start time — confirmed by the backend rather than assumed, and the build version does not move
-either. So `App.vue` re-reads on `visibilitychange`, and the dialog states the identity *as of* the
-instant it was read. That approximation is only safe because of the rule above: the answer decides
+either. So `App.vue` re-reads on `visibilitychange`, and the hover card states the identity *as of*
+the instant it was read. That approximation is only safe because of the rule above: the answer decides
 nothing, so a stale one costs a line of text.
 
 **One hazard recorded rather than solved.** Stored settings are discarded whole on a schema-version
@@ -1186,7 +1197,7 @@ These are the REPORT panels inside the Runs panel, the accordion column; viewer#
 - **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The app bar renders from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset layout* carries it into an arrangement somebody already made.
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus), `PanelColumn` (the ordered stack, drag to reorder), `AppBar` (toggles plus *collapse all* and *reset layout*). **The bar is the column turned on its side: ONE arrangement drawn twice**, horizontally and vertically, and it renders from `arrangedPanels` — every panel, switched-off ones included, in the order the reader made. It rendered `allPanels()` until 2026-09-30, so dragging Broker to the top left its toggle sixth in the bar; it appended the switched-off ones until 2026-10-07, so flipping a toggle moved it. The two orientations now differ in exactly one thing: the column leaves out what is switched off and what this run does not carry, so the pinned boundary lands on a different index in each. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 
-  **The bar is ONE row, however narrow the panel** (`base/OverflowRow.vue`, the rule in `base/overflow_fit.ts`). It wrapped until 2026-10-13, and in a Runs panel 585 px wide it took four rows — with the run line above it in three, a quarter of the panel's height went by before the first section. What does not fit now waits behind `+N ▾` at the row's end, in the order things give way: the two actions first, being the rarest, then the toggles from the end of the reader's order. The menu keeps each hidden toggle's state — ticked where shown, struck where the run has no such section — and stays open, so several can be switched in one visit. The wider the panel, the less waits behind the control, until nothing does and it is gone: the pattern GitHub's repository tabs and the actions above an editor in VS Code use. Items are measured where they stand — one behind the control stays in the row, unseen, inert and hidden from a screen reader, so its width is known the moment there is room for it again. `OverflowRow` is generic over its items and knows nothing about panels. The run line above it is one line too, ending in an ellipsis with the whole of it on hover, and `Change run` never breaks.
+  **The bar is ONE row, however narrow the panel** (`base/OverflowRow.vue`, the rule in `base/overflow_fit.ts`). It wrapped until 2026-10-13, and in a Runs panel 585 px wide it took four rows — with the run line above it in three, a quarter of the panel's height went by before the first section. What does not fit now waits behind `+N ▾` at the row's end, in the order things give way: the two actions first, being the rarest, then the toggles from the end of the reader's order. The menu keeps each hidden toggle's state — ticked where shown, struck where the run has no such section — and stays open, so several can be switched in one visit. The wider the panel, the less waits behind the control, until nothing does and it is gone: the pattern GitHub's repository tabs and the actions above an editor in VS Code use. Items are measured where they stand — one behind the control stays in the row, unseen, inert and hidden from a screen reader, so its width is known the moment there is room for it again. `OverflowRow` is generic over its items and knows nothing about panels. The run line above it is one line too, ending in an ellipsis with the whole of it on hover, and `Change run` never breaks — and so is the deployment line on the Deployments side, with `Change deployment`.
 - **`src/stores/layout_store.ts`** — the panel column's order and state, persisted under its own versioned key `layout.v1` (the selection is in `arrangement.v1`, see *Selection State*).
 
 **A section that fails to load says so, and every one of them does.** `run_reports_store` keyed its
@@ -1241,8 +1252,14 @@ The two DEPLOYMENT routes deliberately keep `| null`: an unknown deployment id i
 
 **From a panel into another view — `use_open_in_context.ts`.** The sibling of the position link,
 one level up: a panel names WHAT to open (`openRun(id)`, `openDeployment(id)`) and the host decides
-HOW. The app root sets the main link's context and brings that panel to the front through the dock
-store (`dock.open`); no panel knows the dock, and none changed when the routes went. `canOpen` is false where
+HOW. The app root supplies `openInDock()` (`components/dock/open_in_dock.ts`): it CHOOSES the run or
+the deployment through the stores' own `selectRun` / `selectDeployment` — the context and the load,
+exactly as a pick in their list — and brings that panel to the front through the dock store
+(`dock.open`); no panel knows the dock, and none changed when the routes went. It never calls the
+context's bare setter: a docked view stays mounted, so nothing reloads behind a context that merely
+changed. Measured 2026-10-14, when the jump did exactly that: a run opened from a deployment showed
+its own sections beside the previous run's executive summary — the sections follow the context, the
+summary loads with the choice. `canOpen` is false where
 no host supplied the channel, and a panel then draws the name as plain text rather than a way in
 that leads nowhere. Four places use it, each through `JumpLink`: a session's run (`SessionsTable`),
 a period's run on the deployment side (`BookingPeriodTable`), a session lane's label
