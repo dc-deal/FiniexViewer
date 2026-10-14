@@ -26,7 +26,7 @@ function mountPanel(history: TradeHistoryReport) {
   return mount(TradeHistoryPanel, { props: { model: history } })
 }
 
-/** The panel under a host that supplies presentation preferences, the way PanelColumn does. */
+/** The panel under a host that supplies presentation preferences, the way the app root does. */
 function mountWithDisplay(
   history: TradeHistoryReport,
   overrides: Partial<DisplaySettings> = {}

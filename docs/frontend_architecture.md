@@ -491,7 +491,11 @@ the ledger.
 
 **Binders do the loading a view needs on mount:** `use_run_binding` and `use_deployment_binding`
 load the index, then the stored selection; `use_chart_binding` resets a timeframe the symbol has no
-coverage for. The bars store REPORTS that case (`timeframeUncovered`) and never writes a selection
+coverage for. The run side is called at the APP ROOT since 2026-10-14, together with
+`use_run_reports_loading` (the run's sections) and `use_run_report_channels` (the channels the
+sections read): a section opened as a panel of its own needs all three while the Runs panel is
+closed or behind a tab, and a docked panel is drawn only once it is first shown. Fetching the index
+again when the Runs panel is shown again stays in the panel — it is the one place that knows. The bars store REPORTS that case (`timeframeUncovered`) and never writes a selection
 itself — a data store that changes what the reader chose is the defect this replaced.
 
 **A picker opens collapsed on a selection it finds at mount.** Its `watch` sees only a CHANGE, and a
@@ -559,7 +563,7 @@ does not allow (see *API Token* above, and issue #22).
 - **`src/stores/machine_store.ts`** — the machine's last reading, asked again every few seconds.
 - **`src/composables/use_display_settings.ts`** — how a preference reaches a panel.
 
-**A panel does not read the store.** `PanelColumn` provides the display subset and a panel injects
+**A panel does not read the store.** The app root provides the display subset (`use_run_report_channels`) and a panel injects
 it, with the defaults as the fallback — so a panel mounted on its own, or by a future live host,
 behaves exactly as it did before settings existed. Ambient rather than a prop for the same reason
 the theme is: it applies to every panel, only some care, and passing it to all of them would hang a
@@ -1000,8 +1004,8 @@ preferences do: it applies to every panel, only four act on it, and a prop on `<
 hangs a stray attribute on the ones that do not declare it. The channel carries the SETTER too,
 because the roster changes the selection — routed back as an event, the generic panel shell would
 have to forward a run-specific emit, which is the domain leaking into the part that must not know
-it. `RunsView` supplies it, not `PanelColumn`, which draws a deployment's panels and has no
-scenario to narrow to.
+it. The app root supplies it (`use_run_report_channels`), so it reaches a section wherever the
+section is drawn.
 
 **Four figures are run-wide and cannot be split, so they are LABELLED rather than filtered:** the
 executive KPI table (one row per CURRENCY), the reconciliation verdict and the deepest-drawdown
@@ -1244,10 +1248,10 @@ CONCURRENTLY — so the last writer won and the reader was told about whichever 
 finish last while the other failures vanished. Same shape as `absences` beside it, and for the same
 reason. The run view prints one line per failure.
 
-**A panel receives its model as a prop and never fetches.** `PanelColumn` is handed a `sources` record and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a streamed frame later (testingide#379/#380) without being written twice. The rule is about DATA: presentation preferences reach a panel ambiently instead (see *Settings* above), which ties it to no source.
+**A panel receives its model as a prop and never fetches.** `run_sections_store` composes the `sources` record ONCE for every place a section is drawn; `PanelColumn` is handed it and passes `sources[descriptor.source]` to each panel. That is what lets the same component render a run artifact today and a streamed frame later (testingide#379/#380) without being written twice. The rule is about DATA: presentation preferences reach a panel ambiently instead (see *Settings* above), which ties it to no source.
 
 **A composed model is its own computed, so it keeps its identity while unrelated sections arrive.**
-Three panels read a model `RunsView` composes from several responses — the Run Header, the Orders
+Three panels read a model `run_sections_store` composes from several responses — the Run Header, the Orders
 and the Scenarios. Built inside the one `sources` literal, each was a new object whenever ANY
 section landed, and a panel that watched its model handed a reader's choices back: the roster
 cleared its narrowing as the trade history or the configuration arrived, neither of which it reads.
@@ -1268,9 +1272,9 @@ cards stay in `vh`: they float over the whole screen, so the window IS their mea
 
 **A section whose model this run does not carry is skipped, never shown empty.** `PanelColumn` drops a panel whose source is absent, which is how a 404 on a report route reaches the UI: not as an error, as a missing section.
 
-**One still on its way is neither, and keeps its place.** `RunsView` passes `pending` per source from the stores' loading flags. `PanelColumn` keeps such a panel where it stands with a loading line instead of its content, holding the height that content last had (one `ResizeObserver` over the panel bodies), and `AppBar` keeps its toggle usable rather than striking it through as absent. A run change used to empty the column behind one spinner and let each panel come back on its own, so the column collapsed and rebuilt piece by piece in front of the reader. The view-wide spinner now waits only for the run index.
+**One still on its way is neither, and keeps its place.** `run_sections_store` states `pending` per source from the stores' loading flags. `PanelColumn` keeps such a panel where it stands with a loading line instead of its content, holding the height that content last had (one `ResizeObserver` over the panel bodies), and `AppBar` keeps its toggle usable rather than striking it through as absent. A run change used to empty the column behind one spinner and let each panel come back on its own, so the column collapsed and rebuilt piece by piece in front of the reader. The view-wide spinner now waits only for the run index.
 
-**And the absence now says WHY.** Until the backend named the cause (contract 5), every missing section answered `run_not_found` and this client collapsed it to `null` — so a run still going, a run started with `reporting: none`, and a run whose pipeline never writes that section all rendered as the same blank space. `getX` now answers `Report | SectionAbsence`, the store keeps the reason beside the empty slot in `absences`, and `RunsView` says it ONCE above the column, **grouped by cause** — a run that ended early is missing several sections for one reason, and naming it once is the point. The sentence shown is the backend's own `detail`: it is written for a reader and held that way by a test on their side, so replacing it with one of ours would be a second, worse copy.
+**And the absence now says WHY.** Until the backend named the cause (contract 5), every missing section answered `run_not_found` and this client collapsed it to `null` — so a run still going, a run started with `reporting: none`, and a run whose pipeline never writes that section all rendered as the same blank space. `getX` now answers `Report | SectionAbsence`, the store keeps the reason beside the empty slot in `absences`, `run_sections_store` adds the summary's, and `RunsView` says it ONCE above the column, **grouped by cause** — a run that ended early is missing several sections for one reason, and naming it once is the point. The sentence shown is the backend's own `detail`: it is written for a reader and held that way by a test on their side, so replacing it with one of ours would be a second, worse copy.
 
 **A section that cannot be DRAWN is a finding about that section, not about the report.** Every panel renders inside an error boundary: `AccordionPanel` catches a render error from its own subtree, stops it there, and puts a sentence in the panel's place with a mark on its header, so the news survives the panel being folded. The stack goes to the console; a reader gets a sentence, because a stack trace on screen explains nothing to them.
 
@@ -1568,7 +1572,7 @@ panel says so, because the figures then fold two kinds of account into one.
 ### Orders — why an order did not become what it was meant to be
 
 `GET /api/v1/reports/runs/{run_id}/pending-orders` **and** `GET …/order-history`, composed in
-`RunsView` and rendered by `runs/OrdersPanel.vue` as a `RecordList` grouped by scenario: the
+`run_sections_store` and rendered by `runs/OrdersPanel.vue` as a `RecordList` grouped by scenario: the
 scenario's pending funnel is the group heading, its order records are the rows. Registered closed by
 default: it is evidence, and a reader opens it with a question.
 
@@ -1748,14 +1752,16 @@ answer whichever close the reader came from.
 
 **`use_position_link.ts` is ambient, like the scenario narrowing, and for the same reason.** Making
 a sibling panel visible and scrolling to a row is about the WORKSPACE, which a panel must not know;
-writing the mark into a context would tie a panel to one link. `RunsView` provides the
-channel and the panels only read the mark and ask for the jump. The channel carries three things:
+writing the mark into a context would tie a panel to one link. The app root provides the
+channel (`use_run_report_channels`, the jump itself in `use_panel_jump`) and the panels only read
+the mark and ask for the jump. The jump searches the Runs panel for the marked row, never the whole
+document. The channel carries three things:
 
 | | |
 |---|---|
 | `marked` | the position on show — the run's `position` in its link's context |
 | `jumpTo(panelId, ref)` | `mark` it · `show` the panel · `setOpen` it · scroll to the marked row |
-| `canJumpTo(panelId)` | does that panel have a model at all — the HOST's knowledge, read from the same `sources` record `PanelColumn` is handed |
+| `canJumpTo(panelId)` | does that panel have a model at all — the HOST's knowledge, read from the same `sources` record `PanelColumn` is handed (`run_sections_store`) |
 
 **A new run drops the mark; a restore keeps it.** A position id is a counter per unit —
 `pos_eurgbp_1` exists in every run that traded EURGBP — so a mark carried into the next run marks a
@@ -1790,7 +1796,7 @@ UNGATED, the way the configuration is — `header` is not in a run's artifact li
 would ask for nothing and show nothing.
 
 **Two models, and neither replaces the other.** The index ROW is always there; the served HEADER
-carries the two things the row cannot. Composed in `RunsView` as `{ info, served }`, the same shape
+carries the two things the row cannot. Composed in `run_sections_store` as `{ info, served }`, the same shape
 the Orders panel uses, because the panel contract takes one model and a second source would have
 had to rebuild it.
 
