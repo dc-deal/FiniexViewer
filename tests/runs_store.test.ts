@@ -132,7 +132,7 @@ describe('useRunsStore', () => {
       const store = useRunsStore()
       await store.loadRuns()
       expect(store.runs).toEqual(RUNS)
-      expect(store.error).toBeNull()
+      expect(store.indexError).toBeNull()
     })
 
     it('reloads on every call — new runs appear while the app is open', async () => {
@@ -161,7 +161,7 @@ describe('useRunsStore', () => {
       const store = useRunsStore()
       await store.loadRuns()
       expect(store.runs).toEqual([])
-      expect(store.error).toBe('Could not load the run index: network down')
+      expect(store.indexError).toBe('Could not load the run index: network down')
       expect(store.loadingRuns).toBe(false)
     })
   })
@@ -258,7 +258,7 @@ describe('useRunsStore', () => {
       await store.selectRun('20260615_130000')
       expect(store.summary).toBeNull()
       expect(store.summaryMissing).toBe(true)
-      expect(store.error).toBeNull()
+      expect(store.summaryError).toBeNull()
     })
 
     /** An outage takes the run view down; a summary in an older schema is a state, and does not. */
@@ -270,18 +270,21 @@ describe('useRunsStore', () => {
       await store.loadRuns()
       await store.selectRun('20260615_130000')
       expect(store.summaryUnreadable).toBe('Written by an older schema.')
-      expect(store.error).toBeNull()
+      expect(store.summaryError).toBeNull()
       expect(store.loadingSummary).toBe(false)
     })
 
-    it('surfaces a summary failure as an error message', async () => {
+    /** The run report's to say — the run list it was picked from stays as it is. */
+    it('surfaces a summary failure as an error message, and leaves the index alone', async () => {
       vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
       vi.mocked(apiClient.getRunSummary).mockRejectedValue(new Error('boom'))
       const store = useRunsStore()
       await store.loadRuns()
       await store.selectRun('20260615_130000')
-      expect(store.error).toBe('Could not load the run summary: boom')
+      expect(store.summaryError).toBe('Could not load the run summary: boom')
       expect(store.loadingSummary).toBe(false)
+      expect(store.indexError).toBeNull()
+      expect(store.runs.length).toBeGreaterThan(0)
     })
 
     it('never requests a run the index does not contain', async () => {
@@ -295,7 +298,7 @@ describe('useRunsStore', () => {
       expect(store.unknownRunId).toBe('20260829_200849')
       // the choice is kept, so the view can say which run is gone; nothing resolves to it
       expect(store.selectedRun).toBeNull()
-      expect(store.error).toBeNull()
+      expect(store.summaryError).toBeNull()
     })
 
     /** A deployment can name a session newer than the index the panel loaded — that run is not gone. */
@@ -344,7 +347,7 @@ describe('useRunsStore', () => {
       expect(store.selectedRun?.has_reports).toBe(false)
       // it is a known run, so it is not the unknown-run case
       expect(store.unknownRunId).toBeNull()
-      expect(store.error).toBeNull()
+      expect(store.summaryError).toBeNull()
       expect(store.summaryMissing).toBe(false)
     })
 

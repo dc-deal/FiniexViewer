@@ -36,7 +36,7 @@ test('a section opens as a panel of its own beside the column, and ⇲ on its ta
   await expect(page.locator(`${ownPanel('trade-history')} [data-panel="trade-history"]`)).toBeVisible()
   await expect(page.locator('.panel-column [data-panel="trade-history"]')).toHaveCount(0)
   // beside the Runs panel, not over it: both stand on screen at once
-  await expect(page.locator('[data-panel-kind="runs"] .panel-column')).toBeVisible()
+  await expect(page.locator('[data-panel-kind="run"] .panel-column')).toBeVisible()
 
   await page.locator('.dv-tab', { hasText: 'Trade History' }).locator('.panel-tab-back').click()
   await expect(page.locator(ownPanel('trade-history'))).toHaveCount(0)
@@ -47,7 +47,7 @@ test('a section opens as a panel of its own beside the column, and ⇲ on its ta
 test('closing a section panel hides it, and the Panels menu shows it again where it stood', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
   await openAsPanel(page, 'Trade History')
-  const runs = (await page.locator('[data-panel-kind="runs"]').boundingBox())!
+  const runs = (await page.locator('[data-panel-kind="run"]').boundingBox())!
   const before = (await page.locator(ownPanel('trade-history')).boundingBox())!
 
   await page.locator('.dv-tab', { hasText: 'Trade History' }).locator('.panel-tab-close').click()

@@ -15,8 +15,8 @@ import type { PositionRef } from '@/types/context_types'
 
 /**
  * The channels the run report's sections read, provided ONCE at the app root so they reach every
- * place a section is drawn — the Runs panel's column, and a section opened as a panel of its own,
- * which is a sibling of the Runs panel and no child of it. The run view and its column provided
+ * place a section is drawn — the run report's column, and a section opened as a panel of its own,
+ * which is a sibling of the run report and no child of it. The run view and its column provided
  * them until 2026-10-14.
  */
 export function provideRunReportChannels(): void {

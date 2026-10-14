@@ -26,7 +26,7 @@ const SLOTS_OF_SOURCE: Record<string, string[]> = {
 
 /**
  * What the run report's sections render, composed ONCE for every place a section is drawn — the
- * Runs panel's column, and a section opened as a panel of its own beside it. Composed in the run
+ * run report's column, and a section opened as a panel of its own beside it. Composed in the run
  * view until 2026-10-14; a second place drawing sections would have composed its own, and two
  * composed models of one section drift apart in silence.
  *
@@ -141,7 +141,11 @@ export const useRunSectionsStore = defineStore('run_sections', () => {
 
   /** Every failure among the slots a section reads — one that failed must say so wherever it is. */
   function failuresOf(source: string): string[] {
-    return slotsOf(source).flatMap(slot => reports.errors[slot] ?? [])
+    return slotsOf(source).flatMap(slot => {
+      // the summary's failure is the runs store's, kept apart from the index's since 2026-10-14
+      const message = slot === 'runSummary' ? runs.summaryError : reports.errors[slot]
+      return message ? [message] : []
+    })
   }
 
   /** Every slot a section reads whose artifact predates the current schema, in the backend's words. */

@@ -1,5 +1,6 @@
 import { defineAsyncComponent, defineComponent, h } from 'vue'
 import { allPanels } from '@/panel_registry'
+import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
 import type { PanelDescriptor, PanelKind, TabStatus } from '@/types/panel_types'
@@ -38,13 +39,33 @@ export const PANEL_KINDS: PanelKind[] = [
     component: defineAsyncComponent(() => import('@/views/DeploymentsView.vue')),
   },
   {
+    // the LIST: a pick here chooses the run and brings its report to the front
     id: 'runs',
     title: t('Runs'),
-    description: t('A run and the reports it left behind'),
+    menuTitle: t('Run list'),
+    description: t('The runs the backend has stored — pick one to read its report'),
     icon: 'form-list',
     order: 2,
     opensByDefault: true,
+    area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunsView.vue')),
+  },
+  {
+    /*
+     * The BUNDLE a pick opens: the chosen run's report, its sections stacked one below the other as
+     * its members, any of which opens as a panel of its own (viewer#31, 2026-10-14). The tab names
+     * the run, so two windows comparing two runs can be told apart at a glance.
+     */
+    id: 'run',
+    title: t('Run'),
+    menuTitle: t('Run report'),
+    subtitle: () => useRunsStore().selectedRunId,
+    description: t('A run and the reports it left behind'),
+    icon: 'form-sheet',
+    order: 3,
+    opensByDefault: true,
+    area: 'runs',
+    component: defineAsyncComponent(() => import('@/views/RunReportView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/RunsQuickBar.vue')),
     status: () => outcomeStatus(useRunsStore().selectedRun?.run_outcome ?? null),
   },
@@ -53,15 +74,20 @@ export const PANEL_KINDS: PanelKind[] = [
     title: t('Chart'),
     description: t('Candles of the market data, by broker, symbol and timeframe'),
     icon: 'form-chart',
-    order: 3,
+    order: 4,
     opensByDefault: true,
     component: defineAsyncComponent(() => import('@/views/ChartView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/ChartQuickBar.vue')),
   },
 ]
 
-/** The tab a first arrangement opens on: where the work is, and where the speed is measured. */
-export const FIRST_ACTIVE_KIND = 'runs'
+/**
+ * The tab a first arrangement opens on: where the work is — the run report where a run is restored,
+ * the run list where none is yet (viewer#31, decided 2026-10-14).
+ */
+export function firstActiveKind(): string {
+  return useContextStore().main.run.id !== null ? 'run' : 'runs'
+}
 
 /** The sections whose panel is a LIST; every other section reads as a sheet of figures. */
 const LIST_SECTIONS = new Set(['scenario-roster', 'trade-history', 'orders', 'booking-periods'])

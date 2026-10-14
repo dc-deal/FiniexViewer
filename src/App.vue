@@ -23,7 +23,7 @@ useArrangementStore()
 provideOpenInContext(openInDock())
 
 // The run the reader chose, its sections and the channels they read — here at the root, so a
-// section shown as a panel of its own has them while the Runs panel is closed or behind a tab.
+// section shown as a panel of its own has them while the run report is closed or behind a tab.
 useRunBinding()
 useRunReportsLoading()
 provideRunReportChannels()

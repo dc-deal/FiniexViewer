@@ -101,7 +101,9 @@ test('a run opens its panels quickly', async ({ page }) => {
       .click()
     await page.locator('.panel-trigger').first().waitFor({ state: 'visible' })
     // a panel keeps its place while its section loads, so a drawn frame is not yet a usable
-    // panel: the figure ends when the last loading line is gone
+    // panel: the figure ends when the last loading line is gone. Since the run report is a panel
+    // of its own (2026-10-14) the click also brings it to the front and draws it the first time —
+    // part of the figure from then on
     await expect(page.locator('.panel-loading')).toHaveCount(0)
   })
   expect(ms).toBeLessThan(3000)

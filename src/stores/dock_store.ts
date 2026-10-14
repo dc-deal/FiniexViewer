@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import type { DockviewApi, GroupNavigationDirection, IDockviewPanel } from 'dockview-vue'
 import { reconcileLayout } from '@/components/dock/dock_layout'
-import { FIRST_ACTIVE_KIND, PANEL_KINDS, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { PANEL_KINDS, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
 import { useArrangementStore } from '@/stores/arrangement_store'
+import { useContextStore } from '@/stores/context_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import type { DockPlace } from '@/types/arrangement_types'
 
@@ -16,8 +17,11 @@ const SAVE_DELAY_MS = 300
  */
 const HOST_COMPONENT = 'host'
 
-/** The panel the run report's column stands in — where a section goes back to. */
-const COLUMN_KIND = 'runs'
+/** The panel the run report's column stands in — the bundle, where a section goes back to. */
+const COLUMN_KIND = 'run'
+
+/** The run list, beside which the bundle a pick opens stands. */
+const LIST_KIND = 'runs'
 
 /**
  * Where to look for the group a split stood beside, and on which side of it the split stood: a
@@ -49,6 +53,7 @@ interface Placement {
  */
 export const useDockStore = defineStore('dock', () => {
   const arrangement = useArrangementStore()
+  const context = useContextStore()
   const layoutStore = useLayoutStore()
 
   // the API object is dockview's own and large — held, never made reactive
@@ -99,7 +104,24 @@ export const useDockStore = defineStore('dock', () => {
     const kinds = PANEL_KINDS.filter(kind => kind.opensByDefault).sort((a, b) => a.order - b.order)
     kinds.forEach((kind, index) =>
       add(dock, kind.id, index ? { referencePanel: kinds[0]!.id, direction: 'within' } : undefined))
-    dock.getPanel(FIRST_ACTIVE_KIND)?.api.setActive()
+    dock.getPanel(firstActiveKind())?.api.setActive()
+  }
+
+  /**
+   * A stored layout that has never held the run report — written before the report was a panel of
+   * its own — gets it beside the run list where a run is chosen, in front where the list was. Never
+   * one the reader HID: that has a place to come back to, and comes back from the Panels menu.
+   */
+  function addMissingBundle(dock: DockviewApi): void {
+    if (context.main.run.id === null || dock.getPanel(COLUMN_KIND) || arrangement.places[COLUMN_KIND]) return
+    const before = dock.activePanel
+    const list = dock.getPanel(LIST_KIND)
+    // right after the list, so the two read as one: the runs, then the run picked from them
+    add(dock, COLUMN_KIND, list
+      ? { referencePanel: LIST_KIND, direction: 'within', index: list.group.panels.indexOf(list) + 1 }
+      : undefined)
+    // a panel added comes to the front; it stays there only where the list it joins was in front
+    if (before && before.id !== LIST_KIND) before.api.setActive()
   }
 
   /**
@@ -184,8 +206,10 @@ export const useDockStore = defineStore('dock', () => {
     api.value = dock
     const layout = reconcileLayout(arrangement.dock, kind => panelKind(kind) !== null)
     try {
-      if (layout) dock.fromJSON(layout)
-      else arrangeDefault(dock)
+      if (layout) {
+        dock.fromJSON(layout)
+        addMissingBundle(dock)
+      } else arrangeDefault(dock)
     } catch {
       arrangeDefault(dock)
     }
@@ -239,7 +263,7 @@ export const useDockStore = defineStore('dock', () => {
 
   /**
    * Opens a section of the run report as a panel of its own, or brings it to the front where it is
-   * open already — a section is in one place at a time. The first stands beside the Runs panel, as
+   * open already — a section is in one place at a time. The first stands beside the run report, as
    * a split to its right; each further one joins the last as a tab, so the screen is not cut
    * thinner with every section.
    */

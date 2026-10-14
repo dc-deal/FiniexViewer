@@ -25,8 +25,9 @@ test('a session opens the run it is', async ({ page }) => {
   await showPanel(page, 'Deployments')
   await page.locator('.sessions-list .jump-link', { hasText: FIRST_SESSION }).click()
 
-  await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Runs')
-  await expect(page.locator('[data-panel-kind="runs"] .picker-chosen')).toContainText(FIRST_SESSION)
+  // the run report comes forward, the bundle a pick in the run list opens
+  await expect(page.locator('.dv-tab.dv-active-tab .panel-tab')).toHaveAttribute('data-kind', 'run')
+  await expect(page.locator('[data-panel-kind="run"] .picker-chosen')).toContainText(FIRST_SESSION)
 })
 
 test('a run opens the deployment it was a session of', async ({ page }) => {

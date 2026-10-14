@@ -1,23 +1,43 @@
-import { describe, it, expect } from 'vitest'
-import { FIRST_ACTIVE_KIND, PANEL_KINDS, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { PANEL_KINDS, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
 import { allPanels } from '@/panel_registry'
+import { useContextStore } from '@/stores/context_store'
 
 describe('panel_kinds', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
   it('gives every kind its own id and its own place in the suggested order', () => {
     expect(new Set(PANEL_KINDS.map(kind => kind.id)).size).toBe(PANEL_KINDS.length)
     expect(new Set(PANEL_KINDS.map(kind => kind.order)).size).toBe(PANEL_KINDS.length)
   })
 
-  /** From the general to the particular: a deployment holds runs, a run has its chart. */
-  it('opens the first arrangement as deployments, runs, chart', () => {
+  /** From the general to the particular: deployments, the run list, the run a pick opens, its chart. */
+  it('opens the first arrangement as deployments, the run list, the run report, the chart', () => {
     const first = PANEL_KINDS.filter(kind => kind.opensByDefault)
       .sort((a, b) => a.order - b.order)
       .map(kind => kind.id)
-    expect(first).toEqual(['deployments', 'runs', 'chart'])
+    expect(first).toEqual(['deployments', 'runs', 'run', 'chart'])
   })
 
-  it('opens on a tab the first arrangement holds', () => {
-    expect(panelKind(FIRST_ACTIVE_KIND)?.opensByDefault).toBe(true)
+  /** Where the work is: the run report where a run is restored, the run list where none is yet. */
+  it('opens on the run list without a run, and on the run report with one', () => {
+    expect(firstActiveKind()).toBe('runs')
+    useContextStore().selectRun('r1')
+    expect(firstActiveKind()).toBe('run')
+    expect(panelKind('runs')?.opensByDefault && panelKind('run')?.opensByDefault).toBe(true)
+  })
+
+  /** The list and the report share one area in the Panels menu; the report's tab names its run. */
+  it('puts the run list and the run report in one area, and names the run on the tab of the report', () => {
+    expect(panelKind('runs')?.area).toBe('runs')
+    expect(panelKind('run')?.area).toBe('runs')
+    expect(panelKind('run')?.subtitle?.()).toBeNull()
+    useContextStore().selectRun('r1')
+    expect(panelKind('run')?.subtitle?.()).toBe('r1')
   })
 
   /** A tab shows the FORM a panel takes, so two lists read alike and the title tells them apart. */

@@ -9,7 +9,7 @@ import type { PositionRef } from '@/types/context_types'
 const MARK_WAIT_MS = 2000
 
 /**
- * Where a section is drawn: its own panel where it is open as one, the Runs panel's column
+ * Where a section is drawn: its own panel where it is open as one, the run report's column
  * otherwise. A jump searches there and never in the whole document — a marked row elsewhere is not
  * the one the reader is about to look at.
  */
@@ -69,12 +69,12 @@ export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
       void scrollToMark(sectionId, ownPanel)
       return
     }
-    // in the column: the Runs panel comes to the front — the jump may start in another panel — and
+    // in the column: the run report comes to the front — the jump may start in another panel — and
     // a hidden section is not in the column at all, and a folded one draws nothing, so the jump
     // has to make the target reachable before it can scroll to it
-    dock.open('runs')
+    dock.open('run')
     layoutStore.show(sectionId)
     layoutStore.setOpen(sectionId, true)
-    void scrollToMark(sectionId, 'runs')
+    void scrollToMark(sectionId, 'run')
   }
 }

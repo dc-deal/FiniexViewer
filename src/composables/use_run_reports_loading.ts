@@ -5,7 +5,7 @@ import { useRunReportsStore } from '@/stores/run_reports_store'
 
 /**
  * Loads the sections of the run the reader chose. Called ONCE, at the app root: a section shown as
- * a panel of its own needs its data while the Runs panel is closed or behind a tab, and a docked
+ * a panel of its own needs its data while the run report is closed or behind a tab, and a docked
  * panel is drawn only once it is first shown. The run view loaded them until 2026-10-14.
  */
 export function useRunReportsLoading(): void {

@@ -8,10 +8,10 @@ import { useLayoutStore } from '@/stores/layout_store'
 
 const MARK = { scenario: 'EURGBP_partial_close', position: 'pos_eurgbp_1' }
 
-/** The Runs panel as the dock draws it, with one section in its column. */
+/** The run report as the dock draws it, with one section in its column. */
 function drawRunsPanel(): HTMLElement {
   const panel = document.createElement('div')
-  panel.dataset['panelKind'] = 'runs'
+  panel.dataset['panelKind'] = 'run'
   panel.innerHTML = '<div data-panel="trade-history"></div>'
   document.body.appendChild(panel)
   return panel.querySelector<HTMLElement>('[data-panel="trade-history"]')!
@@ -81,7 +81,7 @@ describe('usePanelJump', () => {
   /** A section open as a panel of its own is jumped to THERE: its panel to the front, its row found. */
   it('lands in the own panel of the section where it is open as one', async () => {
     const dock = useDockStore()
-    dock.openIds = ['runs', 'report-trade-history']
+    dock.openIds = ['run', 'report-trade-history']
     const brought: string[] = []
     dock.open = (id: string) => { brought.push(id) }
     drawRunsPanel()
@@ -96,12 +96,12 @@ describe('usePanelJump', () => {
     expect(scrolled).toHaveBeenCalledTimes(1)
   })
 
-  /** A jump may start in a section panel: the Runs panel comes to the front for one in the column. */
-  it('brings the Runs panel to the front for a section in the column', () => {
+  /** A jump may start in a section panel: the run report comes to the front for one in the column. */
+  it('brings the run report to the front for a section in the column', () => {
     const dock = useDockStore()
     const brought: string[] = []
     dock.open = (id: string) => { brought.push(id) }
     usePanelJump()('trade-history', MARK)
-    expect(brought).toEqual(['runs'])
+    expect(brought).toEqual(['run'])
   })
 })

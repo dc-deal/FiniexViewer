@@ -11,8 +11,8 @@ import { useRunsStore } from '@/stores/runs_store'
  * new run like any other: the store discards an answer for a run that is no longer the chosen one.
  *
  * Called ONCE, at the app root, since 2026-10-14: a section shown as a panel of its own needs the
- * run while the Runs panel is closed or behind a tab. Fetching the index again when that panel is
- * shown again stays with the panel, the one place that knows it was shown.
+ * run while the run report is closed or behind a tab. Fetching the index again when the run list
+ * is shown again stays with that panel, the one place that knows it was shown.
  */
 export function useRunBinding(): void {
   const context = useContextStore()

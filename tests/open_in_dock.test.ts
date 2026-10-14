@@ -48,7 +48,7 @@ describe('openInDock', () => {
    * PREVIOUS run's executive summary, because only the context changed and the docked view stayed
    * mounted. Opening is CHOOSING, the same as a pick in the run list.
    */
-  it('loads the summary of each run it opens, and brings the Runs panel forward', async () => {
+  it('loads the summary of each run it opens, and brings the run report forward', async () => {
     const open = openInDock()
     open.openRun(FIRST!)
     await flushPromises()
@@ -57,7 +57,7 @@ describe('openInDock', () => {
     open.openRun(SECOND!)
     await flushPromises()
     expect(useRunsStore().summary?.run_id).toBe(SECOND)
-    expect(opened).toEqual(['runs', 'runs'])
+    expect(opened).toEqual(['run', 'run'])
   })
 
   it('starts the opened run with no narrowing of the run before it', async () => {

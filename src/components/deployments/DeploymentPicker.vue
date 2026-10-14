@@ -10,7 +10,7 @@ import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
 import {
-  amount, duration, magnitude, percentFigure, signClass, sortInstant, utcInstant,
+  amount, duration, magnitude, percentFigure, signClass, sortInstant, startedAt, utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { Figure } from '@/types/figure_types'
@@ -129,21 +129,6 @@ const shown = computed(() => sortRows(
 ))
 
 /**
- * The stamp a reader scans by, in their own zone — the same treatment and the same reasoning as the
- * run list's: the year is dropped inside the current year and kept outside it, the seconds are
- * gone, and the month stays a WORD because the card beside it carries UTC.
- */
-function startedAt(iso: string): string {
-  const at = new Date(iso)
-  if (Number.isNaN(at.getTime())) return t('no date')
-  const sameYear = at.getFullYear() === new Date().getFullYear()
-  return new Intl.DateTimeFormat(undefined, {
-    ...(sameYear ? {} : { year: 'numeric' }),
-    month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
-  }).format(at)
-}
-
-/**
  * The longest idle stretch between two sessions. `null` where no such stretch EXISTS — a deployment
  * of one session has nothing between its sessions — which is an absence and not a zero.
  */
@@ -208,7 +193,7 @@ const chosen = computed(() =>
 const chosenMeta = computed(() => {
   const row = chosen.value
   if (!row) return ''
-  return [row.bot, plural(row.sessions, t('session'), t('sessions')), startedAt(row.last_started)]
+  return [row.bot, plural(row.sessions, t('session'), t('sessions')), startedAt(row.last_started) || t('no date')]
     .filter(Boolean)
     .join(' · ')
 })
@@ -265,8 +250,8 @@ const chosenMeta = computed(() => {
           </span>
           <span :data-rank="1" class="deployment-bot" :title="row.bot">{{ row.bot }}</span>
           <span :data-rank="2" class="figure-cell">{{ row.sessions }}</span>
-          <span :data-rank="4">{{ startedAt(row.first_started) }}</span>
-          <span :data-rank="3">{{ startedAt(row.last_started) }}</span>
+          <span :data-rank="4">{{ startedAt(row.first_started) || t('no date') }}</span>
+          <span :data-rank="3">{{ startedAt(row.last_started) || t('no date') }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.net_pnl)">
             {{ amount(row.net_pnl, row.currency) }}
           </span>

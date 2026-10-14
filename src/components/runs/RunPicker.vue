@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
 import FacetBar from '@/components/base/FacetBar.vue'
-import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
@@ -11,7 +10,7 @@ import { useFacetState } from '@/composables/use_facet_state'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListCard, ListColumn } from '@/types/list_types'
 import type { Figure } from '@/types/figure_types'
-import { amount, bytes, marketSpan, shortHash, sortInstant, utcInstant } from '@/components/runs/report_format'
+import { amount, bytes, marketSpan, shortHash, sortInstant, startedAt, utcInstant } from '@/components/runs/report_format'
 import type { RunInfo, RunResult } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
 
@@ -344,38 +343,6 @@ function toggleFamily(key: string): void {
 }
 
 /**
- * When the run started, in the reader's own zone. The id encodes the same instant, but nobody
- * reads `20260925_095227` as a date at a glance — which is the whole reason this column exists.
- *
- * A label says only what its neighbours do not, which is the same rule the time axis follows: the
- * year is dropped inside the current one and kept outside it, and the seconds are gone — two runs
- * of the same minute are told apart by the id, not by this. `Sep 29, 2026, 12:27 PM` was 22
- * characters and needed 13rem of a 28rem panel, which is what made the narrowest tier overflow by
- * 24 px. `Sep 29, 12:27` is 13.
- *
- * The MONTH stays a word on purpose. This column is the reader's own zone while the card beside it
- * carries UTC, and a numeric `2026-09-29 12:27` reads like the canonical clock that it is not.
- */
-function startedAt(iso: string): string {
-  if (!iso) return ''
-  const at = new Date(iso)
-  if (Number.isNaN(at.getTime())) return ''
-  const sameYear = at.getFullYear() === new Date().getFullYear()
-  return new Intl.DateTimeFormat(undefined, {
-    ...(sameYear ? {} : { year: 'numeric' }),
-    month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
-  }).format(at)
-}
-
-/** The chosen run's pipeline, name and start — one line, cut short where the panel is narrow. */
-const chosenMeta = computed(() => {
-  const run = selectedRun.value
-  if (!run) return ''
-  const started = startedAt(run.start_time)
-  return [run.group, run.name, started].filter(Boolean).join(' · ')
-})
-
-/**
  * What the row has no width for — and on this list that is most of the index row.
  *
  * `RunInfo` carries twenty-one fields and ten of them reach a column. The rest are what a reader
@@ -455,30 +422,22 @@ function card(run: RunInfo): ListCard {
 }
 
 /**
- * The list is the way in, so it is open until there is something to look at — and it collapses
- * once a run is chosen, or forty rows push every panel off the screen. A run already chosen when
- * the picker mounts — the one the reader left open — collapses it from the start: the watch below
- * sees only a CHANGE, and a restored selection is none.
+ * A pick chooses the run and says so, so the panel holding this list can bring the run report to
+ * the front. The list itself stays as it is: it is a panel of its own since 2026-10-14, the run
+ * report another, so nothing has to fold away to make room for the sections.
  */
-const open = ref(selectedRunId.value === null)
+const emit = defineEmits<{ chosen: [runId: string] }>()
 
-watch(selectedRunId, runId => { open.value = runId === null })
+function choose(runId: string): void {
+  void runsStore.selectRun(runId)
+  emit('chosen', runId)
+}
 </script>
 
 <template>
   <div class="run-picker">
     <div v-if="loadingRuns" class="picker-state">
       <AppSpinner />
-    </div>
-
-    <!-- chosen: one line saying which, and the way back to the list -->
-    <div v-else-if="!open" class="picker-chosen">
-      <span class="chosen-label">{{ t('Run') }}</span>
-      <span class="chosen-id">{{ selectedRun?.run_id }}</span>
-      <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
-           three lines above the sections -->
-      <span class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
-      <AppButton variant="quiet" @click="open = true">{{ t('Change run') }}</AppButton>
     </div>
 
     <template v-else>
@@ -501,7 +460,6 @@ watch(selectedRunId, runId => { open.value = runId === null })
       <RecordList
         v-else
         class="run-list"
-        :class="{ roomy: !selectedRunId }"
         :rows="shown"
         :columns="columns"
         :row-key="run => run.run_id"
@@ -511,7 +469,7 @@ watch(selectedRunId, runId => { open.value = runId === null })
         :is-open="isFamilyOpen"
         :shows-group-head="showsFamilyHead"
         @toggle="toggleFamily"
-        @pick="run => runsStore.selectRun(run.run_id)"
+        @pick="run => choose(run.run_id)"
       >
         <!--
           The family, on a line of its own, and it says the three things a closed line has to: WHAT
@@ -609,44 +567,6 @@ watch(selectedRunId, runId => { open.value = runId === null })
   padding: var(--space-sm);
 }
 
-.picker-chosen {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-sm);
-  min-width: 0;
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.chosen-label {
-  color: var(--color-text-secondary);
-}
-
-.chosen-label,
-.chosen-id {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.chosen-id {
-  color: var(--color-text-primary);
-}
-
-.chosen-meta {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--color-text-secondary);
-}
-
-/* a control whose name breaks over two lines reads as two controls */
-.picker-chosen .app-button {
-  margin-left: auto;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
 .picker-hint {
   margin: 0;
   color: var(--color-text-secondary);
@@ -654,29 +574,21 @@ watch(selectedRunId, runId => { open.value = runId === null })
   font-size: var(--font-size-sm);
 }
 
-/* the list is the way in, so it gets room — but never more than a third of the view ONCE a run is chosen, or the
-   panels it leads to are never on screen at the same time. Everything else about its shape —
-   the tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`.
-   Measured against the VIEW (`cqh`, the runs view is a size container), not the browser window. */
+/* The list is the whole panel: the run report is a panel of its own since 2026-10-14, so nothing
+   below the list needs a share of the view. It scrolls inside itself rather than growing past the
+   view — the view hides its own overflow, so a list taller than the view would put its last rows
+   out of reach. 11.5rem is the rest of the view above and below the list; the floor keeps a third
+   of a short view, where the subtraction alone would leave less than one row. Measured against the
+   VIEW (`cqh`, the runs view is a size container), not the browser window. Everything else about
+   its shape — the tracks, the sticky headings, the row's four states — belongs to
+   `base/RecordList.vue`. */
 .run-list {
-  max-height: 33cqh;
+  max-height: max(33cqh, calc(100cqh - 11.5rem));
   overflow-y: auto;
   /* The gutter is reserved whether or not a bar is in it. Opening a family can push the list past
      its cap, and the bar then appears and takes 15 px of width from the `1fr` column — measured
      2026-10-10, the `Set` column jumped sideways on a click that had nothing to do with it. */
   scrollbar-gutter: stable;
-}
-
-/* Nothing is below it yet, so the third of a window is a window onto a void: the list was capped
-   at 33vh while the rest of the page held one sentence. Reported on screen 2026-10-10. It still
-   scrolls inside itself rather than growing past the view — the view hides its own overflow,
-   so a header taller than the view would put its last rows out of reach. */
-/* 11.5rem is the rest of the view above and below the list, so the list ends at the view's edge.
-   (It was `100vh - 14rem`, which also had to take out the 2.5rem shell header above the view; that
-   header is not inside `100cqh`.) The floor is the third the list keeps once a run is chosen: in a
-   short view the subtraction alone would leave less than one row, or nothing. */
-.run-list.roomy {
-  max-height: max(33cqh, calc(100cqh - 11.5rem));
 }
 
 /* ONE cell over every track. The other lists split their heading in two so a count can sit at the

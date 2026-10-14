@@ -69,15 +69,24 @@ describe('PanelTab', () => {
     expect(main.find('.panel-tab-back').exists()).toBe(false)
   })
 
+  /** Two windows comparing two runs tell them apart by the tab; the list's tab names no run. */
+  it('names the chosen run on the tab of the run report, and on no other', () => {
+    openRun('success')
+    const report = mount(PanelTab, { props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi } })
+    expect(report.find('.panel-tab-subtitle').text()).toBe('· r1')
+    const list = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
+    expect(list.find('.panel-tab-subtitle').exists()).toBe(false)
+  })
+
   it('falls back to the stored title for a kind it does not know', () => {
     const wrapper = mount(PanelTab, { props: { kindId: 'retired', api: fakeApi() as unknown as DockviewPanelApi } })
     expect(wrapper.find('.panel-tab-title').text()).toBe('stored title')
   })
 
   /** The backend's grade of the open run, where it is not a success — the mark with its word. */
-  it('marks the Runs tab with the grade of a run that failed, in the error role', () => {
+  it('marks the tab of the run report with the grade of a run that failed, in the error role', () => {
     openRun('failed')
-    const wrapper = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
+    const wrapper = mount(PanelTab, { props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi } })
     const mark = wrapper.find('.panel-tab-status')
     expect(mark.attributes('aria-label')).toBe('failed')
     expect(mark.classes()).toContain('error')
@@ -86,26 +95,26 @@ describe('PanelTab', () => {
 
   it('marks a run that finished with errors in the warning role', () => {
     openRun('finished_with_errors')
-    const wrapper = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
+    const wrapper = mount(PanelTab, { props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi } })
     expect(wrapper.find('.panel-tab-status').classes()).toContain('warning')
     expect(wrapper.find('[data-icon="status-warning"]').exists()).toBe(true)
   })
 
   /** Where everything went well, the tab says nothing at all. */
   it('says nothing for a run that succeeded, or where no run is open', () => {
-    const empty = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
+    const empty = mount(PanelTab, { props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi } })
     expect(empty.find('.panel-tab-status').exists()).toBe(false)
 
     openRun('success')
-    const success = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
+    const success = mount(PanelTab, { props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi } })
     expect(success.find('.panel-tab-status').exists()).toBe(false)
   })
 
   it('hands its card what the panel is for, and the status in words', () => {
     openRun('failed')
-    const wrapper = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
+    const wrapper = mount(PanelTab, { props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi } })
     const card = wrapper.findComponent(HoverCard)
-    expect(card.props('title')).toBe('Runs')
+    expect(card.props('title')).toBe('Run · r1')
     const details = card.props('details') as Figure[]
     expect(details.map(row => row.label)).toEqual(['Shows', 'Status'])
     expect(details[1]).toMatchObject({ value: 'failed', tone: 'error' })

@@ -23,22 +23,44 @@ import { t } from '@/translate'
  * arrangement.
  *
  * **The Panels menu shows and hides every panel, the same way** (viewer#31, 2026-10-14): a tick is
- * a panel on show, a click hides it or shows it again where it last stood. The run report's
- * sections stand in the submenu of the Runs panel that holds their column, each with where it is —
- * in the column, open as a panel of its own (⇱), hidden, or struck where the chosen run has none.
- * It replaces the section bar that stood above the column.
+ * a panel on show, a click hides it or shows it again where it last stood. Kinds that share an
+ * AREA stand together in its submenu — the run list and the run report under Runs, with the
+ * report's sections after them, each with where it is: in the column, open as a panel of its own
+ * (⇱), hidden, or struck where the chosen run has none. It replaces the section bar that stood
+ * above the column.
  */
 const dock = useDockStore()
 const { openIds } = storeToRefs(dock)
 const layoutStore = useLayoutStore()
 const sectionStates = useSectionStates()
 
-/** The kind whose submenu holds the run report's sections — the panel their column stands in. */
-const COLUMN_KIND = 'runs'
+/** The area whose submenu also lists the run report's sections — where their column stands. */
+const REPORT_AREA = 'runs'
 
-/** In the suggested order, so the menu reads the way the first arrangement does. */
-const kinds = [...PANEL_KINDS].sort((a, b) => a.order - b.order)
-const columnKind = computed(() => kinds.find(kind => kind.id === COLUMN_KIND) ?? null)
+/** A kind of its own at the menu's top, or an area: a submenu of the kinds that share it. */
+type MenuEntry =
+  | { type: 'kind', kind: PanelKind }
+  | { type: 'area', id: string, title: string, icon: PanelKind['icon'], kinds: PanelKind[] }
+
+/**
+ * In the suggested order, so the menu reads the way the first arrangement does. An area stands
+ * where its first kind does, and takes that kind's title and form for its own.
+ */
+const entries = computed<MenuEntry[]>(() => {
+  const kinds = [...PANEL_KINDS].sort((a, b) => a.order - b.order)
+  const result: MenuEntry[] = []
+  for (const kind of kinds) {
+    if (!kind.area) {
+      result.push({ type: 'kind', kind })
+      continue
+    }
+    const area = result.find((entry): entry is Extract<MenuEntry, { type: 'area' }> =>
+      entry.type === 'area' && entry.id === kind.area)
+    if (area) area.kinds.push(kind)
+    else result.push({ type: 'area', id: kind.area, title: kind.title, icon: kind.icon, kinds: [kind] })
+  }
+  return result
+})
 
 function isOpen(kind: PanelKind): boolean {
   return openIds.value.includes(kind.id)
@@ -79,17 +101,19 @@ function stayOpen(event: Event): void {
       <DropdownMenuTrigger class="menu-bar-trigger">{{ t('Panels') }} ▾</DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="menu-content" :side-offset="4" align="start">
-          <template v-for="kind in kinds" :key="kind.id">
-            <DropdownMenuSub v-if="kind.id === columnKind?.id">
-              <DropdownMenuSubTrigger class="menu-item menu-sub-trigger" :data-area="kind.id">
+          <template v-for="entry in entries" :key="entry.type === 'kind' ? entry.kind.id : entry.id">
+            <DropdownMenuSub v-if="entry.type === 'area'">
+              <DropdownMenuSubTrigger class="menu-item menu-sub-trigger" :data-area="entry.id">
                 <span class="menu-check" aria-hidden="true" />
-                <AppIcon :name="kind.icon" />
-                <span class="menu-label">{{ kind.title }}</span>
+                <AppIcon :name="entry.icon" />
+                <span class="menu-label">{{ entry.title }}</span>
                 <span class="menu-sub-arrow" aria-hidden="true">▸</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuSubContent class="menu-content" :side-offset="2">
                   <DropdownMenuCheckboxItem
+                    v-for="kind in entry.kinds"
+                    :key="kind.id"
                     class="menu-item menu-toggle"
                     :data-kind="kind.id"
                     :model-value="isOpen(kind)"
@@ -98,50 +122,52 @@ function stayOpen(event: Event): void {
                   >
                     <span class="menu-check" aria-hidden="true">{{ isOpen(kind) ? '✓' : '' }}</span>
                     <AppIcon :name="kind.icon" />
-                    <span class="menu-label">{{ kind.title }}</span>
+                    <span class="menu-label">{{ kind.menuTitle ?? kind.title }}</span>
                   </DropdownMenuCheckboxItem>
-                  <DropdownMenuSeparator class="menu-separator" />
-                  <DropdownMenuCheckboxItem
-                    v-for="state in sectionStates"
-                    :key="state.section.id"
-                    class="menu-item menu-toggle"
-                    :class="{ absent: state.absent && state.place !== 'panel' }"
-                    :data-section="state.section.id"
-                    :data-place="state.place"
-                    :title="sectionTitle(state)"
-                    :model-value="sectionShown(state)"
-                    :disabled="state.absent && state.place !== 'panel'"
-                    @update:model-value="toggleSection(state)"
-                    @select="stayOpen"
-                  >
-                    <span class="menu-check" aria-hidden="true">{{ sectionShown(state) ? '✓' : '' }}</span>
-                    <AppIcon :name="state.section.icon" />
-                    <span class="menu-label">{{ t(state.section.title) }}</span>
-                    <AppIcon v-if="state.place === 'panel'" name="action-open-panel" class="menu-opened" />
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuSeparator class="menu-separator" />
-                  <DropdownMenuItem class="menu-item" data-action="collapse-all" @select="layoutStore.collapseAll()">
-                    <span class="menu-check" aria-hidden="true" />
-                    {{ t('Collapse all') }}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem class="menu-item" data-action="reset-column" @select="layoutStore.reset()">
-                    <span class="menu-check" aria-hidden="true" />
-                    {{ t('Reset column') }}
-                  </DropdownMenuItem>
+                  <template v-if="entry.id === REPORT_AREA">
+                    <DropdownMenuSeparator class="menu-separator" />
+                    <DropdownMenuCheckboxItem
+                      v-for="state in sectionStates"
+                      :key="state.section.id"
+                      class="menu-item menu-toggle"
+                      :class="{ absent: state.absent && state.place !== 'panel' }"
+                      :data-section="state.section.id"
+                      :data-place="state.place"
+                      :title="sectionTitle(state)"
+                      :model-value="sectionShown(state)"
+                      :disabled="state.absent && state.place !== 'panel'"
+                      @update:model-value="toggleSection(state)"
+                      @select="stayOpen"
+                    >
+                      <span class="menu-check" aria-hidden="true">{{ sectionShown(state) ? '✓' : '' }}</span>
+                      <AppIcon :name="state.section.icon" />
+                      <span class="menu-label">{{ t(state.section.title) }}</span>
+                      <AppIcon v-if="state.place === 'panel'" name="action-open-panel" class="menu-opened" />
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSeparator class="menu-separator" />
+                    <DropdownMenuItem class="menu-item" data-action="collapse-all" @select="layoutStore.collapseAll()">
+                      <span class="menu-check" aria-hidden="true" />
+                      {{ t('Collapse all') }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem class="menu-item" data-action="reset-column" @select="layoutStore.reset()">
+                      <span class="menu-check" aria-hidden="true" />
+                      {{ t('Reset column') }}
+                    </DropdownMenuItem>
+                  </template>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
             <DropdownMenuCheckboxItem
               v-else
               class="menu-item menu-toggle"
-              :data-kind="kind.id"
-              :model-value="isOpen(kind)"
-              @update:model-value="toggleKind(kind)"
+              :data-kind="entry.kind.id"
+              :model-value="isOpen(entry.kind)"
+              @update:model-value="toggleKind(entry.kind)"
               @select="stayOpen"
             >
-              <span class="menu-check" aria-hidden="true">{{ isOpen(kind) ? '✓' : '' }}</span>
-              <AppIcon :name="kind.icon" />
-              <span class="menu-label">{{ kind.title }}</span>
+              <span class="menu-check" aria-hidden="true">{{ isOpen(entry.kind) ? '✓' : '' }}</span>
+              <AppIcon :name="entry.kind.icon" />
+              <span class="menu-label">{{ entry.kind.menuTitle ?? entry.kind.title }}</span>
             </DropdownMenuCheckboxItem>
           </template>
         </DropdownMenuContent>

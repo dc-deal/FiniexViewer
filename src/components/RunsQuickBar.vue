@@ -9,7 +9,7 @@ import type { Figure } from '@/types/figure_types'
 import { t } from '@/translate'
 
 /**
- * The scenario narrowing, said beside the Runs tab — where it is seen whatever is scrolled, and
+ * The scenario narrowing, said beside the run report's tab — where it is seen whatever is scrolled, and
  * where saying it moves nothing. It stood above the panel column until 2026-10-13 and pushed the
  * column down a line on every choice (a selection never moves the layout). The column's frame is
  * still drawn in the same annotation colour, so the bar and the edge read as one statement.

@@ -79,7 +79,9 @@ describe('AppMenuBar', () => {
   it('lists every section of the run report in the column\'s order, beside the panel it stands in', async () => {
     useLayoutStore().reorder(['broker', 'executive'])
     await openRunsSubmenu()
-    expect(kindEntry('runs')).not.toBeNull()
+    // the area holds the run list and the run report, each by the name it has there
+    expect(kindEntry('runs').textContent).toContain('Run list')
+    expect(kindEntry('run').textContent).toContain('Run report')
     const sections = [...document.querySelectorAll<HTMLElement>('.menu-toggle[data-section]')].map(node => node.dataset['section'])
     expect(sections).toEqual(useLayoutStore().arrangedPanels.map(panel => panel.id))
     expect(sections.length).toBe(allPanels().length)

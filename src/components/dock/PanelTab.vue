@@ -27,6 +27,12 @@ const title = kind?.title ?? props.api.title ?? props.kindId
 /** The section this tab's panel shows, where it is one of the run report's. */
 const section = sectionOfKind(props.kindId)
 
+/**
+ * What the tab adds to its title — the run a bundle shows, so two windows comparing two runs are
+ * told apart at a glance. Cut short in the tab where it is long, whole in the card.
+ */
+const subtitle = computed(() => kind?.subtitle?.() ?? null)
+
 /** Read where the tab is drawn, so a status that follows a store follows it here too. */
 const status = computed(() => kind?.status?.() ?? null)
 
@@ -40,10 +46,11 @@ const details = computed<Figure[]>(() => [
 </script>
 
 <template>
-  <HoverCard :title="title" :details="details">
-    <div class="panel-tab">
+  <HoverCard :title="subtitle ? `${title} · ${subtitle}` : title" :details="details">
+    <div class="panel-tab" :data-kind="kindId">
       <AppIcon v-if="kind" :name="kind.icon" class="panel-tab-icon" />
       <span class="panel-tab-title" :class="{ muted }">{{ title }}</span>
+      <span v-if="subtitle" class="panel-tab-subtitle">· {{ subtitle }}</span>
       <!-- the mark never travels alone: its word is read out with it and written in the card -->
       <span
         v-if="status"
@@ -97,6 +104,13 @@ const details = computed<Figure[]>(() => [
 
 .panel-tab-title.muted {
   color: var(--color-text-secondary);
+}
+
+/* a run id is 24 characters; the date and the time say which run, the card says the rest */
+.panel-tab-subtitle {
+  max-width: 19ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .panel-tab-status.warning {

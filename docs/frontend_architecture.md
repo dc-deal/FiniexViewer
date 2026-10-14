@@ -1147,8 +1147,10 @@ screen.
 `runsInSelection`, `selectedGroup`, `selectedName`, `setGroup`, `setName` — because nothing else
 ever read them. A **logs-only run became selectable**: it used to be a disabled option, but the run
 view now says what such a run is and the store asks the backend for nothing, so a row that cannot
-be clicked would only look broken. And the list **collapses to one line once a run is chosen**,
-because forty rows above the panels would push every one of them off the screen.
+be clicked would only look broken. And the list **is a panel of its own** since 2026-10-14: a pick
+brings the run report — another panel — to the front, so the list never folds away to make room.
+It folded to one line once a run was chosen until then, because forty rows above the sections
+pushed every one of them off the screen.
 
 **The narrowing is kept too**, as the bar's entry in `arrangement.v1` (`use_facet_state`).
 `Purpose` is the one facet that opens with a value picked, and the default is applied as an
@@ -1194,18 +1196,34 @@ panel never floats over another (a non-goal, confirmed 2026-10-11). There is no 
 bar and the tabs are the way between the views.
 
 ```
-AppMenuBar   FiniexViewer  Panels ▾                                                  ☰
-PanelDock    [☰ Deployments] [☰ Runs] [◫ Chart]
-               └─ PanelHost (kind: runs) → RunsView
+AppMenuBar   FiniexViewer  Panels ▾                         CPU · Memory   account   ☰
+PanelDock    [☰ Deployments] [☰ Runs] [▤ Run · 20261012_205715…] [◫ Chart]
+               ├─ PanelHost (kind: runs) → RunsView        the run list
+               └─ PanelHost (kind: run)  → RunReportView   the run report, a bundle
 ```
+
+**The run list and the run report are two panels** (viewer#31, 2026-10-14). `runs` is the LIST — the
+facet bar and the runs, nothing else; a pick chooses the run (`selectRun`) and brings `run` to the
+front. `run` is the BUNDLE the pick opens: one line naming the run with *Change run*, which brings
+the list forward, and then the report's sections stacked as its members in one column. Its tab
+names the run, so two browser windows comparing two runs are told apart at a glance — cut after the
+date and time, whole in the tab's card (`PanelKind.subtitle`). The run's grade and the narrowing's
+quick bar stand on the bundle's tab, where the report is. The two failures are kept apart in
+`runs_store`: the index failing is the list's to say (`indexError`), the summary failing the
+report's (`summaryError`) — one shared ref let a broken summary blank the list it was picked from.
 
 - **`src/panel_kinds.ts`** — every kind in the SUGGESTED ORDER, from the general to the particular:
   a deployment holds runs, a run has its chart (operator, 2026-10-13). A kind names its title, the
-  FORM its tab shows (`form-list`, `form-chart`) and whether the first arrangement holds it. What
+  FORM its tab shows (`form-list`, `form-sheet`, `form-chart`), whether the first arrangement holds
+  it, and the AREA whose submenu lists it in the Panels menu — the run list and the run report share
+  the area *Runs*, each under the name it has there (`menuTitle`). What
   is read or set and then closed — About, the settings — is a dialog and has no kind. Each component
   is loaded on demand into its own chunk, as the routes before them were.
 - **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: the suggested order in
-  one group, Runs in front. `open(kind)` brings a panel to the front; a closed one opens where it
+  one group, in front where the work is — the run report where a run is restored, the run list
+  where none is yet (`firstActiveKind`). A stored layout that never held the run report gains it
+  right after the run list where a run is chosen, in front where the list was; never one the reader
+  hid, which has a place to come back to. `open(kind)` brings a panel to the front; a closed one opens where it
   last stood (*Closing hides* below), and beside the active one where nothing it stood beside is
   open. `reset()` goes back to the suggested order and forgets every place — offered in the
   settings' Layout tab, beside everything else about arrangement, rather than as a menu of one

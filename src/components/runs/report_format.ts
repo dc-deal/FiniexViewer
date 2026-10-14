@@ -94,6 +94,34 @@ export function utcInstant(iso: string | null): string {
 }
 
 /**
+ * When something started, in the reader's own zone — a run in the run list and in the run line, a
+ * deployment's first and last session. The id encodes the same instant, but nobody reads
+ * `20260925_095227` as a date at a glance.
+ *
+ * A label says only what its neighbours do not, which is the same rule the time axis follows: the
+ * year is dropped inside the current one and kept outside it, and the seconds are gone — two runs
+ * of the same minute are told apart by the id, not by this. `Sep 29, 2026, 12:27 PM` was 22
+ * characters and needed 13rem of a 28rem panel, which is what made the narrowest tier overflow by
+ * 24 px. `Sep 29, 12:27` is 13.
+ *
+ * The MONTH stays a word on purpose. These columns are the reader's own zone while the card beside
+ * them carries UTC, and a numeric `2026-09-29 12:27` reads like the canonical clock that it is not.
+ * Empty for a stamp that is not a date; the caller says what it says for none. One copy since
+ * 2026-10-14 — the run list and the deployment list had one each, and they told an unreadable
+ * stamp apart differently.
+ */
+export function startedAt(iso: string): string {
+  if (!iso) return ''
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return ''
+  const sameYear = at.getFullYear() === new Date().getFullYear()
+  return new Intl.DateTimeFormat(undefined, {
+    ...(sameYear ? {} : { year: 'numeric' }),
+    month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(at)
+}
+
+/**
  * An ISO-8601 stamp as a sort key. Parsed rather than compared as text: the stamps carry an
  * explicit offset, and two offsets sort lexicographically in the wrong order. An unreadable stamp
  * becomes `0`, so it sorts last under "newest" rather than jumping to the top.

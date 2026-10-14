@@ -315,26 +315,23 @@ describe('RunPicker', () => {
     })
 
     /**
-     * **The list takes the room while nothing is below it.** It was capped at a third of the
-     * window whether or not panels followed, so an unchosen run left a short list over an empty
-     * page — reported on screen 2026-10-10.
+     * **The list stays the list.** It folded to one line once a run was chosen, so forty rows did
+     * not push every section off the screen; the run report is a panel of its own since
+     * 2026-10-14, so nothing below the list needs its room any more.
      */
-    it('gives the list the room while no run is chosen, and the cap back once one is', async () => {
+    it('keeps every row on show once a run is chosen, the chosen one marked', async () => {
       const wrapper = mountPicker([run({ run_id: 'a' }), run({ run_id: 'b' })])
-      expect(wrapper.find('.run-list').classes()).toContain('roomy')
-
       useContextStore().selectRun('a')
       await flushPromises()
-      await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
-      expect(wrapper.find('.run-list').classes()).not.toContain('roomy')
+      expect(rowIds(wrapper)).toEqual(['a', 'b'])
+      expect(rowFor(wrapper, 'a').classes()).toContain('picked')
     })
 
-    /** The run the reader left open is restored BEFORE the picker mounts — there is no change. */
-    it('opens collapsed on a run that was chosen before it mounted', () => {
+    /** The run the reader left open is restored BEFORE the picker mounts — and is marked all the same. */
+    it('marks a run that was chosen before it mounted', () => {
       useContextStore().selectRun('a')
       const wrapper = mountPicker([run({ run_id: 'a' }), run({ run_id: 'b' })])
-      expect(wrapper.find('.picker-chosen').exists()).toBe(true)
-      expect(rowIds(wrapper)).toEqual([])
+      expect(rowFor(wrapper, 'a').classes()).toContain('picked')
     })
 
     /**
@@ -359,9 +356,6 @@ describe('RunPicker', () => {
       expect(rowIds(wrapper)).toEqual([])
       useContextStore().selectRun('pickedone')
       await flushPromises()
-      // the list collapses to one line once a run is chosen, so it is reopened the way a reader
-      // reopens it
-      await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
       expect(rowIds(wrapper)).toEqual(['pickedone', 'other'])
     })
   })
@@ -377,31 +371,15 @@ describe('RunPicker', () => {
     expect(wrapper.text()).toContain('1 of 2')
   })
 
-  /**
-   * The list is the way in, so it is open until there is something to look at — forty rows above
-   * the panels would otherwise push every one of them off the screen.
-   */
-  it('collapses to one line once a run is chosen, and reopens on request', async () => {
+  /** A pick chooses the run and says so, so the panel holding the list can bring the report forward. */
+  it('chooses a run on a click and says which, the list staying as it is', async () => {
     const wrapper = mountPicker([run({ run_id: 'only_logs', has_reports: false })])
     await rowFor(wrapper, 'only_logs').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('.run-list').exists()).toBe(false)
-    expect(wrapper.find('.picker-chosen').text()).toContain('only_logs')
-
-    await wrapper.find('.picker-chosen .app-button').trigger('click')
+    expect(useRunsStore().selectedRunId).toBe('only_logs')
+    expect(wrapper.emitted('chosen')).toEqual([['only_logs']])
     expect(wrapper.find('.run-list').exists()).toBe(true)
-  })
-
-  /** A narrow panel ends the line in an ellipsis instead of wrapping it over three; the whole is on hover. */
-  it('names the chosen run in one line, with the whole of it on hover', async () => {
-    const wrapper = mountPicker([run({ run_id: 'only_logs', group: 'simulation', name: 'set_x', start_time: '' })])
-    await rowFor(wrapper, 'only_logs').trigger('click')
-    await flushPromises()
-
-    const meta = wrapper.find('.picker-chosen .chosen-meta')
-    expect(meta.text()).toBe('simulation · set_x')
-    expect(meta.attributes('title')).toBe('simulation · set_x')
   })
 
   /**

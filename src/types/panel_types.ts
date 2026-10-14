@@ -47,6 +47,15 @@ export interface PanelKind {
   /** Also the panel's id while a kind has one panel only. */
   id: string
   title: string
+  /**
+   * What its tab adds to the title — the run a bundle shows. Called where the tab is drawn, so it
+   * follows the store it reads; null where there is nothing to add.
+   */
+  subtitle?: () => string | null
+  /** The area whose submenu lists it in the Panels menu; a kind without one stands at the top. */
+  area?: string
+  /** Its entry in that submenu, where the tab's short title would repeat the area's name. */
+  menuTitle?: string
   /** What the panel is for, in one line — its tab's card says it. */
   description: string
   icon: IconName
