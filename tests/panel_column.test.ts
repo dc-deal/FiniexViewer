@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
+import { useDockStore } from '@/stores/dock_store'
 
 /**
  * A ResizeObserver that reports when the test says so — the column remembers the height a panel's
@@ -60,5 +61,33 @@ describe('PanelColumn', () => {
     await wrapper.setProps({ sources: { runSummary: null }, pending: { runSummary: true } })
     const loading = wrapper.find('[data-panel="executive"] .panel-loading')
     expect((loading.element as HTMLElement).style.minHeight).toBe('240px')
+  })
+})
+
+describe('PanelColumn — a section open as a panel of its own', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
+  /** One place at a time, and its place in the arrangement kept, so closing the panel restores it. */
+  it('leaves out a section open as a panel of its own, and takes it back once closed', async () => {
+    const wrapper = mountColumn({ config: {} })
+    expect(wrapper.find('[data-panel="config"]').exists()).toBe(true)
+    useDockStore().openIds = ['report-config']
+    await flushPromises()
+    expect(wrapper.find('[data-panel="config"]').exists()).toBe(false)
+    useDockStore().openIds = []
+    await flushPromises()
+    expect(wrapper.find('[data-panel="config"]').exists()).toBe(true)
+  })
+
+  it('opens a section as a panel of its own from its header', async () => {
+    const dock = useDockStore()
+    const opened: string[] = []
+    dock.openSection = (id: string) => { opened.push(id) }
+    const wrapper = mountColumn({ config: {} })
+    await wrapper.find('[data-panel="config"] [data-action="open-as-panel"]').trigger('click')
+    expect(opened).toEqual(['config'])
   })
 })

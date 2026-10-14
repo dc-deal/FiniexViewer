@@ -6,6 +6,7 @@ import PanelTab from '@/components/dock/PanelTab.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
+import { useRunReportsStore } from '@/stores/run_reports_store'
 import type { RunInfo } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 
@@ -91,5 +92,19 @@ describe('PanelTab', () => {
     const details = card.props('details') as Figure[]
     expect(details.map(row => row.label)).toEqual(['Shows', 'Status'])
     expect(details[1]).toMatchObject({ value: 'failed', tone: 'error' })
+  })
+
+  /** The panel stands with nothing of the chosen run to show — said by the title, never by hiding. */
+  it('dims the title of a section panel the chosen run has nothing for', () => {
+    useRunsStore().runs = [{ run_id: 'r1' } as RunInfo]
+    useContextStore().selectRun('r1')
+    const wrapper = mount(PanelTab, { props: { kindId: 'report-trade-history', api: fakeApi() as unknown as DockviewPanelApi } })
+    expect(wrapper.find('.panel-tab-title').classes()).toContain('muted')
+  })
+
+  it('marks a section panel whose section could not be loaded, with the word', () => {
+    useRunReportsStore().errors = { tradeHistory: 'Could not load the trade history: boom' }
+    const wrapper = mount(PanelTab, { props: { kindId: 'report-trade-history', api: fakeApi() as unknown as DockviewPanelApi } })
+    expect(wrapper.find('.panel-tab-status').attributes('data-status')).toBe('could not be loaded')
   })
 })

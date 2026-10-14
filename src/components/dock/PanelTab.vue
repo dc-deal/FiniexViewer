@@ -23,6 +23,9 @@ const title = kind?.title ?? props.api.title ?? props.kindId
 /** Read where the tab is drawn, so a status that follows a store follows it here too. */
 const status = computed(() => kind?.status?.() ?? null)
 
+/** The panel stands with nothing of the chosen run to show — said by the title, never by hiding. */
+const muted = computed(() => kind?.muted?.() ?? false)
+
 const details = computed<Figure[]>(() => [
   ...(kind ? [{ label: t('Shows'), value: kind.description }] : []),
   ...(status.value ? [{ label: t('Status'), value: status.value.word, tone: status.value.role }] : []),
@@ -33,7 +36,7 @@ const details = computed<Figure[]>(() => [
   <HoverCard :title="title" :details="details">
     <div class="panel-tab">
       <AppIcon v-if="kind" :name="kind.icon" class="panel-tab-icon" />
-      <span class="panel-tab-title">{{ title }}</span>
+      <span class="panel-tab-title" :class="{ muted }">{{ title }}</span>
       <!-- the mark never travels alone: its word is read out with it and written in the card -->
       <span
         v-if="status"
@@ -73,6 +76,10 @@ const details = computed<Figure[]>(() => [
 .panel-tab-status {
   display: inline-flex;
   align-items: center;
+}
+
+.panel-tab-title.muted {
+  color: var(--color-text-secondary);
 }
 
 .panel-tab-status.warning {

@@ -1226,6 +1226,46 @@ PanelDock    [☰ Deployments] [☰ Runs] [◫ Chart]
   dockview's two themes this app's tokens: a tab behind another keeps the primary ink, because
   muted ink means *disabled* here, and the front tab is marked by its surface AND an accent rule.
 
+**A section of the run report opens as a panel of its own** (viewer#31, decided 2026-10-14). The
+run report stays one column — the Runs panel — and a section the reader wants beside another is
+pulled out: the button among its header's controls (`action-open-panel`) opens it as a docked panel,
+and the ✕ on that panel's tab puts it back where it stood. A section is in one place at a time. An
+AutoTrader session writes fewer sections than a backtest; the column absorbs that by growing
+shorter, where a grid of eleven panels would have left empty areas or moved.
+
+```
+[☰ Deployments] [☰ Runs] [◫ Chart]        │ [☰ Trade History]
+  run list · section bar · the column      │   the section, with its own scroll
+  ▾ Executive Summary                  ⇱   │
+  ▸ Orders                             ⇱   │
+```
+
+- **One kind per section, `report-<section id>`** (`reportKindId` in `panel_kinds.ts`), kept OUT of
+  the Panels menu: a section is opened from its own header. Its tab shows the FORM — `form-list` for
+  the four lists, `form-sheet` for the others — and the narrowing's quick bar (`RunsQuickBar`)
+  stands beside every section panel. The tab dims its title where the chosen run has nothing for
+  the section, and shows ✖ *could not be loaded* where the section failed.
+- **`components/dock/ReportSection.vue`** draws the section's component with the model the column
+  hands it (`run_sections_store`), behind the same boundary. Where there is nothing to draw the
+  panel STANDS and says why — the backend's sentence where it gave one, *This run carries no such
+  section* where the run's artifact list lacks it, since which pipeline writes which section is the
+  backend's rule. A size container, so the lists measure their caps against this panel, and framed
+  dashed while the run is narrowed, like the column.
+- **Where a section stands is derived, never stored.** The dock store keeps `openIds` from
+  dockview's own `onDidAddPanel` / `onDidRemovePanel`, and the column leaves out a section whose
+  panel is open; its place in `layout.v1` stays, so closing the panel restores it and a reset of the
+  dock gives every section back. `openSection(id)` brings an open section to the front, or opens it
+  — the first as a split to the right of the Runs panel, each further one as a tab beside the last,
+  so the screen is not cut thinner with every section.
+- **The bar marks a section open as a panel** (`action-open-panel` beside its name), and a click
+  leads to that panel instead of switching the section off — usable even where the run lacks the
+  section, since the panel says why. The lines above the column (absences, failures, older
+  schemas) leave out a slot whose every reader is open as a panel: that panel says it.
+- **The jump lands where the section IS:** its own panel comes to the front and is searched for the
+  marked row; for a section in the column, the Runs panel comes to the front first, since the jump
+  may start in a section panel. A hint above the column (`open-as-panel`) says how a section comes
+  out and goes back.
+
 **The quick bar beside a group's tabs** holds the few options of the panel in FRONT of that group
 (`QuickBar`, from the kind's `quickBar`): for the chart, its broker, symbol and timeframe as compact
 selects (`AppSelect` with `compact`) — the value is what shows, the name while nothing is chosen, and

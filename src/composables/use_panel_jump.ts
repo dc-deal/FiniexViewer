@@ -1,5 +1,7 @@
 import { nextTick } from 'vue'
+import { reportKindId } from '@/panel_kinds'
 import { useContextStore } from '@/stores/context_store'
+import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import type { PositionRef } from '@/types/context_types'
 
@@ -7,12 +9,12 @@ import type { PositionRef } from '@/types/context_types'
 const MARK_WAIT_MS = 2000
 
 /**
- * Where a section is drawn: the Runs panel's column. A jump searches there and never in the whole
- * document — once sections can stand side by side as panels, a second copy would otherwise answer
- * first and the jump would scroll a panel the reader is not looking at.
+ * Where a section is drawn: its own panel where it is open as one, the Runs panel's column
+ * otherwise. A jump searches there and never in the whole document — a marked row elsewhere is not
+ * the one the reader is about to look at.
  */
-function sectionRoot(): HTMLElement | null {
-  return document.querySelector<HTMLElement>('[data-panel-kind="runs"]')
+function sectionRoot(panelKind: string): HTMLElement | null {
+  return document.querySelector<HTMLElement>(`[data-panel-kind="${panelKind}"]`)
 }
 
 /**
@@ -25,10 +27,10 @@ function sectionRoot(): HTMLElement | null {
  * A row that never does is one the target panel does not draw — beyond its visible cap, or in a
  * group it folded — and the jump then leaves the mark where it is rather than scrolling to nothing.
  */
-async function scrollToMark(sectionId: string): Promise<void> {
+async function scrollToMark(sectionId: string, panelKind: string): Promise<void> {
   // one tick first, or a row still carrying the PREVIOUS mark would answer
   await nextTick()
-  const root = sectionRoot()
+  const root = sectionRoot(panelKind)
   if (!root) return
   const scrolled = (): boolean => {
     const row = root.querySelector(`[data-panel="${sectionId}"] .record-row.marked`)
@@ -56,13 +58,23 @@ async function scrollToMark(sectionId: string): Promise<void> {
  */
 export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
   const context = useContextStore()
+  const dock = useDockStore()
   const layoutStore = useLayoutStore()
   return (sectionId, ref) => {
     context.mark(ref)
-    // a hidden panel is not in the column at all, and a folded one draws nothing — the jump has to
-    // make the target reachable before it can scroll to it
+    const ownPanel = reportKindId(sectionId)
+    if (dock.openIds.includes(ownPanel)) {
+      // open as a panel of its own: that panel comes to the front, wherever it stands
+      dock.open(ownPanel)
+      void scrollToMark(sectionId, ownPanel)
+      return
+    }
+    // in the column: the Runs panel comes to the front — the jump may start in another panel — and
+    // a hidden section is not in the column at all, and a folded one draws nothing, so the jump
+    // has to make the target reachable before it can scroll to it
+    dock.open('runs')
     layoutStore.show(sectionId)
     layoutStore.setOpen(sectionId, true)
-    void scrollToMark(sectionId)
+    void scrollToMark(sectionId, 'runs')
   }
 }

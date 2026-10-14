@@ -26,6 +26,10 @@ const HINTS: HintDefinition[] = [
     text: t('What does not fit in the bar waits behind the + at its end — the sections to switch on or off, and the layout actions.'),
   },
   {
+    id: 'open-as-panel',
+    text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the column. The ✕ on the tab of that panel puts it back where it was.'),
+  },
+  {
     id: 'position-link',
     text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back. A partial close books several trades of one position, so all of them are marked.'),
   },

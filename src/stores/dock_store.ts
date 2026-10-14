@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
-import { shallowRef } from 'vue'
+import { ref, shallowRef } from 'vue'
 import type { DockviewApi } from 'dockview-vue'
 import { reconcileLayout } from '@/components/dock/dock_layout'
-import { FIRST_ACTIVE_KIND, PANEL_KINDS, panelKind } from '@/panel_kinds'
+import { FIRST_ACTIVE_KIND, PANEL_KINDS, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
 import { useArrangementStore } from '@/stores/arrangement_store'
 
 /** How long the layout must hold still before it is written — a drag changes it every frame. */
@@ -24,11 +24,24 @@ export const useDockStore = defineStore('dock', () => {
 
   // the API object is dockview's own and large — held, never made reactive
   const api = shallowRef<DockviewApi | null>(null)
+  /**
+   * Which panels are open, by id. Kept from dockview's own events, because its API object is not
+   * reactive — and the column reads it: a section open as a panel of its own is left out there.
+   */
+  const openIds = ref<string[]>([])
   let timer: ReturnType<typeof setTimeout> | null = null
-  let subscription: { dispose(): void } | null = null
+  let subscriptions: { dispose(): void }[] = []
+  /** The section panel opened last: where the next one goes, as a tab beside it. */
+  let lastSection: string | null = null
 
-  /** One kind's panel, beside `reference` where one is given. A kind has one panel today. */
-  function add(dock: DockviewApi, kindId: string, reference?: string): void {
+  /** Where a panel is added: as a tab beside `referencePanel`, or as a split to its right. */
+  interface Placement {
+    referencePanel: string
+    direction: 'within' | 'right'
+  }
+
+  /** One kind's panel, placed where it is told, or where dockview puts a panel by default. */
+  function add(dock: DockviewApi, kindId: string, placement?: Placement): void {
     const kind = panelKind(kindId)
     if (!kind) return
     dock.addPanel({
@@ -38,15 +51,20 @@ export const useDockStore = defineStore('dock', () => {
       params: { kind: kind.id },
       // kept in the page while hidden, so a panel returned to finds its scroll where it left it
       renderer: 'always',
-      ...(reference ? { position: { referencePanel: reference, direction: 'within' as const } } : {}),
+      ...(placement ? { position: placement } : {}),
     })
+  }
+
+  function syncOpen(): void {
+    openIds.value = api.value ? api.value.panels.map(panel => panel.id) : []
   }
 
   /** The suggested order, all in one group, on the tab where the work is. */
   function arrangeDefault(dock: DockviewApi): void {
     dock.clear()
     const kinds = PANEL_KINDS.filter(kind => kind.opensByDefault).sort((a, b) => a.order - b.order)
-    kinds.forEach((kind, index) => add(dock, kind.id, index ? kinds[0]!.id : undefined))
+    kinds.forEach((kind, index) =>
+      add(dock, kind.id, index ? { referencePanel: kinds[0]!.id, direction: 'within' } : undefined))
     dock.getPanel(FIRST_ACTIVE_KIND)?.api.setActive()
   }
 
@@ -82,21 +100,50 @@ export const useDockStore = defineStore('dock', () => {
       arrangeDefault(dock)
     }
     flush()
-    subscription = dock.onDidLayoutChange(scheduleSave)
+    syncOpen()
+    subscriptions = [
+      dock.onDidLayoutChange(scheduleSave),
+      dock.onDidAddPanel(syncOpen),
+      dock.onDidRemovePanel(syncOpen),
+    ]
   }
 
   function detach(): void {
     flush()
-    subscription?.dispose()
-    subscription = null
+    subscriptions.forEach(subscription => subscription.dispose())
+    subscriptions = []
     api.value = null
+    openIds.value = []
   }
 
   /** Brings a kind's panel to the front, opening it beside the active one where it is closed. */
   function open(kindId: string): void {
     const dock = api.value
     if (!dock) return
-    if (!dock.getPanel(kindId)) add(dock, kindId, dock.activePanel?.id)
+    const active = dock.activePanel?.id
+    if (!dock.getPanel(kindId)) add(dock, kindId, active ? { referencePanel: active, direction: 'within' } : undefined)
+    dock.getPanel(kindId)?.api.setActive()
+  }
+
+  /**
+   * Opens a section of the run report as a panel of its own, or brings it to the front where it is
+   * open already — a section is in one place at a time. The first stands beside the Runs panel, as
+   * a split to its right; each further one joins the last as a tab, so the screen is not cut
+   * thinner with every section. Closing it is dockview's own close, and the column takes it back.
+   */
+  function openSection(sectionId: string): void {
+    const dock = api.value
+    if (!dock) return
+    const kindId = reportKindId(sectionId)
+    if (!dock.getPanel(kindId)) {
+      const beside = lastSection && dock.getPanel(lastSection)
+        ? lastSection
+        : dock.panels.map(panel => panel.id).find(id => sectionOfKind(id) !== null)
+      if (beside) add(dock, kindId, { referencePanel: beside, direction: 'within' })
+      else if (dock.getPanel('runs')) add(dock, kindId, { referencePanel: 'runs', direction: 'right' })
+      else add(dock, kindId)
+    }
+    lastSection = kindId
     dock.getPanel(kindId)?.api.setActive()
   }
 
@@ -106,7 +153,8 @@ export const useDockStore = defineStore('dock', () => {
     if (!dock) return
     arrangeDefault(dock)
     flush()
+    syncOpen()
   }
 
-  return { api, attach, detach, open, reset, flush }
+  return { api, openIds, attach, detach, open, openSection, reset, flush }
 })

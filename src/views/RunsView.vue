@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useDockStore } from '@/stores/dock_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
 import { onPanelShownAgain } from '@/composables/use_panel_visibility'
+import { reportKindId } from '@/panel_kinds'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import AppBar from '@/components/panels/AppBar.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import { t } from '@/translate'
 
 /*
@@ -24,7 +27,18 @@ const {
   loadingRuns, error,
 } = storeToRefs(runsStore)
 const { unreadable, errors: sectionErrors } = storeToRefs(useRunReportsStore())
-const { sources, pending, absences } = storeToRefs(useRunSectionsStore())
+const sectionsStore = useRunSectionsStore()
+const { sources, pending, absences } = storeToRefs(sectionsStore)
+const { openIds } = storeToRefs(useDockStore())
+
+/**
+ * Whether a slot's line belongs above the column. Not where every section reading it is open as a
+ * panel of its own: that panel says it, and a sentence printed twice teaches nobody.
+ */
+function saidHere(slot: string): boolean {
+  const readers = sectionsStore.sectionsOfSlot(slot)
+  return !readers.length || readers.some(id => !openIds.value.includes(reportKindId(id)))
+}
 
 // a docked panel stays mounted, so the index is fetched again whenever the panel comes back
 onPanelShownAgain(() => { void runsStore.loadRuns(true) })
@@ -54,17 +68,21 @@ const SECTION_TITLES: Record<string, string> = {
 }
 
 /** One line per section whose artifact predates the current schema, the summary's among them. */
-const unreadableLines = computed<Record<string, string>>(() => ({
+const unreadableLines = computed<Record<string, string>>(() => Object.fromEntries(Object.entries({
   ...(summaryUnreadable.value ? { runSummary: summaryUnreadable.value } : {}),
   ...unreadable.value,
-}))
+}).filter(([slot]) => saidHere(slot))))
+
+/** EVERY section that failed says so — here, or in its own panel where it is open as one. */
+const errorLines = computed<Record<string, string>>(() =>
+  Object.fromEntries(Object.entries(sectionErrors.value).filter(([slot]) => saidHere(slot))))
 
 const missingSections = computed(() => {
   // the CAUSE is carried, not only grouped by: it is what the list is keyed on below, and the
   // detail it was keyed on before is empty whenever the backend sends no sentence — so two
   // different causes collided on one empty key and Vue was free to reuse the wrong node
   const byCause = new Map<string, { cause: string, detail: string, sections: string[] }>()
-  for (const [slot, absence] of Object.entries(absences.value)) {
+  for (const [slot, absence] of Object.entries(absences.value).filter(([key]) => saidHere(key))) {
     const title = slot === 'runSummary' ? t('Executive Summary') : t(SECTION_TITLES[slot] ?? slot)
     const seen = byCause.get(absence.cause)
     if (seen) seen.sections.push(title)
@@ -128,9 +146,11 @@ const showPanels = computed(() =>
         <!-- EVERY section that failed says so, and the sections that did load stay visible. One
              line per failure: the sections load concurrently, so a single slot showed whichever
              finished last and silently dropped the rest. -->
-        <p v-for="(message, section) in sectionErrors" :key="section" class="notice failed">
+        <p v-for="(message, section) in errorLines" :key="section" class="notice failed">
           {{ message }}
         </p>
+        <!-- how a section comes out of the column, and how it goes back -->
+        <HintLine id="open-as-panel" />
         <!-- the whole manipulated area is framed, so it can never be mistaken for the whole run.
              The frame is the second channel beside the colour: a reader who cannot separate the
              hues still sees an edge that was not there before. What is narrowed is said in the

@@ -23,6 +23,7 @@ const emit = defineEmits<{
   'toggle-pin': []
   'toggle-lock': []
   hide: []
+  'open-as-panel': []
 }>()
 
 /**
@@ -65,6 +66,16 @@ watch(() => props.resetOn, () => {
       </CollapsibleTrigger>
       <!-- controls appear on hover, and on focus so they stay keyboard-reachable -->
       <div class="panel-controls">
+        <!-- beside the column rather than in it; the panel's tab carries the way back -->
+        <button
+          class="panel-control"
+          :title="t('Open as a panel of its own')"
+          :aria-label="t('Open as a panel of its own')"
+          data-action="open-as-panel"
+          @click="emit('open-as-panel')"
+        >
+          <AppIcon name="action-open-panel" />
+        </button>
         <button
           class="panel-control"
           :class="{ active: pinned }"
@@ -156,9 +167,12 @@ watch(() => props.resetOn, () => {
   opacity: 1;
 }
 
+/* the header's own ink, never the browser's: a bare button takes the SYSTEM's button text, which
+   was white on the light theme under a dark system — the ✕ stood there unseen */
 .panel-control {
   background: none;
   border: none;
+  color: inherit;
   cursor: pointer;
   padding: 0 2px;
   font-size: var(--font-size-sm);

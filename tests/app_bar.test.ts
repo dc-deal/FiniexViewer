@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import AppBar from '@/components/panels/AppBar.vue'
+import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { allPanels } from '@/panel_registry'
 import { stubOverflowWidths } from './overflow_harness'
@@ -230,5 +231,37 @@ describe('AppBar', () => {
     const before = toggleFor(wrapper, scenarios.title).classes().includes('shown')
     await toggleFor(wrapper, scenarios.title).trigger('click')
     expect(toggleFor(wrapper, scenarios.title).classes().includes('shown')).toBe(before)
+  })
+})
+
+describe('AppBar — a section open as a panel of its own', () => {
+  /** The store the bar reads, set up before it mounts — the opened panels as the dock reports them. */
+  function mountOpened(opened: string[], sources = allSources()) {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    useDockStore().openIds = opened
+    return mount(AppBar, { props: { sources }, global: { plugins: [pinia] } })
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('marks its toggle, and a click brings its panel to the front instead of switching it', async () => {
+    const wrapper = mountOpened(['report-trade-history'])
+    const toggle = toggleFor(wrapper, 'Trade History')
+    expect(toggle.find('[data-icon="action-open-panel"]').exists()).toBe(true)
+    const dock = useDockStore()
+    const brought: string[] = []
+    dock.open = (id: string) => { brought.push(id) }
+    await toggle.trigger('click')
+    expect(brought).toEqual(['report-trade-history'])
+    expect(useLayoutStore().arrangedPanels.find(panel => panel.id === 'trade-history')?.hidden).toBe(false)
+  })
+
+  /** Its panel says why the run lacks the section, so the way to it stays open. */
+  it('keeps the toggle usable where the run lacks the section', () => {
+    const wrapper = mountOpened(['report-trade-history'], { ...allSources(), tradeHistory: null })
+    expect(toggleFor(wrapper, 'Trade History').attributes('disabled')).toBeUndefined()
   })
 })

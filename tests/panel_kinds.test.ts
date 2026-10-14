@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { FIRST_ACTIVE_KIND, PANEL_KINDS, panelKind } from '@/panel_kinds'
+import { FIRST_ACTIVE_KIND, PANEL_KINDS, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { allPanels } from '@/panel_registry'
 
 describe('panel_kinds', () => {
   it('gives every kind its own id and its own place in the suggested order', () => {
@@ -32,5 +33,25 @@ describe('panel_kinds', () => {
 
   it('knows nothing of a kind this version does not have', () => {
     expect(panelKind('a-retired-kind')).toBeNull()
+  })
+
+  /** Opened from its own header in the column — the Panels menu does not list the sections. */
+  it('knows a kind for every section of the run report, and keeps them out of the menu', () => {
+    for (const section of allPanels()) {
+      const kind = panelKind(reportKindId(section.id))
+      expect(kind?.title).toBe(section.title)
+      expect(kind?.opensByDefault).toBe(false)
+      expect(PANEL_KINDS.some(entry => entry.id === kind?.id)).toBe(false)
+    }
+  })
+
+  it('names the section a kind shows, and none for any other kind', () => {
+    expect(sectionOfKind(reportKindId('trade-history'))).toBe('trade-history')
+    expect(sectionOfKind('runs')).toBeNull()
+  })
+
+  it('draws a list section as a list, and every other section as a sheet', () => {
+    expect(panelKind(reportKindId('trade-history'))?.icon).toBe('form-list')
+    expect(panelKind(reportKindId('executive'))?.icon).toBe('form-sheet')
   })
 })

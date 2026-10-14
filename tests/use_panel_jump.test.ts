@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { usePanelJump } from '@/composables/use_panel_jump'
 import { useContextStore } from '@/stores/context_store'
+import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 
 const MARK = { scenario: 'EURGBP_partial_close', position: 'pos_eurgbp_1' }
@@ -75,5 +76,32 @@ describe('usePanelJump', () => {
     usePanelJump()('trade-history', MARK)
     await flushPromises()
     expect(scrolled).not.toHaveBeenCalled()
+  })
+
+  /** A section open as a panel of its own is jumped to THERE: its panel to the front, its row found. */
+  it('lands in the own panel of the section where it is open as one', async () => {
+    const dock = useDockStore()
+    dock.openIds = ['runs', 'report-trade-history']
+    const brought: string[] = []
+    dock.open = (id: string) => { brought.push(id) }
+    drawRunsPanel()
+    const own = document.createElement('div')
+    own.dataset['panelKind'] = 'report-trade-history'
+    own.innerHTML = '<div data-panel="trade-history"></div>'
+    document.body.appendChild(own)
+    own.firstElementChild!.appendChild(markedRow())
+    usePanelJump()('trade-history', MARK)
+    await flushPromises()
+    expect(brought).toEqual(['report-trade-history'])
+    expect(scrolled).toHaveBeenCalledTimes(1)
+  })
+
+  /** A jump may start in a section panel: the Runs panel comes to the front for one in the column. */
+  it('brings the Runs panel to the front for a section in the column', () => {
+    const dock = useDockStore()
+    const brought: string[] = []
+    dock.open = (id: string) => { brought.push(id) }
+    usePanelJump()('trade-history', MARK)
+    expect(brought).toEqual(['runs'])
   })
 })

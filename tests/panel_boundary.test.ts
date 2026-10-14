@@ -81,9 +81,11 @@ describe('AccordionPanel as an error boundary', () => {
     const wrapper = mountWith(Exploding)
     await flushPromises()
     expect(wrapper.find('.panel-failed').text()).toContain('could not be drawn')
-    // the panel is still a panel: its title and its controls are untouched
+    // the panel is still a panel: its title and its controls are untouched — asserted by what they
+    // are, not by how many, since a header that gains a control is no failure of the boundary
     expect(wrapper.find('.panel-title').text()).toBe('Executive Summary')
-    expect(wrapper.findAll('.panel-control')).toHaveLength(3)
+    expect(wrapper.find('.panel-control[title="Hide panel"]').exists()).toBe(true)
+    expect(wrapper.find('[data-action="open-as-panel"]').exists()).toBe(true)
   })
 
   /** A folded panel hides the sentence, so the header has to carry the news. */

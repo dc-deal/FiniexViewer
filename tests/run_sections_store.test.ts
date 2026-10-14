@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
+import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type {
+  RunInfo,
   OrderHistoryReport,
   PortfolioReport,
   RunConfigReport,
@@ -62,5 +64,44 @@ describe('useRunSectionsStore', () => {
     useRunReportsStore().absences = { broker: ABSENT }
     useRunsStore().summaryAbsence = ABSENT
     expect(useRunSectionsStore().absences).toEqual({ broker: ABSENT, runSummary: ABSENT })
+  })
+
+  describe('what a section reads', () => {
+    /** The Orders panel draws with no pending funnel, but not without its orders. */
+    it('takes the absence of a section from the slot it cannot do without', () => {
+      useRunReportsStore().absences = { pendingOrders: ABSENT }
+      expect(useRunSectionsStore().absenceOf('orders')).toBeNull()
+      useRunReportsStore().absences = { orderHistory: ABSENT }
+      expect(useRunSectionsStore().absenceOf('orders')).toEqual(ABSENT)
+    })
+
+    it('says every failure among the slots a section reads', () => {
+      useRunReportsStore().errors = { pendingOrders: 'Could not load the pending orders: boom' }
+      expect(useRunSectionsStore().failuresOf('orders')).toEqual(['Could not load the pending orders: boom'])
+    })
+
+    it('finds the summary in an older schema for both sections it feeds', () => {
+      useRunsStore().summaryUnreadable = 'Written by an older schema.'
+      const sections = useRunSectionsStore()
+      expect(sections.unreadablesOf('runSummary')).toEqual(['Written by an older schema.'])
+      expect(sections.unreadablesOf('feedHealth')).toEqual(['Written by an older schema.'])
+    })
+
+    it('names every section that reads a slot', () => {
+      const readers = useRunSectionsStore().sectionsOfSlot('tradeHistory')
+      expect(readers).toContain('trade-history')
+      expect(readers).toContain('orders')
+    })
+
+    it('says a chosen run lacks a section only once it is known not to come', () => {
+      useRunsStore().runs = [{ run_id: 'r1' } as RunInfo]
+      useContextStore().selectRun('r1')
+      const reports = useRunReportsStore()
+      reports.loadingTradeHistory = true
+      const sections = useRunSectionsStore()
+      expect(sections.lacks('tradeHistory')).toBe(false)
+      reports.loadingTradeHistory = false
+      expect(sections.lacks('tradeHistory')).toBe(true)
+    })
   })
 })

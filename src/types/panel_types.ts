@@ -22,7 +22,10 @@ export interface PanelDescriptor {
  */
 export interface TabStatus {
   icon: IconName
-  /** The backend's own word for the state, never a word of ours for it. */
+  /**
+   * The word for the state — the backend's own wherever it grades one (`run_outcome`), never a word
+   * of ours for its grade. Ours only for a state of our own, such as a section that failed to load.
+   */
   word: string
   /** A colour ROLE from the tokens, never a colour. */
   role: 'warning' | 'error'
@@ -48,6 +51,8 @@ export interface PanelKind {
   quickBar?: Component
   /** Its tab's status — called where the tab is drawn, so it may read a store. */
   status?: () => TabStatus | null
+  /** Its tab's title dimmed: the panel stands, with nothing of the chosen run to show. */
+  muted?: () => boolean
 }
 
 /** Per-panel arrangement, the part the user controls and the part that is persisted. */

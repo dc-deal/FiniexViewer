@@ -5,12 +5,14 @@
  */
 export type IconName =
   | 'form-list'
+  | 'form-sheet'
   | 'form-chart'
   | 'status-warning'
   | 'status-error'
   | 'status-account'
   | 'status-connecting'
   | 'action-close'
+  | 'action-open-panel'
   | 'kind-executive'
   | 'kind-broker'
   | 'kind-scenario-roster'

@@ -2,7 +2,9 @@
 import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from 'reka-ui'
+import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore, pinnedBoundary } from '@/stores/layout_store'
+import { reportKindId } from '@/panel_kinds'
 import { allPanels } from '@/panel_registry'
 import AppIcon from '@/components/base/AppIcon.vue'
 import HintLine from '@/components/base/HintLine.vue'
@@ -24,6 +26,8 @@ const props = defineProps<{
 
 const layoutStore = useLayoutStore()
 const { arrangedPanels } = storeToRefs(layoutStore)
+const dock = useDockStore()
+const { openIds } = storeToRefs(dock)
 
 /**
  * The toggles, in the READER's order and not the registry's — the same arrangement the column
@@ -51,6 +55,8 @@ const toggles = computed(() => {
       // the run carries no such section — a state of the RUN, not of the reader's arrangement. One
       // still on its way is not absent: it would flicker struck-through on every run change
       absent: (model === null || model === undefined) && !props.pending?.[panel.source],
+      // open as a panel of its own: the toggle keeps its place, and leads to that panel
+      opened: openIds.value.includes(reportKindId(panel.id)),
     }]
   })
 })
@@ -67,6 +73,7 @@ type BarToggle = PanelDescriptor & {
   shown: boolean
   pinned: boolean
   absent: boolean
+  opened: boolean
   groupStart: boolean
 }
 
@@ -115,6 +122,11 @@ function stayOpen(event: Event): void {
 }
 
 function toggle(id: string, shown: boolean): void {
+  // a section open as a panel of its own is not switched here: the click goes to its panel
+  if (openIds.value.includes(reportKindId(id))) {
+    dock.open(reportKindId(id))
+    return
+  }
   if (shown) {
     layoutStore.hide(id)
     return
@@ -145,15 +157,16 @@ function toggle(id: string, shown: boolean): void {
         <button
           v-if="item.kind === 'toggle'"
           class="bar-toggle"
-          :class="{ shown: item.shown, absent: item.absent, 'group-start': item.groupStart }"
-          :disabled="item.absent"
+          :class="{ shown: item.shown, absent: item.absent, opened: item.opened, 'group-start': item.groupStart }"
+          :disabled="item.absent && !item.opened"
           :title="item.absent
             ? `${t(item.title)} — ${t('this run carries no such section')}`
-            : t(item.title)"
+            : (item.opened ? `${t(item.title)} — ${t('open as a panel of its own; a click brings it to the front')}` : t(item.title))"
           @click="toggle(item.id, item.shown)"
         >
           <AppIcon :name="item.icon" class="bar-icon" />
           <span class="bar-label">{{ t(item.title) }}</span>
+          <AppIcon v-if="item.opened" name="action-open-panel" class="bar-opened" />
         </button>
         <button v-else class="bar-action" @click="item.run()">{{ item.label }}</button>
       </template>
@@ -168,13 +181,14 @@ function toggle(id: string, shown: boolean): void {
           :class="{ absent: item.absent }"
           :data-section="item.id"
           :model-value="item.shown && !item.absent"
-          :disabled="item.absent"
+          :disabled="item.absent && !item.opened"
           @update:model-value="toggle(item.id, item.shown)"
           @select="stayOpen"
         >
           <span class="bar-menu-check" aria-hidden="true">{{ item.shown && !item.absent ? '✓' : '' }}</span>
           <AppIcon :name="item.icon" />
           <span class="bar-label">{{ t(item.title) }}</span>
+          <AppIcon v-if="item.opened" name="action-open-panel" class="bar-opened" />
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator
           v-if="hiddenToggles(hidden).length && hiddenActions(hidden).length"
@@ -276,6 +290,16 @@ function toggle(id: string, shown: boolean): void {
 
 .bar-toggle.absent .bar-icon {
   opacity: 0.35;
+}
+
+/* open as a panel of its own — the mark beside the word, in the toggle's own colour. A section the
+   run lacks stays usable while it is open: the click leads to its panel, which says why */
+.bar-opened {
+  margin-left: 2px;
+}
+
+.bar-toggle.absent.opened {
+  cursor: pointer;
 }
 
 .bar-toggle.absent .bar-label,

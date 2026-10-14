@@ -1,8 +1,28 @@
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
+import { allPanels } from '@/panel_registry'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import type { SectionAbsence } from '@/types/api/absence_types'
+
+/**
+ * The store slots each source is built from, the one it cannot do without FIRST. How a section's
+ * absence, failure and age are found: an absence counts only for that first slot — the Orders panel
+ * draws with no pending funnel, but not without its orders — while every slot's failure is said.
+ */
+const SLOTS_OF_SOURCE: Record<string, string[]> = {
+  header: ['runHeader'],
+  runSummary: ['runSummary'],
+  feedHealth: ['runSummary'],
+  warningsErrors: ['warningsErrors'],
+  broker: ['broker'],
+  aggregated: ['aggregated'],
+  orders: ['orderHistory', 'pendingOrders', 'tradeHistory'],
+  bookingPeriods: ['bookingPeriods'],
+  config: ['config'],
+  scenarioRoster: ['scenarios', 'portfolio', 'warningsErrors'],
+  tradeHistory: ['tradeHistory'],
+}
 
 /**
  * What the run report's sections render, composed ONCE for every place a section is drawn — the
@@ -108,5 +128,51 @@ export const useRunSectionsStore = defineStore('run_sections', () => {
     ...(runs.summaryAbsence ? { runSummary: runs.summaryAbsence } : {}),
   }))
 
-  return { sources, pending, absences }
+  /** The slots a source reads, the one it cannot do without first. */
+  function slotsOf(source: string): string[] {
+    return SLOTS_OF_SOURCE[source] ?? []
+  }
+
+  /** Why a section has nothing to draw, where the backend said why: its FIRST slot's absence. */
+  function absenceOf(source: string): SectionAbsence | null {
+    const required = slotsOf(source)[0]
+    return required ? absences.value[required] ?? null : null
+  }
+
+  /** Every failure among the slots a section reads — one that failed must say so wherever it is. */
+  function failuresOf(source: string): string[] {
+    return slotsOf(source).flatMap(slot => reports.errors[slot] ?? [])
+  }
+
+  /** Every slot a section reads whose artifact predates the current schema, in the backend's words. */
+  function unreadablesOf(source: string): string[] {
+    return slotsOf(source).flatMap(slot => {
+      const message = slot === 'runSummary' ? runs.summaryUnreadable : reports.unreadable[slot]
+      return message ? [message] : []
+    })
+  }
+
+  /** A chosen run that has nothing for this section: no model, and none on its way. */
+  function lacks(source: string): boolean {
+    return runs.selectedRun !== null && sources.value[source] == null && !pending.value[source]
+  }
+
+  /**
+   * The sections that read a slot. The run view says an absence or a failure ONCE above the column,
+   * and leaves out a slot whose every reader is open as a panel of its own — that panel says it.
+   */
+  function sectionsOfSlot(slot: string): string[] {
+    return allPanels().filter(panel => slotsOf(panel.source).includes(slot)).map(panel => panel.id)
+  }
+
+  return {
+    sources,
+    pending,
+    absences,
+    absenceOf,
+    failuresOf,
+    unreadablesOf,
+    lacks,
+    sectionsOfSlot,
+  }
 })

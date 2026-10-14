@@ -19,14 +19,21 @@ function fakeDock(options: { refuse?: boolean } = {}) {
   let active: string | null = null
   let changed: (() => void) | null = null
   const restored: unknown[] = []
+  // dockview's own announcements of a panel arriving or leaving
+  const arrived: (() => void)[] = []
+  const left: (() => void)[] = []
 
-  function addPanel(spec: { id: string, position?: { referencePanel: string } }): void {
-    const group = spec.position ? panels.find(p => p.id === spec.position!.referencePanel)!.group : `g${panels.length}`
+  function addPanel(spec: { id: string, position?: { referencePanel: string, direction?: string } }): void {
+    const reference = spec.position ? panels.find(p => p.id === spec.position!.referencePanel)! : null
+    // a tab joins its reference's group; a split stands in a group of its own
+    const group = reference && (spec.position!.direction ?? 'within') === 'within' ? reference.group : `g${panels.length}`
     panels.push({ id: spec.id, group, api: { setActive: () => { active = spec.id } } })
+    arrived.forEach(listener => listener())
   }
 
   function close(id: string): void {
     panels.splice(panels.findIndex(p => p.id === id), 1)
+    left.forEach(listener => listener())
     if (active === id) active = panels[0]?.id ?? null
   }
 
@@ -36,7 +43,11 @@ function fakeDock(options: { refuse?: boolean } = {}) {
     get activePanel() { return panels.find(p => p.id === active) },
     getPanel: (id: string) => panels.find(p => p.id === id),
     addPanel,
-    clear: () => { panels.length = 0; active = null },
+    clear: () => {
+      panels.length = 0
+      active = null
+      left.forEach(listener => listener())
+    },
     fromJSON: (layout: { panels: Record<string, unknown> }) => {
       if (options.refuse) throw new Error('refused')
       restored.push(layout)
@@ -49,6 +60,14 @@ function fakeDock(options: { refuse?: boolean } = {}) {
     onDidLayoutChange: (listener: () => void) => {
       changed = listener
       return { dispose: () => { changed = null } }
+    },
+    onDidAddPanel: (listener: () => void) => {
+      arrived.push(listener)
+      return { dispose: () => { arrived.splice(arrived.indexOf(listener), 1) } }
+    },
+    onDidRemovePanel: (listener: () => void) => {
+      left.push(listener)
+      return { dispose: () => { left.splice(left.indexOf(listener), 1) } }
     },
   }
   return {
@@ -165,5 +184,61 @@ describe('useDockStore', () => {
     dock.change()
     store.flush()
     expect(Object.keys((arrangement.dock as { panels: object }).panels)).toEqual(before)
+  })
+
+  /**
+   * A section of the run report opened as a panel of its own (viewer#31, 2026-10-14): one place at
+   * a time, the first beside the Runs panel, each further one as a tab beside the last.
+   */
+  describe('a section opened as a panel of its own', () => {
+    function attached() {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      return { dock, store }
+    }
+
+    function groupOf(dock: ReturnType<typeof fakeDock>, id: string): string {
+      return dock.groups()[dock.ids().indexOf(id)]!
+    }
+
+    it('keeps the open panels as dockview reports them', () => {
+      const { dock, store } = attached()
+      expect(store.openIds).toEqual(['deployments', 'runs', 'chart'])
+      dock.close('chart')
+      expect(store.openIds).toEqual(['deployments', 'runs'])
+    })
+
+    it('opens the first beside the Runs panel, as a split to its right, and in front', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      expect(groupOf(dock, 'report-trade-history')).not.toBe(groupOf(dock, 'runs'))
+      expect(dock.active()).toBe('report-trade-history')
+      expect(store.openIds).toContain('report-trade-history')
+    })
+
+    /** Not a new split each time: the screen would be cut thinner with every section. */
+    it('puts the next one beside the last, as a tab', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      store.openSection('orders')
+      expect(groupOf(dock, 'report-orders')).toBe(groupOf(dock, 'report-trade-history'))
+    })
+
+    it('brings an open section to the front rather than opening it twice', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      store.open('runs')
+      store.openSection('trade-history')
+      expect(dock.ids().filter(id => id === 'report-trade-history')).toHaveLength(1)
+      expect(dock.active()).toBe('report-trade-history')
+    })
+
+    it('gives every section back to the column on reset', () => {
+      const { store } = attached()
+      store.openSection('trade-history')
+      store.reset()
+      expect(store.openIds).toEqual(['deployments', 'runs', 'chart'])
+    })
   })
 })
