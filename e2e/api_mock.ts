@@ -147,6 +147,10 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       return route.fulfill({ json: fixture('runs_list.json'), headers: CONTRACT })
     }
 
+    if (path === '/api/v1/machine-resources') {
+      return route.fulfill({ json: fixture('machine_resources.json'), headers: CONTRACT })
+    }
+
     /*
      * The STREAM, which is the one report route that is NARROWED — it is asked for one position,
      * not for the run. So the capture answers for that one position and an empty stream for any

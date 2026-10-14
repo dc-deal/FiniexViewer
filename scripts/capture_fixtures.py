@@ -111,6 +111,10 @@ TARGETS = [
     ('deployments_list.json', 'deployments'),
     ('deployment_detail.json', f'deployments/{DEPLOY}'),
     ('deployment_booking_periods.json', f'deployments/{DEPLOY}/booking-periods'),
+    # A READING, not a record: its figures are whatever the machine held at capture time, so a
+    # re-capture moves them every time. Nothing asserts a figure, only the shape and the rules
+    # the answer states about itself.
+    ('machine_resources.json', 'machine-resources'),
 ]
 
 # The artifacts the mock has to be able to answer for. A run missing one of these cannot be the

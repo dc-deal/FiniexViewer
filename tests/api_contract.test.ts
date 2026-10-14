@@ -20,6 +20,7 @@ import configSimulation from './fixtures/run_config_simulation.json'
 import tradeHistory from './fixtures/trade_history.json'
 import scenarioDetails from './fixtures/scenario_details.json'
 import manifest from './fixtures/capture_manifest.json'
+import machineResources from './fixtures/machine_resources.json'
 
 import type {
   AggregatedPortfolioReport,
@@ -42,6 +43,7 @@ import type {
   DeploymentListResponse,
 } from '@/types/api/deployment_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { MachineResources } from '@/types/api/machine_types'
 
 /**
  * The contract this code was written against. The backend stamps every response with
@@ -594,5 +596,19 @@ describe('api contract', () => {
     const typed: DeploymentBookingPeriodsReport = deploymentBookingPeriods
     expect(typed.key).toContain('run_id')
     expect(typed.periods.length).toBeGreaterThan(1)
+  })
+
+  /**
+   * How full the machine is (contract 31). A READING, so no figure is asserted — a re-capture
+   * moves every one of them. What stays true is what the answer states about itself: the
+   * thresholds it is graded against travel with it, in their order, and the reasons are empty
+   * exactly when the level is `ok`.
+   */
+  it('the machine reading carries its own thresholds, and reasons only where it is not ok', () => {
+    const typed: MachineResources = machineResources
+    expect(typed.memory.limit_bytes).toBeGreaterThan(0)
+    expect(typed.memory.warn_at_pct).toBeLessThan(typed.memory.critical_at_pct)
+    if (typed.pressure_level === 'ok') expect(typed.pressure_reasons).toEqual([])
+    else expect(typed.pressure_reasons.length).toBeGreaterThan(0)
   })
 })

@@ -6,6 +6,7 @@ import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
 import type { CallerIdentity } from '@/types/api/caller_types'
+import type { MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
@@ -433,5 +434,20 @@ export async function getScenarioDetails(runId: string): Promise<ScenarioDetails
  */
 export async function getCaller(): Promise<CallerIdentity> {
   const response = await http.get<CallerIdentity>('/caller')
+  return response.data
+}
+
+/**
+ * A reading the server makes in a fraction of a millisecond. One still unanswered after this long
+ * is given up, so a hung request cannot hold up the next poll.
+ */
+const MACHINE_READ_TIMEOUT_MS = 4000
+
+/**
+ * How full the machine is (contract 31). A token and no grant, like `/caller`. Meant to be asked
+ * every few seconds — the route reads no file of the project, and costs the server next to nothing.
+ */
+export async function getMachineResources(): Promise<MachineResources> {
+  const response = await http.get<MachineResources>('/machine-resources', { timeout: MACHINE_READ_TIMEOUT_MS })
   return response.data
 }

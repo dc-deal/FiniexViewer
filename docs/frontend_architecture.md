@@ -548,12 +548,15 @@ does not allow (see *API Token* above, and issue #22).
 - **`src/components/AccountStatus.vue`** — the identity below, in the menu bar beside the
   application menu. Who the viewer works as is a fact to see at a glance rather than a setting to
   open, so it left the settings' Account tab on 2026-10-13.
+- **`src/components/MachineStatus.vue`** — how full the machine is, in the menu bar before the
+  account (see *How full the machine is* below).
 - **`src/components/base/AppDialog.vue`** — every dialog's frame: what is set or read and then
   closed — the settings, About — rather than kept open beside the work, which is a panel. One
   frame, so no dialog re-invents the overlay or the close: 80 % of the window caps both sides, the
   content scrolls inside it, and a dialog whose content must not move the frame — the settings,
   switching tabs — gets a fixed height. `AboutDialog.vue` is the second user.
 - **`src/stores/caller_store.ts`** — who the server takes this client to be.
+- **`src/stores/machine_store.ts`** — the machine's last reading, asked again every few seconds.
 - **`src/composables/use_display_settings.ts`** — how a preference reaches a panel.
 
 **A panel does not read the store.** `PanelColumn` provides the display subset and a panel injects
@@ -607,6 +610,36 @@ and what the token holds. A client that hid a view because the list lacked an en
 second, weaker copy of a model it does not own, and it would fail in the silent direction: an absent
 view looks like one that never existed. If the rights model ever needs a client to reason from it,
 that arrives as its own announced contract change.
+
+### How full the machine is — `GET /api/v1/machine-resources`
+
+Contract 31. The machine is the one the server, the backtests and the live sessions share, and memory
+that runs out is the moment a process is ended by the operating system — nothing refuses politely
+before that. `MachineStatus` draws it in the menu bar, before the account:
+
+```
+CPU  15% · Memory  17%                         ok: the two shares, nothing else
+⚠ warn · CPU  63% · Memory  84%                the backend's grade, where it is not ok
+CPU  15% · Memory  17% · ⚠ as of 14:37:22      the readings have stopped arriving
+```
+
+- **The two shares stand there always; the grade speaks only where it is not `ok`**, as a mark and
+  the backend's own word, and a grade this version does not know shows as itself. `pressure_level`
+  is graded by the backend on memory alone — a busy processor is the machine doing its work.
+  Nothing is computed here: the thresholds (`warn_at_pct`, `critical_at_pct`) and the reasons travel
+  in the answer and are shown as they come, on the hover card beside the limit, where it was read
+  (`limit_source`, `count_source`) and the window the processors' share covers.
+- **Each share sits in a slot three digits wide** — spaces, kept by `white-space: pre` — so a figure
+  going from 9 to 100 moves nothing beside it, and the account keeps its place.
+- **`machine_store` asks every 5 s while the page is in view and nothing while it is hidden**; back
+  in view it reads at once. A slow answer is not asked for twice, and one unanswered after 4 s is
+  given up. **The last reading is held through a failure**, and once three polls have brought
+  nothing new it is shown with its time (`as of …`, warning role). The backend asks for exactly
+  that, so a reading that stopped arriving is visibly old rather than silently current.
+- **The polling starts at the app root**, like the caller, so the store holds one reading for
+  whoever shows it: the menu bar now, a System panel later (viewer#31, S6).
+- The processors' `used_pct` and `window_s` are both null on the first reading after a restart of
+  the server: the bar shows `—`, and the card says there is no window yet.
 
 **The answer is never cached, because a restart is invisible from here.** An account or a grant
 takes effect on the backend only across a restart of its process, and no response carries a boot id

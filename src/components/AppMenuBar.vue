@@ -3,6 +3,7 @@ import {
   DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger,
 } from 'reka-ui'
 import AccountStatus from '@/components/AccountStatus.vue'
+import MachineStatus from '@/components/MachineStatus.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import TopMenu from '@/components/TopMenu.vue'
 import { PANEL_KINDS } from '@/panel_kinds'
@@ -43,6 +44,7 @@ const kinds = [...PANEL_KINDS].sort((a, b) => a.order - b.order)
     </DropdownMenuRoot>
 
     <div class="menu-bar-spacer" />
+    <MachineStatus />
     <AccountStatus />
     <TopMenu />
   </header>

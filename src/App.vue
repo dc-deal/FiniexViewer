@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useCallerStore } from '@/stores/caller_store'
+import { useMachineStore } from '@/stores/machine_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { provideOpenInContext } from '@/composables/use_open_in_context'
 import AppMenuBar from '@/components/AppMenuBar.vue'
@@ -38,13 +39,18 @@ function readCallerWhenVisible(): void {
   if (document.visibilityState === 'visible') callerStore.load()
 }
 
+// how full the machine is, asked every few seconds while the page is in view — the menu bar shows it
+const machineStore = useMachineStore()
+
 onMounted(() => {
   callerStore.load()
+  machineStore.start()
   document.addEventListener('visibilitychange', readCallerWhenVisible)
 })
 
 onUnmounted(() => {
   document.removeEventListener('visibilitychange', readCallerWhenVisible)
+  machineStore.stop()
 })
 </script>
 
