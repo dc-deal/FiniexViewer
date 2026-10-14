@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import {
   amount, magnitude, numberOrNa, signClass, utcInstant,
@@ -478,13 +479,12 @@ function card(trade: TradeRow): ListCard {
                could be opened. The LIST decides the shape; this only places it. -->
           <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
           <!-- a link only where there is an Orders panel to land in -->
-          <button
+          <JumpLink
             v-if="link.canJumpTo('orders')"
-            type="button"
             class="to-orders"
             :title="t('Show the orders of this position')"
             @click.stop="jumpToOrders(trade)"
-          >{{ trade.position_id }} ↗</button>
+          >{{ trade.position_id }}</JumpLink>
           <template v-else>{{ trade.position_id }}</template>
           <!-- the partial, said on the ROW. 952 of 1,556 trades are one, and the reader who sees
                0.02 where they opened 0.10 had to open the fills to find out why -->
@@ -573,21 +573,6 @@ function card(trade: TradeRow): ListCard {
   text-align: right;
 }
 
-/* interactive text wears the link role, and the mark covers every trade of that position */
-.to-orders {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: var(--color-accent);
-  cursor: pointer;
-}
-
-.to-orders:hover,
-.to-orders:focus-visible {
-  text-decoration: underline;
-}
-
 /* the partial marker rides with the position, not in the figure column — a figure column is
    right-aligned digits, and prose in it breaks the one property the whole list is built on */
 .in-parts {
@@ -601,6 +586,7 @@ function card(trade: TradeRow): ListCard {
   white-space: nowrap;
 }
 
+/* the mark covers every trade of that position */
 .trade-list :deep(.record-row.marked) {
   background-color: var(--color-bg-raised);
 }

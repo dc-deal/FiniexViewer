@@ -1,0 +1,41 @@
+/*
+ * dockview's metrics, this app's colours. Both of its themes read the tokens, which themselves
+ * follow `data-theme`, so the dock never needs a colour of its own and a theme switch changes one
+ * class. A colour hard-coded here would be invisible until somebody switched.
+ *
+ * A tab that is not in front keeps the PRIMARY ink: muted ink is what this app reserves for a
+ * control that is disabled, and a tab behind another is a way in, not a dead end. The front tab is
+ * told apart by its surface AND an accent rule — two channels, never the hue alone.
+ */
+.dockview-theme-dark,
+.dockview-theme-light {
+  --dv-group-view-background-color: var(--color-bg-base);
+  --dv-tabs-and-actions-container-background-color: var(--color-bg-surface);
+  --dv-tabs-and-actions-container-font-size: var(--font-size-sm);
+  --dv-tabs-and-actions-container-height: 2rem;
+  --dv-activegroup-visiblepanel-tab-background-color: var(--color-bg-base);
+  --dv-activegroup-hiddenpanel-tab-background-color: var(--color-bg-surface);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--color-bg-base);
+  --dv-inactivegroup-hiddenpanel-tab-background-color: var(--color-bg-surface);
+  --dv-activegroup-visiblepanel-tab-color: var(--color-text-primary);
+  --dv-activegroup-hiddenpanel-tab-color: var(--color-text-primary);
+  --dv-inactivegroup-visiblepanel-tab-color: var(--color-text-primary);
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--color-text-primary);
+  --dv-tab-divider-color: var(--color-border);
+  --dv-separator-border: var(--color-border);
+  --dv-paneview-header-border-color: var(--color-border);
+  --dv-icon-hover-background-color: var(--color-bg-hover);
+  --dv-drag-over-background-color: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  --dv-drag-over-border-color: var(--color-accent);
+  --dv-tabs-container-scrollbar-color: var(--color-border);
+}
+
+.dockview-theme-dark .dv-tab:hover,
+.dockview-theme-light .dv-tab:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.dockview-theme-dark .dv-tab.dv-active-tab,
+.dockview-theme-light .dv-tab.dv-active-tab {
+  box-shadow: inset 0 2px 0 var(--color-accent);
+}

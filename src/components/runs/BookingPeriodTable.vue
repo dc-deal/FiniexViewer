@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
 import {
   amount, figure, numberOrNa, percentOrNa, signClass, utcInstant,
@@ -30,6 +32,12 @@ const props = defineProps<{
   /** Set where the rows span several runs — off inside one run, where the column is constant. */
   showRun?: boolean
 }>()
+
+const { openRun, canOpen } = useOpenInContext()
+
+function openRunOf(period: PeriodRow): void {
+  if (period.run_id) openRun(period.run_id)
+}
 
 /**
  * The currency for the whole table, or null where the rows disagree.
@@ -184,12 +192,12 @@ const bands = computed<ListBand[]>(() => [
           {{ period.unit_name }}
         </span>
         <span v-if="showRun" :data-rank="4" class="text-cell">
-          <RouterLink
-            v-if="period.run_id"
-            class="run-link"
-            :to="{ name: 'runs', query: { run: period.run_id } }"
+          <JumpLink
+            v-if="period.run_id && canOpen"
             :title="t('Open this run')"
-          >{{ period.run_id }} ↗</RouterLink>
+            @click="openRunOf(period)"
+          >{{ period.run_id }}</JumpLink>
+          <template v-else>{{ period.run_id }}</template>
         </span>
         <span :data-rank="4" class="figure-cell">{{ period.period_no }}</span>
         <span :data-rank="1" :title="utcInstant(period.opened_at)">
@@ -235,7 +243,8 @@ const bands = computed<ListBand[]>(() => [
 /* only what the shared list does not own: it carries the tracks, the bands, the headings and the
    read-only rows */
 .periods-list {
-  max-height: 50vh;
+  /* of the view that holds the table, not of the browser window */
+  max-height: 50cqh;
   overflow-y: auto;
 }
 
@@ -252,15 +261,6 @@ const bands = computed<ListBand[]>(() => [
 
 .text-cell {
   text-align: left;
-}
-
-.run-link {
-  color: var(--color-accent);
-  text-decoration: none;
-}
-
-.run-link:hover {
-  text-decoration: underline;
 }
 
 .positive { color: var(--color-positive); }

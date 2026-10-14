@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onErrorCaptured, ref, watch } from 'vue'
 import { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent } from 'reka-ui'
+import AppIcon from '@/components/base/AppIcon.vue'
+import type { IconName } from '@/types/icon_types'
 import { t } from '@/translate'
 
 const props = defineProps<{
   title: string
-  icon: string
+  icon: IconName
   open: boolean
   pinned: boolean
   locked: boolean
@@ -33,7 +35,7 @@ const emit = defineEmits<{
  * take the other ten away.
  *
  * `false` stops the error here. The stack goes to the console for whoever is debugging; the reader
- * gets a sentence, because a stack trace on screen is not an explanation (§10).
+ * gets a sentence, because a stack trace on screen is not an explanation.
  */
 const failed = ref(false)
 
@@ -57,7 +59,7 @@ watch(() => props.resetOn, () => {
     <div class="panel-header">
       <CollapsibleTrigger class="panel-trigger">
         <span class="panel-chevron" :class="{ expanded: open }">▸</span>
-        <span class="panel-icon">{{ icon }}</span>
+        <AppIcon :name="icon" />
         <span class="panel-title">{{ t(title) }}</span>
         <span v-if="failed" class="panel-failed-mark" :title="t('This section could not be drawn')">⚠</span>
       </CollapsibleTrigger>

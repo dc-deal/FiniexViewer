@@ -14,8 +14,8 @@ Unit test setup for FiniexViewer. No API server required — all HTTP calls are 
 | **@vitest/coverage-v8** | V8-native coverage reporting, no instrumentation step |
 
 **Playwright, for the layer jsdom can only approximate** (viewer#23). The unit suite proves a
-component does what it was written to do; it cannot prove that a real reload of a real URL in a
-real browser puts the reader back where they were. Specs live in `e2e/`, run with
+component does what it was written to do; it cannot prove that a real reload in a real browser
+puts the reader back where they were. Specs live in `e2e/`, run with
 `npm run test:e2e`, and are **hygiene rather than a gate** — browser tests are slow and flaky under
 load, and a gate that is red on Monday morning gets switched off, taking the type-check beside it
 out of use.
@@ -27,10 +27,29 @@ HTTP contract goes stale in silence, which has already happened once here. For t
 DERIVES what it needs from the capture rather than transcribing it: `api_mock.ts` exports
 `FIXTURE_RUN` and `FIXTURE_DEPLOYMENT`, and keeps the family key it derives to itself — the last being the family line the run
 list now folds the fixture run behind, with `revealFixtureRun(page)` to open it. A spec that
-CLICKS a run calls that first; one that reaches a run by url does not.
+CLICKS a run calls that first; one that opens on a stored run does not.
 
-**What the browser tier is for, concretely.** `run_selection.spec.ts` holds the reload and the URL
-— a real `localStorage`, a real history entry. `trade_groups.spec.ts` holds the open/closed regimes
+**The selection is not in the URL, so a spec that needs a run open STORES it.**
+`openWith(page, path, seed)` in `e2e/arrangement_seed.ts` writes `arrangement.v1` before the app
+boots — ONCE per tab, guarded in `sessionStorage`, because a reload must find what the page stored
+meanwhile rather than the seed again. `storedLink` and `storedBar` read back what the app stored,
+which is what a spec asserts where it used to read the address bar. There are no routes: every spec
+opens `/`, where Runs is the tab in front, and `showPanel(page, title)` brings another panel forward
+by its tab, the way a reader does.
+
+**What the browser tier is for, concretely.** `run_selection.spec.ts` holds the reload — a real
+`localStorage`, and a real boot from it. `dock.spec.ts` holds the docked panels, which jsdom cannot
+lay out at all: the first arrangement in the suggested order, a tab behind another drawn only once
+it is shown, an arrangement that survives a reload, the way back to the suggested order, a closed
+panel brought back from the Panels menu, About opening as a dialog rather than as a tab, the quick
+bar holding the chart's selection only while the chart is in front, and the Runs tab carrying the
+grade of a run that did not succeed. `run_selection.spec.ts` also holds the rule that a selection
+never moves the layout — choosing a scenario leaves the executive panel's box and the row under the
+pointer exactly where they were — and a section still on its way keeping its panel standing with a
+loading line, the route held back on purpose.
+`settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per tab,
+and to a frame that stays inside a small window with its content scrolling, and the account standing
+in the menu bar with no tab for it in the settings. `trade_groups.spec.ts` holds the open/closed regimes
 of the scenario groups, and two things only a browser can state: that the group heading resolves to
 the SAME grid as the rows beneath it — read from `getComputedStyle`, which also catches a track
 collapsed to zero — and that a trade opens its fills and they offer nothing to click. The test it
@@ -38,10 +57,15 @@ replaced counted `<th>` against the group row's `colspan`; after the migration b
 would have passed for ever on a subject that no longer exists. `position_link.spec.ts` holds the jump between an
 order and its trade, and every part of it lives in the VIEW rather than in a panel: a CLOSED target
 panel being opened, a HIDDEN one coming back rather than the jump landing nowhere, the position
-reaching the address bar, and the mark surviving a real reload without the page scrolling on its
-own. The fixtures make the trap concrete — `pos_ethusd_1` appears in five scenarios of the order
+reaching the address bar, a jump from far down the orders SCROLLING its trades into view, and the
+mark surviving a real reload without the page scrolling on its own. The scroll test jumps from the
+LAST link on purpose: the trades of the first one are on screen anyway, so a test on them stayed
+green with the scroll removed (2026-10-12). The fixtures make the trap concrete — `pos_ethusd_1` appears in five scenarios of the order
 history and two of them produced a trade, so the link is drawn twice and the mark lands in one
-scenario rather than in every row carrying that id. `panel_boundary.spec.ts` holds the one claim the
+scenario rather than in every row carrying that id. `open_in_context.spec.ts` holds the way from
+one VIEW into another — a deployment's session into its run, a run into the deployment it was a
+session of — because a unit test records where a panel asked to go, and only a browser shows the
+shell going there. `panel_boundary.spec.ts` holds the one claim the
 unit suite cannot reach, because it is about the WORKSPACE and not about a panel: a section that
 cannot be drawn takes ONLY itself off the screen. The fault is injected rather than waited for —
 `mockApi` takes an option to serve one named field of one section as a number, so the read throws
@@ -67,8 +91,8 @@ of the INK through a Range so padding does not enter into it. That assertion fou
 lists misaligned by 11 to 172 px, ten columns of ten in the booking periods — every declaration
 correct, the geometry not.
 
-Three traps it walked into while being written, all now in the spec's own comments. A url carrying
-`?run=` draws NO run list, because the picker collapses once a run is chosen. The booking-period
+Three traps it walked into while being written, all now in the spec's own comments. A stored run
+draws NO run list, because the picker collapses once a run is chosen. The booking-period
 table lives in a closed `<details>`, which is not laid out at all — its grid resolves to numbers
 that mean nothing, and the first version of the spec duly reported a track count no declaration
 could produce. And sweeping the panel bar by index looked equivalent to opening panels by NAME and
@@ -78,16 +102,53 @@ two lists of four and said nothing about the other two. It now names the lists i
 if one is missing, because a silent skip reads as coverage. `deployments.spec.ts` holds the LEDGER view, which had no browser coverage at all until 2026-10-01
 — the mock served only the run plane, so the deployments page, its picker and its timeline had never
 been opened by a test although their three captures existed. It holds the picker listing the ledger
-and opening a history, the selection surviving a reload as a link, a stale link saying so, the
+and opening a history, each run opened from a deployment showing its own executive summary (every
+session's summary answered with its own net P&L, so two runs cannot be mistaken for each other — the
+spec went red against the jump that only changed the context), the selection surviving a reload as a link, a stale link saying so, the
 figure cells right-aligned under their headings, and the timeline marking round moments rather than
-the overlapping stamps an operator photographed. `panel_layout.spec.ts` holds that **no panel scrolls sideways**, at a wide
+the overlapping stamps an operator photographed. `panel_layout.spec.ts` also holds that **a narrow Runs panel keeps its run line and its section bar to one line each**, with what did not fit one click away and switchable from there, that a wide one shows every section with no control to unfold, and that a narrow Deployments panel keeps its deployment line to one line. It holds that **no panel scrolls sideways**, at a wide
 and at a narrow width: `.panel-content` carries `overflow-x: auto`, which is the right safety valve
 and a poor everyday state, because the moment it engages the panel's leftmost column slides out of
 view and nothing says so. Two defects of exactly that shape reached the screen in one week — a
 56-character worker type pushing the configuration table past its column, and an axis label whose
 transform pulled it back on screen but not in layout, so a panel offered 67 px of scrollbar for
-nothing. Both are geometry, so jsdom cannot see either. `performance.spec.ts` is excluded from the
-ordinary run (`npm run test:perf`, one worker) because its budgets fail under contention.
+nothing. Both are geometry, so jsdom cannot see either. `view_heights.spec.ts` holds that **a list
+caps its height against its VIEW, not the window**: the run list ends inside a view given half the
+window's height, and keeps at least a row in a very short one. Its first version ran at full height
+and stayed green with the size container removed — the budget around the list holds more slack
+than the gap between window and view — so the view is now shrunk, and both tests were seen to fail
+once with the container, and once with the floor, taken away. `performance.spec.ts` is excluded from the
+ordinary run (`npm run test:perf`, one worker) because its budgets fail under contention. Its cold
+figure also carries the test browser's own stall before it asks for the page, so it prints a second
+one read on the page's clock, from the document's arrival to the first row: the app alone. And a
+run's panels count as drawn only once the last loading line is gone — a panel keeps its place while
+its section loads, so its header alone no longer says the panel can be read.
+
+**A long run inside the container gets a DEADLINE, and `scripts/run.sh` is how.** A `docker exec`
+that times out is not stopped — only the host side of it is: the process inside keeps its CPU and
+its heap, and nothing reports that it is still there. That is how the container reached 27.28 GB at
+1300 % CPU on 2026-09-29 and starved the Docker API into answering 500, with a `knip` call
+abandoned at a 300 s timeout still running an hour later. The script puts the deadline INSIDE
+(`timeout -k 10 N`), and a trap kills whatever the deadline left, the same way `e2e.sh` kills the
+browser:
+
+```bash
+bash scripts/run.sh test        # the unit suite, 420 s
+bash scripts/run.sh lint        # 300 s
+bash scripts/run.sh build       # 600 s
+bash scripts/run.sh knip        # 600 s
+bash scripts/run.sh -- <cmd>    # anything, at the default deadline
+```
+
+A deadline reads as exit **143**, not as a failing test — BusyBox `timeout` lets the signal kill the
+child rather than returning GNU's 124. The script says so in words and then prints the container's
+largest and oldest processes, because `etime` is the column that names an orphan.
+
+Two traps it was built around, both measured 2026-10-10 and both self-inflicted: a matcher whose
+own command line contains the word it searches for finds ITSELF (`pkill -f vitest` killed its own
+parent), and a ZOMBIE answers a `pkill` with success although nothing happens — the container has
+no init to reap, so it carried 33 of them and the trap announced a cleanup after every single run.
+Every pattern therefore carries a bracket, and the probe ignores anything in state `Z`.
 
 **The browser is not in the container.** The image is Alpine on musl and Playwright's browsers are
 glibc builds, so the runner connects over CDP to a browser on the developer's machine —
@@ -136,47 +197,69 @@ npx vitest
 
 ```
 tests/
-  selection_store.test.ts   — cascade logic, localStorage persistence, resetTimeframe, isReady
+  selection_store.test.ts   — the facade over the main link's market and the chart's timeframe: brought back from the arrangement, a new broker clearing the symbol and keeping the timeframe, resetTimeframe, isReady
   timeframe_store.test.ts   — load-once cache, minutesFor lookup, error handling, loading flag
-  bars_store.test.ts        — coverage validation, window calculation, timeframe mismatch, error handling
-  use_query_sync.test.ts    — URL-first priority, localStorage fallback, _ready guard, URL write-back
-  runs_store.test.ts        — run index loading, the flat index, missing-artifact flag, error handling, and the scenario narrowing: several at once, one taken back out, no duplicates, dropped whenever the run below it changes
-  use_run_query_sync.test.ts — the run restored from the URL, a link saved under the old cascade opened and its dead params cleaned away, merge with foreign params, and the scenario narrowing: restored AFTER the run that clears it, several names comma separated, a hand-edited param with blanks, ignored without a run, written and removed again
+  bars_store.test.ts        — coverage validation, window calculation, a timeframe outside the coverage REPORTED and the selection left alone, error handling
+  context_store.test.ts     — the main link always there, the cascades (a new run takes the narrowing and the mark with it, a narrowing keeps the mark and drops duplicates, a new broker clears the symbol), and a restore that applies stored links without cascading
+  arrangement_store.test.ts — the stored selection restored into the context on creation and every change written back, a damaged entry reconciled rather than trusted, another schema removed rather than converted, an unreadable entry the same as none, the retired chart keys removed, and a cleared bar kept apart from an untouched one across a reload
+  use_run_binding.test.ts   — the run the reader had open brought back with its narrowing and its mark, a run gone from the index named, the index alone where nothing was open, and a run picked while the stored one is still loading kept — its late answer discarded
+  use_deployment_binding.test.ts — the deployment brought back, and one the ledger no longer lists named
+  use_chart_binding.test.ts — a timeframe the symbol has no coverage for cleared, a covered one kept
+  use_facet_state.test.ts   — an untouched bar on its defaults and storing nothing, narrowing, search and sort brought back, a CLEARED bar kept cleared rather than given its default back, and the scope: a narrowing stored for another run dropped with its sort kept, the same run restored, and a run change under a mounted bar dropping the narrowing and storing the new scope
+  runs_store.test.ts        — run index loading, the flat index, missing-artifact flag, error handling, and the scenario narrowing: several at once, one taken back out, no duplicates, dropped whenever the run below it changes; and a refresh that fetches again without a spinner in place of the list; and an id the index does not know asked for once more before it is called gone, loading a run that arrived since
   translate.test.ts         — the marker returns its input; the count agrees with its noun, zero reads as plural, a large count stays grouped
-  query_param_utils.test.ts — query reading (string-only), param write and delete
-  use_facet_query.test.ts   — the facet encoding round trip and its stable order, a group it cannot read, a value with a space; seeding a bar from the URL, writing nothing while untouched, keeping another view's params, two bars in one URL; and `patchQuery` keeping both writers of one tick
-  run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, the narrowing (a unit's errors, a run-wide warning kept while another unit's drops, the outcome counts marked as the run's), the executive figures marked as the run's, the portfolio breakdown incl. the chart link and the narrowed unit MARKED rather than filtered (the run-wide total stays), and the run header incl. the two kinds of parent, MARKET TIME (covered in days past two, the summed span only where the units overlap, n/a where the run never recorded it), the two excursions, what the account started from, and a run of several accounts saying how many and which one fell deepest
-  app_bar.test.ts           — the inventory of sections: a toggle per registered panel, an absent section LISTED and disabled rather than hidden, and the ORDER — the reader's arrangement rather than the registry's, with a switched-off panel still listed but after everything still arranged
+  run_panels.test.ts        — KPI rendering (units, n/a, per-subset and per-trade-count gating, SIGNAL absence), the warnings/errors tiers, the shutdown mode as detail rather than verdict, a refusal at the first tick marked as something to weigh while a crash's reason stays an error, the narrowing (a unit's errors, a run-wide warning kept while another unit's drops, the outcome counts marked as the run's), the executive figures marked as the run's, and the run header incl. the two kinds of parent (a deployment's history opened through the channel and named as plain text where nothing can open it, a sweep named and not offered as a way in), MARKET TIME (covered in days past two, the summed span only where the units overlap, n/a where the run never recorded it), the two excursions, what the account started from, and a run of several accounts saying how many and which one fell deepest
+  app_bar.test.ts           — the inventory of sections: a toggle per registered panel with that panel's icon drawn on it, an absent section LISTED and disabled rather than hidden while one still on its way stays usable, and the ORDER — the reader's arrangement rather than the registry's, with a switched-off panel still listed but after everything still arranged; and in a panel too narrow for every toggle: one row with the rest behind the control and the actions last, an absent section listed in the menu disabled and unticked, a section switched from the menu with the menu staying open, and the hint about the control only while something waits behind it
+  overflow_fit.test.ts      — how many items fit before the control: all of them without the control where the whole row fits, the first that no longer fits beside it, the order kept rather than a smaller item jumping ahead, none, and an empty row
+  overflow_row.test.ts      — every item and no control where there is room, what does not fit put behind the control from the end and in order, a hidden item inert and hidden from a screen reader, the menu handed exactly what waits, and an end group standing at the end until it has gone and the control takes its place. Its harness, `overflow_harness.ts`, hands the row its widths by class, since jsdom lays nothing out
+  panel_column.test.ts      — a panel whose section the run does not carry left out, one still on its way kept in its place with a loading line saying so, and the room its content last took held while it loads
   layout_store.test.ts      — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
   settings_store.test.ts    — per-field reconciliation (unknown key dropped, missing key defaulted, out-of-range refused), the schema-version discard, setters that ignore rather than clamp, and the display subset handed to panels
-  settings_menu.test.ts     — the three dialog tabs (display against the store, layout export/import incl. a bad file reported rather than swallowed, account in each of its four states), and the menu: the theme entry naming what it switches TO, the account name once the server reports one
-  caller_store.test.ts      — the four states of GET /api/v1/caller, the display-name fallback, a refused token told apart from an unreachable server, and that nothing is cached
+  settings_menu.test.ts     — the two dialog tabs (display against the store, layout export/import incl. a bad file reported rather than swallowed), and the menu: the theme entry naming what it switches TO, and About opened from there as a dialog; the docked panels taken back to the suggested order from the layout tab
+  caller_store.test.ts      — the four states of GET /api/v1/caller, the display-name fallback, a refused token told apart from an unreachable server, the first read shown as loading while a re-read keeps the last answer on show, and that nothing is cached
+  account_status.test.ts    — every state of the caller as a mark and a word in its role (connecting, no sign-in, token refused, server unreachable), the account named quietly once the server reports one, its card carrying the account, the client, the grants, the note and when it was read, and a server that verifies no token saying why there is no identity rather than showing one
   record_list.test.ts         — the shared list stem: the flat list unchanged (one row per record under one set of headings, the TRACKS owned by the list rather than by a row), groups (partitioned in the order the rows arrive and never alphabetically, a closed group's heading drawn without its rows, the click reported as a key so the component holds no state, the first cell indented and never the row, the heading a native button carrying aria-expanded), the card beside a row (wrapped by the list, absent where the caller answers null, and NO tooltip machinery mounted at all where no card was offered), nested read-only use (no headings, and a row that is a div rather than a button that ignores its click), a chosen row announced as chosen and only where rows can be chosen, and BANDS: their spans must cover the columns exactly or none are drawn, each band carries the span it KEEPS at every rank tier (the declared span counts the widest tier only), and a band that would lose every column when narrow is reported rather than patched to one; and what a heading says on hover — the label alone, or the label THEN the column's hint, never the hint in place of it; and one class the CALLER puts on a row, kept beside the list's own states rather than replacing them
   facet_filter.test.ts      — OR within a facet and AND across facets, a facet counting against the OTHERS and not itself, a picked value kept listed at zero, a row that states no value never claimed by one, and that nothing is mutated
-  run_picker.test.ts        — the flat list on the shared stem (every run whatever its group), newest first, sorting on the INSTANT rather than the text of the stamp, a damaged stamp shown as no date rather than Invalid Date, the stamp read from its OWN cell since the id beside it also begins with the year, the year dropped inside the current one and kept outside it, a logs-only run marked but still selectable, narrowing by facet, the list collapsing once a run is chosen, what the row says the run DID (one figure per account currency and never folded, an outcome shown only where the run recorded one, the trouble count silent at zero, the id shortened with the whole value in its title, how much market time it covered), and the RANKS with the card that makes them defensible: every cell carrying the rank its own column declares, a card on every row, the configuration and provenance and weight, `ticks_from` stated only where the run recorded it, the artifacts counted with their names in the title, the Tier-2 log count present only where it is not zero, and a run whose stamp is not a date still drawn
-  scenario_roster.test.ts   — the complete roster incl. the scenarios that produced nothing and their reason, the notice above the filter, narrowing by facet and by search, the honest count, a facet dropped where no row states a value, and CHOOSING scenarios (click narrows, a second click takes one back out, several collected at once, a failed scenario choosable like any other, inert without a host, the hint that says what a click does and the state that replaces it). Its figures are read CELL BY CELL against the column headings since the twelve-column migration — as running text, a probe for the currency an amount is IN matched the currency a scenario merely declares
+  run_picker.test.ts        — the flat list on the shared stem (every run whatever its group), newest first, sorting on the INSTANT rather than the text of the stamp, a damaged stamp shown as no date rather than Invalid Date, the stamp read from its OWN cell since the id beside it also begins with the year, the year dropped inside the current one and kept outside it, a logs-only run marked but still selectable, narrowing by facet, the list collapsing once a run is chosen and opening collapsed on one chosen before it mounted, the chosen run named in one line with the whole of it on hover, what the row says the run DID (one figure per account currency and never folded, an outcome shown only where the run recorded one, the trouble count silent at zero, the id shortened with the whole value in its title, how much market time it covered), and the RANKS with the card that makes them defensible: every cell carrying the rank its own column declares, a card on every row, the configuration and provenance and weight, `ticks_from` stated only where the run recorded it, the artifacts counted with their names in the title, the Tier-2 log count present only where it is not zero, and a run whose stamp is not a date still drawn
+  scenario_roster.test.ts   — the complete roster incl. the scenarios that produced nothing and their reason, the notice above the filter, narrowing by facet and by search, the honest count, a facet dropped where no row states a value, and CHOOSING scenarios (click narrows, a second click takes one back out, several collected at once, a failed scenario choosable like any other, inert without a host, the hint that says what a click does and the state that replaces it). Its figures are read CELL BY CELL against the column headings since the twelve-column migration — as running text, a probe for the currency an amount is IN matched the currency a scenario merely declares. A narrowing survives a section of the SAME run that arrives late and is forgotten for a different run — told apart by the run id, never by the identity of the composed model
   run_reports_store.test.ts — section loading (warnings/errors, portfolio, broker, aggregated), error text KEYED BY SECTION so a concurrent load cannot drop a sibling's failure, clearing on run change, and the ABSENCE as a value — the cause kept beside the empty slot, two sections missing for different reasons, an absence that is not an error, and every reason forgotten on a selection change
   api_client.test.ts        — request construction, endpoint paths, query params, response mapping, 404 / 409 / 403 mapping
   api_contract.test.ts      — the captured fixtures against the contract they were taken under, and each list's declared row key
-  deployments_store.test.ts — ledger listing, the row identity the ledger DECLARED kept rather than dropped, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state
-  deployment_picker.test.ts — the select box replaced by a facet bar over a flat list: what a deployment DID on the row rather than behind the choice, ONE ROW PER LEDGER ROW (a bot booking in two account currencies has two, and the identity is read from the declared key rather than hardcoded), the deployment a clicked row belongs to, the list collapsing once one is chosen, an empty ledger stated plainly; and what the row leaves out — every cell carrying its column's rank, a card on every row, the drawdown caveat beside the drawdown (a sum over sessions it is NOT), the bot id only where the profile declares one, the configuration spoken about only where it MOVED, an absent idle stretch stated as absent rather than as zero, and the facets: the configuration offered as words rather than as a boolean, and no currency facet at all where every deployment books in one
-  booking_period_panels.test.ts — the three-state reconciliation incl. "not checked", the completeness wording, the magnitude drawdown, the timeline (tracks, polarity, no extent, unreadable timestamps, and no rule ruled across lanes that do not share the boundary), the table carrying every field the hover card has incl. the equity band, the column groups, the shared currency stated once and kept per-cell where the rows disagree, the opening balance with its absence stated rather than computed, the fee breakdown one hover from the fee, and under a narrowing: only the chosen lanes drawn while the run-wide verdict keeps its figures and says so
+  deployments_store.test.ts — ledger listing, the row identity the ledger DECLARED kept rather than dropped, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state, and a refresh with no spinner in place of the ledger, and an id the ledger does not list asked for once more before it is called gone
+  deployment_picker.test.ts — the select box replaced by a facet bar over a flat list: what a deployment DID on the row rather than behind the choice, ONE ROW PER LEDGER ROW (a bot booking in two account currencies has two, and the identity is read from the declared key rather than hardcoded), the deployment a clicked row belongs to, the list collapsing once one is chosen into one line with the whole of it on hover, and opening collapsed on one chosen before it mounted, an empty ledger stated plainly; and what the row leaves out — every cell carrying its column's rank, a card on every row, the drawdown caveat beside the drawdown (a sum over sessions it is NOT), the bot id only where the profile declares one, the configuration spoken about only where it MOVED, an absent idle stretch stated as absent rather than as zero, and the facets: the configuration offered as words rather than as a boolean, and no currency facet at all where every deployment books in one
+  booking_period_panels.test.ts — the three-state reconciliation incl. "not checked", the completeness wording, the magnitude drawdown, the timeline (tracks, polarity, no extent, unreadable timestamps, and no rule ruled across lanes that do not share the boundary), the table carrying every field the hover card has incl. the equity band, the column groups, the shared currency stated once and kept per-cell where the rows disagree, the opening balance with its absence stated rather than computed, the fee breakdown one hover from the fee, a period's run and a session lane's label each opening that run through the channel and each named as plain text where nothing can open it, and under a narrowing: only the chosen lanes drawn while the run-wide verdict keeps its figures and says so
   aggregated_portfolio_panel.test.ts — the fold of a run over its scenarios, and mostly what it LEAVES OUT: the run-wide cost split with maker/taker only where charged and the average spread kept out of the account currency; the three distinctions a reader gets wrong without it (the highest peak of ANY account against the deepest account's own peak, the REALISED balance against the valued equity, an undefined recovery factor as n/a); the spot holdings stated as estimates and absent where the currency is not spot; a mixed-model currency saying so and silent otherwise; and the guards — no figure the executive summary already states, no pending-order or latency figure (that is another route's subject), no per-scenario inventory table
   orders_panel.test.ts      — the two order routes as ONE panel: the group heading carrying the SERVED funnel rather than a count of the rows beneath it, a rejection marked there and nothing marked where there was none, a scenario that reached no queue saying so instead of showing a funnel of zeroes (and the same where the run serves no pending section at all), the orders resting at data end stated only where there are any, an untimed scenario as absent rather than as zero, and the two outcomes that have never fired kept out until they do. Then the row: the backend's rejection sentence beneath the row it belongs to and nowhere else, a value the record never held stated as absent rather than as a zero nobody reported, what EXECUTED where it did against what was asked for where it did not, a refusal and an expiry on different channels, and a row keyed by its POSITION so one order can appear as several rows; plus every cell carrying its column's rank, an empty run stated plainly, and nothing to click but the headings; no POSITION column, because `order_id` IS the position id and the column repeated it; and under a narrowing only the chosen scenarios drawn, with an empty result stated as theirs rather than as the run's; the column headed the backend's way (`Order id`) with the glossary sentence on the heading, because `order_id` is the POSITION's id and `Order` alone claimed otherwise; and the LIFECYCLE of one position read as one — the id named once with the following rows carried on, the opening row marked so the boundary sits on it, the id shown again where two positions alternate (measured: 2 of 246 groups do), and the row above read from the NARROWED list; and the way to the trades — the link on the row that names the position, absent where the position produced none, where the run carries no trade history and where the workspace has no such panel, the jump naming the PANEL and the POSITION rather than the id alone, and the mark covering the whole lifecycle while leaving the same id in another scenario alone; and the THIRD level from the event stream — the disclosure drawn once per position and only where the run wrote a stream at all, the request made on OPENING and for that one position, the waiting state told apart from an empty stream, the steps grouped into the ORDERS they belong to by `submitted_seq` rather than by the position id they share, an order that was never submitted named that rather than given a number, the order of the STREAM kept where the clock repeats, and the de-duplication left to the store that can actually do it; the funnel in the backend's OWN words since contract 23 (submitted, accepted, rejected, never confirmed, expired) with the duration carrying its word rather than standing as a bare `1438 ms`, and the two counters that have never fired kept out until they do. The `arrived` caveat that stood here is GONE with its subject: it paraphrased a defect of theirs, they fixed it and named the field `total_accepted`
   order_steps_harness.ts    — the step capability for a test host, and one captured-shaped step: the request is RECORDED rather than performed, the way the position-link harness does it, so a panel test can prove it asks ONCE for the position the reader opened without having a workspace to fetch in
   broker_panel.test.ts      — the panel that replaced Portfolio: one block per broker titled by the declared key, the conditions a scenario traded under, and the MARGIN gate — nothing printed where the backend does not require the fields (leverage 1), all three together where it does. Then the sentence that is the point of the panel: several brokers said to be incomparable, what actually DIFFERS named from the fields that differ, no difference claimed where they agree, silent on one broker, and the margin half in WORDS rather than by comparing a mode string whose `none` is a default. Plus the symbol table: the rules per symbol, a volume kept at the precision the backend stated and never in exponential notation, both swap directions as one fact, every cell carrying its column's rank, an empty symbol list stated rather than drawn, and nothing to click
   trade_history.test.ts     — the magnitude excursion, the VISIBLE row cap, what the card carries that the row cannot, the scenario threshold (summaries past it, the group heading still complete, opening one by pointer), the FILLS as a third level (folded until clicked, both legs then drawn, no headings and no controls of their own, the share named only where the trade took part of a bigger fill, and never a claim about how many trades share one), and under a narrowing: narrowed BEFORE capped, the cap counted against the narrowed set, an empty result stated as the scenario's; plus what a narrow list keeps — every cell carrying its column's rank, the group heading laid out from the END of the tracks rather than by a span fixed at eight columns, and the net closing the row after the life of the trade; plus the POSITION leading the row as part of the trade's own key, and the way back — the jump naming the panel and the position, no link where that panel is not in the workspace, and every trade of a position marked because a partial close books more than one
-  panel_boundary.test.ts    — the error boundary around ONE panel: content drawn where nothing is wrong, a panel that threw kept inside its own frame with its title and controls intact, the header marked so a folded panel still says it failed, the error written to the console and never into the page, a failed panel given another go once it is showing a different model, and a panel whose defect is in the CODE settling on the frame rather than looping between drawing and failing
-  position_link.test.ts     — the position as it travels in a URL and as it is compared: the round trip, a scenario name that contains the separator, no percent-encoding needed, every half-written param marking nothing, and the comparison matching BOTH halves — never the position id alone, never a row that has no position at all
+  panel_boundary.test.ts    — the header drawing its panel kind's icon, and the error boundary around ONE panel: content drawn where nothing is wrong, a panel that threw kept inside its own frame with its title and controls intact, the header marked so a folded panel still says it failed, the error written to the console and never into the page, a failed panel given another go once it is showing a different model, and a panel whose defect is in the CODE settling on the frame rather than looping between drawing and failing
+  panel_kinds.test.ts       — every kind with its own id and place in the suggested order, the first arrangement deployments · runs · chart, the first tab one the arrangement holds, a form icon on every tab, no kind for About or the settings (they are dialogs), nothing known of a retired kind
+  dock_layout.test.ts       — a stored layout reconciled: kept whole where every kind is known, an unknown panel dropped from its group with the front tab moved, an emptied group and the active group with it dropped, floating, popout and tab groups gone, and nothing returned where nothing usable is left
+  dock_store.test.ts        — against a plain-data dock: the suggested order in one group with Runs in front and kept, a stored layout brought back reconciled, a layout the dock refuses answered with the suggested order, a panel brought to the front or opened beside the active one, a reset, a layout written once it holds still or at once when flushed, and a dock holding no panel never written over the arrangement it had
+  panel_host.test.ts        — a panel drawn the first time it is shown and never mounted twice, told when it is shown AGAIN and not on the first showing, a panel that throws stopped at its own frame with a sentence and the stack in the console, an unknown kind said so
+  app_dialog.test.ts        — absent while closed; the title, the content and one way out, named for its caller; a fixed height only where one is given; the close button asking to close
+  panel_tab.test.ts         — the run's grade on the Runs tab where it is not a success (failed in the error role, finished_with_errors in the warning role, nothing for a success or no run), the card saying what the panel is for and the status in words; the form icon and the kind's title, a close button that closes and stops its click there, named for a pointer and a screen reader, the stored title for an unknown kind
+  app_menu_bar.test.ts      — the panels worked in, offered in the suggested order with their form icons, the chosen one handed to the dock, the account status in the frame, and no Layout menu of its own
+  chart_quick_bar.test.ts   — what the three compact selects offer loaded when the chart comes to the front, the symbols of a broker the reader left selected, each select named for a screen reader and showing its name while nothing is chosen
+  quick_bar.test.ts         — the chart's selection while the chart is the panel in front, nothing for a panel without options or a group that shows none
+  runs_quick_bar.test.ts    — silent while the whole run is shown, the scenarios on show named while they fit and counted past that, the names this run does not have said only once the roster arrived, and the way back to the whole run
+  use_open_in_context.test.ts — no way out where no host supplied one, and no throw either; the host's way out handed to a panel. Its harness, `open_in_context_harness.ts`, RECORDS where a panel sent the reader instead of navigating
+  open_in_dock.test.ts      — the docked app's way out: each run it opens loads ITS summary and brings the Runs panel forward, the opened run starts without the previous run's narrowing, and a deployment it opens loads its history and brings the Deployments panel forward
+  position_link.test.ts     — the comparison of a position: matching BOTH halves — never the position id alone, never a row that has no position at all
   hints_store.test.ts       — reconciliation (a retired id dropped, an unknown version discarded, no duplicates), a dismissal that lasts the session and is never written down, a ban that outlives the visit, and the reset that undoes both
   json_tree.test.ts         — key naming, quoted strings, array indices, null, fold depth
   run_config.test.ts        — the two configuration shapes, override PRESENCE without resolution, the overriding scenarios folded away while the warning stays in the open, the worker join, and the guarantee that no top-level key is unreachable
-  app_button.test.ts        — the two shapes, a toggle announced as one ONLY where it is one, a genuinely disabled button rather than one merely styled as it, and that nothing submits a form by accident
+  app_button.test.ts        — the three shapes, a toggle announced as one ONLY where it is one, a genuinely disabled button rather than one merely styled as it, and that nothing submits a form by accident
+  app_icon.test.ts          — the registry's drawing for a meaning, two meanings told apart, the meaning named on the element (`data-icon`), hidden from a screen reader, in the colour of its element with stroke 2
+  icon_registry.test.ts     — the registry held to its rules: every meaning named somewhere in `src/` (read as text through `import.meta.glob`, in quotes of either kind, the registry itself left out by what it says rather than by its path), no two meanings on one drawing, every name in the scheme, every panel kind named `kind-<its id>`
+  jump_link.test.ts         — a button in the link shape of AppButton, never an anchor; the name read and the arrow hidden from a screen reader; the click, title and class of its caller handed to the button
   hover_card.test.ts        — portalled out of the page, opens on focus, carries the caller's figures and their polarity
   report_format.test.ts     — the three formatters worth testing apart from the panels that use them: the canonical UTC clock, and a stamp that is NOT a date giving nothing rather than throwing (Intl raises on an invalid date, so one damaged field took down the whole list it was in); the byte steps, named after the step they actually divided by; a long hash shortened to the part that distinguishes it
   path_label.test.ts        — the whole path comes out whole, the name told from the folders, a break offered at every separator, and the full value kept in the title
-  timeline_chart.test.ts    — scale and clamping, the broken axis and its length-preserving property, staggered labels
-  deployment_panels.test.ts — the change marks between rows, drawn as a line ABOVE the session that starts the new stand and never as a row of the list (against the produced four-session history), the absent idle stretch, the upper-bound gap, the missing totals row, the identity that does not move, the advisory wording
+  timeline_chart.test.ts    — scale and clamping, the broken axis and its length-preserving property, staggered labels, a way in put into a label only where the caller handed its lane something to open, and the label column kept as its own element around it
+  candle_chart.test.ts      — the chart built at its first real size and never at 0×0, bars that arrived earlier handed over and fitted, a collapse to nothing ignored and the next real size followed; the colours read from the theme tokens, repainted on a theme switch without a rebuild, taken at build time when the switch came first, and no longer followed once unmounted — two theme blocks with values nobody would choose are injected, so a colour can only have come from the token it names; the chart library and the ResizeObserver are replaced, because WHEN the chart builds and WHAT it paints with are under test, and a canvas reports neither inside jsdom
+  deployment_panels.test.ts — a session's run opened through the channel and named as plain text where nothing can open it, the change marks between rows, drawn as a line ABOVE the session that starts the new stand and never as a row of the list (against the produced four-session history), the absent idle stretch, the upper-bound gap, the missing totals row, the identity that does not move, the advisory wording
 
 tests/fixtures/            — responses captured from the running backend, plus the contract manifest
 ```
@@ -222,10 +305,16 @@ Refresh them only deliberately, and read `GET /api/v1/contract` when you do — 
 says what moved. Then raise `EXPECTED_CONTRACT` in `api_contract.test.ts` in the same change:
 
 ```bash
-P=http://localhost:5173/api/v1
-curl -s "$P/deployments" -o tests/fixtures/deployments_list.json
-curl -s -D - -o /dev/null "$P/reports/runs" | grep -i '^x-api-contract:'
+python scripts/capture_fixtures.py --dry   # what would move, nothing written
+python scripts/capture_fixtures.py         # all nineteen, or nothing
 ```
+
+**When a refresh is needed, and when it is not.** It is needed when the contract changes SHAPE — a
+field added, removed or renamed — because every fixture is assigned to its mirrored interface and a
+new required field fails the type-check against an old capture; making the field optional instead
+would be a compatibility shim, and the mirror follows the current contract only. It is also needed
+when a pinned source is gone, or when FiniexTestingIDE names new ids for its fixture catalog. A
+change of MEANING alone, with the same fields, needs none. Measured 2026-10-12: a capture takes about 47 s and prints one line per file.
 
 ---
 
@@ -292,9 +381,7 @@ way.
 
 Stubs there stand in for interfaces jsdom does not implement — never for behaviour under test, because a stub that answered differently from a browser would make the suite agree with itself. `ResizeObserver` and the pointer-capture methods exist because reka-ui's floating layer measures its trigger. `Blob.prototype.text` is implemented over `FileReader`, which jsdom does have, so a layout-import test still proves the file's own bytes reach the importer. FileReader resolves on a TASK, so such a test needs one turn of the macrotask queue (`setTimeout(…, 0)`) and not only `flushPromises()`.
 
-### Vue Router (use_query_sync tests)
-
-A real `createRouter` instance is created per test with `createWebHashHistory()` (no browser navigation needed). The router is passed as a plugin when mounting the test component.
+The `ResizeObserver` stub never calls back, which is right for a component that only needs the API to exist. A suite whose subject IS the callback replaces it for its own file — `candle_chart.test.ts` does, with `vi.stubGlobal` — and undoes that in `afterEach`.
 
 ---
 
@@ -302,13 +389,7 @@ A real `createRouter` instance is created per test with `createWebHashHistory()`
 
 Each test file that uses stores calls `setActivePinia(createPinia())` in `beforeEach`. This creates a fresh store registry for every test — no state bleeds between cases.
 
-For `use_query_sync` tests, the same pinia instance is passed both to `setActivePinia` and to the `mount` plugin list so the component and the test assertions share the same store:
-
-```ts
-const pinia = createPinia()
-setActivePinia(pinia)
-mount(TestComponent, { global: { plugins: [pinia, router] } })
-```
+A store that persists — the arrangement, the layout, the settings — reads `localStorage` when it is created, so such a file clears `localStorage` in the same `beforeEach`; otherwise one test's narrowing is the next test's starting point.
 
 ---
 
@@ -333,9 +414,10 @@ automated; its instrument is a browser and a deliberate look. Two scripts suppor
   stored run produces any more is recorded UNCOVERED rather than dropped, because an uncovered case
   is the one that breaks unseen. Measured 2026-09-30 over 46 runs, three cases are uncovered: two
   account currencies in one run, a unit ERROR, and a scenario with two portfolio rows.
-- **`scripts/capture_fixtures.py`** re-cuts the sixteen fixtures from their source runs. The
+- **`scripts/capture_fixtures.py`** re-cuts the fixtures from their source runs. The
   contract moved through seven versions in five days and each time the mirror, the fixtures and
-  `EXPECTED_CONTRACT` move together (§21) — by hand that is where one capture gets forgotten.
+  `EXPECTED_CONTRACT` move together, because the mirror follows one contract and never two — by
+  hand that is where one capture gets forgotten.
   **The sources are pinned by id, and what QUALIFIES each one stands beside it as code rather than
   as prose.** An id points at something this project allows to vanish: runs are regenerated, and a
   breaking change takes the ledger and the whole run history with it. So a pin is never substituted
@@ -376,7 +458,7 @@ code.
 2. Mock any API calls with `vi.mock('@/api/api_client', ...)`.
 3. Use `setActivePinia(createPinia())` in `beforeEach` for store-based tests.
 4. Use `flushPromises()` after triggering reactive changes that cause async side effects.
-5. Mount a component that links to another view with `global: { stubs: { RouterLink: RouterLinkStub } }` — the stub's `to` prop is what the test asserts, so no router instance is needed.
+5. A component that sends the reader to another view does it through `use_open_in_context`, never a route. Mount it under a host that calls `provideTestOpenInContext()` (`tests/open_in_context_harness.ts`) and assert what the harness recorded in `opened` — no router instance is needed. Mounted with `canOpen` false it must draw the name as plain text, and that is worth its own case.
 6. A panel that reads presentation preferences is mounted under a host component that calls `provideDisplaySettings(...)` — the same way `PanelColumn` supplies them. Mounted without a host it must still work, on the defaults, and that is worth its own case.
 7. Portalled content (reka-ui dialogs, menus, hover cards) is read off `document`, not off the wrapper, and the wrapper is unmounted in `afterEach` rather than the body being wiped — wiping removes the node the teleport still holds.
 8. **In a tabbed dialog, read the ACTIVE panel** (`.tab-panel[data-state="active"]`). The primitive keeps the inactive panels in the document and empties them, so the first match is usually an empty shell — a test that reads it sees `''` and fails for the wrong reason. Switching a tab by hand needs `mousedown`, not `click`: the primitive acts on pointer-down.
@@ -387,3 +469,9 @@ code.
     with it. `record_list.test.ts` narrows that at ONE documented place rather than at each of six
     slots. A host `.vue` would be cleaner and is not available: `tsconfig.tests.json` compiles only
     `tests/**/*.ts`.
+11. **A component that waits for a real size gets one on purpose.** jsdom lays nothing out, so every
+    element measures 0×0 and the shared `ResizeObserver` stub never fires — a component that builds
+    only at a real size then never leaves its unsized state, and a test of "nothing happens at 0×0"
+    passes for the wrong reason. Give the size with `vi.spyOn(Element.prototype, 'clientWidth' |
+    'clientHeight', 'get')` and a firing observer with `vi.stubGlobal('ResizeObserver', …)`, unmount,
+    then undo both in `afterEach`. `candle_chart.test.ts` is the model.

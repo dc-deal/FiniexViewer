@@ -18,6 +18,105 @@ export interface DataWindow {
 }
 
 /** Single run entry from GET /api/v1/reports/runs — identity only, no report content */
+/**
+ * WHICH CODE RAN, for one repository (contract 26, inside the run header).
+ *
+ * Every path in it is relative to a repository the run recorded, and no path of the machine it ran
+ * on is served — their words. `root` is `.` for the framework itself, the path inside it for a
+ * repository within it (`user_algos`), and a directory name alone for one outside.
+ *
+ * `changes` is a SAMPLE and `uncommitted_count` is the number: measured 2026-10-10 on the fixture
+ * run, 20 entries against a count of 118. Rendering the length of the list as the count would
+ * understate it by eighty-eight.
+ */
+export interface RepositoryIdentity {
+  root: string
+  // false also for a directory the repository around it ignores; null where version control
+  // could not be asked at all
+  in_repository: boolean | null
+  commit: string | null
+  branch: string | null
+  dirty: boolean
+  uncommitted_count: number
+  changes: string[]
+  diff_hash: string | null
+  // where the patch restoring those changes was kept, relative as above; null when none was
+  patch_ref: string | null
+  // changed paths deliberately left out, such as credential files
+  patch_excluded: string[]
+  restorable: boolean
+}
+
+/** One decision logic or worker the run was given, and where it came from. */
+export interface ComponentIdentity {
+  role: string
+  // a decision's name IS its type, which may be a path
+  name: string
+  type: string
+  version: string
+  source_path: string
+  repository: string
+  // a hash over the files of a user's own component; null for one of theirs
+  package_digest: string | null
+}
+
+export interface CodeIdentity {
+  framework: RepositoryIdentity
+  repositories: RepositoryIdentity[]
+  components: ComponentIdentity[]
+}
+
+/**
+ * WHO STARTED THE RUN. `origin` keeps exactly this one meaning on their side since 2026-10-09,
+ * and the first four are flattened onto the index row as `origin_*`. `allow_dirty` is NOT — it is
+ * on the header alone, and it says whether real orders were explicitly allowed from code that was
+ * not committed.
+ */
+export interface RunOrigin {
+  channel: string
+  client: string
+  principal: string
+  host: string
+  allow_dirty: boolean
+}
+
+/**
+ * The record every run writes BEFORE it does anything else (contract 26).
+ *
+ * Seventeen of its nineteen keys are on the index row already. The two that are not are the point:
+ * `code_identity` — which code ran, down to each worker's version and the commit it came from —
+ * and `origin.allow_dirty`.
+ *
+ * **It answers for a run that carries no report artifacts at all.** Measured 2026-10-10 on all
+ * three logs-only runs in the archive: the route answers 200 while `artifacts` is empty, which is
+ * why it is loaded ungated rather than behind `hasArtifact`. `header` is not listed as an artifact.
+ */
+export interface RunHeader {
+  run_id: string
+  start_time: string
+  run_type: string
+  run_name: string
+  parent_id: string | null
+  parent_kind: string | null
+  config_snapshot: string
+  config_id: string
+  // empty on a backtest, on a session that predates the field, and on one whose profile could not
+  // be rendered
+  rendered_config_id: string
+  app_version: string
+  git_commit: string
+  reporting: string
+  // null on a run that predates the block
+  origin: RunOrigin | null
+  // null on a run that predates the block, or one not commissioned to report
+  code_identity: CodeIdentity | null
+  ticks_from: string | null
+  orders_to: string | null
+  data_windows: DataWindow[] | null
+  run_purpose: string | null
+  report_contract: number | null
+}
+
 export interface RunInfo {
   run_id: string
   /**
@@ -419,6 +518,12 @@ export interface WarningsErrorsOutcome {
   // Resolves that ambiguity — but it is newer than most artifacts, which default it to false, so
   // it cannot be trusted on an older one. Mirrored, deliberately not rendered.
   operator_interrupted: boolean
+  // A live session that stopped at its first tick because its warmup history could not be
+  // completed there. Graded 'failed' with shutdown_mode 'emergency' like a crash, since a restart
+  // is the remedy, but nothing broke; emergency_reason says what was missing. False on a backtest,
+  // on every other run, and on runs recorded before the flag existed (warnings-errors document,
+  // "An emergency is not always a failure").
+  refused_at_first_tick: boolean
   /**
    * The same three counts the run index carries, counted once and the same way in both pipelines
    * (contract 15). The 39 stored artifacts written before that were back-filled from their own
@@ -553,7 +658,28 @@ export interface PortfolioUnitRow {
   total_swap: number
   maker_fee: number
   taker_fee: number
+  fill_fees_by_source: FillFeesBySource
 }
+
+/** The fills of one fee source, and what their fees came to in the row's account currency. */
+export interface FillFees {
+  fill_count: number
+  fill_fees: number
+}
+
+/**
+ * A row's fills split by where each fee came from (contract 28), keyed by the fee source:
+ * `venue` — the figure the venue reported for that fill, in a mock session the mock venue's — or
+ * `estimate` — the fee model's, the declared rate times the order's value. A backtest has only
+ * `estimate`: it has no venue to ask.
+ *
+ * ONE key per source that occurred, so a missing key means no fill carried it, and an EMPTY object
+ * means the unit executed nothing or the run was recorded before contract 28 — an absence either
+ * way, never a zero. It is neither of the two fee totals beside it: swap is not a fill's fee, and a
+ * close the venue executed for a position no longer held here is in it although no fee total holds
+ * that fee.
+ */
+export type FillFeesBySource = Record<string, FillFees | undefined>
 
 /** Run totals for one account currency — the units above, summed. */
 export interface PortfolioAggregateRow {
@@ -588,6 +714,7 @@ export interface PortfolioAggregateRow {
    */
   total_fees: number
   fees_charged: number
+  fill_fees_by_source: FillFeesBySource
   unrealized_pnl: number
   /** One account's closing equity, `null` over several — see the note on its per-currency twin. */
   final_equity: number | null
@@ -1073,6 +1200,7 @@ export interface AggregatedHeadline {
   account_max_drawdown_unit: string
   total_fees: number
   fees_charged: number
+  fill_fees_by_source: FillFeesBySource
   unrealized_pnl: number
   // ONE account's figure, null over several — the same rule run-summary states
   final_equity: number | null
@@ -1328,6 +1456,9 @@ export interface OrderHistoryRow {
    */
   event_time: string | null
   commission: number
+  // where `commission` came from (contract 28): `venue` or `estimate`, and a backtest's is always
+  // `estimate`. Null where nothing executed or the row predates the field.
+  fee_source: string | null
   // `market` · `limit` · `stop` · `stop_limit` — what was asked for, new in contract 23
   order_type: string | null
   // `partial` or `full` on a closing row: WHICH part ended the position's chain. The question we
@@ -1408,6 +1539,12 @@ export interface OrderEvent {
   trigger_price: number | null
   fee: number | null
   fee_currency: string | null
+  /**
+   * Where `fee` came from (contract 27): `venue` or `estimate`, as on `FillFeesBySource`. Null on an
+   * event that executed nothing, on a fill nothing could be booked for, and on every event recorded
+   * before the field existed.
+   */
+  fee_source: string | null
   submission_mid: number | null
   submission_time_msc: number | null
   /**

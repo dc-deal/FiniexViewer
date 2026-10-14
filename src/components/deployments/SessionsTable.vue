@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
 import { amount, magnitude, duration, signClass, utcInstant } from '@/components/runs/report_format'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
@@ -20,6 +22,8 @@ defineProps<{
   sessions: DeploymentSessionRow[]
   keyFields: string[]
 }>()
+
+const { openRun, canOpen } = useOpenInContext()
 
 /**
  * Six columns on the shared list stem. Ranked, because a deployment panel is narrow more often
@@ -74,11 +78,12 @@ function gap(session: DeploymentSessionRow): string {
 
     <template #default="{ row: session }">
       <span :data-rank="1" class="session-run">
-        <RouterLink
-          class="run-link"
-          :to="{ name: 'runs', query: { run: session.run_id } }"
+        <JumpLink
+          v-if="canOpen"
           :title="t('Open this run')"
-        >{{ session.run_id }} ↗</RouterLink>
+          @click="openRun(session.run_id)"
+        >{{ session.run_id }}</JumpLink>
+        <template v-else>{{ session.run_id }}</template>
       </span>
       <span :data-rank="2">{{ utcInstant(session.started) }}</span>
       <span :data-rank="3" class="figure-cell">{{ duration(session.ran_hours) }}</span>
@@ -114,15 +119,6 @@ function gap(session: DeploymentSessionRow): string {
 
 .sessions-list :deep(.record-lead) {
   text-align: center;
-}
-
-.run-link {
-  color: var(--color-accent);
-  text-decoration: none;
-}
-
-.run-link:hover {
-  text-decoration: underline;
 }
 
 .positive { color: var(--color-positive); }

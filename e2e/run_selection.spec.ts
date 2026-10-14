@@ -1,14 +1,14 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_RUN, revealFixtureRun } from './api_mock'
+import { openWith, storedBar, FIXTURES_SHOWN } from './arrangement_seed'
 
 /**
- * The URL round-trip, which is the thing jsdom can only approximate.
+ * The stored selection round-trip, which is the thing jsdom can only approximate.
  *
- * The unit suite already proves that the composable writes the params and that the store restores
- * from them. What it cannot prove is that a REAL reload of a REAL URL in a REAL browser puts the
- * reader back where they were — the part that involves the address bar, the history entry and the
- * app booting from scratch. Every defect this instrument exists for reached the screen with the
- * unit suite green.
+ * The unit suite already proves that the stores write the arrangement and restore from it. What it
+ * cannot prove is that a REAL reload in a REAL browser puts the reader back where they were — the
+ * part that involves real storage and the app booting from scratch. Every defect this instrument
+ * exists for reached the screen with the unit suite green.
  */
 test.beforeEach(async ({ page }) => {
   await mockApi(page)
@@ -18,7 +18,7 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
   // The list opens WITHOUT the fixture runs, and the run every capture was taken from is itself a
   // fixture — so this spec asks for them, the way a reader would by picking the value. It is not
   // a workaround: it is the default behaving, and `run_picker.test.ts` asserts the default itself.
-  await page.goto('/runs?runf=purpose:fixture')
+  await openWith(page, '/', FIXTURES_SHOWN)
 
   // The list groups runs by family and a family of several opens closed, so the run is behind one
   // heading — opened here the way a reader opens it.
@@ -31,7 +31,7 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
   await expect(row).toBeVisible()
   await row.click()
 
-  await expect(page).toHaveURL(new RegExp(`run=${FIXTURE_RUN}`))
+  await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_RUN)
 
   // the Scenarios panel starts COLLAPSED (`defaultOpen: false` in the registry), so its rows are
   // not in the document until it is opened — the panel shell renders nothing behind a closed one
@@ -42,10 +42,9 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
   const chosen = (await scenario.locator('.roster-name').innerText()).trim()
   await scenario.click()
 
-  await expect(page).toHaveURL(new RegExp(`unit=${chosen}`))
   await expect(page.locator('.narrowed-head')).toContainText(chosen)
 
-  // THE POINT: a real reload of the real URL
+  // THE POINT: a real reload
   await page.reload()
 
   await expect(page.locator('.narrowed-head')).toContainText(chosen)
@@ -53,43 +52,75 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
 })
 
 /**
- * The self-healing link. `group` and `name` were cascade params that no longer exist; a link
- * saved while they did must still open the right run AND stop carrying them. Only a browser can
- * show the second half, because it is about what the address bar ends up saying.
+ * A SELECTION NEVER MOVES THE LAYOUT. Choosing a scenario frames the column and names the choice
+ * beside the tab; it used to indent every panel by the frame's border and padding and push the
+ * column down a line, so everything the reader was looking at slid away under the click.
+ *
+ * The executive figures are the run's and do not narrow, so their panel is the clean witness: any
+ * change to its box is a mark that took room. Panels below it narrow their CONTENT, which is the
+ * point of the click, so the row under the pointer is held by its own top instead.
  */
-test('a link saved under the old cascade opens, and cleans its dead params away', async ({ page }) => {
-  await page.goto(`/runs?group=sweeps&name=stale_set&run=${FIXTURE_RUN}`)
+test('choosing a scenario moves nothing in the column', async ({ page }) => {
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await page.locator('.panel-trigger', { hasText: 'Scenarios' }).click()
+  const scenario = page.locator('.scenario-roster .record-row').first()
+  await expect(scenario).toBeVisible()
 
-  await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_RUN)
-  await expect(page).not.toHaveURL(/group=/)
-  await expect(page).not.toHaveURL(/name=/)
+  const executive = page.locator('[data-panel="executive"]')
+  const frame = async () => {
+    const box = (await executive.boundingBox())!
+    return { x: box.x, width: box.width, height: box.height }
+  }
+  const rowTop = async () => (await scenario.boundingBox())!.y
+  const before = { frame: await frame(), row: await rowTop() }
+  await scenario.click()
+  await expect(page.locator('.narrowed-head')).toBeVisible()
+  await expect(executive.locator('.scope-line')).toBeVisible()
+
+  expect(await frame()).toEqual(before.frame)
+  expect(await rowTop()).toBe(before.row)
 })
 
 /**
- * A link naming a run the index no longer lists. The store refuses it rather than firing one 404
- * per section, and the view says which id is gone — a blank page would leave the reader guessing
- * whether the app or the link was broken.
+ * A section on its way for the run on screen keeps its panel in place and says so. A run change
+ * used to empty the column behind one spinner, then let every panel come back on its own.
  */
-test('a link naming a run that is gone says so', async ({ page }) => {
-  await page.goto('/runs?run=20260101_000000_deadbeef')
+test('a section still on its way keeps its panel standing, saying it loads', async ({ page }) => {
+  await page.route('**/api/v1/reports/runs/*/run-summary', async route => {
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    await route.fallback()
+  })
+  await openWith(page, '/', { run: FIXTURE_RUN })
 
+  const executive = page.locator('[data-panel="executive"]')
+  await expect(executive.locator('.panel-loading')).toBeVisible()
+  await expect(page.locator('.app-bar')).toBeVisible()
+
+  await expect(executive.locator('.panel-loading')).toHaveCount(0)
+  await expect(executive).toContainText('Net P&L')
+})
+
+/**
+ * A stored run the index no longer lists. The store refuses it rather than firing one 404 per
+ * section, and the view says which id is gone — a blank page would leave the reader guessing
+ * whether the app or their last visit was the broken part.
+ */
+test('a stored run that is gone says so', async ({ page }) => {
+  await openWith(page, '/', { run: '20260101_000000_deadbeef' })
+
+  await expect(page.locator('.state-overlay')).toContainText('no longer in the index')
   await expect(page.locator('.state-overlay')).toContainText('20260101_000000_deadbeef')
 })
 
-/**
- * A narrowed list is a link somebody can send (viewer#116). The unit suite proves the encoding and
- * the merge; only a browser proves that the address bar ends up carrying it and that a boot from
- * that address reproduces what the sender saw.
- */
-test('a narrowed run list survives a reload and stays a shareable link', async ({ page }) => {
-  await page.goto('/runs')
+test('a narrowed run list survives a reload', async ({ page }) => {
+  await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
   const before = await page.locator('.run-list .record-row').count()
   // a term that narrows without emptying: the picker searches the run id and the SET name, and
-  // the capture holds six `demo_btcusd_bot` runs among 39
+  // the capture holds several `demo_btcusd_bot` runs
   await page.locator('input.facet-search').first().fill('demo_btcusd')
-  await expect(page).toHaveURL(/runq=demo_btcusd/)
+  await expect.poll(async () => (await storedBar(page, 'run-picker'))?.search).toBe('demo_btcusd')
   const narrowed = await page.locator('.run-list .record-row').count()
   expect(narrowed).toBeGreaterThan(0)
   expect(narrowed).toBeLessThan(before)
@@ -98,20 +129,6 @@ test('a narrowed run list survives a reload and stays a shareable link', async (
 
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
   expect(await page.locator('.run-list .record-row').count()).toBe(narrowed)
-})
-
-/**
- * Two bars and the run in ONE url. The run picker's params and the roster's must coexist with
- * `run` and `unit`, and no writer may drop another's key — the failure a single-tick race produces
- * is exactly one missing param, which looks like nothing at all until the link is opened.
- */
-test('the run, the scenario and both bars ride in one url', async ({ page }) => {
-  await page.goto(`/runs?run=${FIXTURE_RUN}&runsort=oldest&unitsort=ticks`)
-
-  await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_RUN)
-  await expect(page).toHaveURL(new RegExp(`run=${FIXTURE_RUN}`))
-  await expect(page).toHaveURL(/runsort=oldest/)
-  await expect(page).toHaveURL(/unitsort=ticks/)
 })
 
 /**
@@ -124,7 +141,7 @@ test('the run, the scenario and both bars ride in one url', async ({ page }) => 
  * SYMPTOM rather than either cause: every chip's left edge, before and after a pick.
  */
 test('picking a value leaves every chip exactly where it was', async ({ page }) => {
-  await page.goto('/runs')
+  await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
   const chips = page.locator('.facet-trigger')
@@ -135,7 +152,8 @@ test('picking a value leaves every chip exactly where it was', async ({ page }) 
   // the panel is portalled out of the bar, so opening it cannot be what moves anything
   await chips.first().click()
   await page.locator('.facet-option').first().click()
-  await expect(page).toHaveURL(/runf=/)
+  // the pick has landed once the bar stored it — an untouched bar stores nothing
+  await expect.poll(async () => (await storedBar(page, 'run-picker'))?.selection).toBeTruthy()
 
   expect(await edges()).toEqual(before)
 })

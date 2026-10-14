@@ -43,7 +43,7 @@ function mountWith(content: unknown, resetOn: unknown = 'run-a') {
   return mount(AccordionPanel, {
     props: {
       title: 'Executive Summary',
-      icon: '📊',
+      icon: 'kind-executive',
       open: true,
       pinned: false,
       locked: false,
@@ -52,6 +52,13 @@ function mountWith(content: unknown, resetOn: unknown = 'run-a') {
     slots: { default: () => h(content as never) },
   })
 }
+
+describe('AccordionPanel header', () => {
+  /** The header is the other place a panel kind is drawn; the meaning rides on the element. */
+  it('draws its kind\'s icon', () => {
+    expect(mountWith(Fine).find('.panel-trigger [data-icon="kind-executive"]').exists()).toBe(true)
+  })
+})
 
 describe('AccordionPanel as an error boundary', () => {
   beforeEach(() => {
@@ -86,7 +93,7 @@ describe('AccordionPanel as an error boundary', () => {
     expect(wrapper.find('.panel-failed-mark').exists()).toBe(true)
   })
 
-  /** Never on screen (§10) — but never swallowed either, or a defect becomes invisible. */
+  /** Never on screen — but never swallowed either, or a defect becomes invisible. */
   it('writes the error to the console and not into the page', async () => {
     const wrapper = mountWith(Exploding)
     await flushPromises()

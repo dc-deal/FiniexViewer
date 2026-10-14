@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import AppBar from '@/components/panels/AppBar.vue'
 import { useLayoutStore } from '@/stores/layout_store'
 import { allPanels } from '@/panel_registry'
+import { stubOverflowWidths } from './overflow_harness'
 
 /** Every section present — the baseline the absent cases are measured against. */
 function allSources(): Record<string, unknown> {
@@ -26,6 +27,14 @@ describe('AppBar', () => {
 
   it('renders a toggle for every registered panel', () => {
     expect(mountBar(allSources()).findAll('.bar-toggle')).toHaveLength(allPanels().length)
+  })
+
+  /** The registry says what a panel kind looks like; the bar is one of the two places that draw it. */
+  it('draws every panel\'s icon on its toggle', () => {
+    const wrapper = mountBar(allSources())
+    const missing = allPanels().filter(panel =>
+      !toggleFor(wrapper, panel.title).find(`[data-icon="kind-${panel.id}"]`).exists())
+    expect(missing.map(panel => panel.id)).toEqual([])
   })
 
   /**
@@ -100,6 +109,21 @@ describe('AppBar', () => {
     expect(toggle.attributes('title')).toContain('carries no such section')
   })
 
+  /** A section on its way for a new run is not absent — it would flicker struck-through on every change. */
+  it('keeps the toggle of a section that is still on its way usable', () => {
+    const sources = allSources()
+    const scenarios = allPanels().find(panel => panel.source === 'scenarioRoster')!
+    delete sources['scenarioRoster']
+
+    const wrapper = mount(AppBar, {
+      props: { sources, pending: { scenarioRoster: true } },
+      global: { plugins: [createPinia()] },
+    })
+    const toggle = toggleFor(wrapper, scenarios.title)
+    expect(toggle.attributes('disabled')).toBeUndefined()
+    expect(toggle.classes()).not.toContain('absent')
+  })
+
   it('leaves the toggles of the sections that ARE there usable', () => {
     const sources = allSources()
     delete sources['scenarioRoster']
@@ -127,6 +151,73 @@ describe('AppBar', () => {
     expect(hidden.classes()).not.toContain('shown')
     expect(hidden.classes()).not.toContain('absent')
     expect(hidden.attributes('disabled')).toBeUndefined()
+  })
+
+  describe('in a panel too narrow for every toggle', () => {
+    let attached: VueWrapper | null = null
+
+    /** Room for three: the control takes 40, then 100 per item — 140, 240, 340 of 350. */
+    async function mountNarrow(sources: Record<string, unknown>): Promise<VueWrapper> {
+      stubOverflowWidths(350, 100, 40)
+      attached = mount(AppBar, { props: { sources }, global: { plugins: [createPinia()] }, attachTo: document.body })
+      await flushPromises()
+      return attached
+    }
+
+    async function openMenu(wrapper: VueWrapper): Promise<void> {
+      await wrapper.find('.overflow-more').trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+    }
+
+    afterEach(() => {
+      attached?.unmount()
+      attached = null
+      vi.restoreAllMocks()
+    })
+
+    /** ONE row, whatever the width: the rest waits behind `+N`, the two actions first. */
+    it('keeps the bar to one row, with the rest behind the control and the actions last', async () => {
+      const wrapper = await mountNarrow(allSources())
+      expect(wrapper.findAll('.overflow-cell:not(.overflow-gone)')).toHaveLength(3)
+
+      await openMenu(wrapper)
+      expect(document.querySelectorAll('.bar-menu-toggle')).toHaveLength(allPanels().length - 3)
+      const actions = [...document.querySelectorAll('.menu-item:not(.bar-menu-toggle)')]
+        .map(node => node.textContent?.trim())
+      expect(actions).toEqual(['Collapse all', 'Reset layout'])
+    })
+
+    /** The menu is the same inventory as the bar: a section the run does not carry is listed and struck. */
+    it('lists a section the run does not carry, disabled, the way the bar does', async () => {
+      const subject = allPanels()[5]!
+      const sources = allSources()
+      delete sources[subject.source]
+      await openMenu(await mountNarrow(sources))
+
+      const entry = document.querySelector(`.bar-menu-toggle[data-section="${subject.id}"]`)!
+      expect(entry.classList).toContain('absent')
+      expect(entry.hasAttribute('data-disabled')).toBe(true)
+      // switched on or not, a section that does not exist is not ticked — the bar does not mark it shown either
+      expect(entry.getAttribute('data-state')).toBe('unchecked')
+    })
+
+    it('switches a section from the menu and stays open for the next one', async () => {
+      const subject = allPanels()[5]!
+      await openMenu(await mountNarrow(allSources()))
+      const entry = () => document.querySelector<HTMLElement>(`.bar-menu-toggle[data-section="${subject.id}"]`)
+      expect(entry()!.getAttribute('data-state')).toBe('checked')
+
+      entry()!.click()
+      await flushPromises()
+      expect(entry()!.getAttribute('data-state')).toBe('unchecked')
+    })
+
+    /** The hint explains the control, so it speaks only while the control is there. */
+    it('explains the control only while something waits behind it', async () => {
+      expect(mountBar(allSources()).find('.hint-line').exists()).toBe(false)
+      const narrow = await mountNarrow(allSources())
+      expect(narrow.find('.hint-line').text()).toContain('waits behind the +')
+    })
   })
 
   // A disabled control must not act, not merely look inert.

@@ -43,17 +43,20 @@ const shown = computed(() => hint.value !== null && hints.isVisible(props.id))
 </template>
 
 <style scoped>
-/* the annotation role: a hint marks something about a control, it is not a warning and not an
-   error — and the dashed edge is the same second channel every annotation here carries */
+/* A NOTICE that merely informs — the plain-structure ink on a surface of its own, framed solid.
+   Not the annotation role it wore until 2026-10-13: that colour and its dashed edge mean "the
+   thing changed here", the scenario narrowing, and a hint in the same pink read as a second
+   selection (operator, on screen). */
 .hint-line {
   display: flex;
   align-items: baseline;
   gap: var(--space-xs);
   margin: 0 0 var(--space-sm);
   padding: var(--space-xs) var(--space-sm);
-  border: 1px dashed var(--color-annotation);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
-  color: var(--color-annotation);
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-secondary);
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
@@ -66,14 +69,10 @@ const shown = computed(() => hint.value !== null && hints.isVisible(props.id))
   flex: 1;
 }
 
-/* the two dismissals are secondary to the sentence they sit beside, so they wear the quiet ink
-   rather than the link colour — the hint is the message, not its close button */
+/* the two dismissals are CONTROLS, so they keep the link ink AppButton gives them — muted ink is
+   what this app reserves for a control that cannot be used, and `Never again` in it was read twice
+   before it was read as a button (operator, 2026-10-13) */
 .hint-line .app-button.quiet {
   flex-shrink: 0;
-  color: var(--color-text-secondary);
-}
-
-.hint-line .app-button.quiet:hover {
-  color: var(--color-text-primary);
 }
 </style>

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
   getAggregatedPortfolio, getBookingPeriods, getBroker, getOrderEvents, getOrderHistory,
+  getRunHeader,
   getPendingOrders,
   getPortfolio,
   getRunConfig, getScenarioDetails, getTradeHistory, getWarningsErrors,
@@ -19,6 +20,7 @@ import type {
   RunConfigReport,
   TradeHistoryReport,
   PortfolioReport,
+  RunHeader,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
@@ -30,6 +32,7 @@ import { t } from '@/translate'
  * the same key, `run_id`, and they all clear together when the selection changes.
  */
 export const useRunReportsStore = defineStore('run_reports', () => {
+  const runHeader = ref<RunHeader | null>(null)
   const warningsErrors = ref<WarningsErrorsReport | null>(null)
   const portfolio = ref<PortfolioReport | null>(null)
   const broker = ref<BrokerReport | null>(null)
@@ -51,6 +54,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const orderEvents = ref(new Map<string, OrderEvent[]>())
   /** Which positions are in flight, by the same key - several may load at once. */
   const loadingOrderEvents = ref(new Set<string>())
+  const loadingRunHeader = ref(false)
   const loadingWarningsErrors = ref(false)
   const loadingPortfolio = ref(false)
   const loadingBroker = ref(false)
@@ -154,6 +158,26 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       errors.value['broker'] = `${t('Could not load the broker conditions')}: ${detail}`
     } finally {
       loadingBroker.value = false
+    }
+  }
+
+  /**
+   * The record the run wrote before it did anything else. **Ungated**, unlike the sections above:
+   * `header` is not in a run's `artifacts`, and the route answers even where that list is empty
+   * — measured 2026-10-10 on all three logs-only runs in the archive.
+   */
+  async function loadRunHeader(runId: string): Promise<void> {
+    loadingRunHeader.value = true
+    runHeader.value = null
+    try {
+      const answer = await getRunHeader(runId)
+      if (isAbsent(answer)) absences.value['runHeader'] = answer
+      else runHeader.value = answer
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
+      errors.value['runHeader'] = `${t('Could not load the run header')}: ${detail}`
+    } finally {
+      loadingRunHeader.value = false
     }
   }
 
@@ -334,6 +358,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   }
 
   return {
+    runHeader,
     warningsErrors,
     scenarios,
     absences,
@@ -347,6 +372,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     bookingPeriods,
     config,
     tradeHistory,
+    loadingRunHeader,
     loadingWarningsErrors,
     loadingPortfolio,
     loadingBroker,
@@ -362,6 +388,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     clear,
     loadWarningsErrors,
     loadPortfolio,
+    loadRunHeader,
     loadBroker,
     loadAggregated,
     loadPendingOrders,

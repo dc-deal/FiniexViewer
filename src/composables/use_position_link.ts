@@ -1,18 +1,6 @@
 import { computed, inject, provide } from 'vue'
 import type { ComputedRef, InjectionKey, Ref } from 'vue'
-
-/**
- * One position, named the only way it can be named.
- *
- * `position_id` alone is NOT a position: every scenario counts from `pos_<symbol>_1`, so two
- * scenarios of one symbol both have a `pos_gbpusd_1`. The backend states the pair —
- * *"an executed order-history row's `(scenario_name, position_id)` names the same position as a
- * trade-history row's, by construction"* (testingide, 2026-10-02) — and warns against the id alone.
- */
-export interface PositionRef {
-  scenario: string
-  position: string
-}
+import type { PositionRef } from '@/types/context_types'
 
 /**
  * The position a reader asked to look at, and the jump that puts them in front of it.
@@ -24,7 +12,7 @@ export interface PositionRef {
  * stored run and for a streamed frame later.
  */
 export interface PositionLink {
-  /** The position on show, or null. Restored from the URL, so a link carries it. */
+  /** The position on show, or null. Stored with the run's context, so a reload brings it back. */
   marked: Ref<PositionRef | null> | ComputedRef<PositionRef | null>
   /** Put the reader in front of this position in that panel: make it visible, open it, scroll. */
   jumpTo: (panelId: string, ref: PositionRef) => void
@@ -69,23 +57,4 @@ export function marksPosition(
 ): boolean {
   if (!marked || position === null) return false
   return marked.scenario === scenario && marked.position === position
-}
-
-/**
- * The URL form. `~` separates the two halves because neither can contain one: a scenario name is a
- * configured unit name and a position id is `pos_<symbol>_<n>`. It needs no percent-encoding, which
- * keeps a shared link readable.
- */
-const SEPARATOR = '~'
-
-export function formatPositionRef(ref: PositionRef): string {
-  return `${ref.scenario}${SEPARATOR}${ref.position}`
-}
-
-/** Null for anything that is not both halves — a half-written param marks nothing. */
-export function parsePositionRef(value: string | undefined): PositionRef | null {
-  if (!value) return null
-  const at = value.lastIndexOf(SEPARATOR)
-  if (at <= 0 || at === value.length - 1) return null
-  return { scenario: value.slice(0, at), position: value.slice(at + 1) }
 }

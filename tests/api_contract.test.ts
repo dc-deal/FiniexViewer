@@ -8,6 +8,7 @@ import runBookingPeriods from './fixtures/run_booking_periods.json'
 import runSummary from './fixtures/run_summary.json'
 import portfolio from './fixtures/portfolio.json'
 import broker from './fixtures/broker.json'
+import runHeader from './fixtures/run_header.json'
 import aggregated from './fixtures/aggregated_portfolio.json'
 import pending from './fixtures/pending_orders.json'
 import history from './fixtures/order_history.json'
@@ -24,6 +25,7 @@ import type {
   AggregatedPortfolioReport,
   BookingPeriodsReport,
   BrokerReport,
+  RunHeader,
   OrderEventsReport,
   OrderHistoryReport,
   PendingOrdersReport,
@@ -50,7 +52,7 @@ import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 26
+const EXPECTED_CONTRACT = 29
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -206,6 +208,36 @@ describe('api contract', () => {
   })
 
   /**
+   * The record a run writes before it does anything else (contract 26). Two properties are asserted
+   * here rather than in a component, because both are properties of the CONTRACT:
+   *
+   * `changes` is a SAMPLE and `uncommitted_count` is the number — measured on this capture, 20
+   * entries against 118. A panel that rendered the list's length as the count would understate it
+   * by eighty-eight, and nothing on screen would say so.
+   *
+   * And the header carries what the index row cannot: `code_identity`. If that ever arrives null
+   * on a run that HAS reports, the panel's central block silently empties, so the fixture holds
+   * the populated case on purpose.
+   */
+  it('the run header still carries the code identity, and a sample that is not a count', () => {
+    const typed: RunHeader = runHeader
+    // derived from another capture of the SAME run rather than transcribed:
+    // a re-capture that moves the pin cannot strand this
+    expect(typed.run_id).toBe((scenarioDetails as { run_id: string }).run_id)
+    expect(typed.origin).not.toBeNull()
+    expect(typed.code_identity).not.toBeNull()
+
+    const framework = typed.code_identity!.framework
+    expect(framework.dirty).toBe(true)
+    expect(framework.uncommitted_count).toBeGreaterThan(framework.changes.length)
+    expect(typed.code_identity!.components.length).toBeGreaterThan(0)
+    // every component says which repository it came from, or a source path means nothing
+    for (const component of typed.code_identity!.components) {
+      expect(component.repository.length).toBeGreaterThan(0)
+    }
+  })
+
+  /**
    * The broker conditions, and the one value in here that must never be read as a figure: a spot
    * broker declares `margin_mode: 'none'` and its two margin LEVELS arrive as 0.0. That zero is
    * the absence of a regime, not a level of zero, and the panel gates on the mode for exactly that
@@ -319,7 +351,8 @@ describe('api contract', () => {
    * equality: a scenario whose every order was refused before the queue appears here and not there.
    *
    * And `event_time` carries the contract-20 rename. Finding `execution_time` on these rows again
-   * would mean a response from before it, which this mirror does not support (CLAUDE.md §21).
+   * would mean a response from before it, which this mirror does not support: it follows the
+   * current contract only.
    */
   /**
    * The order event stream, and the four properties that make a faithful DISPLAY possible.
@@ -415,6 +448,51 @@ describe('api contract', () => {
       expect(row).toHaveProperty('event_time')
       expect(row).not.toHaveProperty('execution_time')
     }
+  })
+
+  /**
+   * Where each fee came from (contracts 27 and 28), and three properties of the contract.
+   *
+   * A source is stated exactly where something EXECUTED — on the order history's executed rows and
+   * on the stream's fills — and is null everywhere else. The simulation capture is a backtest, so
+   * every stated source is `estimate`: a backtest has no venue to ask.
+   *
+   * A stored artifact keeps the values it was written with, and nothing back-fills it. The live
+   * capture predates contract 27, so its fills carry a fee and a NULL source — the same shape, older data, and a
+   * reader must be told nothing rather than `estimate`.
+   *
+   * And a fee of 0.0 under a source is a VALUE: a spread broker charges no fee per fill, so the EUR
+   * accounts in this capture fill several times for 0.0 in fees. An empty map is the absence; a zero
+   * inside one is not.
+   */
+  it('states a fee source exactly where something executed', () => {
+    const orders: OrderHistoryReport = history
+    for (const row of orders.orders) {
+      expect(row.fee_source).toBe(row.status === 'executed' ? 'estimate' : null)
+    }
+
+    const narrowed: OrderEventsReport = events
+    for (const row of narrowed.events) {
+      expect(row.fee_source).toBe(row.fill_price === null ? null : 'estimate')
+    }
+    const live: OrderEventsReport = eventsLive
+    const liveFills = live.events.filter(row => row.fill_price !== null)
+    expect(liveFills.length).toBeGreaterThan(0)
+    expect(liveFills.every(row => row.fee !== null && row.fee_source === null)).toBe(true)
+
+    const typed: PortfolioReport = portfolio
+    const fold: AggregatedPortfolioReport = aggregated
+    const maps = [
+      ...typed.units.map(row => row.fill_fees_by_source),
+      ...typed.aggregates.map(row => row.fill_fees_by_source),
+      ...fold.currencies.map(row => row.combined.headline.fill_fees_by_source),
+    ]
+    for (const map of maps) {
+      expect(Object.keys(map)).toEqual(['estimate'])
+      expect(map.estimate!.fill_count).toBeGreaterThan(0)
+    }
+    const free = typed.aggregates.find(row => row.fill_fees_by_source.estimate?.fill_fees === 0)
+    expect(free?.fill_fees_by_source.estimate?.fill_count).toBeGreaterThan(0)
   })
 
   it('the warnings and errors section still satisfies the mirrored shape', () => {

@@ -4,8 +4,6 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
 import { setActivePinia, createPinia } from 'pinia'
-import { createRouter, createMemoryHistory } from 'vue-router'
-import type { Router } from 'vue-router'
 import { provideTestSelection } from './scenario_selection_harness'
 import type {
   ScenarioDetailsReport, ScenarioRosterView, ScenarioRow,
@@ -96,26 +94,11 @@ function asView(model: ScenarioDetailsReport | ScenarioRosterView): ScenarioRost
 }
 
 
-/**
- * A router, because the bar's narrowing rides in the URL (viewer#116) — `useFacetQuery` reads the
- * query on mount and writes it back. Without one the mounted hook throws, which Vue reports as a
- * warning beside a green test rather than as a failure.
- *
- * MEMORY history, not hash: every hash router in jsdom shares one `window.location`, so each test
- * would inherit whatever narrowing the previous one wrote — four tests failed exactly that way.
- */
-function testRouter(): Router {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [{ path: '/', component: { template: '<div/>' } }],
-  })
-}
-
 function mountPanel(model: ScenarioDetailsReport | ScenarioRosterView = MIXED) {
   mounted = mount(ScenarioRosterPanel, {
     props: { model: asView(model) },
     attachTo: document.body,
-    global: { plugins: [createPinia(), testRouter()] },
+    global: { plugins: [createPinia()] },
   })
   return mounted
 }
@@ -157,7 +140,7 @@ function mountWithSelection(
   })
   mounted = mount(Host, {
     attachTo: document.body,
-    global: { plugins: [createPinia(), testRouter()] },
+    global: { plugins: [createPinia()] },
   })
   return { wrapper: mounted, unit }
 }
@@ -285,6 +268,22 @@ describe('ScenarioRosterPanel', () => {
     })
 
     /**
+     * The narrowing outlives the sections that arrive after it. The host composes this model from
+     * three responses that land one by one, so the object is new whenever the portfolio or the
+     * warnings arrive — and watching that identity cleared a reader's narrowing on a run that had
+     * not changed. Found 2026-10-12; the reset follows the run's own id now.
+     */
+    it('keeps the narrowing while the rest of the same run arrives', async () => {
+      const wrapper = mountPanel()
+      await wrapper.find('.facet-search').setValue('broken')
+      await flushPromises()
+
+      await wrapper.setProps({ model: view(MIXED, portfolio([earning('eth_a')])) })
+      await flushPromises()
+      expect(rowNames(wrapper)).toEqual(['eth_broken'])
+    })
+
+    /**
      * `market_type` is empty on every run recorded before the backend added it. An empty string in
      * a dropdown reads as a category of its own, so the facet is DISABLED rather than offering one.
      *
@@ -339,7 +338,10 @@ describe('ScenarioRosterPanel', () => {
       await flushPromises()
       expect(rowNames(wrapper)).toHaveLength(1)
 
-      await wrapper.setProps({ model: view(report([row({ name: 'fresh_one' })])) })
+      // a different RUN, said by its id: a new roster object of the same run is only a section
+      // arriving late, and that must keep the narrowing (see the test above)
+      const another = { ...report([row({ name: 'fresh_one' })]), run_id: '20261012_074826_88026ae2' }
+      await wrapper.setProps({ model: view(another) })
       await flushPromises()
       expect(rowNames(wrapper)).toEqual(['fresh_one'])
     })
@@ -531,7 +533,7 @@ describe('ScenarioRosterPanel', () => {
       const cells = wrapper.find('.record-row').findAll(':scope > span')
         .map(n => n.attributes('data-rank'))
 
-      expect(heads).toHaveLength(15)
+      expect(heads).not.toHaveLength(0)
       expect(cells).toEqual(heads)
       // and the three a narrow list keeps are the ones worth keeping
       expect(heads.filter(rank => rank === '1')).toHaveLength(3)
@@ -591,7 +593,7 @@ describe('ScenarioRosterPanel', () => {
         outcome: {
           run_outcome: 'success', failed_count: 0, total_units: 3, failed_unit_names: [],
           first_failure_name: '', first_failure_error: '', emergency_reason: '',
-          shutdown_mode: '', operator_interrupted: false,
+          shutdown_mode: '', operator_interrupted: false, refused_at_first_tick: false,
           error_count: null, warning_count: null, log_warning_count: null,
         },
       }

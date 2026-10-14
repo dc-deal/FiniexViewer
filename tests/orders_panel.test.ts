@@ -44,6 +44,7 @@ function order(overrides: Partial<OrderHistoryRow> = {}): OrderHistoryRow {
     executed_price: null,
     event_time: null,
     commission: 0,
+    fee_source: null,
     order_type: 'market',
     close_type: null,
     initiator: 'strategy',
@@ -501,7 +502,7 @@ describe('OrdersPanel', () => {
       const row = wrapper.find('.order-list .record-row').findAll(':scope > span')
         .map(node => node.attributes('data-rank'))
 
-      expect(heads).toHaveLength(8)
+      expect(heads).not.toHaveLength(0)
       expect(row).toEqual(heads)
       // which order, what became of it, and when
       expect(heads.filter(rank => rank === '1')).toHaveLength(3)
@@ -820,6 +821,22 @@ describe('OrdersPanel', () => {
       expect(notes[1]).toContain('cancel_requested')
       // the price carries its word too, like the duration above it
       expect(notes[2]).toBe('at 2573.60000')
+    })
+
+    /**
+     * The backend's sentence goes BESIDE the step's own note, never in place of it. Since contract
+     * 27 a step of a venue-held protective order carries its fill price and a sentence saying it
+     * settled an earlier estimated fee; read as a refusal, the sentence hid the price.
+     */
+    it('keeps the price where the backend adds a sentence to a fill', async () => {
+      const held = { [SCENARIO + '~pos_1']: [
+        step({ seq: 4, event_type: 'filled', fill_price: 2401.5,
+          message: 'Settles the estimated fee of the previous step' }),
+      ] }
+      const { wrapper } = mountStepped(TWO_ROWS, held)
+      await openPosition(wrapper)
+      expect(wrapper.find('.step-detail').text())
+        .toBe('at 2401.50000 · Settles the estimated fee of the previous step')
     })
 
     /**

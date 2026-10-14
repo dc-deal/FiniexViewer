@@ -7,14 +7,12 @@ the project root with the dev container up:
     python scripts/capture_fixtures.py
 
 It exists because the contract moved through seven versions in five days, and each time the mirror,
-the fixtures and EXPECTED_CONTRACT have to move together (CLAUDE.md §21). Doing that by hand once
-is fine; doing it by hand seven times is how one capture is forgotten and a test then asserts
-against a shape the backend no longer serves.
+the fixtures and EXPECTED_CONTRACT have to move together — the mirror follows the current contract
+and no other. Doing that by hand once is fine; doing it by hand seven times is how one capture is
+forgotten and a test then asserts against a shape the backend no longer serves.
 
 The three ids below are the captures' SOURCE runs and are deliberately constants: a fixture whose
-source changes on every capture is a fixture whose diff says nothing. They are the same ids the
-case catalogue in INTERNAL_viewer_smoke_protocol.md names, so a run deleted on the other side shows
-up in both places at once.
+source changes on every capture is a fixture whose diff says nothing.
 
 **An id is a pointer to something that is allowed to disappear.** This project is in alpha: runs are
 regenerated, and a breaking change takes the ledger and the whole run history with it. So beside
@@ -25,9 +23,9 @@ rots unread, and a check that runs every time does not. Three consequences:
     the fixture diff meaningless.
   - a pin that is GONE stops the capture dead and prints the stored runs that satisfy the same
     requirements, so replacing it is a one-line edit rather than an afternoon of measuring.
-  - where nothing satisfies them, the request to FiniexTestingIDE is printed ready to send — in the
-    form CLAUDE.md asks for, because by then the archive genuinely cannot answer and asking is the
-    only move left.
+  - where nothing satisfies them, the request to FiniexTestingIDE is printed ready to send, as
+    OBSERVED, NEEDED and IMPACT — because by then the archive genuinely cannot answer and asking is
+    the only move left.
 
 Nothing is written unless EVERY target answered. A half-capture — two list fixtures refreshed beside
 fourteen stale ones, with a manifest claiming today's date — reads as a whole one and is worse than
@@ -54,7 +52,11 @@ BASE = 'http://localhost:5173/api/v1'
 # something that can vanish with the next archive wipe. Measured: four order statuses with 35
 # refusals, two account currencies, `close_type` full AND partial with `position_closes` up to 3,
 # a scenario absent with its error, `run_outcome: failed`.
-RUN = '20261008_222620_70191690'
+#
+# Re-pinned 2026-10-13 to the fixture catalog's `report_coverage` entry, produced again after a
+# warmup change on their side with no contract change — the id FiniexTestingIDE named in its
+# announcement. The catalog reproduces the case rather than replacing it.
+RUN = '20261012_205715_c3b41fff'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -73,10 +75,17 @@ LIVE_RUN = '20261007_152959_0275a107'
 #
 # Reproducible: `python python/experiments/generate_demo_deployment/generate_demo_deployment.py` on
 # their side, about four minutes, and each run adds two NEW histories rather than replacing these.
-DEPLOY = 'deploy_20261008_232700'
+#
+# Re-pinned 2026-10-13 to the catalog's `demo_deployment` entry, produced again with `RUN` above:
+# the main history, whose last session is again killed before its close.
+DEPLOY = 'deploy_20261012_205734'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),
+    # The record a run writes BEFORE anything else. Captured from the simulation run
+    # because its tree was dirty at the time — 118 uncommitted changes against a served
+    # sample of 20 — which is the case the panel has to get right.
+    ('run_header.json', f'reports/runs/{RUN}/header'),
     ('run_summary.json', f'reports/runs/{RUN}/run-summary'),
     ('portfolio.json', f'reports/runs/{RUN}/portfolio'),
     ('run_booking_periods.json', f'reports/runs/{RUN}/booking-periods'),
@@ -329,7 +338,7 @@ if not dry:
         handle.write('\n')
     print(f'capture_manifest.json               contract {manifest["contract"]:>3}  {manifest["captured_on"]}')
 
-# ---- what MOVED, and what no longer holds. Silent where both are fine (CLAUDE.md). ----
+# ---- what MOVED, and what no longer holds. Silent where both are fine: a pass says nothing. ----
 
 now = measure(bodies['run_summary.json'], bodies['warnings_errors.json'],
               bodies['order_history.json'], bodies['trade_history.json'],

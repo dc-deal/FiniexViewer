@@ -1,14 +1,20 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
+import { useArrangementStore } from '@/stores/arrangement_store'
+import { useContextStore } from '@/stores/context_store'
 
-const KEY_BROKER    = 'sel.broker'
-const KEY_SYMBOL    = 'sel.symbol'
-const KEY_TIMEFRAME = 'sel.timeframe'
-
+/**
+ * The free chart's selection in one place for its selectors and its bars: the MARKET of the main
+ * link, and the chart's own TIMEFRAME — a timeframe belongs to a chart, not to a link. Neither is
+ * held here; both are stored by the arrangement store and restored before the chart mounts.
+ */
 export const useSelectionStore = defineStore('selection', () => {
-  const broker    = ref<string | null>(localStorage.getItem(KEY_BROKER))
-  const symbol    = ref<string | null>(localStorage.getItem(KEY_SYMBOL))
-  const timeframe = ref<string | null>(localStorage.getItem(KEY_TIMEFRAME))
+  const context = useContextStore()
+  const arrangement = useArrangementStore()
+
+  const broker = computed(() => context.main.market.broker)
+  const symbol = computed(() => context.main.market.symbol)
+  const timeframe = computed(() => arrangement.chart.timeframe)
 
   const isReady = computed(() =>
     broker.value !== null && symbol.value !== null && timeframe.value !== null
@@ -19,28 +25,21 @@ export const useSelectionStore = defineStore('selection', () => {
     return `${broker.value} / ${symbol.value} / ${timeframe.value}`
   })
 
+  /** A broker has its own symbols; the timeframe is the reader's preference and stays. */
   function setBroker(b: string): void {
-    broker.value = b
-    symbol.value = null
-    localStorage.setItem(KEY_BROKER, b)
-    localStorage.removeItem(KEY_SYMBOL)
-    // timeframe intentionally kept — user preference persists across broker/symbol changes
+    context.setBroker(b)
   }
 
   function setSymbol(s: string): void {
-    symbol.value = s
-    localStorage.setItem(KEY_SYMBOL, s)
-    // timeframe intentionally kept
+    context.setSymbol(s)
   }
 
   function setTimeframe(tf: string): void {
-    timeframe.value = tf
-    localStorage.setItem(KEY_TIMEFRAME, tf)
+    arrangement.setTimeframe(tf)
   }
 
   function resetTimeframe(): void {
-    timeframe.value = null
-    localStorage.removeItem(KEY_TIMEFRAME)
+    arrangement.setTimeframe(null)
   }
 
   return { broker, symbol, timeframe, isReady, selectedLabel, setBroker, setSymbol, setTimeframe, resetTimeframe }

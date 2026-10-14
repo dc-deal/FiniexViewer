@@ -6,6 +6,7 @@ import {
   getDeployments,
 } from '@/api/api_client'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
+import { useContextStore } from '@/stores/context_store'
 import type {
   DeploymentBookingPeriodsReport,
   DeploymentDetail,
@@ -19,6 +20,8 @@ import { t } from '@/translate'
  * ledger, and the way into the report routes is a session's `run_id`.
  */
 export const useDeploymentsStore = defineStore('deployments', () => {
+  const context = useContextStore()
+
   const deployments = ref<DeploymentRow[]>([])
   /**
    * What makes one ledger row unique, as the response DECLARES it — (deployment_id, currency).
@@ -27,7 +30,8 @@ export const useDeploymentsStore = defineStore('deployments', () => {
    * the deployment alone folds them into one, silently and in the direction that loses data.
    */
   const deploymentsKey = ref<string[]>([])
-  const selectedDeploymentId = ref<string | null>(null)
+  /** The deployment the reader chose — the CONTEXT's, read here so the view keeps one place to ask. */
+  const selectedDeploymentId = computed(() => context.main.deployment.id)
   const detail = ref<DeploymentDetail | null>(null)
   const periods = ref<DeploymentBookingPeriodsReport | null>(null)
   const loadingList = ref(false)
@@ -36,7 +40,7 @@ export const useDeploymentsStore = defineStore('deployments', () => {
   // the token carries nothing on the `deployments` surface — neither an absence nor an outage,
   // and the one failure a component must phrase differently from "could not load"
   const forbiddenSurface = ref<string | null>(null)
-  // an id the ledger does not contain — a stale link or a bookmark
+  // an id the ledger does not contain — a stored selection of a deployment that is gone since
   const unknownDeploymentId = ref<string | null>(null)
 
   /**
@@ -53,11 +57,15 @@ export const useDeploymentsStore = defineStore('deployments', () => {
     return `${action}: ${detailText}`
   }
 
-  function clearSelection(): void {
-    selectedDeploymentId.value = null
+  function clearLoaded(): void {
     detail.value = null
     periods.value = null
     unknownDeploymentId.value = null
+  }
+
+  function clearSelection(): void {
+    context.selectDeployment(null)
+    clearLoaded()
   }
 
   /**
@@ -70,9 +78,10 @@ export const useDeploymentsStore = defineStore('deployments', () => {
    * taking that one on its own side for every store index it has — inventing a different answer
    * here would just be a second opinion nobody asked for.
    */
+  /** @param refresh Fetch again a ledger already on screen — quietly, with no spinner in its place. */
   async function loadDeployments(refresh = false): Promise<void> {
     if (!refresh && deployments.value.length) return
-    loadingList.value = true
+    if (!refresh) loadingList.value = true
     error.value = null
     forbiddenSurface.value = null
     try {
@@ -92,17 +101,24 @@ export const useDeploymentsStore = defineStore('deployments', () => {
   }
 
   /**
-   * Selects a deployment the ledger actually lists. Same rule as the run selection: the index is
-   * the authority, so a link naming a deployment that is gone says so instead of producing a
-   * request whose 404 the view cannot explain.
+   * Loads what the context names, without touching the context — the restore after a reload, and
+   * the second half of choosing a deployment. Same rule as the runs: the ledger is the authority,
+   * so a stored deployment that is gone says so instead of producing a request whose 404 the view
+   * cannot explain.
    */
-  async function selectDeployment(deploymentId: string): Promise<void> {
-    clearSelection()
-    if (!deployments.value.some(row => row.deployment_id === deploymentId)) {
+  async function loadDeployment(deploymentId: string): Promise<void> {
+    clearLoaded()
+    const listed = () => deployments.value.some(row => row.deployment_id === deploymentId)
+    // one the ledger does not list YET is not one that is gone: a run can name a deployment newer
+    // than the ledger this panel loaded, so the ledger is asked once more before saying so
+    if (!listed()) {
+      await loadDeployments(true)
+      if (selectedDeploymentId.value !== deploymentId) return
+    }
+    if (!listed()) {
       unknownDeploymentId.value = deploymentId
       return
     }
-    selectedDeploymentId.value = deploymentId
 
     loadingDetail.value = true
     error.value = null
@@ -113,17 +129,26 @@ export const useDeploymentsStore = defineStore('deployments', () => {
         getDeployment(deploymentId),
         getDeploymentBookingPeriods(deploymentId),
       ])
+      // an answer for a deployment the reader has left since is not this deployment's answer
+      if (selectedDeploymentId.value !== deploymentId) return
       detail.value = sessions
       periods.value = booked
     } catch (e) {
+      if (selectedDeploymentId.value !== deploymentId) return
       if (e instanceof SurfaceForbiddenError) {
         forbiddenSurface.value = e.surface
       } else {
         error.value = describeFailure(e, t('Could not load the deployment'))
       }
     } finally {
-      loadingDetail.value = false
+      if (selectedDeploymentId.value === deploymentId) loadingDetail.value = false
     }
+  }
+
+  /** A deployment the reader chose: it becomes the main link's, then it loads. */
+  async function selectDeployment(deploymentId: string): Promise<void> {
+    context.selectDeployment(deploymentId)
+    await loadDeployment(deploymentId)
   }
 
   return {
@@ -139,6 +164,7 @@ export const useDeploymentsStore = defineStore('deployments', () => {
     forbiddenSurface,
     unknownDeploymentId,
     loadDeployments,
+    loadDeployment,
     selectDeployment,
     clearSelection,
   }

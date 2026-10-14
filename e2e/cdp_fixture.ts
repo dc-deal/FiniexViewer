@@ -1,6 +1,7 @@
 import { lookup } from 'node:dns/promises'
 import { test as base, chromium } from '@playwright/test'
 import type { Browser, BrowserContext } from '@playwright/test'
+import { SEEDED } from './arrangement_seed'
 
 /**
  * The browser is not in this container, so we connect to one that is elsewhere.
@@ -56,10 +57,10 @@ export const test = base.extend<{ context: BrowserContext }, { cdpBrowser: Brows
   }, { scope: 'worker' }],
 
   /**
-   * A fresh context per test where the browser allows one, so localStorage and the URL start
-   * clean — which is exactly what these tests are about. Over CDP a browser may refuse a second
-   * context; then its existing one is used and cleared instead, and the tests still hold because
-   * each of them sets the state it asserts on.
+   * A fresh context per test where the browser allows one, so localStorage starts clean — which is
+   * exactly what these tests are about, since the selection lives there. Over CDP a browser may
+   * refuse a second context; then its existing one is used and its storage cleared on each new
+   * tab's first page, unless `openWith` already seeded that tab.
    */
   context: async ({ cdpBrowser }, use) => {
     let context: BrowserContext
@@ -70,6 +71,11 @@ export const test = base.extend<{ context: BrowserContext }, { cdpBrowser: Brows
     } catch {
       context = cdpBrowser.contexts()[0] as BrowserContext
       await context.clearCookies()
+      await context.addInitScript(marker => {
+        if (sessionStorage.getItem('e2e-cleared')) return
+        if (!sessionStorage.getItem(marker)) localStorage.clear()
+        sessionStorage.setItem('e2e-cleared', '1')
+      }, SEEDED)
     }
     await use(context)
     if (ours) await context.close()

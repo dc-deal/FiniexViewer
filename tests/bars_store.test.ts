@@ -55,7 +55,8 @@ describe('useBarsStore', () => {
     expect(apiClient.getCoverage).not.toHaveBeenCalled()
   })
 
-  it('resets timeframe and skips getBars when timeframe not in coverage', async () => {
+  /** Said, not acted on: the selection is the chart's to change, never the data store's. */
+  it('reports a timeframe outside the coverage and skips getBars, leaving the selection alone', async () => {
     vi.mocked(apiClient.getCoverage).mockResolvedValue({
       start: '2024-01-01T00:00:00',
       end: '2024-12-31T00:00:00',
@@ -65,7 +66,8 @@ describe('useBarsStore', () => {
     const selection = useSelectionStore()
     selectAll('D1')
     await flushPromises()
-    expect(selection.timeframe).toBeNull()
+    expect(store.timeframeUncovered).toBe(true)
+    expect(selection.timeframe).toBe('D1')
     expect(apiClient.getBars).not.toHaveBeenCalled()
     expect(store.chartData).toEqual([])
   })

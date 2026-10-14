@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
+import ScopeMark from '@/components/base/ScopeMark.vue'
 import type { RunSummary, RunSummaryCurrency } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 import {
@@ -215,7 +216,7 @@ const marketTime = computed<Figure[]>(() => {
  * the moment `orders_sent` was removed — and had the pair simply been renamed it would have read
  * `0/307` on every run recorded before the contract, a plausible lie and worse than the undefined.
  * A run that counted nothing shows nothing; a run that counted shows exactly what it counted. No
- * branch on a contract number anywhere (CLAUDE.md §21).
+ * branch on a contract number anywhere: the mirror follows the current contract only.
  *
  * **`Denied` stands beside `Rejected` and the two must not be separated.** Contract 23 narrowed
  * `orders_rejected` to the VENUE's refusals and gave the other half its own name: a refusal before
@@ -285,14 +286,20 @@ const scope = computed<Figure[]>(() => {
 <template>
   <div v-if="!model.currencies.length" class="hint">{{ t('No currency KPIs in this run') }}</div>
   <div v-else class="executive">
-    <p v-if="narrowed" class="scope-line">
-      <span class="scope">{{ t('whole run') }}</span>
-      {{ t('These figures cover every scenario, not the ones you narrowed to') }}
-    </p>
-
     <!-- one column of blocks per currency, side by side where there is room for them -->
-    <div v-for="row in model.currencies" :key="row.currency" class="currency">
-      <h3 class="currency-title">{{ row.currency }}</h3>
+    <div v-for="(row, index) in model.currencies" :key="row.currency" class="currency">
+      <!-- the scope is drawn in the title's own line, so a narrowing costs this panel no room -->
+      <div class="currency-head">
+        <h3 class="currency-title">{{ row.currency }}</h3>
+        <p
+          v-if="narrowed && index === 0"
+          class="scope-line"
+          :title="t('These figures cover every scenario, not the ones you narrowed to')"
+        >
+          <ScopeMark />
+          <span class="scope-text">{{ t('These figures cover every scenario, not the ones you narrowed to') }}</span>
+        </p>
+      </div>
       <div class="blocks">
         <FigureBlock :title="t('Result')" :figures="result(row)" />
         <FigureBlock :title="t('Activity')" :figures="activity(row)" />
@@ -320,8 +327,15 @@ const scope = computed<Figure[]>(() => {
   align-items: start;
 }
 
-.currency-title {
+.currency-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
   margin: var(--space-sm) 0 0;
+}
+
+.currency-title {
+  margin: 0;
   font-family: monospace;
   font-size: var(--font-size-md);
   font-weight: normal;
@@ -339,17 +353,18 @@ const scope = computed<Figure[]>(() => {
   display: flex;
   align-items: baseline;
   gap: var(--space-xs);
-  margin: 0 0 var(--space-xs);
+  min-width: 0;
+  margin: 0;
   color: var(--color-annotation);
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
 
-.scope {
-  flex-shrink: 0;
-  padding: 0 var(--space-xs);
-  border: 1px dashed var(--color-annotation);
-  border-radius: 4px;
+/* one line at any width: the whole sentence is on the title once it no longer fits */
+.scope-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .hint {

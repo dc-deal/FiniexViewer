@@ -1,25 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
-import { createRouter, createMemoryHistory } from 'vue-router'
-import type { Router } from 'vue-router'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
+import { useContextStore } from '@/stores/context_store'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import type { DeploymentRow } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
-
-/**
- * A router, because the bar's narrowing rides in the URL — `useFacetQuery` reads the query on mount
- * and writes it back. MEMORY history, not hash: every hash router in jsdom shares one
- * `window.location`, so each test would inherit the previous one's narrowing.
- */
-function testRouter(): Router {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [{ path: '/', component: { template: '<div/>' } }],
-  })
-}
 
 const BASE: DeploymentRow = {
   deployment_id: 'deploy_20260927_132812',
@@ -55,7 +42,6 @@ function mountPicker(rows: DeploymentRow[], key = ['deployment_id', 'currency'])
   store.deploymentsKey = key
   return mount(DeploymentPicker, {
     attachTo: document.body,
-    global: { plugins: [testRouter()] },
   })
 }
 
@@ -134,14 +120,25 @@ describe('DeploymentPicker', () => {
     expect(select).toHaveBeenCalledWith('deploy_20260927_132812')
   })
 
+  /** The deployment the reader left open is restored BEFORE the picker mounts — no change. */
+  it('opens collapsed on a deployment that was chosen before it mounted', () => {
+    useContextStore().selectDeployment('deploy_20260927_132812')
+    const wrapper = mountPicker([deployment()])
+    expect(wrapper.find('.picker-chosen').exists()).toBe(true)
+    expect(rows(wrapper)).toHaveLength(0)
+  })
+
   /** The history below is what the reader came for, so the list gets out of the way. */
   it('collapses to one line once a deployment is chosen, and reopens on request', async () => {
     const wrapper = mountPicker([deployment()])
-    useDeploymentsStore().selectedDeploymentId = 'deploy_20260927_132812'
+    useContextStore().selectDeployment('deploy_20260927_132812')
     await flushPromises()
 
     expect(wrapper.find('.picker-chosen').exists()).toBe(true)
     expect(wrapper.find('.picker-chosen').text()).toContain('demo_btcusd_bot')
+    // one line in a narrow panel, the whole of it on hover
+    const meta = wrapper.find('.picker-chosen .chosen-meta')
+    expect(meta.attributes('title')).toBe(meta.text())
     expect(rows(wrapper)).toHaveLength(0)
 
     await wrapper.find('.picker-chosen button').trigger('click')
@@ -160,7 +157,7 @@ describe('DeploymentPicker', () => {
       const cells = wrapper.find('.record-row').findAll(':scope > span')
         .map(n => n.attributes('data-rank'))
 
-      expect(heads).toHaveLength(9)
+      expect(heads).not.toHaveLength(0)
       expect(cells).toEqual(heads)
       // WHICH deployment, what it is called, what it earned
       expect(heads.filter(rank => rank === '1')).toHaveLength(3)

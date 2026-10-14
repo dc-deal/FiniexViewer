@@ -7,10 +7,10 @@ import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import { useFacetQuery } from '@/composables/use_facet_query'
+import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
 import {
-  amount, duration, magnitude, percentFigure, signClass, utcInstant,
+  amount, duration, magnitude, percentFigure, signClass, sortInstant, utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { Figure } from '@/types/figure_types'
@@ -44,8 +44,7 @@ const {
   deployments, deploymentsKey, selectedDeploymentId, loadingList,
 } = storeToRefs(store)
 
-// the narrowing rides in the URL under `depf` / `depq` / `depsort`, so a filtered ledger is a link
-const { selection, search, sort } = useFacetQuery('dep', 'newest')
+const { selection, search, sort } = useFacetState('deployment-picker', 'newest')
 
 /** A value the row does not state is not offered — an empty option reads as a category. */
 function stated(value: string | null): string[] {
@@ -92,33 +91,28 @@ const columns: ListColumn[] = [
   { label: '', width: 'minmax(0, 10fr)', rank: 3 },
 ]
 
-function instant(iso: string): number {
-  const at = Date.parse(iso)
-  return Number.isNaN(at) ? 0 : at
-}
-
 const sorts: SortDefinition<DeploymentRow>[] = [
   {
     id: 'newest',
     label: 'newest',
-    compare: (a, b) => instant(b.last_started) - instant(a.last_started),
+    compare: (a, b) => sortInstant(b.last_started) - sortInstant(a.last_started),
   },
   {
     id: 'oldest',
     label: 'oldest',
-    compare: (a, b) => instant(a.first_started) - instant(b.first_started),
+    compare: (a, b) => sortInstant(a.first_started) - sortInstant(b.first_started),
   },
   {
     id: 'sessions',
     label: 'sessions',
-    compare: (a, b) => b.sessions - a.sessions || instant(b.last_started) - instant(a.last_started),
+    compare: (a, b) => b.sessions - a.sessions || sortInstant(b.last_started) - sortInstant(a.last_started),
   },
   {
     id: 'name',
     label: 'name',
     // within one bot the newest first, or several deployments of it sit in arbitrary order
     compare: (a, b) =>
-      a.bot.localeCompare(b.bot) || instant(b.last_started) - instant(a.last_started),
+      a.bot.localeCompare(b.bot) || sortInstant(b.last_started) - sortInstant(a.last_started),
   },
 ]
 
@@ -198,9 +192,10 @@ function card(row: DeploymentRow): ListCard {
 /**
  * The list is the way in, so it is open until there is something to look at — and it collapses once
  * a deployment is chosen, the same as the run picker, because the history below it is what the
- * reader came for.
+ * reader came for. A deployment already chosen when the picker mounts collapses it from the start,
+ * since the watch below sees only a change.
  */
-const open = ref(true)
+const open = ref(selectedDeploymentId.value === null)
 
 watch(selectedDeploymentId, id => { open.value = id === null })
 
@@ -208,6 +203,15 @@ watch(selectedDeploymentId, id => { open.value = id === null })
 const chosen = computed(() =>
   deployments.value.find(row => row.deployment_id === selectedDeploymentId.value) ?? null
 )
+
+/** Its bot, its sessions and its last start — one line, cut short where the panel is narrow. */
+const chosenMeta = computed(() => {
+  const row = chosen.value
+  if (!row) return ''
+  return [row.bot, plural(row.sessions, t('session'), t('sessions')), startedAt(row.last_started)]
+    .filter(Boolean)
+    .join(' · ')
+})
 </script>
 
 <template>
@@ -220,10 +224,9 @@ const chosen = computed(() =>
     <div v-else-if="!open" class="picker-chosen">
       <span class="chosen-label">{{ t('Deployment') }}</span>
       <span class="chosen-id">{{ selectedDeploymentId }}</span>
-      <span v-if="chosen" class="chosen-meta">
-        {{ chosen.bot }} · {{ plural(chosen.sessions, t('session'), t('sessions')) }}
-        · {{ startedAt(chosen.last_started) }}
-      </span>
+      <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
+           three lines above the history -->
+      <span v-if="chosen" class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
       <AppButton variant="quiet" @click="open = true">{{ t('Change deployment') }}</AppButton>
     </div>
 
@@ -300,6 +303,7 @@ const chosen = computed(() =>
   display: flex;
   align-items: baseline;
   gap: var(--space-sm);
+  min-width: 0;
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
@@ -309,12 +313,28 @@ const chosen = computed(() =>
   color: var(--color-text-secondary);
 }
 
+.chosen-label,
+.chosen-id {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .chosen-id {
   color: var(--color-text-primary);
 }
 
+.chosen-meta {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* a control whose name breaks over two lines reads as two controls */
 .picker-chosen .app-button {
   margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .picker-hint {
@@ -324,10 +344,11 @@ const chosen = computed(() =>
   font-size: var(--font-size-sm);
 }
 
-/* never more than a third of the window: the history the list leads to has to fit beside it.
-   Everything else about its shape belongs to `base/RecordList.vue`. */
+/* never more than a third of the view: the history the list leads to has to fit beside it.
+   Everything else about its shape belongs to `base/RecordList.vue`. Measured against the view
+   (`cqh`), not the browser window. */
 .deployment-list {
-  max-height: 33vh;
+  max-height: 33cqh;
   overflow-y: auto;
 }
 

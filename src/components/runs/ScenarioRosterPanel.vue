@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import AppButton from '@/components/base/AppButton.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import { useFacetQuery } from '@/composables/use_facet_query'
+import { useFacetState } from '@/composables/use_facet_state'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import {
   amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, signClass, utcInstant,
@@ -68,14 +68,17 @@ const warnedUnits = computed(() => {
   return counts
 })
 
-// the narrowing rides in the URL under `unitf` / `unitq` / `unitsort` — the same two words the
-// `run=` and `unit=` params already use
-const { selection, search, sort } = useFacetQuery('unit', 'name')
-
-// a different run is a different roster, so a narrowing made for the old one means nothing
-watch(() => props.model, () => {
-  selection.value = {}
-  search.value = ''
+/**
+ * A different run is a different roster, so a narrowing made for the old one means nothing — the
+ * scope drops it, both when this panel mounts on another run and when the run changes under it.
+ *
+ * Scoped by the run's OWN id, never by `props.model` — the lesson `TradeHistoryPanel` learned
+ * first. The model is composed from three sections that arrive one by one, so its identity changes
+ * as the portfolio and the warnings land, and watching it cleared a reader's narrowing under them
+ * on a run that had not changed at all.
+ */
+const { selection, search, sort } = useFacetState('scenario-roster', 'name', {
+  scope: () => props.model.scenarios.run_id,
 })
 
 /**
@@ -512,7 +515,8 @@ const chosenLabel = computed(() =>
 /* only what the shared list does NOT own: it carries the tracks, the row states, the picked edge
    and the spanning reason line */
 .roster-list {
-  max-height: 60vh;
+  /* of the view that holds the panel, not of the browser window */
+  max-height: 60cqh;
   overflow-y: auto;
 }
 

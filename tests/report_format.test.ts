@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bytes, shortHash, utcInstant } from '@/components/runs/report_format'
+import { bytes, shortHash, sortInstant, utcInstant } from '@/components/runs/report_format'
 
 /**
  * The formatters are exercised through the panels that use them, and that is where the
@@ -25,6 +25,17 @@ describe('report_format', () => {
     it('gives nothing for a stamp that is not a date, rather than throwing', () => {
       expect(utcInstant('not-a-date')).toBe('')
       expect(utcInstant('')).toBe('')
+    })
+  })
+
+  describe('sortInstant', () => {
+    /** Compared as text, `+02:00` would sort after a `Z` stamp that is an hour LATER. */
+    it('orders by the instant, not by the text of the offset', () => {
+      expect(sortInstant('2026-10-12T09:30:00+02:00')).toBeLessThan(sortInstant('2026-10-12T08:00:00Z'))
+    })
+
+    it('gives 0 for a stamp that is not a date, so it sorts last under newest', () => {
+      expect(sortInstant('not-a-date')).toBe(0)
     })
   })
 

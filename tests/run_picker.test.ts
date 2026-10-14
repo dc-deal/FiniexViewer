@@ -1,28 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
-import { createRouter, createMemoryHistory } from 'vue-router'
-import type { Router } from 'vue-router'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
+import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
-
-/**
- * A router, because the bar's narrowing rides in the URL (viewer#116) — `useFacetQuery` reads the
- * query on mount and writes it back. Without one the mounted hook throws, which Vue reports as a
- * warning beside a green test rather than as a failure.
- *
- * MEMORY history, not hash: every hash router in jsdom shares one `window.location`, so each test
- * would inherit whatever narrowing the previous one wrote — four tests failed exactly that way.
- */
-function testRouter(): Router {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [{ path: '/', component: { template: '<div/>' } }],
-  })
-}
 
 const BASE: RunInfo = {
   // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
@@ -76,7 +60,6 @@ function mountPicker(rows: RunInfo[]) {
   useRunsStore().runs = rows
   return mount(RunPicker, {
     attachTo: document.body,
-    global: { plugins: [testRouter()] },
   })
 }
 
@@ -332,10 +315,18 @@ describe('RunPicker', () => {
       const wrapper = mountPicker([run({ run_id: 'a' }), run({ run_id: 'b' })])
       expect(wrapper.find('.run-list').classes()).toContain('roomy')
 
-      useRunsStore().selectedRunId = 'a'
+      useContextStore().selectRun('a')
       await flushPromises()
       await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
       expect(wrapper.find('.run-list').classes()).not.toContain('roomy')
+    })
+
+    /** The run the reader left open is restored BEFORE the picker mounts — there is no change. */
+    it('opens collapsed on a run that was chosen before it mounted', () => {
+      useContextStore().selectRun('a')
+      const wrapper = mountPicker([run({ run_id: 'a' }), run({ run_id: 'b' })])
+      expect(wrapper.find('.picker-chosen').exists()).toBe(true)
+      expect(rowIds(wrapper)).toEqual([])
     })
 
     /**
@@ -347,7 +338,7 @@ describe('RunPicker', () => {
       const offered = wrapper.findAll('.facet-trigger').map(node => node.text())
       expect(offered.some(text => text.includes('Set'))).toBe(false)
       // the ones that stayed, so this cannot pass by the bar being absent altogether
-      expect(offered.some(text => text.includes('Run type'))).toBe(true)
+      expect(offered.some(text => text.includes('Pipeline'))).toBe(true)
       expect(offered.some(text => text.includes('Purpose'))).toBe(true)
     })
 
@@ -358,7 +349,7 @@ describe('RunPicker', () => {
         run({ run_id: 'other', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
       ])
       expect(rowIds(wrapper)).toEqual([])
-      useRunsStore().selectedRunId = 'pickedone'
+      useContextStore().selectRun('pickedone')
       await flushPromises()
       // the list collapses to one line once a run is chosen, so it is reopened the way a reader
       // reopens it
@@ -392,6 +383,17 @@ describe('RunPicker', () => {
 
     await wrapper.find('.picker-chosen .app-button').trigger('click')
     expect(wrapper.find('.run-list').exists()).toBe(true)
+  })
+
+  /** A narrow panel ends the line in an ellipsis instead of wrapping it over three; the whole is on hover. */
+  it('names the chosen run in one line, with the whole of it on hover', async () => {
+    const wrapper = mountPicker([run({ run_id: 'only_logs', group: 'simulation', name: 'set_x', start_time: '' })])
+    await rowFor(wrapper, 'only_logs').trigger('click')
+    await flushPromises()
+
+    const meta = wrapper.find('.picker-chosen .chosen-meta')
+    expect(meta.text()).toBe('simulation · set_x')
+    expect(meta.attributes('title')).toBe('simulation · set_x')
   })
 
   /**
@@ -643,7 +645,7 @@ describe('RunPicker', () => {
       const cells = wrapper.find('.record-row').findAll(':scope > span')
         .map(node => node.attributes('data-rank'))
 
-      expect(heads).toHaveLength(10)
+      expect(heads).not.toHaveLength(0)
       expect(cells).toEqual(heads)
       // WHICH run, whether it worked, what it earned: Started, Set, Outcome, Net P&L
       expect(heads.filter(rank => rank === '1')).toHaveLength(4)

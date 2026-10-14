@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { nextTick } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { useSelectionStore } from '@/stores/selection_store'
+
+/** What the arrangement store keeps under its one key, read back the way a reload reads it. */
+function stored(): { links: { A: { market: unknown } }, chart: unknown } {
+  return JSON.parse(localStorage.getItem('arrangement.v1') ?? 'null')
+}
 
 describe('useSelectionStore', () => {
   beforeEach(() => {
@@ -8,71 +14,74 @@ describe('useSelectionStore', () => {
     localStorage.clear()
   })
 
-  it('initializes to null when localStorage is empty', () => {
+  it('starts empty when nothing is stored', () => {
     const store = useSelectionStore()
     expect(store.broker).toBeNull()
     expect(store.symbol).toBeNull()
     expect(store.timeframe).toBeNull()
   })
 
-  it('initializes from localStorage on first access', () => {
-    localStorage.setItem('sel.broker', 'kraken_spot')
-    localStorage.setItem('sel.symbol', 'BTCUSD')
-    localStorage.setItem('sel.timeframe', 'H1')
+  /** The market is the main link's and the timeframe the chart's — both come back after a reload. */
+  it('brings back the stored market and timeframe', () => {
+    localStorage.setItem('arrangement.v1', JSON.stringify({
+      version: 1,
+      links: { A: { market: { broker: 'kraken_spot', symbol: 'BTCUSD' } } },
+      bars: {},
+      chart: { timeframe: 'H1' },
+    }))
     const store = useSelectionStore()
     expect(store.broker).toBe('kraken_spot')
     expect(store.symbol).toBe('BTCUSD')
     expect(store.timeframe).toBe('H1')
   })
 
-  it('setBroker sets broker, clears symbol, updates localStorage', () => {
+  it('setBroker sets the broker and clears the symbol of the last one', async () => {
     const store = useSelectionStore()
-    store.setSymbol('BTCUSD')
+    store.setBroker('mt5')
+    store.setSymbol('EURUSD')
     store.setBroker('kraken_spot')
     expect(store.broker).toBe('kraken_spot')
     expect(store.symbol).toBeNull()
-    expect(localStorage.getItem('sel.broker')).toBe('kraken_spot')
-    expect(localStorage.getItem('sel.symbol')).toBeNull()
+    await nextTick()
+    expect(stored().links.A.market).toEqual({ broker: 'kraken_spot', symbol: null })
   })
 
-  it('setBroker preserves timeframe across broker changes', () => {
+  it('setBroker keeps the timeframe across broker changes', () => {
     const store = useSelectionStore()
     store.setTimeframe('H1')
-    store.setBroker('kraken_spot')
+    store.setBroker('mt5')
     expect(store.timeframe).toBe('H1')
-    expect(localStorage.getItem('sel.timeframe')).toBe('H1')
   })
 
-  it('setSymbol sets symbol and preserves timeframe', () => {
+  it('setSymbol sets the symbol and keeps the timeframe', () => {
     const store = useSelectionStore()
-    store.setTimeframe('M30')
+    store.setTimeframe('H4')
+    store.setBroker('mt5')
     store.setSymbol('EURUSD')
     expect(store.symbol).toBe('EURUSD')
-    expect(store.timeframe).toBe('M30')
-    expect(localStorage.getItem('sel.symbol')).toBe('EURUSD')
+    expect(store.timeframe).toBe('H4')
   })
 
-  it('setTimeframe persists to localStorage', () => {
+  it('setTimeframe is stored as the chart\'s own', async () => {
     const store = useSelectionStore()
     store.setTimeframe('D1')
-    expect(store.timeframe).toBe('D1')
-    expect(localStorage.getItem('sel.timeframe')).toBe('D1')
+    await nextTick()
+    expect(stored().chart).toEqual({ timeframe: 'D1' })
   })
 
-  it('resetTimeframe clears timeframe from state and localStorage', () => {
+  it('resetTimeframe clears the timeframe', () => {
     const store = useSelectionStore()
-    store.setTimeframe('M30')
+    store.setTimeframe('H1')
     store.resetTimeframe()
     expect(store.timeframe).toBeNull()
-    expect(localStorage.getItem('sel.timeframe')).toBeNull()
   })
 
   it('isReady is false until all three values are set', () => {
     const store = useSelectionStore()
     expect(store.isReady).toBe(false)
-    store.setBroker('kraken_spot')
+    store.setBroker('mt5')
     expect(store.isReady).toBe(false)
-    store.setSymbol('BTCUSD')
+    store.setSymbol('EURUSD')
     expect(store.isReady).toBe(false)
     store.setTimeframe('H1')
     expect(store.isReady).toBe(true)
@@ -80,23 +89,19 @@ describe('useSelectionStore', () => {
 
   it('isReady becomes false again after resetTimeframe', () => {
     const store = useSelectionStore()
-    store.setBroker('kraken_spot')
-    store.setSymbol('BTCUSD')
+    store.setBroker('mt5')
+    store.setSymbol('EURUSD')
     store.setTimeframe('H1')
     store.resetTimeframe()
     expect(store.isReady).toBe(false)
   })
 
-  it('selectedLabel returns formatted string when ready', () => {
-    const store = useSelectionStore()
-    store.setBroker('kraken_spot')
-    store.setSymbol('BTCUSD')
-    store.setTimeframe('H1')
-    expect(store.selectedLabel).toBe('kraken_spot / BTCUSD / H1')
-  })
-
-  it('selectedLabel returns null when not ready', () => {
+  it('selectedLabel names all three when ready, and nothing before', () => {
     const store = useSelectionStore()
     expect(store.selectedLabel).toBeNull()
+    store.setBroker('mt5')
+    store.setSymbol('EURUSD')
+    store.setTimeframe('H1')
+    expect(store.selectedLabel).toBe('mt5 / EURUSD / H1')
   })
 })

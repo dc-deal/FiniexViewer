@@ -18,6 +18,14 @@ const HINTS: HintDefinition[] = [
     text: t('Click a scenario to show only its trades and booking periods. Pick several to compare.'),
   },
   {
+    id: 'quick-bar',
+    text: t('The bar beside the tabs holds what the panel in front shows — for the chart, its broker, symbol and timeframe.'),
+  },
+  {
+    id: 'bar-overflow',
+    text: t('What does not fit in the bar waits behind the + at its end — the sections to switch on or off, and the layout actions.'),
+  },
+  {
     id: 'position-link',
     text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back. A partial close books several trades of one position, so all of them are marked.'),
   },

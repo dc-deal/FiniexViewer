@@ -3,35 +3,23 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import TopMenu from '@/components/TopMenu.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
-import { useCallerStore } from '@/stores/caller_store'
+import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { hintIds } from '@/hint_registry'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
-import type { SettingsTab } from '@/types/settings_types'
-import type { CallerIdentity } from '@/types/api/caller_types'
 
 // Held so it can be unmounted: both the menu and the dialog portal their content out of the
 // component, and wiping the body would tear the component down against nothing.
 let mounted: VueWrapper | null = null
-
-const IDENTITY: CallerIdentity = {
-  enforced: true,
-  client: 'viewer',
-  account: 'viewer-op',
-  account_kind: 'person',
-  display_name: 'Viewer-Operator',
-  grants: ['brokers:*', 'reports:*'],
-  note: 'dev proxy holds it',
-}
 
 function mountMenu() {
   mounted = mount(TopMenu, { attachTo: document.body })
   return mounted
 }
 
-function mountDialog(tab?: SettingsTab) {
-  mounted = mount(SettingsDialog, { attachTo: document.body, props: { open: true, tab } })
+function mountDialog() {
+  mounted = mount(SettingsDialog, { attachTo: document.body, props: { open: true } })
   return mounted
 }
 
@@ -114,13 +102,6 @@ describe('SettingsDialog', () => {
     const dialog = panel('.settings-dialog')
     expect(dialog).not.toBeNull()
     expect(wrapper.element.contains(dialog)).toBe(false)
-  })
-
-  it('opens on the tab it was asked for', async () => {
-    mountDialog('account')
-    await flushPromises()
-    expect(field('setting-theme')).toBeNull()
-    expect(activePanel()?.textContent).not.toContain('Timeline order')
   })
 
   describe('the display tab', () => {
@@ -210,62 +191,31 @@ describe('SettingsDialog', () => {
     })
 
     it('reports a file that is not a layout instead of failing silently', async () => {
-      mountDialog('layout')
+      mountDialog()
       await flushPromises()
+      await openTab('Layout')
       await pickFile('this is not a layout', 'notes.json')
       await waitForPanelText('not a layout')
     })
 
     it('confirms a layout that imported cleanly', async () => {
-      mountDialog('layout')
+      mountDialog()
       await flushPromises()
+      await openTab('Layout')
       await pickFile(A_LAYOUT)
       await waitForPanelText('Layout replaced')
     })
-  })
 
-  describe('the account tab', () => {
-    it('names the account, the client and the grants the server reported', async () => {
-      const store = useCallerStore()
-      store.identity = IDENTITY
-      store.state = 'ready'
-      store.readAt = new Date()
-      mountDialog('account')
+    /** The one way back to the suggested order — beside everything else about arrangement. */
+    it('takes the docked panels back to the suggested order', async () => {
+      const dock = useDockStore()
+      let resets = 0
+      dock.reset = () => { resets += 1 }
+      mountDialog()
       await flushPromises()
-      const text = activePanel()?.textContent ?? ''
-      expect(text).toContain('Viewer-Operator')
-      expect(text).toContain('viewer-op')
-      expect(text).toContain('brokers:*')
-      expect(text).toContain('as of')
-    })
-
-    /**
-     * The failure a 200 disguises: with gating off the server verifies no token, so an answer
-     * arrives for a credential nobody checked. It must never read as a signed-in identity.
-     */
-    it('says plainly when the server verifies no token at all', async () => {
-      const store = useCallerStore()
-      store.state = 'unenforced'
-      mountDialog('account')
-      await flushPromises()
-      const notice = panel('.account-notice')
-      expect(notice?.textContent).toContain('verifies no token')
-      expect(notice?.className).toContain('warn')
-    })
-
-    // a refused credential and an unreachable server are different problems, shown differently
-    it('separates a refused token from a server that did not answer', async () => {
-      const store = useCallerStore()
-      store.state = 'unauthenticated'
-      mountDialog('account')
-      await flushPromises()
-      expect(panel('.account-notice')?.className).toContain('warn')
-      mounted?.unmount()
-
-      store.state = 'failed'
-      mountDialog('account')
-      await flushPromises()
-      expect(panel('.account-notice')?.className).toContain('bad')
+      await openTab('Layout')
+      panel('[data-action="reset-dock"]')!.click()
+      expect(resets).toBe(1)
     })
   })
 })
@@ -304,35 +254,14 @@ describe('TopMenu', () => {
     expect(document.querySelector('.menu-content')?.textContent).toContain('Dark theme')
   })
 
-  /** The cheap half of identity: the menu says which access this viewer works under. */
-  it('shows the account name once the server has reported one', async () => {
-    const caller = useCallerStore()
-    caller.identity = IDENTITY
-    caller.state = 'ready'
+  /** About is read and closed, so it is a dialog — no panel and no tab for it. */
+  it('opens About as a dialog from the application menu', async () => {
     const wrapper = mountMenu()
+    expect(panel('.about-dialog')).toBeNull()
     await wrapper.find('.menu-trigger').trigger('keydown', { key: 'Enter' })
     await flushPromises()
-    expect(document.querySelector('.menu-content')?.textContent).toContain('Viewer-Operator')
-  })
-
-  it('stays with the plain word while there is no identity to show', async () => {
-    const wrapper = mountMenu()
-    await wrapper.find('.menu-trigger').trigger('keydown', { key: 'Enter' })
+    document.querySelector<HTMLElement>('.menu-item[data-action="about"]')!.click()
     await flushPromises()
-    const text = document.querySelector('.menu-content')?.textContent ?? ''
-    expect(text).toContain('Account')
-    expect(text).not.toContain('Viewer-Operator')
-  })
-
-  it('opens the dialog on the account tab from the account entry', async () => {
-    const wrapper = mountMenu()
-    await wrapper.find('.menu-trigger').trigger('keydown', { key: 'Enter' })
-    await flushPromises()
-    const account = [...document.querySelectorAll<HTMLElement>('.menu-item')]
-      .find(entry => entry.textContent?.includes('Account'))
-    account!.click()
-    await flushPromises()
-    expect(panel('.settings-dialog')).not.toBeNull()
-    expect(field('setting-theme')).toBeNull()
+    expect(panel('.about-dialog')?.textContent).toContain('About FiniexViewer')
   })
 })

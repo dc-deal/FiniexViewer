@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import TimelineChart from '@/components/base/TimelineChart.vue'
+import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
 import {
   amount, magnitude, duration, numberOrNa, percentOrNa, signClass, utcInstant,
@@ -55,6 +56,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'update:order': [LaneOrder] }>()
 
+const { openRun, canOpen } = useOpenInContext()
+
+/**
+ * `NaN` where a stamp cannot be read, which `usable` below drops. Not the pickers' `sortInstant`:
+ * a sort needs a number for every row, a drawing must not place a broken row at 1970.
+ */
 function instant(iso: string): number {
   return new Date(iso).getTime()
 }
@@ -154,7 +161,7 @@ const deploymentScope = computed(() => {
       id: session.run_id,
       label: session.run_id,
       // a lane names a run, and a run can be opened — so the label is the way in
-      to: { name: 'runs', query: { run: session.run_id } },
+      ...(canOpen ? { open: () => openRun(session.run_id) } : {}),
       spans: rows.map(row => span(row, instant(row.opened_at), instant(row.closed_at))),
     })
   }

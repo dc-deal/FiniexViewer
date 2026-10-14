@@ -5,38 +5,22 @@ import {
   DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from 'reka-ui'
+import AboutDialog from '@/components/AboutDialog.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
-import { useCallerStore } from '@/stores/caller_store'
 import { useSettingsStore } from '@/stores/settings_store'
-import type { SettingsTab } from '@/types/settings_types'
 import { t } from '@/translate'
 
 const settingsStore = useSettingsStore()
-const callerStore = useCallerStore()
 const { settings } = storeToRefs(settingsStore)
-const { displayName, state } = storeToRefs(callerStore)
 
 const settingsOpen = ref(false)
-const settingsTab = ref<SettingsTab>('display')
+const aboutOpen = ref(false)
 
 /** The entry names the theme it switches TO, so the symbol and the word say the same thing. */
 const themeSwitch = computed(() => settings.value.theme === 'dark'
   ? { icon: '☀️', label: t('Light theme') }
   : { icon: '🌙', label: t('Dark theme') })
 
-/**
- * The menu says which access this viewer works under, as soon as the server tells it. Where there
- * is no identity — gating off, a refused token, an unreachable server — it stays the plain word,
- * because the dialog is where the reason belongs.
- */
-const accountLabel = computed(() =>
-  state.value === 'ready' && displayName.value ? displayName.value : t('Account')
-)
-
-function openSettings(tab: SettingsTab): void {
-  settingsTab.value = tab
-  settingsOpen.value = true
-}
 </script>
 
 <template>
@@ -47,21 +31,22 @@ function openSettings(tab: SettingsTab): void {
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
-          <DropdownMenuItem class="menu-item" @select="openSettings('display')">
+          <DropdownMenuItem class="menu-item" @select="settingsOpen = true">
             ⚙️ {{ t('Settings…') }}
           </DropdownMenuItem>
           <DropdownMenuItem class="menu-item" @select="settingsStore.toggleTheme()">
             {{ themeSwitch.icon }} {{ themeSwitch.label }}
           </DropdownMenuItem>
           <DropdownMenuSeparator class="menu-separator" />
-          <DropdownMenuItem class="menu-item" @select="openSettings('account')">
-            👤 {{ accountLabel }}
+          <DropdownMenuItem class="menu-item" data-action="about" @select="aboutOpen = true">
+            ℹ️ {{ t('About FiniexViewer') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
 
-    <SettingsDialog v-model:open="settingsOpen" :tab="settingsTab" />
+    <SettingsDialog v-model:open="settingsOpen" />
+    <AboutDialog v-model:open="aboutOpen" />
   </div>
 </template>
 
@@ -76,11 +61,12 @@ function openSettings(tab: SettingsTab): void {
   background-color: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
   border-radius: 4px;
-  color: var(--color-text-secondary);
+  /* the link ink: muted ink on a raised surface is what a DISABLED control looks like here */
+  color: var(--color-accent);
   cursor: pointer;
   padding: 2px var(--space-sm);
   font-family: monospace;
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   line-height: 1.2;
 }
 
@@ -102,9 +88,10 @@ function openSettings(tab: SettingsTab): void {
   display: flex;
   flex-direction: column;
   padding: var(--space-xs);
-  background-color: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-overlay);
+  border: 1px solid var(--color-border-overlay);
   border-radius: 4px;
+  box-shadow: var(--shadow-overlay);
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
@@ -118,8 +105,9 @@ function openSettings(tab: SettingsTab): void {
   user-select: none;
 }
 
+/* the lifting step: on the overlay surface the elevated one is the darker of the two */
 .menu-item[data-highlighted] {
-  background-color: var(--color-bg-elevated);
+  background-color: var(--color-bg-hover);
 }
 
 .menu-item[data-disabled] {

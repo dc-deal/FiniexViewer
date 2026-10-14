@@ -1,5 +1,7 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, fixture, FIXTURE_RUN } from './api_mock'
+import { openWith } from './arrangement_seed'
+import type { Seed } from './arrangement_seed'
 
 /**
  * The third level of the Orders panel: what the orders of one position went through.
@@ -42,8 +44,8 @@ async function openOrders(page: import('@playwright/test').Page): Promise<void> 
  * without the narrowing the test would click a position whose stream really is empty and the
  * failure would read as a broken display.
  */
-function narrowedTo(scenario: string): string {
-  return `/runs?run=${FIXTURE_RUN}&unit=${encodeURIComponent(scenario)}`
+function narrowedTo(scenario: string): Seed {
+  return { run: FIXTURE_RUN, units: [scenario] }
 }
 
 /**
@@ -59,7 +61,7 @@ function positionRow(page: import('@playwright/test').Page) {
 }
 
 test('a position opens the steps its orders went through', async ({ page }) => {
-  await page.goto(narrowedTo(CAPTURED.scenario_name))
+  await openWith(page, '/', narrowedTo(CAPTURED.scenario_name))
   await openOrders(page)
 
   // every position carries the glyph on its heading, because the run wrote a stream
@@ -87,7 +89,7 @@ test('a position opens the steps its orders went through', async ({ page }) => {
  */
 test('the steps do not scroll sideways inside the row that holds them', async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 1000 })
-  await page.goto(narrowedTo(CAPTURED.scenario_name))
+  await openWith(page, '/', narrowedTo(CAPTURED.scenario_name))
   await openOrders(page)
 
   await positionRow(page).click()
@@ -108,7 +110,7 @@ test('the steps do not scroll sideways inside the row that holds them', async ({
  * real route answers with when asked for a position whose orders left no step.
  */
 test('a position with no steps says so instead of opening an empty list', async ({ page }) => {
-  await page.goto(`/runs?run=${FIXTURE_RUN}`)
+  await openWith(page, '/', { run: FIXTURE_RUN })
   await openOrders(page)
 
   const other = page.locator('.order-list .record-group:not(.outer)')

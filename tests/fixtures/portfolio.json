@@ -1,5 +1,5 @@
 {
-  "run_id": "20261008_222620_70191690",
+  "run_id": "20261012_205715_c3b41fff",
   "units": [
     {
       "name": "EURGBP_refusals_01",
@@ -17,7 +17,7 @@
       "account_max_dd_pct": 0.029542568836380317,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-10-08T22:26:28.800559+00:00",
+      "drawdown_started_at": "2026-10-12T20:57:22.659669+00:00",
       "total_fees": 0.0,
       "fees_charged": 0.0,
       "data_broker_type": "mt5",
@@ -41,6 +41,12 @@
       "total_swap": 0.0,
       "maker_fee": 0.0,
       "taker_fee": 0.0,
+      "fill_fees_by_source": {
+        "estimate": {
+          "fill_count": 5,
+          "fill_fees": 0.0
+        }
+      },
       "has_error": false,
       "balances": {
         "EUR": 10000.796148287896
@@ -91,7 +97,7 @@
       "account_max_dd_pct": 0.10221181711611425,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-10-08T22:26:28.801915+00:00",
+      "drawdown_started_at": "2026-10-12T20:57:22.660317+00:00",
       "total_fees": 0.0,
       "fees_charged": 0.0,
       "data_broker_type": "mt5",
@@ -115,6 +121,12 @@
       "total_swap": 0.0,
       "maker_fee": 0.0,
       "taker_fee": 0.0,
+      "fill_fees_by_source": {
+        "estimate": {
+          "fill_count": 7,
+          "fill_fees": 0.0
+        }
+      },
       "has_error": false,
       "balances": {
         "EUR": 10002.989890460382
@@ -165,7 +177,7 @@
       "account_max_dd_pct": 1.4260805635964242,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-10-08T22:26:28.876798+00:00",
+      "drawdown_started_at": "2026-10-12T20:57:22.744055+00:00",
       "total_fees": 32.281071875,
       "fees_charged": 33.894551855468755,
       "data_broker_type": "kraken_spot",
@@ -189,6 +201,12 @@
       "total_swap": 0.0,
       "maker_fee": 0.0,
       "taker_fee": 33.894551855468755,
+      "fill_fees_by_source": {
+        "estimate": {
+          "fill_count": 21,
+          "fill_fees": 33.894551855468755
+        }
+      },
       "has_error": false,
       "balances": {
         "ETH": 0.6,
@@ -241,7 +259,7 @@
       "account_max_dd_pct": 0.004370894648259737,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-10-08T22:26:28.824634+00:00",
+      "drawdown_started_at": "2026-10-12T20:57:22.686268+00:00",
       "total_fees": 0.0,
       "fees_charged": 0.0,
       "data_broker_type": "mt5",
@@ -265,6 +283,12 @@
       "total_swap": 0.0,
       "maker_fee": 0.0,
       "taker_fee": 0.0,
+      "fill_fees_by_source": {
+        "estimate": {
+          "fill_count": 1,
+          "fill_fees": 0.0
+        }
+      },
       "has_error": false,
       "balances": {
         "EUR": 10000.0
@@ -315,7 +339,7 @@
       "account_max_dd_pct": 0.004660172351052219,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-10-08T22:26:28.824366+00:00",
+      "drawdown_started_at": "2026-10-12T20:57:22.685737+00:00",
       "total_fees": 0.0,
       "fees_charged": 0.0,
       "data_broker_type": "mt5",
@@ -339,6 +363,12 @@
       "total_swap": 0.0,
       "maker_fee": 0.0,
       "taker_fee": 0.0,
+      "fill_fees_by_source": {
+        "estimate": {
+          "fill_count": 4,
+          "fill_fees": 0.0
+        }
+      },
       "has_error": false,
       "balances": {
         "EUR": 9999.954589633075
@@ -377,6 +407,12 @@
       "account_max_drawdown_unit": "EURGBP_refusals_02",
       "total_fees": 0.0,
       "fees_charged": 0.0,
+      "fill_fees_by_source": {
+        "estimate": {
+          "fill_count": 17,
+          "fill_fees": 0.0
+        }
+      },
       "unrealized_pnl": -7.183943048870693,
       "final_equity": null,
       "total_final_equity": 39996.556685332485,
@@ -400,6 +436,12 @@
       "account_max_drawdown_unit": "ETHUSD_spot_two_balances",
       "total_fees": 32.281071875,
       "fees_charged": 33.894551855468755,
+      "fill_fees_by_source": {
+        "estimate": {
+          "fill_count": 21,
+          "fill_fees": 33.894551855468755
+        }
+      },
       "unrealized_pnl": -2.5234775390625,
       "final_equity": 2978.404434960937,
       "total_final_equity": 2978.404434960937,

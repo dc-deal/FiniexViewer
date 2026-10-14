@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
+import ScopeMark from '@/components/base/ScopeMark.vue'
 import { amount, magnitude } from '@/components/runs/report_format'
 import { orderPeriods } from '@/components/runs/period_order'
 import { useDisplaySettings } from '@/composables/use_display_settings'
@@ -110,7 +111,14 @@ const otherCurrencies = computed(() =>
     <div v-if="model.reconciles !== true" class="verdict" :class="verdict.tone" :title="t('This compares completeness, not arithmetic: both figures descend from one value, so a wrong P&L moves them together and the check stays green.')">
       <span class="verdict-mark">{{ verdict.mark }}</span>
       <div class="verdict-body">
-        <p class="verdict-text">{{ verdict.text }}</p>
+        <p class="verdict-text">
+          <!-- a mark in the headline rather than a line of its own: a narrowing moves nothing -->
+          <ScopeMark
+            v-if="narrowed"
+            :title="t('This check is the whole run — the periods below are the chosen scenarios')"
+          />
+          {{ verdict.text }}
+        </p>
         <p class="verdict-detail">
           {{ t('Periods') }}: {{ amount(model.total_net_pnl, model.currency) }} ·
           {{ plural(model.total_trades, t('trade'), t('trades')) }}
@@ -125,9 +133,6 @@ const otherCurrencies = computed(() =>
             </template>
           </template>
           <template v-else>{{ t('nothing reported') }}</template>
-        </p>
-        <p v-if="narrowed" class="verdict-scope">
-          {{ t('This check is the whole run — the periods below are the chosen scenarios') }}
         </p>
       </div>
     </div>
@@ -150,7 +155,7 @@ const otherCurrencies = computed(() =>
          closing equity is the SUM over the units — it was the last period row's own figure, one
          account of several, printed as though it were the run's -->
     <p class="footnote">
-      <span v-if="narrowed" class="scope">{{ t('whole run') }}</span>
+      <ScopeMark v-if="narrowed" />
       {{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }}
       <!-- left out rather than shown as the zero the formatter would make of a null: the run
            states no figure in this currency, which is not a closing equity of nothing -->
@@ -192,24 +197,6 @@ const otherCurrencies = computed(() =>
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-}
-
-/* the scope of the check, in the annotation role — it marks the boundary between what the verdict
-   covers and what is drawn below it */
-.verdict-scope {
-  margin: 0;
-  color: var(--color-annotation);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-/* the scope of a figure that cannot be split — marked, never filtered */
-.scope {
-  margin-right: var(--space-xs);
-  padding: 0 var(--space-xs);
-  border: 1px dashed var(--color-annotation);
-  border-radius: 4px;
-  color: var(--color-annotation);
 }
 
 .verdict-text,

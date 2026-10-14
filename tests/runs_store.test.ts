@@ -142,6 +142,19 @@ describe('useRunsStore', () => {
       expect(apiClient.getRuns).toHaveBeenCalledTimes(2)
     })
 
+    /** A list already on screen is fetched again when its panel comes back — without blanking it. */
+    it('refreshes quietly, with no spinner in place of the list', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      const store = useRunsStore()
+      await store.loadRuns()
+      const seen: boolean[] = []
+      const pending = store.loadRuns(true)
+      seen.push(store.loadingRuns)
+      await pending
+      expect(seen).toEqual([false])
+      expect(apiClient.getRuns).toHaveBeenCalledTimes(2)
+    })
+
     it('surfaces a failure as an error message', async () => {
       vi.mocked(apiClient.getRuns).mockRejectedValue(new Error('network down'))
       const store = useRunsStore()
@@ -258,16 +271,30 @@ describe('useRunsStore', () => {
     })
 
     it('never requests a run the index does not contain', async () => {
-      // a link or a reloaded URL can name a run whose artifacts were removed since — asking for
-      // it produces one 404 per section, which is not something the view can show
+      // a stored selection can name a run whose artifacts were removed since — asking for it
+      // produces one 404 per section, which is not something the view can show
       vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
       const store = useRunsStore()
       await store.loadRuns()
       await store.selectRun('20260829_200849')
       expect(apiClient.getRunSummary).not.toHaveBeenCalled()
       expect(store.unknownRunId).toBe('20260829_200849')
-      expect(store.selectedRunId).toBeNull()
+      // the choice is kept, so the view can say which run is gone; nothing resolves to it
+      expect(store.selectedRun).toBeNull()
       expect(store.error).toBeNull()
+    })
+
+    /** A deployment can name a session newer than the index the panel loaded — that run is not gone. */
+    it('asks the index once more before calling a run gone, and loads one that has arrived since', async () => {
+      const later = runRow({ run_id: '20261014_090000', group: 'autotrader', name: 'demo_btcusd_bot' })
+      vi.mocked(apiClient.getRuns).mockResolvedValueOnce(RUNS).mockResolvedValueOnce([...RUNS, later])
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue({ ...SUMMARY, run_id: later.run_id })
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun(later.run_id)
+      expect(apiClient.getRuns).toHaveBeenCalledTimes(2)
+      expect(store.unknownRunId).toBeNull()
+      expect(apiClient.getRunSummary).toHaveBeenCalledWith(later.run_id)
     })
 
     it('never requests anything while the index is empty', async () => {

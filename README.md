@@ -2,8 +2,8 @@
 
 > **Version:** v0.3.0 Pre-Alpha Showcase
 > **Status:** v0.3.0 — run inspection. Eleven report panels over a run's stored artifacts, a
-> deployment's session history, the candle chart, shareable links, 833 unit tests and a browser
-> suite.
+> deployment's session history, the candle chart, a selection restored on reload, 833 unit tests
+> and a browser suite.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
@@ -12,12 +12,12 @@ a strategy submitted and what became of each one, the trades they produced, the 
 booked into, the warnings a validator raised, and the configuration it all ran under. Nothing is
 recomputed here — every figure is a field the API served, or it is asked for as one.
 
-The candle chart it started as is still there, and the URL of any view is shareable and survives a
-reload.
+The candle chart it started as is still there. Deployments, runs and the chart are docked panels —
+tabs that split side by side — and every view comes back as the reader left it after a reload.
 
 ![The run list, folded by family, over the trade history and the orders of one run](docs/images/runs_overview_dark.png)
 
-**A run, from the list down to one order.** The list folds eighty-five runs into forty-two lines @
+**A run, from the list down to one order.** The list folds eighty-five runs into forty-two lines —
 the children of one sweep or one deployment session stand under a single heading — and a chosen run
 opens the panels beneath it.
 
@@ -33,8 +33,8 @@ one series rather than adding them up — and the periods of all of them share o
 
 ![The candle chart](docs/images/viewer_chart_dark.png)
 
-**The chart.** Broker, symbol, timeframe; a default window per timeframe; the whole selection in
-the URL.
+**The chart.** Broker, symbol, timeframe; a default window per timeframe; the selection kept
+across a reload.
 
 ---
 
@@ -96,7 +96,7 @@ python python/cli/api_server_cli.py --reload   # inside FiniexTestingIDE
 npm run dev
 ```
 
-Open **[http://localhost:5173/viewer](http://localhost:5173/viewer)**.
+Open **[http://localhost:5173](http://localhost:5173)**.
 
 ### Docker Compose (dual-repo setup)
 
@@ -112,16 +112,17 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | Framework | **Vue 3** — Composition API, `<script setup>` |
 | Language | **TypeScript** |
 | State | **Pinia** |
-| Routing | **Vue Router 4** |
+| Docking | **dockview** — tabbed, docked panels; floating switched off |
 | Charts | **Lightweight Charts** (TradingView) |
 | HTTP client | **axios** |
-| Layout | **splitpanes**, **vue-draggable-plus** for the panel order |
+| Layout | **vue-draggable-plus** for the order of the report panels |
 | Headless components | **Reka UI** — collapsible, toggle group, popover, hover card |
+| Icons | **Tabler Icons** — drawn by meaning through one registry |
 | Theme | CSS Custom Properties token system, dark/light mode |
 | Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` + `@stylistic` |
 | Dead code | **knip** — unreferenced files, exports and dependencies |
 | Testing | **Vitest** + **Vue Test Utils** — unit tests, jsdom environment |
-| Browser tests | **Playwright** — a real reload, a real URL, real geometry; hygiene rather than a gate |
+| Browser tests | **Playwright** — a real reload, real storage, real geometry; hygiene rather than a gate |
 | CI | **GitHub Actions** — type-check + tests on every PR and push to master |
 
 Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_architecture.md)
@@ -139,7 +140,7 @@ Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_a
 │  - Candle chart         │                            │  - Bar index manager     │
 │  - Run report panels    │                            │  - Scenario engine       │
 │  - Deployment history   │                            │  - Run-results ledger    │
-│  - Shareable URL state  │                            │                          │
+│  - Restored selection   │                            │                          │
 └─────────────────────────┘                            └──────────────────────────┘
 ```
 

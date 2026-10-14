@@ -1,6 +1,6 @@
 import { inject, provide } from 'vue'
 import type { InjectionKey } from 'vue'
-import type { PositionRef } from '@/composables/use_position_link'
+import type { PositionRef } from '@/types/context_types'
 import type { OrderEvent } from '@/types/api/report_types'
 
 /**

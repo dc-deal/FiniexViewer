@@ -1,26 +1,20 @@
 <script setup lang="ts">
-import { computed, nextTick, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useLayoutStore } from '@/stores/layout_store'
-import { useRunQuerySync } from '@/composables/use_run_query_sync'
-import { patchQuery } from '@/composables/query_param_utils'
+import { useRunBinding } from '@/composables/use_run_binding'
 import { provideScenarioSelection } from '@/composables/use_scenario_selection'
-import {
-  formatPositionRef,
-  parsePositionRef,
-  providePositionLink,
-} from '@/composables/use_position_link'
-import type { PositionRef } from '@/composables/use_position_link'
+import { providePositionLink } from '@/composables/use_position_link'
+import type { PositionRef } from '@/types/context_types'
 import { provideOrderSteps } from '@/composables/use_order_steps'
 import { hasArtifact } from '@/api/report_artifacts'
 import { panelById } from '@/panel_registry'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import AppBar from '@/components/panels/AppBar.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
-import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import { t } from '@/translate'
 
@@ -32,15 +26,18 @@ const {
   loadingRuns, loadingSummary, error,
 } = storeToRefs(runsStore)
 const {
+  runHeader,
   warningsErrors, portfolio, broker, aggregated, pendingOrders, orderHistory, bookingPeriods,
   config,
   tradeHistory, scenarios,
   absences,
   unreadable, errors: sectionErrors,
+  loadingWarningsErrors, loadingPortfolio, loadingBroker, loadingAggregated, loadingOrderHistory,
+  loadingBookingPeriods, loadingConfig, loadingScenarios, loadingTradeHistory,
 } = storeToRefs(reportsStore)
 
-// loads the run index and restores the cascade from the URL
-useRunQuerySync()
+// loads the run index and brings back the run the reader had open
+useRunBinding()
 
 // The narrowing is ambient for the same reason the display preferences are — see the composable.
 // The view owns it rather than PanelColumn, which draws a deployment's panels too and has no
@@ -58,20 +55,17 @@ provideScenarioSelection({
  * the WORKSPACE, which a panel must not know. Two panels act on it — the orders and the trades —
  * and both only read the mark and ask for the jump.
  *
- * The mark rides in the URL so a link carries it (§23). The SCROLL does not: it happens on the
- * click, never on a restore, because a page that jumps on every reload is a page that moved while
- * the reader was not looking.
+ * The mark is part of the run's context, so a reload brings it back. The SCROLL is not: it happens
+ * on the click, never on a restore, because a page that jumps on every reload is a page that moved
+ * while the reader was not looking.
  */
-const route = useRoute()
-const router = useRouter()
+const context = useContextStore()
 const layoutStore = useLayoutStore()
 
 providePositionLink({
-  marked: computed(() => parsePositionRef(
-    typeof route.query['position'] === 'string' ? route.query['position'] : undefined
-  )),
+  marked: computed(() => context.main.run.position),
   jumpTo: (panelId: string, ref: PositionRef) => {
-    patchQuery(router, { position: formatPositionRef(ref) })
+    context.mark(ref)
     // a hidden panel is not in the column at all, and a folded one draws nothing — the jump has to
     // make the target reachable before it can scroll to it
     layoutStore.show(panelId)
@@ -108,50 +102,65 @@ provideOrderSteps({
   },
 })
 
+// the view's own root, so the jump below searches THIS view and never the whole document
+const viewRoot = ref<HTMLElement | null>(null)
+
+/** How long a jump waits for its marked row before it gives up. */
+const MARK_WAIT_MS = 2000
+
 /**
- * Scroll the marked row into view, once it exists.
+ * Scroll the marked row into view, once it exists — WAITED FOR, never guessed.
  *
- * Two ticks rather than one: the first lets the layout store's change reach the column, the second
- * lets the panel that was just opened render its rows. A row still absent after that is one the
- * target panel does not draw — beyond its visible cap, or in a group it folded — and the jump then
- * leaves the mark where it is rather than scrolling to nothing.
+ * The mark is set at the click, so one tick later every row already drawn carries it. A panel the
+ * jump had to OPEN is not drawn by then, and no fixed number of ticks is right. Measured
+ * 2026-10-13: one tick found no row once the mark stopped riding in the URL, whose write had been
+ * slow enough to hide it. So the view is watched until the row appears.
+ * A row that never does is one the target panel does not draw — beyond its visible cap, or in a
+ * group it folded — and the jump then leaves the mark where it is rather than scrolling to nothing.
+ *
+ * Searched inside THIS view, never the whole document: once the views are panels that can stand
+ * side by side, a second copy of a panel would otherwise answer first and the jump would scroll a
+ * view the reader is not looking at.
  */
 async function scrollToMark(panelId: string): Promise<void> {
+  // one tick first, or a row still carrying the PREVIOUS mark would answer
   await nextTick()
-  await nextTick()
-  const row = document.querySelector(`[data-panel="${panelId}"] .record-row.marked`)
-  row?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  const root = viewRoot.value
+  if (!root) return
+  const scrolled = (): boolean => {
+    const row = root.querySelector(`[data-panel="${panelId}"] .record-row.marked`)
+    row?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    return row !== null
+  }
+  if (scrolled()) return
+  const observer = new MutationObserver(() => { if (scrolled()) stop() })
+  const timer = window.setTimeout(stop, MARK_WAIT_MS)
+  function stop(): void {
+    observer.disconnect()
+    window.clearTimeout(timer)
+  }
+  observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
 }
-
-/**
- * Names in the narrowing this run does not have — an edited link, or one saved before the set was
- * changed. Claimed ONLY where the roster actually arrived: `scenario-details` is built from the
- * batch and is backtest-only by construction, so its absence on a session says nothing about a
- * name and must not be reported as a bad one.
- */
-/**
- * The narrowing as a heading. Names while they still fit — a reader recognises the scenario they
- * clicked — and a count past that, because eleven names in one line is not something anyone reads.
- */
-const narrowingLabel = computed(() => {
-  const units = selectedUnits.value
-  if (units.length <= 3) return units.join(' · ')
-  return `${units.length} ${t('scenarios')}`
-})
-
-const unknownUnits = computed(() => {
-  const roster = scenarios.value
-  if (roster === null) return []
-  return selectedUnits.value.filter(unit => !roster.units.some(row => row.name === unit))
-})
 
 // One request per section per run. Lazy loading on first expand is deferred until there are
 // enough sections to justify the plumbing — see viewer#21.
-watch(selectedRunId, runId => {
+//
+// Keyed on the RESOLVED run, not on the chosen id: after a reload the id is back before the index
+// is, so a watch on the id fired once with no run to load and never again.
+watch(() => selectedRun.value?.run_id ?? null, runId => {
   reportsStore.clear()
-  // a logs-only run is skipped here for the same reason the store skips the summary
   const run = selectedRun.value
-  if (!runId || !run?.has_reports) return
+  if (!runId || !run) return
+
+  /**
+   * The HEADER first, and ungated. It is not in a run's `artifacts` and it answers even where that
+   * list is empty — measured 2026-10-10 on all three logs-only runs here. It is the one section a
+   * run without reports still has, which is exactly what the Run Header panel is for.
+   */
+  reportsStore.loadRunHeader(runId)
+
+  // a logs-only run stops here, for the same reason the store skips the summary
+  if (!run.has_reports) return
 
   /**
    * Only the sections this run actually wrote. The index row lists them, and the two pipelines
@@ -174,41 +183,86 @@ watch(selectedRunId, runId => {
   reportsStore.loadConfig(runId)
 }, { immediate: true })
 
+/*
+ * The three COMPOSED models, each its own computed. Built inside the one `sources` literal below,
+ * every one of them was a new object whenever ANY section arrived, and a panel that watched its
+ * model handed a reader's choices back: the roster cleared its narrowing as the trade history or
+ * the configuration landed, neither of which it even reads. Apart, a composed model changes only
+ * when one of its OWN parts does — and since those still arrive one by one, a panel that resets on
+ * a new run watches the run's id, never the model (OrdersPanel, ScenarioRosterPanel,
+ * TradeHistoryPanel).
+ */
+
+/**
+ * TWO models in one, and both halves are needed. The index ROW is always there and answers for
+ * a run with no artifacts at all; the served HEADER carries the two things the row cannot —
+ * which code ran, and whether uncommitted code was explicitly allowed to place real orders. The
+ * row is never absent, so the panel always draws; the header may be, and then it draws less.
+ */
+const headerModel = computed(() => selectedRun.value
+  ? { info: selectedRun.value, served: runHeader.value }
+  : null)
+
+// composed rather than served: `pending-orders` says what BECAME of a scenario's orders and
+// `order-history` carries the orders themselves. Joined on the scenario name, which both sides
+// write from the same run unit. The history is what the panel needs — a run with a funnel and no
+// orders has nothing to show — so the pending half may be null and the panel says so.
+const ordersModel = computed(() => orderHistory.value
+  ? {
+      pending: pendingOrders.value,
+      history: orderHistory.value,
+      // the TRADES too, and only so a link can be absent where it would lead nowhere: 55 of the
+      // measured positions opened and never closed, so they produced no trade at all
+      trades: tradeHistory.value,
+    }
+  : null)
+
+// composed rather than served: the roster says what was DECLARED, the portfolio what it EARNED
+// and warnings-errors what WENT WRONG — three responses, one question a reader scans forty rows
+// with. Joined on the unit name, which is one identity across all three.
+const rosterModel = computed(() => scenarios.value
+  ? {
+      scenarios: scenarios.value,
+      portfolio: portfolio.value,
+      warningsErrors: warningsErrors.value,
+    }
+  : null)
+
 // the models the panels render, keyed by the source each descriptor declares
 const sources = computed(() => ({
-  runInfo: selectedRun.value,
+  header: headerModel.value,
   runSummary: summary.value,
   feedHealth: feedHealth.value,
   warningsErrors: warningsErrors.value,
   portfolio: portfolio.value,
   broker: broker.value,
   aggregated: aggregated.value,
-  // composed rather than served: `pending-orders` says what BECAME of a scenario's orders and
-  // `order-history` carries the orders themselves. Joined on the scenario name, which both sides
-  // write from the same run unit. The history is what the panel needs — a run with a funnel and no
-  // orders has nothing to show — so the pending half may be null and the panel says so.
-  orders: orderHistory.value
-    ? {
-        pending: pendingOrders.value,
-        history: orderHistory.value,
-        // the TRADES too, and only so a link can be absent where it would lead nowhere: 55 of the
-        // measured positions opened and never closed, so they produced no trade at all
-        trades: tradeHistory.value,
-      }
-    : null,
+  orders: ordersModel.value,
   bookingPeriods: bookingPeriods.value,
   config: config.value,
-  // composed rather than served: the roster says what was DECLARED, the portfolio what it EARNED
-  // and warnings-errors what WENT WRONG — three responses, one question a reader scans forty rows
-  // with. Joined on the unit name, which is one identity across all three.
-  scenarioRoster: scenarios.value
-    ? {
-        scenarios: scenarios.value,
-        portfolio: portfolio.value,
-        warningsErrors: warningsErrors.value,
-      }
-    : null,
+  scenarioRoster: rosterModel.value,
   tradeHistory: tradeHistory.value,
+}))
+
+/**
+ * Which sections are on their way for the run on screen, keyed like `sources`. A panel whose
+ * section is coming keeps its place and says so; it leaves the column only once the run is KNOWN
+ * not to carry it. Until 2026-10-13 a run change emptied every section at once and each panel left
+ * and came back on its own — the column collapsed and rebuilt itself piece by piece, and nothing
+ * said it was loading (a selection never moves the layout).
+ */
+const pending = computed<Record<string, boolean>>(() => ({
+  runSummary: loadingSummary.value,
+  feedHealth: loadingSummary.value,
+  warningsErrors: loadingWarningsErrors.value,
+  portfolio: loadingPortfolio.value,
+  broker: loadingBroker.value,
+  aggregated: loadingAggregated.value,
+  orders: loadingOrderHistory.value,
+  bookingPeriods: loadingBookingPeriods.value,
+  config: loadingConfig.value,
+  scenarioRoster: loadingScenarios.value,
+  tradeHistory: loadingTradeHistory.value,
 }))
 
 /**
@@ -254,21 +308,21 @@ const missingSections = computed(() => {
 // Once a run is chosen there is always something to show: the header panel reads the index row.
 // PanelColumn drops every panel whose model is absent, so a run without artifacts simply renders
 // fewer sections rather than nothing at all.
+// The summary loading does not hide them: its panel keeps its place like every other section.
 const showPanels = computed(() =>
-  !loadingRuns.value && !loadingSummary.value && !error.value
-  && !unknownRunId.value && selectedRun.value !== null
+  !loadingRuns.value && !error.value && !unknownRunId.value && selectedRun.value !== null
 )
 </script>
 
 <template>
-  <div class="runs-view">
+  <div ref="viewRoot" class="runs-view">
     <header class="runs-header">
       <RunPicker />
-      <AppBar v-if="showPanels" :sources="sources" />
+      <AppBar v-if="showPanels" :sources="sources" :pending="pending" />
     </header>
 
     <div class="runs-body">
-      <div v-if="loadingRuns || loadingSummary" class="state-overlay">
+      <div v-if="loadingRuns" class="state-overlay">
         <AppSpinner />
       </div>
       <div v-else-if="error" class="state-overlay">
@@ -279,7 +333,7 @@ const showPanels = computed(() =>
       </div>
       <div v-else-if="unknownRunId" class="state-overlay">
         <span class="hint">
-          {{ t('This link names a run that is no longer in the index') }}: {{ unknownRunId }}
+          {{ t('The run you had open is no longer in the index') }}: {{ unknownRunId }}
         </span>
       </div>
       <!-- No sentence where no run is chosen. It read "Select group, scenario and run" — the
@@ -311,21 +365,10 @@ const showPanels = computed(() =>
         </p>
         <!-- the whole manipulated area is framed, so it can never be mistaken for the whole run.
              The frame is the second channel beside the colour: a reader who cannot separate the
-             hues still sees an edge that was not there before. -->
+             hues still sees an edge that was not there before. What is narrowed is said in the
+             quick bar beside the tab, where saying it moves nothing. -->
         <div class="panels" :class="{ narrowed: selectedUnits.length > 0 }">
-          <p v-if="selectedUnits.length" class="narrowed-head">
-            <span class="mark" aria-hidden="true">⌖</span>
-            <span>
-              {{ t('Showing only') }} <strong>{{ narrowingLabel }}</strong>
-              <template v-if="unknownUnits.length">
-                — {{ t('not in this run:') }} {{ unknownUnits.join(', ') }}
-              </template>
-            </span>
-            <AppButton variant="quiet" @click="runsStore.clearUnits()">
-              {{ t('Show all') }}
-            </AppButton>
-          </p>
-          <PanelColumn :sources="sources" />
+          <PanelColumn :sources="sources" :pending="pending" />
         </div>
       </template>
     </div>
@@ -333,12 +376,17 @@ const showPanels = computed(() =>
 </template>
 
 <style scoped>
+/* A SIZE container, so the lists inside measure their caps against this view and not against the
+   browser window. With `vh` a view given half the screen still sized its run list for the whole
+   of it, and the rows past the view's own hidden overflow could not be reached. The view is sized
+   by what holds it and never by its content, which is what size containment requires. */
 .runs-view {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  container-type: size;
 }
 
 .runs-header {
@@ -389,33 +437,17 @@ const showPanels = computed(() =>
 
 /* a narrowed column is FRAMED, not merely announced: the edge says how far the manipulation
    reaches, which a sentence above it cannot. The colour is the annotation role — a marked
-   division — and the frame itself is the channel that survives without it. */
-.panels.narrowed {
-  border: 1px solid var(--color-annotation);
+   division — and the frame itself is the channel that survives without it. Its ROOM is always
+   there, transparent until a narrowing colours it: drawn only on a choice, its border and padding
+   indented every panel inside (a selection never moves the layout). */
+.panels {
+  border: 1px dashed transparent;
   border-radius: 4px;
   padding: var(--space-sm);
 }
 
-.narrowed-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-xs);
-  margin: 0 0 var(--space-sm);
-  color: var(--color-annotation);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.narrowed-head strong {
-  font-weight: normal;
-}
-
-.narrowed-head .mark {
-  flex-shrink: 0;
-}
-
-.narrowed-head .app-button {
-  margin-left: auto;
+.panels.narrowed {
+  border-color: var(--color-annotation);
 }
 
 .notice.absent strong {

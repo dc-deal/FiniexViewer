@@ -117,6 +117,16 @@ describe('deployments_store', () => {
       expect(apiClient.getDeployments).toHaveBeenCalledTimes(2)
     })
 
+    /** A refresh replaces a ledger already on screen — it must not blank it with a spinner first. */
+    it('refreshes quietly, with no spinner in place of the ledger', async () => {
+      resolveAll()
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      const pending = store.loadDeployments(true)
+      expect(store.loadingList).toBe(false)
+      await pending
+    })
+
     // an empty ledger is not a cached answer — it has to stay askable
     it('asks again while the ledger has told us nothing', async () => {
       vi.mocked(apiClient.getDeployments).mockResolvedValue({
@@ -147,8 +157,24 @@ describe('deployments_store', () => {
       await store.loadDeployments()
       await store.selectDeployment('deploy_that_never_existed')
       expect(store.unknownDeploymentId).toBe('deploy_that_never_existed')
-      expect(store.selectedDeploymentId).toBeNull()
+      // the choice is kept, so the view can say which deployment is gone; no row resolves to it
+      expect(store.selectedRows).toEqual([])
       expect(apiClient.getDeployment).not.toHaveBeenCalled()
+    })
+
+    /** A run can name a deployment newer than the ledger the panel loaded — that one is not gone. */
+    it('asks the ledger once more before calling a deployment gone, and loads one that has arrived since', async () => {
+      resolveAll()
+      const listed = deploymentsFixture.deployments as DeploymentRow[]
+      vi.mocked(apiClient.getDeployments)
+        .mockResolvedValueOnce({ ...deploymentsFixture, deployments: listed.filter(row => row.deployment_id !== ID) })
+        .mockResolvedValueOnce({ ...deploymentsFixture, deployments: listed })
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      await store.selectDeployment(ID)
+      expect(apiClient.getDeployments).toHaveBeenCalledTimes(2)
+      expect(store.unknownDeploymentId).toBeNull()
+      expect(apiClient.getDeployment).toHaveBeenCalledWith(ID)
     })
 
     it('clears the previous deployment before loading the next', async () => {

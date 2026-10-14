@@ -96,7 +96,7 @@ export interface ScenarioOverride {
  * back"*. This one deliberately does not, so a stored config keeps its spelling for good.
  *
  * Reading both is therefore MIRRORING an artifact's own values, not a compatibility layer over two
- * contract versions (CLAUDE.md §21): the response shape is one, and what differs is inside the
+ * contract versions: the response shape is one, and what differs is inside the
  * opaque document it carries.
  *
  * Measured 2026-10-05 over all 48 stored runs, agreeing with their date to the day:

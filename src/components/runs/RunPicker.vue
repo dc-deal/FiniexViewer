@@ -7,11 +7,11 @@ import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import { useFacetQuery } from '@/composables/use_facet_query'
+import { useFacetState } from '@/composables/use_facet_state'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListCard, ListColumn } from '@/types/list_types'
 import type { Figure } from '@/types/figure_types'
-import { amount, bytes, marketSpan, shortHash, utcInstant } from '@/components/runs/report_format'
+import { amount, bytes, marketSpan, shortHash, sortInstant, utcInstant } from '@/components/runs/report_format'
 import type { RunInfo, RunResult } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
 
@@ -58,7 +58,7 @@ const UNKNOWN = 'unknown'
  */
 const SHOWN_BY_DEFAULT = { purpose: ['regular', 'certificate', UNKNOWN] }
 
-const { selection, search, sort } = useFacetQuery('run', 'newest', SHOWN_BY_DEFAULT)
+const { selection, search, sort } = useFacetState('run-picker', 'newest', { defaultSelection: SHOWN_BY_DEFAULT })
 
 /** A value the row does not state is not offered — an empty option reads as a category. */
 function stated(value: string | null): string[] {
@@ -66,8 +66,15 @@ function stated(value: string | null): string[] {
 }
 
 const facets: FacetDefinition<RunInfo>[] = [
-  { id: 'group', label: 'Run type', valuesOf: row => stated(row.group) },
-  // no `Set` facet: the list GROUPS by set, so the facet would offer the same partition twice @
+  /**
+   * **THEIR word, not ours.** `run-header` prescribes the label `Pipeline` for this value and
+   * `run-kinds` carries a section called *"`group` is the pipeline, never the nesting"*. Ours was
+   * `Run type`, which sat beside a `Purpose` facet meaning what the run is FOR — nobody can tell
+   * "type" from "purpose" by the words alone. Renamed 2026-10-10; the facet's id stays `group`,
+   * so a shared link is unaffected.
+   */
+  { id: 'group', label: 'Pipeline', valuesOf: row => stated(row.group) },
+  // no `Set` facet: the list GROUPS by set, so the facet would offer the same partition twice —
   // and on a sweep it offered 13 values matching one run each, which is a second search line.
   // The search still reads the set name, so hunting one by hand is a word rather than a menu.
   // the one facet built rather than read: it is the presence of a field, which has two names
@@ -75,7 +82,7 @@ const facets: FacetDefinition<RunInfo>[] = [
   { id: 'reporting', label: 'Reporting', valuesOf: row => stated(row.reporting) },
   /**
    * The family a run belongs to. **`Parent`, by their decision of 2026-10-09**, not `Origin`:
-   * they asked where we used that word, we counted, and the count settled it on their side @
+   * they asked where we used that word, we counted, and the count settled it on their side —
    * *"the word `origin` keeps exactly one meaning, who started a run"*. This renders `parent_kind`
    * and they call the relation the run's parent, so this takes their word.
    *
@@ -120,15 +127,15 @@ const facets: FacetDefinition<RunInfo>[] = [
    * is 0 on all 46 stored runs** — including the nine graded `failed`, one of which reports FOUR
    * errors. The counts measure different things: `warnings-errors.errors[]` holds scenarios that
    * failed VALIDATION and therefore never ran, while `error_count` counts runtime errors, so a
-   * validation failure logs none. A facet offering a value it can never produce is the instrument
-   * CLAUDE.md §24 warns about — worse than none, because it is believed.
+   * validation failure logs none. A facet offering a value it can never produce is worse than
+   * no facet, because it is believed.
    *
    * And the `error` value was redundant besides: **a run with errors is a run the backend graded
    * `failed`**, so `run_outcome` already is the error filter.
    *
    * Three values, and each is a mechanical reading rather than a judgement:
    *   - not `success` → the backend's OWN grade, by its own word, so `finished_with_errors` appears
-   *     as itself rather than folded into `failed` (§15)
+   *     as itself rather than folded into `failed` — the label is the backend's word
    *   - `success` with a warning counted → `with warnings`
    *   - `success` with none → `no warnings`
    *
@@ -184,7 +191,7 @@ function earned(run: RunInfo): RunResult[] {
  * stating: it renders as the timestamp part of the id, which is the same instant `Started` already
  * shows in words. Two spellings of one fact are not two facts.
  *
- * Every rung of the ladder gives something up — 10 columns, then 8, 7, 6 and 4. A rank the list
+ * Every rung of the ladder gives something up — 10 columns, then 8, 7, 5 and 4. A rank the list
  * does not use makes a breakpoint that changes nothing, which reads as a broken one: the first
  * version of this declared no rank 4 at all and so held all ten columns down to 48rem, then dropped
  * six at once.
@@ -200,7 +207,7 @@ const columns: ListColumn[] = [
   // instead of 22. `auto` needs the cell to stay on one line, which `.run-when` declares — the
   // 13rem it replaces was chosen because the old stamp wrapped at 11.
   { label: t('Started'), width: 'auto', rank: 1 },
-  { label: t('Run type'), width: '7rem', rank: 5 },
+  { label: t('Pipeline'), width: '7rem', rank: 5 },
   // a floor as well as the slack: the set NAMES the run, and with a bare `1fr` the columns added
   // since squeezed it to `EU…` — the one cell on the row a reader actually recognises
   { label: t('Set'), width: 'minmax(7rem, 1fr)', rank: 1 },
@@ -213,7 +220,10 @@ const columns: ListColumn[] = [
   { label: t('Outcome'), width: 'auto', rank: 1 },
   { label: t('Net P&L'), width: 'auto', figure: true, rank: 1 },
   { label: t('Trades'), width: 'auto', figure: true, rank: 3 },
-  { label: t('Trouble'), width: 'auto', figure: true, rank: 2 },
+  // Gives way at 48 rem rather than 34: measured 2026-10-13, once the docked panels gave the list
+  // the full width, it sat between the two rungs at 580 px and overflowed by 19 px. The count is in
+  // the row's card as well, silent at zero, and `Outcome` already says whether the run had trouble.
+  { label: t('Trouble'), width: 'auto', figure: true, rank: 3 },
   { label: '', width: 'auto', rank: 2 },
 ]
 
@@ -233,35 +243,25 @@ function signOf(value: number): string {
   return value > 0 ? 'positive' : 'negative'
 }
 
-/**
- * Parsed rather than compared as text: `start_time` is ISO-8601 with an explicit offset, and two
- * offsets sort lexicographically in the wrong order. An unreadable stamp sorts last under
- * "newest" rather than jumping to the top.
- */
-function instant(iso: string): number {
-  const at = Date.parse(iso)
-  return Number.isNaN(at) ? 0 : at
-}
-
 /** A run that never recorded its span sorts last under "longest" rather than first. */
 function span(run: RunInfo): number {
   return run.tick_timespan_seconds ?? -1
 }
 
 const sorts: SortDefinition<RunInfo>[] = [
-  { id: 'newest', label: 'newest', compare: (a, b) => instant(b.start_time) - instant(a.start_time) },
-  { id: 'oldest', label: 'oldest', compare: (a, b) => instant(a.start_time) - instant(b.start_time) },
+  { id: 'newest', label: 'newest', compare: (a, b) => sortInstant(b.start_time) - sortInstant(a.start_time) },
+  { id: 'oldest', label: 'oldest', compare: (a, b) => sortInstant(a.start_time) - sortInstant(b.start_time) },
   {
     id: 'span',
     label: 'market time',
-    compare: (a, b) => span(b) - span(a) || instant(b.start_time) - instant(a.start_time),
+    compare: (a, b) => span(b) - span(a) || sortInstant(b.start_time) - sortInstant(a.start_time),
   },
   {
     id: 'name',
     label: 'name',
     // within one set the newest first, or a set of six runs is six rows in arbitrary order
     compare: (a, b) =>
-      a.name.localeCompare(b.name) || instant(b.start_time) - instant(a.start_time),
+      a.name.localeCompare(b.name) || sortInstant(b.start_time) - sortInstant(a.start_time),
   },
 ]
 
@@ -367,6 +367,14 @@ function startedAt(iso: string): string {
   }).format(at)
 }
 
+/** The chosen run's pipeline, name and start — one line, cut short where the panel is narrow. */
+const chosenMeta = computed(() => {
+  const run = selectedRun.value
+  if (!run) return ''
+  const started = startedAt(run.start_time)
+  return [run.group, run.name, started].filter(Boolean).join(' · ')
+})
+
 /**
  * What the row has no width for — and on this list that is most of the index row.
  *
@@ -448,9 +456,11 @@ function card(run: RunInfo): ListCard {
 
 /**
  * The list is the way in, so it is open until there is something to look at — and it collapses
- * once a run is chosen, or forty rows push every panel off the screen.
+ * once a run is chosen, or forty rows push every panel off the screen. A run already chosen when
+ * the picker mounts — the one the reader left open — collapses it from the start: the watch below
+ * sees only a CHANGE, and a restored selection is none.
  */
-const open = ref(true)
+const open = ref(selectedRunId.value === null)
 
 watch(selectedRunId, runId => { open.value = runId === null })
 </script>
@@ -465,12 +475,9 @@ watch(selectedRunId, runId => { open.value = runId === null })
     <div v-else-if="!open" class="picker-chosen">
       <span class="chosen-label">{{ t('Run') }}</span>
       <span class="chosen-id">{{ selectedRun?.run_id }}</span>
-      <span class="chosen-meta">
-        {{ selectedRun?.group }} · {{ selectedRun?.name }}
-        <template v-if="selectedRun?.start_time">
-          · {{ startedAt(selectedRun.start_time) }}
-        </template>
-      </span>
+      <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
+           three lines above the sections -->
+      <span class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
       <AppButton variant="quiet" @click="open = true">{{ t('Change run') }}</AppButton>
     </div>
 
@@ -567,7 +574,7 @@ watch(selectedRunId, runId => { open.value = runId === null })
             </span>
           </span>
           <!-- one slot, present or not: a mark on some rows and not others moved the column -->
-          <span :data-rank="2" class="run-counts">
+          <span :data-rank="3" class="run-counts">
             <span v-if="run.error_count" class="run-mark error">✖ {{ run.error_count }}</span>
             <span v-if="run.warning_count" class="run-mark warned">⚠ {{ run.warning_count }}</span>
           </span>
@@ -606,6 +613,7 @@ watch(selectedRunId, runId => { open.value = runId === null })
   display: flex;
   align-items: baseline;
   gap: var(--space-sm);
+  min-width: 0;
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
@@ -614,16 +622,29 @@ watch(selectedRunId, runId => { open.value = runId === null })
   color: var(--color-text-secondary);
 }
 
+.chosen-label,
+.chosen-id {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .chosen-id {
   color: var(--color-text-primary);
 }
 
 .chosen-meta {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--color-text-secondary);
 }
 
+/* a control whose name breaks over two lines reads as two controls */
 .picker-chosen .app-button {
   margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .picker-hint {
@@ -633,11 +654,12 @@ watch(selectedRunId, runId => { open.value = runId === null })
   font-size: var(--font-size-sm);
 }
 
-/* the list is the way in, so it gets room — but never more than a third of the window ONCE a run is chosen, or the
+/* the list is the way in, so it gets room — but never more than a third of the view ONCE a run is chosen, or the
    panels it leads to are never on screen at the same time. Everything else about its shape —
-   the tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`. */
+   the tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`.
+   Measured against the VIEW (`cqh`, the runs view is a size container), not the browser window. */
 .run-list {
-  max-height: 33vh;
+  max-height: 33cqh;
   overflow-y: auto;
   /* The gutter is reserved whether or not a bar is in it. Opening a family can push the list past
      its cap, and the bar then appears and takes 15 px of width from the `1fr` column — measured
@@ -647,10 +669,14 @@ watch(selectedRunId, runId => { open.value = runId === null })
 
 /* Nothing is below it yet, so the third of a window is a window onto a void: the list was capped
    at 33vh while the rest of the page held one sentence. Reported on screen 2026-10-10. It still
-   scrolls inside itself rather than growing past the viewport — the view hides its own overflow,
-   so a header taller than the window would put its last rows out of reach. */
+   scrolls inside itself rather than growing past the view — the view hides its own overflow,
+   so a header taller than the view would put its last rows out of reach. */
+/* 11.5rem is the rest of the view above and below the list, so the list ends at the view's edge.
+   (It was `100vh - 14rem`, which also had to take out the 2.5rem shell header above the view; that
+   header is not inside `100cqh`.) The floor is the third the list keeps once a run is chosen: in a
+   short view the subtraction alone would leave less than one row, or nothing. */
 .run-list.roomy {
-  max-height: calc(100vh - 14rem);
+  max-height: max(33cqh, calc(100cqh - 11.5rem));
 }
 
 /* ONE cell over every track. The other lists split their heading in two so a count can sit at the
