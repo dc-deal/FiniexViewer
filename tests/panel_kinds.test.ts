@@ -54,4 +54,14 @@ describe('panel_kinds', () => {
     expect(panelKind(reportKindId('trade-history'))?.icon).toBe('form-list')
     expect(panelKind(reportKindId('executive'))?.icon).toBe('form-sheet')
   })
+
+  /** A section the narrowing does not change would carry a statement about something else. */
+  it('says the narrowing beside a section exactly where the narrowing reaches it', () => {
+    for (const section of allPanels()) {
+      const kind = panelKind(reportKindId(section.id))
+      expect(Boolean(kind?.quickBar), section.id).toBe(section.narrowing !== null)
+    }
+    expect(panelKind(reportKindId('trade-history'))?.quickBar).toBeDefined()
+    expect(panelKind(reportKindId('executive'))?.quickBar).toBeUndefined()
+  })
 })

@@ -91,8 +91,9 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
       const { default: ReportSection } = await import('@/components/dock/ReportSection.vue')
       return defineComponent({ name: 'ReportSectionPanel', setup: () => () => h(ReportSection, { sectionId: section.id }) })
     }),
-    // the narrowing belongs beside every section it narrows, not only beside the Runs tab
-    quickBar: defineAsyncComponent(() => import('@/components/RunsQuickBar.vue')),
+    // the narrowing is said beside every section it reaches, and only there: a section it does not
+    // change would carry a statement about something else
+    ...(section.narrowing ? { quickBar: defineAsyncComponent(() => import('@/components/RunsQuickBar.vue')) } : {}),
     status: () => useRunSectionsStore().failuresOf(section.source).length
       ? { icon: 'status-error', word: t('could not be loaded'), role: 'error' }
       : null,

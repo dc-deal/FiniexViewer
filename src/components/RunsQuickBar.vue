@@ -2,8 +2,10 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppButton from '@/components/base/AppButton.vue'
+import HoverCard from '@/components/base/HoverCard.vue'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
+import type { Figure } from '@/types/figure_types'
 import { t } from '@/translate'
 
 /**
@@ -17,16 +19,6 @@ const { selectedUnits } = storeToRefs(runsStore)
 const { scenarios } = storeToRefs(useRunReportsStore())
 
 /**
- * The narrowing as words. Names while they still fit — a reader recognises the scenario they
- * clicked — and a count past that, because eleven names in one line is not something anyone reads.
- */
-const narrowingLabel = computed(() => {
-  const units = selectedUnits.value
-  if (units.length <= 3) return units.join(' · ')
-  return `${units.length} ${t('scenarios')}`
-})
-
-/**
  * Names in the narrowing this run does not have — one saved before the set was changed. Claimed
  * ONLY where the roster actually arrived: `scenario-details` is backtest-only by construction, so
  * its absence on a session says nothing about a name and must not be reported as a bad one.
@@ -36,17 +28,38 @@ const unknownUnits = computed(() => {
   if (roster === null) return []
   return selectedUnits.value.filter(unit => !roster.units.some(row => row.name === unit))
 })
+
+/**
+ * The narrowing as words: the one name where there is one — the scenario the reader clicked — and
+ * a count from two on, with the names in the card behind it. Three names fitted beside a wide
+ * panel's tabs and pushed a narrow panel's tabs into their overflow menu.
+ */
+const statement = computed(() => {
+  const units = selectedUnits.value
+  const shown = units.length === 1 ? units[0]! : `${units.length} ${t('scenarios')}`
+  const unknown = unknownUnits.value
+  if (!unknown.length) return `${t('Showing only')} ${shown}`
+  // the one name is already in the line, so it is only said to be missing; several are counted
+  const missing = units.length === 1 ? t('not in this run') : `${unknown.length} ${t('not in this run')}`
+  return `${t('Showing only')} ${shown} — ${missing}`
+})
+
+/** What the line cannot say: every name it counted, and which of them this run lacks. */
+const cardRows = computed<Figure[]>(() => {
+  if (selectedUnits.value.length < 2) return []
+  const rows: Figure[] = [{ label: t('Showing only'), value: selectedUnits.value.join(', ') }]
+  if (unknownUnits.value.length) rows.push({ label: t('Not in this run'), value: unknownUnits.value.join(', ') })
+  return rows
+})
 </script>
 
 <template>
   <p v-if="selectedUnits.length" class="narrowed-head">
     <span class="mark" aria-hidden="true">⌖</span>
-    <span class="narrowed-text">
-      {{ t('Showing only') }} <strong>{{ narrowingLabel }}</strong>
-      <template v-if="unknownUnits.length">
-        — {{ t('not in this run:') }} {{ unknownUnits.join(', ') }}
-      </template>
-    </span>
+    <HoverCard v-if="cardRows.length" :details="cardRows">
+      <span class="narrowed-text" tabindex="0">{{ statement }}</span>
+    </HoverCard>
+    <span v-else class="narrowed-text">{{ statement }}</span>
     <AppButton variant="quiet" @click="runsStore.clearUnits()">
       {{ t('Show all') }}
     </AppButton>
@@ -54,14 +67,20 @@ const unknownUnits = computed(() => {
 </template>
 
 <style scoped>
+/*
+ * A grid, because the text is the one part that may give way: its track shrinks to nothing while
+ * the mark and the button keep their size. The bar's least width is therefore theirs alone, and
+ * the dock hands the bar the shortfall first, so a tab goes into the overflow menu only once the
+ * text has given up its room.
+ */
 .narrowed-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, max-content) auto;
   align-items: center;
-  gap: var(--space-xs);
+  column-gap: var(--space-xs);
   height: 100%;
   margin: 0;
   padding: 0 var(--space-sm);
-  min-width: 0;
   color: var(--color-annotation);
   font-family: monospace;
   font-size: var(--font-size-sm);
@@ -71,13 +90,5 @@ const unknownUnits = computed(() => {
 .narrowed-text {
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.narrowed-head strong {
-  font-weight: normal;
-}
-
-.narrowed-head .mark {
-  flex-shrink: 0;
 }
 </style>

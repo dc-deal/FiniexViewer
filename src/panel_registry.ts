@@ -49,6 +49,9 @@ const PANELS: PanelDescriptor[] = [
     component: ExecutivePanel,
     source: 'runSummary',
     defaultOpen: true,
+    // it READS the narrowing and still narrows nothing: its figures are the whole run's, and its
+    // own scope line says so where a narrowing is set — a note or a frame beside it would contradict
+    narrowing: null,
   },
   {
     /*
@@ -63,6 +66,7 @@ const PANELS: PanelDescriptor[] = [
     component: BrokerPanel,
     source: 'broker',
     defaultOpen: true,
+    narrowing: null,
   },
   {
     // Ahead of the breakdowns: it is the only COMPLETE list of what the run set out to do, and a
@@ -74,6 +78,7 @@ const PANELS: PanelDescriptor[] = [
     component: ScenarioRosterPanel,
     source: 'scenarioRoster',
     defaultOpen: false,
+    narrowing: 'marks',
   },
   {
     // The bookkeeping stretches the run was divided into, and the completeness check over them.
@@ -85,6 +90,7 @@ const PANELS: PanelDescriptor[] = [
     component: BookingPeriodsPanel,
     source: 'bookingPeriods',
     defaultOpen: true,
+    narrowing: 'filters',
   },
   {
     /*
@@ -102,6 +108,7 @@ const PANELS: PanelDescriptor[] = [
     component: AggregatedPortfolioPanel,
     source: 'aggregated',
     defaultOpen: false,
+    narrowing: null,
   },
   {
     // The only place the individual trades exist — every other section is already summed over
@@ -112,6 +119,7 @@ const PANELS: PanelDescriptor[] = [
     component: TradeHistoryPanel,
     source: 'tradeHistory',
     defaultOpen: false,
+    narrowing: 'filters',
   },
   {
     /*
@@ -130,6 +138,7 @@ const PANELS: PanelDescriptor[] = [
     component: OrdersPanel,
     source: 'orders',
     defaultOpen: false,
+    narrowing: 'filters',
   },
   {
     // Deliberately second, ahead of the console's own late placement: "can this run be trusted"
@@ -140,6 +149,7 @@ const PANELS: PanelDescriptor[] = [
     component: WarningsErrorsPanel,
     source: 'warningsErrors',
     defaultOpen: true,
+    narrowing: 'filters',
   },
   {
     id: 'feed-health',
@@ -150,6 +160,7 @@ const PANELS: PanelDescriptor[] = [
     // panel has anything to say, and PanelColumn then drops it like any absent section
     source: 'feedHealth',
     defaultOpen: false,
+    narrowing: null,
   },
   {
     // Provenance, beside the header: what the run was COMMISSIONED with, resolved from the
@@ -160,6 +171,7 @@ const PANELS: PanelDescriptor[] = [
     component: ConfigPanel,
     source: 'config',
     defaultOpen: false,
+    narrowing: null,
   },
   {
     /*
@@ -180,6 +192,7 @@ const PANELS: PanelDescriptor[] = [
     // Provenance rather than a headline: which artifact am I looking at. Folded by default —
     // the reader who needs it opens it, and the one who never does hides it from the bar.
     defaultOpen: false,
+    narrowing: null,
   },
 ]
 

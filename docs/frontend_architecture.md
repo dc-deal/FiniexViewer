@@ -318,7 +318,7 @@ and `mergeConfig` cannot merge a function — the env is therefore loaded at mod
 
 ### Theming — CSS Custom Properties
 
-All colors, spacing, and type scale are defined as CSS custom properties in `src/styles/tokens.css`. The type sizes are in `rem`, so a small size inside a small size stays the same size — `--font-size-sm` was `0.85em` until 2026-10-14 and compounded, which set tab titles and the section toggles at 11.56 px under 13.6 px panel text. What floats over the page — a hover card, a menu, a filter popup — wears its own overlay surface, border and shadow (`--color-bg-overlay`, `--color-border-overlay`, `--shadow-overlay`): on the panel surface with the panel border a card could not be told from what it covered. The overlay surface stays a small step, because muted text has to keep 4.5:1 on it; the border and the shadow set it apart. The "whole run" mark beside a figure a narrowing cannot split is one component, `base/ScopeMark.vue`, drawn with an outline rather than a border so it takes no room in the line it stands in. Dark mode is the default; light mode overrides the same variables under `[data-theme='light']`. The active theme is controlled by a `data-theme` attribute on `<html>`, written in exactly one place — `App.vue` watches the settings store and sets the attribute. No panel receives the theme as a prop; it reads the tokens the attribute selects, which is why a theme change needs no re-render anywhere else. The one exception is a canvas, which is painted with values: `CandleChart.vue` reads the tokens itself and repaints through a `MutationObserver` on the attribute (see *Chart Engine*). A future canvas layer — an indicator, the signal overlay, an algo's drawings — takes the same path.
+All colors, spacing, and type scale are defined as CSS custom properties in `src/styles/tokens.css`. The type sizes are in `rem`, so a small size inside a small size stays the same size — `--font-size-sm` was `0.85em` until 2026-10-14 and compounded, which set tab titles and the section toggles at 11.56 px under 13.6 px panel text. What floats over the page — a hover card, a menu, a filter popup — wears its own overlay surface, border and shadow (`--color-bg-overlay`, `--color-border-overlay`, `--shadow-overlay`): on the panel surface with the panel border a card could not be told from what it covered. The overlay surface stays a small step, because muted text has to keep 4.5:1 on it; the border and the shadow set it apart. The "whole run" mark beside a figure a narrowing cannot split is one component, `base/ScopeMark.vue`, drawn with an outline rather than a border so it takes no room in the line it stands in. Dark mode is the default; light mode overrides the same variables under `[data-theme='light']`. Each theme also sets `color-scheme`, so the browser's own parts — buttons, fields, scrollbars, a native list — follow the app's theme rather than a default of the browser's: a bare button's ink once stood white on the light theme, unseen. The active theme is controlled by a `data-theme` attribute on `<html>`, written in exactly one place — `App.vue` watches the settings store and sets the attribute. No panel receives the theme as a prop; it reads the tokens the attribute selects, which is why a theme change needs no re-render anywhere else. The one exception is a canvas, which is painted with values: `CandleChart.vue` reads the tokens itself and repaints through a `MutationObserver` on the attribute (see *Chart Engine*). A future canvas layer — an indicator, the signal overlay, an algo's drawings — takes the same path.
 
 This avoids a CSS-in-JS dependency, works natively in every browser, and is trivially inspectable in DevTools. Reka UI (headless component layer) is deferred — no concrete accessibility need has surfaced yet.
 
@@ -976,7 +976,8 @@ run 20260927_092959_cd1d9b1e · units ETHUSD_blocks_06, ETHUSD_blocks_09
   warnings/errors   narrowed — but a RUN-scoped warning stays, it is still true
   portfolio         MARKED, never narrowed
   RunsView          the whole column is FRAMED, dashed
-  Runs quick bar    "⌖ Showing only … · Show all", beside the tabs
+  Runs quick bar    "⌖ Showing only EURGBP_01 · Show all", beside the tabs —
+                    from two on "2 scenarios", the names in the card behind it
 ```
 
 **Several at once, because the question is usually a comparison.** The names are a list in the
@@ -1061,7 +1062,9 @@ backtest-only, so its absence on a session says nothing about the name.
 
 The API's vocabulary is fixed in FiniexTestingIDE's `docs/glossary.md`, and the four kinds of run in
 its `docs/introduction_to_the_ide.md` ("The kinds of run"). Every label on screen uses those words,
-because a word invented here would mean something different from the same word in a report.
+because a word invented here would mean something different from the same word in a report. The
+words this viewer coins for its own display — panel, bundle, link, narrowing and the rest — are in
+[the glossary](glossary.md), each saying which of FiniexTestingIDE's words it is not.
 
 | Kind | `group` | `ticks_from` | `orders_to` |
 |---|---|---|---|
@@ -1243,14 +1246,19 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
 - **One kind per section, `report-<section id>`** (`reportKindId` in `panel_kinds.ts`), kept OUT of
   the Panels menu: a section is opened from its own header. Its tab shows the FORM — `form-list` for
   the four lists, `form-sheet` for the others — and the narrowing's quick bar (`RunsQuickBar`)
-  stands beside every section panel. The tab dims its title where the chosen run has nothing for
+  stands beside a section panel where the narrowing reaches the section. The registry says how, in
+  `narrowing`: `filters` (Trade History, Orders, Booking Periods, Warnings & Errors) draws only the
+  chosen scenarios' rows, `marks` (Scenarios) keeps every row and marks the chosen ones, `null`
+  does not read it — the Executive Summary reads it and narrows nothing, its own scope line saying
+  the figures are the whole run's. The tab dims its title where the chosen run has nothing for
   the section, and shows ✖ *could not be loaded* where the section failed.
 - **`components/dock/ReportSection.vue`** draws the section's component with the model the column
   hands it (`run_sections_store`), behind the same boundary. Where there is nothing to draw the
   panel STANDS and says why — the backend's sentence where it gave one, *This run carries no such
   section* where the run's artifact list lacks it, since which pipeline writes which section is the
   backend's rule. A size container, so the lists measure their caps against this panel, and framed
-  dashed while the run is narrowed, like the column.
+  dashed where the narrowing FILTERS it, like the column: a frame says *what you see is a part*,
+  which is untrue of a list that still shows every row.
 - **Where a section stands is derived, never stored.** The dock store keeps `openIds` from
   dockview's own `onDidAddPanel` / `onDidRemovePanel`, and the column leaves out a section whose
   panel is open; its place in `layout.v1` stays, so closing the panel restores it and a reset of the
@@ -1271,6 +1279,14 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
 selects (`AppSelect` with `compact`) — the value is what shows, the name while nothing is chosen, and
 each carries its name for a screen reader. A panel without options leaves the bar empty, and two
 groups side by side each speak for their own front panel.
+
+**The quick bar gives way before a tab does.** The narrowing names a single scenario in the line and
+counts from two on (*Showing only 2 scenarios*), the names in the card behind the count, and the
+names a run lacks are counted there too. Three names once fitted beside a wide panel's tabs and
+pushed a narrow panel's tabs into their overflow menu. The line is a grid whose text track is
+`minmax(0, max-content)`, so the bar's least width is its mark and its button alone, and
+`dock_theme.css` gives dockview's actions container a shrink share of 100 to 1 against the tabs:
+the text shortens with an ellipsis first, and a tab goes into the overflow menu only after it.
 
 **Measured 2026-10-13:** the start bundle grew from 393 to 744 kB (gzip 130 → 210 kB), and that is
 dockview. The timings, taken again the same day on a quiet machine, moved by nothing beyond noise.

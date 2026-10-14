@@ -30,7 +30,9 @@ withDefaults(defineProps<{
 }>(), {
   title: '',
   figures: () => [],
-  minWidth: '13rem',
+  // 15rem, not 13: at 13 a panel ~990 px wide set the executive's pairs two abreast in columns too
+  // narrow for `Initial capital  10,000.00 USD`, and the value broke onto a second line
+  minWidth: '15rem',
 })
 </script>
 
@@ -87,14 +89,22 @@ withDefaults(defineProps<{
   min-width: 0;
 }
 
+/* where a pair is too narrow, the LABEL gives way first: `10,000.00 / USD` across two lines, or a
+   figure cut short, misreads a number, while a shortened label is still recognised. The value is
+   cut only once the label has given up all of its room. */
 .figure dt {
+  min-width: 0;
+  flex-shrink: 1000;
   color: var(--color-text-secondary);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .figure dd {
   margin: 0;
   color: var(--color-text-primary);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }

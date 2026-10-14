@@ -82,4 +82,12 @@ describe('ReportSection', () => {
     useRunsStore().toggleUnit('EURGBP_partial_close')
     expect(mountSection('trade-history').classes()).toContain('narrowed')
   })
+
+  /** A frame says *a part is shown* — untrue of a list that still shows every row, or of figures it does not change. */
+  it('is not framed where the narrowing only marks rows, or does not reach the section', () => {
+    chooseRun()
+    useRunsStore().toggleUnit('EURGBP_partial_close')
+    expect(mountSection('scenario-roster').classes()).not.toContain('narrowed')
+    expect(mountSection('executive').classes()).not.toContain('narrowed')
+  })
 })

@@ -39,3 +39,16 @@
 .dockview-theme-light .dv-tab.dv-active-tab {
   box-shadow: inset 0 2px 0 var(--color-accent);
 }
+
+/*
+ * The quick bar gives way before a tab does: it takes the whole shortfall, down to the least width
+ * its own content declares — the narrowing's mark and button, its text being the part that
+ * shortens — and only then do the tabs. Flex shares a shortfall in proportion, so the share has to
+ * be overwhelming: at 100 to 1 the tabs still lost 2 px, and one pixel short is enough for dockview
+ * to move a tab into its overflow menu (measured at 560 px). Before, the bar could not shrink at
+ * all, and a narrow panel's tabs went into that menu while a scenario list stood beside them in full.
+ */
+.dockview-theme-dark .dv-right-actions-container,
+.dockview-theme-light .dv-right-actions-container {
+  flex-shrink: 1000000;
+}

@@ -28,6 +28,9 @@ const { sources, pending } = storeToRefs(sections)
 const { selectedRun, selectedUnits } = storeToRefs(useRunsStore())
 
 const model = computed(() => descriptor ? sources.value[descriptor.source] ?? null : null)
+
+/** Framed only where the narrowing FILTERS what is drawn — a list that still shows every row is whole. */
+const framed = computed(() => descriptor?.narrowing === 'filters' && selectedUnits.value.length > 0)
 const loading = computed(() => model.value === null && Boolean(descriptor && pending.value[descriptor.source]))
 
 // every failure and every older-schema state among the slots this section reads, said above it —
@@ -60,7 +63,7 @@ watch(model, () => {
 </script>
 
 <template>
-  <div class="report-section" :class="{ narrowed: selectedUnits.length > 0 }" :data-panel="sectionId">
+  <div class="report-section" :class="{ narrowed: framed }" :data-panel="sectionId">
     <!-- `data-panel` is the address the column gives a section, so a jump and a test find it in
          either place; the comment stands inside, since one before the root makes it a fragment -->
     <p v-for="message in failures" :key="message" class="notice failed">
@@ -82,8 +85,8 @@ watch(model, () => {
 <style scoped>
 /*
  * A SIZE container, like the run view: the lists inside measure their caps against THIS panel. And
- * the frame's room is always there, transparent until a narrowing colours it — the annotation role,
- * dashed, the same edge the column draws — so a narrowing indents nothing.
+ * the frame's room is always there, transparent until a narrowing that filters this section colours
+ * it — the annotation role, dashed, the same edge the column draws — so a narrowing indents nothing.
  */
 .report-section {
   height: 100%;
