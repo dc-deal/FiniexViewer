@@ -39,9 +39,12 @@ defineProps<{
         >
           <p v-if="title" class="card-title">{{ title }}</p>
           <dl v-if="details?.length" class="card-rows">
+            <!-- a figure's caveat rides on the pair, as it does in a FigureBlock. The card stays
+                 open under the pointer, so the pair can be hovered; without this every caveat
+                 handed to a card was dropped in silence -->
             <template v-for="row in details" :key="row.label">
-              <dt>{{ row.label }}</dt>
-              <dd :class="row.tone">{{ row.value }}</dd>
+              <dt :title="row.title">{{ row.label }}</dt>
+              <dd :class="row.tone" :title="row.title">{{ row.value }}</dd>
             </template>
           </dl>
           <TooltipArrow class="card-arrow" :width="10" :height="5" />

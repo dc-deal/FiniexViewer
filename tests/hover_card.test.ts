@@ -69,6 +69,25 @@ describe('HoverCard', () => {
     expect(values[1]?.className).toContain('negative')
   })
 
+  // a caveat handed to a card used to be dropped: the pair carries it, the way a FigureBlock does,
+  // and a pair without one carries no empty title
+  it('carries the caveat of a figure on its pair, and only where there is one', async () => {
+    const wrapper = mountCard({
+      details: [
+        { label: 'Spread', value: 'not recorded', title: 'No quote in the data.' },
+        { label: 'Swap', value: '0.00 EUR' },
+      ],
+    })
+    await wrapper.find('.trigger').trigger('focus')
+    await flushPromises()
+    const labels = card()?.querySelectorAll('dt') ?? []
+    const values = card()?.querySelectorAll('dd') ?? []
+    expect(labels[0]?.getAttribute('title')).toBe('No quote in the data.')
+    expect(values[0]?.getAttribute('title')).toBe('No quote in the data.')
+    expect(labels[1]?.hasAttribute('title')).toBe(false)
+    expect(values[1]?.hasAttribute('title')).toBe(false)
+  })
+
   // opening on FOCUS and not only on hover is what makes it exist for a keyboard at all
   it('opens on focus, not only under the pointer', async () => {
     const wrapper = mountCard()

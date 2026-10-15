@@ -874,6 +874,12 @@ single element and that element is the row button, which the list owns. Wrapping
 unconditionally would mount a tooltip context per row — five hundred on a long trade list, for
 lists that offer no card — so a row without a card is a bare button.
 
+**A figure's caveat rides on its pair in the card too**, as a `title` on the label and the value —
+the same place a `FigureBlock` puts it. The card stays open under the pointer, so the pair can be
+hovered. Until 2026-10-15 the card dropped it: every caveat handed to a card — the deployment's
+drawdown, a unit's fees charged, a spread not recorded, the run's full config id — was in the
+caller's figures and nowhere on screen.
+
 **Bands over the headings, for a list too wide to read as one row of equal words.** `bands` is a
 list of `{ label, span }`, drawn as a second sticky row above the headings, each band spanning its
 columns. The booking periods read as *Period · Result · Account* rather than as fifteen equal
