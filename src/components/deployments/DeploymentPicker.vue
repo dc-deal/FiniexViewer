@@ -5,6 +5,7 @@ import { useDeploymentsStore } from '@/stores/deployments_store'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
@@ -216,6 +217,7 @@ const chosenMeta = computed(() => {
     </div>
 
     <template v-else>
+      <HintLine id="facet-bar" />
       <FacetBar
         v-model:selection="selection"
         v-model:search="search"

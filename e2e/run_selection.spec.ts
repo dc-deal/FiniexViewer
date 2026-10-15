@@ -127,7 +127,8 @@ test('a narrowed run list survives a reload', async ({ page }) => {
 
   const before = await page.locator('.run-list .record-row').count()
   // a term that narrows without emptying: the picker searches the run id and the SET name, and
-  // the capture holds several `demo_btcusd_bot` runs
+  // the capture holds several `demo_btcusd_bot` runs. The search stands folded into its button.
+  await page.locator('.facet-search-toggle').first().click()
   await page.locator('input.facet-search').first().fill('demo_btcusd')
   await expect.poll(async () => (await storedBar(page, 'run-picker'))?.search).toBe('demo_btcusd')
   const narrowed = await page.locator('.run-list .record-row').count()

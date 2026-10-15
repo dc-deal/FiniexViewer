@@ -14,6 +14,7 @@ export type IconName =
   | 'action-close'
   | 'action-open-panel'
   | 'action-back-into-column'
+  | 'action-search'
   | 'kind-executive'
   | 'kind-broker'
   | 'kind-scenario-roster'

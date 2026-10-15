@@ -44,6 +44,23 @@ test('the quick bar shortens its text before a tab goes into the overflow menu',
 })
 
 /**
+ * The run list's facet bar is ONE line wherever it fits: in a narrow panel it took three and four
+ * lines before a single run showed. The facets that do not fit wait behind `+N`; at the narrowest the
+ * right-hand group — clear, the count, the sort — takes a second line, and never more.
+ */
+for (const [width, lines] of [[1400, 1], [700, 1], [420, 2]] as const) {
+  test(`the run list's facet bar takes at most ${lines} line${lines > 1 ? 's' : ''} at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 700 })
+    await page.goto('/')
+    await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+
+    const bar = page.locator('.run-picker .facet-bar')
+    const line = (await bar.locator('.facet-trigger').first().boundingBox())!.height
+    expect((await bar.boundingBox())!.height).toBeLessThan(line * (lines + 0.5))
+  })
+}
+
+/**
  * `10,000.00 / USD` on two lines misreads a number. At ~990 px the executive's pairs stood two
  * abreast in columns too narrow for them and the values broke; a value is never cut short either.
  */

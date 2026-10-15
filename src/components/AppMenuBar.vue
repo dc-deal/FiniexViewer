@@ -232,34 +232,7 @@ function stayOpen(event: Event): void {
   outline: 1px solid var(--color-accent);
 }
 
-/* every entry in one grid of columns — tick, icon, word — whether or not the tick is drawn */
-.menu-toggle,
-.menu-sub-trigger,
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.menu-check {
-  display: inline-block;
-  width: 1em;
-  flex-shrink: 0;
-  color: var(--color-accent);
-}
-
-.menu-label {
-  flex: 1;
-}
-
-.menu-sub-arrow {
-  margin-left: var(--space-md);
-  color: var(--color-text-secondary);
-}
-
-.menu-sub-trigger[data-state='open'] {
-  background-color: var(--color-bg-hover);
-}
+/* the entries' grid — tick, icon, word — is every menu's, beside `.menu-item` in TopMenu.vue */
 
 /* open as a panel of its own — the mark beside the word, in the entry's own ink */
 .menu-opened {

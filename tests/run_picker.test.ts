@@ -7,6 +7,7 @@ import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
+import { searchFor } from './facet_harness'
 
 // Choosing a run loads its summary, and the picker is what is tested here, not the server. Without
 // this the click asked a real address from jsdom, and the refused connection was printed into the
@@ -365,7 +366,7 @@ describe('RunPicker', () => {
       run({ run_id: 'a', group: 'live' }),
       run({ run_id: 'b', group: 'simulation' }),
     ])
-    await wrapper.find('.facet-search').setValue('a')
+    await searchFor(wrapper, 'a')
     await flushPromises()
     expect(rowTexts(wrapper)).toHaveLength(1)
     expect(wrapper.text()).toContain('1 of 2')

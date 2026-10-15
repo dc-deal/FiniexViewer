@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
 import FacetBar from '@/components/base/FacetBar.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
@@ -441,6 +442,7 @@ function choose(runId: string): void {
     </div>
 
     <template v-else>
+      <HintLine id="facet-bar" />
       <FacetBar
         v-model:selection="selection"
         v-model:search="search"

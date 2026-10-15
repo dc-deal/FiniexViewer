@@ -692,6 +692,30 @@ of thousands of rows uses: **a facet bar over a plain list**, nothing cleverer.
 - **`src/components/base/FacetBar.vue`** — generic over its row type. It owns no state: the caller
   holds the selection and applies the same pure functions, so the bar and the list can never
   disagree about what is shown.
+
+**One line wherever it fits** (viewer#31, 2026-10-14). In a narrow panel the bar took three and four
+lines before a single row of the list showed, so it was folded:
+
+```
+⌕  Pipeline ▾  Artifacts ▾  +6 3 ▾          ✕ clear   29 of 141   Sort: newest ▾
+│  └ the facets that fit, in their order   │             │             └ a menu of the sorts
+│                    the rest, behind +N ──┘             └ shown of all
+└ the search, folded until asked for — open while it holds a term
+```
+
+- **The facets run in `base/OverflowRow.vue`** — one row that never wraps, its arithmetic in
+  `overflow_fit.ts` and pure: those that fit stand in the row, in their order, and the rest wait
+  behind `+N`, each there as a submenu with its values, their counts and its picks. The control carries the
+  picks behind it as a count and wears the chosen look, so a narrowing out of sight still shows
+  where the click happens.
+- **The bar does not move when it is used.** Everything a use changes keeps the room of its widest
+  state — `clear` is laid out while there is nothing to clear, the count at its most digits, the
+  sort at its longest name, the count on `+N` at two digits — because the facets that fit are
+  measured against what stands beside them, and a chip would otherwise go behind `+N` or come out
+  from under the pointer.
+- **At the narrowest the right-hand group takes a second line**, never a third; which line it takes
+  depends on the panel's width alone. Measured 2026-10-15 on the run list: one line at 1400 and at
+  700 px, two at 420 px.
 - **`src/types/facet_types.ts`** — a `FacetDefinition` is the only place that knows what a row looks
   like, which is what lets one bar serve a scenario roster, a run index and a session list.
 
@@ -704,8 +728,9 @@ Four rules the implementation follows, each of which is a way a filter usually g
   widen a choice without clearing it first. A picked value stays listed at 0 so it can be taken off.
 - **A row that states no value is never claimed by one.** `market_type` is empty on every run
   recorded before the backend added it; such a row shows while the facet is open and drops as soon
-  as a value is picked. An empty string is not a category, and a facet with nothing to offer is not
-  drawn at all.
+  as a value is picked. An empty string is not a category. A facet that cannot narrow anything is
+  drawn DISABLED rather than dropped: dropped, chips appeared and vanished mid-bar as values were
+  picked, and the open panel moved out from under the pointer (measured on screen 2026-10-08).
 - **The count is read against the whole list**, not against what survived — a filter that counts
   only its own result cannot say what it is hiding.
 
@@ -1122,8 +1147,7 @@ declarations.
 The row says what the run DID, from the index response itself and without a request per run:
 
 ```
-Search runs by id or set   Group ▾  Set ▾  Artifacts ▾  …        12 of 46
-Sort by  [newest]  oldest  market time  name
+⌕  Pipeline ▾  Artifacts ▾  Reporting ▾  …  +2 ▾       ✕ clear   12 of 46   Sort: newest ▾
 
 Started        Pipeline    Set                       Run id            Market time  Outcome    Net P&L      Trades
 Sep 25, 11:52  simulation  ETHUSD_blocks_robustness  20260925_095227…     464.0 h  ✓ success  −317.36 USD  85 trades

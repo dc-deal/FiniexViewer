@@ -26,6 +26,10 @@ const HINTS: HintDefinition[] = [
     text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the column. On the tab of that panel, ⇲ puts it back into the column and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
   },
   {
+    id: 'facet-bar',
+    text: t('⌕ opens the search. Where the panel is narrow, the filters that do not fit wait behind +N, each with its values and counts.'),
+  },
+  {
     id: 'position-link',
     text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back. A partial close books several trades of one position, so all of them are marked.'),
   },
