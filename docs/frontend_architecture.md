@@ -1696,6 +1696,12 @@ in the roster's card and this total is nowhere else), `highest_equity` with the 
 it, the realised `final_balance` beside the equity, and the averages plus the spot holdings. Printing
 the rest would be the same figure twice on one screen.
 
+**A spread that was never measured reads `not recorded`, never `0`** (contract 32). A unit that read
+data without a quote — every row bid = ask — has a null `total_spread_cost`, and the run's
+`total_spread_cost` and `avg_spread` are null as soon as one unit's is, since a sum over a part
+would read as the whole. `spreadFigure` in `report_format.ts` says so, and the figure's hover gives
+the reason; the roster's card does the same per unit.
+
 **Three distinctions that a reader gets wrong without this panel**, and each carries its caveat where
 the figure is rather than in a paragraph:
 

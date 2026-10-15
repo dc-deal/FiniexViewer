@@ -476,6 +476,15 @@ describe('ScenarioRosterPanel', () => {
       expect(rows['Spread']).toBe('2.74 EUR')
     })
 
+    /** Contract 32: a unit that read data without a quote measured no spread — said, not shown as 0. */
+    it('says a spread the data never measured is not recorded', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { total_spread_cost: null })])))
+      const details = wrapper.findAllComponents(HoverCard)[0]!.props('details') as { label: string, value: string, title?: string }[]
+      const spread = details.find(pair => pair.label === 'Spread')!
+      expect(spread.value).toBe('not recorded')
+      expect(spread.title).toContain('no quote')
+    })
+
     /**
      * What the venue CHARGED, where the `Fees` column cannot show it.
      *

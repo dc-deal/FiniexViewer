@@ -1283,7 +1283,8 @@
       "gross_pnl": 0.7961482878969264,
       "net_pnl": 0.7961482878969264,
       "total_fees": 0.0,
-      "total_swap": 0.0
+      "total_swap": 0.0,
+      "total_spread_cost": null
     },
     {
       "scenario_name": "EURGBP_refusals_02",
@@ -1292,7 +1293,8 @@
       "gross_pnl": 2.9898904603811323,
       "net_pnl": 2.9898904603811323,
       "total_fees": 0.0,
-      "total_swap": 0.0
+      "total_swap": 0.0,
+      "total_spread_cost": null
     },
     {
       "scenario_name": "ETHUSD_spot_two_balances",
@@ -1301,7 +1303,8 @@
       "gross_pnl": 9.333984375,
       "net_pnl": -22.947087500000002,
       "total_fees": 32.281071875,
-      "total_swap": 0.0
+      "total_swap": 0.0,
+      "total_spread_cost": null
     },
     {
       "scenario_name": "EURGBP_partial_close",
@@ -1310,7 +1313,8 @@
       "gross_pnl": -0.045410366924923604,
       "net_pnl": -0.045410366924923604,
       "total_fees": 0.0,
-      "total_swap": 0.0
+      "total_swap": 0.0,
+      "total_spread_cost": null
     }
   ],
   "keys": {

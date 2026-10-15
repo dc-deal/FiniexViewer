@@ -7,7 +7,8 @@ import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import {
-  amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, signClass, utcInstant,
+  SPREAD_NOT_RECORDED, amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, signClass, spreadFigure,
+  utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListCard, ListColumn } from '@/types/list_types'
@@ -297,7 +298,11 @@ function card(row: ScenarioRow): ListCard | null {
         + `(${percentFigure(unit.account_max_dd_pct)})`,
     },
     { label: t('Long / short'), value: `${unit.total_long_trades} / ${unit.total_short_trades}` },
-    { label: t('Spread'), value: money(unit.total_spread_cost) },
+    {
+      label: t('Spread'),
+      value: spreadFigure(unit.total_spread_cost, money),
+      ...(unit.total_spread_cost === null ? { title: SPREAD_NOT_RECORDED } : {}),
+    },
     { label: t('Commission'), value: money(unit.total_commission) },
     { label: t('Swap'), value: money(unit.total_swap) },
   ]

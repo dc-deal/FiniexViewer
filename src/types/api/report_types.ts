@@ -653,7 +653,9 @@ export interface PortfolioUnitRow {
   spot_est_pnl_pct: number
   // What the unit PAID. `total_fees` carries the commission, the swap and — where a venue charges
   // per side — the maker and taker fees; the SPREAD is not in it and is a cost of its own.
-  total_spread_cost: number
+  // null where the unit read data WITHOUT A QUOTE (every row bid = ask): no spread was measured,
+  // which is not a spread of zero (contract 32 — it read 0 before)
+  total_spread_cost: number | null
   total_commission: number
   total_swap: number
   maker_fee: number
@@ -1050,6 +1052,12 @@ export interface ScenarioTotals {
   net_pnl: number
   total_fees: number
   total_swap: number
+  /**
+   * The unit's measured `spread_cost` summed over the same trades the rows list — beside
+   * `total_fees`, never inside it (contract 32). null where the unit read data without a quote, and
+   * on every run recorded before contract 32: the trade history is written when a run ends.
+   */
+  total_spread_cost: number | null
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/trade-history */
@@ -1247,12 +1255,14 @@ export interface AggregatedCombined {
    */
   highest_equity: number
   highest_equity_scenario: string
-  total_spread_cost: number
+  // null as soon as ONE unit's is — a sum over a part would read as the whole (contract 32)
+  total_spread_cost: number | null
   total_commission: number
   total_swap: number
   maker_fee: number
   taker_fee: number
-  avg_spread: number
+  // null as soon as one unit's spread is, for the same reason (contract 32)
+  avg_spread: number | null
   // the same nine as on `RunSummary`, and the same two changed meanings — see the note there
   orders_submitted: number
   orders_adopted: number

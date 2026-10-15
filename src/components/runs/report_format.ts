@@ -21,6 +21,17 @@ export function amount(value: number, currency: string): string {
   return `${figure(value)} ${currency}`
 }
 
+/**
+ * A spread figure, or the words for its absence. null means the data the unit read carried NO
+ * QUOTE — every row bid = ask — so no spread was measured, which is not a spread of zero (contract
+ * 32; their `portfolio` and `trade-history` documents). `SPREAD_NOT_RECORDED` says so on hover.
+ */
+export function spreadFigure(value: number | null, format: (value: number) => string): string {
+  return value === null ? t('not recorded') : format(value)
+}
+
+export const SPREAD_NOT_RECORDED = t('The data this unit read carried no quote, so no spread was measured — not a spread of zero.')
+
 /** Backend ratios are 0..1 — the percent conversion happens here, at the render edge. */
 export function percent(ratio: number): string {
   return `${(ratio * 100).toFixed(1)}%`
