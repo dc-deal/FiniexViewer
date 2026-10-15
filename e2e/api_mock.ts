@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import type { Page, Route } from '@playwright/test'
@@ -86,7 +86,8 @@ export const FIXTURE_DEPLOYMENT =
  */
 const SHELL: Record<string, unknown> = {
   '/api/v1/brokers': { brokers: [] },
-  '/api/v1/timeframes': { timeframes: [] },
+  // captured: the run chart orders the timeframes and picks one by their lengths
+  '/api/v1/timeframes': fixture('timeframes.json'),
   '/api/v1/caller': {
     enforced: false, client: null, account: null, account_kind: null, display_name: null, grants: null, note: null,
   },
@@ -149,6 +150,28 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
 
     if (path === '/api/v1/machine-resources') {
       return route.fulfill({ json: fixture('machine_resources.json'), headers: CONTRACT })
+    }
+
+    /*
+     * The MARKET plane, for the run chart: the coverage of the two markets the fixture run traded,
+     * and the M1 bars captured over its units' spans. A market or timeframe not captured answers
+     * 404, as the server does for one it holds nothing for; the bars are served for the range asked,
+     * the way the route cuts them, and never truncated — the spans are far below its cap.
+     */
+    const market = /^\/api\/v1\/brokers\/([^/]+)\/symbols\/([^/]+)\/(coverage|bars)$/.exec(path)
+    if (market) {
+      const [, broker, symbol, what] = market
+      const asked = new URL(route.request().url()).searchParams
+      const name = what === 'coverage'
+        ? `coverage_${broker}_${symbol}.json`
+        : `bars_${broker}_${symbol}_${asked.get('timeframe')}.json`
+      if (!existsSync(join(FIXTURES, name))) return route.fulfill(absent('no_bars_indexed', `No capture ${name}`))
+      if (what === 'coverage') return route.fulfill({ json: fixture(name), headers: CONTRACT })
+      const from = Date.parse(asked.get('from') ?? '') / 1000
+      const to = Date.parse(asked.get('to') ?? '') / 1000
+      // as the route cuts them: the bars that OPEN in the range
+      const rows = (fixture(name) as { t: number }[]).filter(bar => bar.t >= from && bar.t <= to)
+      return route.fulfill({ json: rows, headers: { ...CONTRACT, 'X-Bar-Truncated': 'false' } })
     }
 
     /*

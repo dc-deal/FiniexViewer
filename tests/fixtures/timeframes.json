@@ -1,0 +1,39 @@
+{
+  "key": [
+    "name"
+  ],
+  "timeframes": [
+    {
+      "name": "M1",
+      "minutes": 1
+    },
+    {
+      "name": "M5",
+      "minutes": 5
+    },
+    {
+      "name": "M10",
+      "minutes": 10
+    },
+    {
+      "name": "M15",
+      "minutes": 15
+    },
+    {
+      "name": "M30",
+      "minutes": 30
+    },
+    {
+      "name": "H1",
+      "minutes": 60
+    },
+    {
+      "name": "H4",
+      "minutes": 240
+    },
+    {
+      "name": "D1",
+      "minutes": 1440
+    }
+  ]
+}

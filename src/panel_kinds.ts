@@ -1,6 +1,7 @@
 import { defineAsyncComponent, defineComponent, h } from 'vue'
 import { allPanels } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
+import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
 import type { PanelDescriptor, PanelKind, TabStatus } from '@/types/panel_types'
@@ -70,12 +71,31 @@ export const PANEL_KINDS: PanelKind[] = [
     status: () => outcomeStatus(useRunsStore().selectedRun?.run_outcome ?? null),
   },
   {
-    id: 'chart',
-    title: t('Chart'),
-    description: t('Candles of the market data, by broker, symbol and timeframe'),
+    /*
+     * The RUN-BOUND chart (viewer#31, the item #21 left open): one unit of the chosen run on its
+     * candles, its trades marked. Part of the first arrangement, beside the run report, so a trade
+     * in the list and its candle are one glance apart (operator, 2026-10-15); with no run chosen it
+     * says so and draws nothing.
+     */
+    id: 'run-chart',
+    title: t('Run chart'),
+    subtitle: () => useRunChartStore().unit?.name ?? null,
+    description: t('One unit of the chosen run on its candles, its trades marked where they opened and closed'),
     icon: 'form-chart',
     order: 4,
     opensByDefault: true,
+    area: 'runs',
+    component: defineAsyncComponent(() => import('@/views/RunChartView.vue')),
+    quickBar: defineAsyncComponent(() => import('@/components/RunChartQuickBar.vue')),
+  },
+  {
+    // the FREE chart: any market, no run — opened from the Panels menu
+    id: 'chart',
+    title: t('Free chart'),
+    description: t('Candles of the market data, by broker, symbol and timeframe'),
+    icon: 'form-chart',
+    order: 5,
+    opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/ChartView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/ChartQuickBar.vue')),
   },

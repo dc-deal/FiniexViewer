@@ -31,7 +31,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'position-link',
-    text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back. A partial close books several trades of one position, so all of them are marked.'),
+    text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back; the chart mark beside it opens the run chart on that position. A partial close books several trades of one position, so all of them are marked.'),
   },
 ]
 

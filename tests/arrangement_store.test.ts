@@ -30,12 +30,14 @@ describe('useArrangementStore', () => {
       links: { A: { run: { id: RUN, units: ['EURGBP_partial_close'], position: MARK }, deployment: { id: null }, market: { broker: 'mt5', symbol: 'EURUSD' } } },
       bars: {},
       chart: { timeframe: 'H1' },
+      runChart: { run: RUN, unit: 'EURGBP_partial_close', timeframe: 'M5' },
     })
     const arrangement = useArrangementStore()
     const context = useContextStore()
     expect(context.main.run).toEqual({ id: RUN, units: ['EURGBP_partial_close'], position: MARK })
     expect(context.main.market).toEqual({ broker: 'mt5', symbol: 'EURUSD' })
     expect(arrangement.chart.timeframe).toBe('H1')
+    expect(arrangement.runChart).toEqual({ run: RUN, unit: 'EURGBP_partial_close', timeframe: 'M5' })
   })
 
   it('writes every change of the selection back', async () => {
@@ -45,17 +47,26 @@ describe('useArrangementStore', () => {
     expect((stored()['links'] as Record<string, { run: { id: string } }>)['A']!.run.id).toBe(RUN)
   })
 
+  /** The run chart's unit and timeframe are a choice of what is shown, and come back with the run. */
+  it('writes the choice made on the run chart back, with the run it was made for', async () => {
+    useArrangementStore().setRunChart({ run: RUN, unit: 'EURGBP_refusals_01', timeframe: 'M1' })
+    await nextTick()
+    expect(stored()['runChart']).toEqual({ run: RUN, unit: 'EURGBP_refusals_01', timeframe: 'M1' })
+  })
+
   /** Never trusted as it is: whatever does not have the right shape is left empty, field by field. */
   it('reconciles a damaged entry instead of trusting it', () => {
     store({
       version: 1,
       links: { A: { run: { id: 42, units: ['ok', 7], position: { scenario: 'only half' } } } },
       bars: { run: { selection: { purpose: ['regular', 3] }, search: 9, sort: 'oldest' } },
+      runChart: { run: 7, unit: 'EURGBP_refusals_01', timeframe: [] },
     })
     const arrangement = useArrangementStore()
     expect(useContextStore().main.run).toEqual({ id: null, units: ['ok'], position: null })
     expect(arrangement.bars['run']).toEqual({ selection: { purpose: ['regular'] }, search: '', sort: 'oldest', scope: null })
     expect(arrangement.chart).toEqual({ timeframe: null })
+    expect(arrangement.runChart).toEqual({ run: null, unit: 'EURGBP_refusals_01', timeframe: null })
   })
 
   it('removes an entry of another schema rather than converting it', () => {

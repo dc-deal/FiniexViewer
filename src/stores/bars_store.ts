@@ -3,12 +3,17 @@ import { ref, watch } from 'vue'
 import { useSelectionStore } from '@/stores/selection_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import { getCoverage, getBars } from '@/api/api_client'
-import type { ChartBar } from '@/types/api/bar_types'
+import type { ApiBar, ChartBar } from '@/types/api/bar_types'
 import { t } from '@/translate'
 
 // Number of candles to show by default — applies to all timeframes uniformly.
 // Window = TARGET_BARS * minutes_per_bar * 60 seconds.
 const TARGET_BARS = 300
+
+/** The route's rows as the chart draws them — one shape for every chart that draws candles. */
+export function toChartBars(bars: ApiBar[]): ChartBar[] {
+  return bars.map(b => ({ time: b.t, open: b.o, high: b.h, low: b.l, close: b.c }))
+}
 
 function parseUtcDate(iso: string): Date {
   // append Z if no timezone suffix present to ensure UTC parsing
@@ -52,15 +57,9 @@ export const useBarsStore = defineStore('bars', () => {
       const windowMs = TARGET_BARS * minutes * 60 * 1000
       const fromDate = new Date(endDate.getTime() - windowMs)
 
-      const bars = await getBars(broker, symbol, timeframe, fromDate.toISOString(), endDate.toISOString())
-
-      chartData.value = bars.map(b => ({
-        time: b.t,
-        open: b.o,
-        high: b.h,
-        low: b.l,
-        close: b.c,
-      }))
+      // 300 bars, far below the route's cap: `truncated` cannot be set here
+      const { bars } = await getBars(broker, symbol, timeframe, fromDate.toISOString(), endDate.toISOString())
+      chartData.value = toChartBars(bars)
     } catch (e) {
       error.value = e instanceof Error ? e.message : t('Failed to load bars')
     } finally {

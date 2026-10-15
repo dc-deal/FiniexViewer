@@ -4,7 +4,7 @@ import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
-import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
+import type { ApiBar, BarAnswer, CoverageResponse } from '@/types/api/bar_types'
 import type { CallerIdentity } from '@/types/api/caller_types'
 import type { MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
@@ -56,18 +56,31 @@ export async function getCoverage(broker: string, symbol: string): Promise<Cover
   return response.data
 }
 
+/**
+ * A market's coverage, or null where the archive holds none for it — a symbol the server does not
+ * know and one it knows with no bars indexed both answer `404` (their `market-data` document).
+ */
+export async function findCoverage(broker: string, symbol: string): Promise<CoverageResponse | null> {
+  try {
+    return await getCoverage(broker, symbol)
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
 export async function getBars(
   broker: string,
   symbol: string,
   timeframe: string,
   from: string,
   to: string
-): Promise<ApiBar[]> {
+): Promise<BarAnswer> {
   const response = await http.get<ApiBar[]>(
     `/brokers/${broker}/symbols/${symbol}/bars`,
     { params: { timeframe, from, to } }
   )
-  return response.data
+  return { bars: response.data, truncated: String(response.headers?.['x-bar-truncated']) === 'true' }
 }
 
 /**

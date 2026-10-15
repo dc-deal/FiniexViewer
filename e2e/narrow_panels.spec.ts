@@ -26,10 +26,11 @@ async function tabsOverflow(page: Page): Promise<boolean> {
  * The quick bar gives way first. Before, the narrowing's whole text was the least it would take, so
  * at this width the tabs beside it went into the overflow menu while the text stood in full. The
  * width is chosen so the four tabs fit beside the bar's mark and button, and not beside its whole
- * text — much narrower, the tabs alone are too wide, and no arrangement keeps them all.
+ * text — much narrower, the tabs alone are too wide, and no arrangement keeps them all. Measured
+ * 2026-10-15, with the run chart's tab and its unit beside the others: 950 to 1000 px.
  */
 test('the quick bar shortens its text before a tab goes into the overflow menu', async ({ page }) => {
-  await page.setViewportSize({ width: 800, height: 800 })
+  await page.setViewportSize({ width: 975, height: 800 })
   await openWith(page, '/', { run: FIXTURE_RUN, units: TWO })
 
   const text = page.locator('[data-quick-bar] .narrowed-text')

@@ -16,11 +16,13 @@ describe('panel_kinds', () => {
   })
 
   /** From the general to the particular: deployments, the run list, the run a pick opens, its chart. */
-  it('opens the first arrangement as deployments, the run list, the run report, the chart', () => {
+  /** The run chart beside the report from the start; the free chart is opened from the menu. */
+  it('opens the first arrangement as deployments, the run list, the run report, the run chart', () => {
     const first = PANEL_KINDS.filter(kind => kind.opensByDefault)
       .sort((a, b) => a.order - b.order)
       .map(kind => kind.id)
-    expect(first).toEqual(['deployments', 'runs', 'run', 'chart'])
+    expect(first).toEqual(['deployments', 'runs', 'run', 'run-chart'])
+    expect(panelKind('chart')!.opensByDefault).toBe(false)
   })
 
   /** Where the work is: the run report where a run is restored, the run list where none is yet. */

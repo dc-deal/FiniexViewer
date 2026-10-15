@@ -74,7 +74,7 @@ describe('useBarsStore', () => {
 
   it('computes M30 window as TARGET_BARS * 30 minutes', async () => {
     vi.mocked(apiClient.getCoverage).mockResolvedValue(COVERAGE)
-    vi.mocked(apiClient.getBars).mockResolvedValue([])
+    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: [], truncated: false })
     useBarsStore()
     selectAll('M30')
     await flushPromises()
@@ -85,7 +85,7 @@ describe('useBarsStore', () => {
 
   it('computes H1 window as TARGET_BARS * 60 minutes', async () => {
     vi.mocked(apiClient.getCoverage).mockResolvedValue(COVERAGE)
-    vi.mocked(apiClient.getBars).mockResolvedValue([])
+    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: [], truncated: false })
     useBarsStore()
     selectAll('H1')
     await flushPromises()
@@ -96,7 +96,7 @@ describe('useBarsStore', () => {
 
   it('computes D1 window as TARGET_BARS * 1440 minutes', async () => {
     vi.mocked(apiClient.getCoverage).mockResolvedValue(COVERAGE)
-    vi.mocked(apiClient.getBars).mockResolvedValue([])
+    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: [], truncated: false })
     useBarsStore()
     selectAll('D1')
     await flushPromises()
@@ -107,9 +107,10 @@ describe('useBarsStore', () => {
 
   it('maps API bar fields to Lightweight Charts format', async () => {
     vi.mocked(apiClient.getCoverage).mockResolvedValue(COVERAGE)
-    vi.mocked(apiClient.getBars).mockResolvedValue([
-      { t: 1704067200, o: 42000, h: 43000, l: 41000, c: 42500, v: 100 },
-    ])
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: [{ t: 1704067200, o: 42000, h: 43000, l: 41000, c: 42500, v: 100 }],
+      truncated: false,
+    })
     const store = useBarsStore()
     selectAll('H1')
     await flushPromises()
@@ -136,7 +137,7 @@ describe('useBarsStore', () => {
     expect(store.error).toBe('Timeout')
 
     vi.mocked(apiClient.getCoverage).mockResolvedValue(COVERAGE)
-    vi.mocked(apiClient.getBars).mockResolvedValue([])
+    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: [], truncated: false })
     selection.setTimeframe('M30')
     await flushPromises()
     expect(store.error).toBeNull()

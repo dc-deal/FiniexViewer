@@ -5,10 +5,21 @@ import type {
   CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, UTCTimestamp,
 } from 'lightweight-charts'
 import type { ChartBar } from '@/types/api/bar_types'
+import type { ChartMark } from '@/types/run_chart_types'
 
 const props = defineProps<{
   data: ChartBar[]
+  /**
+   * Where trades opened and closed — drawn on the candles they fell in. Their count stands on the
+   * element as `data-marks`: the canvas draws them where no assertion can read them back.
+   */
+  marks?: ChartMark[]
+  /** An instant to centre on, in UTC seconds — the position the reader is looking at. */
+  focus?: number | null
 }>()
+
+/** How many bars are on show around a focus, where the whole window would make them too narrow to read. */
+const FOCUS_SPAN = 150
 
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
@@ -24,6 +35,8 @@ interface ChartColours {
   focus: string
   rise: string
   fall: string
+  mark: string
+  quiet: string
 }
 
 /**
@@ -44,7 +57,48 @@ function readColours(): ChartColours {
     // a candle's direction is the polarity of a figure
     rise: token('--color-positive'),
     fall: token('--color-negative'),
+    // an entry is a fact about the trade, not a result: plain ink
+    mark: token('--color-text-primary'),
+    quiet: token('--color-text-secondary'),
   }
+}
+
+/** A mark's colour by its role — a result is the polarity of a figure; the shape says the rest. */
+function markColour(mark: ChartMark, colours: ChartColours): string {
+  if (mark.role === 'gain') return colours.rise
+  if (mark.role === 'loss') return colours.fall
+  if (mark.role === 'flat') return colours.quiet
+  return colours.mark
+}
+
+function showMarks(): void {
+  if (!series) return
+  const colours = readColours()
+  series.setMarkers((props.marks ?? []).map(mark => ({
+    time: mark.time as UTCTimestamp,
+    position: mark.position,
+    shape: mark.shape,
+    color: markColour(mark, colours),
+    text: mark.text,
+    size: mark.focused ? 2 : 1,
+  })))
+}
+
+/**
+ * The bars on show: around the focus where there is one and the window is long, all of them
+ * otherwise. A short window is shown whole, focus or not — every trade is in sight already.
+ */
+function frame(): void {
+  if (!chart) return
+  const at = props.focus
+  if (at === null || at === undefined || props.data.length <= FOCUS_SPAN) {
+    chart.timeScale().fitContent()
+    return
+  }
+  // the bar the focus fell in: the last one that opened at or before it
+  let middle = 0
+  props.data.forEach((bar, index) => { if (bar.time <= at) middle = index })
+  chart.timeScale().setVisibleLogicalRange({ from: middle - FOCUS_SPAN / 2, to: middle + FOCUS_SPAN / 2 })
 }
 
 function chartColours(colours: ChartColours): DeepPartial<ChartOptions> {
@@ -111,12 +165,14 @@ function repaint(): void {
   const colours = readColours()
   chart.applyOptions(chartColours(colours))
   series.applyOptions(candleColours(colours))
+  showMarks()
 }
 
 function showData(data: ChartBar[]): void {
   if (!series) return
   series.setData(data.map(b => ({ ...b, time: b.time as UTCTimestamp })))
-  chart?.timeScale().fitContent()
+  showMarks()
+  frame()
 }
 
 /** Build at the first real size, follow every later one, and ignore a collapse to nothing. */
@@ -147,10 +203,12 @@ onUnmounted(() => {
 
 // bars that arrive before the chart has a size wait for it: onResize hands them over at build time
 watch(() => props.data, newData => showData(newData))
+watch(() => props.marks, () => showMarks())
+watch(() => props.focus, () => frame())
 </script>
 
 <template>
-  <div ref="container" class="candle-chart" />
+  <div ref="container" class="candle-chart" :data-marks="marks?.length ?? 0" />
 </template>
 
 <style scoped>

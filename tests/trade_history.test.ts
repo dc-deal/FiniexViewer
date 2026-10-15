@@ -3,12 +3,14 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
 import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
+import { provideChartLink } from '@/composables/use_chart_link'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestPositionLink } from './position_link_harness'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings } from '@/types/settings_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
+import type { PositionRef } from '@/types/context_types'
 
 import fixture from './fixtures/trade_history.json'
 
@@ -81,7 +83,41 @@ function cardRows(wrapper: VueWrapper, index = 0) {
   return Object.fromEntries(details.map(row => [row.label, row.value]))
 }
 
+/** The panel under a host that offers the run chart for the units it names, recording each request. */
+function mountCharted(history: TradeHistoryReport, drawable: string[]) {
+  const shown: PositionRef[] = []
+  const Host = defineComponent({
+    setup() {
+      provideChartLink({ canShow: scenario => drawable.includes(scenario), show: ref => { shown.push(ref) } })
+      return () => h(TradeHistoryPanel, { model: history })
+    },
+  })
+  return { wrapper: mount(Host), shown }
+}
+
 describe('TradeHistoryPanel', () => {
+  /** From a trade to its candles: the mark is drawn only where the run chart can draw the unit. */
+  describe('the chart mark', () => {
+    it('stands on every trade of a unit the run chart can draw, and on no other', () => {
+      const first = BASE.trades[0]!.scenario_name
+      const { wrapper } = mountCharted(report(), [first])
+      const expected = BASE.trades.filter(entry => entry.scenario_name === first).length
+      expect(wrapper.findAll('.to-chart')).toHaveLength(expected)
+      expect(expected).toBeGreaterThan(0)
+    })
+
+    it('points the run chart at the position, never at the position id alone', async () => {
+      const first = BASE.trades[0]!
+      const { wrapper, shown } = mountCharted(report({ trades: [first] }), [first.scenario_name])
+      await wrapper.find('.to-chart').trigger('click')
+      expect(shown).toEqual([{ scenario: first.scenario_name, position: first.position_id }])
+    })
+
+    it('draws no mark where no host offers the run chart', () => {
+      expect(mountPanel(report()).find('.to-chart').exists()).toBe(false)
+    })
+  })
+
   it('lists every closed position with the unit that produced it', () => {
     const wrapper = mountPanel(report())
     expect(tradeRows(wrapper)).toHaveLength(BASE.trades.length)

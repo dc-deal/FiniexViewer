@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import CandleChart from '@/components/CandleChart.vue'
 import type { ChartBar } from '@/types/api/bar_types'
+import type { ChartMark } from '@/types/run_chart_types'
 
 /**
  * The chart library itself is replaced: what is under test is WHEN the component builds, fits and
@@ -11,18 +12,20 @@ import type { ChartBar } from '@/types/api/bar_types'
 const lw = vi.hoisted(() => {
   const fitContent = vi.fn()
   const setData = vi.fn<(data: unknown[]) => void>()
-  const series = { setData, applyOptions: vi.fn<(options: Record<string, unknown>) => void>() }
+  const setMarkers = vi.fn<(marks: Record<string, unknown>[]) => void>()
+  const setVisibleLogicalRange = vi.fn<(range: { from: number, to: number }) => void>()
+  const series = { setData, setMarkers, applyOptions: vi.fn<(options: Record<string, unknown>) => void>() }
   const chart = {
     addCandlestickSeries: vi.fn<(options: Record<string, unknown>) => typeof series>(() => series),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
-    timeScale: vi.fn(() => ({ fitContent })),
+    timeScale: vi.fn(() => ({ fitContent, setVisibleLogicalRange })),
     resize: vi.fn<(width: number, height: number) => void>(),
     remove: vi.fn(),
   }
   const createChart = vi.fn<(container: HTMLElement, options: Record<string, unknown>) => typeof chart>(
     () => chart
   )
-  return { chart, series, setData, fitContent, createChart }
+  return { chart, series, setData, setMarkers, setVisibleLogicalRange, fitContent, createChart }
 })
 
 vi.mock('lightweight-charts', () => ({
@@ -56,10 +59,19 @@ const BARS: ChartBar[] = [
 
 let mounted: VueWrapper | null = null
 
-function mountChart(data: ChartBar[] = BARS): VueWrapper {
-  mounted = mount(CandleChart, { props: { data } })
+function mountChart(data: ChartBar[] = BARS, extra: { marks?: ChartMark[], focus?: number | null } = {}): VueWrapper {
+  mounted = mount(CandleChart, { props: { data, ...extra } })
   return mounted
 }
+
+function mark(fields: Partial<ChartMark>): ChartMark {
+  return { time: BARS[0]!.time, position: 'belowBar', shape: 'arrowUp', role: 'entry', text: '', focused: false, ...fields }
+}
+
+/** A long window: one bar an hour. */
+const LONG: ChartBar[] = Array.from({ length: 200 }, (_, index) => ({
+  time: 1_760_000_000 + index * 3600, open: 1, high: 1, low: 1, close: 1,
+}))
 
 describe('CandleChart', () => {
   beforeEach(() => {
@@ -166,6 +178,27 @@ describe('CandleChart', () => {
     expect(lw.fitContent).toHaveBeenCalledTimes(1)
   })
 
+  /** Around the position looked at where the window is long; a short window is shown whole. */
+  it('centres a long window on its focus, and shows a short one whole', () => {
+    size = { width: 800, height: 400 }
+    mountChart(LONG, { focus: LONG[120]!.time + 60 })
+    expect(lw.setVisibleLogicalRange).toHaveBeenCalledWith({ from: 45, to: 195 })
+    expect(lw.fitContent).not.toHaveBeenCalled()
+
+    mounted!.unmount()
+    vi.clearAllMocks()
+    mountChart(BARS, { focus: BARS[1]!.time })
+    expect(lw.fitContent).toHaveBeenCalledTimes(1)
+    expect(lw.setVisibleLogicalRange).not.toHaveBeenCalled()
+  })
+
+  /** The marks are drawn on a canvas, where nothing can read them back — so the element counts them. */
+  it('says on its element how many marks it draws', () => {
+    size = { width: 800, height: 400 }
+    const wrapper = mountChart(BARS, { marks: [mark({}), mark({ role: 'gain' })] })
+    expect(wrapper.attributes('data-marks')).toBe('2')
+  })
+
   /**
    * A canvas is painted with values, so the theme cannot reach it the way it reaches every other
    * surface. Two themes with values nobody would choose, under the token names the chart reads: a
@@ -176,10 +209,12 @@ describe('CandleChart', () => {
       :root[data-theme='dark'] {
         --color-bg-base: #000001; --color-text-secondary: #000002; --color-border: #000003;
         --color-accent: #000004; --color-positive: #000005; --color-negative: #000006;
+        --color-text-primary: #000007;
       }
       :root[data-theme='light'] {
         --color-bg-base: #ffff01; --color-text-secondary: #ffff02; --color-border: #ffff03;
         --color-accent: #ffff04; --color-positive: #ffff05; --color-negative: #ffff06;
+        --color-text-primary: #ffff07;
       }
     `
     let sheet: HTMLStyleElement | null = null
@@ -218,6 +253,26 @@ describe('CandleChart', () => {
         wickUpColor: '#000005',
         wickDownColor: '#000006',
       })
+    })
+
+    /** A result is the polarity of a figure; an entry is a fact in plain ink; the shape says the rest. */
+    it('paints the marks of trades by their role, the one looked at larger', async () => {
+      size = { width: 800, height: 400 }
+      mountChart(BARS, { marks: [
+        mark({ role: 'entry', focused: true }),
+        mark({ role: 'gain', shape: 'circle', position: 'aboveBar', text: '+' }),
+        mark({ role: 'loss', shape: 'circle', text: '−' }),
+        mark({ role: 'flat', shape: 'circle', text: '0' }),
+      ] })
+
+      expect(lw.setMarkers.mock.lastCall![0].map(entry => [entry['color'], entry['size']])).toEqual([
+        ['#000007', 2], ['#000005', 1], ['#000006', 1], ['#000002', 1],
+      ])
+      expect(lw.setMarkers.mock.lastCall![0][1]).toMatchObject({ shape: 'circle', position: 'aboveBar', text: '+' })
+
+      document.documentElement.dataset.theme = 'light'
+      await flushPromises()
+      expect(lw.setMarkers.mock.lastCall![0].map(entry => entry['color'])).toEqual(['#ffff07', '#ffff05', '#ffff06', '#ffff02'])
     })
 
     it('repaints when the theme changes, without being built again', async () => {

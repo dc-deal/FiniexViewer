@@ -15,11 +15,23 @@ function tabTitles(page: import('@playwright/test').Page): Promise<string[]> {
   return page.locator('.dv-tab .panel-tab-title').allInnerTexts()
 }
 
+/** The free chart is not in the first arrangement: it opens from the Panels menu, beside the panel in front. */
+async function openFreeChart(page: import('@playwright/test').Page): Promise<void> {
+  await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).click()
+  await page.locator('.menu-item[data-kind="chart"]').click()
+  // the menu stays open after a toggle, so several panels can be switched in one visit
+  await page.keyboard.press('Escape')
+}
+
+/**
+ * At the suite's 1280 px the dock is too narrow to share, so the run chart is a tab right after the
+ * report; from 1400 px it stands beside it as a split (`run_chart.spec.ts`).
+ */
 test('the first arrangement holds the suggested order, with Runs in front', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
-  expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Chart'])
+  expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Run chart'])
   await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Runs')
 })
 
@@ -32,11 +44,11 @@ test('a panel behind another is drawn the first time it is shown', async ({ page
   await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
-  await expect(page.locator('[data-panel-kind="chart"]')).toHaveCount(1)
-  await expect(page.locator('.chart-view')).toHaveCount(0)
+  await expect(page.locator('[data-panel-kind="run-chart"]')).toHaveCount(1)
+  await expect(page.locator('.run-chart-view')).toHaveCount(0)
 
-  await showPanel(page, 'Chart')
-  await expect(page.locator('.chart-view')).toBeVisible()
+  await showPanel(page, 'Run chart')
+  await expect(page.locator('.run-chart-view')).toBeVisible()
 })
 
 test('the arrangement survives a reload, and the suggested order comes back on request', async ({ page }) => {
@@ -44,7 +56,7 @@ test('the arrangement survives a reload, and the suggested order comes back on r
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
   await showPanel(page, 'Deployments')
-  await page.locator('.dv-tab', { hasText: 'Chart' }).locator('.panel-tab-close').click()
+  await page.locator('.dv-tab', { hasText: 'Run chart' }).locator('.panel-tab-close').click()
   await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run'])
 
   await page.reload()
@@ -56,21 +68,22 @@ test('the arrangement survives a reload, and the suggested order comes back on r
   await page.locator('.tab-trigger', { hasText: 'Layout' }).click()
   await page.locator('[data-action="reset-dock"]').click()
   await page.keyboard.press('Escape')
-  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Chart'])
+  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Run chart'])
   await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Runs')
 })
 
-test('a closed panel comes back from the Panels menu', async ({ page }) => {
+test('the free chart opens from the Panels menu, and comes back there once closed', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
-  await page.locator('.dv-tab', { hasText: 'Chart' }).locator('.panel-tab-close').click()
-  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run'])
 
-  await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).click()
-  await page.locator('.menu-item[data-kind="chart"]').click()
+  await openFreeChart(page)
+  await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Free chart')
 
-  await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Chart')
-  expect(await tabTitles(page)).toContain('Chart')
+  await page.locator('.dv-tab', { hasText: 'Free chart' }).locator('.panel-tab-close').click()
+  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Run chart'])
+
+  await openFreeChart(page)
+  await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Free chart')
 })
 
 /** About is read and closed, so it is a dialog over the dock — no tab is added for it. */
@@ -82,7 +95,7 @@ test('About opens as a dialog from the application menu, not as a tab', async ({
   await page.locator('.menu-item[data-action="about"]').click()
 
   await expect(page.locator('.about-dialog')).toBeVisible()
-  expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Chart'])
+  expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Run chart'])
 })
 
 /** The quick bar speaks for the panel in FRONT: the chart's selection while it is, nothing otherwise. */
@@ -91,7 +104,7 @@ test('the quick bar holds the chart selection while the chart is in front', asyn
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
   await expect(page.locator('[data-quick-bar="chart"]')).toHaveCount(0)
 
-  await showPanel(page, 'Chart')
+  await openFreeChart(page)
   const bar = page.locator('[data-quick-bar="chart"]')
   await expect(bar).toBeVisible()
   await expect(bar.locator('select[aria-label="Broker"]')).toBeVisible()

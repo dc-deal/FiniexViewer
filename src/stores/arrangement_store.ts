@@ -4,7 +4,7 @@ import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
 import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext, PositionRef } from '@/types/context_types'
-import type { DockPlace, StoredArrangement, StoredChart, StoredFacets } from '@/types/arrangement_types'
+import type { DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredRunChart } from '@/types/arrangement_types'
 
 const STORAGE_KEY = 'arrangement.v1'
 const SCHEMA_VERSION = 1
@@ -115,8 +115,14 @@ function readStored(): StoredArrangement | null {
     const bars: Record<string, StoredFacets> = {}
     for (const [id, facets] of Object.entries(record(parsed['bars']))) bars[id] = readFacets(facets)
     const chart: StoredChart = { timeframe: text(record(parsed['chart'])['timeframe']) }
+    const storedRunChart = record(parsed['runChart'])
+    const runChart: StoredRunChart = {
+      run: text(storedRunChart['run']),
+      unit: text(storedRunChart['unit']),
+      timeframe: text(storedRunChart['timeframe']),
+    }
     const dock = typeof parsed['dock'] === 'object' && parsed['dock'] !== null ? parsed['dock'] : null
-    return { version: SCHEMA_VERSION, links, bars, chart, dock, places: readPlaces(parsed['places']) }
+    return { version: SCHEMA_VERSION, links, bars, chart, runChart, dock, places: readPlaces(parsed['places']) }
   } catch {
     // a corrupt or unreadable entry is the same as none — never a broken start
     return null
@@ -147,6 +153,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
 
   const bars = ref<Record<string, StoredFacets>>(stored?.bars ?? {})
   const chart = ref<StoredChart>(stored?.chart ?? { timeframe: null })
+  const runChart = ref<StoredRunChart>(stored?.runChart ?? { run: null, unit: null, timeframe: null })
   // the layout is large and replaced whole, never edited in place — no deep reactivity needed
   const dock = shallowRef<object | null>(stored?.dock ?? null)
   // replaced whole as well, by the dock store, which owns what a place means
@@ -158,6 +165,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       links: context.links,
       bars: bars.value,
       chart: chart.value,
+      runChart: runChart.value,
       dock: dock.value,
       places: places.value,
     }
@@ -166,7 +174,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
     writeTabAndShared(STORAGE_KEY, JSON.stringify(arrangement))
   }
 
-  watch([() => context.links, bars, chart], persist, { deep: true })
+  watch([() => context.links, bars, chart, runChart], persist, { deep: true })
   watch([dock, places], persist)
 
   function setFacets(bar: string, facets: StoredFacets): void {
@@ -185,5 +193,9 @@ export const useArrangementStore = defineStore('arrangement', () => {
     places.value = next
   }
 
-  return { bars, chart, dock, places, setFacets, setTimeframe, setDock, setPlaces }
+  function setRunChart(next: StoredRunChart): void {
+    runChart.value = next
+  }
+
+  return { bars, chart, runChart, dock, places, setFacets, setTimeframe, setRunChart, setDock, setPlaces }
 })

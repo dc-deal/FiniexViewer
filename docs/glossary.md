@@ -27,7 +27,7 @@ picks; the pick is written into the link), a **sheet** (a reader reads) or a **c
 axis). Not a venue's *balance sheet* (`venue_balances`).
 
 **free chart** — The chart of a market — a broker, a symbol and a timeframe — chosen with no run
-behind it. See *run-bound chart*.
+behind it: the panel *Free chart*, opened from the Panels menu. See *run-bound chart*.
 
 **link** — The set of choices a group of panels shares: a run, its narrowing and its marked
 position, a deployment, a market. A list writes the choice it makes; every panel reads the choices
@@ -60,8 +60,9 @@ the arrangement that is not a choice of what to show.
 **quick bar** — The one to three settings of the panel in front of a tab group, on the right of its
 tabs: a chart's broker, symbol and timeframe, or a report's narrowing.
 
-**run-bound chart** — The chart of one unit of a run, its trades marked on the candles, opened from
-the run — planned in viewer#31. See *free chart*.
+**run-bound chart** — The chart of one unit of a run, its trades marked on the candles — the panel
+*Run chart*, opened beside the run report from the Panels menu or by the chart mark on a trade or
+an order. Which unit it shows is its own choice. See *free chart*.
 
 **tab** — A panel's handle in the dock: its form, its title, and one status that prints only when
 it has something to say.

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import { useChartLink } from '@/composables/use_chart_link'
 import {
   amount, magnitude, numberOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
@@ -99,6 +102,7 @@ const rowCap = computed(() => display.value.tradeRowCap)
 
 const narrowing = useScenarioSelection()
 const link = usePositionLink()
+const chartLink = useChartLink()
 
 /**
  * The way back to the orders of this trade's position — the DECLARED join
@@ -110,6 +114,11 @@ const link = usePositionLink()
  */
 function jumpToOrders(trade: TradeRow): void {
   link.jumpTo('orders', { scenario: trade.scenario_name, position: trade.position_id })
+}
+
+/** The position's candles: the run chart on its unit, centred where the position opened. */
+function showOnChart(trade: TradeRow): void {
+  chartLink.show({ scenario: trade.scenario_name, position: trade.position_id })
 }
 
 /** Every trade of the position a reader jumped to — a partial close means there are several. */
@@ -490,6 +499,16 @@ function card(trade: TradeRow): ListCard {
                0.02 where they opened 0.10 had to open the fills to find out why -->
           <span v-if="closedInParts(trade) > 1" class="in-parts"
             >{{ t('of') }} {{ closedInParts(trade) }}</span>
+          <!-- a mark only where the run chart can draw the unit -->
+          <AppButton
+            v-if="chartLink.canShow(trade.scenario_name)"
+            variant="link"
+            size="compact"
+            class="to-chart"
+            :title="t('Show this trade on the run chart')"
+            :aria-label="t('Show this trade on the run chart')"
+            @click.stop="showOnChart(trade)"
+          ><AppIcon name="form-chart" /></AppButton>
         </span>
         <span :data-rank="1" :title="trade.symbol">{{ trade.symbol }}</span>
         <span :data-rank="2">{{ trade.direction }}</span>
@@ -575,6 +594,10 @@ function card(trade: TradeRow): ListCard {
 
 /* the partial marker rides with the position, not in the figure column — a figure column is
    right-aligned digits, and prose in it breaks the one property the whole list is built on */
+.to-chart {
+  margin-left: var(--space-xs);
+}
+
 .in-parts {
   color: var(--color-text-secondary);
   margin-left: var(--space-xs);

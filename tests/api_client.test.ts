@@ -115,9 +115,16 @@ describe('api_client', () => {
 
     it('returns the bar array from response', async () => {
       const bars = [{ t: 1704067200, o: 42000, h: 43000, l: 41000, c: 42500, v: 100 }]
-      mockGet.mockResolvedValue({ data: bars })
+      mockGet.mockResolvedValue({ data: bars, headers: { 'x-bar-truncated': 'false' } })
       const result = await getBars('kraken_spot', 'BTCUSD', 'H1', '2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z')
-      expect(result).toEqual(bars)
+      expect(result).toEqual({ bars, truncated: false })
+    })
+
+    /** The cap never cuts quietly: the route says so on a header, and the answer carries it on. */
+    it('says when the range held more rows than the route\'s cap', async () => {
+      mockGet.mockResolvedValue({ data: [], headers: { 'x-bar-truncated': 'true' } })
+      const result = await getBars('kraken_spot', 'BTCUSD', 'M1', '2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z')
+      expect(result.truncated).toBe(true)
     })
   })
 

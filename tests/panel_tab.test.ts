@@ -32,7 +32,7 @@ describe('PanelTab', () => {
   it('shows the form of its kind and the kind\'s title', () => {
     const wrapper = mount(PanelTab, { props: { kindId: 'chart', api: fakeApi() as unknown as DockviewPanelApi } })
     expect(wrapper.find('[data-icon="form-chart"]').exists()).toBe(true)
-    expect(wrapper.find('.panel-tab-title').text()).toBe('Chart')
+    expect(wrapper.find('.panel-tab-title').text()).toBe('Free chart')
   })
 
   it('closes its panel, and the click goes no further than the button', async () => {

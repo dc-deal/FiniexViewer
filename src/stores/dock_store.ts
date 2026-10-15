@@ -24,6 +24,23 @@ const COLUMN_KIND = 'run'
 const LIST_KIND = 'runs'
 
 /**
+ * Where a kind opens the first time, while nothing it stood beside is known: the run chart as a
+ * split to the right of the run report, so a trade in the list and its candle are one glance apart
+ * (viewer#31, decided 2026-10-15). Every other kind joins the active panel's tabs.
+ */
+const OPENS_RIGHT_OF: Record<string, string> = { 'run-chart': COLUMN_KIND }
+
+/** The share of the dock's width a split of its own takes in the first arrangement — the report keeps the larger part. */
+const SPLIT_SHARE = 0.4
+
+/**
+ * Below this dock width a split would leave the report too narrow for its lists — measured
+ * 2026-10-15: at 620 px the run list overflowed its panel by 95 px — so the kind joins the
+ * report's tabs instead, right after it.
+ */
+const SPLIT_MIN_WIDTH = 1400
+
+/**
  * Where to look for the group a split stood beside, and on which side of it the split stood: a
  * group to the LEFT means the panel stood to its right. The size kept is the one that side splits.
  */
@@ -98,12 +115,37 @@ export const useDockStore = defineStore('dock', () => {
     openIds.value = api.value ? api.value.panels.map(panel => panel.id) : []
   }
 
-  /** The suggested order, all in one group, on the tab where the work is. */
+  /**
+   * Where a kind that opens beside another goes: a split to its right where the dock is wide enough
+   * to share, at its share of the width; a tab right after it otherwise.
+   */
+  function besideAnchor(dock: DockviewApi, anchor: string): { placement: Placement, size?: number } {
+    if (dock.width >= SPLIT_MIN_WIDTH) {
+      return { placement: { referencePanel: anchor, direction: 'right' }, size: Math.round(dock.width * SPLIT_SHARE) }
+    }
+    const panel = dock.getPanel(anchor)!
+    return { placement: { referencePanel: anchor, direction: 'within', index: panel.group.panels.indexOf(panel) + 1 } }
+  }
+
+  /**
+   * The suggested order: the lists and the report as tabs of one group, on the tab where the work
+   * is — and a kind that opens beside another, the run chart, as a split to its right.
+   */
   function arrangeDefault(dock: DockviewApi): void {
     dock.clear()
     const kinds = PANEL_KINDS.filter(kind => kind.opensByDefault).sort((a, b) => a.order - b.order)
-    kinds.forEach((kind, index) =>
-      add(dock, kind.id, index ? { referencePanel: kinds[0]!.id, direction: 'within' } : undefined))
+    const tabs = kinds.filter(kind => !OPENS_RIGHT_OF[kind.id])
+    tabs.forEach((kind, index) =>
+      add(dock, kind.id, index ? { referencePanel: tabs[0]!.id, direction: 'within' } : undefined))
+    for (const kind of kinds.filter(entry => OPENS_RIGHT_OF[entry.id])) {
+      const anchor = OPENS_RIGHT_OF[kind.id]!
+      if (!dock.getPanel(anchor)) {
+        add(dock, kind.id)
+        continue
+      }
+      const { placement, size } = besideAnchor(dock, anchor)
+      add(dock, kind.id, placement, size)
+    }
     dock.getPanel(firstActiveKind())?.api.setActive()
   }
 
@@ -122,6 +164,22 @@ export const useDockStore = defineStore('dock', () => {
       : undefined)
     // a panel added comes to the front; it stays there only where the list it joins was in front
     if (before && before.id !== LIST_KIND) before.api.setActive()
+  }
+
+  /**
+   * A stored layout that has never held the run chart — written before it opened by default — gets
+   * it beside the run report, the way a first arrangement has it: a new panel is appended with its
+   * default, never one the reader HID, which has a place to come back to.
+   */
+  function addMissingRunChart(dock: DockviewApi): void {
+    const kindId = 'run-chart'
+    const anchor = OPENS_RIGHT_OF[kindId]!
+    if (dock.getPanel(kindId) || arrangement.places[kindId] || !dock.getPanel(anchor)) return
+    const before = dock.activePanel
+    const { placement, size } = besideAnchor(dock, anchor)
+    add(dock, kindId, placement, size)
+    // beside the report, not in front of the panel the reader had in front
+    before?.api.setActive()
   }
 
   /**
@@ -209,6 +267,7 @@ export const useDockStore = defineStore('dock', () => {
       if (layout) {
         dock.fromJSON(layout)
         addMissingBundle(dock)
+        addMissingRunChart(dock)
       } else arrangeDefault(dock)
     } catch {
       arrangeDefault(dock)
@@ -244,14 +303,18 @@ export const useDockStore = defineStore('dock', () => {
 
   /**
    * Brings a kind's panel to the front. A closed one opens where it last stood while a panel it
-   * stood beside is still open, and beside the active one otherwise.
+   * stood beside is still open; else where its kind first opens, and beside the active one.
    */
   function open(kindId: string): void {
     const dock = api.value
     if (!dock) return
     if (!dock.getPanel(kindId) && !placeAgain(dock, kindId)) {
+      const anchor = OPENS_RIGHT_OF[kindId]
       const active = dock.activePanel?.id
-      add(dock, kindId, active ? { referencePanel: active, direction: 'within' } : undefined)
+      if (anchor && dock.getPanel(anchor)) {
+        const { placement, size } = besideAnchor(dock, anchor)
+        add(dock, kindId, placement, size)
+      } else add(dock, kindId, active ? { referencePanel: active, direction: 'within' } : undefined)
     }
     dock.getPanel(kindId)?.api.setActive()
   }

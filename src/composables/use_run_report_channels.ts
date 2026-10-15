@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import { provideChartLink } from '@/composables/use_chart_link'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { provideOrderSteps } from '@/composables/use_order_steps'
 import { usePanelJump } from '@/composables/use_panel_jump'
@@ -7,6 +8,8 @@ import { providePositionLink } from '@/composables/use_position_link'
 import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import { panelById } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
+import { useDockStore } from '@/stores/dock_store'
+import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
@@ -48,6 +51,17 @@ export function provideRunReportChannels(): void {
       if (!descriptor) return false
       // the same record the column is handed, read by the source a descriptor declares
       return sections.sources[descriptor.source] != null
+    },
+  })
+
+  // the way from a row to its candles: the run chart pointed at the position, brought to the front
+  const runChart = useRunChartStore()
+  const dock = useDockStore()
+  provideChartLink({
+    canShow: (scenario: string) => runChart.canShow(scenario),
+    show: (ref: PositionRef) => {
+      runChart.showPosition(ref)
+      dock.open('run-chart')
     },
   })
 

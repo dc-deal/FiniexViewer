@@ -82,7 +82,7 @@ A production image for the Viewer (static build served by a lightweight HTTP ser
 
 Loading a candle chart for `mt5/EURUSD M30`:
 
-1. Browser calls `http://localhost:5173/` and opens the Chart panel.
+1. Browser calls `http://localhost:5173/` and opens the free chart from the Panels menu.
 2. Vite serves the Vue SPA.
 3. On mount, the SPA calls `GET /api/v1/timeframes` once to populate the timeframe selector (result cached in `timeframe_store`, never re-fetched).
 4. After the user selects broker, symbol, and timeframe, the SPA calls `GET /api/v1/brokers/mt5/symbols/EURUSD/bars?timeframe=M30&from=...&to=...`.
@@ -96,7 +96,7 @@ No shared filesystem, no direct imports across repositories. The HTTP contract i
 
 The backend exposes two planes. The viewer consumes both, and treats them differently only in what they describe.
 
-**Data plane** — the market data behind the candle chart:
+**Data plane** — the market data behind the two candle charts, the free one and the run chart:
 
 ```
 GET /api/v1/health                                    open, no token
@@ -104,9 +104,14 @@ GET /api/v1/timeframes                                open, no token
 GET /api/v1/caller                                    token, no grant — who the server takes us to be
 GET /api/v1/brokers                                   token, no grant
 GET /api/v1/brokers/{broker}/symbols
-GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage
-GET /api/v1/brokers/{broker}/symbols/{symbol}/bars
+GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage   404 where the archive holds nothing (`findCoverage`)
+GET /api/v1/brokers/{broker}/symbols/{symbol}/bars       the bars that OPEN in the range; `X-Bar-Truncated` read
 ```
+
+**The bars route answers the bars that OPEN in `[from, to]`**, each stamped with the open of its
+period (`X-Bar-Time-Basis: open`), and never cuts quietly: a range past its cap of 10,000 is
+answered with the cap's worth and `X-Bar-Truncated: true` (their `market-data` document).
+`getBars` returns both, so a shortened answer is never drawn as a whole one.
 
 The two open routes are open by decision, not by omission: `/health` is the liveness check, and
 `/timeframes` is the app's own static configuration rather than data about a venue or a run. Useful
@@ -473,6 +478,7 @@ arrangement.v1 = { version: 1,
                    links: { A: { run: { id, units, position }, deployment: { id }, market: { broker, symbol } } },
                    bars:  { 'run-picker': { selection, search, sort }, 'scenario-roster': { …, scope: <run id> } },
                    chart: { timeframe },
+                   runChart: { run, unit, timeframe },
                    dock:  <dockview's toJSON()>,  places: { <panel id>: { besides, direction, index?, size? } } }
 ```
 
@@ -1256,11 +1262,16 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
   the area *Runs*, each under the name it has there (`menuTitle`). What
   is read or set and then closed — About, the settings — is a dialog and has no kind. Each component
   is loaded on demand into its own chunk, as the routes before them were.
-- **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: the suggested order in
-  one group, in front where the work is — the run report where a run is restored, the run list
-  where none is yet (`firstActiveKind`). A stored layout that never held the run report gains it
-  right after the run list where a run is chosen, in front where the list was; never one the reader
-  hid, which has a place to come back to. `open(kind)` brings a panel to the front; a closed one opens where it
+- **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: Deployments, Runs and
+  the run report as tabs of one group, in front where the work is — the run report where a run is
+  restored, the run list where none is yet (`firstActiveKind`) — and the run chart beside the report
+  (operator, 2026-10-15): a split to its right at 40 % of the width where the dock is at least
+  1400 px wide, a tab right after it below that, where a split would leave the report's lists too
+  narrow (measured: at 620 px the run list overflowed its panel by 95 px). The free chart is not in
+  it and opens from the Panels menu. A stored layout that never held the run report gains it right
+  after the run list where a run is chosen, in front where the list was, and one that never held
+  the run chart gains it beside the report; never a panel the reader hid, which has a place to come
+  back to. `open(kind)` brings a panel to the front; a closed one opens where it
   last stood (*Closing hides* below), and beside the active one where nothing it stood beside is
   open. `reset()` goes back to the suggested order and forgets every place — offered in the
   settings' Layout tab, beside everything else about arrangement, rather than as a menu of one
@@ -2104,6 +2115,55 @@ than joining an `s` onto a plural sentence, the same construction the scenario r
 
 No tool enforces the marker — it is carried by review.
 
+### The run chart — one unit of a run on its candles
+
+The chart beside the run (viewer#31, the item #21 left open): one unit of the chosen run on its
+candles, its trades marked where they opened and closed. A panel of the kind `run-chart` in the
+area *Runs*, part of the first arrangement beside the run report (see *Docked Panels*), so a trade
+in the list and its candle are one glance apart; hidden, it comes back from the Panels menu, and
+the chart mark on a trade or an order brings it to the front on that position. With no run chosen
+it says so and draws nothing.
+
+```
+[☰ Runs][▤ Run · 20261012_205715]          │ [◫ Run chart · EURGBP_refus…]   EURGBP_refusals_01 ▾ · M1 ▾
+  Trade History                             │   ▲ entry: up below the bar (long), down above it (short)
+  pos_eurgbp_1 ↗ ◫  long  +0.68 EUR ──────► │   ● exit: on the other side, + or − as a word,
+                                            │     the colour its polarity
+```
+
+- **`src/stores/run_chart_store.ts`** holds the chart's unit, timeframe, bars and marks. It asks the
+  archive only while a run chart is on show (`attach` / `detach` from the view): the units are read
+  off what the run report already loaded, so a reader who never opens the panel pays nothing.
+- **`src/components/runs/run_chart.ts`** — the pure half: `chartUnits`, `defaultUnit`,
+  `autoTimeframe`, `barOf`, `tradeMarks`, `focusTime`.
+- **The units come from what the run states.** A backtest names each unit's market in
+  `scenario-details` (`symbol`, `data_broker_type`) and the span its ticks covered
+  (`first_tick_time` … `last_tick_time`) — that span is drawn rather than the declared window, which
+  a unit can run past. A session names one market for the run in its configuration
+  (`broker_type`, `symbol`, an untyped record read at runtime) and only the start of its window
+  (`data_windows`): it is drawn to the end of the coverage. A unit that processed no tick, or
+  whose market nothing names, stays in the list, disabled, with the reason.
+- **The unit is the chart's own choice**, kept per run in the arrangement (`runChart`); until one
+  is made it is the one scenario the run is narrowed to, else the first unit with trades.
+- **The timeframe is the finest the archive renders for the market that draws the window in at
+  most 2,000 bars** — an hour of a backtest in M1, a session of weeks in hours — unless the reader
+  chose one. The coverage lists its timeframes alphabetically, so they are ordered by the lengths
+  `/timeframes` states.
+- **The bars are asked from one period BEFORE the window.** The route answers the bars that open in
+  the range, and the bar the first tick fell in opened before it — measured 2026-10-15:
+  `from=05:00:00.274` answered from the 05:01 bar, and the trade at 05:00:40 had no candle. The
+  length only widens the ask; a mark stands on a bar SERVED, the last one that opened at or before
+  the event, never on one computed from a period's length — a trading day or a week does not start
+  on a multiple of its length, and lightweight-charts snaps a mark between bars onto the next one.
+- **What it centres on is the link's marked position.** The chart mark on a row marks the position
+  (`context.mark`), sets the chart's unit and opens the panel (`use_chart_link.ts`, provided at
+  the root beside the other channels) — so the row in the list and the marks on the candles agree
+  on what is being looked at, and that position's marks are drawn larger. A long window is centred
+  on where the position opened; a short one is shown whole.
+- **Every state says what it is**: no run, the run's units on their way, no unit that can be drawn,
+  a market the archive holds nothing for, a window without bars, and a notice where the route cut
+  the window — an empty chart says nothing about why it is empty.
+
 ### Chart Engine — Lightweight Charts (TradingView)
 
 [Lightweight Charts](https://github.com/tradingview/lightweight-charts) is a purpose-built OHLCV charting library: small bundle, good performance, minimal API surface. It handles candle rendering, time axis, crosshair, and resize natively.
@@ -2127,7 +2187,9 @@ and the tokens follow — but a canvas is painted with values. So the chart read
 `--color-text-secondary` and `--color-border` for its surface, text and rules, `--color-accent` for
 the crosshair's lines (interactive focus) and `--color-positive` / `--color-negative` for the
 candles (a candle's direction is a polarity), and a `MutationObserver` on `data-theme` repaints it
-without building it again. Until 2026-10-12 the colours were written into the component as the
+without building it again. The run chart's marks are painted the same way: an entry in
+`--color-text-primary`, an exit in the polarity of its result and `--color-text-secondary` where
+it is flat — the shape and the sign carry the meaning, the colour only reinforces it. Until 2026-10-12 the colours were written into the component as the
 dark theme's values, so the light theme showed a dark chart; the dark theme is pixel-identical to
 before, measured on the canvas. The crosshair's two axis labels keep the library's own dark label
 (`#131722`, its text chosen for contrast) in both themes, deliberately: it reads on both surfaces,
