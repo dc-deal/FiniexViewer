@@ -7,6 +7,894 @@
   ],
   "runs": [
     {
+      "run_id": "20261015_081253_f7c1d6d2",
+      "group": "simulation",
+      "name": "ethusd_is_30d_2017",
+      "artifacts": [],
+      "stream_files": [],
+      "start_time": "2026-10-15T08:12:53.145626+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "51095a1c77f84b8ab8025314fccd21cb420b19c4cb0a8a72c251f1a2412cca9c",
+      "app_version": "1.4.0",
+      "git_commit": "18f4a850",
+      "config_snapshot": "ethusd_is_30d_2017.json",
+      "reporting": "expected",
+      "size_bytes": 0,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "ETHUSD_blocks_01",
+          "start_date": "2017-01-01T00:00:00+00:00",
+          "end_date": "2017-01-28T05:17:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_02",
+          "start_date": "2017-01-28T09:25:00+00:00",
+          "end_date": "2017-02-27T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_03",
+          "start_date": "2017-02-27T09:25:00+00:00",
+          "end_date": "2017-03-29T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_04",
+          "start_date": "2017-03-29T09:25:00+00:00",
+          "end_date": "2017-04-28T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_05",
+          "start_date": "2017-04-28T09:25:00+00:00",
+          "end_date": "2017-05-28T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_06",
+          "start_date": "2017-05-28T09:25:00+00:00",
+          "end_date": "2017-06-27T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_07",
+          "start_date": "2017-06-27T09:25:00+00:00",
+          "end_date": "2017-07-27T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_08",
+          "start_date": "2017-07-27T09:25:00+00:00",
+          "end_date": "2017-08-26T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_09",
+          "start_date": "2017-08-26T09:25:00+00:00",
+          "end_date": "2017-09-25T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_10",
+          "start_date": "2017-09-25T09:25:00+00:00",
+          "end_date": "2017-10-25T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_11",
+          "start_date": "2017-10-25T09:25:00+00:00",
+          "end_date": "2017-11-24T09:25:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_12",
+          "start_date": "2017-11-24T09:25:00+00:00",
+          "end_date": "2017-12-24T09:25:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 32,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
+      "run_id": "20261015_080410_1d3acb68",
+      "group": "simulation",
+      "name": "ethusd_is_year_2021",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "robustness.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-15T08:04:10.896621+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "64034ada3c033e5b1ea28390337aecc2e1b3f41a2505a3bc714ac79600e2f26b",
+      "app_version": "1.4.0",
+      "git_commit": "18f4a850",
+      "config_snapshot": "ethusd_is_year_2021.json",
+      "reporting": "expected",
+      "size_bytes": 1554973,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "ETHUSD_blocks_01",
+          "start_date": "2021-01-01T00:00:00+00:00",
+          "end_date": "2021-07-22T21:27:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_blocks_02",
+          "start_date": "2021-07-23T02:35:00+00:00",
+          "end_date": "2022-01-01T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 32,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 934.6212899895435,
+          "total_trades": 112
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 8,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 31517474.883,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261015_074932_9da9e272",
+      "group": "simulation",
+      "name": "ethusd_refusal_check_2025",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "start_time": "2026-10-15T07:49:32.542231+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "4e731f4c283acfc10ff2c3825a68a35f54aab0d889cfdb6d504ac860353f498d",
+      "app_version": "1.4.0",
+      "git_commit": "18f4a850",
+      "config_snapshot": "ethusd_refusal_check_2025.json",
+      "reporting": "expected",
+      "size_bytes": 27488,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "ETHUSD_refusal_check",
+          "start_date": "2025-06-01T00:00:00+00:00",
+          "end_date": "2025-06-02T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 0.0,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_203248_e0497aec",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_hard_restart",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "cold_start.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T20:32:48.985602+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "d705a50eeca25dda0c105f1168f60c1cf6c1e3f9ec3d5add44c71653586f2b22",
+      "app_version": "1.4.0",
+      "git_commit": "e7186fe4",
+      "config_snapshot": "security_cert_5_hard_restart.json",
+      "reporting": "expected",
+      "size_bytes": 54464,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_hard_restart",
+          "start_date": "2026-10-14T20:32:48.985602+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "failed",
+      "error_count": 1,
+      "warning_count": 0,
+      "log_warning_count": 3,
+      "tick_timespan_seconds": 0.178665,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_203223_efa7ab14",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_hard_kept",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T20:32:23.074320+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "213835270109b2d5bd32439ba4e6f1b0a19c9a7f483400a9536703ed6942b2e1",
+      "app_version": "1.4.0",
+      "git_commit": "e7186fe4",
+      "config_snapshot": "security_cert_4_hard_kept.json",
+      "reporting": "expected",
+      "size_bytes": 51324,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_hard_kept",
+          "start_date": "2026-10-14T20:32:23.074320+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "failed",
+      "error_count": 1,
+      "warning_count": 0,
+      "log_warning_count": 2,
+      "tick_timespan_seconds": 0.154327,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_203155_a91de2a0",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_restart",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T20:31:55.830472+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "3ed2700e837e3358d66c4afa81b1a08875c826e46cd3b0b94830a25804f694ee",
+      "app_version": "1.4.0",
+      "git_commit": "e7186fe4",
+      "config_snapshot": "security_cert_3_restart.json",
+      "reporting": "expected",
+      "size_bytes": 44690,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_restart",
+          "start_date": "2026-10-14T20:31:55.830472+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 3,
+      "tick_timespan_seconds": 0.0,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_203113_68a1f0f4",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_soft",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T20:31:13.390390+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "44a4c27d049cd439847f1bdb81d5f59084ab3e2ea5e3967459eee69a4cde9396",
+      "app_version": "1.4.0",
+      "git_commit": "e7186fe4",
+      "config_snapshot": "security_cert_2_soft.json",
+      "reporting": "expected",
+      "size_bytes": 63440,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_soft",
+          "start_date": "2026-10-14T20:31:13.390390+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -0.07888800000000017,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 4,
+      "tick_timespan_seconds": 14.86944,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_202929_9fdd9655",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_guards",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T20:29:29.825195+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "3d4cc7302a60add1afd319ea4a115768f66fef1547c843b549dd909f75ec479d",
+      "app_version": "1.4.0",
+      "git_commit": "e7186fe4",
+      "config_snapshot": "security_cert_1_guards.json",
+      "reporting": "expected",
+      "size_bytes": 107697,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_guards",
+          "start_date": "2026-10-14T20:29:29.825195+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -0.07854,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 11,
+      "tick_timespan_seconds": 72.091732,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_193602_61a8f3c3",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_hard_restart",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "cold_start.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T19:36:02.053520+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "d705a50eeca25dda0c105f1168f60c1cf6c1e3f9ec3d5add44c71653586f2b22",
+      "app_version": "1.4.0",
+      "git_commit": "d7326215",
+      "config_snapshot": "security_cert_5_hard_restart.json",
+      "reporting": "expected",
+      "size_bytes": 56696,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_hard_restart",
+          "start_date": "2026-10-14T19:36:02.053520+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "failed",
+      "error_count": 1,
+      "warning_count": 1,
+      "log_warning_count": 3,
+      "tick_timespan_seconds": 0.452384,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_193531_5a0215aa",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_hard_kept",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T19:35:31.531656+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "213835270109b2d5bd32439ba4e6f1b0a19c9a7f483400a9536703ed6942b2e1",
+      "app_version": "1.4.0",
+      "git_commit": "d7326215",
+      "config_snapshot": "security_cert_4_hard_kept.json",
+      "reporting": "expected",
+      "size_bytes": 53512,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_hard_kept",
+          "start_date": "2026-10-14T19:35:31.531656+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "failed",
+      "error_count": 1,
+      "warning_count": 1,
+      "log_warning_count": 2,
+      "tick_timespan_seconds": 0.490403,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_193501_405d4ce1",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_restart",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T19:35:01.076055+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "3ed2700e837e3358d66c4afa81b1a08875c826e46cd3b0b94830a25804f694ee",
+      "app_version": "1.4.0",
+      "git_commit": "d7326215",
+      "config_snapshot": "security_cert_3_restart.json",
+      "reporting": "expected",
+      "size_bytes": 47106,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_restart",
+          "start_date": "2026-10-14T19:35:01.076055+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 1,
+      "log_warning_count": 3,
+      "tick_timespan_seconds": 0.0,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_193413_145507dd",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_soft",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T19:34:13.500978+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "44a4c27d049cd439847f1bdb81d5f59084ab3e2ea5e3967459eee69a4cde9396",
+      "app_version": "1.4.0",
+      "git_commit": "d7326215",
+      "config_snapshot": "security_cert_2_soft.json",
+      "reporting": "expected",
+      "size_bytes": 65656,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_soft",
+          "start_date": "2026-10-14T19:34:13.500978+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -0.07869999999999999,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 1,
+      "log_warning_count": 4,
+      "tick_timespan_seconds": 14.168513,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261014_193230_7825af6e",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_guards",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warmup_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-14T19:32:30.679498+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "3d4cc7302a60add1afd319ea4a115768f66fef1547c843b549dd909f75ec479d",
+      "app_version": "1.4.0",
+      "git_commit": "d7326215",
+      "config_snapshot": "security_cert_1_guards.json",
+      "reporting": "expected",
+      "size_bytes": 108944,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_guards",
+          "start_date": "2026-10-14T19:32:30.679498+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 31,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -0.07809800000000018,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 1,
+      "log_warning_count": 8,
+      "tick_timespan_seconds": 73.350664,
+      "has_reports": true
+    },
+    {
       "run_id": "20261012_210703_8fa0a7df",
       "group": "simulation",
       "name": "trend_channel_reference_sweep_base__sweep_20261012_210055_c008",
@@ -11335,5 +12223,5 @@
       "has_reports": true
     }
   ],
-  "count": 141
+  "count": 154
 }

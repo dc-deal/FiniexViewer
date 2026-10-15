@@ -470,6 +470,7 @@ function choose(runId: string): void {
         :group-by="familyOf"
         :is-open="isFamilyOpen"
         :shows-group-head="showsFamilyHead"
+        measure-closed
         @toggle="toggleFamily"
         @pick="run => choose(run.run_id)"
       >

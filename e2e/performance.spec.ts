@@ -60,7 +60,7 @@ test.beforeEach(async ({ page }) => {
 test('the run list is usable quickly', async ({ page }) => {
   const cold = await timed('run list — cold (first transform / first fetch)', async () => {
     await page.goto('/')
-    await page.locator('.run-list .record-row').first().waitFor({ state: 'visible' })
+    await page.locator('.run-list .record-row:not(.record-unseen)').first().waitFor({ state: 'visible' })
   })
 
   // The cold figure also carries the test browser's own stall before it asks for the page at all
@@ -75,7 +75,7 @@ test('the run list is usable quickly', async ({ page }) => {
 
   const warm = await timed('run list — warm (the app itself)', async () => {
     await page.goto('/?reload=1')
-    await page.locator('.run-list .record-row').first().waitFor({ state: 'visible' })
+    await page.locator('.run-list .record-row:not(.record-unseen)').first().waitFor({ state: 'visible' })
   })
 
   // the alarm is on the WARM number; the cold one is recorded so the gap stays visible
@@ -90,13 +90,13 @@ test('a run opens its panels quickly', async ({ page }) => {
   // row: this spec runs only on a perf pass, so it went unnoticed from the day the default filter
   // and the folding arrived until 2026-10-12.
   await openWith(page, '/', FIXTURES_SHOWN)
-  await page.locator('.run-list .record-row').first().waitFor({ state: 'visible' })
+  await page.locator('.run-list .record-row:not(.record-unseen)').first().waitFor({ state: 'visible' })
   await revealFixtureRun(page)
 
   const ms = await timed('run chosen to panels drawn', async () => {
     // by the id cell's TITLE, not by the row's text: the cell shows only the timestamp part, so
     // the full id appears nowhere in what the row renders
-    await page.locator('.run-list .record-row')
+    await page.locator('.run-list .record-row:not(.record-unseen)')
       .filter({ has: page.locator(`.run-id[title="${FIXTURE_RUN}"]`) })
       .click()
     await page.locator('.panel-trigger').first().waitFor({ state: 'visible' })

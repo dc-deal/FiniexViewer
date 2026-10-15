@@ -854,6 +854,21 @@ sliding every heading sideways. A grouped list therefore declares proportional t
 one long cell widening its column. A heading cell may SPAN tracks, which is what the table's old
 `colspan` did for the unit's name.
 
+**Or the list measures the closed groups too — `measureClosed`.** Not every column of a grouped
+list can take a share: the run list's stamp and figures are as wide as their values, and a share
+wide enough for the widest one wastes room on every other row. Those tracks stay `auto`, and then a
+closed group holding the widest value of a column widens it the moment it opens — measured
+2026-10-15 on the run list, 4.75 px once the index held thirteen runs more, and every heading
+beside it moved. With `measureClosed` the list also draws the rows of every closed group, at the
+end of the grid, with no height, unseen, hidden from assistive technology (`aria-hidden`) and out of
+reach of focus and pointer (`inert`). The tracks are then sized over every row, shown or not, which
+is how established data grids settle it. It is opt-in, because a long list then draws rows it does
+not show — measured 2026-10-15 on the preview bundle, +74 ms on the warm run list at 154 runs; the
+unseen rows are memoised on the row, so a pick does not draw them again. The run list is the caller
+that needs it. Such a row keeps the `record-row` class, since
+the width-bearing styles hang on it, and is told apart by `record-unseen` — whatever counts the
+rows on screen counts `.record-row:not(.record-unseen)`.
+
 **The card beside a row is wrapped by the LIST, not by the caller.** reka-ui's trigger takes a
 single element and that element is the row button, which the list owns. Wrapping every row
 unconditionally would mount a tooltip context per row — five hundred on a long trade list, for

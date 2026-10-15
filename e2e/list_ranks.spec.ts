@@ -263,10 +263,11 @@ test('every ranked list gives columns up as it narrows', async ({ page }) => {
  * and slide every heading sideways the moment a reader opens it. The architecture note states the
  * rule: a grouped list declares proportional tracks.
  *
- * Measured 2026-10-09 against the captured index of 85 runs: the eight drawn tracks are identical
- * to the pixel, closed and open, because no folded run is wider than the widest standing one. That
- * is the DATA, not a guarantee — which is why this stands here rather than in a comment. The day
- * it stops holding, this says so instead of the operator's eye.
+ * Measured 2026-10-09 against the captured index of 85 runs: the eight drawn tracks were identical
+ * to the pixel, closed and open, because no folded run was wider than the widest standing one. That
+ * was the DATA, not a guarantee — and on 2026-10-15 the index held thirteen runs more and a column
+ * grew 4.75 px when the first family opened. Since then the list measures the rows of closed
+ * families too (`measureClosed`), so the guarantee is the code's; this is what holds it.
  */
 test('opening a family leaves the run list columns where they were', async ({ page }) => {
   await mockApi(page)

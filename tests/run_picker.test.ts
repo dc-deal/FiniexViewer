@@ -9,6 +9,12 @@ import type { RunInfo } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 import { searchFor } from './facet_harness'
 
+/**
+ * A row on SHOW. The run list also draws the rows of its closed families, with no height and unseen,
+ * so its columns hold still when one opens — those carry `record-unseen` and are not rows a reader has.
+ */
+const SHOWN = '.record-row:not(.record-unseen)'
+
 // Choosing a run loads its summary, and the picker is what is tested here, not the server. Without
 // this the click asked a real address from jsdom, and the refused connection was printed into the
 // suite's output as an `AggregateError` under whichever test happened to be running.
@@ -73,7 +79,7 @@ function mountPicker(rows: RunInfo[]) {
 }
 
 function rowTexts(wrapper: VueWrapper): string[] {
-  return wrapper.findAll('.record-row').map(node => node.text())
+  return wrapper.findAll(SHOWN).map(node => node.text())
 }
 
 /**
@@ -82,13 +88,13 @@ function rowTexts(wrapper: VueWrapper): string[] {
  * cost the set name nine characters in every row.
  */
 function rowFor(wrapper: VueWrapper, id: string) {
-  return wrapper.findAll('.record-row')
+  return wrapper.findAll(SHOWN)
     .find(node => node.find('.run-id').attributes('title') === id)!
 }
 
 /** The ids in the order they are drawn — read from their own cell, not out of the running text. */
 function rowIds(wrapper: VueWrapper): string[] {
-  return wrapper.findAll('.run-id').map(node => node.text())
+  return wrapper.findAll(`${SHOWN} .run-id`).map(node => node.text())
 }
 
 /** The figures a row's card carries, as the list handed them over. */
@@ -288,7 +294,7 @@ describe('RunPicker', () => {
       // comes above `older_set` although it also holds the oldest run of all
       // read from the cell's own title, not out of the running text: the heading now carries
       // the list's disclosure glyph as its first token
-      const lines = wrapper.findAll('.record-group, .record-row')
+      const lines = wrapper.findAll(`.record-group, ${SHOWN}`)
         .map(node => node.find('.family-name').exists()
           ? node.find('.family-name').attributes('title')
           : node.find('.run-id').attributes('title'))
@@ -306,13 +312,13 @@ describe('RunPicker', () => {
         run({ run_id: 'held_2', name: 'pair', parent_id: 'deploy_1', parent_kind: 'deployment' }),
       ])
       // the lone run keeps its badge: nothing above it says what kind of run it is
-      expect(wrapper.findAll('.run-marks').map(node => node.text())).toEqual(['deployment'])
+      expect(wrapper.findAll(`${SHOWN} .run-marks`).map(node => node.text())).toEqual(['deployment'])
 
       await wrapper.find('.record-group').trigger('click')
       // opened, the family's two rows carry no badge at all — the heading carries it
-      expect(wrapper.findAll('.record-row')).toHaveLength(3)
+      expect(wrapper.findAll(SHOWN)).toHaveLength(3)
       // the lone run is first (all three share a stamp, so the order is the one they arrived in)
-      expect(wrapper.findAll('.run-marks').map(node => node.text())).toEqual(['deployment', '', ''])
+      expect(wrapper.findAll(`${SHOWN} .run-marks`).map(node => node.text())).toEqual(['deployment', '', ''])
     })
 
     /**
@@ -629,7 +635,7 @@ describe('RunPicker', () => {
     it('gives every cell the rank its own column declares', () => {
       const wrapper = mountPicker([run()])
       const heads = wrapper.findAll('.record-head > span').map(node => node.attributes('data-rank'))
-      const cells = wrapper.find('.record-row').findAll(':scope > span')
+      const cells = wrapper.find(SHOWN).findAll(':scope > span')
         .map(node => node.attributes('data-rank'))
 
       expect(heads).not.toHaveLength(0)
@@ -717,7 +723,7 @@ describe('RunPicker', () => {
     /** A damaged stamp is a hole in the card too, and it must not take the list down with it. */
     it('draws a run whose stamp is not a date', () => {
       const wrapper = mountPicker([run({ run_id: 'broken', start_time: 'not-a-date' })])
-      expect(wrapper.findAll('.record-row')).toHaveLength(1)
+      expect(wrapper.findAll(SHOWN)).toHaveLength(1)
       expect(cardRows(wrapper)['Started (UTC)']).toBeUndefined()
     })
   })

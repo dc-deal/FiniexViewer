@@ -54,6 +54,7 @@ interface ListProps {
   groupBy?: (row: unknown) => string
   isOpen?: (key: string) => boolean
   showsGroupHead?: (key: string) => boolean
+  measureClosed?: boolean
   showsChildren?: (row: unknown) => boolean
   rowClass?: (row: unknown) => string | undefined
   bands?: ListBand[]
@@ -221,6 +222,27 @@ describe('RecordList — groups', () => {
     )
     expect(wrapper.findAll('.record-group')).toHaveLength(2)
     expect(wrapper.findAll('.record-row')).toHaveLength(1)
+  })
+
+  /**
+   * A closed group's rows widen no `auto` track unless they are in the grid: a list that asks for it
+   * draws them anyway — with no height, unseen and out of reach — so opening the group moves no
+   * column. Only the closed group's rows, and only where asked.
+   */
+  it('measures the rows of a closed group where asked, unseen and out of reach', () => {
+    const closed = { groupBy, isOpen: (key: string) => key !== 'alpha' }
+    const measured = mountList({ ...closed, measureClosed: true }, groupSlot)
+    const unseen = measured.findAll('.record-unseen')
+    expect(unseen.map(row => row.text())).toEqual(['alpha1', 'alpha3'])
+    for (const row of unseen) {
+      expect(row.element.parentElement!.getAttribute('aria-hidden')).toBe('true')
+      expect(row.element.parentElement!.hasAttribute('inert')).toBe(true)
+    }
+    // the open group's row is drawn once, as the row it is
+    expect(measured.findAll('.record-row:not(.record-unseen)')).toHaveLength(1)
+
+    expect(mountList(closed, groupSlot).findAll('.record-unseen')).toHaveLength(0)
+    expect(mountList({ groupBy, isOpen: () => true, measureClosed: true }, groupSlot).findAll('.record-unseen')).toHaveLength(0)
   })
 
   it('reports the clicked heading by its key, holding no state of its own', async () => {

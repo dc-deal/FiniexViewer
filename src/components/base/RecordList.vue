@@ -149,6 +149,15 @@ const props = defineProps<{
    * carries its identity and its stream, so it earns a line even with one record under it.
    */
   showsGroupHead?: (key: string) => boolean
+  /**
+   * Measure the rows of CLOSED groups too, so opening one moves no column. An `auto` track is sized
+   * from the cells in the grid, and a closed group's rows are not in it: where one held the widest
+   * value of a column, the column grew the moment the group opened and every heading beside it
+   * moved — measured 2026-10-15 on the run list, 4.75 px once the index held thirteen runs more.
+   * Settled the way established grids settle it: the widths are taken over EVERY row, shown or not.
+   * Opt-in, because a long list then draws, unseen, rows it does not show.
+   */
+  measureClosed?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -400,6 +409,13 @@ function sectionsOf(rows: T[]): ListGroup<T>[] {
  * that draws no heading, exactly as `groupBy`'s own absence already works. That keeps the row, its
  * detail and its children written once rather than in branches that drift apart.
  */
+/** The rows no open group draws, for a list that measures them anyway (`measureClosed`). */
+const unseenRows = computed<T[]>(() => {
+  if (!props.measureClosed) return []
+  return layout.value.flatMap(outer =>
+    outer.groups.flatMap(section => (outer.open && section.open ? [] : section.rows)))
+})
+
 const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   const by = props.outerBy
   if (!by) {
@@ -541,6 +557,19 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
       </li>
     </template>
     </template>
+
+    <!-- the rows of the closed groups: in the grid for the column widths, with no height, unseen
+         and out of reach — see `measureClosed`. Memoised on the row, because only a new row can
+         change a width: a pick re-renders the list, and these rows would be drawn again for nothing -->
+    <li
+      v-for="row in unseenRows"
+      :key="`unseen:${rowKey(row)}`"
+      v-memo="[row, isUnderHead(row)]"
+      aria-hidden="true"
+      inert
+    >
+      <div v-bind="rowAttrs(row)" class="record-unseen"><slot :row="row" marker="" /></div>
+    </li>
   </ul>
   </div>
 </template>
@@ -731,6 +760,15 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
+}
+
+/* measured for the column widths, drawn with no height: its cells widen a track and take no line */
+.record-row.record-unseen {
+  height: 0;
+  padding-block: 0;
+  border-bottom: none;
+  overflow: hidden;
+  visibility: hidden;
 }
 
 /* the four states, the same two channels every control in this app uses */

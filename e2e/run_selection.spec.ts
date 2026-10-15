@@ -26,7 +26,7 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
 
   // Found by the id cell's TITLE, not by the row's text: the cell shows only the timestamp part,
   // since the eight hex characters after it separate two runs of the same second and nothing else.
-  const row = page.locator('.run-list .record-row')
+  const row = page.locator('.run-list .record-row:not(.record-unseen)')
     .filter({ has: page.locator(`.run-id[title="${FIXTURE_RUN}"]`) })
   await expect(row).toBeVisible()
   await row.click()
@@ -123,22 +123,22 @@ test('a stored run that is gone says so', async ({ page }) => {
 
 test('a narrowed run list survives a reload', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+  await expect(page.locator('.run-list .record-row:not(.record-unseen)').first()).toBeVisible()
 
-  const before = await page.locator('.run-list .record-row').count()
+  const before = await page.locator('.run-list .record-row:not(.record-unseen)').count()
   // a term that narrows without emptying: the picker searches the run id and the SET name, and
   // the capture holds several `demo_btcusd_bot` runs. The search stands folded into its button.
   await page.locator('.facet-search-toggle').first().click()
   await page.locator('input.facet-search').first().fill('demo_btcusd')
   await expect.poll(async () => (await storedBar(page, 'run-picker'))?.search).toBe('demo_btcusd')
-  const narrowed = await page.locator('.run-list .record-row').count()
+  const narrowed = await page.locator('.run-list .record-row:not(.record-unseen)').count()
   expect(narrowed).toBeGreaterThan(0)
   expect(narrowed).toBeLessThan(before)
 
   await page.reload()
 
-  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
-  expect(await page.locator('.run-list .record-row').count()).toBe(narrowed)
+  await expect(page.locator('.run-list .record-row:not(.record-unseen)').first()).toBeVisible()
+  expect(await page.locator('.run-list .record-row:not(.record-unseen)').count()).toBe(narrowed)
 })
 
 /**
@@ -152,7 +152,7 @@ test('a narrowed run list survives a reload', async ({ page }) => {
  */
 test('picking a value leaves every chip exactly where it was', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+  await expect(page.locator('.run-list .record-row:not(.record-unseen)').first()).toBeVisible()
 
   const chips = page.locator('.facet-trigger')
   const edges = () => chips.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().x))
