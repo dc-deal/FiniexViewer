@@ -6,13 +6,13 @@ import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useChartLink } from '@/composables/use_chart_link'
 import {
-  amount, magnitude, numberOrNa, signClass, utcInstant,
+  SPREAD_NOT_RECORDED, amount, magnitude, numberOrNa, signClass, spreadFigure, utcInstant,
 } from '@/components/runs/report_format'
 import { useDisplaySettings } from '@/composables/use_display_settings'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import { rowKey } from '@/api/list_key'
-import type { ListCard, ListColumn } from '@/types/list_types'
+import type { ListCard, ListColumn, ListGroup } from '@/types/list_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
 
@@ -206,6 +206,50 @@ const totals = computed(() => {
 
 function totalOf(name: string) {
   return totals.value.get(name) ?? null
+}
+
+/**
+ * The cost parts a heading names: the fees and the measured spread, each only where the served
+ * total is not zero. On forex the fees usually read 0.00 and the spread is the cost; on a spot
+ * market both stand. A spread of null was never measured, which the card says — every run recorded
+ * before contract 32 has one, so saying it here would put it on every heading. The swap is a part of
+ * the fees (`total_fees` is commission plus swap), so it stands beside them in the card.
+ */
+function costParts(name: string): string[] {
+  const total = totalOf(name)
+  if (!total) return []
+  const parts: string[] = []
+  if (total.total_fees !== 0) {
+    parts.push(`${t('fees')} ${amount(total.total_fees, total.currency)}`)
+  }
+  if (total.total_spread_cost !== null && total.total_spread_cost !== 0) {
+    parts.push(`${t('spread')} ${amount(total.total_spread_cost, total.currency)}`)
+  }
+  return parts
+}
+
+/**
+ * A unit's whole split beside its heading, in the order of a trade's card: the parts the line
+ * leaves out because they are zero, and a spread never measured, said as such. Every figure is a
+ * served total; the API serves no total cost, so the card adds none up.
+ */
+function groupCard(group: ListGroup<TradeRow>): ListCard | null {
+  const total = totalOf(group.key)
+  if (!total) return null
+  const money = (value: number) => amount(value, total.currency)
+  return {
+    title: `${group.key} · ${total.currency}`,
+    details: [
+      { label: t('Gross'), value: money(total.gross_pnl), tone: signClass(total.gross_pnl) },
+      { label: t('Net'), value: money(total.net_pnl), tone: signClass(total.net_pnl) },
+      { label: t('Fees'), value: `${money(total.total_fees)} · ${t('swap')} ${total.total_swap.toFixed(2)}` },
+      {
+        label: t('Spread'),
+        value: spreadFigure(total.total_spread_cost, money),
+        ...(total.total_spread_cost === null ? { title: SPREAD_NOT_RECORDED } : {}),
+      },
+    ],
+  }
 }
 
 /**
@@ -447,6 +491,7 @@ function card(trade: TradeRow): ListCard {
       :group-by="trade => trade.scenario_name"
       :is-open="isExpanded"
       :row-card="card"
+      :group-card="groupCard"
       :shows-children="showsFills"
       @toggle="toggleGroup"
       @pick="toggleFills"
@@ -460,17 +505,14 @@ function card(trade: TradeRow): ListCard {
       <template #group="{ group, marker }">
         <!-- TWO cells, counted from the end: everything but the last track, then the last track.
              The old three-cell form was fixed at eight columns and a rank that gives one up would
-             leave it spanning tracks the grid no longer has. The count and the fees ride inside the
+             leave it spanning tracks the grid no longer has. The count and the costs ride inside the
              name — they are a note ABOUT the group, never values of a column. -->
         <span class="group-name" :title="group.key">
           <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
           {{ group.key }}
           <span class="group-meta">
-            {{ plural(group.rows.length, t('trade'), t('trades')) }}
-            <template v-if="totalOf(group.key)">
-              · {{ t('fees') }}
-              {{ amount(totalOf(group.key)!.total_fees, totalOf(group.key)!.currency) }}
-            </template>
+            <!-- one string: a `v-for` over text drops the space between its iterations -->
+            {{ [plural(group.rows.length, t('trade'), t('trades')), ...costParts(group.key)].join(' · ') }}
           </span>
         </span>
         <span class="group-net" :class="signClass(totalOf(group.key)?.net_pnl ?? 0)">

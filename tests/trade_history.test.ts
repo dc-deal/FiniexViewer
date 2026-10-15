@@ -10,6 +10,7 @@ import { provideTestPositionLink } from './position_link_harness'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings } from '@/types/settings_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
+import type { Figure } from '@/types/figure_types'
 import type { PositionRef } from '@/types/context_types'
 
 import fixture from './fixtures/trade_history.json'
@@ -77,9 +78,14 @@ function tradeRows(wrapper: VueWrapper) {
   return wrapper.findAll('.record-row')
 }
 
-/** The figures a card carries, as label -> value. */
+/**
+ * The figures a ROW's card carries, as label -> value. A group heading has a card of its own, told
+ * apart by its title: a row's names the trade's direction, a heading's the unit's currency.
+ */
 function cardRows(wrapper: VueWrapper, index = 0) {
-  const details = wrapper.findAllComponents(HoverCard)[index]?.props('details') ?? []
+  const rowCards = wrapper.findAllComponents(HoverCard)
+    .filter(card => / (long|short) /.test(String(card.props('title'))))
+  const details = rowCards[index]?.props('details') ?? []
   return Object.fromEntries(details.map(row => [row.label, row.value]))
 }
 
@@ -167,6 +173,77 @@ describe('TradeHistoryPanel', () => {
       const group = wrapper.find('.record-group')
       expect(group.text()).toContain('orphan')
       expect(group.text()).toContain('1')
+    })
+  })
+
+  /**
+   * What a unit COST, on its heading: the parts the API served that are not zero — on forex the fee
+   * usually reads 0.00 and the spread is the cost — and the whole split in the card beside it. A
+   * spread never measured is null, which is not a spread of zero (contract 32).
+   */
+  describe('what a unit cost, on its heading', () => {
+    function costs() {
+      return report({
+        trades: [
+          trade({ position_id: 'a1', scenario_name: 'forex' }),
+          trade({ position_id: 'b1', scenario_name: 'spot' }),
+          trade({ position_id: 'c1', scenario_name: 'unquoted' }),
+        ],
+        scenario_totals: [
+          {
+            ...BASE.scenario_totals[0]!, scenario_name: 'forex', currency: 'EUR',
+            total_fees: 0, total_swap: 0, total_spread_cost: 2.5,
+          },
+          {
+            ...BASE.scenario_totals[0]!, scenario_name: 'spot', currency: 'USD',
+            total_fees: 32.25, total_swap: 0, total_spread_cost: 1.25,
+          },
+          {
+            ...BASE.scenario_totals[0]!, scenario_name: 'unquoted', currency: 'EUR',
+            total_fees: 0, total_swap: 0, total_spread_cost: null,
+          },
+        ],
+      })
+    }
+
+    function meta(wrapper: VueWrapper, index: number): string {
+      return wrapper.findAll('.record-group .group-meta')[index]!.text()
+    }
+
+    function cardOf(wrapper: VueWrapper, title: string): Figure[] {
+      const card = wrapper.findAllComponents(HoverCard).find(found => found.props('title') === title)
+      return (card?.props('details') ?? []) as Figure[]
+    }
+
+    it('names the cost parts that are not zero, and no other', () => {
+      const wrapper = mountPanel(costs())
+      expect(meta(wrapper, 0)).toContain('spread 2.50 EUR')
+      expect(meta(wrapper, 0)).not.toContain('fees')
+      // the whole line, separators included: two parts once ran together as `USD· spread`
+      expect(meta(wrapper, 1)).toBe('1 trade · fees 32.25 USD · spread 1.25 USD')
+      expect(meta(wrapper, 2)).not.toContain('fees')
+      expect(meta(wrapper, 2)).not.toContain('spread')
+    })
+
+    it('gives the whole split in the card beside the heading', () => {
+      const split = cardOf(mountPanel(costs()), 'forex · EUR')
+      expect(split.map(pair => pair.label)).toEqual(expect.arrayContaining(['Gross', 'Net', 'Fees', 'Spread']))
+      expect(split.find(pair => pair.label === 'Fees')?.value).toContain('swap')
+      expect(split.find(pair => pair.label === 'Spread')?.value).toBe('2.50 EUR')
+    })
+
+    it('says a spread never measured is not recorded, with the reason beside it', () => {
+      const spread = cardOf(mountPanel(costs()), 'unquoted · EUR').find(pair => pair.label === 'Spread')
+      expect(spread?.value).toBe('not recorded')
+      expect(spread?.title).toBeTruthy()
+    })
+
+    it('offers no card where the unit reports no total', () => {
+      const wrapper = mountPanel(report({ trades: [trade({ scenario_name: 'orphan' })], scenario_totals: [] }))
+      // a group card is titled by name and currency; the row's card beside it names the trade
+      const titles = wrapper.findAllComponents(HoverCard).map(found => String(found.props('title')))
+      expect(titles.filter(title => /^orphan · [A-Z]{3}$/.test(title))).toHaveLength(0)
+      expect(wrapper.find('.record-group .group-meta').text()).not.toContain('fees')
     })
   })
 

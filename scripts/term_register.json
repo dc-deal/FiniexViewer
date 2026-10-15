@@ -184,6 +184,7 @@
   "commission": {"field": "commission_cost", "doc": "booking-periods", "their": null, "ours": null, "note": ""},
   "expired": {"field": "total_expired", "doc": "pending-orders", "their": null, "ours": null, "note": ""},
   "fee": {"field": "fee", "doc": "order-events", "their": null, "ours": null, "note": ""},
+  "fees": {"field": "total_fees", "doc": "trade-history", "their": null, "ours": null, "note": ""},
   "first failure:": {"field": "first_failure_name", "doc": "warnings-errors", "their": null, "ours": null, "note": ""},
   "from": {"field": "warn_at_pct", "doc": "server", "their": null, "ours": null, "note": "a CONNECTOR like over: the machine card reads warn from <warn_at_pct> \u00b7 critical from <critical_at_pct>, the two words being their own level names"},
   "in": {"field": "entry_slippage", "doc": "trade-history", "their": null, "ours": null, "note": ""},
@@ -200,7 +201,7 @@
   "read from": {"field": "count_source", "doc": null, "their": null, "ours": null, "note": "undocumented  a CONNECTOR on the machine card: <count> \u00b7 read from <count_source>. The server document shows count_source only in its example answer; the prose describes limit_source and not this one"},
   "rejected": {"field": "total_rejected", "doc": "pending-orders", "their": null, "ours": null, "note": ""},
   "shutdown:": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/runs/WarningsErrorsPanel.vue; the reading is a local computed, and the served field behind it is outcome.shutdown_mode"},
-  "spread": {"field": "spread_cost", "doc": "booking-periods", "their": null, "ours": null, "note": ""},
+  "spread": {"field": "spread_cost", "doc": "booking-periods", "their": null, "ours": null, "note": "the same label in TWO components - a booking period renders spread_cost (recorded here) and a trade group's heading renders total_spread_cost, the unit's sum of it. The register is keyed on the label TEXT, so only one survives; both are correct where they stand"},
   "submitted": {"field": "total_submitted", "doc": "pending-orders", "their": null, "ours": null, "note": ""},
   "swap": {"field": "swap_cost", "doc": "booking-periods", "their": null, "ours": null, "note": ""},
   "vol": {"field": "volume", "doc": "trade-history", "their": null, "ours": null, "note": ""}

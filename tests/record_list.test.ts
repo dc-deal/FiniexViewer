@@ -49,6 +49,7 @@ interface ListProps {
   hideHead?: boolean
   inert?: boolean
   rowCard?: (row: unknown) => { title: string, details: { label: string, value: string }[] } | null
+  groupCard?: (group: ListGroup<unknown>) => { title: string, details: { label: string, value: string }[] } | null
   isPicked?: (row: unknown) => boolean
   hasDetail?: (row: unknown) => boolean
   groupBy?: (row: unknown) => string
@@ -191,6 +192,34 @@ describe('RecordList — the card beside a row', () => {
         : null,
     })
     expect(wrapper.findAllComponents(HoverCard)).toHaveLength(1)
+  })
+})
+
+describe('RecordList — the card beside a group heading', () => {
+  const groupBy = (row: unknown) => asRow(row).unit
+  const groupSlot = { group: (scope: unknown) => h('span', groupOf(scope).key) }
+
+  it('wraps a heading the caller has a card for, and no other', () => {
+    const wrapper = mountList({
+      groupBy,
+      isOpen: () => true,
+      groupCard: group => group.key === 'alpha' ? { title: 'alpha · EUR', details: [] } : null,
+    }, groupSlot)
+    const cards = wrapper.findAllComponents(HoverCard)
+    expect(cards).toHaveLength(1)
+    expect(cards[0]!.props('title')).toBe('alpha · EUR')
+    // the wrapped heading is still the heading: both stay buttons that open and close their group
+    expect(wrapper.findAll('button.record-group')).toHaveLength(2)
+  })
+
+  // a plain heading cannot be focused, so a card on it would exist for a pointer alone
+  it('offers no card on a heading that is not a control', () => {
+    const wrapper = mountList({
+      groupBy,
+      groupCard: () => ({ title: 'any', details: [] }),
+    }, groupSlot)
+    expect(wrapper.findAll('.record-group')).not.toHaveLength(0)
+    expect(wrapper.findAllComponents(HoverCard)).toHaveLength(0)
   })
 })
 

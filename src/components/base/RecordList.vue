@@ -85,6 +85,12 @@ const props = defineProps<{
    */
   rowCard?: (row: T) => ListCard | null
   /**
+   * The card beside a group HEADING, wrapped by the list for the same reason as `rowCard`. Only a
+   * heading that is a button carries one: a plain heading cannot be focused, so its card would exist
+   * for a pointer alone.
+   */
+  groupCard?: (group: ListGroup<T>) => ListCard | null
+  /**
    * No headings. For a list NESTED under a row — a trade's fills — where a heading row would
    * repeat itself over every two lines and label what the cells already label inline.
    */
@@ -496,8 +502,24 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
         klicken?"* about an order heading in the step list.
       -->
       <li v-if="groupBy && hasHead(section.key)">
+        <!-- the button twice, as on a row: a card must WRAP its trigger -->
+        <HoverCard
+          v-if="(isOpen || showsGroupChildren) && groupCard?.(section)"
+          :title="groupCard(section)!.title"
+          :details="groupCard(section)!.details"
+          side="top"
+        >
+          <button
+            type="button"
+            class="record-group"
+            :aria-expanded="groupShown(section)"
+            @click="emit('toggle', section.key)"
+          >
+            <slot name="group" :group="section" :marker="glyph(groupShown(section))" />
+          </button>
+        </HoverCard>
         <button
-          v-if="isOpen || showsGroupChildren"
+          v-else-if="isOpen || showsGroupChildren"
           type="button"
           class="record-group"
           :aria-expanded="groupShown(section)"

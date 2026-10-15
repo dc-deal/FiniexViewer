@@ -1678,6 +1678,16 @@ served. One refinement belongs to this panel: totals are declared unique by
 `(scenario_name, currency)`, so a scenario that traded in two currencies has TWO. The heading shows
 one figure, so such a scenario gets NONE rather than an arbitrary half.
 
+**The heading names what the unit COST, part by part, and only the parts that are not zero.**
+`fees` is the served `total_fees`, `spread` the served `total_spread_cost` (contract 32) — measured
+rather than charged, already inside the gross, so it stands beside the fees and never in them. On
+forex the fees usually read 0.00 and the spread is the whole cost; on a spot market both stand. A
+part of zero is left out, so `fees 0.00` no longer sits on every forex unit. The card beside the
+heading (`groupCard` on the list) carries the whole split — gross, net, the fees with their swap, the
+spread — and a spread of null reads `not recorded` there, the reason on its pair: the data the unit
+read had no quote, or the run was recorded before contract 32. A null spread stays off the line,
+because every older run has one. Nothing is added up: the API serves no total cost.
+
 **The tracks are proportional, and that is a fix rather than a taste.** They were eight percentage
 widths under `table-layout: fixed`, and the reason is worth keeping: while every group is closed the
 columns the heading spans hold no cells at all, so an automatic layout sized them from nothing and
@@ -1688,7 +1698,7 @@ also mean a rank costs nothing to lay out: the surviving `fr` shares simply redi
 **The group heading is counted from the END, and `Net P&L` is the last column because of it.** The
 heading was three cells spanning `5 + 1 + 2`, an arithmetic fixed at eight columns — so a rank that
 gave one up left it spanning tracks the grid no longer had. Two cells (`1 / -2` for the name, its
-count and its fees; `-2 / -1` for the net) hold at every tier, and the net still lands under its own
+count and its costs; `-2 / -1` for the net) hold at every tier, and the net still lands under its own
 heading, so a reader runs down the one column and meets both the trades and their totals. The
 reading order gains by it besides: opened · held · worst · best · net is the life of the trade in
 order, with the result closing the line instead of sitting in the middle.
