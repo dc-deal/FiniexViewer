@@ -91,9 +91,13 @@ function opening(period: PeriodRow): string {
  * spread of `2.96` on a period that really cost that much.
  */
 function feeSplit(period: PeriodRow): string {
+  // the modelled spread only where one was charged — 0 on recorded quotes, null before contract 33
+  const modelled = period.modelled_spread_cost
+    ? ` · ${t('modelled spread')} ${money(period.modelled_spread_cost, period)}`
+    : ''
   return `${t('commission')} ${money(period.commission_cost, period)}`
     + ` · ${t('swap')} ${money(period.swap_cost, period)}`
-    + ` — ${t('spread')} ${money(period.spread_cost, period)} ${t('besides, not part of this total')}`
+    + ` — ${t('spread')} ${money(period.spread_cost, period)}${modelled} ${t('besides, not part of this total')}`
 }
 
 /** Columns under the identity group, which has no heading of its own. */

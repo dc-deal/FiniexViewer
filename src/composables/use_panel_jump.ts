@@ -65,14 +65,14 @@ export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
     const ownPanel = reportKindId(sectionId)
     if (dock.openIds.includes(ownPanel)) {
       // open as a panel of its own: that panel comes to the front, wherever it stands
-      dock.open(ownPanel)
+      dock.reveal(ownPanel, 'command')
       void scrollToMark(sectionId, ownPanel)
       return
     }
     // in the column: the run report comes to the front — the jump may start in another panel — and
     // a hidden section is not in the column at all, and a folded one draws nothing, so the jump
     // has to make the target reachable before it can scroll to it
-    dock.open('run')
+    dock.reveal('run', 'command')
     layoutStore.show(sectionId)
     layoutStore.setOpen(sectionId, true)
     void scrollToMark(sectionId, 'run')

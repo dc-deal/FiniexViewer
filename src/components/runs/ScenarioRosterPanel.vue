@@ -7,8 +7,8 @@ import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import {
-  SPREAD_NOT_RECORDED, amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, signClass, spreadFigure,
-  utcInstant,
+  SPREAD_NOT_RECORDED, amount, figure, magnitude, marketSpan, modelledSpreadFigures, numberOrNa, percentFigure,
+  percentOrNa, signClass, spreadFigure, utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListColumn } from '@/types/list_types'
@@ -303,6 +303,8 @@ function card(row: ScenarioRow): FigureCard | null {
       value: spreadFigure(unit.total_spread_cost, money),
       ...(unit.total_spread_cost === null ? { title: SPREAD_NOT_RECORDED } : {}),
     },
+    ...modelledSpreadFigures(unit.total_modelled_spread_cost, money),
+    ...ticksModelled(row),
     { label: t('Commission'), value: money(unit.total_commission) },
     { label: t('Swap'), value: money(unit.total_swap) },
   ]
@@ -324,6 +326,26 @@ function card(row: ScenarioRow): FigureCard | null {
   }
   details.push({ label: t('Fees charged'), value: money(unit.fees_charged) })
   return { title: `${row.name} · ${unit.currency}`, details }
+}
+
+/**
+ * What the scenario's ticks recorded without a quote were given instead (contract 33) — said only
+ * where it read any. The counts say how much of its data was priced that way; the factor, the
+ * estimator and the digest identify WHAT was charged, so two runs compare by them, a hover away.
+ */
+function ticksModelled(row: ScenarioRow): Figure[] {
+  const detail = row.modelled_spread
+  if (!detail) return []
+  const median = detail.median_spread_bps === null
+    ? ''
+    : ` · ${t('median')} ${figure(detail.median_spread_bps)} bps`
+  return [{
+    label: t('Ticks modelled'),
+    value: `${detail.ticks_modelled.toLocaleString()} ${t('of')} `
+      + `${detail.ticks_without_quote.toLocaleString()} ${t('without a quote')}${median}`,
+    title: `${t('factor')} ${detail.factor} · ${t('estimator')} ${detail.estimator_version}`
+      + ` · ${t('digest')} ${detail.day_digest}`,
+  }]
 }
 
 /** Polarity of what a unit earned — the same role the figure carries everywhere else. */

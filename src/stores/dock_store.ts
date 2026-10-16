@@ -33,6 +33,31 @@ const OPENS_RIGHT_OF: Record<string, string> = { 'run-chart': COLUMN_KIND }
 /** The share of the dock's width a split of its own takes in the first arrangement — the report keeps the larger part. */
 const SPLIT_SHARE = 0.4
 
+/** The four edges of the whole dock a dragged panel can be docked along. */
+export type DockEdge = 'left' | 'right' | 'top' | 'bottom'
+
+export const DOCK_EDGES: readonly DockEdge[] = ['left', 'right', 'top', 'bottom']
+
+/** dockview's word for each edge: a direction from the root of the layout. */
+const EDGE_DIRECTION: Record<DockEdge, 'left' | 'right' | 'above' | 'below'> = {
+  left: 'left', right: 'right', top: 'above', bottom: 'below',
+}
+
+/** The share of the dock a column or a row docked along an edge starts with; its seam moves it. */
+const EDGE_SHARE = 0.25
+
+/**
+ * Why a panel is to be shown, which decides whether a CLOSED one may open (operator, 2026-10-16).
+ * A `command` is the reader asking for that panel: the Panels menu, a link or a jump they clicked.
+ * A `selection` is the reader choosing something the panel shows: a pick in a list. A selection
+ * never reopens a panel the reader closed — a pick in the run list did, and moved the layout on a
+ * click that was about something else.
+ */
+export type RevealReason = 'command' | 'selection'
+
+/** What is being dragged in the dock: a panel by its tab, or a whole group by its header. */
+type DockDrag = { panel: string } | { group: string }
+
 /**
  * Below this dock width a split would leave the report too narrow for its lists — measured
  * 2026-10-15: at 620 px the run list overflowed its panel by 95 px — so the kind joins the
@@ -75,6 +100,9 @@ export const useDockStore = defineStore('dock', () => {
 
   // the API object is dockview's own and large — held, never made reactive
   const api = shallowRef<DockviewApi | null>(null)
+
+  /** What is being dragged, while it is — the dock's edges offer a place only then. */
+  const dragging = shallowRef<DockDrag | null>(null)
   /**
    * Which panels are open, by id. Kept from dockview's own events, because its API object is not
    * reactive — and the column reads it: a section open as a panel of its own is left out there.
@@ -279,7 +307,36 @@ export const useDockStore = defineStore('dock', () => {
       dock.onWillMutateLayout(recordPlaces),
       dock.onDidAddPanel(syncOpen),
       dock.onDidRemovePanel(onRemoved),
+      dock.onWillDragPanel(event => { dragging.value = { panel: event.panel.id } }),
+      dock.onWillDragGroup(event => { dragging.value = { group: event.group.id } }),
+      dock.onDidDrop(endDrag),
     ]
+  }
+
+  function endDrag(): void {
+    dragging.value = null
+  }
+
+  /**
+   * Docks what is being dragged along a whole edge of the dock: a column over its full height, a
+   * row over its full width (operator, 2026-10-16). dockview has edge targets of its own, and they
+   * see no drag over a panel kept in the page: `renderer: 'always'` puts its content in an overlay
+   * outside their element, so only the tab bars reached them (traced 2026-10-16). The dock draws
+   * its own edges instead (`DockEdges.vue`) and docks through the public API.
+   */
+  function dockToEdge(side: DockEdge): void {
+    const dock = api.value
+    const drag = dragging.value
+    dragging.value = null
+    if (!dock || !drag) return
+    const across = side === 'left' || side === 'right'
+    const size = Math.round((across ? dock.width : dock.height) * EDGE_SHARE)
+    const group = dock.addGroup({
+      direction: EDGE_DIRECTION[side],
+      ...(across ? { initialWidth: size } : { initialHeight: size }),
+    })
+    if ('panel' in drag) dock.getPanel(drag.panel)?.api.moveTo({ group })
+    else dock.getGroup(drag.group)?.api.moveTo({ group })
   }
 
   function detach(): void {
@@ -302,21 +359,35 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   /**
-   * Brings a kind's panel to the front. A closed one opens where it last stood while a panel it
-   * stood beside is still open; else where its kind first opens, and beside the active one.
+   * Opens a closed kind: where it last stood while a panel it stood beside is still open; else where
+   * its kind first opens, and beside the active one.
    */
-  function open(kindId: string): void {
+  function openClosed(dock: DockviewApi, kindId: string): void {
+    if (placeAgain(dock, kindId)) return
+    const anchor = OPENS_RIGHT_OF[kindId]
+    const active = dock.activePanel?.id
+    if (anchor && dock.getPanel(anchor)) {
+      const { placement, size } = besideAnchor(dock, anchor)
+      add(dock, kindId, placement, size)
+    } else add(dock, kindId, active ? { referencePanel: active, direction: 'within' } : undefined)
+  }
+
+  /**
+   * Shows a kind's panel — THE way every jump, link and pick shows one, so its rule lives in one
+   * place (VS Code's `openView` as the model, operator 2026-10-16). The panel comes to the front
+   * wherever it stands, in its own group. A closed one opens for a `command` only, never for a
+   * `selection` (see `RevealReason`). Says whether the panel is on show now.
+   */
+  function reveal(kindId: string, reason: RevealReason): boolean {
     const dock = api.value
-    if (!dock) return
-    if (!dock.getPanel(kindId) && !placeAgain(dock, kindId)) {
-      const anchor = OPENS_RIGHT_OF[kindId]
-      const active = dock.activePanel?.id
-      if (anchor && dock.getPanel(anchor)) {
-        const { placement, size } = besideAnchor(dock, anchor)
-        add(dock, kindId, placement, size)
-      } else add(dock, kindId, active ? { referencePanel: active, direction: 'within' } : undefined)
+    if (!dock) return false
+    if (!dock.getPanel(kindId)) {
+      if (reason === 'selection') return false
+      openClosed(dock, kindId)
     }
-    dock.getPanel(kindId)?.api.setActive()
+    const panel = dock.getPanel(kindId)
+    panel?.api.setActive()
+    return panel !== undefined
   }
 
   /** Closes a panel, which hides it — the Panels menu shows it again where it stood. */
@@ -372,7 +443,7 @@ export const useDockStore = defineStore('dock', () => {
       return
     }
     forgetPlace(kindId)
-    open(COLUMN_KIND)
+    reveal(COLUMN_KIND, 'command')
   }
 
   /** Hides a section wherever it stands — its panel's close, or switched off in the column. */
@@ -402,7 +473,8 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   return {
-    api, openIds,
-    attach, detach, open, close, openSection, backIntoColumn, showSection, hideSection, reset, flush,
+    api, openIds, dragging,
+    attach, detach, reveal, close, openSection, backIntoColumn, showSection, hideSection, reset, flush,
+    dockToEdge, endDrag,
   }
 })

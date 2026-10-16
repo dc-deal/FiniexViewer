@@ -22,7 +22,9 @@ onPanelShownAgain(() => { void runsStore.loadRuns(true) })
   <div class="runs-view">
     <!-- the INDEX failing is this panel's to say; the summary failing is the run report's -->
     <p v-if="indexError" class="error-msg">{{ indexError }}</p>
-    <RunPicker v-else @chosen="dock.open('run')" />
+    <!-- a pick is a selection: the run's report comes to the front where it is open, and a report
+         the reader closed stays closed — every other panel shows the run all the same -->
+    <RunPicker v-else @chosen="dock.reveal('run', 'selection')" />
   </div>
 </template>
 

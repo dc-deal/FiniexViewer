@@ -40,7 +40,7 @@ describe('openInDock', () => {
     useRunsStore().runs = runsFixture.runs as RunInfo[]
     useDeploymentsStore().deployments = deploymentsFixture.deployments as DeploymentRow[]
     opened = []
-    useDockStore().open = (kind: string) => { opened.push(kind) }
+    useDockStore().reveal = (kind: string, reason: string) => { opened.push(`${kind} ${reason}`); return true }
   })
 
   /**
@@ -57,7 +57,7 @@ describe('openInDock', () => {
     open.openRun(SECOND!)
     await flushPromises()
     expect(useRunsStore().summary?.run_id).toBe(SECOND)
-    expect(opened).toEqual(['run', 'run'])
+    expect(opened).toEqual(['run command', 'run command'])
   })
 
   it('starts the opened run with no narrowing of the run before it', async () => {
@@ -76,6 +76,6 @@ describe('openInDock', () => {
     await flushPromises()
     expect(apiClient.getDeployment).toHaveBeenCalledWith(id)
     expect(useDeploymentsStore().detail?.deployment_id).toBe(id)
-    expect(opened).toEqual(['deployments'])
+    expect(opened).toEqual(['deployments command'])
   })
 })

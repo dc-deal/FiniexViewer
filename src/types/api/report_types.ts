@@ -656,6 +656,10 @@ export interface PortfolioUnitRow {
   // null where the unit read data WITHOUT A QUOTE (every row bid = ask): no spread was measured,
   // which is not a spread of zero (contract 32 — it read 0 before)
   total_spread_cost: number | null
+  // The spread crossed against quotes the backtest MODELLED for data recorded without one, beside
+  // `total_spread_cost` — the two add up to what the unit's fills crossed. Always a number, 0 where
+  // nothing was modelled (contract 33).
+  total_modelled_spread_cost: number
   total_commission: number
   total_swap: number
   maker_fee: number
@@ -768,6 +772,9 @@ export interface BookingPeriodRow {
   commission_cost: number
   swap_cost: number
   spread_cost: number
+  // Crossed against quotes a backtest MODELLED for data without one — beside `spread_cost`, the two
+  // adding up. null on a period recorded before contract 33: nothing back-fills it.
+  modelled_spread_cost: number | null
   /**
    * Stamped at the source rather than derived — `final_equity - net_pnl` would be wrong as well as
    * derived, because `net_pnl` is realised while equity also values what is still open.
@@ -809,6 +816,8 @@ export interface BookingPeriodUnitTotal {
   commission_cost: number
   swap_cost: number
   spread_cost: number
+  // null where the unit's periods were recorded before contract 33 (measured on the capture)
+  modelled_spread_cost: number | null
   gross_profit: number
   gross_loss: number
   win_rate: number
@@ -966,6 +975,10 @@ export interface TradeRow {
   swap_cost: number
   commission_cost: number
   spread_cost: number
+  // The same quantity where there was no quote to measure against: crossed against a quote the
+  // backtest MODELLED. Inside `gross_pnl` like `spread_cost`, and each fill counts in exactly one
+  // of the two. 0 where every quote was recorded, which includes every live session (contract 33).
+  modelled_spread_cost: number
   /**
    * Maximum ADVERSE excursion. `mae_pnl` arrives signed while the analytics block's `largest_mae`
    * carries the magnitude of the same number — so the sign says nothing the name has not already
@@ -1058,6 +1071,9 @@ export interface ScenarioTotals {
    * on every run recorded before contract 32: the trade history is written when a run ends.
    */
   total_spread_cost: number | null
+  // The unit's `modelled_spread_cost` summed — always a number, 0 where nothing was modelled and on
+  // a run recorded before contract 33
+  total_modelled_spread_cost: number
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/trade-history */
@@ -1257,6 +1273,8 @@ export interface AggregatedCombined {
   highest_equity_scenario: string
   // null as soon as ONE unit's is — a sum over a part would read as the whole (contract 32)
   total_spread_cost: number | null
+  // always summed: 0 where nothing was modelled (contract 33)
+  total_modelled_spread_cost: number
   total_commission: number
   total_swap: number
   maker_fee: number

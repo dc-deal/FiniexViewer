@@ -83,7 +83,7 @@ describe('usePanelJump', () => {
     const dock = useDockStore()
     dock.openIds = ['run', 'report-trade-history']
     const brought: string[] = []
-    dock.open = (id: string) => { brought.push(id) }
+    dock.reveal = (id: string) => { brought.push(id); return true }
     drawRunsPanel()
     const own = document.createElement('div')
     own.dataset['panelKind'] = 'report-trade-history'
@@ -100,7 +100,7 @@ describe('usePanelJump', () => {
   it('brings the run report to the front for a section in the column', () => {
     const dock = useDockStore()
     const brought: string[] = []
-    dock.open = (id: string) => { brought.push(id) }
+    dock.reveal = (id: string) => { brought.push(id); return true }
     usePanelJump()('trade-history', MARK)
     expect(brought).toEqual(['run'])
   })

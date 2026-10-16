@@ -6,7 +6,7 @@ import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useChartLink } from '@/composables/use_chart_link'
 import {
-  SPREAD_NOT_RECORDED, amount, magnitude, signClass, spreadFigure, utcInstant,
+  SPREAD_NOT_RECORDED, amount, magnitude, modelledSpreadFigures, signClass, spreadFigure, utcInstant,
 } from '@/components/runs/report_format'
 import { tradeDetails } from '@/components/runs/trade_card'
 import { useDisplaySettings } from '@/composables/use_display_settings'
@@ -227,6 +227,9 @@ function costParts(name: string): string[] {
   if (total.total_spread_cost !== null && total.total_spread_cost !== 0) {
     parts.push(`${t('spread')} ${amount(total.total_spread_cost, total.currency)}`)
   }
+  if (total.total_modelled_spread_cost !== 0) {
+    parts.push(`${t('modelled spread')} ${amount(total.total_modelled_spread_cost, total.currency)}`)
+  }
   return parts
 }
 
@@ -250,6 +253,7 @@ function groupCard(group: ListGroup<TradeRow>): FigureCard | null {
         value: spreadFigure(total.total_spread_cost, money),
         ...(total.total_spread_cost === null ? { title: SPREAD_NOT_RECORDED } : {}),
       },
+      ...modelledSpreadFigures(total.total_modelled_spread_cost, money),
     ],
   }
 }

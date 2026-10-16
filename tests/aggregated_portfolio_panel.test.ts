@@ -97,6 +97,15 @@ describe('AggregatedPortfolioPanel', () => {
         expect(pair.title, label).toContain('no quote')
       }
     })
+
+    /** Contract 33: what the modelled quotes cost, beside the spread — and only where it is not 0. */
+    it('names the modelled spread beside the measured one where any was charged', () => {
+      const modelled = figurePairs(mountPanel(withFold({ total_spread_cost: null, total_modelled_spread_cost: 6.25 })))
+        .find(pair => pair.label === 'Modelled spread')
+      expect(modelled?.value).toContain('6.25')
+      expect(modelled?.title).toContain('modelled')
+      expect(figurePairs(mountPanel()).map(pair => pair.label)).not.toContain('Modelled spread')
+    })
   })
 
   describe('the account, and the distinctions a reader gets wrong without it', () => {

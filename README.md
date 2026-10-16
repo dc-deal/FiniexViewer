@@ -1,9 +1,9 @@
 # FiniexViewer
 
-> **Version:** v0.3.0 Pre-Alpha Showcase
-> **Status:** v0.3.0 — run inspection. Eleven report panels over a run's stored artifacts, a
-> deployment's session history, the candle chart, a selection restored on reload, 833 unit tests
-> and a browser suite.
+> **Version:** v0.4.0 Pre-Alpha Showcase
+> **Status:** v0.4.0 — docked panels. The run report as a bundle whose sections open as panels of
+> their own, a run chart with the trades on their candles, a deployment's session history, an
+> arrangement kept per browser tab, 1138 unit tests and a browser suite.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
@@ -17,26 +17,22 @@ tabs that split side by side — and every view comes back as the reader left it
 trade opens on its candles in one click: the run chart beside the report shows a unit of the run,
 its trades marked where they opened and closed.
 
-![The run list, folded by family, over the trade history and the orders of one run](docs/images/runs_overview_dark.png)
+![A run report beside its trade history and the run chart, one scenario in focus](docs/images/run_dock_dark.png)
 
-**A run, from the list down to one order.** The list folds eighty-five runs into forty-two lines —
-the children of one sweep or one deployment session stand under a single heading — and a chosen run
-opens the panels beneath it.
+**A run, as panels.** The run report is a bundle: its sections stand one below the other, and any of
+them opens as a panel of its own beside it. One scenario in focus narrows every panel that lists
+scenarios — the dashed frame says which — and the run chart shows that scenario's candles with its
+trades marked where they opened and closed; a card at the pointer says which trade a mark is.
 
-![Trade history and the booking periods of one run](docs/images/booking_periods_dark.png)
+![The run list, folded by family, beside the run chart](docs/images/runs_list_dark.png)
 
-**Where a run was booked.** Each unit's periods as a lane on one canonical clock, and every trade
-one click from the orders that produced it.
+**The run list.** The children of one sweep or one deployment stand under a single heading, a facet
+bar on one line narrows the list, and a pick shows the run in every panel at once.
 
-![A deployment and its sessions](docs/images/deployment_sessions_dark.png)
+![A deployment, its sessions and the booking periods across them](docs/images/deployment_dark.png)
 
 **A live bot across its restarts.** Sessions are separate runs, so the view says when they are not
 one series rather than adding them up — and the periods of all of them share one clock.
-
-![The candle chart](docs/images/viewer_chart_dark.png)
-
-**The chart.** Broker, symbol, timeframe; a default window per timeframe; the selection kept
-across a reload.
 
 ---
 
@@ -102,7 +98,7 @@ Open **[http://localhost:5173](http://localhost:5173)**.
 
 ### Docker Compose (dual-repo setup)
 
-If you use the FiniexTestingIDE devcontainer, the dual-container setup is documented in [FiniexTestingIDE — FiniexViewer Setup Guide](../FiniexTestingIDE/docs/user_guides/finiexviewer_setup.md).
+If you use the FiniexTestingIDE devcontainer, the dual-container setup is documented in [FiniexTestingIDE — FiniexViewer Setup Guide](https://github.com/dc-deal/FiniexTestingIDE/blob/main/docs/user_guides/finiexviewer_setup.md).
 
 ---
 
@@ -117,8 +113,8 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | Docking | **dockview** — tabbed, docked panels; floating switched off |
 | Charts | **Lightweight Charts** (TradingView) |
 | HTTP client | **axios** |
-| Layout | **vue-draggable-plus** for the order of the report panels |
-| Headless components | **Reka UI** — collapsible, toggle group, popover, hover card |
+| Layout | **vue-draggable-plus** for the order of the sections in the run report |
+| Headless components | **Reka UI** — collapsible, dropdown menus, dialog, popover, hover card, tooltip |
 | Icons | **Tabler Icons** — drawn by meaning through one registry |
 | Theme | CSS Custom Properties token system, dark/light mode |
 | Linting | **ESLint 9** + `eslint-plugin-vue` + `@vue/eslint-config-typescript` + `@stylistic` |
@@ -138,11 +134,11 @@ Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_a
 │     FiniexViewer        │ ◄───────────────────────► │   FiniexTestingIDE       │
 │  (Vue 3, TypeScript)    │     /api/v1/brokers/...    │   (Python, FastAPI)      │
 │                         │                            │                          │
-│  - Broker/Symbol picker │                            │  - Parquet tick reader   │
-│  - Candle chart         │                            │  - Bar index manager     │
-│  - Run report panels    │                            │  - Scenario engine       │
+│  - Docked panels        │                            │  - Parquet tick reader   │
+│  - Run report bundle    │                            │  - Bar index manager     │
+│  - Run chart, free chart│                            │  - Scenario engine       │
 │  - Deployment history   │                            │  - Run-results ledger    │
-│  - Restored selection   │                            │                          │
+│  - Restored arrangement │                            │                          │
 └─────────────────────────┘                            └──────────────────────────┘
 ```
 

@@ -6,9 +6,13 @@
  * A tab that is not in front keeps the PRIMARY ink: muted ink is what this app reserves for a
  * control that is disabled, and a tab behind another is a way in, not a dead end. The front tab is
  * told apart by its surface AND an accent rule — two channels, never the hue alone.
+ *
+ * `.panel-dock` reads them too: the dock's own edges (`DockEdges.vue`) stand beside dockview's
+ * element, not inside it, and show their drop in the same colours.
  */
 .dockview-theme-dark,
-.dockview-theme-light {
+.dockview-theme-light,
+.panel-dock {
   --dv-group-view-background-color: var(--color-bg-base);
   --dv-tabs-and-actions-container-background-color: var(--color-bg-surface);
   --dv-tabs-and-actions-container-font-size: var(--font-size-sm);

@@ -7,7 +7,8 @@ import { useRunsStore } from '@/stores/runs_store'
  * The way out of a panel in the docked app: the run or the deployment is CHOSEN — it becomes the
  * main link's and loads, exactly as a pick in its own list does — and the panel showing it comes to
  * the front: the run's report, the deployment's history, opened where it last stood where the
- * reader had closed it. No panel knows the dock; each asks this channel.
+ * reader had closed it, because a link the reader clicked asks for that panel (a `command`). No
+ * panel knows the dock; each asks this channel.
  *
  * Through the stores' own `select…` and never the context's bare setter. A docked view stays
  * mounted, so nothing reloads behind a context that merely changed: measured 2026-10-14, a run
@@ -21,11 +22,11 @@ export function openInDock(): OpenInContext {
   return {
     openRun: (runId: string) => {
       void runs.selectRun(runId)
-      dock.open('run')
+      dock.reveal('run', 'command')
     },
     openDeployment: (deploymentId: string) => {
       void deployments.selectDeployment(deploymentId)
-      dock.open('deployments')
+      dock.reveal('deployments', 'command')
     },
     canOpen: true,
   }

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { bytes, shortHash, sortInstant, spreadFigure, utcInstant } from '@/components/runs/report_format'
+import {
+  bytes, modelledSpreadFigures, shortHash, sortInstant, spreadFigure, utcInstant,
+} from '@/components/runs/report_format'
 
 /**
  * The formatters are exercised through the panels that use them, and that is where the
@@ -61,6 +63,23 @@ describe('report_format', () => {
       expect(spreadFigure(2.955, format)).toBe('2.955 EUR')
       expect(spreadFigure(0, format)).toBe('0 EUR')
       expect(spreadFigure(null, format)).toBe('not recorded')
+    })
+  })
+
+  /**
+   * The modelled spread stands only where one was charged: 0 on every run over recorded quotes and
+   * null on a period recorded before contract 33 would put a line of noise on all of them.
+   */
+  describe('modelledSpreadFigures', () => {
+    it('gives one figure with its reason where a spread was modelled, and none where not', () => {
+      const format = (value: number) => `${value} USD`
+      expect(modelledSpreadFigures(0, format)).toEqual([])
+      expect(modelledSpreadFigures(null, format)).toEqual([])
+      const [modelled, ...rest] = modelledSpreadFigures(1.75, format)
+      expect(rest).toEqual([])
+      expect(modelled?.label).toBe('Modelled spread')
+      expect(modelled?.value).toBe('1.75 USD')
+      expect(modelled?.title).toContain('modelled')
     })
   })
 

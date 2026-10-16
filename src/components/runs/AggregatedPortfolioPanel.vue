@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import FigureBlock from '@/components/base/FigureBlock.vue'
 import {
-  SPREAD_NOT_RECORDED, amount, figure, numberOrNa, percentFigure, signClass, spreadFigure,
+  SPREAD_NOT_RECORDED, amount, figure, modelledSpreadFigures, numberOrNa, percentFigure, signClass, spreadFigure,
 } from '@/components/runs/report_format'
 import type { Figure } from '@/types/figure_types'
 import type { AggregatedCurrency, AggregatedPortfolioReport } from '@/types/api/report_types'
@@ -42,6 +42,7 @@ function costs(row: AggregatedCurrency): Figure[] {
       value: spreadFigure(fold.total_spread_cost, money),
       ...(fold.total_spread_cost === null ? { title: SPREAD_NOT_RECORDED } : {}),
     },
+    ...modelledSpreadFigures(fold.total_modelled_spread_cost, money),
     { label: t('Commission'), value: money(fold.total_commission) },
     { label: t('Swap'), value: money(fold.total_swap) },
     /*

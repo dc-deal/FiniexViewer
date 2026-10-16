@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, fixture, FIXTURE_RUN } from './api_mock'
-import { openWith, showPanel } from './arrangement_seed'
+import { openWith, showPanel, storedLink } from './arrangement_seed'
 
 /**
  * The docked panels, which only a browser can judge: dockview measures, drags and lays out, and
@@ -157,4 +157,59 @@ test('the page does not scroll, also once the window is made smaller', async ({ 
   await expect(runs).toBeVisible()
   const box = (await runs.boundingBox())!
   expect(box.y + box.height).toBeLessThanOrEqual(700)
+})
+
+/**
+ * A panel dragged to the very edge of the dock docks along the WHOLE edge (operator, 2026-10-16):
+ * a column over the full height, a row over the full width. The bottom shows the difference in
+ * the first arrangement's two columns — a drop on a group splits one of them, the edge spans both.
+ * dockview's own edge targets never saw a drag over a panel kept in the page, so the dock draws its
+ * own; this is what proves them.
+ */
+test('a panel dropped at the edge of the dock spans the whole edge', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await expect(page.locator('[data-panel-kind="run"] .panel-column')).toBeVisible()
+  const dock = (await page.locator('.panel-dock').boundingBox())!
+  const tab = page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="runs"]') })
+  const from = (await tab.boundingBox())!
+
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(dock.x + dock.width / 2, dock.y + dock.height - 60, { steps: 6 })
+  await page.mouse.move(dock.x + dock.width / 2, dock.y + dock.height - 4, { steps: 4 })
+  await page.mouse.move(dock.x + dock.width / 2 + 1, dock.y + dock.height - 4)
+  await expect(page.locator('.dock-edge-preview.bottom')).toBeVisible()
+  await page.mouse.up()
+
+  // the edges are gone with the drag, and the panel spans the dock's whole width along its bottom
+  await expect(page.locator('.dock-edge')).toHaveCount(0)
+  const runs = (await page.locator('[data-panel-kind="runs"]').boundingBox())!
+  expect(runs.width).toBeGreaterThan(dock.width - 4)
+  expect(runs.y + runs.height).toBeGreaterThan(dock.y + dock.height - 4)
+  // and the report keeps the full width above it
+  const report = (await page.locator('[data-panel-kind="run"]').boundingBox())!
+  expect(report.y + report.height).toBeLessThanOrEqual(runs.y + 1)
+})
+
+/**
+ * A pick is a SELECTION and never reopens a panel the reader closed (operator, 2026-10-16): with
+ * every section out as a panel of its own, the run report was an empty frame, and a pick in the run
+ * list brought it back each time. The run is chosen all the same — every panel shows it.
+ */
+test('a pick in the run list leaves a closed run report closed, and chooses the run', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await expect(page.locator('[data-panel-kind="run"] .panel-column')).toBeVisible()
+
+  await page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="run"]') }).locator('.panel-tab-close').click()
+  await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(0)
+  await showPanel(page, 'Runs')
+  const other = page.locator('.run-list .record-row >> visible=true').first()
+  const otherId = await other.locator('.run-id').getAttribute('title')
+  await other.click()
+
+  await expect.poll(async () => (await storedLink(page))?.run.id).toBe(otherId)
+  await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(0)
+  await expect(page.locator('[data-panel-kind="runs"]')).toBeVisible()
 })

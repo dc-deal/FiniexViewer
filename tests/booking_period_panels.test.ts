@@ -279,6 +279,17 @@ describe('BookingPeriodTable', () => {
       .toBe('commission 9.04 · swap 1.00 — spread 4.00 besides, not part of this total')
   })
 
+  // contract 33: a spread crossed against modelled quotes stands beside the measured one, not in the fee
+  it('names the modelled spread in the fee breakdown where the period was charged one', () => {
+    const wrapper = mountTable([period({
+      total_fees: 0, commission_cost: 0, swap_cost: 0, spread_cost: 0, modelled_spread_cost: 2.5,
+    })])
+    const labels = wrapper.findAll('.record-head > span').map(node => node.text())
+    const fees = wrapper.find('.record-row').findAll(':scope > span')[labels.indexOf('Fees')]!
+    expect(fees.attributes('title'))
+      .toBe('commission 0.00 · swap 0.00 — spread 0.00 · modelled spread 2.50 besides, not part of this total')
+  })
+
   it('shows the run column only where the rows span several runs', () => {
     expect(mountTable([period()], false).text()).not.toContain('Run')
     expect(mountTable([period()], true).text()).toContain('Run')

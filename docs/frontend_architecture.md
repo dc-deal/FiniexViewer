@@ -1318,6 +1318,26 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
   the page grew a scrollbar over empty space (measured 2026-10-16: the grid at 660 px, a hidden
   overlay at 918). `PanelDock` therefore hides its overflow. It clips only the unseen — a panel
   brought forward is laid out anew, and dockview shifts its own tab-overflow list inside the dock.
+- **Every panel is shown through ONE `reveal(kind, reason)`** (the dock store, operator 2026-10-16,
+  VS Code's `openView` as the model). It brings the panel to the front wherever it stands, in its
+  own group, and it is the only way a jump, a link or a pick shows one — the store exports no
+  `open`, so the type-check refuses a component that tries. The reason decides whether a CLOSED
+  panel may open: a `command` (the Panels menu, a link or a jump the reader clicked) opens it where
+  it stood; a `selection` (a pick in a list) never does. Seven call sites each decided that on their
+  own before, and a pick in the run list reopened the run report the reader had closed, every
+  section of it already out as a panel of its own.
+- **A panel docks along a whole edge of the dock** (`DockEdges.vue`, operator 2026-10-16). Dragged
+  to the outermost edge, a tab becomes a column over the dock's full height or a row over its full
+  width, a quarter of it to start with; a drop on a group only splits that group. dockview has edge
+  targets of its own (`dndEdges`) and they cannot do it here, for two reasons traced that day: the
+  Vue binding declares the option a Boolean prop, so left unset it arrives as `false` and switches
+  them off; and switched on, they see no drag over a panel kept in the page — `renderer: 'always'`
+  puts its content in an overlay outside their element, so only the tab bars reached them. So the
+  dock draws four bands of its own while a drag is under way (`onWillDragPanel`,
+  `onWillDragGroup`), shows the room a drop will take in dockview's drop colours, and docks through
+  the public API (`addGroup({ direction })`, `moveTo`). dockview's own edges are switched off
+  explicitly, so the two never compete. The `dock-edges` hint says it, because nothing on screen
+  shows an edge until a tab is dragged.
 - **`PanelHost`** draws a panel the first time it is SHOWN and keeps it after: a tab behind another
   costs nothing until it is picked, and a panel returned to finds its scroll where it left it. It is
   the panel's error boundary, and it hands the panel its visibility — `onPanelShownAgain` fetches
@@ -1456,7 +1476,10 @@ and deployment views are CSS size containers (`container-type: size`), and the l
 the run list, the deployment list, the scenario roster, the booking-period table — measure their
 `max-height` in `cqh`. With `vh` a view given half the screen still sized its run list for the whole
 of it, and the rows past the view's own hidden overflow could not be reached. Dialogs and hover
-cards stay in `vh`: they float over the whole screen, so the window IS their measure.
+cards stay in `vh`: they float over the whole screen, so the window IS their measure. The run list,
+the whole of its panel since 2026-10-14, takes the REST of its view through flex rather than a cap
+with a fixed reserve for what stands above it: with the hint dismissed, a reserve of 11.5 rem stood
+empty below the last row (measured 2026-10-16: 144 px); `cqh` stays its floor, a third of the view.
 
 **Two stores, two questions.** `runs_store` answers *which* run is selected — the index, the chosen run and the scenarios narrowed to. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
 
@@ -1699,7 +1722,9 @@ part of zero is left out, so `fees 0.00` no longer sits on every forex unit. The
 heading (`groupCard` on the list) carries the whole split — gross, net, the fees with their swap, the
 spread — and a spread of null reads `not recorded` there, the reason on its pair: the data the unit
 read had no quote, or the run was recorded before contract 32. A null spread stays off the line,
-because every older run has one. Nothing is added up: the API serves no total cost.
+because every older run has one. Where such data was given modelled quotes (contract 33) the line
+says `modelled spread` with the unit's `total_modelled_spread_cost`, and the card carries it as a
+figure of its own. Nothing is added up: the API serves no total cost.
 
 **The tracks are proportional, and that is a fix rather than a taste.** They were eight percentage
 widths under `table-layout: fixed`, and the reason is worth keeping: while every group is closed the
@@ -1756,6 +1781,18 @@ data without a quote — every row bid = ask — has a null `total_spread_cost`,
 `total_spread_cost` and `avg_spread` are null as soon as one unit's is, since a sum over a part
 would read as the whole. `spreadFigure` in `report_format.ts` says so, and the figure's hover gives
 the reason; the roster's card does the same per unit.
+
+**Since contract 33 such data pays a MODELLED spread, and it stands beside the measured one.** A
+backtest gives each tick without a quote the quote the spread estimated for the previous day
+implies; what the fills crossed against it is `modelled_spread_cost` on a trade and a booking period,
+`total_modelled_spread_cost` on a unit, a trade group and the aggregated fold — their glossary's
+*modelled spread*. Measured and modelled add up to what the fills crossed, and each fill counts in
+exactly one of the two. `modelledSpreadFigures` in `report_format.ts` builds the one figure every
+place shares, and only where it is not zero: on recorded quotes it is 0, on a period recorded before
+the contract null, and a line of either on every run would be noise. The scenario roster's card adds
+how much of the scenario's data was priced that way (`modelled_spread` on scenario-details: the ticks
+modelled of those without a quote, the median spread given), with the factor, the estimator and the
+day digest — what identifies the charge across runs — a hover away.
 
 **Three distinctions that a reader gets wrong without this panel**, and each carries its caveat where
 the figure is rather than in a paragraph:
