@@ -1,4 +1,6 @@
+import { rowKey } from '@/api/list_key'
 import { sortInstant } from '@/components/runs/report_format'
+import { entryCard, exitCard } from '@/components/runs/trade_card'
 import type { DataWindow, TradeRow } from '@/types/api/report_types'
 import type { ScenarioRow } from '@/types/api/scenario_types'
 import type { PositionRef } from '@/types/context_types'
@@ -141,8 +143,13 @@ function seconds(iso: string): number {
  * circle on the other side, coloured by the sign of the net result and carrying the sign as a word,
  * since a colour never travels alone. A position closed in parts has one entry and an exit per part.
  * An event before the first bar drawn has no candle and gets no mark.
+ *
+ * Every mark carries an id and the card it shows at the pointer. An exit is a trade row, so its id
+ * is the row's declared `key`; an entry is the position's, one per position in the unit.
  */
-export function tradeMarks(trades: TradeRow[], barTimes: number[], focus: PositionRef | null): ChartMark[] {
+export function tradeMarks(
+  trades: TradeRow[], key: string[], barTimes: number[], focus: PositionRef | null,
+): ChartMark[] {
   const marks: ChartMark[] = []
   const entered = new Set<string>()
   for (const trade of trades) {
@@ -160,6 +167,8 @@ export function tradeMarks(trades: TradeRow[], barTimes: number[], focus: Positi
           role: 'entry',
           text: '',
           focused,
+          id: `entry|${trade.scenario_name}|${trade.position_id}`,
+          card: entryCard(trade),
         })
       }
     }
@@ -173,6 +182,8 @@ export function tradeMarks(trades: TradeRow[], barTimes: number[], focus: Positi
       role: net > 0 ? 'gain' : net < 0 ? 'loss' : 'flat',
       text: net > 0 ? '+' : net < 0 ? '−' : '0',
       focused,
+      id: `exit|${rowKey(trade, key)}`,
+      card: exitCard(trade),
     })
   }
   // the chart takes its marks in time order

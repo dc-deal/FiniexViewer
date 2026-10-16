@@ -1,3 +1,5 @@
+import type { FigureCard } from '@/types/figure_types'
+
 /**
  * Why a unit of a run cannot be drawn on the run chart. A code, not a sentence: the words are the
  * view's (`t()` reaches them there).
@@ -34,4 +36,8 @@ export interface ChartMark {
   text: string
   /** A mark of the position the reader is looking at — drawn larger. */
   focused: boolean
+  /** What the chart library reports while the pointer rests on the mark — the key of its card. */
+  id: string
+  /** What the mark is, said at the pointer: which position, and how it opened or ended. */
+  card: FigureCard
 }

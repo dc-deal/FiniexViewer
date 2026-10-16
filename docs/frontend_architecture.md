@@ -2232,6 +2232,26 @@ before, measured on the canvas. The crosshair's two axis labels keep the library
 (`#131722`, its text chosen for contrast) in both themes, deliberately: it reads on both surfaces,
 and it is how TradingView draws it.
 
+**Everything drawn says what it is, at the pointer — through ONE register** (`CandleChart.vue`).
+The library reports the id of the thing under the pointer as `hoveredObjectId`, for a marker (its
+`id`) and for a series primitive (the `externalId` its `hitTest` answers) alike. The chart keeps a
+register of id → `FigureCard` and shows the card of whatever is under the pointer in a `ChartCard`:
+placed from the pointer, on the side with more room, inside the chart's frame, and taking no pointer
+events so the chart keeps them. The trade marks are the register's first source — an exit's id is
+its trade row's declared key, an entry's is the position's, and their cards come from
+`runs/trade_card.ts`, the same builder as the card beside a row in the trade list, so the two cannot
+come to say a trade differently. The algo's drawings (testingide#379) are planned as primitives, and
+a primitive brings its id and its card to the same register; nothing else changes.
+Measured in the browser on 2026-10-16: the library reported `exit|EURGBP_refusals_01|pos_eurgbp_1|379`
+under the pointer and the card showed that trade. That half has no spec: the marks are paint on a
+canvas, the library ignores synthetic pointer events, and finding a mark with real ones costs 36 ms a
+step over the whole pane. Re-check it by hand when the library is upgraded — version 5 moves the
+markers into a plugin.
+
+The card's look is the app's, not one component's: `src/styles/card.css` holds it, and
+`base/FigureCardBody.vue` says what a card says — its heading and its pairs, each pair carrying its
+caveat — for `HoverCard` beside an element and `ChartCard` on a chart alike.
+
 ### Testing Strategy
 
 Unit tests: **Vitest** + **Vue Test Utils**. Vitest runs in the same Vite context as the app — zero extra configuration. Vue Test Utils mounts components and stores in isolation. CI runs on every push and pull request via GitHub Actions.

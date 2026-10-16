@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue'
 import { createChart, ColorType } from 'lightweight-charts'
 import type {
-  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, UTCTimestamp,
+  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, MouseEventParams,
+  UTCTimestamp,
 } from 'lightweight-charts'
+import ChartCard from '@/components/base/ChartCard.vue'
 import type { ChartBar } from '@/types/api/bar_types'
+import type { FigureCard } from '@/types/figure_types'
 import type { ChartMark } from '@/types/run_chart_types'
 
 const props = defineProps<{
@@ -26,6 +29,28 @@ let chart: IChartApi | null = null
 let series: ISeriesApi<'Candlestick'> | null = null
 let resizeObserver: ResizeObserver | null = null
 let themeObserver: MutationObserver | null = null
+
+/** The size the chart was last drawn at — the frame a card has to stay inside. */
+const frameSize = ref({ width: 0, height: 0 })
+
+/**
+ * Every drawn thing that can say what it is, by the id the library reports under the pointer.
+ *
+ * ONE register, and the trade marks are only its first source. The library reports an id for a
+ * marker (its `id`) and for a series primitive (the `externalId` its `hitTest` answers) alike, and
+ * primitives are how the drawings an algo makes will reach this chart (testingide#379): a new kind
+ * of drawing brings its id and its card, and nothing here changes.
+ */
+const cards = computed(() => new Map<string, FigureCard>((props.marks ?? []).map(mark => [mark.id, mark.card])))
+
+/** The card under the pointer, and where the pointer is — null off every drawn thing. */
+const pointed = shallowRef<{ card: FigureCard, x: number, y: number } | null>(null)
+
+function onPointer(param: MouseEventParams): void {
+  const id = param.hoveredObjectId
+  const card = typeof id === 'string' ? cards.value.get(id) : undefined
+  pointed.value = card && param.point ? { card, x: param.point.x, y: param.point.y } : null
+}
 
 /** What the chart paints with — each one a token, in its role where `tokens.css` names one. */
 interface ChartColours {
@@ -81,6 +106,7 @@ function showMarks(): void {
     color: markColour(mark, colours),
     text: mark.text,
     size: mark.focused ? 2 : 1,
+    id: mark.id,
   })))
 }
 
@@ -152,6 +178,8 @@ function initChart(size: { width: number, height: number }): void {
     timeScale: { timeVisible: true },
   })
   chart.applyOptions(chartColours(colours))
+  chart.subscribeCrosshairMove(onPointer)
+  frameSize.value = size
 
   series = chart.addCandlestickSeries({ borderVisible: false, ...candleColours(colours) })
 }
@@ -185,6 +213,7 @@ function onResize(): void {
     return
   }
   chart.resize(size.width, size.height)
+  frameSize.value = size
 }
 
 onMounted(() => {
@@ -203,16 +232,37 @@ onUnmounted(() => {
 
 // bars that arrive before the chart has a size wait for it: onResize hands them over at build time
 watch(() => props.data, newData => showData(newData))
-watch(() => props.marks, () => showMarks())
+// a card of a mark that is gone is not shown on: the next move of the pointer finds what is there
+watch(() => props.marks, () => {
+  pointed.value = null
+  showMarks()
+})
 watch(() => props.focus, () => frame())
 </script>
 
 <template>
-  <div ref="container" class="candle-chart" :data-marks="marks?.length ?? 0" />
+  <div class="candle-chart" :data-marks="marks?.length ?? 0">
+    <div ref="container" class="candle-canvas" />
+    <ChartCard
+      v-if="pointed"
+      :card="pointed.card"
+      :x="pointed.x"
+      :y="pointed.y"
+      :width="frameSize.width"
+      :height="frameSize.height"
+    />
+  </div>
 </template>
 
 <style scoped>
+/* the frame a card is placed in: the library draws into the canvas element beside it */
 .candle-chart {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.candle-canvas {
   width: 100%;
   height: 100%;
 }

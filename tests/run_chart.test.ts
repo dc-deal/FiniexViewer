@@ -11,6 +11,8 @@ const RUN = '20261012_205715_c3b41fff'
 const runInfo = (runsList as unknown as { runs: RunInfo[] }).runs.find(run => run.run_id === RUN)!
 const scenarios = (scenarioFixture as unknown as ScenarioDetailsReport).units
 const trades = (tradeFixture as unknown as TradeHistoryReport).trades
+/** The key the trade history declares for its rows — what an exit mark's id is made of. */
+const KEY = (tradeFixture as unknown as TradeHistoryReport).keys.trades
 
 /** The server's own timeframe lengths, in minutes. */
 const MINUTES: Record<string, number> = { M1: 1, M5: 5, M10: 10, M15: 15, M30: 30, H1: 60, H4: 240, D1: 1440 }
@@ -134,7 +136,7 @@ describe('run_chart', () => {
 
     /** An event belongs to the bar it fell in — 05:00:40 to the 05:00 bar, never the next one. */
     it('marks a long\'s entry below its bar and its exit above, on the bars they fell in', () => {
-      expect(tradeMarks([long], bars, null)).toEqual([
+      expect(tradeMarks([long], KEY, bars, null)).toMatchObject([
         { time: 1761886800, position: 'belowBar', shape: 'arrowUp', role: 'entry', text: '', focused: false },
         { time: 1761886920, position: 'aboveBar', shape: 'circle', role: 'gain', text: '+', focused: false },
       ])
@@ -142,7 +144,7 @@ describe('run_chart', () => {
 
     it('marks a short the other way round, and a loss with its sign as a word', () => {
       const short = trade({ ...long, direction: 'short', net_pnl: -0.4 })
-      expect(tradeMarks([short], bars, null).map(mark => [mark.position, mark.shape, mark.role, mark.text])).toEqual([
+      expect(tradeMarks([short], KEY, bars, null).map(mark => [mark.position, mark.shape, mark.role, mark.text])).toEqual([
         ['aboveBar', 'arrowDown', 'entry', ''],
         ['belowBar', 'circle', 'loss', '−'],
       ])
@@ -151,7 +153,7 @@ describe('run_chart', () => {
     /** A partial close books several trade rows of one position: one entry, an exit per part. */
     it('marks one entry and every exit of a position closed in parts', () => {
       const part = trade({ ...long, exit_time: '2025-10-31T05:01:30+00:00', net_pnl: 0 })
-      const marks = tradeMarks([long, part], bars, null)
+      const marks = tradeMarks([long, part], KEY, bars, null)
       expect(marks.filter(mark => mark.role === 'entry')).toHaveLength(1)
       expect(marks.map(mark => mark.time)).toEqual([1761886800, 1761886860, 1761886920])
       expect(marks.find(mark => mark.time === 1761886860)).toMatchObject({ role: 'flat', text: '0' })
@@ -159,7 +161,7 @@ describe('run_chart', () => {
 
     it('draws the marks of the position looked at larger, and none for an event before the bars', () => {
       const early = trade({ ...long, position_id: 'pos_0', entry_time: '2025-10-31T04:59:00+00:00' })
-      const marks = tradeMarks([long, early], bars, { scenario: 'unit', position: 'pos_1' })
+      const marks = tradeMarks([long, early], KEY, bars, { scenario: 'unit', position: 'pos_1' })
       expect(marks.filter(mark => mark.focused)).toHaveLength(2)
       // the early position's entry has no candle; its exit does
       expect(marks.filter(mark => mark.role === 'entry')).toHaveLength(1)
@@ -169,9 +171,32 @@ describe('run_chart', () => {
       const unitTrades = trades.filter(entry => entry.scenario_name === 'EURGBP_refusals_01')
       const minute = (iso: string): number => Math.floor(Date.parse(iso) / 60_000) * 60
       const times = [...new Set(unitTrades.flatMap(entry => [minute(entry.entry_time), minute(entry.exit_time)]))].sort()
-      const marks = tradeMarks(unitTrades, times, null)
+      const marks = tradeMarks(unitTrades, KEY, times, null)
       expect(marks.length).toBeGreaterThan(0)
       expect(marks.every(mark => times.includes(mark.time))).toBe(true)
+    })
+
+    /**
+     * What the chart says at the pointer: which position, and how it opened or ended. An exit is a
+     * trade row and takes the row's declared key as its id; an entry is the position's.
+     */
+    it('gives every mark an id of its own and a card naming its position', () => {
+      const part = trade({
+        ...long, exit_time: '2025-10-31T05:01:30+00:00', exit_tick_index: long.exit_tick_index + 1,
+        net_pnl: -0.2, close_reason: 'stop_loss',
+      })
+      const marks = tradeMarks([{ ...long, close_reason: '' }, part], KEY, bars, null)
+      expect(new Set(marks.map(mark => mark.id)).size).toBe(marks.length)
+      expect(marks.every(mark => mark.card.title.startsWith('pos_1 · long'))).toBe(true)
+
+      const labels = (role: string) => marks.find(mark => mark.role === role)!.card.details.map(pair => pair.label)
+      expect(labels('entry')).toContain('Opened')
+      expect(labels('entry')).not.toContain('Net')
+      expect(labels('loss')).toEqual(expect.arrayContaining(['Closed', 'Closed by', 'Net']))
+      // the close is named only where one was recorded
+      expect(labels('gain')).not.toContain('Closed by')
+      expect(marks.find(mark => mark.role === 'loss')!.card.details.find(pair => pair.label === 'Net'))
+        .toMatchObject({ tone: 'negative' })
     })
   })
 

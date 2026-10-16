@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import CandleChart from '@/components/CandleChart.vue'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { ChartMark } from '@/types/run_chart_types'
@@ -15,7 +16,10 @@ const lw = vi.hoisted(() => {
   const setMarkers = vi.fn<(marks: Record<string, unknown>[]) => void>()
   const setVisibleLogicalRange = vi.fn<(range: { from: number, to: number }) => void>()
   const series = { setData, setMarkers, applyOptions: vi.fn<(options: Record<string, unknown>) => void>() }
+  /** What the library calls as the pointer moves — held so a test can move it. */
+  const pointer: { move: ((param: Record<string, unknown>) => void) | null } = { move: null }
   const chart = {
+    subscribeCrosshairMove: vi.fn((handler: (param: Record<string, unknown>) => void) => { pointer.move = handler }),
     addCandlestickSeries: vi.fn<(options: Record<string, unknown>) => typeof series>(() => series),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
     timeScale: vi.fn(() => ({ fitContent, setVisibleLogicalRange })),
@@ -25,7 +29,7 @@ const lw = vi.hoisted(() => {
   const createChart = vi.fn<(container: HTMLElement, options: Record<string, unknown>) => typeof chart>(
     () => chart
   )
-  return { chart, series, setData, setMarkers, setVisibleLogicalRange, fitContent, createChart }
+  return { chart, series, pointer, setData, setMarkers, setVisibleLogicalRange, fitContent, createChart }
 })
 
 vi.mock('lightweight-charts', () => ({
@@ -65,7 +69,11 @@ function mountChart(data: ChartBar[] = BARS, extra: { marks?: ChartMark[], focus
 }
 
 function mark(fields: Partial<ChartMark>): ChartMark {
-  return { time: BARS[0]!.time, position: 'belowBar', shape: 'arrowUp', role: 'entry', text: '', focused: false, ...fields }
+  return {
+    time: BARS[0]!.time, position: 'belowBar', shape: 'arrowUp', role: 'entry', text: '', focused: false,
+    id: 'entry|unit|pos_1', card: { title: 'pos_1 · long 0.1', details: [] },
+    ...fields,
+  }
 }
 
 /** A long window: one bar an hour. */
@@ -190,6 +198,59 @@ describe('CandleChart', () => {
     mountChart(BARS, { focus: BARS[1]!.time })
     expect(lw.fitContent).toHaveBeenCalledTimes(1)
     expect(lw.setVisibleLogicalRange).not.toHaveBeenCalled()
+  })
+
+  /**
+   * What is drawn says what it is, at the pointer. The library reports the id of the thing under
+   * the pointer; the chart looks its card up in one register — the trade marks are its first source.
+   */
+  describe('the card at the pointer', () => {
+    const MARKS = [
+      mark({
+        id: 'entry|unit|pos_1',
+        card: { title: 'pos_1 · long 0.1', details: [{ label: 'Opened', value: '05:00' }] },
+      }),
+      mark({
+        id: 'exit|unit|pos_1|7',
+        role: 'loss',
+        card: { title: 'pos_1 · long 0.1', details: [{ label: 'Net', value: '-0.40 EUR', tone: 'negative' }] },
+      }),
+    ]
+
+    it('hands every mark its id, so the library can say which one is under the pointer', () => {
+      size = { width: 800, height: 400 }
+      mountChart(BARS, { marks: MARKS })
+      expect(lw.setMarkers.mock.lastCall![0].map(drawn => drawn['id'])).toEqual(['entry|unit|pos_1', 'exit|unit|pos_1|7'])
+    })
+
+    it('shows the card of the mark under the pointer, and none off every mark', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(BARS, { marks: MARKS })
+      expect(wrapper.find('.chart-card').exists()).toBe(false)
+
+      lw.pointer.move!({ hoveredObjectId: 'exit|unit|pos_1|7', point: { x: 100, y: 80 } })
+      await nextTick()
+      expect(wrapper.find('.chart-card').text()).toContain('pos_1 · long 0.1')
+      expect(wrapper.find('.chart-card').text()).toContain('-0.40 EUR')
+
+      // a thing the register does not know, and no thing at all, both show nothing
+      lw.pointer.move!({ hoveredObjectId: 'line|elsewhere', point: { x: 100, y: 80 } })
+      await nextTick()
+      expect(wrapper.find('.chart-card').exists()).toBe(false)
+      lw.pointer.move!({ point: { x: 300, y: 80 } })
+      await nextTick()
+      expect(wrapper.find('.chart-card').exists()).toBe(false)
+    })
+
+    it('drops a card whose mark is gone', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(BARS, { marks: MARKS })
+      lw.pointer.move!({ hoveredObjectId: 'entry|unit|pos_1', point: { x: 100, y: 80 } })
+      await nextTick()
+      expect(wrapper.find('.chart-card').exists()).toBe(true)
+      await wrapper.setProps({ marks: [] })
+      expect(wrapper.find('.chart-card').exists()).toBe(false)
+    })
   })
 
   /** The marks are drawn on a canvas, where nothing can read them back — so the element counts them. */

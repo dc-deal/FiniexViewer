@@ -151,7 +151,7 @@
   "Status": {"field": ["status", "initiator"], "doc": "order-events", "their": "Status", "ours": null, "note": "the cell carries WHO ended the order beside the word, because two orders both cancelled are not the same event - a strategy taking its limit back against the framework releasing a protective order. Added 2026-10-08 after the list drew the two identically"},
   "Step": {"field": ["volume_step", "contract_size"], "doc": "broker", "their": null, "ours": null, "note": ""},
   "Still open": {"field": "open_position_count", "doc": "nulls", "their": "Still open", "ours": null, "note": ""},
-  "Stop loss": {"field": ["stop_loss", "take_profit"], "doc": "pending-orders", "their": null, "ours": null, "note": ""},
+  "Stop loss": {"field": "stop_loss", "doc": "pending-orders", "their": null, "ours": null, "note": ""},
   "Stop out": {"field": "stopout_level", "doc": "broker", "their": null, "ours": null, "note": ""},
   "Summed": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/runs/ExecutivePanel.vue"},
   "Swap": {"field": "total_swap", "doc": "aggregated-portfolio", "their": "Swap", "ours": null, "note": ""},

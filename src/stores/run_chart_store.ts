@@ -119,7 +119,9 @@ export const useRunChartStore = defineStore('runChart', () => {
   })
 
   const marks = computed<ChartMark[]>(() =>
-    tradeMarks(unitTrades.value, bars.value.map(bar => bar.time), focus.value))
+    tradeMarks(
+      unitTrades.value, reports.tradeHistory?.keys.trades ?? [], bars.value.map(bar => bar.time), focus.value,
+    ))
 
   const focusAt = computed<number | null>(() => focusTime(unitTrades.value, focus.value))
 
