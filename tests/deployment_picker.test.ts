@@ -7,6 +7,7 @@ import { useContextStore } from '@/stores/context_store'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import type { DeploymentRow } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
+import { searchFor } from './facet_harness'
 
 const BASE: DeploymentRow = {
   deployment_id: 'deploy_20260927_132812',
@@ -244,8 +245,8 @@ describe('DeploymentPicker', () => {
      * It used to be dropped, and that was worse. Whether a facet can narrow depends on what is
      * already PICKED, so the set of chips changed on every click and the bar reflowed under an open
      * dropdown — measured on screen 2026-10-08, the operator clicked a value and the menu they were
-     * reading moved sideways. The bar keeps its shape now, which is the same decision `AppBar.vue`
-     * makes for a section a run does not have.
+     * reading moved sideways. The bar keeps its shape now, which is the same decision the Panels
+     * menu makes for a section a run does not have.
      */
     it('disables the currency facet where every deployment books in one, and keeps it in place', () => {
       const oneCurrency = [
@@ -306,7 +307,7 @@ describe('DeploymentPicker', () => {
 
     it('searches the id and the bot name', async () => {
       const wrapper = mountPicker(two())
-      await wrapper.find('.facet-search').setValue('beta')
+      await searchFor(wrapper, 'beta')
       expect(rows(wrapper)).toHaveLength(1)
       expect(rows(wrapper)[0]!.text()).toContain('beta_bot')
     })

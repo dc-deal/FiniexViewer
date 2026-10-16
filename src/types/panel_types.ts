@@ -14,6 +14,14 @@ export interface PanelDescriptor {
   /** Key into the model record the host supplies — the panel never fetches its own data. */
   source: string
   defaultOpen: boolean
+  /**
+   * What a scenario narrowing does to this section: `filters` draws only the chosen scenarios'
+   * rows, `marks` keeps every row and marks the chosen ones, `null` means it does not read the
+   * narrowing at all. Opened as a panel of its own, a section carries the narrowing's note where
+   * the narrowing reaches it, and its frame only where the narrowing FILTERS — a frame says *what
+   * you see here is a part*, which is untrue of a list that still shows every row.
+   */
+  narrowing: 'filters' | 'marks' | null
 }
 
 /**
@@ -22,7 +30,10 @@ export interface PanelDescriptor {
  */
 export interface TabStatus {
   icon: IconName
-  /** The backend's own word for the state, never a word of ours for it. */
+  /**
+   * The word for the state — the backend's own wherever it grades one (`run_outcome`), never a word
+   * of ours for its grade. Ours only for a state of our own, such as a section that failed to load.
+   */
   word: string
   /** A colour ROLE from the tokens, never a colour. */
   role: 'warning' | 'error'
@@ -36,6 +47,15 @@ export interface PanelKind {
   /** Also the panel's id while a kind has one panel only. */
   id: string
   title: string
+  /**
+   * What its tab adds to the title — the run a bundle shows. Called where the tab is drawn, so it
+   * follows the store it reads; null where there is nothing to add.
+   */
+  subtitle?: () => string | null
+  /** The area whose submenu lists it in the Panels menu; a kind without one stands at the top. */
+  area?: string
+  /** Its entry in that submenu, where the tab's short title would repeat the area's name. */
+  menuTitle?: string
   /** What the panel is for, in one line — its tab's card says it. */
   description: string
   icon: IconName
@@ -48,6 +68,8 @@ export interface PanelKind {
   quickBar?: Component
   /** Its tab's status — called where the tab is drawn, so it may read a store. */
   status?: () => TabStatus | null
+  /** Its tab's title dimmed: the panel stands, with nothing of the chosen run to show. */
+  muted?: () => boolean
 }
 
 /** Per-panel arrangement, the part the user controls and the part that is persisted. */
@@ -57,10 +79,10 @@ export interface PanelState {
   pinned: boolean
   locked: boolean
   /**
-   * Switched off. A FLAG and not a removal, which is the whole reason this field exists: the app
-   * bar is the same arrangement drawn horizontally, and a toggle that moves when you flip it is a
-   * control that runs away from the finger. A hidden panel therefore keeps its place in the list;
-   * only the column declines to draw it.
+   * Switched off. A FLAG and not a removal, which is the whole reason this field exists: the Panels
+   * menu lists the same arrangement, and an entry that moves when you flip it is a control that runs
+   * away from the finger. A hidden panel therefore keeps its place in the list; only the column
+   * declines to draw it.
    *
    * It also tells reconciliation apart what it could not tell apart before: a panel the user
    * switched off is here with the flag set, and a panel that is NEW since the layout was stored is

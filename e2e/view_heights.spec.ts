@@ -38,9 +38,8 @@ test('the run list ends inside a view half the height of the window', async ({ p
 })
 
 /**
- * The list with no run chosen takes the view minus what stands around it — and in a very short view
- * that subtraction alone leaves less than one row. It keeps at least the third it keeps once a run
- * is chosen.
+ * The list takes the view minus what stands around it — and in a very short view that subtraction
+ * alone leaves less than one row. It keeps at least a third of the view.
  */
 test('the run list keeps at least a row in a very short window', async ({ page }) => {
   await page.setViewportSize({ width: 1300, height: 240 })

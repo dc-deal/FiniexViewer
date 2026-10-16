@@ -7,10 +7,10 @@ const ITEMS = ['alpha', 'beta', 'gamma', 'delta', 'epsilon']
 
 let mounted: VueWrapper | null = null
 
-async function mountRow(endFrom?: number): Promise<VueWrapper> {
+async function mountRow(endFrom?: number, picked?: number): Promise<VueWrapper> {
   mounted = mount(OverflowRow, {
     // mount() does not infer the row's item type, so the key reads an unknown
-    props: { items: ITEMS, itemKey: (item: unknown) => String(item), moreLabel: 'More', endFrom },
+    props: { items: ITEMS, itemKey: (item: unknown) => String(item), moreLabel: 'More', endFrom, picked },
     slots: {
       item: '<span class="probe">{{ params.item }}</span>',
       menu: '<span v-for="item in params.hidden" :key="item" class="menu-probe">{{ item }}</span>',
@@ -51,6 +51,20 @@ describe('OverflowRow', () => {
     expect(cellsOf(wrapper, true)).toEqual(['delta', 'epsilon'])
     expect(wrapper.find('.overflow-more').text()).toBe('+2 ▾')
     expect(wrapper.emitted('overflow')!.at(-1)).toEqual([2])
+  })
+
+  /** A pick out of sight still shows where the click happens: counted on the control, which is marked. */
+  it('says how many picks wait behind the control, in a room kept for the count', async () => {
+    stubWidths(350, 100, 40)
+    const wrapper = await mountRow(undefined, 0)
+    const more = () => wrapper.find('.overflow-more')
+    expect(more().find('.overflow-badge').text()).toBe('')
+    expect(more().classes()).not.toContain('active')
+
+    await wrapper.setProps({ picked: 3 })
+    expect(more().find('.overflow-badge').text()).toBe('3')
+    expect(more().classes()).toContain('active')
+    expect(more().attributes('aria-label')).toBe('More: 2 — 3 picked')
   })
 
   /** An item behind the control is laid out to be measured, and is out of reach for everything else. */

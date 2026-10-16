@@ -6,10 +6,10 @@ import { useContextStore } from '@/stores/context_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 
-function narrowTo(units: string[]): void {
+function focusOn(unit: string): void {
   const context = useContextStore()
   context.selectRun('r1')
-  context.setUnits(units)
+  context.toggleUnit(unit)
 }
 
 describe('RunsQuickBar', () => {
@@ -23,25 +23,25 @@ describe('RunsQuickBar', () => {
     expect(mount(RunsQuickBar).find('.narrowed-head').exists()).toBe(false)
   })
 
-  it('names the scenarios on show while they fit, and counts them past that', () => {
-    narrowTo(['EURUSD_a', 'GBPUSD_b'])
-    expect(mount(RunsQuickBar).text()).toContain('Showing only EURUSD_a · GBPUSD_b')
-
-    narrowTo(['a', 'b', 'c', 'd'])
-    expect(mount(RunsQuickBar).text()).toContain('Showing only 4 scenarios')
+  /** The scenario in focus, named in the line — and in its title, for a panel too narrow to show it. */
+  it('names the scenario in focus', () => {
+    focusOn('EURUSD_a')
+    const wrapper = mount(RunsQuickBar)
+    expect(wrapper.text()).toContain('Only EURUSD_a')
+    expect(wrapper.find('.narrowed-text').attributes('title')).toBe('Only EURUSD_a')
   })
 
   /** Claimed only where the roster arrived — its absence says nothing about a name. */
-  it('says which narrowed names this run does not have, once the roster has arrived', () => {
-    narrowTo(['EURUSD_a', 'gone'])
+  it('says the name is not in this run, once the roster has arrived', () => {
+    focusOn('gone')
     expect(mount(RunsQuickBar).text()).not.toContain('not in this run')
 
     useRunReportsStore().scenarios = { units: [{ name: 'EURUSD_a' }] } as unknown as ScenarioDetailsReport
-    expect(mount(RunsQuickBar).text()).toContain('not in this run: gone')
+    expect(mount(RunsQuickBar).text()).toContain('Only gone — not in this run')
   })
 
   it('shows the whole run again', async () => {
-    narrowTo(['EURUSD_a'])
+    focusOn('EURUSD_a')
     const wrapper = mount(RunsQuickBar)
     await wrapper.find('button').trigger('click')
     expect(useContextStore().main.run.units).toEqual([])

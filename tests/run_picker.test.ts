@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RunPicker from '@/components/runs/RunPicker.vue'
@@ -7,6 +7,21 @@ import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
+import { searchFor } from './facet_harness'
+
+/**
+ * A row on SHOW. The run list also draws the rows of its closed families, with no height and unseen,
+ * so its columns hold still when one opens — those carry `record-unseen` and are not rows a reader has.
+ */
+const SHOWN = '.record-row:not(.record-unseen)'
+
+// Choosing a run loads its summary, and the picker is what is tested here, not the server. Without
+// this the click asked a real address from jsdom, and the refused connection was printed into the
+// suite's output as an `AggregateError` under whichever test happened to be running.
+vi.mock('@/api/api_client', () => ({
+  getRuns: vi.fn(async () => []),
+  getRunSummary: vi.fn(async () => ({ absent: true, cause: 'artifact_not_produced', detail: '' })),
+}))
 
 const BASE: RunInfo = {
   // contract 15 — what the run DID. null is the ledger holding nothing, distinct from []
@@ -64,7 +79,7 @@ function mountPicker(rows: RunInfo[]) {
 }
 
 function rowTexts(wrapper: VueWrapper): string[] {
-  return wrapper.findAll('.record-row').map(node => node.text())
+  return wrapper.findAll(SHOWN).map(node => node.text())
 }
 
 /**
@@ -73,13 +88,13 @@ function rowTexts(wrapper: VueWrapper): string[] {
  * cost the set name nine characters in every row.
  */
 function rowFor(wrapper: VueWrapper, id: string) {
-  return wrapper.findAll('.record-row')
+  return wrapper.findAll(SHOWN)
     .find(node => node.find('.run-id').attributes('title') === id)!
 }
 
 /** The ids in the order they are drawn — read from their own cell, not out of the running text. */
 function rowIds(wrapper: VueWrapper): string[] {
-  return wrapper.findAll('.run-id').map(node => node.text())
+  return wrapper.findAll(`${SHOWN} .run-id`).map(node => node.text())
 }
 
 /** The figures a row's card carries, as the list handed them over. */
@@ -279,7 +294,7 @@ describe('RunPicker', () => {
       // comes above `older_set` although it also holds the oldest run of all
       // read from the cell's own title, not out of the running text: the heading now carries
       // the list's disclosure glyph as its first token
-      const lines = wrapper.findAll('.record-group, .record-row')
+      const lines = wrapper.findAll(`.record-group, ${SHOWN}`)
         .map(node => node.find('.family-name').exists()
           ? node.find('.family-name').attributes('title')
           : node.find('.run-id').attributes('title'))
@@ -297,36 +312,33 @@ describe('RunPicker', () => {
         run({ run_id: 'held_2', name: 'pair', parent_id: 'deploy_1', parent_kind: 'deployment' }),
       ])
       // the lone run keeps its badge: nothing above it says what kind of run it is
-      expect(wrapper.findAll('.run-marks').map(node => node.text())).toEqual(['deployment'])
+      expect(wrapper.findAll(`${SHOWN} .run-marks`).map(node => node.text())).toEqual(['deployment'])
 
       await wrapper.find('.record-group').trigger('click')
       // opened, the family's two rows carry no badge at all — the heading carries it
-      expect(wrapper.findAll('.record-row')).toHaveLength(3)
+      expect(wrapper.findAll(SHOWN)).toHaveLength(3)
       // the lone run is first (all three share a stamp, so the order is the one they arrived in)
-      expect(wrapper.findAll('.run-marks').map(node => node.text())).toEqual(['deployment', '', ''])
+      expect(wrapper.findAll(`${SHOWN} .run-marks`).map(node => node.text())).toEqual(['deployment', '', ''])
     })
 
     /**
-     * **The list takes the room while nothing is below it.** It was capped at a third of the
-     * window whether or not panels followed, so an unchosen run left a short list over an empty
-     * page — reported on screen 2026-10-10.
+     * **The list stays the list.** It folded to one line once a run was chosen, so forty rows did
+     * not push every section off the screen; the run report is a panel of its own since
+     * 2026-10-14, so nothing below the list needs its room any more.
      */
-    it('gives the list the room while no run is chosen, and the cap back once one is', async () => {
+    it('keeps every row on show once a run is chosen, the chosen one marked', async () => {
       const wrapper = mountPicker([run({ run_id: 'a' }), run({ run_id: 'b' })])
-      expect(wrapper.find('.run-list').classes()).toContain('roomy')
-
       useContextStore().selectRun('a')
       await flushPromises()
-      await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
-      expect(wrapper.find('.run-list').classes()).not.toContain('roomy')
+      expect(rowIds(wrapper)).toEqual(['a', 'b'])
+      expect(rowFor(wrapper, 'a').classes()).toContain('picked')
     })
 
-    /** The run the reader left open is restored BEFORE the picker mounts — there is no change. */
-    it('opens collapsed on a run that was chosen before it mounted', () => {
+    /** The run the reader left open is restored BEFORE the picker mounts — and is marked all the same. */
+    it('marks a run that was chosen before it mounted', () => {
       useContextStore().selectRun('a')
       const wrapper = mountPicker([run({ run_id: 'a' }), run({ run_id: 'b' })])
-      expect(wrapper.find('.picker-chosen').exists()).toBe(true)
-      expect(rowIds(wrapper)).toEqual([])
+      expect(rowFor(wrapper, 'a').classes()).toContain('picked')
     })
 
     /**
@@ -351,9 +363,6 @@ describe('RunPicker', () => {
       expect(rowIds(wrapper)).toEqual([])
       useContextStore().selectRun('pickedone')
       await flushPromises()
-      // the list collapses to one line once a run is chosen, so it is reopened the way a reader
-      // reopens it
-      await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
       expect(rowIds(wrapper)).toEqual(['pickedone', 'other'])
     })
   })
@@ -363,37 +372,21 @@ describe('RunPicker', () => {
       run({ run_id: 'a', group: 'live' }),
       run({ run_id: 'b', group: 'simulation' }),
     ])
-    await wrapper.find('.facet-search').setValue('a')
+    await searchFor(wrapper, 'a')
     await flushPromises()
     expect(rowTexts(wrapper)).toHaveLength(1)
     expect(wrapper.text()).toContain('1 of 2')
   })
 
-  /**
-   * The list is the way in, so it is open until there is something to look at — forty rows above
-   * the panels would otherwise push every one of them off the screen.
-   */
-  it('collapses to one line once a run is chosen, and reopens on request', async () => {
+  /** A pick chooses the run and says so, so the panel holding the list can bring the report forward. */
+  it('chooses a run on a click and says which, the list staying as it is', async () => {
     const wrapper = mountPicker([run({ run_id: 'only_logs', has_reports: false })])
     await rowFor(wrapper, 'only_logs').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('.run-list').exists()).toBe(false)
-    expect(wrapper.find('.picker-chosen').text()).toContain('only_logs')
-
-    await wrapper.find('.picker-chosen .app-button').trigger('click')
+    expect(useRunsStore().selectedRunId).toBe('only_logs')
+    expect(wrapper.emitted('chosen')).toEqual([['only_logs']])
     expect(wrapper.find('.run-list').exists()).toBe(true)
-  })
-
-  /** A narrow panel ends the line in an ellipsis instead of wrapping it over three; the whole is on hover. */
-  it('names the chosen run in one line, with the whole of it on hover', async () => {
-    const wrapper = mountPicker([run({ run_id: 'only_logs', group: 'simulation', name: 'set_x', start_time: '' })])
-    await rowFor(wrapper, 'only_logs').trigger('click')
-    await flushPromises()
-
-    const meta = wrapper.find('.picker-chosen .chosen-meta')
-    expect(meta.text()).toBe('simulation · set_x')
-    expect(meta.attributes('title')).toBe('simulation · set_x')
   })
 
   /**
@@ -642,7 +635,7 @@ describe('RunPicker', () => {
     it('gives every cell the rank its own column declares', () => {
       const wrapper = mountPicker([run()])
       const heads = wrapper.findAll('.record-head > span').map(node => node.attributes('data-rank'))
-      const cells = wrapper.find('.record-row').findAll(':scope > span')
+      const cells = wrapper.find(SHOWN).findAll(':scope > span')
         .map(node => node.attributes('data-rank'))
 
       expect(heads).not.toHaveLength(0)
@@ -730,7 +723,7 @@ describe('RunPicker', () => {
     /** A damaged stamp is a hole in the card too, and it must not take the list down with it. */
     it('draws a run whose stamp is not a date', () => {
       const wrapper = mountPicker([run({ run_id: 'broken', start_time: 'not-a-date' })])
-      expect(wrapper.findAll('.record-row')).toHaveLength(1)
+      expect(wrapper.findAll(SHOWN)).toHaveLength(1)
       expect(cardRows(wrapper)['Started (UTC)']).toBeUndefined()
     })
   })

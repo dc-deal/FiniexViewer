@@ -2,14 +2,14 @@
 import { computed, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { VueDraggable } from 'vue-draggable-plus'
+import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore, pinnedBoundary } from '@/stores/layout_store'
-import { useSettingsStore } from '@/stores/settings_store'
-import { provideDisplaySettings } from '@/composables/use_display_settings'
+import { reportKindId } from '@/panel_kinds'
 import { panelById } from '@/panel_registry'
 import AccordionPanel from '@/components/panels/AccordionPanel.vue'
+import LoadingLine from '@/components/base/LoadingLine.vue'
 import type { PanelState } from '@/types/panel_types'
 import type { IconName } from '@/types/icon_types'
-import { t } from '@/translate'
 
 const props = defineProps<{
   /** Models keyed by the `source` a panel descriptor declares — panels never fetch their own. */
@@ -20,10 +20,8 @@ const props = defineProps<{
 
 const layoutStore = useLayoutStore()
 const { visiblePanels } = storeToRefs(layoutStore)
-
-// The host supplies the preferences for every panel it renders. A panel that reached into the store
-// itself would stop being renderable from a different source, which the panel contract forbids.
-provideDisplaySettings(storeToRefs(useSettingsStore()).display)
+const dock = useDockStore()
+const { openIds } = storeToRefs(dock)
 
 interface RenderedPanel {
   state: PanelState
@@ -37,6 +35,9 @@ interface RenderedPanel {
 
 const rendered = computed<RenderedPanel[]>(() =>
   visiblePanels.value.flatMap(state => {
+    // a section open as a panel of its own is THERE, not here — one place at a time. Its place in
+    // the arrangement stays, so closing that panel puts it back where it stood
+    if (openIds.value.includes(reportKindId(state.id))) return []
     const descriptor = panelById(state.id)
     if (!descriptor) return []
     // a section whose model this run does not carry is skipped, never shown empty — and one still
@@ -57,9 +58,9 @@ const rendered = computed<RenderedPanel[]>(() =>
 
 /*
  * Where the pinned group ends, over what this column actually DRAWS — not over the arrangement.
- * The bar shows every panel and the column leaves out what is switched off and what this run does
- * not carry, so the same rule lands on a different index in each. That is the only way the two
- * orientations differ.
+ * The arrangement holds every section, and the column leaves out what is switched off, what is
+ * open as a panel of its own and what this run does not carry, so the rule lands on the index of
+ * what is drawn.
  */
 const boundary = computed(() => pinnedBoundary(rendered.value.map(panel => panel.state)))
 
@@ -112,19 +113,16 @@ const order = computed({
       @update:open="value => layoutStore.setOpen(panel.state.id, value)"
       @toggle-pin="layoutStore.togglePin(panel.state.id)"
       @toggle-lock="layoutStore.toggleLock(panel.state.id)"
-      @hide="layoutStore.hide(panel.state.id)"
+      @hide="dock.hideSection(panel.state.id)"
+      @open-as-panel="dock.openSection(panel.state.id)"
     >
       <div :ref="observe" class="panel-body" :data-height-of="panel.state.id">
         <!-- on its way for the run on screen: the room it had, and a line saying it is coming -->
-        <div
+        <LoadingLine
           v-if="panel.loading"
           class="panel-loading"
           :style="{ minHeight: heightOf(panel.state.id) }"
-          aria-busy="true"
-        >
-          <span class="loading-line" aria-hidden="true" />
-          <span class="loading-text">{{ t('Loading…') }}</span>
-        </div>
+        />
         <component :is="panel.component" v-else :model="panel.model" />
       </div>
     </AccordionPanel>
@@ -135,41 +133,6 @@ const order = computed({
 .panel-column {
   display: flex;
   flex-direction: column;
-}
-
-.panel-loading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-sm) 0;
-}
-
-.loading-text {
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-/* a line that moves, so the waiting is visibly WORK and not an empty panel; still for a reader who
-   asked the system for less motion, where the word alone says it */
-.loading-line {
-  display: block;
-  height: 2px;
-  width: 100%;
-  background: linear-gradient(90deg, transparent, var(--color-accent), transparent) 0 0 / 40% 100% no-repeat;
-  animation: loading-sweep 1.2s ease-in-out infinite;
-}
-
-@keyframes loading-sweep {
-  from { background-position: -40% 0; }
-  to { background-position: 140% 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .loading-line {
-    animation: none;
-    background: var(--color-border);
-  }
 }
 
 /*

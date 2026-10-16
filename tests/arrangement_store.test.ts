@@ -8,7 +8,9 @@ const KEY = 'arrangement.v1'
 const RUN = '20261012_074826_88026ae2'
 const MARK = { scenario: 'EURGBP_partial_close', position: 'pos_eurgbp_1' }
 
+/** What a NEW tab finds: the last arrangement saved, and nothing of its own yet. */
 function store(value: unknown): void {
+  sessionStorage.removeItem(KEY)
   localStorage.setItem(KEY, JSON.stringify(value))
 }
 
@@ -28,12 +30,14 @@ describe('useArrangementStore', () => {
       links: { A: { run: { id: RUN, units: ['EURGBP_partial_close'], position: MARK }, deployment: { id: null }, market: { broker: 'mt5', symbol: 'EURUSD' } } },
       bars: {},
       chart: { timeframe: 'H1' },
+      runChart: { run: RUN, unit: 'EURGBP_partial_close', timeframe: 'M5' },
     })
     const arrangement = useArrangementStore()
     const context = useContextStore()
     expect(context.main.run).toEqual({ id: RUN, units: ['EURGBP_partial_close'], position: MARK })
     expect(context.main.market).toEqual({ broker: 'mt5', symbol: 'EURUSD' })
     expect(arrangement.chart.timeframe).toBe('H1')
+    expect(arrangement.runChart).toEqual({ run: RUN, unit: 'EURGBP_partial_close', timeframe: 'M5' })
   })
 
   it('writes every change of the selection back', async () => {
@@ -43,17 +47,33 @@ describe('useArrangementStore', () => {
     expect((stored()['links'] as Record<string, { run: { id: string } }>)['A']!.run.id).toBe(RUN)
   })
 
+  /** The run chart's unit and timeframe are a choice of what is shown, and come back with the run. */
+  it('writes the choice made on the run chart back, with the run it was made for', async () => {
+    useArrangementStore().setRunChart({ run: RUN, unit: 'EURGBP_refusals_01', timeframe: 'M1' })
+    await nextTick()
+    expect(stored()['runChart']).toEqual({ run: RUN, unit: 'EURGBP_refusals_01', timeframe: 'M1' })
+  })
+
+  /** One scenario in focus at most: a stored list of several is reconciled to its first, not trusted. */
+  it('keeps one scenario in focus from a stored narrowing of several', () => {
+    store({ version: 1, links: { A: { run: { id: RUN, units: ['EURGBP_refusals_01', 'EURGBP_partial_close'], position: null } } } })
+    useArrangementStore()
+    expect(useContextStore().main.run.units).toEqual(['EURGBP_refusals_01'])
+  })
+
   /** Never trusted as it is: whatever does not have the right shape is left empty, field by field. */
   it('reconciles a damaged entry instead of trusting it', () => {
     store({
       version: 1,
       links: { A: { run: { id: 42, units: ['ok', 7], position: { scenario: 'only half' } } } },
       bars: { run: { selection: { purpose: ['regular', 3] }, search: 9, sort: 'oldest' } },
+      runChart: { run: 7, unit: 'EURGBP_refusals_01', timeframe: [] },
     })
     const arrangement = useArrangementStore()
     expect(useContextStore().main.run).toEqual({ id: null, units: ['ok'], position: null })
     expect(arrangement.bars['run']).toEqual({ selection: { purpose: ['regular'] }, search: '', sort: 'oldest', scope: null })
     expect(arrangement.chart).toEqual({ timeframe: null })
+    expect(arrangement.runChart).toEqual({ run: null, unit: 'EURGBP_refusals_01', timeframe: null })
   })
 
   it('removes an entry of another schema rather than converting it', () => {
@@ -91,5 +111,31 @@ describe('useArrangementStore', () => {
     const reloaded = useArrangementStore()
     expect(reloaded.bars['run']!.selection).toEqual({})
     expect('selection' in reloaded.bars['dep']!).toBe(false)
+  })
+
+  /** Where a hidden panel stood survives a reload, read field by field like everything else. */
+  it('keeps where each panel stood across a reload, and drops a place that names nothing', async () => {
+    const arrangement = useArrangementStore()
+    arrangement.setPlaces({
+      'report-orders': { besides: ['report-trade-history'], direction: 'within', index: 1 },
+      chart: { besides: ['runs'], direction: 'right', size: 520 },
+    })
+    await nextTick()
+    const raw = stored()
+    raw['places'] = {
+      ...(raw['places'] as object),
+      nowhere: { besides: [], direction: 'right' },
+      sideways: { besides: ['runs'], direction: 'diagonal' },
+      'odd-size': { besides: ['runs'], direction: 'left', size: -3 },
+    }
+    store(raw)
+
+    setActivePinia(createPinia())
+    const places = useArrangementStore().places
+    expect(places['report-orders']).toEqual({ besides: ['report-trade-history'], direction: 'within', index: 1 })
+    expect(places['chart']).toEqual({ besides: ['runs'], direction: 'right', size: 520 })
+    expect(places['nowhere']).toBeUndefined()
+    expect(places['sideways']).toBeUndefined()
+    expect(places['odd-size']).toEqual({ besides: ['runs'], direction: 'left' })
   })
 })

@@ -653,7 +653,9 @@ export interface PortfolioUnitRow {
   spot_est_pnl_pct: number
   // What the unit PAID. `total_fees` carries the commission, the swap and — where a venue charges
   // per side — the maker and taker fees; the SPREAD is not in it and is a cost of its own.
-  total_spread_cost: number
+  // null where the unit read data WITHOUT A QUOTE (every row bid = ask): no spread was measured,
+  // which is not a spread of zero (contract 32 — it read 0 before)
+  total_spread_cost: number | null
   total_commission: number
   total_swap: number
   maker_fee: number
@@ -1050,6 +1052,12 @@ export interface ScenarioTotals {
   net_pnl: number
   total_fees: number
   total_swap: number
+  /**
+   * The unit's measured `spread_cost` summed over the same trades the rows list — beside
+   * `total_fees`, never inside it (contract 32). null where the unit read data without a quote, and
+   * on every run recorded before contract 32: the trade history is written when a run ends.
+   */
+  total_spread_cost: number | null
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/trade-history */
@@ -1107,7 +1115,7 @@ export interface BrokerSymbol {
  * One broker a run traded through, with the scenarios that used it.
  *
  * `margin_mode`, `margin_call_level` and `stopout_level` are required only **where leverage > 1** —
- * stated in `ide_docs/broker_config_guide.md` and repeated in the adapter guide. Below that a
+ * stated in the backend's `docs/broker_config_guide.md` and repeated in the adapter guide. Below that a
  * broker states none of them, so what arrives is a default rather than a measurement: the captured
  * spot broker reads `margin_mode: 'none'` with both levels at `0.0`, and rendering that as "margin
  * call at 0%" says the opposite of what is true. The leverage is the gate, not the mode.
@@ -1156,7 +1164,7 @@ export interface BrokerReport {
 /**
  * One SPOT account of the run, as a quote balance plus a base-asset holding.
  *
- * A spot account is an inventory, not a balance with margin arithmetic (`ide_docs/glossary.md`,
+ * A spot account is an inventory, not a balance with margin arithmetic (the backend's glossary,
  * *account model*), so its worth is the quote balance plus the base holding valued at a price —
  * which is why `est_current` is an ESTIMATE and `last_price` is served beside it. Nothing here is
  * multiplied by us.
@@ -1247,12 +1255,14 @@ export interface AggregatedCombined {
    */
   highest_equity: number
   highest_equity_scenario: string
-  total_spread_cost: number
+  // null as soon as ONE unit's is — a sum over a part would read as the whole (contract 32)
+  total_spread_cost: number | null
   total_commission: number
   total_swap: number
   maker_fee: number
   taker_fee: number
-  avg_spread: number
+  // null as soon as one unit's spread is, for the same reason (contract 32)
+  avg_spread: number | null
   // the same nine as on `RunSummary`, and the same two changed meanings — see the note there
   orders_submitted: number
   orders_adopted: number

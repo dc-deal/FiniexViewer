@@ -4,8 +4,9 @@ import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
-import type { CoverageResponse, ApiBar } from '@/types/api/bar_types'
+import type { ApiBar, BarAnswer, CoverageResponse } from '@/types/api/bar_types'
 import type { CallerIdentity } from '@/types/api/caller_types'
+import type { MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
@@ -55,18 +56,31 @@ export async function getCoverage(broker: string, symbol: string): Promise<Cover
   return response.data
 }
 
+/**
+ * A market's coverage, or null where the archive holds none for it — a symbol the server does not
+ * know and one it knows with no bars indexed both answer `404` (their `market-data` document).
+ */
+export async function findCoverage(broker: string, symbol: string): Promise<CoverageResponse | null> {
+  try {
+    return await getCoverage(broker, symbol)
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
 export async function getBars(
   broker: string,
   symbol: string,
   timeframe: string,
   from: string,
   to: string
-): Promise<ApiBar[]> {
+): Promise<BarAnswer> {
   const response = await http.get<ApiBar[]>(
     `/brokers/${broker}/symbols/${symbol}/bars`,
     { params: { timeframe, from, to } }
   )
-  return response.data
+  return { bars: response.data, truncated: String(response.headers?.['x-bar-truncated']) === 'true' }
 }
 
 /**
@@ -92,6 +106,19 @@ function absenceFrom(error: unknown): SectionAbsence | null {
   return { absent: true, cause: body?.error ?? 'unknown', detail: body?.detail ?? '' }
 }
 
+/**
+ * Turns a 409 into the STALE ARTIFACT it describes: the file is there and no longer matches the
+ * backend's model — usually its age — and the run has to be repeated. A state of the run, never an
+ * outage, and one the backend answers for ANY report artifact (`errors`: "a report artifact exists
+ * but no longer matches its model"). Three routes mapped it until 2026-10-14; on the others a 409
+ * read as a failure and showed `Request failed with status code 409` instead of their sentence.
+ */
+function raiseIfUnreadable(error: unknown, fallback = 'The artifact could not be read'): void {
+  if (!axios.isAxiosError(error) || error.response?.status !== 409) return
+  const body = error.response.data as { detail?: string } | undefined
+  throw new ArtifactUnreadableError(body?.detail ?? fallback)
+}
+
 export async function getRuns(): Promise<RunInfo[]> {
   const response = await http.get<RunListResponse>('/reports/runs')
   return response.data.runs
@@ -108,6 +135,7 @@ export async function getRunSummary(runId: string): Promise<RunSummary | Section
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -124,13 +152,9 @@ export async function getWarningsErrors(runId: string): Promise<WarningsErrorsRe
     )
     return assertBelongsTo(runId, response.data)
   } catch (error) {
-    if (!axios.isAxiosError(error)) throw error
     const absence = absenceFrom(error)
     if (absence) return absence
-    if (error.response?.status === 409) {
-      const body = error.response.data as { detail?: string } | undefined
-      throw new ArtifactUnreadableError(body?.detail ?? 'The artifact could not be read')
-    }
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -143,6 +167,7 @@ export async function getPortfolio(runId: string): Promise<PortfolioReport | Sec
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -162,6 +187,7 @@ export async function getAggregatedPortfolio(
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -179,6 +205,7 @@ export async function getPendingOrders(
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -199,6 +226,7 @@ export async function getOrderHistory(
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -229,13 +257,9 @@ export async function getOrderEvents(
     )
     return assertBelongsTo(runId, response.data)
   } catch (error) {
-    if (!axios.isAxiosError(error)) throw error
     const absence = absenceFrom(error)
     if (absence) return absence
-    if (error.response?.status === 409) {
-      const body = error.response.data as { detail?: string } | undefined
-      throw new ArtifactUnreadableError(body?.detail ?? 'The stream could not be read')
-    }
+    raiseIfUnreadable(error, 'The stream could not be read')
     throw error
   }
 }
@@ -257,6 +281,7 @@ export async function getRunHeader(runId: string): Promise<RunHeader | SectionAb
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -273,6 +298,7 @@ export async function getBroker(runId: string): Promise<BrokerReport | SectionAb
   } catch (error) {
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -301,13 +327,9 @@ export async function getBookingPeriods(runId: string): Promise<BookingPeriodsRe
     return assertBelongsTo(runId, response.data)
   } catch (error) {
     raiseIfForbidden(error, 'reports')
-    if (!axios.isAxiosError(error)) throw error
     const absence = absenceFrom(error)
     if (absence) return absence
-    if (error.response?.status === 409) {
-      const body = error.response.data as { detail?: string } | undefined
-      throw new ArtifactUnreadableError(body?.detail ?? 'The artifact could not be read')
-    }
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -400,6 +422,7 @@ export async function getTradeHistory(runId: string): Promise<TradeHistoryReport
     raiseIfForbidden(error, 'reports')
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -418,6 +441,7 @@ export async function getScenarioDetails(runId: string): Promise<ScenarioDetails
     raiseIfForbidden(error, 'reports')
     const absence = absenceFrom(error)
     if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }
@@ -433,5 +457,20 @@ export async function getScenarioDetails(runId: string): Promise<ScenarioDetails
  */
 export async function getCaller(): Promise<CallerIdentity> {
   const response = await http.get<CallerIdentity>('/caller')
+  return response.data
+}
+
+/**
+ * A reading the server makes in a fraction of a millisecond. One still unanswered after this long
+ * is given up, so a hung request cannot hold up the next poll.
+ */
+const MACHINE_READ_TIMEOUT_MS = 4000
+
+/**
+ * How full the machine is (contract 31). A token and no grant, like `/caller`. Meant to be asked
+ * every few seconds — the route reads no file of the project, and costs the server next to nothing.
+ */
+export async function getMachineResources(): Promise<MachineResources> {
+  const response = await http.get<MachineResources>('/machine-resources', { timeout: MACHINE_READ_TIMEOUT_MS })
   return response.data
 }

@@ -96,7 +96,12 @@ const themeSwitch = computed(() => settings.value.theme === 'dark'
   font-size: var(--font-size-sm);
 }
 
+/* every entry in one grid of columns — tick, icon, word — whether or not the tick is drawn; every
+   menu of the app shares it, so it lives with the menu surface rather than in one menu */
 .menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
   padding: var(--space-xs) var(--space-sm);
   border-radius: 3px;
   color: var(--color-text-primary);
@@ -119,5 +124,25 @@ const themeSwitch = computed(() => settings.value.theme === 'dark'
   height: 1px;
   margin: var(--space-xs) 0;
   background-color: var(--color-border);
+}
+
+.menu-check {
+  display: inline-block;
+  width: 1em;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.menu-label {
+  flex: 1;
+}
+
+.menu-sub-arrow {
+  margin-left: var(--space-md);
+  color: var(--color-text-secondary);
+}
+
+.menu-sub-trigger[data-state='open'] {
+  background-color: var(--color-bg-hover);
 }
 </style>

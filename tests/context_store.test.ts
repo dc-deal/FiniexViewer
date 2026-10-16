@@ -37,13 +37,17 @@ describe('useContextStore', () => {
     expect(store.main.run.position).toEqual(MARK)
   })
 
-  it('adds a scenario to the narrowing and takes it out again', () => {
+  /** ONE scenario in focus (operator, 2026-10-16): a click moves it, a second on the same clears it. */
+  it('puts one scenario in focus, moves it with the next click, and clears it on the same one', () => {
     const store = useContextStore()
     store.toggleUnit('EURGBP_refusals_01')
     store.toggleUnit('EURGBP_partial_close')
-    store.toggleUnit('EURGBP_refusals_01')
     expect(store.main.run.units).toEqual(['EURGBP_partial_close'])
 
+    store.toggleUnit('EURGBP_partial_close')
+    expect(store.main.run.units).toEqual([])
+
+    store.toggleUnit('EURGBP_refusals_01')
     store.clearUnits()
     expect(store.main.run.units).toEqual([])
   })

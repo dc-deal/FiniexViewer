@@ -87,6 +87,16 @@ describe('AggregatedPortfolioPanel', () => {
       expect(spread?.value).not.toContain('EUR')
       expect(spread?.title).toContain('price units')
     })
+
+    /** Contract 32: null as soon as one unit read data without a quote — not a spread of zero. */
+    it('says a spread the data never measured is not recorded, and why', () => {
+      const pairs = figurePairs(mountPanel(withFold({ total_spread_cost: null, avg_spread: null })))
+      for (const label of ['Spread', 'Avg spread']) {
+        const pair = pairs.find(entry => entry.label === label)!
+        expect(pair.value, label).toBe('not recorded')
+        expect(pair.title, label).toContain('no quote')
+      }
+    })
   })
 
   describe('the account, and the distinctions a reader gets wrong without it', () => {

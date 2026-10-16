@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import type { TimelineLane } from '@/types/timeline_types'
@@ -102,9 +102,17 @@ interface Break {
 const BREAK_WIDTH_MAX = 5
 const BREAK_BUDGET = 20
 
-/** Labels need room. Below these shares of the plot a span falls back, then goes silent. */
+/**
+ * Labels need room. Below these shares of the plot a span falls back, then goes silent — the rule
+ * only until the browser has measured the plot; after that a label is drawn where its characters
+ * actually fit (see `fits`).
+ */
 const LABEL_MIN_WIDTH = 6
 const SHORT_LABEL_MIN_WIDTH = 2.5
+
+/** A span label's padding, both sides, and the space two axis labels on one row keep apart. */
+const LABEL_PADDING_PX = 8
+const LABEL_GAP_PX = 8
 
 /** Above this many breaks the labels are summarised rather than drawn one per piece. */
 const MAX_LABELLED_BREAKS = 3
@@ -279,27 +287,124 @@ function naturalStep(span: number, count: number): number {
 const MIN_TICK_GAP = 14
 
 /**
- * Labels are STAGGERED onto a second line rather than dropped or shrunk. A timestamp is wide and
- * the marks it belongs to can be close: shrinking the text makes the axis unreadable, dropping a
- * label loses a moment the reader needs. Two rows double the room, and a pointer under each label
- * says which mark it belongs to — which is the thing a staggered axis otherwise leaves ambiguous.
+ * The plot's width and one character's, in pixels — both 0 until the browser has laid them out,
+ * and jsdom never does. The labels are monospace, so a label's width is its length times one
+ * character, measured once from a hidden probe rather than guessed per font.
  */
-const placedTicks = computed(() => {
-  const all = axisTicks.value
+const axisPx = ref(0)
+const charPx = ref(0)
+const measured = computed(() => axisPx.value > 0 && charPx.value > 0)
 
-  const lastOnRow = [-Infinity, -Infinity]
-  return all.map((tick, index) => {
-    // the top row unless its neighbour there is too close, in which case the row below
-    const row = tick.at - lastOnRow[0]! >= MIN_TICK_GAP ? 0 : 1
-    lastOnRow[row] = tick.at
+const axisElement = ref<HTMLElement | null>(null)
+const probe = ref<HTMLElement | null>(null)
+
+function measure(): void {
+  if (!axisElement.value || !probe.value) return
+  axisPx.value = axisElement.value.getBoundingClientRect().width
+  charPx.value = probe.value.getBoundingClientRect().width / 10
+}
+
+// the plot's width is the reader's arrangement: they drag the seams and the panel narrows
+const observer = new ResizeObserver(() => measure())
+
+function observeAxis(element: unknown): void {
+  if (!(element instanceof HTMLElement)) return
+  axisElement.value = element
+  observer.observe(element)
+}
+
+onMounted(measure)
+onUnmounted(() => observer.disconnect())
+
+/** A tick on its row; `labelAt` where its label was slid along the axis away from its mark. */
+interface PlacedTick extends Tick {
+  row: number
+  labelAt?: number
+}
+
+/** Where a label's box lies on the axis, in pixels, given how it hangs from its mark. */
+function extent(tick: Tick): [number, number] {
+  const x = (tick.at / 100) * axisPx.value
+  const width = tick.label.length * charPx.value
+  if (tick.edge === 'start') return [x, x + width]
+  if (tick.edge === 'end') return [x - width, x]
+  return [x - width / 2, x + width / 2]
+}
+
+/**
+ * Labels are STAGGERED onto a second line rather than shrunk. A timestamp is wide and the marks it
+ * belongs to can be close: shrinking the text makes the axis unreadable. Two rows double the room,
+ * and a pointer under each label says which mark it belongs to — which is the thing a staggered
+ * axis otherwise leaves ambiguous.
+ *
+ * Measured, the rows are decided in PIXELS: the two ends first, so the axis always says where it
+ * starts and stops, then each mark on the first row where its box touches nothing, else the
+ * second, else not at all — a label that fits on neither row is dropped rather than overprinted.
+ * The share of the width a label needs is not a constant: fourteen percent of a narrow panel was a
+ * few pixels, and three stamps printed into one (measured 2026-10-14).
+ */
+const placedTicks = computed<PlacedTick[]>(() => {
+  const all = axisTicks.value.map((tick, index, list) => ({
+    ...tick,
     // Whatever a branch above decided, the OUTERMOST two labels hang inwards. A centred label at
     // the far edge keeps half its box past the chart — the transform pulls it back on screen but
     // not in layout, so the panel around it offered 67 px of scrollbar, and scrolling that phantom
     // slid the lane labels away. Measured 2026-09-29; `e2e/panel_layout.spec.ts` holds it.
-    const edge = index === 0 ? 'start' : (index === all.length - 1 ? 'end' : tick.edge)
-    return { ...tick, edge, row }
-  })
+    edge: index === 0 ? 'start' : (index === list.length - 1 ? 'end' : tick.edge),
+  }))
+
+  if (!measured.value) {
+    const lastOnRow = [-Infinity, -Infinity]
+    return all.map(tick => {
+      // the top row unless its neighbour there is too close, in which case the row below
+      const row = tick.at - lastOnRow[0]! >= MIN_TICK_GAP ? 0 : 1
+      lastOnRow[row] = tick.at
+      return { ...tick, row }
+    })
+  }
+
+  // Measured, each label keeps the way its branch hung it and is SLID along the axis until it lies
+  // wholly on it; its stem stays at the mark. A range label centred on the first piece of a broken
+  // axis ran past the right edge and was cut off mid-stamp (measured 2026-10-14).
+  const raw = axisTicks.value
+  if (!raw.length) return []
+  const order = [...new Set([0, raw.length - 1, ...raw.keys()])]
+  const taken: [number, number][][] = [[], []]
+  const placed: PlacedTick[] = []
+  for (const index of order) {
+    const tick = raw[index]!
+    const [left, right] = extent(tick)
+    // wider than the whole axis: there is nowhere to put it
+    if (right - left > axisPx.value) continue
+    const shift = left < 0 ? -left : (right > axisPx.value ? axisPx.value - right : 0)
+    const from = left + shift
+    const to = right + shift
+    const free = (row: number) => taken[row]!.every(([start, end]) =>
+      to + LABEL_GAP_PX <= start || from >= end + LABEL_GAP_PX)
+    const row = free(0) ? 0 : (free(1) ? 1 : -1)
+    if (row < 0) continue
+    taken[row]!.push([from, to])
+    placed.push(shift
+      ? { ...tick, row, edge: 'start', labelAt: (from / axisPx.value) * 100 }
+      : { ...tick, row })
+  }
+  return placed.sort((a, b) => a.at - b.at)
 })
+
+/** Measured: whether the characters and the label's padding fit inside a span this wide. */
+function fits(text: string, widthPercent: number): boolean {
+  return text.length * charPx.value + LABEL_PADDING_PX <= (widthPercent / 100) * axisPx.value
+}
+
+/** The span's name where it fits, its short name where only that does, else none. */
+function captionFor(label: string, shortLabel: string | undefined, width: number): string {
+  if (measured.value) {
+    if (fits(label, width)) return label
+    return shortLabel && fits(shortLabel, width) ? shortLabel : ''
+  }
+  if (width >= LABEL_MIN_WIDTH) return label
+  return width >= SHORT_LABEL_MIN_WIDTH ? (shortLabel ?? '') : ''
+}
 
 const removedTotal = computed(() =>
   axis.value.breaks.reduce((sum, gap) => sum + gap.length, 0)
@@ -312,10 +417,9 @@ const drawn = computed(() =>
       const left = offset(span.from)
       // a span shorter than a pixel still has to be findable, so width has a floor in CSS
       const width = Math.max(0, offset(span.to) - left)
-      // a clipped word reads as a fault; a bar with no label reads as a small bar
-      const caption = width >= LABEL_MIN_WIDTH
-        ? span.label
-        : (width >= SHORT_LABEL_MIN_WIDTH ? (span.shortLabel ?? '') : '')
+      // a clipped word reads as a fault; a bar with no label reads as a small bar, and the whole
+      // name is on its card either way
+      const caption = captionFor(span.label, span.shortLabel, width)
       return { ...span, left, width, caption }
     }),
   }))
@@ -326,13 +430,15 @@ const drawn = computed(() =>
   <div v-if="drawn.length" class="timeline" :style="{ '--label-width': `${labelWidth}rem` }">
     <div class="axis-row">
       <span class="axis-spacer" :title="scaleNote">{{ scaleLabel }}</span>
-      <div class="axis" :title="scaleNote">
+      <div :ref="observeAxis" class="axis" :title="scaleNote">
+        <!-- ten characters in the labels' own font, never seen: what one character takes -->
+        <span ref="probe" class="probe" aria-hidden="true">0000000000</span>
         <span
           v-for="tick in placedTicks"
           :key="`tick-${tick.at}`"
           class="tick"
           :class="[tick.edge, `row-${tick.row}`]"
-          :style="{ left: `${tick.at}%` }"
+          :style="{ left: `${tick.labelAt ?? tick.at}%` }"
         >{{ tick.label }}</span>
         <!-- the pointer belongs to the MARK, not to the label, so it is placed and centred
              independently — a staggered label otherwise leaves the reader guessing which one -->
@@ -465,6 +571,14 @@ const drawn = computed(() =>
 .tick.mid { transform: translateX(-50%); }
 
 .tick.row-1 { top: 1.05rem; }
+
+.probe {
+  position: absolute;
+  visibility: hidden;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
 
 /* the pointer from a label down to the mark it names */
 .stem {

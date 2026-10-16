@@ -26,7 +26,7 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
 
   // Found by the id cell's TITLE, not by the row's text: the cell shows only the timestamp part,
   // since the eight hex characters after it separate two runs of the same second and nothing else.
-  const row = page.locator('.run-list .record-row')
+  const row = page.locator('.run-list .record-row:not(.record-unseen)')
     .filter({ has: page.locator(`.run-id[title="${FIXTURE_RUN}"]`) })
   await expect(row).toBeVisible()
   await row.click()
@@ -60,26 +60,35 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
  * change to its box is a mark that took room. Panels below it narrow their CONTENT, which is the
  * point of the click, so the row under the pointer is held by its own top instead.
  */
-test('choosing a scenario moves nothing in the column', async ({ page }) => {
-  await openWith(page, '/', { run: FIXTURE_RUN })
-  await page.locator('.panel-trigger', { hasText: 'Scenarios' }).click()
-  const scenario = page.locator('.scenario-roster .record-row').first()
-  await expect(scenario).toBeVisible()
+for (const hint of ['shown', 'dismissed'] as const) {
+  test(`choosing a scenario moves nothing in the column, the hint ${hint}`, async ({ page }) => {
+    // dismissed is the reader's usual state, and it is where the old state line moved the list by a
+    // whole line: it appeared where nothing stood
+    if (hint === 'dismissed') {
+      await page.addInitScript(() => {
+        window.localStorage.setItem('hints.v1', JSON.stringify({ version: 1, banned: ['scenario-pick'] }))
+      })
+    }
+    await openWith(page, '/', { run: FIXTURE_RUN })
+    await page.locator('.panel-trigger', { hasText: 'Scenarios' }).click()
+    const scenario = page.locator('.scenario-roster .record-row').first()
+    await expect(scenario).toBeVisible()
 
-  const executive = page.locator('[data-panel="executive"]')
-  const frame = async () => {
-    const box = (await executive.boundingBox())!
-    return { x: box.x, width: box.width, height: box.height }
-  }
-  const rowTop = async () => (await scenario.boundingBox())!.y
-  const before = { frame: await frame(), row: await rowTop() }
-  await scenario.click()
-  await expect(page.locator('.narrowed-head')).toBeVisible()
-  await expect(executive.locator('.scope-line')).toBeVisible()
+    const executive = page.locator('[data-panel="executive"]')
+    const frame = async () => {
+      const box = (await executive.boundingBox())!
+      return { x: box.x, width: box.width, height: box.height }
+    }
+    const rowTop = async () => (await scenario.boundingBox())!.y
+    const before = { frame: await frame(), row: await rowTop() }
+    await scenario.click()
+    await expect(page.locator('.narrowed-head')).toBeVisible()
+    await expect(executive.locator('.scope-line')).toBeVisible()
 
-  expect(await frame()).toEqual(before.frame)
-  expect(await rowTop()).toBe(before.row)
-})
+    expect(await frame()).toEqual(before.frame)
+    expect(await rowTop()).toBe(before.row)
+  })
+}
 
 /**
  * A section on its way for the run on screen keeps its panel in place and says so. A run change
@@ -94,7 +103,7 @@ test('a section still on its way keeps its panel standing, saying it loads', asy
 
   const executive = page.locator('[data-panel="executive"]')
   await expect(executive.locator('.panel-loading')).toBeVisible()
-  await expect(page.locator('.app-bar')).toBeVisible()
+  await expect(page.locator('.panel-column')).toBeVisible()
 
   await expect(executive.locator('.panel-loading')).toHaveCount(0)
   await expect(executive).toContainText('Net P&L')
@@ -114,21 +123,22 @@ test('a stored run that is gone says so', async ({ page }) => {
 
 test('a narrowed run list survives a reload', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+  await expect(page.locator('.run-list .record-row:not(.record-unseen)').first()).toBeVisible()
 
-  const before = await page.locator('.run-list .record-row').count()
+  const before = await page.locator('.run-list .record-row:not(.record-unseen)').count()
   // a term that narrows without emptying: the picker searches the run id and the SET name, and
-  // the capture holds several `demo_btcusd_bot` runs
+  // the capture holds several `demo_btcusd_bot` runs. The search stands folded into its button.
+  await page.locator('.facet-search-toggle').first().click()
   await page.locator('input.facet-search').first().fill('demo_btcusd')
   await expect.poll(async () => (await storedBar(page, 'run-picker'))?.search).toBe('demo_btcusd')
-  const narrowed = await page.locator('.run-list .record-row').count()
+  const narrowed = await page.locator('.run-list .record-row:not(.record-unseen)').count()
   expect(narrowed).toBeGreaterThan(0)
   expect(narrowed).toBeLessThan(before)
 
   await page.reload()
 
-  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
-  expect(await page.locator('.run-list .record-row').count()).toBe(narrowed)
+  await expect(page.locator('.run-list .record-row:not(.record-unseen)').first()).toBeVisible()
+  expect(await page.locator('.run-list .record-row:not(.record-unseen)').count()).toBe(narrowed)
 })
 
 /**
@@ -142,7 +152,7 @@ test('a narrowed run list survives a reload', async ({ page }) => {
  */
 test('picking a value leaves every chip exactly where it was', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+  await expect(page.locator('.run-list .record-row:not(.record-unseen)').first()).toBeVisible()
 
   const chips = page.locator('.facet-trigger')
   const edges = () => chips.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().x))
@@ -156,4 +166,47 @@ test('picking a value leaves every chip exactly where it was', async ({ page }) 
   await expect.poll(async () => (await storedBar(page, 'run-picker'))?.selection).toBeTruthy()
 
   expect(await edges()).toEqual(before)
+})
+
+/**
+ * EACH BROWSER TAB KEEPS ITS OWN ARRANGEMENT (viewer#31, 2026-10-14) — which is what makes a second
+ * window the way to compare two runs. A new tab starts from the last one saved; from then on, what
+ * another tab saves never reaches it.
+ *
+ * While two tabs shared one `localStorage`, the column's layout came back from the other tab on every
+ * reload — it is written only when changed, and this tab had changed nothing. The run came back from
+ * the other tab only sometimes: a tab writes its arrangement again as it is left, and lost only when
+ * the other tab's delayed save landed between that write and the reload's read (measured both ways).
+ * So the column is asserted first: it fails for the old storage every time.
+ */
+test('each browser tab keeps its own run and column across a reload, a new one starts from the last saved', async ({ page, context }) => {
+  const tradesOf = (tab: typeof page) => tab.locator('.panel-trigger', { hasText: 'Trade History' })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await expect(page.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
+  await expect(tradesOf(page)).toHaveAttribute('aria-expanded', 'false')
+
+  // a second tab starts from the last arrangement saved: the first tab's run
+  const second = await context.newPage()
+  await mockApi(second)
+  await second.goto('/')
+  await expect(second.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
+
+  // it opens a section of the column, and picks another run — the fixture run is hidden in the list
+  // by default, so any visible row will do
+  await tradesOf(second).click()
+  await expect(tradesOf(second)).toHaveAttribute('aria-expanded', 'true')
+  await second.locator('.dv-tab', { has: second.locator('.panel-tab[data-kind="runs"]') }).click()
+  const other = second.locator('.run-list .record-row >> visible=true').first()
+  const otherId = await other.locator('.run-id').getAttribute('title')
+  expect(otherId).not.toBe(FIXTURE_RUN)
+  await other.click()
+  await expect(second.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(otherId!)
+
+  // the first tab, reloaded, still has its own column and its own run; the second its own run
+  await page.reload()
+  await expect(tradesOf(page)).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
+  await second.reload()
+  await expect(second.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(otherId!)
+  await second.close()
 })

@@ -5,16 +5,17 @@ import { useDeploymentsStore } from '@/stores/deployments_store'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
 import {
-  amount, duration, magnitude, percentFigure, signClass, sortInstant, utcInstant,
+  amount, duration, magnitude, percentFigure, signClass, sortInstant, startedAt, utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
-import type { Figure } from '@/types/figure_types'
-import type { ListCard, ListColumn } from '@/types/list_types'
+import type { Figure, FigureCard } from '@/types/figure_types'
+import type { ListColumn } from '@/types/list_types'
 import type { DeploymentRow } from '@/types/api/deployment_types'
 import { plural, t } from '@/translate'
 
@@ -129,21 +130,6 @@ const shown = computed(() => sortRows(
 ))
 
 /**
- * The stamp a reader scans by, in their own zone — the same treatment and the same reasoning as the
- * run list's: the year is dropped inside the current year and kept outside it, the seconds are
- * gone, and the month stays a WORD because the card beside it carries UTC.
- */
-function startedAt(iso: string): string {
-  const at = new Date(iso)
-  if (Number.isNaN(at.getTime())) return t('no date')
-  const sameYear = at.getFullYear() === new Date().getFullYear()
-  return new Intl.DateTimeFormat(undefined, {
-    ...(sameYear ? {} : { year: 'numeric' }),
-    month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
-  }).format(at)
-}
-
-/**
  * The longest idle stretch between two sessions. `null` where no such stretch EXISTS — a deployment
  * of one session has nothing between its sessions — which is an absence and not a zero.
  */
@@ -156,7 +142,7 @@ function gap(row: DeploymentRow): string {
  * that is on screen anyway, and the two stamps appear here on the CANONICAL clock beside the
  * column's rendering in the reader's own zone.
  */
-function card(row: DeploymentRow): ListCard {
+function card(row: DeploymentRow): FigureCard {
   const details: Figure[] = [
     { label: t('First started'), value: utcInstant(row.first_started) },
     { label: t('Last started'), value: utcInstant(row.last_started) },
@@ -208,7 +194,7 @@ const chosen = computed(() =>
 const chosenMeta = computed(() => {
   const row = chosen.value
   if (!row) return ''
-  return [row.bot, plural(row.sessions, t('session'), t('sessions')), startedAt(row.last_started)]
+  return [row.bot, plural(row.sessions, t('session'), t('sessions')), startedAt(row.last_started) || t('no date')]
     .filter(Boolean)
     .join(' · ')
 })
@@ -231,6 +217,7 @@ const chosenMeta = computed(() => {
     </div>
 
     <template v-else>
+      <HintLine id="facet-bar" />
       <FacetBar
         v-model:selection="selection"
         v-model:search="search"
@@ -265,8 +252,8 @@ const chosenMeta = computed(() => {
           </span>
           <span :data-rank="1" class="deployment-bot" :title="row.bot">{{ row.bot }}</span>
           <span :data-rank="2" class="figure-cell">{{ row.sessions }}</span>
-          <span :data-rank="4">{{ startedAt(row.first_started) }}</span>
-          <span :data-rank="3">{{ startedAt(row.last_started) }}</span>
+          <span :data-rank="4">{{ startedAt(row.first_started) || t('no date') }}</span>
+          <span :data-rank="3">{{ startedAt(row.last_started) || t('no date') }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.net_pnl)">
             {{ amount(row.net_pnl, row.currency) }}
           </span>

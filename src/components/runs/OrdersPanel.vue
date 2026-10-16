@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import OrderStepList from '@/components/runs/OrderStepList.vue'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
+import { useChartLink } from '@/composables/use_chart_link'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import type { PositionRef } from '@/types/context_types'
 import { useOrderSteps } from '@/composables/use_order_steps'
@@ -69,6 +72,7 @@ const props = defineProps<{
 }>()
 
 const link = usePositionLink()
+const chartLink = useChartLink()
 
 /**
  * The positions that produced a trade, as `scenario~position`.
@@ -99,6 +103,11 @@ function positionOf(order: OrderHistoryRow): string {
 function hasTrades(order: OrderHistoryRow): boolean {
   if (!link.canJumpTo('trade-history')) return false
   return traded.value.has(`${order.scenario_name}~${positionOf(order)}`)
+}
+
+/** A position with trades has candles to show them on: the run chart on its unit. */
+function canChart(order: OrderHistoryRow): boolean {
+  return hasTrades(order) && chartLink.canShow(order.scenario_name)
 }
 
 function jumpToTrades(order: OrderHistoryRow): void {
@@ -454,7 +463,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
   <div class="orders-panel">
     <div v-if="!shown.length" class="hint">
       {{ narrowed
-        ? t('The chosen scenarios placed no order')
+        ? t('The chosen scenario placed no order')
         : t('This run placed no order') }}
     </div>
     <template v-else>
@@ -462,7 +471,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
       Only where something is OPEN. Where everything is fine, nothing is printed — with nothing
       expanded there is nothing to close, so the line does not exist. It also states the number a
       reader would otherwise have to count, and it is not called "collapse all": that name belongs
-      to the app bar's control over the PANELS, and two of them would be a trap.
+      to the Panels menu's control over the SECTIONS, and two of them would be a trap.
     -->
     <p v-if="opened.size" class="steps-open">
       {{ plural(opened.size, t('position open'), t('positions open')) }}
@@ -563,6 +572,15 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
             @click.stop="jumpToTrades(group.rows[0]!)"
           >{{ positionOf(group.rows[0]!) }}</JumpLink>
           <template v-else>{{ group.rows[0] ? positionOf(group.rows[0]!) : group.key }}</template>
+          <AppButton
+            v-if="group.rows[0] && canChart(group.rows[0])"
+            variant="link"
+            size="compact"
+            class="to-chart"
+            :title="t('Show this position on the run chart')"
+            :aria-label="t('Show this position on the run chart')"
+            @click.stop="chartLink.show(refOf(group.rows[0]!))"
+          ><AppIcon name="form-chart" /></AppButton>
           <span class="position-shape">{{ shapeOf(group.rows[0]) }}</span>
         </span>
         <span class="group-count">{{ plural(group.rows.length, t('record'), t('records')) }}</span>
@@ -640,6 +658,10 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
 
 /* the position's shape is the second word after its id, never glued to it: the template keeps no
    whitespace between the two elements, so the gap has to be drawn */
+.to-chart {
+  margin-left: var(--space-xs);
+}
+
 .position-shape {
   margin-left: var(--space-xs);
 }

@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef, watch } from 'vue'
 import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
+import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext, PositionRef } from '@/types/context_types'
-import type { StoredArrangement, StoredChart, StoredFacets } from '@/types/arrangement_types'
+import type { DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredRunChart } from '@/types/arrangement_types'
 
 const STORAGE_KEY = 'arrangement.v1'
 const SCHEMA_VERSION = 1
@@ -37,10 +38,41 @@ function readLink(value: unknown): LinkContext {
   const deployment = record(stored['deployment'])
   const market = record(stored['market'])
   const link = emptyLink()
-  link.run = { id: text(run['id']), units: texts(run['units']), position: readPosition(run['position']) }
+  // one scenario in focus at most: the controls set no more, and a stored list is reconciled, not trusted
+  const units = texts(run['units']).slice(0, 1)
+  link.run = { id: text(run['id']), units, position: readPosition(run['position']) }
   link.deployment = { id: text(deployment['id']) }
   link.market = { broker: text(market['broker']), symbol: text(market['symbol']) }
   return link
+}
+
+const DIRECTIONS: DockPlace['direction'][] = ['within', 'left', 'right', 'above', 'below']
+
+function nonNegative(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined
+}
+
+/** One stored place, field by field — a place naming no panel to stand beside is no place. */
+function readPlace(value: unknown): DockPlace | null {
+  const stored = record(value)
+  const besides = texts(stored['besides'])
+  const direction = DIRECTIONS.find(entry => entry === stored['direction'])
+  if (!besides.length || !direction) return null
+  const place: DockPlace = { besides, direction }
+  const index = nonNegative(stored['index'])
+  const size = nonNegative(stored['size'])
+  if (index !== undefined) place.index = index
+  if (size !== undefined) place.size = size
+  return place
+}
+
+function readPlaces(value: unknown): Record<string, DockPlace> {
+  const places: Record<string, DockPlace> = {}
+  for (const [id, stored] of Object.entries(record(value))) {
+    const place = readPlace(stored)
+    if (place) places[id] = place
+  }
+  return places
 }
 
 function readSelection(value: unknown): FacetSelection | undefined {
@@ -72,11 +104,11 @@ function readFacets(value: unknown): StoredFacets {
  */
 function readStored(): StoredArrangement | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readTabEntry(STORAGE_KEY)
     if (!raw) return null
     const parsed = record(JSON.parse(raw))
     if (parsed['version'] !== SCHEMA_VERSION) {
-      localStorage.removeItem(STORAGE_KEY)
+      removeTabAndShared(STORAGE_KEY)
       return null
     }
     const links: Record<string, LinkContext> = {}
@@ -85,8 +117,14 @@ function readStored(): StoredArrangement | null {
     const bars: Record<string, StoredFacets> = {}
     for (const [id, facets] of Object.entries(record(parsed['bars']))) bars[id] = readFacets(facets)
     const chart: StoredChart = { timeframe: text(record(parsed['chart'])['timeframe']) }
+    const storedRunChart = record(parsed['runChart'])
+    const runChart: StoredRunChart = {
+      run: text(storedRunChart['run']),
+      unit: text(storedRunChart['unit']),
+      timeframe: text(storedRunChart['timeframe']),
+    }
     const dock = typeof parsed['dock'] === 'object' && parsed['dock'] !== null ? parsed['dock'] : null
-    return { version: SCHEMA_VERSION, links, bars, chart, dock }
+    return { version: SCHEMA_VERSION, links, bars, chart, runChart, dock, places: readPlaces(parsed['places']) }
   } catch {
     // a corrupt or unreadable entry is the same as none — never a broken start
     return null
@@ -117,8 +155,11 @@ export const useArrangementStore = defineStore('arrangement', () => {
 
   const bars = ref<Record<string, StoredFacets>>(stored?.bars ?? {})
   const chart = ref<StoredChart>(stored?.chart ?? { timeframe: null })
+  const runChart = ref<StoredRunChart>(stored?.runChart ?? { run: null, unit: null, timeframe: null })
   // the layout is large and replaced whole, never edited in place — no deep reactivity needed
   const dock = shallowRef<object | null>(stored?.dock ?? null)
+  // replaced whole as well, by the dock store, which owns what a place means
+  const places = shallowRef<Record<string, DockPlace>>(stored?.places ?? {})
 
   function persist(): void {
     const arrangement: StoredArrangement = {
@@ -126,17 +167,17 @@ export const useArrangementStore = defineStore('arrangement', () => {
       links: context.links,
       bars: bars.value,
       chart: chart.value,
+      runChart: runChart.value,
       dock: dock.value,
+      places: places.value,
     }
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(arrangement))
-    } catch {
-      // a full or blocked storage must not break the app — the selection still works, unstored
-    }
+    // this tab's own, and the start of the next new one — a full or blocked storage must not break
+    // the app: the selection still works, unstored
+    writeTabAndShared(STORAGE_KEY, JSON.stringify(arrangement))
   }
 
-  watch([() => context.links, bars, chart], persist, { deep: true })
-  watch(dock, persist)
+  watch([() => context.links, bars, chart, runChart], persist, { deep: true })
+  watch([dock, places], persist)
 
   function setFacets(bar: string, facets: StoredFacets): void {
     bars.value = { ...bars.value, [bar]: facets }
@@ -150,5 +191,13 @@ export const useArrangementStore = defineStore('arrangement', () => {
     dock.value = layout
   }
 
-  return { bars, chart, dock, setFacets, setTimeframe, setDock }
+  function setPlaces(next: Record<string, DockPlace>): void {
+    places.value = next
+  }
+
+  function setRunChart(next: StoredRunChart): void {
+    runChart.value = next
+  }
+
+  return { bars, chart, runChart, dock, places, setFacets, setTimeframe, setRunChart, setDock, setPlaces }
 })

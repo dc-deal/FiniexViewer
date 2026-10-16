@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getRuns, getRunSummary } from '@/api/api_client'
+import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { useContextStore } from '@/stores/context_store'
 import { isAbsent } from '@/types/api/absence_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
@@ -22,11 +23,18 @@ export const useRunsStore = defineStore('runs', () => {
   const summary = ref<RunSummary | null>(null)
   const loadingRuns = ref(false)
   const loadingSummary = ref(false)
-  const error = ref<string | null>(null)
+  /**
+   * Two failures, two places: the INDEX failing is the run list's to say, the SUMMARY failing the
+   * run report's. One shared ref let a broken summary blank the list it was picked from.
+   */
+  const indexError = ref<string | null>(null)
+  const summaryError = ref<string | null>(null)
   // the selected run exists but carries no run-summary artifact (backend 404)
   const summaryMissing = ref(false)
   /** Why the summary is not here, where it is not. */
   const summaryAbsence = ref<SectionAbsence | null>(null)
+  /** The summary is there and predates the current schema — the backend's sentence, as it came. */
+  const summaryUnreadable = ref<string | null>(null)
   // a run id the index does not contain — a link or a reloaded URL naming a run that is gone
   const unknownRunId = ref<string | null>(null)
   /**
@@ -71,12 +79,12 @@ export const useRunsStore = defineStore('runs', () => {
   async function loadRuns(quiet = false): Promise<void> {
     // deliberately not cached — new runs appear while the app is open
     if (!quiet) loadingRuns.value = true
-    error.value = null
+    indexError.value = null
     try {
       // the index row carries run_id + group + name, so the cascade needs no request per run
       runs.value = await getRuns()
     } catch (e) {
-      error.value = describeFailure(e, t('Could not load the run index'))
+      indexError.value = describeFailure(e, t('Could not load the run index'))
     } finally {
       loadingRuns.value = false
     }
@@ -84,8 +92,10 @@ export const useRunsStore = defineStore('runs', () => {
 
   function clearRun(): void {
     summary.value = null
+    summaryError.value = null
     summaryMissing.value = false
     summaryAbsence.value = null
+    summaryUnreadable.value = null
     unknownRunId.value = null
   }
 
@@ -106,10 +116,11 @@ export const useRunsStore = defineStore('runs', () => {
 
   async function loadSummary(runId: string): Promise<void> {
     loadingSummary.value = true
-    error.value = null
+    summaryError.value = null
     summary.value = null
     summaryMissing.value = false
     summaryAbsence.value = null
+    summaryUnreadable.value = null
 
     try {
       const result = await getRunSummary(runId)
@@ -121,7 +132,12 @@ export const useRunsStore = defineStore('runs', () => {
       summary.value = isAbsent(result) ? null : result
       summaryAbsence.value = isAbsent(result) ? result : null
     } catch (e) {
-      if (selectedRunId.value === runId) error.value = describeFailure(e, t('Could not load the run summary'))
+      if (selectedRunId.value === runId) {
+        // a summary in an older schema is a state of the run like any section's, and it must not
+        // take the whole run view down with it the way an outage does
+        if (e instanceof ArtifactUnreadableError) summaryUnreadable.value = e.message
+        else summaryError.value = describeFailure(e, t('Could not load the run summary'))
+      }
     } finally {
       if (selectedRunId.value === runId) loadingSummary.value = false
     }
@@ -168,10 +184,12 @@ export const useRunsStore = defineStore('runs', () => {
     feedHealth,
     summaryMissing,
     summaryAbsence,
+    summaryUnreadable,
     unknownRunId,
     loadingRuns,
     loadingSummary,
-    error,
+    indexError,
+    summaryError,
     loadRuns,
     toggleUnit,
     setUnits,

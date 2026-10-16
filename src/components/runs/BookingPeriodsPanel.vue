@@ -115,7 +115,7 @@ const otherCurrencies = computed(() =>
           <!-- a mark in the headline rather than a line of its own: a narrowing moves nothing -->
           <ScopeMark
             v-if="narrowed"
-            :title="t('This check is the whole run — the periods below are the chosen scenarios')"
+            :title="t('This check is the whole run — the periods below are those of the chosen scenario')"
           />
           {{ verdict.text }}
         </p>
@@ -139,7 +139,7 @@ const otherCurrencies = computed(() =>
 
     <div v-if="!selectedPeriods.length" class="hint">
       {{ narrowed
-        ? t('The chosen scenarios booked no periods')
+        ? t('The chosen scenario booked no periods')
         : t('This run booked no periods') }}
     </div>
     <template v-else>

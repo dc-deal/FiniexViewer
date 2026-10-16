@@ -1,20 +1,56 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue'
 import { createChart, ColorType } from 'lightweight-charts'
 import type {
-  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, UTCTimestamp,
+  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, MouseEventParams,
+  UTCTimestamp,
 } from 'lightweight-charts'
+import ChartCard from '@/components/base/ChartCard.vue'
 import type { ChartBar } from '@/types/api/bar_types'
+import type { FigureCard } from '@/types/figure_types'
+import type { ChartMark } from '@/types/run_chart_types'
 
 const props = defineProps<{
   data: ChartBar[]
+  /**
+   * Where trades opened and closed — drawn on the candles they fell in. Their count stands on the
+   * element as `data-marks`: the canvas draws them where no assertion can read them back.
+   */
+  marks?: ChartMark[]
+  /** An instant to centre on, in UTC seconds — the position the reader is looking at. */
+  focus?: number | null
 }>()
+
+/** How many bars are on show around a focus, where the whole window would make them too narrow to read. */
+const FOCUS_SPAN = 150
 
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
 let series: ISeriesApi<'Candlestick'> | null = null
 let resizeObserver: ResizeObserver | null = null
 let themeObserver: MutationObserver | null = null
+
+/** The size the chart was last drawn at — the frame a card has to stay inside. */
+const frameSize = ref({ width: 0, height: 0 })
+
+/**
+ * Every drawn thing that can say what it is, by the id the library reports under the pointer.
+ *
+ * ONE register, and the trade marks are only its first source. The library reports an id for a
+ * marker (its `id`) and for a series primitive (the `externalId` its `hitTest` answers) alike, and
+ * primitives are how the drawings an algo makes will reach this chart (testingide#379): a new kind
+ * of drawing brings its id and its card, and nothing here changes.
+ */
+const cards = computed(() => new Map<string, FigureCard>((props.marks ?? []).map(mark => [mark.id, mark.card])))
+
+/** The card under the pointer, and where the pointer is — null off every drawn thing. */
+const pointed = shallowRef<{ card: FigureCard, x: number, y: number } | null>(null)
+
+function onPointer(param: MouseEventParams): void {
+  const id = param.hoveredObjectId
+  const card = typeof id === 'string' ? cards.value.get(id) : undefined
+  pointed.value = card && param.point ? { card, x: param.point.x, y: param.point.y } : null
+}
 
 /** What the chart paints with — each one a token, in its role where `tokens.css` names one. */
 interface ChartColours {
@@ -24,6 +60,8 @@ interface ChartColours {
   focus: string
   rise: string
   fall: string
+  mark: string
+  quiet: string
 }
 
 /**
@@ -44,7 +82,49 @@ function readColours(): ChartColours {
     // a candle's direction is the polarity of a figure
     rise: token('--color-positive'),
     fall: token('--color-negative'),
+    // an entry is a fact about the trade, not a result: plain ink
+    mark: token('--color-text-primary'),
+    quiet: token('--color-text-secondary'),
   }
+}
+
+/** A mark's colour by its role — a result is the polarity of a figure; the shape says the rest. */
+function markColour(mark: ChartMark, colours: ChartColours): string {
+  if (mark.role === 'gain') return colours.rise
+  if (mark.role === 'loss') return colours.fall
+  if (mark.role === 'flat') return colours.quiet
+  return colours.mark
+}
+
+function showMarks(): void {
+  if (!series) return
+  const colours = readColours()
+  series.setMarkers((props.marks ?? []).map(mark => ({
+    time: mark.time as UTCTimestamp,
+    position: mark.position,
+    shape: mark.shape,
+    color: markColour(mark, colours),
+    text: mark.text,
+    size: mark.focused ? 2 : 1,
+    id: mark.id,
+  })))
+}
+
+/**
+ * The bars on show: around the focus where there is one and the window is long, all of them
+ * otherwise. A short window is shown whole, focus or not — every trade is in sight already.
+ */
+function frame(): void {
+  if (!chart) return
+  const at = props.focus
+  if (at === null || at === undefined || props.data.length <= FOCUS_SPAN) {
+    chart.timeScale().fitContent()
+    return
+  }
+  // the bar the focus fell in: the last one that opened at or before it
+  let middle = 0
+  props.data.forEach((bar, index) => { if (bar.time <= at) middle = index })
+  chart.timeScale().setVisibleLogicalRange({ from: middle - FOCUS_SPAN / 2, to: middle + FOCUS_SPAN / 2 })
 }
 
 function chartColours(colours: ChartColours): DeepPartial<ChartOptions> {
@@ -98,6 +178,8 @@ function initChart(size: { width: number, height: number }): void {
     timeScale: { timeVisible: true },
   })
   chart.applyOptions(chartColours(colours))
+  chart.subscribeCrosshairMove(onPointer)
+  frameSize.value = size
 
   series = chart.addCandlestickSeries({ borderVisible: false, ...candleColours(colours) })
 }
@@ -111,12 +193,14 @@ function repaint(): void {
   const colours = readColours()
   chart.applyOptions(chartColours(colours))
   series.applyOptions(candleColours(colours))
+  showMarks()
 }
 
 function showData(data: ChartBar[]): void {
   if (!series) return
   series.setData(data.map(b => ({ ...b, time: b.time as UTCTimestamp })))
-  chart?.timeScale().fitContent()
+  showMarks()
+  frame()
 }
 
 /** Build at the first real size, follow every later one, and ignore a collapse to nothing. */
@@ -129,6 +213,7 @@ function onResize(): void {
     return
   }
   chart.resize(size.width, size.height)
+  frameSize.value = size
 }
 
 onMounted(() => {
@@ -147,14 +232,37 @@ onUnmounted(() => {
 
 // bars that arrive before the chart has a size wait for it: onResize hands them over at build time
 watch(() => props.data, newData => showData(newData))
+// a card of a mark that is gone is not shown on: the next move of the pointer finds what is there
+watch(() => props.marks, () => {
+  pointed.value = null
+  showMarks()
+})
+watch(() => props.focus, () => frame())
 </script>
 
 <template>
-  <div ref="container" class="candle-chart" />
+  <div class="candle-chart" :data-marks="marks?.length ?? 0">
+    <div ref="container" class="candle-canvas" />
+    <ChartCard
+      v-if="pointed"
+      :card="pointed.card"
+      :x="pointed.x"
+      :y="pointed.y"
+      :width="frameSize.width"
+      :height="frameSize.height"
+    />
+  </div>
 </template>
 
 <style scoped>
+/* the frame a card is placed in: the library draws into the canvas element beside it */
 .candle-chart {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.candle-canvas {
   width: 100%;
   height: 100%;
 }

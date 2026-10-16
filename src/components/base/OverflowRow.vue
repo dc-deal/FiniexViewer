@@ -1,7 +1,9 @@
 <script setup lang="ts" generic="T">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
+import AppButton from '@/components/base/AppButton.vue'
 import { fittingCount } from '@/components/base/overflow_fit'
+import { t } from '@/translate'
 
 /**
  * One row that never wraps: the items that fit stand in it, in their order, and the rest wait
@@ -19,6 +21,12 @@ const props = defineProps<{
   endFrom?: number
   /** What the control is called for a screen reader and on hover. */
   moreLabel: string
+  /**
+   * How many picks wait behind the control, said on it the way a chip says its own: a narrowing
+   * that went out of sight still shows where the click happens. Without it the control has no
+   * count; 0 keeps the count's room, so a pick made behind the control does not widen it.
+   */
+  picked?: number
 }>()
 
 const emit = defineEmits<{
@@ -39,6 +47,11 @@ const hidden = computed(() => props.items.slice(count.value))
 
 /** The control takes the end where the end group has gone behind it. */
 const moreAtEnd = computed(() => props.endFrom !== undefined && count.value <= props.endFrom)
+
+const moreName = computed(() => {
+  const name = `${props.moreLabel}: ${hidden.value.length}`
+  return props.picked ? `${name} — ${props.picked} ${t('picked')}` : name
+})
 
 function measure(): void {
   const element = row.value
@@ -92,12 +105,20 @@ watch(() => hidden.value.length, length => emit('overflow', length), { immediate
     <!-- always in the row so its width is known; seen only while something waits behind it -->
     <span ref="more" class="overflow-more-cell" :class="{ 'overflow-idle': !hidden.length, 'overflow-end': moreAtEnd }">
       <DropdownMenuRoot>
-        <DropdownMenuTrigger
-          class="overflow-more"
-          :disabled="!hidden.length"
-          :aria-label="`${moreLabel}: ${hidden.length}`"
-          :title="moreLabel"
-        >+{{ hidden.length }} ▾</DropdownMenuTrigger>
+        <!-- a button like every other, so its states are AppButton's; `marked` while picks wait behind it -->
+        <DropdownMenuTrigger as-child :disabled="!hidden.length">
+          <AppButton
+            class="overflow-more"
+            size="compact"
+            :marked="(picked ?? 0) > 0"
+            :aria-label="moreName"
+            :title="moreLabel"
+          >
+            +{{ hidden.length }}
+            <span v-if="picked !== undefined" class="overflow-badge">{{ picked || '' }}</span>
+            <span class="overflow-caret">▾</span>
+          </AppButton>
+        </DropdownMenuTrigger>
         <DropdownMenuPortal>
           <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
             <slot name="menu" :hidden="hidden" />
@@ -137,39 +158,19 @@ watch(() => hidden.value.length, length => emit('overflow', length), { immediate
   margin-left: auto;
 }
 
-/* a control like every other: the link ink, and each state on two channels */
-.overflow-more {
-  min-width: 3.5em;
-  padding: 2px var(--space-sm);
-  background-color: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  color: var(--color-accent);
-  cursor: pointer;
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  transition: background-color 80ms ease, border-color 80ms ease;
-}
-
-.overflow-more:hover,
+/* the states are AppButton's; open is the one state a menu trigger adds */
 .overflow-more[data-state='open'] {
   background-color: var(--color-bg-hover);
   border-color: var(--color-accent);
 }
 
-.overflow-more:active {
-  background-color: var(--color-bg-active);
-  transform: translateY(1px);
+/* two digits wide whatever it holds, like a chip's count, so a pick never resizes the control */
+.overflow-badge {
+  min-width: 2ch;
+  text-align: center;
 }
 
-.overflow-more:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .overflow-more {
-    transition: none;
-  }
+.overflow-caret {
+  color: var(--color-text-secondary);
 }
 </style>

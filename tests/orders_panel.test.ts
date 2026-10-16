@@ -4,7 +4,9 @@ import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import OrdersPanel from '@/components/runs/OrdersPanel.vue'
 import { provideTestSelection } from './scenario_selection_harness'
+import { provideChartLink } from '@/composables/use_chart_link'
 import { provideTestPositionLink } from './position_link_harness'
+import type { PositionRef } from '@/types/context_types'
 import { provideTestOrderSteps, step } from './order_steps_harness'
 import type {
   OrderHistoryRow,
@@ -454,6 +456,33 @@ describe('OrdersPanel', () => {
       expect(wrapper.find('.to-trades').exists()).toBe(false)
     })
 
+    /** The same position on its candles: offered where it has trades and the chart can draw it. */
+    it('offers the run chart for a position with trades, pointed at the position', async () => {
+      const shown: PositionRef[] = []
+      const Host = defineComponent({
+        setup() {
+          provideTestPositionLink(null, 'all')
+          provideChartLink({ canShow: scenario => scenario === SCENARIO, show: ref => { shown.push(ref) } })
+          return () => h(OrdersPanel, { model: WITH_TRADE })
+        },
+      })
+      const wrapper = mount(Host, { global: { plugins: [createPinia()] } })
+      await wrapper.find('.to-chart').trigger('click')
+      expect(shown).toEqual([{ scenario: SCENARIO, position: 'pos_1' }])
+    })
+
+    it('offers no run chart for a position that produced no trade', () => {
+      const Host = defineComponent({
+        setup() {
+          provideTestPositionLink(null, 'all')
+          provideChartLink({ canShow: () => true, show: () => {} })
+          return () => h(OrdersPanel, { model: model([order({ order_id: 'pos_1' })], [unit()], tradesOf()) })
+        },
+      })
+      const wrapper = mount(Host, { global: { plugins: [createPinia()] } })
+      expect(wrapper.find('.to-chart').exists()).toBe(false)
+    })
+
     it('names the panel and the POSITION, never the position id alone', async () => {
       const { wrapper, state } = mountLinked(WITH_TRADE)
       await wrapper.find('.to-trades').trigger('click')
@@ -586,7 +615,7 @@ describe('OrdersPanel', () => {
     /** A scenario the narrowing drops takes its funnel with it — the heading belongs to the group. */
     it('states an empty result as the chosen scenarios rather than as the run', () => {
       const wrapper = mountNarrowed(TWO, ['a_scenario_with_no_orders'])
-      expect(wrapper.text()).toContain('The chosen scenarios placed no order')
+      expect(wrapper.text()).toContain('The chosen scenario placed no order')
       expect(wrapper.find('.order-list').exists()).toBe(false)
     })
   })

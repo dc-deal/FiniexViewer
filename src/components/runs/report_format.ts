@@ -21,6 +21,17 @@ export function amount(value: number, currency: string): string {
   return `${figure(value)} ${currency}`
 }
 
+/**
+ * A spread figure, or the words for its absence. null means the data the unit read carried NO
+ * QUOTE — every row bid = ask — so no spread was measured, which is not a spread of zero (contract
+ * 32; their `portfolio` and `trade-history` documents). `SPREAD_NOT_RECORDED` says so on hover.
+ */
+export function spreadFigure(value: number | null, format: (value: number) => string): string {
+  return value === null ? t('not recorded') : format(value)
+}
+
+export const SPREAD_NOT_RECORDED = t('The data this unit read carried no quote, so no spread was measured — not a spread of zero.')
+
 /** Backend ratios are 0..1 — the percent conversion happens here, at the render edge. */
 export function percent(ratio: number): string {
   return `${(ratio * 100).toFixed(1)}%`
@@ -91,6 +102,34 @@ export function utcInstant(iso: string | null): string {
   const part: Record<string, string> = {}
   for (const piece of utcClock.formatToParts(new Date(iso))) part[piece.type] = piece.value
   return `${part['year']}-${part['month']}-${part['day']} ${part['hour']}:${part['minute']}:${part['second']}Z`
+}
+
+/**
+ * When something started, in the reader's own zone — a run in the run list and in the run line, a
+ * deployment's first and last session. The id encodes the same instant, but nobody reads
+ * `20260925_095227` as a date at a glance.
+ *
+ * A label says only what its neighbours do not, which is the same rule the time axis follows: the
+ * year is dropped inside the current one and kept outside it, and the seconds are gone — two runs
+ * of the same minute are told apart by the id, not by this. `Sep 29, 2026, 12:27 PM` was 22
+ * characters and needed 13rem of a 28rem panel, which is what made the narrowest tier overflow by
+ * 24 px. `Sep 29, 12:27` is 13.
+ *
+ * The MONTH stays a word on purpose. These columns are the reader's own zone while the card beside
+ * them carries UTC, and a numeric `2026-09-29 12:27` reads like the canonical clock that it is not.
+ * Empty for a stamp that is not a date; the caller says what it says for none. One copy since
+ * 2026-10-14 — the run list and the deployment list had one each, and they told an unreadable
+ * stamp apart differently.
+ */
+export function startedAt(iso: string): string {
+  if (!iso) return ''
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return ''
+  const sameYear = at.getFullYear() === new Date().getFullYear()
+  return new Intl.DateTimeFormat(undefined, {
+    ...(sameYear ? {} : { year: 'numeric' }),
+    month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(at)
 }
 
 /**

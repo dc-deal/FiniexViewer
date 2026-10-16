@@ -87,7 +87,7 @@ describe('BrokerPanel', () => {
 
   /**
    * A broker at leverage 1 is not REQUIRED to state any of the three margin fields — that is the
-   * backend's own condition (`ide_docs/broker_config_guide.md`: "If leverage > 1"), so what arrives
+   * backend's own condition (its `docs/broker_config_guide.md`: "If leverage > 1"), so what arrives
    * there is a default rather than a measurement. The captured spot broker reads `margin_mode:
    * 'none'` with both levels at `0.0`, and "margin call at 0.00%" would say the OPPOSITE of what is
    * true: that the account is called immediately, rather than that it can never be called.

@@ -2,17 +2,17 @@
 import { computed } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
-import AppButton from '@/components/base/AppButton.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import {
-  amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, signClass, utcInstant,
+  SPREAD_NOT_RECORDED, amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, signClass, spreadFigure,
+  utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
-import type { ListCard, ListColumn } from '@/types/list_types'
-import type { Figure } from '@/types/figure_types'
+import type { ListColumn } from '@/types/list_types'
+import type { Figure, FigureCard } from '@/types/figure_types'
 import type { ScenarioRosterView, ScenarioRow } from '@/types/api/scenario_types'
 import type { PortfolioUnitRow } from '@/types/api/report_types'
 import { t } from '@/translate'
@@ -257,7 +257,7 @@ const columns: ListColumn[] = [
  * Nothing is derived. Every line names a served field, `open_positions` excepted: it is on the wire
  * and not mirrored, so the count is not claimed.
  */
-function card(row: ScenarioRow): ListCard | null {
+function card(row: ScenarioRow): FigureCard | null {
   const unit = earned(row)
   if (!unit) return null
   const money = (value: number) => amount(value, unit.currency)
@@ -298,7 +298,11 @@ function card(row: ScenarioRow): ListCard | null {
         + `(${percentFigure(unit.account_max_dd_pct)})`,
     },
     { label: t('Long / short'), value: `${unit.total_long_trades} / ${unit.total_short_trades}` },
-    { label: t('Spread'), value: money(unit.total_spread_cost) },
+    {
+      label: t('Spread'),
+      value: spreadFigure(unit.total_spread_cost, money),
+      ...(unit.total_spread_cost === null ? { title: SPREAD_NOT_RECORDED } : {}),
+    },
     { label: t('Commission'), value: money(unit.total_commission) },
     { label: t('Swap'), value: money(unit.total_swap) },
   ]
@@ -366,13 +370,6 @@ const picked = computed(() => narrowing.units.value)
 function isPicked(name: string): boolean {
   return picked.value.includes(name)
 }
-
-/** Two sentences rather than one with a number in it — "1 scenarios" is how that reads otherwise. */
-const chosenLabel = computed(() =>
-  picked.value.length === 1
-    ? t('1 scenario chosen — every section below shows only it')
-    : `${picked.value.length} ${t('scenarios chosen — every section below shows only these')}`
-)
 </script>
 
 <template>
@@ -385,21 +382,11 @@ const chosenLabel = computed(() =>
       {{ t('scenarios produced nothing — their reason is on the row') }}
     </p>
 
-    <!-- The state where the CLICK happens. It is also said once above the panel column, because it
-         governs every section there — but a reader who just clicked is looking here.
-
-         It says CHOSEN, not "showing only": this list still shows every scenario, and the facet
-         count beside it already means "how many rows are listed". Two counts over scenarios that
-         contradict each other are worse than one. -->
-    <p v-if="picked.length" class="roster-picked">
-      <span class="mark" aria-hidden="true">⌖</span>
-      <span>{{ chosenLabel }}</span>
-      <AppButton variant="quiet" @click="narrowing.clear()">
-        {{ t('Clear') }}
-      </AppButton>
-    </p>
-    <!-- and where nothing is picked, what picking would do -->
-    <HintLine v-else id="scenario-pick" />
+    <!-- What a click does, and it STAYS once something is picked: swapping it for a line that
+         named the choice moved the whole list under the pointer — by a pixel with the hint showing,
+         by a line once it was dismissed (2026-10-14). The choice is marked on its rows here, and said
+         once in the Runs quick bar, with the way back to the whole run. -->
+    <HintLine id="scenario-pick" />
 
     <FacetBar
       v-model:selection="selection"
@@ -554,23 +541,6 @@ const chosenLabel = computed(() =>
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.roster-picked {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-xs);
-  margin: 0 0 var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-annotation);
-  border-radius: 4px;
-  color: var(--color-annotation);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.roster-picked .app-button {
-  margin-left: auto;
 }
 
 .roster-state {

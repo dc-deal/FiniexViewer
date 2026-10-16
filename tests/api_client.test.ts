@@ -32,6 +32,8 @@ import {
   getDeploymentBookingPeriods,
   getRunConfig,
   getTradeHistory,
+  getRunHeader,
+  getScenarioDetails,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
@@ -113,9 +115,16 @@ describe('api_client', () => {
 
     it('returns the bar array from response', async () => {
       const bars = [{ t: 1704067200, o: 42000, h: 43000, l: 41000, c: 42500, v: 100 }]
-      mockGet.mockResolvedValue({ data: bars })
+      mockGet.mockResolvedValue({ data: bars, headers: { 'x-bar-truncated': 'false' } })
       const result = await getBars('kraken_spot', 'BTCUSD', 'H1', '2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z')
-      expect(result).toEqual(bars)
+      expect(result).toEqual({ bars, truncated: false })
+    })
+
+    /** The cap never cuts quietly: the route says so on a header, and the answer carries it on. */
+    it('says when the range held more rows than the route\'s cap', async () => {
+      mockGet.mockResolvedValue({ data: [], headers: { 'x-bar-truncated': 'true' } })
+      const result = await getBars('kraken_spot', 'BTCUSD', 'M1', '2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z')
+      expect(result.truncated).toBe(true)
     })
   })
 
@@ -507,6 +516,32 @@ describe('api_client', () => {
    * index just named — a disagreement between two indexes, which behind a blank panel would look
    * like a run that simply has no configuration.
    */
+  /**
+   * A 409 is a STALE ARTIFACT on every report route, not only on the three that mapped it first:
+   * the backend answers it for any report artifact that no longer matches its model. Before
+   * 2026-10-14 these routes turned it into a failure reading `Request failed with status code 409`.
+   */
+  describe('a stale artifact on every report route', () => {
+    const STALE = { response: { status: 409, data: { error: 'artifact_unreadable', detail: 'Written by an older schema.' } } }
+
+    it.each([
+      ['run-summary', getRunSummary],
+      ['portfolio', getPortfolio],
+      ['aggregated-portfolio', getAggregatedPortfolio],
+      ['pending-orders', getPendingOrders],
+      ['order-history', getOrderHistory],
+      ['header', getRunHeader],
+      ['broker', getBroker],
+      ['trade-history', getTradeHistory],
+      ['scenario-details', getScenarioDetails],
+    ] as const)('reads a 409 on %s as unreadable, with the backend sentence', async (_route, get) => {
+      mockGet.mockRejectedValue(STALE)
+      const answer = get('20260615_130000')
+      await expect(answer).rejects.toBeInstanceOf(ArtifactUnreadableError)
+      await expect(answer).rejects.toThrow('Written by an older schema.')
+    })
+  })
+
   describe('getRunConfig', () => {
     it('calls the config endpoint with the run id in the path', async () => {
       mockGet.mockResolvedValue({ data: runConfigFixture })

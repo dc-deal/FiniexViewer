@@ -15,6 +15,7 @@ import historyFixture from './fixtures/order_history.json'
 import eventsFixture from './fixtures/order_events.json'
 import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
+import runHeaderFixture from './fixtures/run_header.json'
 import * as apiClient from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
@@ -31,6 +32,7 @@ vi.mock('@/api/api_client', () => ({
   getBookingPeriods: vi.fn(),
   getRunConfig: vi.fn(),
   getTradeHistory: vi.fn(),
+  getRunHeader: vi.fn(),
 }))
 
 const REPORT: WarningsErrorsReport = {
@@ -125,7 +127,7 @@ describe('useRunReportsStore', () => {
       .mockRejectedValue(new ArtifactUnreadableError('Re-run to regenerate it.'))
     const store = useRunReportsStore()
     await store.loadWarningsErrors('20260615_130000')
-    expect(store.unreadable).toBe('Re-run to regenerate it.')
+    expect(store.unreadable['warningsErrors']).toBe('Re-run to regenerate it.')
     expect(store.errors['warningsErrors']).toBeUndefined()
     expect(store.warningsErrors).toBeNull()
   })
@@ -136,7 +138,7 @@ describe('useRunReportsStore', () => {
     const store = useRunReportsStore()
     await store.loadWarningsErrors('20260615_130000')
     store.clear()
-    expect(store.unreadable).toBeNull()
+    expect(store.unreadable).toEqual({})
   })
 
   it('clear drops the previous run — its numbers must never survive a selection change', async () => {
@@ -459,7 +461,7 @@ describe('useRunReportsStore — portfolio section', () => {
         .mockRejectedValue(new ArtifactUnreadableError('Written by an older schema.'))
       const store = useRunReportsStore()
       await store.loadBookingPeriods('20260615_130000')
-      expect(store.unreadable).toContain('older schema')
+      expect(store.unreadable['bookingPeriods']).toContain('older schema')
       expect(store.errors['bookingPeriods']).toBeUndefined()
     })
 
@@ -595,5 +597,134 @@ describe('useRunReportsStore — portfolio section', () => {
       store.clear()
       expect(store.tradeHistory).toBeNull()
     })
+  })
+})
+
+/** A promise the test settles by hand, so an answer can arrive AFTER the selection changed. */
+function settleLater<T>(): { promise: Promise<T>, resolve: (value: T) => void, reject: (reason: unknown) => void } {
+  let resolve!: (value: T) => void
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<T>((done, fail) => {
+    resolve = done
+    reject = fail
+  })
+  return { promise, resolve, reject }
+}
+
+type TradeHistoryAnswer = Awaited<ReturnType<typeof apiClient.getTradeHistory>>
+
+/**
+ * An answer belongs to the selection it was asked under. A section of the previous run that lands
+ * late must not fill the next run's slot — the next run may not ask for that section at all, so no
+ * answer of its own would ever overwrite it — and must not switch off the next run's loading flag.
+ */
+describe('useRunReportsStore — an answer for a run no longer chosen', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.mocked(apiClient.getTradeHistory).mockReset()
+    vi.mocked(apiClient.getWarningsErrors).mockReset()
+    vi.mocked(apiClient.getBookingPeriods).mockReset()
+    vi.mocked(apiClient.getOrderEvents).mockReset()
+    vi.mocked(apiClient.getRunHeader).mockReset()
+  })
+
+  it('drops a late answer of the previous run', async () => {
+    const late = settleLater<TradeHistoryAnswer>()
+    vi.mocked(apiClient.getTradeHistory).mockReturnValue(late.promise)
+    const store = useRunReportsStore()
+    const request = store.loadTradeHistory(tradeHistoryFixture.run_id)
+    store.clear()
+    late.resolve(tradeHistoryFixture)
+    await request
+    expect(store.tradeHistory).toBeNull()
+    expect(store.loadingTradeHistory).toBe(false)
+  })
+
+  it('does not report a late failure of the previous run', async () => {
+    const late = settleLater<Awaited<ReturnType<typeof apiClient.getWarningsErrors>>>()
+    vi.mocked(apiClient.getWarningsErrors).mockReturnValue(late.promise)
+    const store = useRunReportsStore()
+    const request = store.loadWarningsErrors('20260615_130000')
+    store.clear()
+    late.reject(new Error('gateway timed out'))
+    await request
+    expect(store.errors).toEqual({})
+  })
+
+  it('leaves the next run loading while the previous run still answers', async () => {
+    const previous = settleLater<TradeHistoryAnswer>()
+    const next = settleLater<TradeHistoryAnswer>()
+    vi.mocked(apiClient.getTradeHistory)
+      .mockReturnValueOnce(previous.promise)
+      .mockReturnValueOnce(next.promise)
+    const store = useRunReportsStore()
+    const first = store.loadTradeHistory('20260615_120000')
+    store.clear()
+    const second = store.loadTradeHistory(tradeHistoryFixture.run_id)
+
+    previous.resolve(ABSENT)
+    await first
+    expect(store.loadingTradeHistory).toBe(true)
+    expect(store.absences['tradeHistory']).toBeUndefined()
+
+    next.resolve(tradeHistoryFixture)
+    await second
+    expect(store.loadingTradeHistory).toBe(false)
+    expect(store.tradeHistory?.trades.length).toBeGreaterThan(0)
+  })
+
+  it('stops saying a section is loading the moment the run changes', () => {
+    vi.mocked(apiClient.getTradeHistory).mockReturnValue(settleLater<TradeHistoryAnswer>().promise)
+    const store = useRunReportsStore()
+    void store.loadTradeHistory(tradeHistoryFixture.run_id)
+    expect(store.loadingTradeHistory).toBe(true)
+    store.clear()
+    expect(store.loadingTradeHistory).toBe(false)
+  })
+
+  it('drops the steps of a position that arrive after the run changed', async () => {
+    const late = settleLater<Awaited<ReturnType<typeof apiClient.getOrderEvents>>>()
+    vi.mocked(apiClient.getOrderEvents).mockReturnValue(late.promise)
+    const store = useRunReportsStore()
+    const request = store.loadOrderEvents(eventsFixture.run_id, 'EURGBP_partial_close', 'pos_eurgbp_1')
+    store.clear()
+    late.resolve(eventsFixture)
+    await request
+    expect(store.orderEvents.size).toBe(0)
+    expect(store.loadingOrderEvents.size).toBe(0)
+  })
+
+  it('forgets the run header with every other section', async () => {
+    vi.mocked(apiClient.getRunHeader).mockResolvedValue(runHeaderFixture)
+    const store = useRunReportsStore()
+    await store.loadRunHeader('20260615_130000')
+    expect(store.runHeader).not.toBeNull()
+    store.clear()
+    expect(store.runHeader).toBeNull()
+  })
+
+  /** Any section may meet an older schema — not only the two that were known to, until 2026-10-14. */
+  it('keeps an older schema as a state on every section, never as a failure', async () => {
+    vi.mocked(apiClient.getTradeHistory)
+      .mockRejectedValue(new ArtifactUnreadableError('Written by an older schema.'))
+    const store = useRunReportsStore()
+    await store.loadTradeHistory('20260615_130000')
+    expect(store.unreadable['tradeHistory']).toBe('Written by an older schema.')
+    expect(store.errors).toEqual({})
+  })
+
+  /** Two sections in an older schema used to share one line, and the later one won it. */
+  it('keeps an unreadable state per section', async () => {
+    vi.mocked(apiClient.getWarningsErrors)
+      .mockRejectedValue(new ArtifactUnreadableError('Re-run to regenerate it.'))
+    vi.mocked(apiClient.getBookingPeriods)
+      .mockRejectedValue(new ArtifactUnreadableError('Written by an older schema.'))
+    const store = useRunReportsStore()
+    await Promise.all([
+      store.loadWarningsErrors('20260615_130000'),
+      store.loadBookingPeriods('20260615_130000'),
+    ])
+    expect(store.unreadable['warningsErrors']).toBe('Re-run to regenerate it.')
+    expect(store.unreadable['bookingPeriods']).toContain('older schema')
   })
 })

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { allPanels } from '@/panel_registry'
+import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { PanelState, WorkspaceState } from '@/types/panel_types'
 
 const STORAGE_KEY = 'layout.v1'
@@ -74,10 +75,9 @@ export function reconcile(stored: WorkspaceState): WorkspaceState {
 /**
  * Where the UNPINNED group starts, or null when there is nothing to separate.
  *
- * One rule, read by both orientations: the bar draws it as a vertical line and the column as a
- * horizontal one, and the index differs because the column leaves out what is switched off. Null
- * where every panel is pinned or none is — a rule with one side is noise, and nothing is printed
- * where there is nothing to say.
+ * The column draws it as a line between the two groups, over what it actually draws. Null where
+ * every panel is pinned or none is — a rule with one side is noise, and nothing is printed where
+ * there is nothing to say.
  */
 export function pinnedBoundary(panels: PanelState[]): number | null {
   const pinned = panels.filter(panel => panel.pinned).length
@@ -86,11 +86,11 @@ export function pinnedBoundary(panels: PanelState[]): number | null {
 
 function readStored(): WorkspaceState | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readTabEntry(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as WorkspaceState
     if (parsed?.version !== SCHEMA_VERSION) {
-      localStorage.removeItem(STORAGE_KEY)
+      removeTabAndShared(STORAGE_KEY)
       return null
     }
     return parsed
@@ -110,9 +110,8 @@ export const useLayoutStore = defineStore('layout', () => {
   /**
    * THE arrangement — every panel, switched off ones included, in the order the reader made.
    *
-   * Pinned panels form the first group and the rest follow, each keeping its own order. The groups
-   * are what the bar and the column both draw a line between; the two orientations differ in
-   * nothing else.
+   * Pinned panels form the first group and the rest follow, each keeping its own order. The column
+   * draws a line between the groups; the Panels menu lists them in the same order.
    */
   const arrangedPanels = computed(() => {
     const panels = activeLayout.value.columns.flatMap(column => column.panels)
@@ -122,12 +121,9 @@ export const useLayoutStore = defineStore('layout', () => {
   /** The same arrangement minus what is switched off — which is all the COLUMN draws. */
   const visiblePanels = computed(() => arrangedPanels.value.filter(panel => !panel.hidden))
 
+  /** This tab's own, and the start of the next new one — like the arrangement beside it. */
   function persist(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace.value))
-    } catch {
-      // a full or blocked storage must not break the app — the arrangement is a convenience
-    }
+    writeTabAndShared(STORAGE_KEY, JSON.stringify(workspace.value))
   }
 
   function find(id: string): PanelState | undefined {
@@ -180,10 +176,10 @@ export const useLayoutStore = defineStore('layout', () => {
   }
 
   /**
-   * Writes a dropped order back, and it has to work for a drag in EITHER orientation.
+   * Writes a dropped order back.
    *
-   * The bar drags the whole arrangement; the column drags only what it draws, which is the
-   * arrangement minus the switched-off panels. So the given ids are a SUBSEQUENCE: they are placed
+   * The column drags only what it draws, which is the arrangement minus the switched-off panels and
+   * those open as panels of their own. So the given ids are a SUBSEQUENCE: they are placed
    * into the slots they already occupy, and everything not named keeps its index. Without that, a
    * drag in the column would drop every hidden panel out of the list — the ids simply would not be
    * in the list it was given.

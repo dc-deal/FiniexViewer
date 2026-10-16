@@ -5,6 +5,7 @@ import { defineComponent, h } from 'vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { provideTestSelection } from './scenario_selection_harness'
+import { searchFor, sortBy } from './facet_harness'
 import type {
   ScenarioDetailsReport, ScenarioRosterView, ScenarioRow,
 } from '@/types/api/scenario_types'
@@ -206,11 +207,11 @@ describe('ScenarioRosterPanel', () => {
      * with `as-child`, and a second copy of a button contract drifts the moment the first changes.
      *
      * The trigger is a DISCLOSURE, so it carries the chosen look through `marked` and never
-     * `aria-pressed`; the sort buttons are a real toggle group and do carry it.
+     * `aria-pressed`. The sort is a menu, and its trigger is a button like the chips.
      */
     it('builds its chips from AppButton rather than restating one', () => {
       const wrapper = mountPanel()
-      for (const selector of ['.facet-trigger', '.facet-sort']) {
+      for (const selector of ['.facet-trigger', '.facet-sort-trigger']) {
         const chips = wrapper.findAll(selector)
         expect(chips.length, selector).toBeGreaterThan(0)
         for (const chip of chips) expect(chip.classes(), selector).toContain('app-button')
@@ -234,7 +235,7 @@ describe('ScenarioRosterPanel', () => {
 
     it('searches the scenario name', async () => {
       const wrapper = mountPanel()
-      await wrapper.find('.facet-search').setValue('broken')
+      await searchFor(wrapper, 'broken')
       await flushPromises()
       expect(rowNames(wrapper)).toEqual(['eth_broken'])
     })
@@ -245,7 +246,7 @@ describe('ScenarioRosterPanel', () => {
      */
     it('says how many of how many are shown', async () => {
       const wrapper = mountPanel()
-      await wrapper.find('.facet-search').setValue('eth')
+      await searchFor(wrapper, 'eth')
       await flushPromises()
       expect(wrapper.find('.facet-count-label').text()).toContain('3')
       expect(wrapper.find('.facet-count-label').text()).toContain('4')
@@ -253,15 +254,13 @@ describe('ScenarioRosterPanel', () => {
 
     it('reorders without removing anything', async () => {
       const wrapper = mountPanel()
-      const ticks = wrapper.findAll('.facet-sort').find(node => node.text() === 'ticks')
-      await ticks!.trigger('click')
-      await flushPromises()
+      await sortBy(wrapper, 'ticks')
       expect(rowNames(wrapper)).toEqual(['eth_b', 'gbp_a', 'eth_a', 'eth_broken'])
     })
 
     it('says so plainly where a narrowing leaves nothing', async () => {
       const wrapper = mountPanel()
-      await wrapper.find('.facet-search').setValue('nothing matches this')
+      await searchFor(wrapper, 'nothing matches this')
       await flushPromises()
       expect(wrapper.find('.hint').text()).toContain('No scenario matches')
       expect(rowNames(wrapper)).toHaveLength(0)
@@ -275,7 +274,7 @@ describe('ScenarioRosterPanel', () => {
      */
     it('keeps the narrowing while the rest of the same run arrives', async () => {
       const wrapper = mountPanel()
-      await wrapper.find('.facet-search').setValue('broken')
+      await searchFor(wrapper, 'broken')
       await flushPromises()
 
       await wrapper.setProps({ model: view(MIXED, portfolio([earning('eth_a')])) })
@@ -334,7 +333,7 @@ describe('ScenarioRosterPanel', () => {
 
     it('forgets a narrowing when a different run is shown', async () => {
       const wrapper = mountPanel()
-      await wrapper.find('.facet-search').setValue('broken')
+      await searchFor(wrapper, 'broken')
       await flushPromises()
       expect(rowNames(wrapper)).toHaveLength(1)
 
@@ -388,16 +387,14 @@ describe('ScenarioRosterPanel', () => {
       expect(wrapper.findAll('.record-row.picked')).toHaveLength(0)
     })
 
-    // Several at once is what turns the roster from a jump into a comparison.
-    it('collects several scenarios, and lets one go without losing the rest', async () => {
+    // ONE scenario in focus (operator, 2026-10-16): a reader works one case at a time, and the run
+    // chart, which draws one unit, shows the same one the lists show
+    it('moves the focus to the next scenario clicked, never collecting several', async () => {
       const { wrapper, unit } = mountWithSelection()
       await headOf(wrapper, 'eth_a').trigger('click')
       await headOf(wrapper, 'eth_b').trigger('click')
-      expect(unit.value).toEqual(['eth_a', 'eth_b'])
-      expect(wrapper.findAll('.record-row.picked')).toHaveLength(2)
-
-      await headOf(wrapper, 'eth_a').trigger('click')
       expect(unit.value).toEqual(['eth_b'])
+      expect(wrapper.findAll('.record-row.picked')).toHaveLength(1)
     })
 
     /**
@@ -409,17 +406,15 @@ describe('ScenarioRosterPanel', () => {
       expect(wrapper.find('.hint-line').text()).toContain('Click a scenario')
     })
 
-    it('replaces that with the state once something is picked, and offers the way out', async () => {
-      const { wrapper, unit } = mountWithSelection(MIXED, ['eth_a'])
-      expect(wrapper.find('.hint-line').exists()).toBe(false)
-      const state = wrapper.find('.roster-picked')
-      // CHOSEN, not "showing only": the roster still lists all four, and the facet count beside
-      // it already means "how many rows are listed".
-      expect(state.text()).toContain('1 scenario chosen')
-      expect(state.text()).not.toContain('of 4')
-
-      await state.find('.app-button').trigger('click')
-      expect(unit.value).toEqual([])
+    /**
+     * A pick changes what is MARKED, never what stands where. Swapping the hint for a line naming the
+     * choice moved the whole list under the pointer; the choice is said once, in the Runs quick bar.
+     */
+    it('keeps the hint once something is picked, and marks the choice on its rows only', () => {
+      const { wrapper } = mountWithSelection(MIXED, ['eth_a'])
+      expect(wrapper.find('.hint-line').text()).toContain('Click a scenario')
+      expect(wrapper.findAll('.record-row.picked')).toHaveLength(1)
+      expect(wrapper.text()).not.toContain('scenario chosen')
     })
   })
 
@@ -477,6 +472,15 @@ describe('ScenarioRosterPanel', () => {
       expect(rows['Final equity']).toBe('9,987.26 EUR')
       expect(rows['Unrealized']).toBe('-6.10 EUR')
       expect(rows['Spread']).toBe('2.74 EUR')
+    })
+
+    /** Contract 32: a unit that read data without a quote measured no spread — said, not shown as 0. */
+    it('says a spread the data never measured is not recorded', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { total_spread_cost: null })])))
+      const details = wrapper.findAllComponents(HoverCard)[0]!.props('details') as { label: string, value: string, title?: string }[]
+      const spread = details.find(pair => pair.label === 'Spread')!
+      expect(spread.value).toBe('not recorded')
+      expect(spread.title).toContain('no quote')
     })
 
     /**
@@ -603,13 +607,10 @@ describe('ScenarioRosterPanel', () => {
       expect(marks[0]?.text()).toContain('2')
     })
 
-    it('sorts by net P&L, putting a unit with no row last rather than at zero', () => {
+    it('sorts by net P&L, putting a unit with no row last rather than at zero', async () => {
       const wrapper = mountPanel(view(ROSTER, EARNED))
-      const sortButton = wrapper.findAll('.facet-sort').find(n => n.text().includes('net P&L'))!
-      sortButton.trigger('click')
-      return wrapper.vm.$nextTick().then(() => {
-        expect(rowNames(wrapper)).toEqual(['winner', 'loser', 'absent'])
-      })
+      await sortBy(wrapper, 'net P&L')
+      expect(rowNames(wrapper)).toEqual(['winner', 'loser', 'absent'])
     })
 
     /**
@@ -622,9 +623,7 @@ describe('ScenarioRosterPanel', () => {
         row({ name: 'long', tick_timespan_seconds: 200_000 }),
         row({ name: 'middle', tick_timespan_seconds: 21_600 }),
       ])))
-      const sortButton = wrapper.findAll('.facet-sort')
-        .find(n => n.text().includes('tick timespan'))!
-      await sortButton.trigger('click')
+      await sortBy(wrapper, 'tick timespan')
       expect(rowNames(wrapper)).toEqual(['long', 'middle', 'short'])
     })
 
@@ -651,9 +650,7 @@ describe('ScenarioRosterPanel', () => {
         row({ name: 'slow', execution_time_ms: 2600 }),
         row({ name: 'middling', execution_time_ms: 700 }),
       ])))
-      const sortButton = wrapper.findAll('.facet-sort')
-        .find(n => n.text().includes('execution time'))!
-      await sortButton.trigger('click')
+      await sortBy(wrapper, 'execution time')
       expect(rowNames(wrapper)).toEqual(['slow', 'middling', 'quick'])
     })
 

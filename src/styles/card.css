@@ -1,0 +1,57 @@
+/*
+ * The card of figures — one look wherever a card appears: beside a row or a heading (`HoverCard`,
+ * portalled out of the page) and on a chart, at the pointer (`ChartCard`). Global rather than
+ * scoped, because the portalled card leaves its component's subtree, and because two components
+ * draw it: a look owned by one of them would reach the other only by the accident of a shared bundle.
+ */
+.hover-card {
+  z-index: var(--z-card);
+  min-width: 15rem;
+  /* a long value WRAPS rather than stretching the card across the screen — a token note did */
+  max-width: min(28rem, calc(100vw - 2rem));
+  /* it can be taller than the screen on a rich row — scroll inside rather than truncate, because
+     a card that hides a figure is worse than one that asks for a scroll */
+  max-height: min(70vh, 28rem);
+  overflow-y: auto;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border-overlay);
+  border-radius: 4px;
+  background-color: var(--color-bg-overlay);
+  box-shadow: var(--shadow-overlay);
+}
+
+.hover-card .card-title {
+  margin: 0 0 var(--space-xs);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.hover-card .card-rows {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0 var(--space-md);
+  margin: 0;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+}
+
+.hover-card .card-rows dt {
+  color: var(--color-text-secondary);
+}
+
+.hover-card .card-rows dd {
+  margin: 0;
+  text-align: right;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.hover-card .card-rows dd.positive { color: var(--color-positive); }
+.hover-card .card-rows dd.negative { color: var(--color-negative); }
+.hover-card .card-rows dd.warning { color: var(--color-warning); }
+.hover-card .card-rows dd.error { color: var(--color-error); }
+
+.card-arrow {
+  fill: var(--color-border-overlay);
+}

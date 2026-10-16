@@ -38,6 +38,9 @@
  * step lighter falls under AA. The border and the shadow are what set it apart.
  */
 :root[data-theme='dark'] {
+  /* the browser's own parts — buttons, fields, scrollbars — follow the app's theme rather than a
+     default of the browser's: a bare button's ink once stood white on the light theme, unseen */
+  color-scheme: dark;
   --color-bg-base:        #0d0d0f;
   --color-bg-surface:     #18181b;
   --color-bg-elevated:    #1e1e23;
@@ -59,6 +62,7 @@
 }
 
 :root[data-theme='light'] {
+  color-scheme: light;
   --color-bg-base:        #f0f0f2;
   --color-bg-surface:     #ffffff;
   --color-bg-elevated:    #f8f8fa;

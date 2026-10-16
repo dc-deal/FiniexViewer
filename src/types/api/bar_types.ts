@@ -13,6 +13,16 @@ export interface ApiBar {
   v: number
 }
 
+/**
+ * One answer of the bars route: the rows, and whether the range held more than the route's cap.
+ * The cap never cuts quietly — a range past it is answered with the cap's worth and says so in
+ * `X-Bar-Truncated` (their `market-data` document), so a shortened answer is never taken for whole.
+ */
+export interface BarAnswer {
+  bars: ApiBar[]
+  truncated: boolean
+}
+
 export interface ChartBar {
   time: number
   open: number

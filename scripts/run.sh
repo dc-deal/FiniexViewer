@@ -29,9 +29,9 @@ set -uo pipefail
 CONTAINER=finiex-viewer
 DEFAULT_DEADLINE=420
 
-# The deadlines are measured, not guessed. The unit suite takes 75-95 s on a healthy VM, so 420 s
-# is loose enough never to fire on an ordinary run and tight enough that an abandoned one cannot
-# fill the VM. `knip` and the production build are slower and get their own.
+# The deadlines are measured, not guessed. The unit suite takes 176-187 s on a healthy VM (measured
+# 2026-10-15), so 420 s is loose enough never to fire on an ordinary run and tight enough that an
+# abandoned one cannot fill the VM. `knip` and the production build are slower and get their own.
 case "${1:-}" in
     test)  DEADLINE=420; COMMAND='npm run test' ;;
     lint)  DEADLINE=300; COMMAND='npm run lint:check' ;;

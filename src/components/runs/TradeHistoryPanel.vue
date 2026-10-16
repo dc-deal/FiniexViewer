@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import { useChartLink } from '@/composables/use_chart_link'
 import {
-  amount, magnitude, numberOrNa, signClass, utcInstant,
+  SPREAD_NOT_RECORDED, amount, magnitude, signClass, spreadFigure, utcInstant,
 } from '@/components/runs/report_format'
+import { tradeDetails } from '@/components/runs/trade_card'
 import { useDisplaySettings } from '@/composables/use_display_settings'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import { rowKey } from '@/api/list_key'
-import type { ListCard, ListColumn } from '@/types/list_types'
+import type { FigureCard } from '@/types/figure_types'
+import type { ListColumn, ListGroup } from '@/types/list_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
 
@@ -99,6 +104,7 @@ const rowCap = computed(() => display.value.tradeRowCap)
 
 const narrowing = useScenarioSelection()
 const link = usePositionLink()
+const chartLink = useChartLink()
 
 /**
  * The way back to the orders of this trade's position — the DECLARED join
@@ -110,6 +116,11 @@ const link = usePositionLink()
  */
 function jumpToOrders(trade: TradeRow): void {
   link.jumpTo('orders', { scenario: trade.scenario_name, position: trade.position_id })
+}
+
+/** The position's candles: the run chart on its unit, centred where the position opened. */
+function showOnChart(trade: TradeRow): void {
+  chartLink.show({ scenario: trade.scenario_name, position: trade.position_id })
 }
 
 /** Every trade of the position a reader jumped to — a partial close means there are several. */
@@ -197,6 +208,50 @@ const totals = computed(() => {
 
 function totalOf(name: string) {
   return totals.value.get(name) ?? null
+}
+
+/**
+ * The cost parts a heading names: the fees and the measured spread, each only where the served
+ * total is not zero. On forex the fees usually read 0.00 and the spread is the cost; on a spot
+ * market both stand. A spread of null was never measured, which the card says — every run recorded
+ * before contract 32 has one, so saying it here would put it on every heading. The swap is a part of
+ * the fees (`total_fees` is commission plus swap), so it stands beside them in the card.
+ */
+function costParts(name: string): string[] {
+  const total = totalOf(name)
+  if (!total) return []
+  const parts: string[] = []
+  if (total.total_fees !== 0) {
+    parts.push(`${t('fees')} ${amount(total.total_fees, total.currency)}`)
+  }
+  if (total.total_spread_cost !== null && total.total_spread_cost !== 0) {
+    parts.push(`${t('spread')} ${amount(total.total_spread_cost, total.currency)}`)
+  }
+  return parts
+}
+
+/**
+ * A unit's whole split beside its heading, in the order of a trade's card: the parts the line
+ * leaves out because they are zero, and a spread never measured, said as such. Every figure is a
+ * served total; the API serves no total cost, so the card adds none up.
+ */
+function groupCard(group: ListGroup<TradeRow>): FigureCard | null {
+  const total = totalOf(group.key)
+  if (!total) return null
+  const money = (value: number) => amount(value, total.currency)
+  return {
+    title: `${group.key} · ${total.currency}`,
+    details: [
+      { label: t('Gross'), value: money(total.gross_pnl), tone: signClass(total.gross_pnl) },
+      { label: t('Net'), value: money(total.net_pnl), tone: signClass(total.net_pnl) },
+      { label: t('Fees'), value: `${money(total.total_fees)} · ${t('swap')} ${total.total_swap.toFixed(2)}` },
+      {
+        label: t('Spread'),
+        value: spreadFigure(total.total_spread_cost, money),
+        ...(total.total_spread_cost === null ? { title: SPREAD_NOT_RECORDED } : {}),
+      },
+    ],
+  }
 }
 
 /**
@@ -337,78 +392,11 @@ function held(seconds: number): string {
   return `${(seconds / 86400).toFixed(1)} d`
 }
 
-/**
- * Everything the row has no width for. The excursions are given three ways by the backend — as a
- * price, as the unrealised P&L at that price, and as a distance — and all three are here, because
- * which one answers a question depends on the question.
- */
-function details(trade: TradeRow): { label: string, value: string, tone?: string }[] {
-  const rows = [
-    { label: t('Opened'), value: `${utcInstant(trade.entry_time)} @ ${trade.entry_price}` },
-    { label: t('Closed'), value: `${utcInstant(trade.exit_time)} @ ${trade.exit_price}` },
-    { label: t('Ticks'), value: `${trade.entry_tick_index} to ${trade.exit_tick_index}` },
-    { label: t('Entry'), value: `${trade.entry_type} · ${trade.entry_side}` },
-    {
-      label: t('Gross'),
-      value: amount(trade.gross_pnl, trade.currency),
-      tone: signClass(trade.gross_pnl),
-    },
-    {
-      label: t('Net'),
-      value: amount(trade.net_pnl, trade.currency),
-      tone: signClass(trade.net_pnl),
-    },
-    {
-      // `total_fees` is commission plus swap and nothing else — measured over 1,591 trade rows,
-      // 1,563 of which carry a non-zero spread. Listing the spread as a third part of it printed
-      // `Fees 0.00 · spread 1.30` on a trade whose spread WAS the whole cost. So the spread stands
-      // on its own below, the way the aggregated panel has always listed it.
-      label: t('Fees'),
-      value: `${amount(trade.total_fees, trade.currency)} · ${t('commission')} `
-        + `${trade.commission_cost.toFixed(2)} · ${t('swap')} ${trade.swap_cost.toFixed(2)}`,
-    },
-    {
-      label: t('Spread'),
-      value: amount(trade.spread_cost, trade.currency),
-    },
-    {
-      label: t('Slippage'),
-      // the exit half is absent on a quarter of the trades in this archive — stated as such rather
-      // than as a zero, and never assumed to be a number
-      value: `${t('in')} ${trade.entry_slippage.toFixed(4)} · `
-        + `${t('out')} ${trade.exit_slippage === null ? t('n/a') : trade.exit_slippage.toFixed(4)}`,
-    },
-    {
-      label: t('Worst against'),
-      value: `${magnitude(trade.mae_pnl, trade.currency)} @ ${trade.mae_price} · `
-        + `${trade.mae_distance.toFixed(2)} ${trade.price_unit}`,
-    },
-    {
-      label: t('Best in favour'),
-      value: `${amount(trade.mfe_pnl, trade.currency)} @ ${trade.mfe_price} · `
-        + `${trade.mfe_distance.toFixed(2)} ${trade.price_unit}`,
-    },
-    // null where no stop was set: the trade has no R to be a multiple of, which is an absence
-    { label: t('R multiple'), value: numberOrNa(trade.r_multiple) },
-    {
-      label: t('Fills'),
-      value: `${trade.entry_executions.length} / ${trade.exit_executions.length}`,
-    },
-  ]
-  // '' means the close was not attributed — shown only where it says something
-  if (trade.close_reason) rows.splice(3, 0, { label: t('Closed by'), value: trade.close_reason })
-  if (trade.stop_loss !== null) rows.push({ label: t('Stop loss'), value: String(trade.stop_loss) })
-  if (trade.take_profit !== null) {
-    rows.push({ label: t('Take profit'), value: String(trade.take_profit) })
-  }
-  return rows
-}
-
 /** Every trade has a card — there is always more than eight columns can hold. */
-function card(trade: TradeRow): ListCard {
+function card(trade: TradeRow): FigureCard {
   return {
     title: `${trade.scenario_name} · ${trade.direction} ${trade.lots}`,
-    details: details(trade),
+    details: tradeDetails(trade),
   }
 }
 </script>
@@ -425,7 +413,7 @@ function card(trade: TradeRow): ListCard {
          the run declared is in the roster whether it traded or not -->
     <div v-if="!selected.length" class="hint">
       {{ narrowed
-        ? t('The chosen scenarios closed no positions')
+        ? t('The chosen scenario closed no positions')
         : t('This run closed no positions') }}
     </div>
     <RecordList
@@ -438,6 +426,7 @@ function card(trade: TradeRow): ListCard {
       :group-by="trade => trade.scenario_name"
       :is-open="isExpanded"
       :row-card="card"
+      :group-card="groupCard"
       :shows-children="showsFills"
       @toggle="toggleGroup"
       @pick="toggleFills"
@@ -451,17 +440,14 @@ function card(trade: TradeRow): ListCard {
       <template #group="{ group, marker }">
         <!-- TWO cells, counted from the end: everything but the last track, then the last track.
              The old three-cell form was fixed at eight columns and a rank that gives one up would
-             leave it spanning tracks the grid no longer has. The count and the fees ride inside the
+             leave it spanning tracks the grid no longer has. The count and the costs ride inside the
              name — they are a note ABOUT the group, never values of a column. -->
         <span class="group-name" :title="group.key">
           <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
           {{ group.key }}
           <span class="group-meta">
-            {{ plural(group.rows.length, t('trade'), t('trades')) }}
-            <template v-if="totalOf(group.key)">
-              · {{ t('fees') }}
-              {{ amount(totalOf(group.key)!.total_fees, totalOf(group.key)!.currency) }}
-            </template>
+            <!-- one string: a `v-for` over text drops the space between its iterations -->
+            {{ [plural(group.rows.length, t('trade'), t('trades')), ...costParts(group.key)].join(' · ') }}
           </span>
         </span>
         <span class="group-net" :class="signClass(totalOf(group.key)?.net_pnl ?? 0)">
@@ -490,6 +476,16 @@ function card(trade: TradeRow): ListCard {
                0.02 where they opened 0.10 had to open the fills to find out why -->
           <span v-if="closedInParts(trade) > 1" class="in-parts"
             >{{ t('of') }} {{ closedInParts(trade) }}</span>
+          <!-- a mark only where the run chart can draw the unit -->
+          <AppButton
+            v-if="chartLink.canShow(trade.scenario_name)"
+            variant="link"
+            size="compact"
+            class="to-chart"
+            :title="t('Show this trade on the run chart')"
+            :aria-label="t('Show this trade on the run chart')"
+            @click.stop="showOnChart(trade)"
+          ><AppIcon name="form-chart" /></AppButton>
         </span>
         <span :data-rank="1" :title="trade.symbol">{{ trade.symbol }}</span>
         <span :data-rank="2">{{ trade.direction }}</span>
@@ -575,6 +571,10 @@ function card(trade: TradeRow): ListCard {
 
 /* the partial marker rides with the position, not in the figure column — a figure column is
    right-aligned digits, and prose in it breaks the one property the whole list is built on */
+.to-chart {
+  margin-left: var(--space-xs);
+}
+
 .in-parts {
   color: var(--color-text-secondary);
   margin-left: var(--space-xs);

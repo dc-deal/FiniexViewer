@@ -49,11 +49,13 @@ interface ListProps {
   hideHead?: boolean
   inert?: boolean
   rowCard?: (row: unknown) => { title: string, details: { label: string, value: string }[] } | null
+  groupCard?: (group: ListGroup<unknown>) => { title: string, details: { label: string, value: string }[] } | null
   isPicked?: (row: unknown) => boolean
   hasDetail?: (row: unknown) => boolean
   groupBy?: (row: unknown) => string
   isOpen?: (key: string) => boolean
   showsGroupHead?: (key: string) => boolean
+  measureClosed?: boolean
   showsChildren?: (row: unknown) => boolean
   rowClass?: (row: unknown) => string | undefined
   bands?: ListBand[]
@@ -193,6 +195,34 @@ describe('RecordList — the card beside a row', () => {
   })
 })
 
+describe('RecordList — the card beside a group heading', () => {
+  const groupBy = (row: unknown) => asRow(row).unit
+  const groupSlot = { group: (scope: unknown) => h('span', groupOf(scope).key) }
+
+  it('wraps a heading the caller has a card for, and no other', () => {
+    const wrapper = mountList({
+      groupBy,
+      isOpen: () => true,
+      groupCard: group => group.key === 'alpha' ? { title: 'alpha · EUR', details: [] } : null,
+    }, groupSlot)
+    const cards = wrapper.findAllComponents(HoverCard)
+    expect(cards).toHaveLength(1)
+    expect(cards[0]!.props('title')).toBe('alpha · EUR')
+    // the wrapped heading is still the heading: both stay buttons that open and close their group
+    expect(wrapper.findAll('button.record-group')).toHaveLength(2)
+  })
+
+  // a plain heading cannot be focused, so a card on it would exist for a pointer alone
+  it('offers no card on a heading that is not a control', () => {
+    const wrapper = mountList({
+      groupBy,
+      groupCard: () => ({ title: 'any', details: [] }),
+    }, groupSlot)
+    expect(wrapper.findAll('.record-group')).not.toHaveLength(0)
+    expect(wrapper.findAllComponents(HoverCard)).toHaveLength(0)
+  })
+})
+
 describe('RecordList — groups', () => {
   const groupBy = (row: unknown) => asRow(row).unit
   /** Mirrors a panel: the list decides the glyph and its state, the caller places it in a cell. */
@@ -221,6 +251,27 @@ describe('RecordList — groups', () => {
     )
     expect(wrapper.findAll('.record-group')).toHaveLength(2)
     expect(wrapper.findAll('.record-row')).toHaveLength(1)
+  })
+
+  /**
+   * A closed group's rows widen no `auto` track unless they are in the grid: a list that asks for it
+   * draws them anyway — with no height, unseen and out of reach — so opening the group moves no
+   * column. Only the closed group's rows, and only where asked.
+   */
+  it('measures the rows of a closed group where asked, unseen and out of reach', () => {
+    const closed = { groupBy, isOpen: (key: string) => key !== 'alpha' }
+    const measured = mountList({ ...closed, measureClosed: true }, groupSlot)
+    const unseen = measured.findAll('.record-unseen')
+    expect(unseen.map(row => row.text())).toEqual(['alpha1', 'alpha3'])
+    for (const row of unseen) {
+      expect(row.element.parentElement!.getAttribute('aria-hidden')).toBe('true')
+      expect(row.element.parentElement!.hasAttribute('inert')).toBe(true)
+    }
+    // the open group's row is drawn once, as the row it is
+    expect(measured.findAll('.record-row:not(.record-unseen)')).toHaveLength(1)
+
+    expect(mountList(closed, groupSlot).findAll('.record-unseen')).toHaveLength(0)
+    expect(mountList({ groupBy, isOpen: () => true, measureClosed: true }, groupSlot).findAll('.record-unseen')).toHaveLength(0)
   })
 
   it('reports the clicked heading by its key, holding no state of its own', async () => {

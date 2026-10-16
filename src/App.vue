@@ -3,8 +3,12 @@ import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useCallerStore } from '@/stores/caller_store'
+import { useMachineStore } from '@/stores/machine_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { provideOpenInContext } from '@/composables/use_open_in_context'
+import { provideRunReportChannels } from '@/composables/use_run_report_channels'
+import { useRunBinding } from '@/composables/use_run_binding'
+import { useRunReportsLoading } from '@/composables/use_run_reports_loading'
 import AppMenuBar from '@/components/AppMenuBar.vue'
 import PanelDock from '@/components/dock/PanelDock.vue'
 import { openInDock } from '@/components/dock/open_in_dock'
@@ -17,6 +21,12 @@ useArrangementStore()
 
 // the way out of a panel: what it names is chosen and loaded, and its panel comes to the front
 provideOpenInContext(openInDock())
+
+// The run the reader chose, its sections and the channels they read — here at the root, so a
+// section shown as a panel of its own has them while the run report is closed or behind a tab.
+useRunBinding()
+useRunReportsLoading()
+provideRunReportChannels()
 
 // The one place the theme reaches the document. Panels never receive it — they read the tokens the
 // attribute selects, which is why a theme change needs no re-render anywhere else. The exception is
@@ -38,13 +48,18 @@ function readCallerWhenVisible(): void {
   if (document.visibilityState === 'visible') callerStore.load()
 }
 
+// how full the machine is, asked every few seconds while the page is in view — the menu bar shows it
+const machineStore = useMachineStore()
+
 onMounted(() => {
   callerStore.load()
+  machineStore.start()
   document.addEventListener('visibilitychange', readCallerWhenVisible)
 })
 
 onUnmounted(() => {
   document.removeEventListener('visibilitychange', readCallerWhenVisible)
+  machineStore.stop()
 })
 </script>
 

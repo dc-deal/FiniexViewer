@@ -111,7 +111,7 @@ test('a jump from far down the orders scrolls its trades into view', async ({ pa
   const link = page.locator('.order-list .to-trades').last()
   await link.scrollIntoViewIfNeeded()
   // the case itself: a reader scrolled away from the top, where the trades are about to open
-  const scrolled = await page.locator('.runs-body').evaluate(element => element.scrollTop)
+  const scrolled = await page.locator('.run-report-body').evaluate(element => element.scrollTop)
   expect(scrolled).toBeGreaterThan(0)
 
   await link.click()

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { provideScenarioSelection } from '@/composables/use_scenario_selection'
+import { toggledFocus } from '@/stores/context_store'
 
 /**
  * A scenario narrowing for a test host, behaving the way `RunsView` does.
@@ -15,11 +16,7 @@ export function provideTestSelection(initial: string[] = []): Ref<string[]> {
   const units = ref<string[]>([...initial])
   provideScenarioSelection({
     units,
-    toggle: (unit: string) => {
-      units.value = units.value.includes(unit)
-        ? units.value.filter(name => name !== unit)
-        : [...units.value, unit]
-    },
+    toggle: (unit: string) => { units.value = toggledFocus(units.value, unit) },
     clear: () => { units.value = [] },
   })
   return units

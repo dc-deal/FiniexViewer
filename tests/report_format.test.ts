@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bytes, shortHash, sortInstant, utcInstant } from '@/components/runs/report_format'
+import { bytes, shortHash, sortInstant, spreadFigure, utcInstant } from '@/components/runs/report_format'
 
 /**
  * The formatters are exercised through the panels that use them, and that is where the
@@ -51,6 +51,16 @@ describe('report_format', () => {
     it('names the step it actually divided by', () => {
       expect(bytes(1000)).toBe('1.0 kB')
       expect(bytes(999)).toBe('999 B')
+    })
+  })
+
+  /** null is data without a quote: no spread was measured, which is not a spread of zero. */
+  describe('spreadFigure', () => {
+    it('formats a measured spread, a zero one included, and names one never measured', () => {
+      const format = (value: number) => `${value} EUR`
+      expect(spreadFigure(2.955, format)).toBe('2.955 EUR')
+      expect(spreadFigure(0, format)).toBe('0 EUR')
+      expect(spreadFigure(null, format)).toBe('not recorded')
     })
   })
 

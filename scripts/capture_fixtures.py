@@ -41,6 +41,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
@@ -111,7 +112,23 @@ TARGETS = [
     ('deployments_list.json', 'deployments'),
     ('deployment_detail.json', f'deployments/{DEPLOY}'),
     ('deployment_booking_periods.json', f'deployments/{DEPLOY}/booking-periods'),
+    # A READING, not a record: its figures are whatever the machine held at capture time, so a
+    # re-capture moves them every time. Nothing asserts a figure, only the shape and the rules
+    # the answer states about itself.
+    ('machine_resources.json', 'machine-resources'),
+    # The two markets the fixture run traded, for the run chart. A READING as well: the archive
+    # grows, so `end` moves with every capture and nothing asserts it.
+    # the server's timeframes with their lengths — what the run chart orders and picks them by
+    ('timeframes.json', 'timeframes'),
+    ('coverage_mt5_EURGBP.json', 'brokers/mt5/symbols/EURGBP/coverage'),
+    ('coverage_kraken_spot_ETHUSD.json', 'brokers/kraken_spot/symbols/ETHUSD/coverage'),
 ]
+
+# The run chart's candles: M1 bars over exactly the span each unit of the fixture run processed
+# (`first_tick_time` … `last_tick_time` in the scenario details just captured), one file per market.
+# M1 because that is what the chart picks for these windows — the finest timeframe that draws the
+# window in at most 2,000 bars — and only the spans, because a market's whole archive is gigabytes.
+BAR_TIMEFRAME = 'M1'
 
 # The artifacts the mock has to be able to answer for. A run missing one of these cannot be the
 # simulation source at all, and the run index states them, so the first pass costs one request.
@@ -286,6 +303,29 @@ for name, path in TARGETS:
         continue
     bodies[name] = body
     served.add(contract)
+
+markets = {}
+for unit in bodies.get('scenario_details.json', {}).get('units', []):
+    if not unit.get('first_tick_time') or not unit.get('last_tick_time'):
+        continue
+    key = (unit['data_broker_type'], unit['symbol'])
+    # asked from one minute earlier, as the run chart asks: the route answers the bars that OPEN in
+    # the range, and the bar the first tick fell in opened before it
+    start = datetime.datetime.fromisoformat(unit['first_tick_time']) - datetime.timedelta(minutes=1)
+    path = (f"brokers/{key[0]}/symbols/{key[1]}/bars?timeframe={BAR_TIMEFRAME}"
+            f"&from={urllib.parse.quote(start.isoformat())}&to={urllib.parse.quote(unit['last_tick_time'])}")
+    try:
+        rows, _ = fetch(path)
+    except Exception as error:                                   # noqa: BLE001 - report, never mask
+        failures.append((f'bars of {unit["name"]}', path, error))
+        continue
+    merged = markets.setdefault(key, {})
+    for row in rows:
+        merged[row['t']] = row
+for (broker, symbol), rows in sorted(markets.items()):
+    name = f'bars_{broker}_{symbol}_{BAR_TIMEFRAME}.json'
+    bodies[name] = [rows[t] for t in sorted(rows)]
+    TARGETS.append((name, f'bars of the fixture run over its units, {BAR_TIMEFRAME}'))
 
 if failures:
     print('NOTHING WRITTEN - the capture is all or nothing, and these targets did not answer:')

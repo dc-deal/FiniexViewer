@@ -15,19 +15,23 @@ import { t } from '@/translate'
 const HINTS: HintDefinition[] = [
   {
     id: 'scenario-pick',
-    text: t('Click a scenario to show only its trades and booking periods. Pick several to compare.'),
+    text: t('Click a scenario to focus on it: the lists show only its trades and booking periods, and the run chart shows it. Click it again to show the whole run.'),
   },
   {
     id: 'quick-bar',
     text: t('The bar beside the tabs holds what the panel in front shows — for the chart, its broker, symbol and timeframe.'),
   },
   {
-    id: 'bar-overflow',
-    text: t('What does not fit in the bar waits behind the + at its end — the sections to switch on or off, and the layout actions.'),
+    id: 'open-as-panel',
+    text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the column. On the tab of that panel, ⇲ puts it back into the column and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
+  },
+  {
+    id: 'facet-bar',
+    text: t('⌕ opens the search. Where the panel is narrow, the filters that do not fit wait behind +N, each with its values and counts.'),
   },
   {
     id: 'position-link',
-    text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back. A partial close books several trades of one position, so all of them are marked.'),
+    text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back; the chart mark beside it opens the run chart on that position. A partial close books several trades of one position, so all of them are marked.'),
   },
 ]
 

@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_RUN, FIXTURE_DEPLOYMENT } from './api_mock'
-import { openWith, showPanel } from './arrangement_seed'
+import { openSectionMenu, openWith, showPanel } from './arrangement_seed'
 
 /**
  * No panel scrolls sideways.
@@ -66,41 +66,34 @@ for (const width of WIDTHS) {
 }
 
 /**
- * THE TOP OF THE RUNS PANEL STAYS TWO LINES, however narrow the panel. Measured 2026-10-13 at a
+ * THE TOP OF THE RUNS PANEL STAYS ONE LINE, however narrow the panel. Measured 2026-10-13 at a
  * panel 585 px wide: the run line took three lines and the section bar four, so a quarter of the
- * panel's height went by before the first section. The bar is now one row with the rest behind
- * `+N`, and the run line ends in an ellipsis.
+ * panel's height went by before the first section. The run line ends in an ellipsis, and the
+ * sections are switched in the Panels menu since the bar retired (2026-10-14).
  */
-test('a narrow Runs panel keeps its run line and its section bar to one line each', async ({ page }) => {
+test('a narrow Runs panel keeps its run line to one line', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
-  const row = page.locator('.app-bar .overflow-row')
-  await expect(row).toBeVisible()
-
-  const toggle = (await page.locator('.bar-toggle').first().boundingBox())!
-  expect((await row.boundingBox())!.height).toBeLessThan(toggle.height * 1.5)
   const line = (await page.locator('.picker-chosen .chosen-id').boundingBox())!
   expect((await page.locator('.picker-chosen').boundingBox())!.height).toBeLessThan(line.height * 1.5)
-
-  // what did not fit is one click away, and switching it there switches the section in the column
-  const more = page.locator('.overflow-more')
-  await expect(more).toHaveText(/^\+\d+ ▾$/)
-  await more.click()
-  const entry = page.locator('.bar-menu-toggle[data-state="checked"]').first()
-  const section = await entry.getAttribute('data-section')
-  await expect(page.locator(`.panels [data-panel="${section}"]`)).toHaveCount(1)
-  await entry.click()
-  await expect(page.locator(`.panels [data-panel="${section}"]`)).toHaveCount(0)
 })
 
-test('a wide Runs panel shows every section and no control to unfold', async ({ page }) => {
-  // at the panels' type size the whole bar needs about 1670 px (measured 2026-10-14) — a wide
-  // screen with the Runs panel alone, not a split
-  await page.setViewportSize({ width: 1920, height: 900 })
+/** The Panels menu switches a section of the column off and on, and stays open for the next one. */
+test('the Panels menu switches a section in the column off and on again', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await expect(page.locator('.app-bar .overflow-row')).toBeVisible()
-  await expect(page.locator('.overflow-more')).toBeHidden()
-  await expect(page.locator('.bar-toggle:visible')).toHaveCount(await page.locator('.bar-toggle').count())
+  await expect(page.locator('.panels [data-panel="executive"]')).toHaveCount(1)
+
+  await openSectionMenu(page)
+  const entry = page.locator('.menu-toggle[data-section="executive"]')
+  await expect(entry).toHaveAttribute('data-state', 'checked')
+  await entry.click()
+  await expect(page.locator('.panels [data-panel="executive"]')).toHaveCount(0)
+  await expect(entry).toHaveAttribute('data-place', 'hidden')
+
+  await entry.click()
+  await expect(page.locator('.panels [data-panel="executive"]')).toHaveCount(1)
+  await expect(entry).toHaveAttribute('data-place', 'column')
 })
 
 /** The same line on the deployment side: it took three lines and broke `Change deployment` in two. */

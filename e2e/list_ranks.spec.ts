@@ -151,12 +151,9 @@ test.beforeEach(async ({ page }) => {
 })
 
 /**
- * Opens every panel so all four lists are on screen at once, which is also the arrangement that
- * makes each panel column narrow enough for the lower tiers to engage.
- *
- * The picker needs asking back: it COLLAPSES to one line once a run is chosen, so a stored run
- * draws no run list at all. That is the picker working, and `Change run` is how a reader
- * gets it back.
+ * Opens every section that holds a list, so the run report shows all of its lists at once. The run
+ * list is a panel of its own beside the report since 2026-10-14, in the same tab group: each list
+ * is measured while its panel is the one in front (`front`).
  */
 async function openEverything(page: Page): Promise<void> {
   await openWith(page, '/', { run: FIXTURE_RUN })
@@ -172,7 +169,6 @@ async function openEverything(page: Page): Promise<void> {
     if (await trigger.getAttribute('aria-expanded') === 'false') await trigger.click()
     await expect(trigger).toHaveAttribute('aria-expanded', 'true')
   }
-  await page.locator('.picker-chosen .app-button').click()
   // and every disclosure inside them: the booking-period table lives in a closed `<details>`, and
   // a closed one is not laid out at all — its grid resolves to numbers that mean nothing, which is
   // how the first version of this spec came to report a track count no declaration could produce.
@@ -181,7 +177,24 @@ async function openEverything(page: Page): Promise<void> {
   await page.locator('details').evaluateAll(
     list => list.forEach(element => element.setAttribute('open', ''))
   )
-  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+}
+
+/** The panels the lists stand in: the run report, and the run list beside it. */
+const HOLDERS = ['run', 'runs'] as const
+
+/** The panel each list stands in. */
+function holderOf(selector: string): typeof HOLDERS[number] {
+  return selector === '.run-list' ? 'runs' : 'run'
+}
+
+/**
+ * Brings a panel to the front by its tab, the way a reader does, and waits for what it draws: a
+ * docked panel is drawn the first time it is SHOWN, so its lists are not there the moment before.
+ */
+async function front(page: Page, kind: typeof HOLDERS[number]): Promise<void> {
+  await page.locator('.dv-tab', { has: page.locator(`.panel-tab[data-kind="${kind}"]`) }).click()
+  const drawn = kind === 'runs' ? '.run-list .record-row' : '.panel-column .panel-trigger'
+  await expect(page.locator(drawn).first()).toBeVisible()
 }
 
 /** Whether this list is on screen at all. A list nobody laid out has no layout to assert. */
@@ -195,15 +208,19 @@ for (const width of WIDTHS) {
     await openEverything(page)
 
     const measured: string[] = []
-    for (const selector of RUN_LISTS) {
-      if (!await isDrawn(page, selector)) continue
-      await expectRanksHold(page, selector)
-      await expectHeadingsReadable(page, selector)
-      measured.push(selector)
+    for (const holder of HOLDERS) {
+      await front(page, holder)
+      for (const selector of RUN_LISTS) {
+        if (measured.includes(selector) || !await isDrawn(page, selector)) continue
+        await expectRanksHold(page, selector)
+        await expectHeadingsReadable(page, selector)
+        measured.push(selector)
+      }
     }
     // A skipped list reads as a covered one, and that is how two of these four went unmeasured for
     // a while. At a width this wide every one of them is on screen, so a missing one is a finding.
-    expect(measured, 'a ranked list was not on screen and so went unmeasured').toEqual(RUN_LISTS)
+    expect([...measured].sort(), 'a ranked list was not on screen and so went unmeasured')
+      .toEqual([...RUN_LISTS].sort())
   })
 }
 
@@ -216,17 +233,22 @@ test('every ranked list gives columns up as it narrows', async ({ page }) => {
   await page.setViewportSize({ width: 1900, height: 1200 })
   await openEverything(page)
   const wide: Record<string, number> = {}
-  for (const selector of RUN_LISTS) {
-    if (!await isDrawn(page, selector)) continue
-    wide[selector] = (await measure(page, selector)).tracks
+  for (const holder of HOLDERS) {
+    await front(page, holder)
+    for (const selector of RUN_LISTS) {
+      if (selector in wide || !await isDrawn(page, selector)) continue
+      wide[selector] = (await measure(page, selector)).tracks
+    }
   }
 
   await page.setViewportSize({ width: 620, height: 1200 })
-  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
-
-  for (const [selector, tracksWide] of Object.entries(wide)) {
-    const narrow = await measure(page, selector)
-    expect(narrow.tracks, `${selector} keeps every column when narrow`).toBeLessThan(tracksWide)
+  for (const holder of HOLDERS) {
+    await front(page, holder)
+    for (const [selector, tracksWide] of Object.entries(wide)) {
+      if (!await isDrawn(page, selector)) continue
+      const narrow = await measure(page, selector)
+      expect(narrow.tracks, `${selector} keeps every column when narrow`).toBeLessThan(tracksWide)
+    }
   }
 })
 
@@ -241,10 +263,11 @@ test('every ranked list gives columns up as it narrows', async ({ page }) => {
  * and slide every heading sideways the moment a reader opens it. The architecture note states the
  * rule: a grouped list declares proportional tracks.
  *
- * Measured 2026-10-09 against the captured index of 85 runs: the eight drawn tracks are identical
- * to the pixel, closed and open, because no folded run is wider than the widest standing one. That
- * is the DATA, not a guarantee — which is why this stands here rather than in a comment. The day
- * it stops holding, this says so instead of the operator's eye.
+ * Measured 2026-10-09 against the captured index of 85 runs: the eight drawn tracks were identical
+ * to the pixel, closed and open, because no folded run was wider than the widest standing one. That
+ * was the DATA, not a guarantee — and on 2026-10-15 the index held thirteen runs more and a column
+ * grew 4.75 px when the first family opened. Since then the list measures the rows of closed
+ * families too (`measureClosed`), so the guarantee is the code's; this is what holds it.
  */
 test('opening a family leaves the run list columns where they were', async ({ page }) => {
   await mockApi(page)
@@ -265,6 +288,7 @@ test('the run list keeps its card at the narrowest tier', async ({ page }) => {
   await page.setViewportSize({ width: 620, height: 1200 })
   await openEverything(page)
 
+  await front(page, 'runs')
   const row = page.locator('.run-list .record-row').first()
   await row.hover()
 
@@ -285,6 +309,7 @@ test('neither the run list nor the trade list scrolls sideways when narrow', asy
   await openEverything(page)
 
   for (const selector of ['.run-list', '.trade-list']) {
+    await front(page, holderOf(selector))
     const overflow = await page.locator(selector).first().evaluate(
       element => element.scrollWidth - element.clientWidth
     )
@@ -311,6 +336,7 @@ test('every figure cell stands under its own heading', async ({ page }) => {
   await openEverything(page)
 
   for (const selector of RUN_LISTS) {
+    await front(page, holderOf(selector))
     await expectFiguresRightAligned(page, selector)
   }
 })

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
 import TimelineChart from '@/components/base/TimelineChart.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import type { TimelineLane } from '@/types/timeline_types'
@@ -254,6 +254,82 @@ describe('TimelineChart', () => {
 
   it('renders nothing at all when there is no lane', () => {
     expect(mountChart([]).find('.timeline').exists()).toBe(false)
+  })
+
+  /**
+   * Once the browser has measured, a label is judged in PIXELS. A share of the width was the rule
+   * until 2026-10-14, and in a narrow panel it let `period 12` into a bar 40 px wide and three
+   * stamps print into one. jsdom lays nothing out, so the widths are handed over by class: the
+   * plot, and a probe of ten characters — 8 px each here.
+   */
+  describe('measured in pixels', () => {
+    function stubWidths(axis: number): void {
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+        const width = this.classList.contains('axis') ? axis : (this.classList.contains('probe') ? 80 : 0)
+        return { width, height: 16, top: 0, left: 0, right: width, bottom: 16, x: 0, y: 0, toJSON: () => ({}) }
+      })
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    function namedLane(spans: [number, number][]): TimelineLane {
+      return {
+        id: 'a',
+        label: 'a',
+        spans: spans.map(([from, to], index) => ({
+          id: `a-${index}`, from, to, label: 'period 12', shortLabel: '12', tone: 'flat', title: 'period 12',
+        })),
+      }
+    }
+
+    // `period 12` takes 9 × 8 + 8 = 80 px, `12` takes 24 px; the plot is 400 px wide
+    it('names a span where its characters fit, gives the short name where only that fits, else none', async () => {
+      stubWidths(400)
+      const wrapper = mountChart([namedLane([[0, 25], [30, 40], [50, 54]])])
+      // measured on mount, drawn on the next tick
+      await flushPromises()
+      const captions = wrapper.findAll('.span').map(span => span.find('.span-label').exists() ? span.text() : '')
+      expect(captions).toEqual(['period 12', '12', ''])
+    })
+
+    it('drops an axis label that fits on neither row, and always keeps both ends', async () => {
+      stubWidths(200)
+      const wrapper = mountChart([lane('a', [[0, 100]])], 0, 100, {
+        ticks: 12,
+        format: (v: number) => `mark ${Math.round(v)}`,
+      })
+      await flushPromises()
+      const labels = wrapper.findAll('.tick').map(tick => tick.text())
+      expect(labels.length).toBeGreaterThan(1)
+      expect(labels.length).toBeLessThan(12)
+      expect(labels[0]).toBe('mark 0')
+      expect(labels.at(-1)).toBe('mark 100')
+      // a pointer still belongs to every label that is drawn, and to no dropped one
+      expect(wrapper.findAll('.stem')).toHaveLength(labels.length)
+    })
+
+    // `value 0` takes 56 px and `value 100` 72 px on a 400 px axis: centred on the ends, half of
+    // each would hang past the axis
+    it('slides a label along the axis until it lies wholly on it, its pointer staying at the mark', async () => {
+      stubWidths(400)
+      const wrapper = mountChart([lane('a', [[0, 100]])], 0, 100, { ticks: 3, format: (v: number) => `value ${v}` })
+      await flushPromises()
+      const ticks = wrapper.findAll('.tick')
+      expect(ticks[0]!.classes()).toContain('start')
+      expect(leftOf(ticks[0]!.attributes('style'))).toBe(0)
+      expect(ticks.at(-1)!.classes()).toContain('start')
+      expect(leftOf(ticks.at(-1)!.attributes('style'))).toBe(82)
+      expect(leftOf(wrapper.findAll('.stem').at(-1)!.attributes('style'))).toBe(100)
+    })
+
+    it('draws no label wider than the whole axis', async () => {
+      stubWidths(40)
+      const wrapper = mountChart([lane('a', [[0, 100]])], 0, 100, { ticks: 3, format: (v: number) => `value ${v}` })
+      await flushPromises()
+      expect(wrapper.findAll('.tick')).toHaveLength(0)
+    })
   })
 })
 

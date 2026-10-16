@@ -5,6 +5,16 @@ import type { LinkContext, PositionRef } from '@/types/context_types'
 /** The link every panel belongs to while there is only one. */
 export const MAIN_LINK = 'A'
 
+/**
+ * The narrowing after a click on a scenario: that one alone — or, the scenario in focus clicked
+ * again, the whole run. ONE scenario in focus (operator, 2026-10-16): a reader works one case at a
+ * time, and the run chart, which draws one unit, then shows the same one the lists show. The
+ * narrowing stays a list, so several can come back as a modifier click without a new shape.
+ */
+export function toggledFocus(units: string[], unit: string): string[] {
+  return units.length === 1 && units[0] === unit ? [] : [unit]
+}
+
 export function emptyLink(): LinkContext {
   return {
     run: { id: null, units: [], position: null },
@@ -43,10 +53,9 @@ export const useContextStore = defineStore('context', () => {
     main.value.run.units = [...new Set(units)]
   }
 
-  /** Adds a scenario to the narrowing, or takes it out again. */
+  /** Puts a scenario in focus, or — the one in focus — shows the whole run again. */
   function toggleUnit(unit: string): void {
-    const units = main.value.run.units
-    setUnits(units.includes(unit) ? units.filter(name => name !== unit) : [...units, unit])
+    setUnits(toggledFocus(main.value.run.units, unit))
   }
 
   /** Back to the whole run. */

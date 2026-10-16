@@ -13,7 +13,9 @@ booked into, the warnings a validator raised, and the configuration it all ran u
 recomputed here — every figure is a field the API served, or it is asked for as one.
 
 The candle chart it started as is still there. Deployments, runs and the chart are docked panels —
-tabs that split side by side — and every view comes back as the reader left it after a reload.
+tabs that split side by side — and every view comes back as the reader left it after a reload. A
+trade opens on its candles in one click: the run chart beside the report shows a unit of the run,
+its trades marked where they opened and closed.
 
 ![The run list, folded by family, over the trade history and the orders of one run](docs/images/runs_overview_dark.png)
 
@@ -125,7 +127,7 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | Browser tests | **Playwright** — a real reload, real storage, real geometry; hygiene rather than a gate |
 | CI | **GitHub Actions** — type-check + tests on every PR and push to master |
 
-Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_architecture.md)
+Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_architecture.md) · the words this viewer coins: [docs/glossary.md](docs/glossary.md)
 
 ---
 
