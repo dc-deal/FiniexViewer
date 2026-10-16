@@ -12,6 +12,7 @@ import type {
 import type {
   PortfolioReport, PortfolioUnitRow, WarningsErrorsReport,
 } from '@/types/api/report_types'
+import type { Figure } from '@/types/figure_types'
 
 import portfolioFixture from './fixtures/portfolio.json'
 
@@ -29,6 +30,7 @@ const BASE: ScenarioRow = {
   origin_evidence_grades: 'attested',
   price_bases: 'order_driven',
   data_format_versions: '1.0.5',
+  modelled_spread: null,
   execution_time_ms: 120,
   ticks_processed: 4200,
   first_tick_time: '',
@@ -481,6 +483,36 @@ describe('ScenarioRosterPanel', () => {
       const spread = details.find(pair => pair.label === 'Spread')!
       expect(spread.value).toBe('not recorded')
       expect(spread.title).toContain('no quote')
+    })
+
+    /**
+     * Contract 33: such data is now given a modelled quote, and the card says what that cost and
+     * how much of the data it covered — the factor, the estimator and the digest a hover away. Only
+     * where it happened: a unit over recorded quotes has nothing to say here.
+     */
+    it('says what the modelled quotes cost and how much of the data they covered', () => {
+      const modelledRoster = report([row({
+        name: 'winner',
+        modelled_spread: {
+          factor: 1, estimator_version: 2, ticks_without_quote: 12_400, ticks_modelled: 12_340,
+          median_spread_bps: 3.1, day_digest: 'f'.repeat(64),
+        },
+      })])
+      const wrapper = mountPanel(view(modelledRoster, portfolio([
+        earning('winner', { total_spread_cost: null, total_modelled_spread_cost: 4.5 }),
+      ])))
+      const details = wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]
+      const pairs = Object.fromEntries(details.map(pair => [pair.label, pair]))
+      expect(pairs['Modelled spread']?.value).toBe('4.50 EUR')
+      expect(pairs['Ticks modelled']?.value).toBe(`${(12_340).toLocaleString()} of ${(12_400).toLocaleString()} without a quote · median 3.10 bps`)
+      expect(pairs['Ticks modelled']?.title).toContain('f'.repeat(64))
+    })
+
+    it('says nothing of modelled quotes where the unit read recorded ones', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner')])))
+      const labels = (wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]).map(pair => pair.label)
+      expect(labels).not.toContain('Modelled spread')
+      expect(labels).not.toContain('Ticks modelled')
     })
 
     /**

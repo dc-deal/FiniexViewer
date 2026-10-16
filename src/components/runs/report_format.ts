@@ -1,3 +1,4 @@
+import type { Figure } from '@/types/figure_types'
 import { t } from '@/translate'
 
 // Fixed locale on purpose: the rest of the panels format with toFixed (dot decimals), and a
@@ -31,6 +32,19 @@ export function spreadFigure(value: number | null, format: (value: number) => st
 }
 
 export const SPREAD_NOT_RECORDED = t('The data this unit read carried no quote, so no spread was measured — not a spread of zero.')
+
+export const MODELLED_SPREAD_NOTE = t('Crossed against quotes the backtest modelled for data recorded without one. It stands beside the measured spread, and the two add up to what the fills crossed.')
+
+/**
+ * The spread crossed against quotes a backtest MODELLED for data recorded without one (contract 33;
+ * their glossary's *modelled spread*), as a figure to stand beside the measured one — or none where
+ * nothing was modelled: 0 on every run over recorded quotes, and null on a period recorded before
+ * the contract, would be a line of noise on all of them. An array, so a list can spread it in place.
+ */
+export function modelledSpreadFigures(value: number | null, format: (value: number) => string): Figure[] {
+  if (!value) return []
+  return [{ label: t('Modelled spread'), value: format(value), title: MODELLED_SPREAD_NOTE }]
+}
 
 /** Backend ratios are 0..1 — the percent conversion happens here, at the render edge. */
 export function percent(ratio: number): string {

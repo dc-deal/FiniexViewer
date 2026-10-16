@@ -1,6 +1,21 @@
 import type { PortfolioReport, WarningsErrorsReport } from '@/types/api/report_types'
 
 /**
+ * What a scenario's ticks recorded WITHOUT A QUOTE were given in place of one (contract 33): bid and
+ * ask half the spread estimated for the previous day below and above the traded price.
+ */
+export interface ModelledSpreadDetail {
+  factor: number                    // the share of the estimated spread applied; 0 models nothing
+  estimator_version: number
+  ticks_without_quote: number
+  // of those, the ones given a quote — the rest had no usable estimate before their day and kept bid = ask
+  ticks_modelled: number
+  median_spread_bps: number | null  // the median full spread given, in bps of the price; null where none was
+  // identifies what was charged: two runs with the same digest priced their fills from the same day estimates
+  day_digest: string
+}
+
+/**
  * `GET /api/v1/reports/runs/{run_id}/scenario-details` — the ROSTER of a run.
  *
  * Settled with the backend 2026-09-25: this is the authority for "which scenarios does this run
@@ -47,6 +62,8 @@ export interface ScenarioRow {
   origin_evidence_grades: string
   price_bases: string
   data_format_versions: string
+  // null where the scenario read no tick without a quote
+  modelled_spread: ModelledSpreadDetail | null
   execution_time_ms: number
   ticks_processed: number
   first_tick_time: string

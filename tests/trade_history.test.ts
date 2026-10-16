@@ -200,7 +200,7 @@ describe('TradeHistoryPanel', () => {
           },
           {
             ...BASE.scenario_totals[0]!, scenario_name: 'unquoted', currency: 'EUR',
-            total_fees: 0, total_swap: 0, total_spread_cost: null,
+            total_fees: 0, total_swap: 0, total_spread_cost: null, total_modelled_spread_cost: 3.5,
           },
         ],
       })
@@ -222,7 +222,14 @@ describe('TradeHistoryPanel', () => {
       // the whole line, separators included: two parts once ran together as `USD· spread`
       expect(meta(wrapper, 1)).toBe('1 trade · fees 32.25 USD · spread 1.25 USD')
       expect(meta(wrapper, 2)).not.toContain('fees')
-      expect(meta(wrapper, 2)).not.toContain('spread')
+      // data without a quote: nothing measured, and what the modelled quotes cost stands instead
+      expect(meta(wrapper, 2)).toBe('1 trade · modelled spread 3.50 EUR')
+    })
+
+    it('gives the modelled spread in the card, where the measured one was never recorded', () => {
+      const split = cardOf(mountPanel(costs()), 'unquoted · EUR')
+      expect(split.find(pair => pair.label === 'Modelled spread')?.value).toBe('3.50 EUR')
+      expect(cardOf(mountPanel(costs()), 'forex · EUR').map(pair => pair.label)).not.toContain('Modelled spread')
     })
 
     it('gives the whole split in the card beside the heading', () => {
@@ -323,6 +330,18 @@ describe('TradeHistoryPanel', () => {
       expect(rows['Fees']).toContain('swap 0.50')
       expect(rows['Fees']).not.toContain('spread')
       expect(rows['Spread']).toContain('1.30')
+    })
+
+    // contract 33: a fill against a modelled quote counts there, beside the measured spread
+    it('names the modelled spread beside the measured one where the trade crossed one', () => {
+      const modelled = cardRows(mountPanel(report({
+        trades: [trade({ spread_cost: 0, modelled_spread_cost: 0.42 })],
+      })))
+      expect(modelled['Modelled spread']).toContain('0.42')
+      const recorded = cardRows(mountPanel(report({
+        trades: [trade({ spread_cost: 1.3, modelled_spread_cost: 0 })],
+      })))
+      expect(recorded).not.toHaveProperty('Modelled spread')
     })
 
     // the excursion is given three ways by the backend and the question decides which one answers

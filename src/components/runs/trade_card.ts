@@ -1,4 +1,6 @@
-import { amount, magnitude, numberOrNa, signClass, utcInstant } from '@/components/runs/report_format'
+import {
+  amount, magnitude, modelledSpreadFigures, numberOrNa, signClass, utcInstant,
+} from '@/components/runs/report_format'
 import type { TradeRow } from '@/types/api/report_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
 import { t } from '@/translate'
@@ -69,6 +71,7 @@ export function tradeDetails(trade: TradeRow): Figure[] {
       label: t('Spread'),
       value: amount(trade.spread_cost, trade.currency),
     },
+    ...modelledSpreadFigures(trade.modelled_spread_cost, value => amount(value, trade.currency)),
     {
       label: t('Slippage'),
       // the exit half is absent on a quarter of the trades in this archive — stated as such rather

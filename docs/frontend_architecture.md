@@ -1722,7 +1722,9 @@ part of zero is left out, so `fees 0.00` no longer sits on every forex unit. The
 heading (`groupCard` on the list) carries the whole split — gross, net, the fees with their swap, the
 spread — and a spread of null reads `not recorded` there, the reason on its pair: the data the unit
 read had no quote, or the run was recorded before contract 32. A null spread stays off the line,
-because every older run has one. Nothing is added up: the API serves no total cost.
+because every older run has one. Where such data was given modelled quotes (contract 33) the line
+says `modelled spread` with the unit's `total_modelled_spread_cost`, and the card carries it as a
+figure of its own. Nothing is added up: the API serves no total cost.
 
 **The tracks are proportional, and that is a fix rather than a taste.** They were eight percentage
 widths under `table-layout: fixed`, and the reason is worth keeping: while every group is closed the
@@ -1779,6 +1781,18 @@ data without a quote — every row bid = ask — has a null `total_spread_cost`,
 `total_spread_cost` and `avg_spread` are null as soon as one unit's is, since a sum over a part
 would read as the whole. `spreadFigure` in `report_format.ts` says so, and the figure's hover gives
 the reason; the roster's card does the same per unit.
+
+**Since contract 33 such data pays a MODELLED spread, and it stands beside the measured one.** A
+backtest gives each tick without a quote the quote the spread estimated for the previous day
+implies; what the fills crossed against it is `modelled_spread_cost` on a trade and a booking period,
+`total_modelled_spread_cost` on a unit, a trade group and the aggregated fold — their glossary's
+*modelled spread*. Measured and modelled add up to what the fills crossed, and each fill counts in
+exactly one of the two. `modelledSpreadFigures` in `report_format.ts` builds the one figure every
+place shares, and only where it is not zero: on recorded quotes it is 0, on a period recorded before
+the contract null, and a line of either on every run would be noise. The scenario roster's card adds
+how much of the scenario's data was priced that way (`modelled_spread` on scenario-details: the ticks
+modelled of those without a quote, the median spread given), with the factor, the estimator and the
+day digest — what identifies the charge across runs — a hover away.
 
 **Three distinctions that a reader gets wrong without this panel**, and each carries its caveat where
 the figure is rather than in a paragraph:
