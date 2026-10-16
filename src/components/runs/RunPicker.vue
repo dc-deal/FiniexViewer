@@ -9,8 +9,8 @@ import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
-import type { ListCard, ListColumn } from '@/types/list_types'
-import type { Figure } from '@/types/figure_types'
+import type { ListColumn } from '@/types/list_types'
+import type { Figure, FigureCard } from '@/types/figure_types'
 import { amount, bytes, marketSpan, shortHash, sortInstant, startedAt, utcInstant } from '@/components/runs/report_format'
 import type { RunInfo, RunResult } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
@@ -357,7 +357,7 @@ function toggleFamily(key: string): void {
  * are conditional — `reporting` reads `expected` on all 46 and `app_version` `1.4.0` on all 46,
  * while `ticks_from` is stated on 18 and `data_windows` on 18.
  */
-function card(run: RunInfo): ListCard {
+function card(run: RunInfo): FigureCard {
   const details: Figure[] = []
   // UTC beside the column's local rendering: the stamp in the column is in the reader's own zone,
   // and the canonical clock is the one the run itself was written in. Absent for a stamp that is

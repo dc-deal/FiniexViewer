@@ -11,8 +11,8 @@ import {
   utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
-import type { ListCard, ListColumn } from '@/types/list_types'
-import type { Figure } from '@/types/figure_types'
+import type { ListColumn } from '@/types/list_types'
+import type { Figure, FigureCard } from '@/types/figure_types'
 import type { ScenarioRosterView, ScenarioRow } from '@/types/api/scenario_types'
 import type { PortfolioUnitRow } from '@/types/api/report_types'
 import { t } from '@/translate'
@@ -257,7 +257,7 @@ const columns: ListColumn[] = [
  * Nothing is derived. Every line names a served field, `open_positions` excepted: it is on the wire
  * and not mirrored, so the count is not claimed.
  */
-function card(row: ScenarioRow): ListCard | null {
+function card(row: ScenarioRow): FigureCard | null {
   const unit = earned(row)
   if (!unit) return null
   const money = (value: number) => amount(value, unit.currency)

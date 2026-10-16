@@ -12,7 +12,8 @@ import { useDisplaySettings } from '@/composables/use_display_settings'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import { rowKey } from '@/api/list_key'
-import type { ListCard, ListColumn, ListGroup } from '@/types/list_types'
+import type { FigureCard } from '@/types/figure_types'
+import type { ListColumn, ListGroup } from '@/types/list_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
 
@@ -233,7 +234,7 @@ function costParts(name: string): string[] {
  * leaves out because they are zero, and a spread never measured, said as such. Every figure is a
  * served total; the API serves no total cost, so the card adds none up.
  */
-function groupCard(group: ListGroup<TradeRow>): ListCard | null {
+function groupCard(group: ListGroup<TradeRow>): FigureCard | null {
   const total = totalOf(group.key)
   if (!total) return null
   const money = (value: number) => amount(value, total.currency)
@@ -458,7 +459,7 @@ function details(trade: TradeRow): { label: string, value: string, tone?: string
 }
 
 /** Every trade has a card — there is always more than eight columns can hold. */
-function card(trade: TradeRow): ListCard {
+function card(trade: TradeRow): FigureCard {
   return {
     title: `${trade.scenario_name} · ${trade.direction} ${trade.lots}`,
     details: details(trade),

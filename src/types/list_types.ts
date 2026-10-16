@@ -1,5 +1,3 @@
-import type { Figure } from '@/types/figure_types'
-
 /**
  * What a column of a `RecordList` declares about itself.
  *
@@ -72,19 +70,6 @@ export interface ListBand {
   /** Empty for a band that groups columns without naming them, such as a row's identity. */
   label: string
   span: number
-}
-
-/**
- * The figures of one row that do not fit a column, for the card beside it.
- *
- * `Figure` is the same pair a `FigureBlock` places — one shape for "a label and an already-rendered
- * value", whether it sits in a block or in a card. Two names for it was the beginning of two
- * vocabularies. The value arrives FORMATTED, because a currency, a magnitude and an `n/a` stop
- * being interchangeable at the formatter, which lives at the rendering edge.
- */
-export interface ListCard {
-  title: string
-  details: Figure[]
 }
 
 /**

@@ -1,7 +1,8 @@
 <script setup lang="ts" generic="T">
 import { computed } from 'vue'
 import HoverCard from '@/components/base/HoverCard.vue'
-import type { ListBand, ListCard, ListColumn, ListGroup } from '@/types/list_types'
+import type { FigureCard } from '@/types/figure_types'
+import type { ListBand, ListColumn, ListGroup } from '@/types/list_types'
 
 /**
  * A list read as a TABLE and clicked as a list: aligned columns, sticky headings, one button per
@@ -83,13 +84,13 @@ const props = defineProps<{
    * component owns, deliberately, because that is where the four states and the focus ring live.
    * The caller supplies the cells, so it has eight siblings and no one element to offer.
    */
-  rowCard?: (row: T) => ListCard | null
+  rowCard?: (row: T) => FigureCard | null
   /**
    * The card beside a group HEADING, wrapped by the list for the same reason as `rowCard`. Only a
    * heading that is a button carries one: a plain heading cannot be focused, so its card would exist
    * for a pointer alone.
    */
-  groupCard?: (group: ListGroup<T>) => ListCard | null
+  groupCard?: (group: ListGroup<T>) => FigureCard | null
   /**
    * No headings. For a list NESTED under a row — a trade's fills — where a heading row would
    * repeat itself over every two lines and label what the cells already label inline.

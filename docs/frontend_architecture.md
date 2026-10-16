@@ -757,8 +757,8 @@ between the bar and the rows that a single combined component would have to grow
   card beside the row, and an optional block of CHILD records. It holds no state, sorts nothing,
   filters nothing and folds nothing.
 - **`src/types/list_types.ts`** — `ListColumn` (label, track, whether it is a figure, its rank, and
-  an optional `hint`), `ListCard` (what the card beside a row shows) and `ListGroup` (one partition:
-  key, rows, open).
+  an optional `hint`) and `ListGroup` (one partition: key, rows, open). What the card beside a row
+  shows is a `FigureCard` (`src/types/figure_types.ts`), the shape every card of the app takes.
 
 **The columns line up across rows, and a grid on the row cannot do it.** Each row is its own
 `<button>` — deliberately, because a row that cannot be focused or pressed is the look of a broken

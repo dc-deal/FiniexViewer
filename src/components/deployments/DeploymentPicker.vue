@@ -14,8 +14,8 @@ import {
   amount, duration, magnitude, percentFigure, signClass, sortInstant, startedAt, utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
-import type { Figure } from '@/types/figure_types'
-import type { ListCard, ListColumn } from '@/types/list_types'
+import type { Figure, FigureCard } from '@/types/figure_types'
+import type { ListColumn } from '@/types/list_types'
 import type { DeploymentRow } from '@/types/api/deployment_types'
 import { plural, t } from '@/translate'
 
@@ -142,7 +142,7 @@ function gap(row: DeploymentRow): string {
  * that is on screen anyway, and the two stamps appear here on the CANONICAL clock beside the
  * column's rendering in the reader's own zone.
  */
-function card(row: DeploymentRow): ListCard {
+function card(row: DeploymentRow): FigureCard {
   const details: Figure[] = [
     { label: t('First started'), value: utcInstant(row.first_started) },
     { label: t('Last started'), value: utcInstant(row.last_started) },
