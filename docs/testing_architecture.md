@@ -45,8 +45,9 @@ tab's delayed save landed in between. `dock.spec.ts` holds the docked panels, wh
 lay out at all: the first arrangement in the suggested order, a tab behind another drawn only once
 it is shown, an arrangement that survives a reload, the way back to the suggested order, a closed
 panel brought back from the Panels menu, About opening as a dialog rather than as a tab, the quick
-bar holding the chart's selection only while the chart is in front, and the Runs tab carrying the
-grade of a run that did not succeed. `run_selection.spec.ts` also holds the rule that a selection
+bar holding the chart's selection only while the chart is in front, the Runs tab carrying the
+grade of a run that did not succeed, and a page that never scrolls — also once the window is made
+smaller, which is what left a panel behind a tab reaching past the bottom. `run_selection.spec.ts` also holds the rule that a selection
 never moves the layout — choosing a scenario leaves the executive panel's box and the row under the
 pointer exactly where they were — and a section still on its way keeping its panel standing with a
 loading line, the route held back on purpose.

@@ -70,8 +70,13 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* CLIPPED: dockview sizes a panel's overlay only while the panel is on show, so one behind another
+   tab keeps its old size — after the window was made smaller it reached past the bottom, unseen,
+   and the page grew a scrollbar over empty space (measured 2026-10-16). The dock is the window;
+   nothing of it may spill. */
 .panel-dock {
   height: 100%;
+  overflow: hidden;
 }
 
 /* dockview's root carries no scope id of ours, so its height is set from the frame around it */

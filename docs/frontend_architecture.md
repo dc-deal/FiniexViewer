@@ -1305,6 +1305,12 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
   panel of a kind this version does not know is dropped from its group, an emptied group from the
   grid, and floating and popout groups go. Where nothing usable is left — or dockview refuses what
   was stored — the suggested order is laid out instead, never an empty screen.
+- **The dock is the window, and it CLIPS.** dockview draws every panel into an overlay of its own
+  and sizes it from script, but only while the panel is on show: one behind another tab keeps the
+  size it had. Made smaller, the window left such an overlay reaching past its bottom, unseen, and
+  the page grew a scrollbar over empty space (measured 2026-10-16: the grid at 660 px, a hidden
+  overlay at 918). `PanelDock` therefore hides its overflow. It clips only the unseen — a panel
+  brought forward is laid out anew, and dockview shifts its own tab-overflow list inside the dock.
 - **`PanelHost`** draws a panel the first time it is SHOWN and keeps it after: a tab behind another
   costs nothing until it is picked, and a panel returned to finds its scroll where it left it. It is
   the panel's error boundary, and it hands the panel its visibility — `onPanelShownAgain` fetches

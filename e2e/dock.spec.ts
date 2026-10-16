@@ -126,3 +126,35 @@ test('the tab of the run report carries the grade of the open run where it did n
   const mark = page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="run"]') }).locator('.panel-tab-status')
   await expect(mark).toHaveAttribute('aria-label', outcome!)
 })
+
+/**
+ * THE PAGE NEVER SCROLLS: the dock is the whole window, and nothing of it spills past the edge.
+ *
+ * dockview draws every panel into an overlay of its own and sizes it from script — but only the
+ * panels on show. A panel behind another tab kept the size it had, so a window made SMALLER left
+ * it reaching past the new bottom, unseen, and the page grew a scrollbar over empty space (seen on
+ * screen 2026-10-16; measured: the grid at 660 px, a hidden overlay still at 918). Shrinking the
+ * window is what turns it red, and the first arrangement holds panels behind tabs already.
+ */
+test('the page does not scroll, also once the window is made smaller', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 990 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await expect(page.locator('[data-panel-kind="run"] .panel-column')).toBeVisible()
+
+  await page.setViewportSize({ width: 1300, height: 700 })
+  await expect(page.locator('.dv-grid-view')).toHaveCSS('height', /^6\d\dpx$/)
+
+  const extent = await page.evaluate(() => ({
+    tall: document.documentElement.scrollHeight, high: window.innerHeight,
+    wide: document.documentElement.scrollWidth, broad: window.innerWidth,
+  }))
+  expect(extent.tall).toBeLessThanOrEqual(extent.high)
+  expect(extent.wide).toBeLessThanOrEqual(extent.broad)
+
+  // the clip hides only what is unseen: a panel brought forward is laid out to the new window
+  await showPanel(page, 'Runs')
+  const runs = page.locator('[data-panel-kind="runs"]')
+  await expect(runs).toBeVisible()
+  const box = (await runs.boundingBox())!
+  expect(box.y + box.height).toBeLessThanOrEqual(700)
+})
