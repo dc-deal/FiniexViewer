@@ -53,3 +53,27 @@ test('the run list keeps at least a row in a very short window', async ({ page }
     .evaluate(element => element.getBoundingClientRect().height)
   expect(height).toBeGreaterThanOrEqual(row)
 })
+
+/**
+ * The run list takes the REST of its panel, whatever stands above it. Its cap was the view minus a
+ * fixed 11.5 rem for the hint line and the facet bar, so with the hint dismissed or the bar on one
+ * line that reserve stood empty below the last row — seen on screen 2026-10-16, about 140 px of it.
+ */
+test('the run list reaches the bottom of its panel once the hint is dismissed', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('hints.v1', JSON.stringify({ version: 1, banned: ['facet-bar'] }))
+  })
+  await page.setViewportSize({ width: 1300, height: 800 })
+  await mockApi(page)
+  await page.goto('/')
+  const list = page.locator('.run-list')
+  await list.waitFor()
+
+  // long enough to scroll, or a short list would end early for the right reason
+  expect(await list.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
+  const view = page.locator('.runs-view')
+  const padding = await view.evaluate(element => parseFloat(getComputedStyle(element).paddingBottom))
+  const listBox = (await list.boundingBox())!
+  const viewBox = (await view.boundingBox())!
+  expect(viewBox.y + viewBox.height - padding - (listBox.y + listBox.height)).toBeLessThanOrEqual(1)
+})

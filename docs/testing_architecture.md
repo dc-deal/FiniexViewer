@@ -134,7 +134,8 @@ view and nothing says so. Two defects of exactly that shape reached the screen i
 transform pulled it back on screen but not in layout, so a panel offered 67 px of scrollbar for
 nothing. Both are geometry, so jsdom cannot see either. `view_heights.spec.ts` holds that **a list
 caps its height against its VIEW, not the window**: the run list ends inside a view given half the
-window's height, and keeps at least a row in a very short one. Its first version ran at full height
+window's height, keeps at least a row in a very short one, and reaches the bottom of its panel
+with the hint dismissed — a fixed reserve for the hint once left 144 px empty below the last row. Its first version ran at full height
 and stayed green with the size container removed — the budget around the list holds more slack
 than the gap between window and view — so the view is now shrunk, and both tests were seen to fail
 once with the container, and once with the floor, taken away. `performance.spec.ts` is excluded from the

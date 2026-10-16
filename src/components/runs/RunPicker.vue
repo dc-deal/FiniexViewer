@@ -562,6 +562,9 @@ function choose(runId: string): void {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  /* the whole view below its padding, so the list can take what the hint and the bar leave */
+  flex: 1;
+  min-height: 0;
 }
 
 .picker-state {
@@ -578,15 +581,17 @@ function choose(runId: string): void {
 }
 
 /* The list is the whole panel: the run report is a panel of its own since 2026-10-14, so nothing
-   below the list needs a share of the view. It scrolls inside itself rather than growing past the
-   view — the view hides its own overflow, so a list taller than the view would put its last rows
-   out of reach. 11.5rem is the rest of the view above and below the list; the floor keeps a third
-   of a short view, where the subtraction alone would leave less than one row. Measured against the
-   VIEW (`cqh`, the runs view is a size container), not the browser window. Everything else about
-   its shape — the tracks, the sticky headings, the row's four states — belongs to
-   `base/RecordList.vue`. */
+   below the list needs a share of the view. It takes the REST of the view, whatever the hint line
+   and the facet bar above it take, and scrolls inside itself rather than growing past the view —
+   the view hides its own overflow, so a list taller than the view would put its last rows out of
+   reach. Its cap was the view minus a fixed 11.5rem until 2026-10-16, and with the hint dismissed
+   that reserve stood empty below the last row: 144 px, measured. The floor keeps a third of a short
+   view, where the rest alone would leave less than one row; measured against the VIEW (`cqh`, the
+   runs view is a size container), not the browser window. Everything else about its shape — the
+   tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`. */
 .run-list {
-  max-height: max(33cqh, calc(100cqh - 11.5rem));
+  flex: 1 1 0;
+  min-height: 33cqh;
   overflow-y: auto;
   /* The gutter is reserved whether or not a bar is in it. Opening a family can push the list past
      its cap, and the bar then appears and takes 15 px of width from the `1fr` column — measured

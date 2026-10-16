@@ -1468,7 +1468,10 @@ and deployment views are CSS size containers (`container-type: size`), and the l
 the run list, the deployment list, the scenario roster, the booking-period table — measure their
 `max-height` in `cqh`. With `vh` a view given half the screen still sized its run list for the whole
 of it, and the rows past the view's own hidden overflow could not be reached. Dialogs and hover
-cards stay in `vh`: they float over the whole screen, so the window IS their measure.
+cards stay in `vh`: they float over the whole screen, so the window IS their measure. The run list,
+the whole of its panel since 2026-10-14, takes the REST of its view through flex rather than a cap
+with a fixed reserve for what stands above it: with the hint dismissed, a reserve of 11.5 rem stood
+empty below the last row (measured 2026-10-16: 144 px); `cqh` stays its floor, a third of the view.
 
 **Two stores, two questions.** `runs_store` answers *which* run is selected — the index, the chosen run and the scenarios narrowed to. `run_reports_store` answers *what that run reports*, one slot per section, all cleared together when the selection changes. Sections load eagerly with the run for now; lazy loading on first expand waits until there are enough sections to justify the plumbing.
 
