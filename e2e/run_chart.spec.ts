@@ -77,3 +77,33 @@ test('below that width the run chart is a tab after the report', async ({ page }
   expect(await tabs.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-kind'))))
     .toEqual(['deployments', 'runs', 'run', 'run-chart'])
 })
+
+/**
+ * ONE focus for the lists and the chart (operator, 2026-10-16): the scenario chosen in the list is
+ * the one the run chart draws, and a unit chosen in the chart narrows every list to it.
+ */
+test('the scenario in focus is the one on the run chart, whichever side chose it', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await openSection(page, 'Scenarios')
+  const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
+  await expect(unitSelect).toBeEnabled()
+
+  const drawable = await unitSelect.locator('option:not([disabled])')
+    .evaluateAll(nodes => nodes.map(node => (node as HTMLOptionElement).value))
+  expect(drawable.length).toBeGreaterThan(1)
+  const shown = await unitSelect.inputValue()
+  const picked = drawable.find(name => name !== shown)!
+
+  // from the list: the chart follows
+  await page.locator('.scenario-roster .record-row')
+    .filter({ has: page.locator('.roster-name', { hasText: new RegExp(`^${picked}$`) }) })
+    .click()
+  await expect(unitSelect).toHaveValue(picked)
+
+  // from the chart: the lists follow
+  const other = drawable.find(name => name !== picked)!
+  await unitSelect.selectOption(other)
+  await expect(page.locator('.narrowed-head').first()).toContainText(other)
+  await expect(page.locator('.scenario-roster .record-row.picked .roster-name')).toHaveText(other)
+})

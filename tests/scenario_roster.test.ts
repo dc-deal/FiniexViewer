@@ -387,16 +387,14 @@ describe('ScenarioRosterPanel', () => {
       expect(wrapper.findAll('.record-row.picked')).toHaveLength(0)
     })
 
-    // Several at once is what turns the roster from a jump into a comparison.
-    it('collects several scenarios, and lets one go without losing the rest', async () => {
+    // ONE scenario in focus (operator, 2026-10-16): a reader works one case at a time, and the run
+    // chart, which draws one unit, shows the same one the lists show
+    it('moves the focus to the next scenario clicked, never collecting several', async () => {
       const { wrapper, unit } = mountWithSelection()
       await headOf(wrapper, 'eth_a').trigger('click')
       await headOf(wrapper, 'eth_b').trigger('click')
-      expect(unit.value).toEqual(['eth_a', 'eth_b'])
-      expect(wrapper.findAll('.record-row.picked')).toHaveLength(2)
-
-      await headOf(wrapper, 'eth_a').trigger('click')
       expect(unit.value).toEqual(['eth_b'])
+      expect(wrapper.findAll('.record-row.picked')).toHaveLength(1)
     })
 
     /**

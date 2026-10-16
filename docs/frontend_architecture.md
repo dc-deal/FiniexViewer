@@ -463,7 +463,7 @@ as they are, without cascading:
 | Action | sets | clears |
 |---|---|---|
 | `selectRun(id)` | `run.id` | `run.units`, `run.position` |
-| `setUnits` · `toggleUnit` · `clearUnits` | `run.units` | — the mark stays, as it always did |
+| `setUnits` · `toggleUnit` · `clearUnits` | `run.units` | — the mark stays, as it always did; a click puts one scenario in focus (`toggledFocus`) |
 | `mark(position)` | `run.position` | — |
 | `selectDeployment(id)` | `deployment.id` | — |
 | `setBroker(broker)` | `market.broker` | `market.symbol` |
@@ -1042,13 +1042,20 @@ run 20260927_092959_cd1d9b1e · units ETHUSD_blocks_06, ETHUSD_blocks_09
   warnings/errors   narrowed — but a RUN-scoped warning stays, it is still true
   portfolio         MARKED, never narrowed
   RunsView          the whole column is FRAMED, dashed
-  Runs quick bar    "⌖ Only EURGBP_01 · Show all", beside the tabs —
-                    from two on "2 scenarios", the names in the card behind it
+  Runs quick bar    "⌖ Only EURGBP_01 · Show all", beside the tabs
+  Run chart         draws the scenario in focus
 ```
 
-**Several at once, because the question is usually a comparison.** The names are a list in the
-run's context. An EMPTY list means the whole run, never "nothing" — `showsUnit` encodes
-exactly that, so no call site branches on it.
+**ONE scenario in focus — the lists and the run chart show the same case** (operator, 2026-10-16).
+A click puts a scenario in focus, a click on another moves the focus there, and a second click on
+the same one shows the whole run again (`toggledFocus` in `context_store.ts`). Several at once was
+built first, for comparison, and taken back: a reader works one case at a time, and the run chart
+draws ONE unit, so a narrowing of several left the lists and the chart showing different things.
+Units are compared where they stand side by side already — the scenario roster's columns, the
+groups of an un-narrowed list — and runs in a second browser window. The names stay a LIST in the
+run's context, so several can come back as a modifier click without a new shape; a stored list of
+several is reconciled to its first. An EMPTY list means the whole run, never "nothing" —
+`showsUnit` encodes exactly that, so no call site branches on it.
 
 **The narrowed column is framed, not merely announced.** A sentence above a list cannot say how far
 a manipulation reaches; an edge can. The frame wears the annotation role — a marked division — and
@@ -1408,10 +1415,10 @@ selects (`AppSelect` with `compact`) — the value is what shows, the name while
 each carries its name for a screen reader. A panel without options leaves the bar empty, and two
 groups side by side each speak for their own front panel.
 
-**The quick bar gives way before a tab does.** The narrowing names a single scenario in the line and
-counts from two on (*Only 2 scenarios*), the names in the card behind the count, and the
-names a run lacks are counted there too. Three names once fitted beside a wide panel's tabs and
-pushed a narrow panel's tabs into their overflow menu. The line is a grid whose text track is
+**The quick bar gives way before a tab does.** The narrowing names the scenario in focus, the whole
+line in its title for a panel too narrow to show it, and says where the run lacks that name.
+Three names once fitted beside a wide panel's tabs and pushed a narrow panel's tabs into their
+overflow menu; with one scenario in focus the count and its card went. The line is a grid whose text track is
 `minmax(0, max-content)`, so the bar's least width is its mark and its button alone, and
 `dock_theme.css` gives dockview's actions container a shrink share of 100 to 1 against the tabs:
 the text shortens with an ellipsis first, and a tab goes into the overflow menu only after it.
@@ -2180,8 +2187,12 @@ it says so and draws nothing.
   (`broker_type`, `symbol`, an untyped record read at runtime) and only the start of its window
   (`data_windows`): it is drawn to the end of the coverage. A unit that processed no tick, or
   whose market nothing names, stays in the list, disabled, with the reason.
-- **The unit is the chart's own choice**, kept per run in the arrangement (`runChart`); until one
-  is made it is the one scenario the run is narrowed to, else the first unit with trades.
+- **The unit is the scenario in focus** (operator, 2026-10-16) — one focus for the lists and the
+  chart. A unit chosen in the chart's quick bar puts it in focus for every panel, and the focus
+  cleared leaves the chart where it was. With no focus the chart shows its own choice, kept per run
+  in the arrangement (`runChart`) and made by the chart mark on a trade or an order, else the first
+  unit with trades. The chart mark moves a focus that stands on another unit, and sets none where
+  there was none — the lists keep showing the whole run.
 - **The timeframe is the finest the archive renders for the market that draws the window in at
   most 2,000 bars** — an hour of a backtest in M1, a session of weeks in hours — unless the reader
   chose one. The coverage lists its timeframes alphabetically, so they are ordered by the lengths

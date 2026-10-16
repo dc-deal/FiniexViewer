@@ -121,6 +121,47 @@ describe('useRunChartStore', () => {
     expect(chart.unit?.name).not.toBe('EURGBP_refusals_02')
   })
 
+  /**
+   * ONE focus for the lists and the chart (operator, 2026-10-16): the scenario in focus is the chart's
+   * unit whatever was chosen before, and a unit chosen in the chart is the focus of every panel.
+   */
+  it('shows the scenario in focus, and puts a unit chosen in the chart in focus', () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.chooseUnit('EURGBP_refusals_02')
+    expect(useContextStore().main.run.units).toEqual(['EURGBP_refusals_02'])
+
+    // a click in the scenario list moves the focus, and the chart with it
+    useContextStore().toggleUnit('EURGBP_partial_close')
+    expect(chart.unit!.name).toBe('EURGBP_partial_close')
+  })
+
+  it('stays on the unit it showed once the focus is cleared', async () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    useContextStore().toggleUnit('EURGBP_partial_close')
+    await flushPromises()
+    expect(chart.unit!.name).toBe('EURGBP_partial_close')
+
+    useContextStore().clearUnits()
+    await flushPromises()
+    expect(chart.unit!.name).toBe('EURGBP_partial_close')
+  })
+
+  /** The lists keep the whole run where nothing was in focus; a focus on another unit moves along. */
+  it('moves the focus with a position shown from another unit, and sets none where there was none', () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    const trade = trades.trades.find(entry => entry.scenario_name === 'EURGBP_refusals_02')!
+    chart.showPosition({ scenario: trade.scenario_name, position: trade.position_id })
+    expect(useContextStore().main.run.units).toEqual([])
+
+    useContextStore().toggleUnit('EURGBP_partial_close')
+    chart.showPosition({ scenario: trade.scenario_name, position: trade.position_id })
+    expect(useContextStore().main.run.units).toEqual(['EURGBP_refusals_02'])
+    expect(chart.unit!.name).toBe('EURGBP_refusals_02')
+  })
+
   /** The chart mark on a row points the chart at the position, and the link marks it for every panel. */
   it('shows a position: its unit, the position marked, centred where it opened', async () => {
     chooseFixtureRun()

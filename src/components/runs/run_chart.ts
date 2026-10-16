@@ -78,15 +78,11 @@ export function chartUnits(sources: RunUnitSources): ChartUnit[] | null {
 }
 
 /**
- * The unit the chart opens on (viewer#31, decided 2026-10-14): the one scenario the run is narrowed
- * to, else the first unit with trades, else the first that can be drawn at all.
+ * The unit the chart opens on where nothing is in focus and nothing was chosen (viewer#31, decided
+ * 2026-10-14): the first unit with trades, else the first that can be drawn at all.
  */
-export function defaultUnit(units: ChartUnit[], narrowedTo: string[]): ChartUnit | null {
+export function defaultUnit(units: ChartUnit[]): ChartUnit | null {
   const drawable = units.filter(unit => unit.block === null)
-  if (narrowedTo.length === 1) {
-    const narrowed = drawable.find(unit => unit.name === narrowedTo[0])
-    if (narrowed) return narrowed
-  }
   return drawable.find(unit => unit.trades > 0) ?? drawable[0] ?? null
 }
 

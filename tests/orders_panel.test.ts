@@ -615,7 +615,7 @@ describe('OrdersPanel', () => {
     /** A scenario the narrowing drops takes its funnel with it — the heading belongs to the group. */
     it('states an empty result as the chosen scenarios rather than as the run', () => {
       const wrapper = mountNarrowed(TWO, ['a_scenario_with_no_orders'])
-      expect(wrapper.text()).toContain('The chosen scenarios placed no order')
+      expect(wrapper.text()).toContain('The chosen scenario placed no order')
       expect(wrapper.find('.order-list').exists()).toBe(false)
     })
   })

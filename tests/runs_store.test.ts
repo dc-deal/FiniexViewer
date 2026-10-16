@@ -208,16 +208,16 @@ describe('useRunsStore', () => {
       expect(store.selectedUnits).toEqual([])
     })
 
-    // Several scenarios at once is what makes the roster a comparison rather than a jump.
-    it('narrows to several scenarios, and takes one back out without losing the rest', async () => {
+    // ONE scenario in focus (operator, 2026-10-16): a reader works one case at a time
+    it('puts one scenario in focus, moves it with each click, and clears it on the same one', async () => {
       const store = await loadedStore()
       store.toggleUnit('a')
       store.toggleUnit('b')
       store.toggleUnit('c')
-      expect(store.selectedUnits).toEqual(['a', 'b', 'c'])
+      expect(store.selectedUnits).toEqual(['c'])
 
-      store.toggleUnit('b')
-      expect(store.selectedUnits).toEqual(['a', 'c'])
+      store.toggleUnit('c')
+      expect(store.selectedUnits).toEqual([])
     })
 
     // A link is written by hand as often as it is copied, and a repeated name is not a selection.

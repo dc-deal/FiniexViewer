@@ -70,7 +70,7 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
     const wrapper = mountNarrowed({ ...MIXED, reconciles: false }, ['unit_a'])
     const scope = wrapper.find('.verdict-text .scope')
     expect(scope.text()).toBe('whole run')
-    expect(scope.attributes('title')).toContain('the periods below are the chosen scenarios')
+    expect(scope.attributes('title')).toContain('the periods below are those of the chosen scenario')
   })
 
   it('says nothing about scope where nothing is narrowed', () => {
@@ -109,9 +109,9 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
   })
 
   // A scenario the run declared but that booked nothing — a statement about it, not a bad match.
-  it('says the chosen scenarios booked nothing, rather than the run', () => {
+  it('says the chosen scenario booked nothing, rather than the run', () => {
     const wrapper = mountNarrowed(MIXED, ['unit_c'])
-    expect(wrapper.find('.hint').text()).toContain('The chosen scenarios booked no periods')
+    expect(wrapper.find('.hint').text()).toContain('The chosen scenario booked no periods')
   })
 })
 

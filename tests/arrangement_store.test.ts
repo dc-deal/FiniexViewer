@@ -54,6 +54,13 @@ describe('useArrangementStore', () => {
     expect(stored()['runChart']).toEqual({ run: RUN, unit: 'EURGBP_refusals_01', timeframe: 'M1' })
   })
 
+  /** One scenario in focus at most: a stored list of several is reconciled to its first, not trusted. */
+  it('keeps one scenario in focus from a stored narrowing of several', () => {
+    store({ version: 1, links: { A: { run: { id: RUN, units: ['EURGBP_refusals_01', 'EURGBP_partial_close'], position: null } } } })
+    useArrangementStore()
+    expect(useContextStore().main.run.units).toEqual(['EURGBP_refusals_01'])
+  })
+
   /** Never trusted as it is: whatever does not have the right shape is left empty, field by field. */
   it('reconciles a damaged entry instead of trusting it', () => {
     store({

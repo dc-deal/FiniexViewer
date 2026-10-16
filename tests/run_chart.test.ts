@@ -82,16 +82,11 @@ describe('run_chart', () => {
   describe('defaultUnit', () => {
     const units = chartUnits({ group: 'simulation', windows: runInfo.data_windows, scenarios, config: null, trades })!
 
-    it('opens on the one scenario the run is narrowed to', () => {
-      expect(defaultUnit(units, ['EURGBP_refusals_02'])!.name).toBe('EURGBP_refusals_02')
-    })
-
-    it('opens on the first unit with trades otherwise, and never on one that cannot be drawn', () => {
+    it('opens on the first unit with trades, and never on one that cannot be drawn', () => {
       const first = units.find(unit => unit.block === null && unit.trades > 0)!
-      expect(defaultUnit(units, [])!.name).toBe(first.name)
-      expect(defaultUnit(units, ['EURGBP_refusals_01', 'EURGBP_refusals_02'])!.name).toBe(first.name)
-      expect(defaultUnit(units, ['EURGBP_before_the_archive'])!.block).toBeNull()
-      expect(defaultUnit(units.filter(unit => unit.block !== null), [])).toBeNull()
+      expect(defaultUnit(units)!.name).toBe(first.name)
+      expect(defaultUnit(units)!.block).toBeNull()
+      expect(defaultUnit(units.filter(unit => unit.block !== null))).toBeNull()
     })
   })
 

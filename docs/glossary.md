@@ -42,8 +42,8 @@ own and goes back. Not the *member* of an archive FiniexTestingIDE re-imports, a
 **menu bar** — The frame above the panels: the app's name, the Panels menu, the machine's load, the
 account and the application menu. It is never closed or moved.
 
-**narrowing** — Choosing some of a run's units, so that the report sections which map over units
-show only those, or mark them. Stated in the quick bar, and drawn as a dashed border — the
+**narrowing** — Putting one of a run's units in focus, so that the report sections which map over
+units show only it, or mark it, and the *run-bound chart* draws it. Stated in the quick bar, and drawn as a dashed border — the
 *narrowing frame* — around the run report, and around a section opened as a panel where it filters
 that section's rows. Not the *subscription narrowing* of a worker in FiniexTestingIDE, and the
 frame is not their recorded state *frame*.
@@ -62,7 +62,7 @@ tabs: a chart's broker, symbol and timeframe, or a report's narrowing.
 
 **run-bound chart** — The chart of one unit of a run, its trades marked on the candles — the panel
 *Run chart*, opened beside the run report from the Panels menu or by the chart mark on a trade or
-an order. Which unit it shows is its own choice. See *free chart*.
+an order. It shows the unit in focus (see *narrowing*), else its own choice. See *free chart*.
 
 **tab** — A panel's handle in the dock: its form, its title, and one status that prints only when
 it has something to say.

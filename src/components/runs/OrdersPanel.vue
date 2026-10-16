@@ -463,7 +463,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
   <div class="orders-panel">
     <div v-if="!shown.length" class="hint">
       {{ narrowed
-        ? t('The chosen scenarios placed no order')
+        ? t('The chosen scenario placed no order')
         : t('This run placed no order') }}
     </div>
     <template v-else>

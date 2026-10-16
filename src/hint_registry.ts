@@ -15,7 +15,7 @@ import { t } from '@/translate'
 const HINTS: HintDefinition[] = [
   {
     id: 'scenario-pick',
-    text: t('Click a scenario to show only its trades and booking periods. Pick several to compare.'),
+    text: t('Click a scenario to focus on it: the lists show only its trades and booking periods, and the run chart shows it. Click it again to show the whole run.'),
   },
   {
     id: 'quick-bar',

@@ -2,10 +2,8 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppButton from '@/components/base/AppButton.vue'
-import HoverCard from '@/components/base/HoverCard.vue'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
-import type { Figure } from '@/types/figure_types'
 import { t } from '@/translate'
 
 /**
@@ -18,52 +16,33 @@ const runsStore = useRunsStore()
 const { selectedUnits } = storeToRefs(runsStore)
 const { scenarios } = storeToRefs(useRunReportsStore())
 
+/** The scenario in focus — one at most (operator, 2026-10-16). */
+const focused = computed(() => selectedUnits.value[0] ?? null)
+
 /**
- * Names in the narrowing this run does not have — one saved before the set was changed. Claimed
- * ONLY where the roster actually arrived: `scenario-details` is backtest-only by construction, so
- * its absence on a session says nothing about a name and must not be reported as a bad one.
+ * Whether this run lacks the scenario in focus — one saved before the set was changed. Claimed ONLY
+ * where the roster actually arrived: `scenario-details` is backtest-only by construction, so its
+ * absence on a session says nothing about a name and must not be reported as a bad one.
  */
-const unknownUnits = computed(() => {
+const missing = computed(() => {
   const roster = scenarios.value
-  if (roster === null) return []
-  return selectedUnits.value.filter(unit => !roster.units.some(row => row.name === unit))
+  const name = focused.value
+  return roster !== null && name !== null && !roster.units.some(row => row.name === name)
 })
 
 /**
- * The narrowing as words: the one name where there is one — the scenario the reader clicked — and
- * a count from two on, with the names in the card behind it. Three names fitted beside a wide
- * panel's tabs and pushed a narrow panel's tabs into their overflow menu.
- *
- * `Only`, not `Showing only`: the text is what shortens when the panel is narrow, and the prefix
- * said nothing the mark, the annotation colour and *Show all* beside it do not — while the count
- * after it was the first thing cut.
+ * The focus as words. `Only`, not `Showing only`: the text is what shortens when the panel is
+ * narrow, and the prefix said nothing the mark, the annotation colour and *Show all* beside it do
+ * not. The whole line stands in the title, for the panel too narrow to show the name.
  */
-const statement = computed(() => {
-  const units = selectedUnits.value
-  const shown = units.length === 1 ? units[0]! : `${units.length} ${t('scenarios')}`
-  const unknown = unknownUnits.value
-  if (!unknown.length) return `${t('Only')} ${shown}`
-  // the one name is already in the line, so it is only said to be missing; several are counted
-  const missing = units.length === 1 ? t('not in this run') : `${unknown.length} ${t('not in this run')}`
-  return `${t('Only')} ${shown} — ${missing}`
-})
-
-/** What the line cannot say: every name it counted, and which of them this run lacks. */
-const cardRows = computed<Figure[]>(() => {
-  if (selectedUnits.value.length < 2) return []
-  const rows: Figure[] = [{ label: t('Showing only'), value: selectedUnits.value.join(', ') }]
-  if (unknownUnits.value.length) rows.push({ label: t('Not in this run'), value: unknownUnits.value.join(', ') })
-  return rows
-})
+const statement = computed(() =>
+  `${t('Only')} ${focused.value}${missing.value ? ` — ${t('not in this run')}` : ''}`)
 </script>
 
 <template>
-  <p v-if="selectedUnits.length" class="narrowed-head">
+  <p v-if="focused" class="narrowed-head">
     <span class="mark" aria-hidden="true">⌖</span>
-    <HoverCard v-if="cardRows.length" :details="cardRows">
-      <span class="narrowed-text" tabindex="0">{{ statement }}</span>
-    </HoverCard>
-    <span v-else class="narrowed-text">{{ statement }}</span>
+    <span class="narrowed-text" :title="statement">{{ statement }}</span>
     <AppButton variant="quiet" @click="runsStore.clearUnits()">
       {{ t('Show all') }}
     </AppButton>

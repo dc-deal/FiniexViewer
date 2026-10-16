@@ -13,8 +13,8 @@ test.beforeEach(async ({ page }) => {
   await mockApi(page)
 })
 
-/** The two scenarios of the fixture run every narrowing here is made of. */
-const TWO = ['EURGBP_refusals_01', 'EURGBP_refusals_02']
+/** The scenario of the fixture run every narrowing here is made of — one in focus, as the app allows. */
+const FOCUS = 'EURGBP_refusals_01'
 
 /** Whether any tab of the dock went into dockview's overflow menu. */
 async function tabsOverflow(page: Page): Promise<boolean> {
@@ -31,10 +31,10 @@ async function tabsOverflow(page: Page): Promise<boolean> {
  */
 test('the quick bar shortens its text before a tab goes into the overflow menu', async ({ page }) => {
   await page.setViewportSize({ width: 975, height: 800 })
-  await openWith(page, '/', { run: FIXTURE_RUN, units: TWO })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: [FOCUS] })
 
   const text = page.locator('[data-quick-bar] .narrowed-text')
-  await expect(text).toHaveText('Only 2 scenarios')
+  await expect(text).toHaveText(`Only ${FOCUS}`)
 
   expect(await tabsOverflow(page)).toBe(false)
   // shortened, not gone: the text gave up room, and what it cannot lose is still whole

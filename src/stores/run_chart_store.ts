@@ -23,10 +23,12 @@ function marketKey(unit: ChartUnit): string {
  * The run-bound chart (viewer#31, the item #21 left open): one unit of the chosen run on its
  * candles, its trades marked where they opened and closed.
  *
- * The UNIT is the chart's own choice — set in its quick bar, or by the chart mark on a trade or an
- * order — and kept per run with the arrangement; until one is made it follows the narrowing. The
- * position it centres on is the link's marked position, so a jump between the lists and the chart
- * agree on what is being looked at.
+ * The UNIT is the scenario in focus (operator, 2026-10-16): one focus for the lists and the chart,
+ * so they show the same case. Choosing a unit in the chart's quick bar puts it in focus; the focus
+ * cleared leaves the chart where it was. With no focus the chart shows its own choice — kept per run
+ * with the arrangement, made by the chart mark on a trade or an order — else the first unit with
+ * trades. The position it centres on is the link's marked position, so a jump between the lists and
+ * the chart agree on what is being looked at.
  *
  * It asks the archive only while a run chart is open: the units are read off what the run report
  * already loaded, and nothing is fetched for a reader who never opens the panel.
@@ -66,11 +68,17 @@ export const useRunChartStore = defineStore('runChart', () => {
       ? arrangement.runChart
       : null)
 
+  /** The scenario in focus, where there is one. */
+  const focused = computed<string | null>(() =>
+    runsStore.selectedUnits.length === 1 ? runsStore.selectedUnits[0]! : null)
+
   const unit = computed<ChartUnit | null>(() => {
     const list = units.value
     if (!list) return null
-    const chosen = list.find(entry => entry.name === choice.value?.unit && entry.block === null)
-    return chosen ?? defaultUnit(list, runsStore.selectedUnits)
+    const drawable = (name: string | null | undefined) =>
+      list.find(entry => entry.name === name && entry.block === null)
+    // a unit that cannot be drawn is not shown for being in focus: the chart keeps what it can draw
+    return drawable(focused.value) ?? drawable(choice.value?.unit) ?? defaultUnit(list)
   })
 
   const coverage = ref<Record<string, CoverageEntry>>({})
@@ -180,6 +188,12 @@ export const useRunChartStore = defineStore('runChart', () => {
     () => { if (viewers.value) void loadBars() },
   )
 
+  // the focus cleared leaves the chart where it was: the unit it showed becomes its own choice.
+  // Only within one run — a new run clears the focus too, and its chart starts afresh
+  watch(() => [runsStore.selectedRunId, focused.value] as const, ([run, now], [runBefore, before]) => {
+    if (run === runBefore && now === null && before !== null) remember({ unit: before })
+  })
+
   function remember(next: { unit?: string, timeframe?: string | null }): void {
     arrangement.setRunChart({
       run: runsStore.selectedRunId,
@@ -188,17 +202,24 @@ export const useRunChartStore = defineStore('runChart', () => {
     })
   }
 
+  /** A unit chosen in the chart is the focus of every panel, not the chart's alone. */
   function chooseUnit(name: string): void {
     remember({ unit: name })
+    runsStore.setUnits([name])
   }
 
   function chooseTimeframe(next: string): void {
     remember({ timeframe: next })
   }
 
-  /** Points the chart at a position: its unit, and the position marked — which it centres on. */
+  /**
+   * Points the chart at a position: its unit, and the position marked — which it centres on. Where a
+   * scenario is in focus the focus moves with it, or the focus would keep the chart on another unit;
+   * where none is, the lists keep showing the whole run.
+   */
   function showPosition(ref: PositionRef): void {
     remember({ unit: ref.scenario })
+    if (focused.value !== null && focused.value !== ref.scenario) runsStore.setUnits([ref.scenario])
     context.mark(ref)
   }
 

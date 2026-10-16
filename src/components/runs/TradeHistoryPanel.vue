@@ -413,7 +413,7 @@ function card(trade: TradeRow): FigureCard {
          the run declared is in the roster whether it traded or not -->
     <div v-if="!selected.length" class="hint">
       {{ narrowed
-        ? t('The chosen scenarios closed no positions')
+        ? t('The chosen scenario closed no positions')
         : t('This run closed no positions') }}
     </div>
     <RecordList
