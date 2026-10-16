@@ -33,6 +33,22 @@ const OPENS_RIGHT_OF: Record<string, string> = { 'run-chart': COLUMN_KIND }
 /** The share of the dock's width a split of its own takes in the first arrangement — the report keeps the larger part. */
 const SPLIT_SHARE = 0.4
 
+/** The four edges of the whole dock a dragged panel can be docked along. */
+export type DockEdge = 'left' | 'right' | 'top' | 'bottom'
+
+export const DOCK_EDGES: readonly DockEdge[] = ['left', 'right', 'top', 'bottom']
+
+/** dockview's word for each edge: a direction from the root of the layout. */
+const EDGE_DIRECTION: Record<DockEdge, 'left' | 'right' | 'above' | 'below'> = {
+  left: 'left', right: 'right', top: 'above', bottom: 'below',
+}
+
+/** The share of the dock a column or a row docked along an edge starts with; its seam moves it. */
+const EDGE_SHARE = 0.25
+
+/** What is being dragged in the dock: a panel by its tab, or a whole group by its header. */
+type DockDrag = { panel: string } | { group: string }
+
 /**
  * Below this dock width a split would leave the report too narrow for its lists — measured
  * 2026-10-15: at 620 px the run list overflowed its panel by 95 px — so the kind joins the
@@ -75,6 +91,9 @@ export const useDockStore = defineStore('dock', () => {
 
   // the API object is dockview's own and large — held, never made reactive
   const api = shallowRef<DockviewApi | null>(null)
+
+  /** What is being dragged, while it is — the dock's edges offer a place only then. */
+  const dragging = shallowRef<DockDrag | null>(null)
   /**
    * Which panels are open, by id. Kept from dockview's own events, because its API object is not
    * reactive — and the column reads it: a section open as a panel of its own is left out there.
@@ -279,7 +298,36 @@ export const useDockStore = defineStore('dock', () => {
       dock.onWillMutateLayout(recordPlaces),
       dock.onDidAddPanel(syncOpen),
       dock.onDidRemovePanel(onRemoved),
+      dock.onWillDragPanel(event => { dragging.value = { panel: event.panel.id } }),
+      dock.onWillDragGroup(event => { dragging.value = { group: event.group.id } }),
+      dock.onDidDrop(endDrag),
     ]
+  }
+
+  function endDrag(): void {
+    dragging.value = null
+  }
+
+  /**
+   * Docks what is being dragged along a whole edge of the dock: a column over its full height, a
+   * row over its full width (operator, 2026-10-16). dockview has edge targets of its own, and they
+   * see no drag over a panel kept in the page: `renderer: 'always'` puts its content in an overlay
+   * outside their element, so only the tab bars reached them (traced 2026-10-16). The dock draws
+   * its own edges instead (`DockEdges.vue`) and docks through the public API.
+   */
+  function dockToEdge(side: DockEdge): void {
+    const dock = api.value
+    const drag = dragging.value
+    dragging.value = null
+    if (!dock || !drag) return
+    const across = side === 'left' || side === 'right'
+    const size = Math.round((across ? dock.width : dock.height) * EDGE_SHARE)
+    const group = dock.addGroup({
+      direction: EDGE_DIRECTION[side],
+      ...(across ? { initialWidth: size } : { initialHeight: size }),
+    })
+    if ('panel' in drag) dock.getPanel(drag.panel)?.api.moveTo({ group })
+    else dock.getGroup(drag.group)?.api.moveTo({ group })
   }
 
   function detach(): void {
@@ -402,7 +450,8 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   return {
-    api, openIds,
+    api, openIds, dragging,
     attach, detach, open, close, openSection, backIntoColumn, showSection, hideSection, reset, flush,
+    dockToEdge, endDrag,
   }
 })

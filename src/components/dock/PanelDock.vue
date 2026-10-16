@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { DockviewVue, themeDark, themeLight } from 'dockview-vue'
 import type { DockviewReadyEvent } from 'dockview-vue'
+import DockEdges from '@/components/dock/DockEdges.vue'
 import PanelHost from '@/components/dock/PanelHost.vue'
 import PanelTab from '@/components/dock/PanelTab.vue'
 import QuickBar from '@/components/dock/QuickBar.vue'
@@ -50,7 +51,16 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="panel-dock">
-    <DockviewVue class="panel-dock-view" :theme="theme" disable-floating-groups @ready="onReady">
+    <!-- dockview's own edge targets are switched off, and said so: they see no drag over a panel
+         kept in the page, and the dock draws its own (`DockEdges`). Left unset, the Vue binding
+         passes `false` anyway — `dndEdges` is a Boolean prop there, and an absent one is false -->
+    <DockviewVue
+      class="panel-dock-view"
+      :theme="theme"
+      disable-floating-groups
+      :dnd-edges="false"
+      @ready="onReady"
+    >
       <template #panel-host="{ params, api }">
         <PanelHost :kind-id="params.kind" :api="api" />
       </template>
@@ -66,6 +76,7 @@ onBeforeUnmount(() => {
         </div>
       </template>
     </DockviewVue>
+    <DockEdges />
   </div>
 </template>
 
@@ -75,6 +86,9 @@ onBeforeUnmount(() => {
    and the page grew a scrollbar over empty space (measured 2026-10-16). The dock is the window;
    nothing of it may spill. */
 .panel-dock {
+  /* the frame the dock's own edges stand in, and how wide they are */
+  position: relative;
+  --dock-edge-band: 12px;
   height: 100%;
   overflow: hidden;
 }

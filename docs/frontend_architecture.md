@@ -1318,6 +1318,18 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
   the page grew a scrollbar over empty space (measured 2026-10-16: the grid at 660 px, a hidden
   overlay at 918). `PanelDock` therefore hides its overflow. It clips only the unseen — a panel
   brought forward is laid out anew, and dockview shifts its own tab-overflow list inside the dock.
+- **A panel docks along a whole edge of the dock** (`DockEdges.vue`, operator 2026-10-16). Dragged
+  to the outermost edge, a tab becomes a column over the dock's full height or a row over its full
+  width, a quarter of it to start with; a drop on a group only splits that group. dockview has edge
+  targets of its own (`dndEdges`) and they cannot do it here, for two reasons traced that day: the
+  Vue binding declares the option a Boolean prop, so left unset it arrives as `false` and switches
+  them off; and switched on, they see no drag over a panel kept in the page — `renderer: 'always'`
+  puts its content in an overlay outside their element, so only the tab bars reached them. So the
+  dock draws four bands of its own while a drag is under way (`onWillDragPanel`,
+  `onWillDragGroup`), shows the room a drop will take in dockview's drop colours, and docks through
+  the public API (`addGroup({ direction })`, `moveTo`). dockview's own edges are switched off
+  explicitly, so the two never compete. The `dock-edges` hint says it, because nothing on screen
+  shows an edge until a tab is dragged.
 - **`PanelHost`** draws a panel the first time it is SHOWN and keeps it after: a tab behind another
   costs nothing until it is picked, and a panel returned to finds its scroll where it left it. It is
   the panel's error boundary, and it hands the panel its visibility — `onPanelShownAgain` fetches

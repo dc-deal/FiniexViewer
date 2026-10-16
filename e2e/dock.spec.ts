@@ -158,3 +158,36 @@ test('the page does not scroll, also once the window is made smaller', async ({ 
   const box = (await runs.boundingBox())!
   expect(box.y + box.height).toBeLessThanOrEqual(700)
 })
+
+/**
+ * A panel dragged to the very edge of the dock docks along the WHOLE edge (operator, 2026-10-16):
+ * a column over the full height, a row over the full width. The bottom shows the difference in
+ * the first arrangement's two columns — a drop on a group splits one of them, the edge spans both.
+ * dockview's own edge targets never saw a drag over a panel kept in the page, so the dock draws its
+ * own; this is what proves them.
+ */
+test('a panel dropped at the edge of the dock spans the whole edge', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await expect(page.locator('[data-panel-kind="run"] .panel-column')).toBeVisible()
+  const dock = (await page.locator('.panel-dock').boundingBox())!
+  const tab = page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="runs"]') })
+  const from = (await tab.boundingBox())!
+
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(dock.x + dock.width / 2, dock.y + dock.height - 60, { steps: 6 })
+  await page.mouse.move(dock.x + dock.width / 2, dock.y + dock.height - 4, { steps: 4 })
+  await page.mouse.move(dock.x + dock.width / 2 + 1, dock.y + dock.height - 4)
+  await expect(page.locator('.dock-edge-preview.bottom')).toBeVisible()
+  await page.mouse.up()
+
+  // the edges are gone with the drag, and the panel spans the dock's whole width along its bottom
+  await expect(page.locator('.dock-edge')).toHaveCount(0)
+  const runs = (await page.locator('[data-panel-kind="runs"]').boundingBox())!
+  expect(runs.width).toBeGreaterThan(dock.width - 4)
+  expect(runs.y + runs.height).toBeGreaterThan(dock.y + dock.height - 4)
+  // and the report keeps the full width above it
+  const report = (await page.locator('[data-panel-kind="run"]').boundingBox())!
+  expect(report.y + report.height).toBeLessThanOrEqual(runs.y + 1)
+})

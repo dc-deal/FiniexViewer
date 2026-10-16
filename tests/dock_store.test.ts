@@ -10,13 +10,20 @@ import { useLayoutStore } from '@/stores/layout_store'
 interface FakeGroup {
   id: string
   panels: FakePanel[]
-  api: { width: number, height: number }
+  api: { width: number, height: number, moveTo: (options: { group: FakeGroup }) => void }
 }
 
 interface FakePanel {
   id: string
   group: FakeGroup
-  api: { setActive: () => void, close: () => void }
+  api: { setActive: () => void, close: () => void, moveTo: (options: { group: FakeGroup }) => void }
+}
+
+/** A group added along an edge of the whole dock: where, and how large it starts. */
+interface FakeEdgeGroup {
+  direction: string
+  initialWidth?: number
+  initialHeight?: number
 }
 
 interface FakeAdd {
@@ -42,15 +49,39 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
   const willMutate: (() => void)[] = []
   const arrived: ((panel: FakePanel) => void)[] = []
   const left: ((panel: FakePanel) => void)[] = []
+  // a drag begins on a tab or on a group's header, and ends in a drop
+  const panelDrags: ((event: { panel: FakePanel }) => void)[] = []
+  const groupDrags: ((event: { group: FakeGroup }) => void)[] = []
+  const drops: (() => void)[] = []
+  const edgeGroups: FakeEdgeGroup[] = []
 
   const panels = () => row.flatMap(group => group.panels)
   const find = (id: string) => panels().find(panel => panel.id === id)
   const mutate = () => willMutate.forEach(listener => listener())
 
   function newGroup(at: number): FakeGroup {
-    const group: FakeGroup = { id: `g${groupCount++}`, panels: [], api: { width: 400, height: 600 } }
+    const group: FakeGroup = {
+      id: `g${groupCount++}`,
+      panels: [],
+      api: {
+        width: 400,
+        height: 600,
+        moveTo: ({ group: target }) => [...group.panels].forEach(panel => movePanel(panel, target)),
+      },
+    }
     row.splice(at, 0, group)
     return group
+  }
+
+  /** A panel moved into another group; a group left empty goes, as in dockview. */
+  function movePanel(panel: FakePanel, target: FakeGroup): void {
+    mutate()
+    const from = panel.group
+    from.panels.splice(from.panels.indexOf(panel), 1)
+    if (!from.panels.length) row.splice(row.indexOf(from), 1)
+    panel.group = target
+    target.panels.push(panel)
+    active = panel.id
   }
 
   function addPanel(spec: FakeAdd): void {
@@ -67,7 +98,11 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     const panel: FakePanel = {
       id: spec.id,
       group,
-      api: { setActive: () => { active = spec.id }, close: () => close(spec.id) },
+      api: {
+        setActive: () => { active = spec.id },
+        close: () => close(spec.id),
+        moveTo: ({ group: target }) => movePanel(panel, target),
+      },
     }
     const index = reference && direction === 'within' && spec.position?.index !== undefined
       ? Math.min(spec.position.index, group.panels.length)
@@ -92,12 +127,23 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
   const api = {
     // wide enough to share by default, as on the screens the viewer is built for
     width: options.width ?? 1600,
+    height: 900,
     get panels() { return panels() },
     get groups() { return row },
     get totalPanels() { return panels().length },
     get activePanel() { return find(active ?? '') },
     getPanel: (id: string) => find(id),
+    getGroup: (id: string) => row.find(group => group.id === id),
     addPanel,
+    // along an edge of the whole dock: the row holds it at its start or its end
+    addGroup: (spec: FakeEdgeGroup) => {
+      mutate()
+      edgeGroups.push(spec)
+      const group = newGroup(spec.direction === 'left' || spec.direction === 'above' ? 0 : row.length)
+      if (spec.initialWidth) group.api.width = spec.initialWidth
+      if (spec.initialHeight) group.api.height = spec.initialHeight
+      return group
+    },
     adjacentGroupInDirection: (group: FakeGroup, direction: string) => {
       const at = row.indexOf(group)
       if (direction === 'left') return row[at - 1]
@@ -138,6 +184,18 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
       left.push(listener)
       return { dispose: () => { left.splice(left.indexOf(listener), 1) } }
     },
+    onWillDragPanel: (listener: (event: { panel: FakePanel }) => void) => {
+      panelDrags.push(listener)
+      return { dispose: () => { panelDrags.splice(panelDrags.indexOf(listener), 1) } }
+    },
+    onWillDragGroup: (listener: (event: { group: FakeGroup }) => void) => {
+      groupDrags.push(listener)
+      return { dispose: () => { groupDrags.splice(groupDrags.indexOf(listener), 1) } }
+    },
+    onDidDrop: (listener: () => void) => {
+      drops.push(listener)
+      return { dispose: () => { drops.splice(drops.indexOf(listener), 1) } }
+    },
   }
   return {
     api: api as unknown as DockviewApi,
@@ -156,6 +214,12 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     added,
     close,
     change: () => changed?.(),
+    edgeGroups,
+    /** The reader starts dragging a panel by its tab, or a group by its header. */
+    dragPanel: (id: string) => { const panel = find(id); if (panel) panelDrags.forEach(listener => listener({ panel })) },
+    dragGroupOf: (id: string) => { const panel = find(id); if (panel) groupDrags.forEach(listener => listener({ group: panel.group })) },
+    /** A drop on one of dockview's own targets. */
+    drop: () => drops.forEach(listener => listener()),
   }
 }
 
@@ -546,6 +610,62 @@ describe('useDockStore', () => {
       reloaded.showSection('trade-history')
       // the stand-in dock restores a stored layout into one group
       expect(again.rows()).toEqual([['deployments', 'runs', 'run', 'run-chart'], ['report-trade-history']])
+    })
+  })
+
+  /**
+   * A panel dragged to the very edge of the dock docks along the WHOLE edge (operator, 2026-10-16):
+   * a column over the full height, a row over the full width — through dockview's public API,
+   * because its own edge targets never saw a drag over a panel kept in the page.
+   */
+  describe('the edges of the dock', () => {
+    function attached() {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      return { dock, store }
+    }
+
+    it('knows what is being dragged, and forgets it once the drag ends anywhere', () => {
+      const { dock, store } = attached()
+      dock.dragPanel('runs')
+      expect(store.dragging).toEqual({ panel: 'runs' })
+      dock.drop()
+      expect(store.dragging).toBeNull()
+
+      dock.dragPanel('runs')
+      store.endDrag()
+      expect(store.dragging).toBeNull()
+    })
+
+    it('docks a dragged panel along the whole edge, a quarter of the dock wide', () => {
+      const { dock, store } = attached()
+      dock.dragPanel('runs')
+      store.dockToEdge('left')
+      expect(dock.edgeGroups).toEqual([{ direction: 'left', initialWidth: 400 }])
+      expect(dock.rows()[0]).toEqual(['runs'])
+      expect(store.dragging).toBeNull()
+    })
+
+    it('docks a row along the bottom, a quarter of the dock high', () => {
+      const { dock, store } = attached()
+      dock.dragPanel('runs')
+      store.dockToEdge('bottom')
+      expect(dock.edgeGroups).toEqual([{ direction: 'below', initialHeight: 225 }])
+      expect(dock.rows().at(-1)).toEqual(['runs'])
+    })
+
+    it('moves a whole group dragged by its header, its tabs together', () => {
+      const { dock, store } = attached()
+      dock.dragGroupOf('runs')
+      store.dockToEdge('right')
+      expect(dock.rows().at(-1)).toEqual(['deployments', 'runs', 'run'])
+    })
+
+    it('adds nothing where nothing is being dragged', () => {
+      const { dock, store } = attached()
+      store.dockToEdge('left')
+      expect(dock.edgeGroups).toEqual([])
     })
   })
 })
