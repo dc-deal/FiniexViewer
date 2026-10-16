@@ -41,20 +41,20 @@ describe('RunReportView', () => {
   it('brings the run list to the front to change the run', async () => {
     chooseRun()
     const opened: string[] = []
-    useDockStore().open = (kind: string) => { opened.push(kind) }
+    useDockStore().reveal = (kind: string, reason: string) => { opened.push(`${kind} ${reason}`); return true }
     const wrapper = mount(RunReportView)
     await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
-    expect(opened).toEqual(['runs'])
+    expect(opened).toEqual(['runs command'])
   })
 
   it('says that no run is chosen, and offers the run list', async () => {
     const opened: string[] = []
-    useDockStore().open = (kind: string) => { opened.push(kind) }
+    useDockStore().reveal = (kind: string, reason: string) => { opened.push(`${kind} ${reason}`); return true }
     const wrapper = mount(RunReportView)
     expect(wrapper.text()).toContain('No run is chosen')
     expect(wrapper.findComponent(PanelColumn).exists()).toBe(false)
     await wrapper.findAll('button').find(node => node.text().includes('Show the run list'))!.trigger('click')
-    expect(opened).toEqual(['runs'])
+    expect(opened).toEqual(['runs command'])
   })
 
   it('says which stored run is gone from the index', () => {

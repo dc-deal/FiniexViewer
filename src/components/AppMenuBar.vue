@@ -68,7 +68,7 @@ function isOpen(kind: PanelKind): boolean {
 
 function toggleKind(kind: PanelKind): void {
   if (isOpen(kind)) dock.close(kind.id)
-  else dock.open(kind.id)
+  else dock.reveal(kind.id, 'command')
 }
 
 /** On show: in the column or open as a panel — but not in the column of a run that lacks it. */

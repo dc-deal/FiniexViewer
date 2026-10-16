@@ -61,7 +61,7 @@ describe('AppMenuBar', () => {
     dock.openIds = ['deployments', 'runs']
     const opened: string[] = []
     const closed: string[] = []
-    dock.open = (kind: string) => { opened.push(kind) }
+    dock.reveal = (kind: string, reason: string) => { opened.push(`${kind} ${reason}`); return true }
     dock.close = (kind: string) => { closed.push(kind) }
 
     await openMenu('Panels')
@@ -71,7 +71,7 @@ describe('AppMenuBar', () => {
     kindEntry('chart').click()
     kindEntry('deployments').click()
     await flushPromises()
-    expect(opened).toEqual(['chart'])
+    expect(opened).toEqual(['chart command'])
     expect(closed).toEqual(['deployments'])
   })
 

@@ -330,16 +330,40 @@ describe('useDockStore', () => {
     expect(dock.ids()).toEqual(['deployments', 'runs', 'run', 'run-chart'])
   })
 
+  /**
+   * A SELECTION never reopens a panel the reader closed (operator, 2026-10-16): a pick in the run
+   * list reopened the run report they had closed, its sections all standing as panels already. A
+   * command — the menu, a link, a jump — still opens it where it stood.
+   */
+  it('brings an open panel forward for a pick, and leaves a closed one closed', () => {
+    const dock = fakeDock()
+    const store = useDockStore()
+    store.attach(dock.api)
+
+    store.reveal('runs', 'command')
+    expect(store.reveal('run', 'selection')).toBe(true)
+    expect(dock.active()).toBe('run')
+
+    dock.close('run')
+    store.reveal('runs', 'command')
+    expect(store.reveal('run', 'selection')).toBe(false)
+    expect(dock.ids()).not.toContain('run')
+    expect(dock.active()).toBe('runs')
+
+    expect(store.reveal('run', 'command')).toBe(true)
+    expect(dock.ids()).toContain('run')
+  })
+
   it('brings an open panel to the front, and opens a closed one beside the active one', () => {
     const dock = fakeDock()
     const store = useDockStore()
     store.attach(dock.api)
 
-    store.open('deployments')
+    store.reveal('deployments', 'command')
     expect(dock.active()).toBe('deployments')
 
     // the free chart is not in the first arrangement, and has no place yet
-    store.open('chart')
+    store.reveal('chart', 'command')
     expect(dock.ids()).toContain('chart')
     expect(dock.active()).toBe('chart')
     expect(dock.groups()[dock.ids().indexOf('chart')]).toBe(dock.groups()[0])
@@ -361,7 +385,7 @@ describe('useDockStore', () => {
     store.attach(dock.api)
     expect(dock.ids()).not.toContain('run-chart')
 
-    store.open('run-chart')
+    store.reveal('run-chart', 'command')
     expect(dock.rows()).toEqual([['deployments', 'runs', 'run'], ['run-chart']])
     expect(dock.active()).toBe('run-chart')
   })
@@ -475,7 +499,7 @@ describe('useDockStore', () => {
     it('brings an open section to the front rather than opening it twice', () => {
       const { dock, store } = attached()
       store.openSection('trade-history')
-      store.open('runs')
+      store.reveal('runs', 'command')
       store.openSection('trade-history')
       expect(dock.ids().filter(id => id === 'report-trade-history')).toHaveLength(1)
       expect(dock.active()).toBe('report-trade-history')
@@ -580,7 +604,7 @@ describe('useDockStore', () => {
       dock.api.addPanel({ id: 'chart', component: 'host', position: { referencePanel: 'runs', direction: 'right' } })
       dock.close('chart')
 
-      store.open('chart')
+      store.reveal('chart', 'command')
       expect(dock.rows()).toEqual([['deployments', 'runs', 'run'], ['chart'], ['run-chart']])
       expect(dock.active()).toBe('chart')
     })

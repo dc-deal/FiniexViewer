@@ -114,7 +114,7 @@ const missingSections = computed(() => {
         <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
              three lines above the sections -->
         <span class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
-        <AppButton variant="quiet" @click="dock.open('runs')">{{ t('Change run') }}</AppButton>
+        <AppButton variant="quiet" @click="dock.reveal('runs', 'command')">{{ t('Change run') }}</AppButton>
       </div>
     </header>
 
@@ -129,7 +129,7 @@ const missingSections = computed(() => {
       </div>
       <div v-else-if="!selectedRun" class="state-overlay state-none">
         <span class="hint">{{ t('No run is chosen — the Runs panel lists them') }}</span>
-        <AppButton variant="quiet" @click="dock.open('runs')">{{ t('Show the run list') }}</AppButton>
+        <AppButton variant="quiet" @click="dock.reveal('runs', 'command')">{{ t('Show the run list') }}</AppButton>
       </div>
       <template v-else>
         <!-- a missing or unreadable section does not hide the ones that are there -->

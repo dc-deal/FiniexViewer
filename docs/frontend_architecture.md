@@ -1318,6 +1318,14 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
   the page grew a scrollbar over empty space (measured 2026-10-16: the grid at 660 px, a hidden
   overlay at 918). `PanelDock` therefore hides its overflow. It clips only the unseen — a panel
   brought forward is laid out anew, and dockview shifts its own tab-overflow list inside the dock.
+- **Every panel is shown through ONE `reveal(kind, reason)`** (the dock store, operator 2026-10-16,
+  VS Code's `openView` as the model). It brings the panel to the front wherever it stands, in its
+  own group, and it is the only way a jump, a link or a pick shows one — the store exports no
+  `open`, so the type-check refuses a component that tries. The reason decides whether a CLOSED
+  panel may open: a `command` (the Panels menu, a link or a jump the reader clicked) opens it where
+  it stood; a `selection` (a pick in a list) never does. Seven call sites each decided that on their
+  own before, and a pick in the run list reopened the run report the reader had closed, every
+  section of it already out as a panel of its own.
 - **A panel docks along a whole edge of the dock** (`DockEdges.vue`, operator 2026-10-16). Dragged
   to the outermost edge, a tab becomes a column over the dock's full height or a row over its full
   width, a quarter of it to start with; a drop on a group only splits that group. dockview has edge

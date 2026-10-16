@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, fixture, FIXTURE_RUN } from './api_mock'
-import { openWith, showPanel } from './arrangement_seed'
+import { openWith, showPanel, storedLink } from './arrangement_seed'
 
 /**
  * The docked panels, which only a browser can judge: dockview measures, drags and lays out, and
@@ -190,4 +190,26 @@ test('a panel dropped at the edge of the dock spans the whole edge', async ({ pa
   // and the report keeps the full width above it
   const report = (await page.locator('[data-panel-kind="run"]').boundingBox())!
   expect(report.y + report.height).toBeLessThanOrEqual(runs.y + 1)
+})
+
+/**
+ * A pick is a SELECTION and never reopens a panel the reader closed (operator, 2026-10-16): with
+ * every section out as a panel of its own, the run report was an empty frame, and a pick in the run
+ * list brought it back each time. The run is chosen all the same — every panel shows it.
+ */
+test('a pick in the run list leaves a closed run report closed, and chooses the run', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await expect(page.locator('[data-panel-kind="run"] .panel-column')).toBeVisible()
+
+  await page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="run"]') }).locator('.panel-tab-close').click()
+  await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(0)
+  await showPanel(page, 'Runs')
+  const other = page.locator('.run-list .record-row >> visible=true').first()
+  const otherId = await other.locator('.run-id').getAttribute('title')
+  await other.click()
+
+  await expect.poll(async () => (await storedLink(page))?.run.id).toBe(otherId)
+  await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(0)
+  await expect(page.locator('[data-panel-kind="runs"]')).toBeVisible()
 })

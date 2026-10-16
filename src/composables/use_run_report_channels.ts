@@ -61,7 +61,7 @@ export function provideRunReportChannels(): void {
     canShow: (scenario: string) => runChart.canShow(scenario),
     show: (ref: PositionRef) => {
       runChart.showPosition(ref)
-      dock.open('run-chart')
+      dock.reveal('run-chart', 'command')
     },
   })
 
