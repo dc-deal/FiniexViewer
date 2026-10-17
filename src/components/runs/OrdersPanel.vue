@@ -651,11 +651,6 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
   color: var(--color-text-primary);
 }
 
-/* the whole lifecycle of the position a reader jumped to, not one row of it */
-.order-list :deep(.record-row.marked) {
-  background-color: var(--color-bg-raised);
-}
-
 /* the position's shape is the second word after its id, never glued to it: the template keeps no
    whitespace between the two elements, so the gap has to be drawn */
 .to-chart {

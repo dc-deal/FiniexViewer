@@ -817,6 +817,17 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   background-color: var(--color-bg-elevated);
 }
 
+/*
+ * `marked` is a caller's class (`rowClass`): the rows of the position a reader jumped to, in the
+ * trade history and the orders. Drawn here, the way the chosen row is, so both lists mark alike —
+ * they each carried their own rule on a `--color-bg-raised` no theme defines, which drew nothing
+ * from 2026-10-05 on. Edge and surface together: a surface step alone is too weak to be seen.
+ */
+.record-row.marked {
+  border-left-color: var(--color-annotation);
+  background-color: var(--color-bg-elevated);
+}
+
 /* the group heading is a boundary in the list, so it is raised rather than coloured */
 .record-group {
   background-color: var(--color-bg-elevated);

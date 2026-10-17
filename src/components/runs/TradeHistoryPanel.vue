@@ -590,11 +590,6 @@ function card(trade: TradeRow): FigureCard {
   white-space: nowrap;
 }
 
-/* the mark covers every trade of that position */
-.trade-list :deep(.record-row.marked) {
-  background-color: var(--color-bg-raised);
-}
-
 .group-name {
   grid-column: 1 / -2;
   color: var(--color-text-primary);
