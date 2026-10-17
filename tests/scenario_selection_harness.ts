@@ -17,7 +17,6 @@ export function provideTestSelection(initial: string[] = []): Ref<string[]> {
   provideScenarioSelection({
     units,
     toggle: (unit: string) => { units.value = toggledFocus(units.value, unit) },
-    clear: () => { units.value = [] },
   })
   return units
 }

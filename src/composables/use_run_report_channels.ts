@@ -38,7 +38,6 @@ export function provideRunReportChannels(): void {
   provideScenarioSelection({
     units: selectedUnits,
     toggle: (unit: string) => runsStore.toggleUnit(unit),
-    clear: () => runsStore.clearUnits(),
   })
 
   // The position a reader asked to look at, and the jump that puts them in front of it — the
