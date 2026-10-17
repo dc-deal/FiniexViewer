@@ -151,7 +151,7 @@ function stayOpen(event: Event): void {
                     </DropdownMenuItem>
                     <DropdownMenuItem class="menu-item" data-action="reset-column" @select="layoutStore.reset()">
                       <span class="menu-check" aria-hidden="true" />
-                      {{ t('Reset column') }}
+                      {{ t('Reset bundle') }}
                     </DropdownMenuItem>
                   </template>
                 </DropdownMenuSubContent>

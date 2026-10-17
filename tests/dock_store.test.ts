@@ -16,7 +16,14 @@ interface FakeGroup {
 interface FakePanel {
   id: string
   group: FakeGroup
-  api: { setActive: () => void, close: () => void, moveTo: (options: { group: FakeGroup }) => void }
+  /** dockview's own copy of the title, stored with the layout and restored as stored */
+  title: string
+  api: {
+    setActive: () => void
+    close: () => void
+    moveTo: (options: { group: FakeGroup }) => void
+    setTitle: (title: string) => void
+  }
 }
 
 /** A group added along an edge of the whole dock: where, and how large it starts. */
@@ -28,6 +35,7 @@ interface FakeEdgeGroup {
 
 interface FakeAdd {
   id: string
+  title?: string
   position?: { referencePanel: string, direction?: string, index?: number }
   initialWidth?: number
 }
@@ -98,10 +106,12 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     const panel: FakePanel = {
       id: spec.id,
       group,
+      title: spec.title ?? spec.id,
       api: {
         setActive: () => { active = spec.id },
         close: () => close(spec.id),
         moveTo: ({ group: target }) => movePanel(panel, target),
+        setTitle: (title: string) => { panel.title = title },
       },
     }
     const index = reference && direction === 'within' && spec.position?.index !== undefined
@@ -157,10 +167,10 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
       active = null
       gone.forEach(panel => left.forEach(listener => listener(panel)))
     },
-    fromJSON: (layout: { grid?: { root?: { data?: { activeView?: string } } }, panels: Record<string, unknown> }) => {
+    fromJSON: (layout: { grid?: { root?: { data?: { activeView?: string } } }, panels: Record<string, { title?: string }> }) => {
       if (options.refuse) throw new Error('refused')
       restored.push(layout)
-      Object.keys(layout.panels).forEach(id => addPanel({ id }))
+      Object.entries(layout.panels).forEach(([id, stored]) => addPanel({ id, title: stored?.title }))
       const front = layout.grid?.root?.data?.activeView
       if (front && find(front)) active = front
     },
@@ -316,6 +326,27 @@ describe('useDockStore', () => {
 
     expect(dock.ids()).toEqual(['chart'])
     expect(dock.restored).toHaveLength(1)
+  })
+
+  /**
+   * dockview stores a panel's title with the layout and restores it as stored. The tab draws the
+   * kind's own title, but the tab's accessible name and the dock's announcements kept the old one
+   * after a rename — the run bundle went on being read out as "Run".
+   */
+  it('gives a restored panel the title its kind has now', () => {
+    useArrangementStore().setDock({
+      grid: { root: { type: 'leaf', data: { id: 'g', views: ['run', 'chart'], activeView: 'run' } } },
+      panels: {
+        run: { id: 'run', title: 'Run', params: { kind: 'run' } },
+        chart: { id: 'chart', title: 'Chart', params: { kind: 'chart' } },
+      },
+    })
+    const dock = fakeDock()
+    useDockStore().attach(dock.api)
+
+    const titles = Object.fromEntries((dock.api.panels as unknown as FakePanel[]).map(panel => [panel.id, panel.title]))
+    expect(titles['run']).toBe('Run bundle')
+    expect(titles['chart']).toBe('Free chart')
   })
 
   /** A layout dockview itself refuses must not leave the reader with an empty screen. */

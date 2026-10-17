@@ -81,7 +81,7 @@ describe('AppMenuBar', () => {
     await openRunsSubmenu()
     // the area holds the run list and the run report, each by the name it has there
     expect(kindEntry('runs').textContent).toContain('Run list')
-    expect(kindEntry('run').textContent).toContain('Run report')
+    expect(kindEntry('run').textContent).toContain('Run bundle')
     const sections = [...document.querySelectorAll<HTMLElement>('.menu-toggle[data-section]')].map(node => node.dataset['section'])
     expect(sections).toEqual(useLayoutStore().arrangedPanels.map(panel => panel.id))
     expect(sections.length).toBe(allPanels().length)

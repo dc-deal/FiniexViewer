@@ -284,6 +284,19 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   /**
+   * Gives every restored panel its kind's title. dockview stores the title with the layout and
+   * restores it as stored, so a panel renamed since kept its old one — not in the tab, which draws
+   * the kind's own, but in the tab's accessible name and in what the dock announces on opening and
+   * closing it: a run bundle went on being read out as "Run".
+   */
+  function retitle(dock: DockviewApi): void {
+    for (const panel of dock.panels) {
+      const title = panelKind(panel.id)?.title
+      if (title && panel.title !== title) panel.api.setTitle(title)
+    }
+  }
+
+  /**
    * Takes over a ready dock: lays out what was stored — reconciled, never trusted — or the
    * suggested order where nothing usable was. A layout dockview itself refuses counts as none, so
    * a damaged entry can never leave the reader with an empty screen.
@@ -294,6 +307,7 @@ export const useDockStore = defineStore('dock', () => {
     try {
       if (layout) {
         dock.fromJSON(layout)
+        retitle(dock)
         addMissingBundle(dock)
         addMissingRunChart(dock)
       } else arrangeDefault(dock)

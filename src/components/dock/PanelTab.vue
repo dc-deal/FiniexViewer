@@ -66,8 +66,8 @@ const details = computed<Figure[]>(() => [
         v-if="section"
         type="button"
         class="panel-tab-button panel-tab-back"
-        :title="t('Back into the run report')"
-        :aria-label="t('Back into the run report')"
+        :title="t('Back into the bundle')"
+        :aria-label="t('Back into the bundle')"
         @click.stop="dock.backIntoColumn(section)"
       >
         <AppIcon name="action-back-into-column" />

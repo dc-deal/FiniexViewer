@@ -17,7 +17,8 @@ one versioned key and kept per browser tab: a new tab starts from the last one s
 which is only a placement.
 
 **bundle** — A panel whose content is other panels, its *members*, stacked one below the other: the
-run report is one, its report sections the members. Not *group* — in FiniexTestingIDE `group` is a
+run report is one, its report sections the members. The word is on screen: the panel *Run bundle*,
+`Runs ▸ Run bundle` in the Panels menu, ⇲ *Back into the bundle* on a member's tab. Not *group* — in FiniexTestingIDE `group` is a
 run's pipeline, and in the dock library a group is a stack of tabs. Not *container*, which is their
 Docker container and the CSS size container a panel declares. Not the build's *bundle*, the
 JavaScript a production build emits, which the performance figures call the *start bundle*.
@@ -36,7 +37,7 @@ it needs. Not the HTTP `Link` header the API sends.
 **list panel** — A panel whose form is a list and whose pick opens something: the run list, the
 deployments. Never a member of a bundle.
 
-**member** — A panel inside a bundle: a report section in the run report. It opens as a panel of its
+**member** — A panel inside a bundle: a report section in the run bundle. It opens as a panel of its
 own and goes back. Not the *member* of an archive FiniexTestingIDE re-imports, a file inside a zip.
 
 **menu bar** — The frame above the panels: the app's name, the Panels menu, the machine's load, the

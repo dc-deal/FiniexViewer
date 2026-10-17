@@ -71,7 +71,7 @@ for (const width of WIDTHS) {
  * panel's height went by before the first section. The run line ends in an ellipsis, and the
  * sections are switched in the Panels menu since the bar retired (2026-10-14).
  */
-test('a narrow Runs panel keeps its run line to one line', async ({ page }) => {
+test('a narrow run bundle keeps its run line to one line', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   const line = (await page.locator('.picker-chosen .chosen-id').boundingBox())!

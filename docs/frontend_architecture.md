@@ -513,9 +513,9 @@ the ledger.
 load the index, then the stored selection; `use_chart_binding` resets a timeframe the symbol has no
 coverage for. The run side is called at the APP ROOT since 2026-10-14, together with
 `use_run_reports_loading` (the run's sections) and `use_run_report_channels` (the channels the
-sections read): a section opened as a panel of its own needs all three while the Runs panel is
+sections read): a section opened as a panel of its own needs all three while the run bundle is
 closed or behind a tab, and a docked panel is drawn only once it is first shown. Fetching the index
-again when the Runs panel is shown again stays in the panel — it is the one place that knows. The bars store REPORTS that case (`timeframeUncovered`) and never writes a selection
+again when the run list is shown again stays in that panel — it is the one place that knows. The bars store REPORTS that case (`timeframeUncovered`) and never writes a selection
 itself — a data store that changes what the reader chose is the defect this replaced.
 
 **A picker opens collapsed on a selection it finds at mount.** Its `watch` sees only a CHANGE, and a
@@ -568,7 +568,7 @@ does not allow (see *API Token* above, and issue #22).
   trigger: settings, a theme entry that names the theme it switches TO, and About.
 - **`src/components/SettingsDialog.vue`** — two tabs: **Display** (the preferences) and **Layout**
   (the way back to the suggested order of the docked panels, and the export and import of the
-  report panels in Runs). Every open starts on Display.
+  order of the sections in the run bundle). Every open starts on Display.
 - **`src/components/AccountStatus.vue`** — the identity below, in the menu bar beside the
   application menu. Who the viewer works as is a fact to see at a glance rather than a setting to
   open, so it left the settings' Account tab on 2026-10-13.
@@ -1268,14 +1268,16 @@ bar and the tabs are the way between the views.
 
 ```
 AppMenuBar   FiniexViewer  Panels ▾                         CPU · Memory   account   ☰
-PanelDock    [☰ Deployments] [☰ Runs] [▤ Run · 20261012_205715…] [◫ Chart]
+PanelDock    [☰ Deployments] [☰ Runs] [▤ Run bundle · 20261012_205715…] [◫ Run chart]
                ├─ PanelHost (kind: runs) → RunsView        the run list
-               └─ PanelHost (kind: run)  → RunReportView   the run report, a bundle
+               └─ PanelHost (kind: run)  → RunReportView   the run bundle
 ```
 
-**The run list and the run report are two panels** (viewer#31, 2026-10-14). `runs` is the LIST — the
+**The run list and the run bundle are two panels** (viewer#31, 2026-10-14). `runs` is the LIST — the
 facet bar and the runs, nothing else; a pick chooses the run (`selectRun`) and brings `run` to the
-front. `run` is the BUNDLE the pick opens: one line naming the run with *Change run*, which brings
+front where it is open — a pick is a selection, and a selection never reopens a panel. `run` is the
+BUNDLE: the word is on its tab, *Run bundle · <run id>*, in the Panels menu and on ⇲ (viewer#42), so
+the container has one name wherever it is named. It holds one line naming the run with *Change run*, which brings
 the list forward, and then the report's sections stacked as its members in one column. Its tab
 names the run, so two browser windows comparing two runs are told apart at a glance — cut after the
 date and time, whole in the tab's card (`PanelKind.subtitle`). The run's grade and the narrowing's
@@ -1286,12 +1288,13 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
 - **`src/panel_kinds.ts`** — every kind in the SUGGESTED ORDER, from the general to the particular:
   a deployment holds runs, a run has its chart (operator, 2026-10-13). A kind names its title, the
   FORM its tab shows (`form-list`, `form-sheet`, `form-chart`), whether the first arrangement holds
-  it, and the AREA whose submenu lists it in the Panels menu — the run list and the run report share
-  the area *Runs*, each under the name it has there (`menuTitle`). What
+  it, and the AREA whose submenu lists it in the Panels menu — the run list, the run bundle and the
+  run chart share the area *Runs*, each under the name it has there (`menuTitle` where the tab's
+  title would repeat the area's name: *Run list*). What
   is read or set and then closed — About, the settings — is a dialog and has no kind. Each component
   is loaded on demand into its own chunk, as the routes before them were.
 - **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: Deployments, Runs and
-  the run report as tabs of one group, in front where the work is — the run report where a run is
+  the run bundle as tabs of one group, in front where the work is — the bundle where a run is
   restored, the run list where none is yet (`firstActiveKind`) — and the run chart beside the report
   (operator, 2026-10-15): a split to its right at 40 % of the width where the dock is at least
   1400 px wide, a tab right after it below that, where a split would leave the report's lists too
@@ -1299,9 +1302,11 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
   it and opens from the Panels menu. A stored layout that never held the run report gains it right
   after the run list where a run is chosen, in front where the list was, and one that never held
   the run chart gains it beside the report; never a panel the reader hid, which has a place to come
-  back to. `open(kind)` brings a panel to the front; a closed one opens where it
+  back to. `reveal(kind, reason)` brings a panel to the front; a closed one opens where it
   last stood (*Closing hides* below), and beside the active one where nothing it stood beside is
-  open. `reset()` goes back to the suggested order and forgets every place — offered in the
+  open — for a command only, never for a selection. A restored layout takes every panel's title
+  from its kind: dockview stores the title with the layout, and an old one kept the tab's
+  accessible name and the dock's announcements on a name the panel no longer has. `reset()` goes back to the suggested order and forgets every place — offered in the
   settings' Layout tab, beside everything else about arrangement, rather than as a menu of one
   entry. The layout is written
   into `arrangement.v1` once it has held still for 300 ms, and at once when the page goes or the dock
@@ -1344,31 +1349,31 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
   the run index and the ledger afresh, quietly and without a spinner, whenever their panel comes
   back, because a docked panel stays mounted where a route was entered anew.
 - **`PanelTab`** shows the form icon, the title, ONE status where it says something, and ✕, which
-  hides the panel; a section's tab also carries ⇲, back into the column. Its card says what the
-  panel is for and the status in words. The Runs tab carries the
+  hides the panel; a section's tab also carries ⇲, *Back into the bundle*. Its card says what the
+  panel is for and the status in words. The run bundle's tab carries the
   backend's grade of the open run (`run_outcome`) where it is not `success` — the icon in the
   warning or error role, its word read out with the tab and written in the card. Where everything
   went well, the tab says nothing. **`dock_theme.css`** gives
   dockview's two themes this app's tokens: a tab behind another keeps the primary ink, because
   muted ink means *disabled* here, and the front tab is marked by its surface AND an accent rule.
 
-**A section of the run report opens as a panel of its own** (viewer#31, decided 2026-10-14). The
-run report stays one column — the Runs panel — and a section the reader wants beside another is
-pulled out: the button among its header's controls (`action-open-panel`) opens it as a docked panel,
-and ⇲ on that panel's tab (`action-back-into-column`) puts it back in the column. A section is in
+**A section of the run bundle opens as a panel of its own** (viewer#31, decided 2026-10-14). The
+run bundle stays one column and a section the reader wants beside another is pulled out: the button
+among its header's controls (`action-open-panel`) opens it as a docked panel, and ⇲ on that panel's
+tab (`action-back-into-column`, *Back into the bundle*) puts it back in the column. A section is in
 one place at a time. An
 AutoTrader session writes fewer sections than a backtest; the column absorbs that by growing
 shorter, where a grid of eleven panels would have left empty areas or moved.
 
 ```
-[☰ Deployments] [☰ Runs] [◫ Chart]        │ [☰ Trade History]
-  run list · the column                    │   the section, with its own scroll
+[☰ Runs] [▤ Run bundle · 20261012_…]     │ [☰ Trade History]
+  the bundle's column                      │   the section, with its own scroll
   ▾ Executive Summary                  ⇱   │
   ▸ Orders                             ⇱   │
 ```
 
 - **One kind per section, `report-<section id>`** (`reportKindId` in `panel_kinds.ts`), kept out of
-  the menu's top level: the Panels menu lists the sections in the submenu of the Runs panel. Its tab
+  the menu's top level: the Panels menu lists the sections in the submenu *Runs*. Its tab
   shows the FORM — `form-list` for
   the four lists, `form-sheet` for the others — and the narrowing's quick bar (`RunsQuickBar`)
   stands beside a section panel where the narrowing reaches the section. The registry says how, in
@@ -1388,18 +1393,18 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
   dockview's own `onDidAddPanel` / `onDidRemovePanel`, and the column leaves out a section whose
   panel is open; its place in `layout.v1` stays, so ⇲ restores it and a reset of the dock gives
   every section back. `openSection(id)` brings an open section to the front, or opens it — the
-  first as a split to the right of the Runs panel, each further one as a tab beside the last, so the
+  first as a split to the right of the run bundle, each further one as a tab beside the last, so the
   screen is not cut thinner with every section. The lines above the column (absences, failures,
   older schemas) leave out a slot whose every reader is open as a panel: that panel says it.
 - **The jump lands where the section IS:** its own panel comes to the front and is searched for the
-  marked row; for a section in the column, the Runs panel comes to the front first, since the jump
+  marked row; for a section in the column, the run bundle comes to the front first, since the jump
   may start in a section panel. A hint above the column (`open-as-panel`) says how a section comes
   out and goes back.
 
 **Closing hides, alike for every panel — and the Panels menu shows it again where it stood**
 (viewer#31, 2026-10-14). The section bar above the column is gone; the Panels menu took its place.
 A tick is a panel on show, a click hides it or shows it again, and the menu stays open so several
-can be switched in one visit. The run report's sections stand in the submenu of the Runs panel, in
+can be switched in one visit. The run bundle's sections stand in the submenu *Runs*, in
 the column's order, each with where it is (`use_section_states.ts`): in the column, open as a panel
 (⇱), hidden, or struck where the chosen run has none — listed rather than left out, because an
 inventory that silently shortens is not one.
@@ -1407,13 +1412,17 @@ inventory that silently shortens is not one.
 ```
 Panels ▾
 ├ ✓ Deployments
-├   Runs ▸ ┬ ✓ Runs
-│          ├ ✓ Executive Summary          in the column
+├   Runs ▸ ┬ ✓ Run list
+│          ├ ✓ Run bundle
+│          ├ ✓ Run chart
+│          ├ ─────────
+│          ├ ✓ Executive Summary          in the bundle
 │          ├ ✓ Trade History          ⇱   open as a panel
 │          ├   Feed Health                hidden
 │          ├   Scenarios                  struck: the run has none
-│          └ Collapse all · Reset column
-└ ✓ Chart
+│          ├ ─────────
+│          └ Collapse all · Reset bundle
+└   Free chart
 ```
 
 - **Where a panel stood is noted just BEFORE the layout changes** — dockview's `onWillMutateLayout`
@@ -1448,9 +1457,9 @@ dockview. The timings, taken again the same day on a quiet machine, moved by not
 
 ### Panels — a registry, a shell, one persisted layout
 
-These are the REPORT panels inside the Runs panel, the accordion column; viewer#31's next step makes each a docked panel of its own. The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
+These are the REPORT panels inside the run bundle, the accordion column; since viewer#31 any of them opens as a docked panel of its own. The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
 
-- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The column and the Panels menu render from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset column* (Panels ▸ Runs) carries it into an arrangement somebody already made.
+- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The column and the Panels menu render from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset bundle* (Panels ▸ Runs) carries it into an arrangement somebody already made.
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus) and `PanelColumn` (the ordered stack, drag to reorder). The column renders from `arrangedPanels` — every panel, switched-off ones included, in the order the reader made — and leaves out what is switched off, what is open as a panel of its own and what this run does not carry. The Panels menu lists the same arrangement (see *Docked Panels*); the section bar that drew it on its side above the column retired on 2026-10-14. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 - **`src/stores/layout_store.ts`** — the panel column's order and state, persisted under its own versioned key `layout.v1`, per browser tab like the arrangement (the selection is in `arrangement.v1`, see *Selection State*).
 
@@ -1999,7 +2008,7 @@ answer whichever close the reader came from.
 a sibling panel visible and scrolling to a row is about the WORKSPACE, which a panel must not know;
 writing the mark into a context would tie a panel to one link. The app root provides the
 channel (`use_run_report_channels`, the jump itself in `use_panel_jump`) and the panels only read
-the mark and ask for the jump. The jump searches the Runs panel for the marked row, never the whole
+the mark and ask for the jump. The jump searches the run bundle for the marked row, never the whole
 document. The channel carries three things:
 
 | | |

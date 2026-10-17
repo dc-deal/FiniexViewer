@@ -39,7 +39,7 @@ import type { PanelDescriptor } from '@/types/panel_types'
  * render from this list, so a new panel is an entry here, not a rebuild.
  *
  * A STORED layout keeps its own order — reconciliation appends what is new rather than reshuffling
- * what the user arranged — so this order reaches an existing workspace only through Reset layout.
+ * what the user arranged — so this order reaches an existing workspace only through Reset bundle.
  */
 const PANELS: PanelDescriptor[] = [
   {

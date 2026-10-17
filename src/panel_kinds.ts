@@ -55,13 +55,13 @@ export const PANEL_KINDS: PanelKind[] = [
     /*
      * The BUNDLE a pick opens: the chosen run's report, its sections stacked one below the other as
      * its members, any of which opens as a panel of its own (viewer#31, 2026-10-14). The tab names
-     * the run, so two windows comparing two runs can be told apart at a glance.
+     * the run, so two windows comparing two runs can be told apart at a glance — and says *bundle*,
+     * the word the glossary gives the container, so the tab, the menu and ⇲ name it alike (#42).
      */
     id: 'run',
-    title: t('Run'),
-    menuTitle: t('Run report'),
+    title: t('Run bundle'),
     subtitle: () => useRunsStore().selectedRunId,
-    description: t('A run and the reports it left behind'),
+    description: t('The report of the chosen run, its sections one below the other — any of them opens as a panel of its own'),
     icon: 'form-sheet',
     order: 3,
     opensByDefault: true,
@@ -128,7 +128,7 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
   return {
     id: reportKindId(section.id),
     title: t(section.title),
-    description: t('A section of the run report as a panel of its own — ⇲ puts it back in the column'),
+    description: t('This section as a panel of its own — ⇲ puts it back into the bundle'),
     icon: LIST_SECTIONS.has(section.id) ? 'form-list' : 'form-sheet',
     order: PANEL_KINDS.length + 1 + index,
     opensByDefault: false,

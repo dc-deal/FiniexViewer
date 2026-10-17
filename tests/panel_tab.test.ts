@@ -55,15 +55,15 @@ describe('PanelTab', () => {
     expect(close.attributes('title')).toBe('Hide — the Panels menu shows it again')
   })
 
-  /** A section opened as a panel goes back into the column by its own control, not by its close. */
-  it('puts a section back into the column, and offers that on a section tab only', async () => {
+  /** A section opened as a panel goes back into the bundle by its own control, not by its close. */
+  it('puts a section back into the bundle, and offers that on a section tab only', async () => {
     const dock = useDockStore()
     const back = vi.fn()
     dock.backIntoColumn = back
     const section = mount(PanelTab, { props: { kindId: reportKindId('orders'), api: fakeApi() as unknown as DockviewPanelApi } })
     await section.find('.panel-tab-back').trigger('click')
     expect(back).toHaveBeenCalledWith('orders')
-    expect(section.find('.panel-tab-back').attributes('aria-label')).toBe('Back into the run report')
+    expect(section.find('.panel-tab-back').attributes('aria-label')).toBe('Back into the bundle')
 
     const main = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
     expect(main.find('.panel-tab-back').exists()).toBe(false)
@@ -114,7 +114,7 @@ describe('PanelTab', () => {
     openRun('failed')
     const wrapper = mount(PanelTab, { props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi } })
     const card = wrapper.findComponent(HoverCard)
-    expect(card.props('title')).toBe('Run · r1')
+    expect(card.props('title')).toBe('Run bundle · r1')
     const details = card.props('details') as Figure[]
     expect(details.map(row => row.label)).toEqual(['Shows', 'Status'])
     expect(details[1]).toMatchObject({ value: 'failed', tone: 'error' })
