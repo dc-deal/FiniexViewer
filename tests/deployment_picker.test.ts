@@ -146,6 +146,19 @@ describe('DeploymentPicker', () => {
     expect(rows(wrapper)).toHaveLength(1)
   })
 
+  /** The collapse watched only a CHANGE, so picking the deployment already chosen left the list open. */
+  it('folds the list away when the deployment already chosen is picked again', async () => {
+    useContextStore().selectDeployment('deploy_20260927_132812')
+    const wrapper = mountPicker([deployment()])
+    vi.spyOn(useDeploymentsStore(), 'selectDeployment').mockResolvedValue()
+    await wrapper.find('.picker-chosen button').trigger('click')
+    expect(rows(wrapper)).toHaveLength(1)
+
+    await rows(wrapper)[0]!.trigger('click')
+    expect(rows(wrapper)).toHaveLength(0)
+    expect(wrapper.find('.picker-chosen').exists()).toBe(true)
+  })
+
   describe('what the row leaves out, and where it went', () => {
     /**
      * The rank lives twice — on the column and on the cell — because the list owns the tracks

@@ -145,8 +145,12 @@ export const useDeploymentsStore = defineStore('deployments', () => {
     }
   }
 
-  /** A deployment the reader chose: it becomes the main link's, then it loads. */
+  /**
+   * A deployment the reader chose: it becomes the main link's, then it loads. The one already
+   * chosen loads again only where it failed or the ledger did not know it — the same rule as a run.
+   */
   async function selectDeployment(deploymentId: string): Promise<void> {
+    if (deploymentId === selectedDeploymentId.value && error.value === null && unknownDeploymentId.value === null) return
     context.selectDeployment(deploymentId)
     await loadDeployment(deploymentId)
   }

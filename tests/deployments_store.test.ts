@@ -177,6 +177,17 @@ describe('deployments_store', () => {
       expect(apiClient.getDeployment).toHaveBeenCalledWith(ID)
     })
 
+    /** The one already chosen is not a new choice: it is not cleared and fetched again for nothing. */
+    it('leaves the deployment already chosen as it is', async () => {
+      resolveAll()
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      await store.selectDeployment(ID)
+      await store.selectDeployment(ID)
+      expect(apiClient.getDeployment).toHaveBeenCalledTimes(1)
+      expect(store.detail).not.toBeNull()
+    })
+
     it('clears the previous deployment before loading the next', async () => {
       resolveAll()
       const store = useDeploymentsStore()

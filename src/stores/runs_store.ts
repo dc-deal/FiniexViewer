@@ -169,8 +169,16 @@ export const useRunsStore = defineStore('runs', () => {
     await loadSummary(runId)
   }
 
-  /** A NEW run: the context's cascade clears the old run's narrowing and mark, then it loads. */
+  /**
+   * A NEW run: the context's cascade clears the old run's narrowing and mark, then it loads.
+   *
+   * The run already chosen is not a new one. A second click on its row — or *Open this run* on a
+   * session that is already open — cleared the scenario in focus and the marked position and drew
+   * the summary through loading again, for nothing. It still loads again where the first attempt
+   * failed or the index did not know the run, so a pick stays the way to try once more.
+   */
   async function selectRun(runId: string): Promise<void> {
+    if (runId === selectedRunId.value && summaryError.value === null && unknownRunId.value === null) return
     context.selectRun(runId)
     await loadRun(runId)
   }

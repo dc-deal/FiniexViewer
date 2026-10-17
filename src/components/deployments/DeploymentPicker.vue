@@ -185,6 +185,15 @@ const open = ref(selectedDeploymentId.value === null)
 
 watch(selectedDeploymentId, id => { open.value = id === null })
 
+/**
+ * A pick folds the list away. The watch above sees only a CHANGE, so picking the deployment already
+ * chosen — after *Change deployment* opened the list again — left the list standing open.
+ */
+function pick(row: DeploymentRow): void {
+  open.value = false
+  void store.selectDeployment(row.deployment_id)
+}
+
 /** The chosen deployment's own row, for the one line the collapsed form shows. */
 const chosen = computed(() =>
   deployments.value.find(row => row.deployment_id === selectedDeploymentId.value) ?? null
@@ -242,7 +251,7 @@ const chosenMeta = computed(() => {
         :row-key="row => rowKey(row, deploymentsKey)"
         :is-picked="row => row.deployment_id === selectedDeploymentId"
         :row-card="card"
-        @pick="row => store.selectDeployment(row.deployment_id)"
+        @pick="pick"
       >
         <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
              this template owns the cells -->

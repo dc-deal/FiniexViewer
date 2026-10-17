@@ -275,6 +275,37 @@ describe('useRunsStore', () => {
     })
 
     /** The run report's to say — the run list it was picked from stays as it is. */
+    /**
+     * The run already chosen is not a new one: a second click on its row cleared the scenario in
+     * focus and drew the summary through loading again, for nothing. Where the first attempt
+     * failed, a pick is still the way to try once more.
+     */
+    it('leaves the run already chosen as it is, its focus included', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260615_130000')
+      store.toggleUnit('ETHUSD_blocks_03')
+
+      await store.selectRun('20260615_130000')
+      expect(store.selectedUnits).toEqual(['ETHUSD_blocks_03'])
+      expect(apiClient.getRunSummary).toHaveBeenCalledTimes(1)
+    })
+
+    it('loads the run already chosen once more where its summary failed', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      vi.mocked(apiClient.getRunSummary).mockRejectedValueOnce(new Error('boom')).mockResolvedValue(SUMMARY)
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260615_130000')
+      expect(store.summaryError).not.toBeNull()
+
+      await store.selectRun('20260615_130000')
+      expect(store.summaryError).toBeNull()
+      expect(store.summary).toEqual(SUMMARY)
+    })
+
     it('surfaces a summary failure as an error message, and leaves the index alone', async () => {
       vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
       vi.mocked(apiClient.getRunSummary).mockRejectedValue(new Error('boom'))
