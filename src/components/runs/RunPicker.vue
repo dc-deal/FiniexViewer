@@ -30,7 +30,7 @@ import { plural, t } from '@/translate'
 const runsStore = useRunsStore()
 const { runs, selectedRun, selectedRunId, loadingRuns } = storeToRefs(runsStore)
 
-// the narrowing rides in the URL under `runf` / `runq` / `runsort`, so a filtered index is a link
+// the narrowing is stored with the arrangement (`bars['run-picker']`), so a reload keeps it
 /**
  * A run whose purpose nobody stated. **THEIR word since 2026-10-09**, decided on their side after
  * we asked: *"`unstated` → `unknown`. It is the word our documents already use for exactly this."*
@@ -71,7 +71,7 @@ const facets: FacetDefinition<RunInfo>[] = [
    * `run-kinds` carries a section called *"`group` is the pipeline, never the nesting"*. Ours was
    * `Run type`, which sat beside a `Purpose` facet meaning what the run is FOR — nobody can tell
    * "type" from "purpose" by the words alone. Renamed 2026-10-10; the facet's id stays `group`,
-   * so a shared link is unaffected.
+   * so a stored narrowing is unaffected.
    */
   { id: 'group', label: 'Pipeline', valuesOf: row => stated(row.group) },
   // no `Set` facet: the list GROUPS by set, so the facet would offer the same partition twice —
@@ -325,8 +325,8 @@ function showsFamilyHead(key: string): boolean {
  * Which families are open. They start CLOSED, because the fold is the point: a list that opens
  * with every family expanded has folded nothing and is the 85 rows it was.
  *
- * Session state rather than stored: it is not what the reader is looking at (that is the run, and
- * it rides in the url) and not an arrangement they made of the workspace.
+ * Session state rather than stored: it is not what the reader is looking at (that is the run, kept
+ * in the link) and not an arrangement they made of the workspace.
  */
 const opened = ref(new Set<string>())
 

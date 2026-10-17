@@ -59,10 +59,11 @@ function readStored(): unknown {
 /**
  * Presentation state, and only presentation state.
  *
- * What the user is LOOKING AT — run, scenario, symbol, filters — belongs in the URL, because that
- * is what makes a shared link mean something. How they ARRANGED it belongs here. The two never
- * swap places: a layout in a link shares a preference nobody asked for, and a selection in local
- * storage makes the link meaningless.
+ * What the user is LOOKING AT — run, scenario, symbol, filters — belongs to the link and the
+ * arrangement (`arrangement.v1`), stored per browser tab. How they prefer the app to BEHAVE belongs
+ * here, shared by every tab. The two never swap places: a preference stored with one tab's
+ * selection would leave the other tabs, and a selection here would follow the reader into a tab
+ * comparing another run.
  *
  * One versioned key, so the whole of it moves in one step the day a backend serves it per user.
  */
