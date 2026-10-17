@@ -3,18 +3,21 @@ import { computed } from 'vue'
 import type { DockviewPanelApi } from 'dockview-vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
-import { panelKind, sectionOfKind } from '@/panel_kinds'
+import { tabCard } from '@/components/dock/tab_card'
+import { useSectionStates } from '@/composables/use_section_states'
+import { RUN_BUNDLE, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
-import type { Figure } from '@/types/figure_types'
+import type { PanelKind } from '@/types/panel_types'
 import { t } from '@/translate'
 
 /**
  * A panel's tab: the FORM it takes, its title, and one status where the status says something. The
  * icon is a list or a chart rather than the content, so two lists read alike and the title tells
- * them apart. Its card says what the panel is for, and the status in words.
+ * them apart. Its card says what the panel is for, the bundle it belongs to, what it follows and
+ * chooses, and the status in words (`tab_card.ts`).
  *
  * Its ✕ HIDES the panel, alike for every panel — the Panels menu shows it again where it stood. A
- * section of the run report opened as a panel also carries ⇲, which puts it back into the column.
+ * section of the run bundle opened as a panel also carries ⇲, which puts it back into the bundle.
  *
  * @param kindId The panel's kind.
  * @param api The panel's own handle in the dock, which also closes it.
@@ -39,14 +42,18 @@ const status = computed(() => kind?.status?.() ?? null)
 /** The panel stands with nothing of the chosen run to show — said by the title, never by hiding. */
 const muted = computed(() => kind?.muted?.() ?? false)
 
-const details = computed<Figure[]>(() => [
-  ...(kind ? [{ label: t('Shows'), value: kind.description }] : []),
-  ...(status.value ? [{ label: t('Status'), value: status.value.word, tone: status.value.role }] : []),
-])
+/** The run bundle's members standing in its column, whose links its card says as its own. */
+const states = kind?.id === RUN_BUNDLE ? useSectionStates() : null
+const members = computed<PanelKind[]>(() => (states?.value ?? [])
+  .filter(state => state.place === 'column' && !state.absent)
+  .flatMap(state => panelKind(reportKindId(state.section.id)) ?? []))
+
+/** Built where the tab is drawn, so the subtitle, the status and the members follow their stores. */
+const card = computed(() => tabCard(kind, props.api.title ?? props.kindId, members.value))
 </script>
 
 <template>
-  <HoverCard :title="subtitle ? `${title} · ${subtitle}` : title" :details="details">
+  <HoverCard :title="card.title" :details="card.details">
     <div class="panel-tab" :data-kind="kindId">
       <AppIcon v-if="kind" :name="kind.icon" class="panel-tab-icon" />
       <span class="panel-tab-title" :class="{ muted }">{{ title }}</span>

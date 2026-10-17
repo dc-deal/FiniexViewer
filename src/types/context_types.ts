@@ -29,6 +29,12 @@ export interface MarketContext {
 }
 
 /**
+ * One part of a link a panel can follow or choose: the run, its scenario in focus (`units`), its
+ * marked position, the deployment, the market. Ours, so a union — a typo fails the type-check.
+ */
+export type LinkKey = 'run' | 'units' | 'position' | 'deployment' | 'market'
+
+/**
  * Everything one LINK holds — the selection the panels of that link share. A panel reads its link
  * and writes it only through the context store's actions.
  */

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { PANEL_KINDS, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { PANEL_KINDS, RUN_BUNDLE, allPanelKinds, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
 import { allPanels } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
 
@@ -85,5 +85,48 @@ describe('panel_kinds', () => {
     }
     expect(panelKind(reportKindId('trade-history'))?.quickBar).toBeDefined()
     expect(panelKind(reportKindId('executive'))?.quickBar).toBeUndefined()
+  })
+
+  /**
+   * The relations are DATA (viewer#42): what a panel follows and chooses, and the bundle it is
+   * part of. A tab's card says them in words, so a wrong declaration is a wrong sentence on screen.
+   */
+  describe('the relations every kind declares', () => {
+    it('makes every section a member of the run bundle, and no other kind a member of anything', () => {
+      for (const kind of allPanelKinds()) {
+        const member = sectionOfKind(kind.id) !== null
+        expect(kind.relations.memberOf, kind.id).toBe(member ? RUN_BUNDLE : null)
+      }
+      expect(panelKind(RUN_BUNDLE)).not.toBeNull()
+    })
+
+    it('lists a key once at most', () => {
+      for (const kind of allPanelKinds()) {
+        expect(new Set(kind.relations.follows).size, kind.id).toBe(kind.relations.follows.length)
+        expect(new Set(kind.relations.chooses).size, kind.id).toBe(kind.relations.chooses.length)
+      }
+    })
+
+    /** A section whose rows the narrowing filters shows another scenario's rows when it moves. */
+    it('has a section the narrowing filters follow the scenario in focus, and one that only marks it not', () => {
+      for (const section of allPanels()) {
+        const follows = panelKind(reportKindId(section.id))?.relations.follows ?? []
+        if (section.narrowing === 'filters') expect(follows, section.id).toContain('units')
+        if (section.narrowing === 'marks') expect(follows, section.id).not.toContain('units')
+      }
+    })
+
+    it('follows nothing that no panel chooses', () => {
+      const chosen = new Set(allPanelKinds().flatMap(kind => kind.relations.chooses))
+      for (const kind of allPanelKinds()) {
+        for (const key of kind.relations.follows) expect(chosen.has(key), `${kind.id} follows ${key}`).toBe(true)
+      }
+    })
+
+    // the issue's own anchors, so a change to them is a decision and not a slip
+    it('has the run list choose the run, and the run chart follow the run and the scenario it chooses', () => {
+      expect(panelKind('runs')?.relations).toEqual({ memberOf: null, follows: [], chooses: ['run'] })
+      expect(panelKind('run-chart')?.relations).toEqual({ memberOf: null, follows: ['run', 'units'], chooses: ['units'] })
+    })
   })
 })

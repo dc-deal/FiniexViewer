@@ -18,6 +18,9 @@ function outcomeStatus(outcome: string | null): TabStatus | null {
   return { icon: failed ? 'status-error' : 'status-warning', word: outcome, role: failed ? 'error' : 'warning' }
 }
 
+/** The run bundle's kind: the panel whose column holds the run report's sections as its members. */
+export const RUN_BUNDLE = 'run'
+
 /**
  * Every kind of docked panel, in the SUGGESTED ORDER: from the general to the particular — a
  * deployment holds runs, a run has its chart (operator, 2026-10-13). The first arrangement and a
@@ -38,6 +41,8 @@ export const PANEL_KINDS: PanelKind[] = [
     order: 1,
     opensByDefault: true,
     component: defineAsyncComponent(() => import('@/views/DeploymentsView.vue')),
+    // the deployment it follows is the one it chooses itself until a bundle shows it (#43)
+    relations: { memberOf: null, follows: ['deployment'], chooses: ['deployment', 'run'] },
   },
   {
     // the LIST: a pick here chooses the run and brings its report to the front
@@ -50,6 +55,8 @@ export const PANEL_KINDS: PanelKind[] = [
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunsView.vue')),
+    // it marks the chosen run on a list that stays whole: a list does not follow the pick it shows
+    relations: { memberOf: null, follows: [], chooses: ['run'] },
   },
   {
     /*
@@ -58,7 +65,7 @@ export const PANEL_KINDS: PanelKind[] = [
      * the run, so two windows comparing two runs can be told apart at a glance — and says *bundle*,
      * the word the glossary gives the container, so the tab, the menu and ⇲ name it alike (#42).
      */
-    id: 'run',
+    id: RUN_BUNDLE,
     title: t('Run bundle'),
     subtitle: () => useRunsStore().selectedRunId,
     description: t('The report of the chosen run, its sections one below the other — any of them opens as a panel of its own'),
@@ -69,6 +76,9 @@ export const PANEL_KINDS: PanelKind[] = [
     component: defineAsyncComponent(() => import('@/views/RunReportView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/RunsQuickBar.vue')),
     status: () => outcomeStatus(useRunsStore().selectedRun?.run_outcome ?? null),
+    // its own line follows the run; what its members follow and choose its card adds while they
+    // stand in its column — a member open as a panel of its own takes its links with it
+    relations: { memberOf: null, follows: ['run'], chooses: [] },
   },
   {
     /*
@@ -87,6 +97,9 @@ export const PANEL_KINDS: PanelKind[] = [
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunChartView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/RunChartQuickBar.vue')),
+    // it centres on a chosen position only where that position is of the unit it shows, so the
+    // position is not claimed
+    relations: { memberOf: null, follows: ['run', 'units'], chooses: ['units'] },
   },
   {
     // the FREE chart: any market, no run — opened from the Panels menu
@@ -98,6 +111,7 @@ export const PANEL_KINDS: PanelKind[] = [
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/ChartView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/ChartQuickBar.vue')),
+    relations: { memberOf: null, follows: ['market'], chooses: ['market'] },
   },
 ]
 
@@ -106,7 +120,7 @@ export const PANEL_KINDS: PanelKind[] = [
  * the run list where none is yet (viewer#31, decided 2026-10-14).
  */
 export function firstActiveKind(): string {
-  return useContextStore().main.run.id !== null ? 'run' : 'runs'
+  return useContextStore().main.run.id !== null ? RUN_BUNDLE : 'runs'
 }
 
 /** The sections whose panel is a LIST; every other section reads as a sheet of figures. */
@@ -144,6 +158,7 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
       ? { icon: 'status-error', word: t('could not be loaded'), role: 'error' }
       : null,
     muted: () => useRunSectionsStore().lacks(section.source),
+    relations: { memberOf: RUN_BUNDLE, follows: section.follows, chooses: section.chooses },
   }
 }
 
@@ -159,4 +174,9 @@ const REPORT_KINDS: PanelKind[] = allPanels().map(reportKind)
 /** A kind by its id, or null for one this version does not know — a stored panel can outlive it. */
 export function panelKind(id: string): PanelKind | null {
   return PANEL_KINDS.find(kind => kind.id === id) ?? REPORT_KINDS.find(kind => kind.id === id) ?? null
+}
+
+/** Every kind there is: the top level and one per section of the run report. */
+export function allPanelKinds(): PanelKind[] {
+  return [...PANEL_KINDS, ...REPORT_KINDS]
 }

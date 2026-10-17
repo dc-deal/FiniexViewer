@@ -1,5 +1,24 @@
 import type { Component } from 'vue'
+import type { LinkKey } from '@/types/context_types'
 import type { IconName } from '@/types/icon_types'
+
+/**
+ * How a panel relates to the others — declared as data, so its tab's card can say it in words and
+ * a test can hold every kind to it (viewer#42, VS Code's view register as the model). "Who controls
+ * whom" is the writer and the reader of a link, never one panel over another.
+ */
+export interface PanelRelations {
+  /** The bundle it is a member of — the kind whose column holds it — or null. */
+  memberOf: string | null
+  /**
+   * The link keys whose change changes what it SHOWS: other figures, other rows, another unit
+   * drawn. A key it only marks a row by is not followed — a list that stays whole does not follow
+   * the pick it shows.
+   */
+  follows: LinkKey[]
+  /** The link keys a control in its content chooses. */
+  chooses: LinkKey[]
+}
 
 /**
  * What a panel declares about itself. A panel is presentation only: it receives its model as a
@@ -22,6 +41,9 @@ export interface PanelDescriptor {
    * you see here is a part*, which is untrue of a list that still shows every row.
    */
   narrowing: 'filters' | 'marks' | null
+  /** What the section follows and chooses, the same in the bundle and as a panel of its own. */
+  follows: LinkKey[]
+  chooses: LinkKey[]
 }
 
 /**
@@ -70,6 +92,8 @@ export interface PanelKind {
   status?: () => TabStatus | null
   /** Its tab's title dimmed: the panel stands, with nothing of the chosen run to show. */
   muted?: () => boolean
+  /** What it follows and chooses, and the bundle it belongs to. Required: every kind declares it. */
+  relations: PanelRelations
 }
 
 /** Per-panel arrangement, the part the user controls and the part that is persisted. */

@@ -1350,12 +1350,47 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
   back, because a docked panel stays mounted where a route was entered anew.
 - **`PanelTab`** shows the form icon, the title, ONE status where it says something, and ✕, which
   hides the panel; a section's tab also carries ⇲, *Back into the bundle*. Its card says what the
-  panel is for and the status in words. The run bundle's tab carries the
+  panel is for, the bundle it is part of, what it follows and chooses, and the status in words —
+  one builder, `tab_card.ts`, from the kind's declared relations (below). A section's card names
+  the whole run in its heading, which its tab has no room for. The run bundle's tab carries the
   backend's grade of the open run (`run_outcome`) where it is not `success` — the icon in the
   warning or error role, its word read out with the tab and written in the card. Where everything
   went well, the tab says nothing. **`dock_theme.css`** gives
   dockview's two themes this app's tokens: a tab behind another keeps the primary ink, because
   muted ink means *disabled* here, and the front tab is marked by its surface AND an accent rule.
+
+**What a panel follows and chooses is DATA on its kind** (viewer#42 — VS Code's register of views
+as the model: a register, the link it reads, one `reveal` that shows a view). `PanelKind.relations`
+names the bundle a kind is a member of, the link keys it FOLLOWS — a change of which changes what it
+shows: other figures, other rows, another unit drawn — and the keys a control in it CHOOSES. A key it
+only marks a row by is not followed: a list that stays whole does not follow the pick it shows. A
+section declares its own in the registry, the same in the bundle and as a panel. Who controls whom
+is the chooser and the follower of a key, never one panel over another.
+
+```
+kind              member of   follows                  chooses
+Deployments       —           deployment ¹             deployment · run
+Runs              —           —                        run
+Run bundle        —           run  + its members ²     its members ²
+Run chart         —           run · scenario           scenario
+Free chart        —           market ¹                 market
+Scenarios         Run bundle  run                      scenario
+Trade History     Run bundle  run · scenario           position
+Orders            Run bundle  run · scenario           position
+Booking Periods   Run bundle  run · scenario           —
+Warnings & Errors Run bundle  run · scenario           —
+every other       Run bundle  run                      —
+```
+
+¹ Said on the card only where ANOTHER kind can choose the key: a key nobody else chooses is the
+panel's own pick, and *Follows* would send the reader looking for a panel that sets it. ² A bundle
+says what the members standing in its column follow and choose; one open as a panel of its own,
+hidden, or absent for the run takes its links with it. The card words them in one fixed phrase per
+key, in the link's order: *Follows — the chosen run and the scenario in focus · Chooses — the
+position · Part of — Run bundle*. A test holds every kind to its declaration: a section the
+narrowing filters follows the scenario, one that only marks it does not, and nothing is followed
+that no kind chooses. Not claimed: the run chart centres on a chosen position only where it is of
+the unit it shows, and the run header links a deployment only on a deployment's session.
 
 **A section of the run bundle opens as a panel of its own** (viewer#31, decided 2026-10-14). The
 run bundle stays one column and a section the reader wants beside another is pulled out: the button

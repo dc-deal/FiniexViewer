@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import type { DockviewApi, GroupNavigationDirection, IDockviewPanel } from 'dockview-vue'
 import { reconcileLayout } from '@/components/dock/dock_layout'
-import { PANEL_KINDS, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { PANEL_KINDS, RUN_BUNDLE, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
 import { useLayoutStore } from '@/stores/layout_store'
@@ -18,7 +18,7 @@ const SAVE_DELAY_MS = 300
 const HOST_COMPONENT = 'host'
 
 /** The panel the run report's column stands in — the bundle, where a section goes back to. */
-const COLUMN_KIND = 'run'
+const COLUMN_KIND = RUN_BUNDLE
 
 /** The run list, beside which the bundle a pick opens stands. */
 const LIST_KIND = 'runs'

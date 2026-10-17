@@ -52,6 +52,8 @@ const PANELS: PanelDescriptor[] = [
     // it READS the narrowing and still narrows nothing: its figures are the whole run's, and its
     // own scope line says so where a narrowing is set — a note or a frame beside it would contradict
     narrowing: null,
+    follows: ['run'],
+    chooses: [],
   },
   {
     /*
@@ -67,6 +69,8 @@ const PANELS: PanelDescriptor[] = [
     source: 'broker',
     defaultOpen: true,
     narrowing: null,
+    follows: ['run'],
+    chooses: [],
   },
   {
     // Ahead of the breakdowns: it is the only COMPLETE list of what the run set out to do, and a
@@ -79,6 +83,9 @@ const PANELS: PanelDescriptor[] = [
     source: 'scenarioRoster',
     defaultOpen: false,
     narrowing: 'marks',
+    // it MARKS the scenario in focus on a list that stays whole, so it does not follow it — it chooses it
+    follows: ['run'],
+    chooses: ['units'],
   },
   {
     // The bookkeeping stretches the run was divided into, and the completeness check over them.
@@ -91,6 +98,8 @@ const PANELS: PanelDescriptor[] = [
     source: 'bookingPeriods',
     defaultOpen: true,
     narrowing: 'filters',
+    follows: ['run', 'units'],
+    chooses: [],
   },
   {
     /*
@@ -109,6 +118,8 @@ const PANELS: PanelDescriptor[] = [
     source: 'aggregated',
     defaultOpen: false,
     narrowing: null,
+    follows: ['run'],
+    chooses: [],
   },
   {
     // The only place the individual trades exist — every other section is already summed over
@@ -120,6 +131,9 @@ const PANELS: PanelDescriptor[] = [
     source: 'tradeHistory',
     defaultOpen: false,
     narrowing: 'filters',
+    // the position it chooses only marks its rows, so it is not followed here; the run chart centres on it
+    follows: ['run', 'units'],
+    chooses: ['position'],
   },
   {
     /*
@@ -139,6 +153,8 @@ const PANELS: PanelDescriptor[] = [
     source: 'orders',
     defaultOpen: false,
     narrowing: 'filters',
+    follows: ['run', 'units'],
+    chooses: ['position'],
   },
   {
     // Deliberately second, ahead of the console's own late placement: "can this run be trusted"
@@ -150,6 +166,8 @@ const PANELS: PanelDescriptor[] = [
     source: 'warningsErrors',
     defaultOpen: true,
     narrowing: 'filters',
+    follows: ['run', 'units'],
+    chooses: [],
   },
   {
     id: 'feed-health',
@@ -161,6 +179,8 @@ const PANELS: PanelDescriptor[] = [
     source: 'feedHealth',
     defaultOpen: false,
     narrowing: null,
+    follows: ['run'],
+    chooses: [],
   },
   {
     // Provenance, beside the header: what the run was COMMISSIONED with, resolved from the
@@ -172,6 +192,8 @@ const PANELS: PanelDescriptor[] = [
     source: 'config',
     defaultOpen: false,
     narrowing: null,
+    follows: ['run'],
+    chooses: [],
   },
   {
     /*
@@ -193,6 +215,9 @@ const PANELS: PanelDescriptor[] = [
     // the reader who needs it opens it, and the one who never does hides it.
     defaultOpen: false,
     narrowing: null,
+    // its link to a deployment exists on a deployment's session only, so it is not claimed for every run
+    follows: ['run'],
+    chooses: [],
   },
 ]
 

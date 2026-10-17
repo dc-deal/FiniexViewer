@@ -116,8 +116,22 @@ describe('PanelTab', () => {
     const card = wrapper.findComponent(HoverCard)
     expect(card.props('title')).toBe('Run bundle · r1')
     const details = card.props('details') as Figure[]
-    expect(details.map(row => row.label)).toEqual(['Shows', 'Status'])
-    expect(details[1]).toMatchObject({ value: 'failed', tone: 'error' })
+    // what is on it, never an exact set: a new line in the card is not a defect of this one
+    expect(details.find(row => row.label === 'Shows')?.value).toBeTruthy()
+    expect(details.find(row => row.label === 'Status')).toMatchObject({ value: 'failed', tone: 'error' })
+  })
+
+  /**
+   * A section's tab has no room for the run; its card names the whole id, so two windows comparing
+   * two runs are told apart there too (viewer#42).
+   */
+  it('names the whole run in the card of a section panel, not on its tab', () => {
+    openRun('success')
+    const wrapper = mount(PanelTab, {
+      props: { kindId: reportKindId('trade-history'), api: fakeApi() as unknown as DockviewPanelApi },
+    })
+    expect(wrapper.findComponent(HoverCard).props('title')).toBe('Trade History · r1')
+    expect(wrapper.find('.panel-tab-subtitle').exists()).toBe(false)
   })
 
   /** The panel stands with nothing of the chosen run to show — said by the title, never by hiding. */
