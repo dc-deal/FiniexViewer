@@ -3,6 +3,7 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RunChartView from '@/views/RunChartView.vue'
 import RunChartQuickBar from '@/components/RunChartQuickBar.vue'
+import AppSpinner from '@/components/base/AppSpinner.vue'
 import { useContextStore } from '@/stores/context_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
@@ -109,6 +110,22 @@ describe('RunChartView', () => {
     const wrapper = await mountView()
     expect(wrapper.find('.candle-chart').exists()).toBe(false)
     expect(wrapper.text()).toContain(`The archive holds no bars in the window this unit covered: ${useRunChartStore().unit!.name}`)
+  })
+
+  /** Without its index row the chart said "names no market" through every first load of the index. */
+  it('waits for the index rather than saying the run names no market', async () => {
+    useContextStore().selectRun(RUN)
+    useRunsStore().loadingRuns = true
+    const wrapper = await mountView()
+    expect(wrapper.text()).not.toContain('names no market')
+    expect(wrapper.findComponent(AppSpinner).exists()).toBe(true)
+  })
+
+  it('names the run the index no longer holds', async () => {
+    useContextStore().selectRun('gone_run')
+    useRunsStore().unknownRunId = 'gone_run'
+    const wrapper = await mountView()
+    expect(wrapper.text()).toContain('The run you had open is no longer in the index: gone_run')
   })
 
   it('says a run names no market where its source has arrived without one', async () => {

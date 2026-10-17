@@ -65,6 +65,25 @@ describe('ReportSection', () => {
     expect(mountSection('trade-history').find('.notice.absent').text()).toContain('No run is chosen')
   })
 
+  /**
+   * A run restored from storage has no index row until the index has arrived. The panel said "No
+   * run is chosen" through every first load; it is loading, and says nothing until it knows.
+   */
+  it('stands loading while the index is on its way, a run already chosen', () => {
+    useContextStore().selectRun('r1')
+    useRunsStore().loadingRuns = true
+    const wrapper = mountSection('trade-history')
+    expect(wrapper.find('.panel-loading').exists()).toBe(true)
+    expect(wrapper.find('.notice.absent').exists()).toBe(false)
+  })
+
+  it('names the run the index no longer holds, rather than saying none is chosen', () => {
+    useContextStore().selectRun('r9')
+    useRunsStore().unknownRunId = 'r9'
+    expect(mountSection('trade-history').find('.notice.absent').text())
+      .toBe('The run you had open is no longer in the index: r9')
+  })
+
   /** Every failure among what it reads says so — the column leaves it to this panel. */
   it('says every failure among the slots it reads', () => {
     chooseRun()

@@ -19,7 +19,7 @@ import { t } from '@/translate'
 const chart = useRunChartStore()
 const { units, unit, waiting, unitCoverage, coverageError, timeframe, bars, truncated, loading, error, marks, focusAt }
   = storeToRefs(chart)
-const { selectedRunId } = storeToRefs(useRunsStore())
+const { selectedRunId, selectedRun, loadingRuns, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
 // the archive is asked only while a run chart is on show
 onMounted(() => chart.attach())
@@ -30,6 +30,17 @@ onUnmounted(() => chart.detach())
   <div class="run-chart-view">
     <div v-if="!selectedRunId" class="state-overlay">
       <span class="hint">{{ t('Choose a run to see its trades on the candles') }}</span>
+    </div>
+    <!-- the run's index row comes before anything about its units: without it the chart said
+         "names no market" through every first load of the index — the run report's own order -->
+    <div v-else-if="loadingRuns" class="state-overlay">
+      <AppSpinner />
+    </div>
+    <div v-else-if="unknownRunId" class="state-overlay">
+      <span class="hint">{{ t('The run you had open is no longer in the index') }}: {{ unknownRunId }}</span>
+    </div>
+    <div v-else-if="!selectedRun && indexError" class="state-overlay">
+      <span class="error-msg">{{ indexError }}</span>
     </div>
     <div v-else-if="waiting" class="state-overlay">
       <AppSpinner />
