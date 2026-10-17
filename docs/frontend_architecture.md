@@ -1435,6 +1435,12 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
   marked row; for a section in the column, the run bundle comes to the front first, since the jump
   may start in a section panel. A hint above the column (`open-as-panel`) says how a section comes
   out and goes back.
+- **A bundle the reader emptied says so** (viewer#42): where every section stands as a panel of its
+  own or is hidden, the column gives way to one sentence — *⇲ on a panel's tab brings it back here,
+  the Panels menu shows a hidden one* — and neither the frame nor the hint, which says the same,
+  stands around nothing. Where what is left is sections the run does not carry, the sentence speaks
+  of the sections it carries. A run that carries none had nothing taken out, and the lines above the
+  column already say why (`use_section_states.ts` holds where each section stands).
 
 **Closing hides, alike for every panel — and the Panels menu shows it again where it stood**
 (viewer#31, 2026-10-14). The section bar above the column is gone; the Panels menu took its place.

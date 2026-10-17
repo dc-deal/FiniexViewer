@@ -6,6 +6,7 @@ import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
 import { reportKindId } from '@/panel_kinds'
+import { useSectionStates } from '@/composables/use_section_states'
 import { startedAt } from '@/components/runs/report_format'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
 import AppButton from '@/components/base/AppButton.vue'
@@ -41,6 +42,18 @@ function saidHere(slot: string): boolean {
   const readers = sectionsStore.sectionsOfSlot(slot)
   return !readers.length || readers.some(id => !openIds.value.includes(reportKindId(id)))
 }
+
+/**
+ * The reader has taken every member out: each section stands as a panel of its own or is hidden, or
+ * is one the run does not carry. The bundle then says why, rather than standing as an empty frame
+ * (#42). A run that carries no section at all is not this — the lines above already say why it has
+ * none, and nothing was taken out.
+ */
+const sectionStates = useSectionStates()
+const emptied = computed(() => sectionStates.value.some(state => state.place !== 'column')
+  && !sectionStates.value.some(state => state.place === 'column' && !state.absent))
+/** Literally every section out or hidden; otherwise the run lacks the ones still in the column. */
+const everySectionOut = computed(() => sectionStates.value.every(state => state.place !== 'column'))
 
 /** The chosen run's pipeline, name and start — one line, cut short where the panel is narrow. */
 const chosenMeta = computed(() => {
@@ -155,13 +168,20 @@ const missingSections = computed(() => {
         </p>
         <!-- how a section comes out of the column, and how it goes back; and how a panel docks
              along a whole edge of the dock, which nothing on screen shows until a tab is dragged -->
-        <HintLine id="open-as-panel" />
+        <!-- an empty bundle says the same as this hint and more, so the hint stands down -->
+        <HintLine v-if="!emptied" id="open-as-panel" />
         <HintLine id="dock-edges" />
+        <p v-if="emptied" class="notice empty-bundle">
+          {{ everySectionOut
+            ? t("Every section stands as a panel of its own or is hidden — ⇲ on a panel's tab brings it back here, the Panels menu shows a hidden one.")
+            : t("Every section this run carries stands as a panel of its own or is hidden — ⇲ on a panel's tab brings it back here, the Panels menu shows a hidden one.") }}
+        </p>
         <!-- the whole manipulated area is framed, so it can never be mistaken for the whole run.
              The frame is the second channel beside the colour: a reader who cannot separate the
              hues still sees an edge that was not there before. What is narrowed is said in the
-             quick bar beside the tab, where saying it moves nothing. -->
-        <div class="panels" :class="{ narrowed: selectedUnits.length > 0 }">
+             quick bar beside the tab, where saying it moves nothing. A frame around nothing frames
+             no part, so an empty bundle draws none. -->
+        <div v-else class="panels" :class="{ narrowed: selectedUnits.length > 0 }">
           <PanelColumn :sources="sources" :pending="pending" />
         </div>
       </template>

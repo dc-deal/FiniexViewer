@@ -3,8 +3,11 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RunReportView from '@/views/RunReportView.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
+import { useLayoutStore } from '@/stores/layout_store'
+import { allPanels } from '@/panel_registry'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
 
@@ -61,6 +64,37 @@ describe('RunReportView', () => {
     useRunsStore().unknownRunId = 'gone_run'
     const wrapper = mount(RunReportView)
     expect(wrapper.text()).toContain('gone_run')
+  })
+
+  /**
+   * Every member taken out: the bundle says why it is empty instead of standing as an empty frame,
+   * and the hint that says the same stands down (#42).
+   */
+  it('says why it is empty where every section stands as a panel of its own or is hidden', () => {
+    chooseRun()
+    const layout = useLayoutStore()
+    for (const section of allPanels()) layout.hide(section.id)
+    const wrapper = mount(RunReportView)
+    expect(wrapper.find('.empty-bundle').text())
+      .toBe("Every section stands as a panel of its own or is hidden — ⇲ on a panel's tab brings it back here, the Panels menu shows a hidden one.")
+    expect(wrapper.findComponent(PanelColumn).exists()).toBe(false)
+    expect(wrapper.findAllComponents(HintLine).map(hint => hint.props('id'))).not.toContain('open-as-panel')
+  })
+
+  /** What stays in the column the run does not carry, so the sentence speaks of what it carries. */
+  it('speaks of the sections the run carries where the rest it does not', () => {
+    chooseRun()
+    // the run header is the one section a chosen run always carries; the others this run lacks
+    useLayoutStore().hide('run-header')
+    const wrapper = mount(RunReportView)
+    expect(wrapper.find('.empty-bundle').text()).toContain('Every section this run carries stands as a panel of its own')
+  })
+
+  /** A run that carries nothing has nothing taken out of it: the lines above say why, not this. */
+  it('says nothing of an empty bundle where the reader took nothing out', () => {
+    chooseRun()
+    const wrapper = mount(RunReportView)
+    expect(wrapper.find('.empty-bundle').exists()).toBe(false)
   })
 
   /** The summary failing is a section failing: it says so, and the sections that did load stay. */
