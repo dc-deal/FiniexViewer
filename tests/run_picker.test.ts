@@ -365,6 +365,66 @@ describe('RunPicker', () => {
       await flushPromises()
       expect(rowIds(wrapper)).toEqual(['pickedone', 'other'])
     })
+
+    /**
+     * Opened WITH the choice rather than held open: a heading that could not close the family was a
+     * button that did nothing. *Show in list* opens it again where the reader closed it.
+     */
+    it('lets the reader close the family of the chosen run, and opens it again when the row is asked for', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'pickedone', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
+        run({ run_id: 'other', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
+      ])
+      useContextStore().selectRun('pickedone')
+      await flushPromises()
+      await wrapper.find('.record-group').trigger('click')
+      expect(rowIds(wrapper)).toEqual([])
+
+      useRunsStore().askForChosenRow()
+      await flushPromises()
+      expect(rowIds(wrapper)).toEqual(['pickedone', 'other'])
+    })
+  })
+
+  /** A chosen run the filter hides is said where the list is, with the way to see it. */
+  it('says where the filter hides the chosen run, and shows every run on request', async () => {
+    const wrapper = mountPicker([run({ run_id: 'kept' }), run({ run_id: 'chosen' })])
+    useContextStore().selectRun('chosen')
+    await flushPromises()
+    expect(wrapper.find('.chosen-hidden').exists()).toBe(false)
+
+    await searchFor(wrapper, 'set_kept')
+    expect(wrapper.find('.chosen-hidden').text()).toContain('The chosen run is not in this list')
+
+    await wrapper.find('.chosen-hidden button').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.chosen-hidden').exists()).toBe(false)
+    expect(rowIds(wrapper)).toContain('chosen')
+  })
+
+  /**
+   * Whether the chosen row stands in the list's own view is the browser's to measure: the list
+   * hands the answer to the store, and takes it back when it goes.
+   */
+  it('reports whether the chosen row stands in its view, and takes it back on unmount', async () => {
+    let report: ((entries: { isIntersecting: boolean }[]) => void) | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: (entries: { isIntersecting: boolean }[]) => void) { report = callback }
+      observe(): void {}
+      disconnect(): void {}
+    })
+    try {
+      const wrapper = mountPicker([run({ run_id: 'chosen' })])
+      useContextStore().selectRun('chosen')
+      await flushPromises()
+      report!([{ isIntersecting: true }])
+      expect(useRunsStore().chosenRowInView).toBe(true)
+
+      wrapper.unmount()
+      expect(useRunsStore().chosenRowInView).toBe(false)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('narrows the list by a facet, and says how many of how many are left', async () => {

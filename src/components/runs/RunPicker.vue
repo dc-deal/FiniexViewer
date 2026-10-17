@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch, watchPostEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
+import AppButton from '@/components/base/AppButton.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
@@ -330,11 +331,61 @@ function showsFamilyHead(key: string): boolean {
  */
 const opened = ref(new Set<string>())
 
+function openFamily(key: string): void {
+  if (!opened.value.has(key)) opened.value = new Set([...opened.value, key])
+}
+
+/**
+ * The chosen run stays reachable: its family opens WITH the choice, wherever the choice was made,
+ * and again when *Show in list* asks for its row. Opened once rather than held open — a family
+ * heading that could not close was a button that did nothing.
+ */
+watch(() => (selectedRun.value ? familyOf(selectedRun.value) : null), key => { if (key) openFamily(key) },
+  { immediate: true })
+watch(() => runsStore.chosenRowAsked, () => { if (selectedRun.value) openFamily(familyOf(selectedRun.value)) })
+
 function isFamilyOpen(key: string): boolean {
-  // the chosen run stays reachable: its family is open whether or not anyone opened it
-  if (selectedRun.value && familyOf(selectedRun.value) === key) return true
   return opened.value.has(key)
 }
+
+/**
+ * The chosen run is not among the rows the filter or the search leaves — said where the list is,
+ * with the way to see it, instead of a row that is simply not there to scroll to.
+ */
+const chosenHidden = computed(() => selectedRun.value !== null && runs.value.length > 0
+  && !shown.value.some(row => row.run_id === selectedRun.value!.run_id))
+
+function showEveryRun(): void {
+  selection.value = {}
+  search.value = ''
+}
+
+const listRef = ref<{ $el: HTMLElement } | null>(null)
+
+/**
+ * Whether the chosen run's row stands inside the list's own view: the run bundle offers *Show in
+ * list* only where it does not. Measured by the browser — an IntersectionObserver rooted at the
+ * list — and aimed anew whenever the rows may have moved: another run, another filter, a family
+ * opened, the index arriving. A panel behind another tab keeps its rows laid out, so whether the
+ * list is on show at all is the dock's to say, not this.
+ */
+watchPostEffect(onCleanup => {
+  void [selectedRunId.value, shown.value, loadingRuns.value, opened.value]
+  runsStore.chosenRowInView = false
+  const list = listRef.value?.$el
+  if (!list?.querySelector || typeof IntersectionObserver === 'undefined') return
+  const row = list.querySelector('.record-row.picked:not(.record-unseen)')
+  if (!row) return
+  // the heading stays at the top of the list, so a row under it is not in view
+  const head = list.querySelector('.record-head')?.getBoundingClientRect().height ?? 0
+  const observer = new IntersectionObserver(
+    entries => { runsStore.chosenRowInView = entries.some(entry => entry.isIntersecting) },
+    { root: list, rootMargin: `-${Math.round(head)}px 0px 0px 0px`, threshold: 0.6 },
+  )
+  observer.observe(row)
+  onCleanup(() => observer.disconnect())
+})
+onUnmounted(() => { runsStore.chosenRowInView = false })
 
 function toggleFamily(key: string): void {
   const next = new Set(opened.value)
@@ -454,6 +505,10 @@ function choose(runId: string): void {
         :search-placeholder="t('Search runs by id or set')"
       />
 
+      <p v-if="chosenHidden" class="picker-hint chosen-hidden">
+        {{ t('The chosen run is not in this list — the filter or the search hides it') }}
+        <AppButton variant="quiet" @click="showEveryRun">{{ t('Show every run') }}</AppButton>
+      </p>
       <p v-if="!runs.length" class="picker-hint">
         {{ t('The backend reports no runs — its run index is empty') }}
       </p>
@@ -461,6 +516,7 @@ function choose(runId: string): void {
 
       <RecordList
         v-else
+        ref="listRef"
         class="run-list"
         :rows="shown"
         :columns="columns"

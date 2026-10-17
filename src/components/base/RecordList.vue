@@ -948,9 +948,34 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   border-bottom: 1px solid var(--color-border);
 }
 
+/*
+ * The row *Show in list* led to, for a moment: a dashed edge in the annotation colour — "here it
+ * is", not "something is wrong" — on a raised surface, fading out. Never the accent, which is the
+ * keyboard's focus ring and would read as one.
+ */
+.record-row.flash {
+  animation: record-flash 1.6s ease-out;
+}
+
+@keyframes record-flash {
+  0%, 55% {
+    outline: 2px dashed var(--color-annotation);
+    outline-offset: -2px;
+    background-color: var(--color-bg-hover);
+  }
+  100% {
+    outline: 2px dashed transparent;
+    outline-offset: -2px;
+  }
+}
+
+/* without motion the mark stands still for the same moment instead of fading */
 @media (prefers-reduced-motion: reduce) {
-  .record-row {
-    transition: none;
+  .record-row.flash {
+    animation: none;
+    outline: 2px dashed var(--color-annotation);
+    outline-offset: -2px;
+    background-color: var(--color-bg-hover);
   }
 }
 </style>

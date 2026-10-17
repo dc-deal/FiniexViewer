@@ -7,6 +7,7 @@ import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
 import { reportKindId } from '@/panel_kinds'
 import { useSectionStates } from '@/composables/use_section_states'
+import { useShowInList } from '@/composables/use_panel_jump'
 import { startedAt } from '@/components/runs/report_format'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
 import AppButton from '@/components/base/AppButton.vue'
@@ -26,13 +27,21 @@ import { t } from '@/translate'
 const runsStore = useRunsStore()
 const {
   selectedRun, selectedUnits, summaryUnreadable, summaryError,
-  unknownRunId, loadingRuns,
+  unknownRunId, loadingRuns, chosenRowInView,
 } = storeToRefs(runsStore)
 const { unreadable, errors: sectionErrors } = storeToRefs(useRunReportsStore())
 const sectionsStore = useRunSectionsStore()
 const { sources, pending, absences } = storeToRefs(sectionsStore)
 const dock = useDockStore()
-const { openIds } = storeToRefs(dock)
+const { openIds, shownIds } = storeToRefs(dock)
+
+/**
+ * The way back to the list, which shows the chosen run's row (#42, after VS Code's *Reveal in
+ * Explorer*). Not offered where the list is on show with that row in view: there it would do
+ * nothing a glance does not.
+ */
+const showInList = useShowInList()
+const listShowsRun = computed(() => shownIds.value.includes('runs') && chosenRowInView.value)
 
 /**
  * Whether a slot's line belongs above the column. Not where every section reading it is open as a
@@ -127,7 +136,15 @@ const missingSections = computed(() => {
         <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
              three lines above the sections -->
         <span class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
-        <AppButton variant="quiet" @click="dock.reveal('runs', 'command')">{{ t('Change run') }}</AppButton>
+        <!-- hidden rather than removed where it is not needed: the line keeps its length, so the
+             run's meta does not cut differently while the reader scrolls the list beside it -->
+        <AppButton
+          variant="quiet"
+          class="show-in-list"
+          :class="{ needless: listShowsRun }"
+          :aria-hidden="listShowsRun"
+          @click="showInList"
+        >{{ t('Show in list') }}</AppButton>
       </div>
     </header>
 
@@ -190,6 +207,10 @@ const missingSections = computed(() => {
 </template>
 
 <style scoped>
+.show-in-list.needless {
+  visibility: hidden;
+}
+
 /* A SIZE container, so the lists inside measure their caps against this view and not against the
    browser window. The view is sized by what holds it and never by its content, which is what size
    containment requires. */

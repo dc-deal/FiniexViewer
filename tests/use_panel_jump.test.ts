@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
-import { usePanelJump } from '@/composables/use_panel_jump'
+import { usePanelJump, useShowInList } from '@/composables/use_panel_jump'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
+import { useRunsStore } from '@/stores/runs_store'
 
 const MARK = { scenario: 'EURGBP_partial_close', position: 'pos_eurgbp_1' }
 
@@ -103,5 +104,62 @@ describe('usePanelJump', () => {
     dock.reveal = (id: string) => { brought.push(id); return true }
     usePanelJump()('trade-history', MARK)
     expect(brought).toEqual(['run'])
+  })
+})
+
+describe('useShowInList', () => {
+  const scrolledBy = vi.fn()
+
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+    scrolledBy.mockReset()
+    Element.prototype.scrollBy = scrolledBy
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  /** The run list as the dock draws it: its rows in a list of their own, the chosen one picked. */
+  function drawRunList(): HTMLElement {
+    const panel = document.createElement('div')
+    panel.dataset['panelKind'] = 'runs'
+    panel.innerHTML = '<div class="run-list"><button class="record-row record-unseen picked"></button>'
+      + '<button class="record-row picked"></button></div>'
+    document.body.appendChild(panel)
+    return panel.querySelectorAll<HTMLElement>('.record-row')[1]!
+  }
+
+  async function afterAFrame(): Promise<void> {
+    await new Promise(resolve => window.requestAnimationFrame(resolve))
+    await flushPromises()
+  }
+
+  /** VS Code's *Reveal in Explorer*: the list comes to the front, the row is centred and marked. */
+  it('brings the run list to the front, opens the family of the row, and centres the row in the list', async () => {
+    const brought: string[] = []
+    useDockStore().reveal = (id: string, reason: string) => { brought.push(`${id} ${reason}`); return true }
+    const row = drawRunList()
+    useShowInList()()
+    expect(brought).toEqual(['runs command'])
+    expect(useRunsStore().chosenRowAsked).toBe(1)
+
+    await afterAFrame()
+    expect(scrolledBy).toHaveBeenCalledTimes(1)
+    // the measuring row of a closed family is never the one led to
+    expect(row.classList.contains('flash')).toBe(true)
+  })
+
+  it('marks the row for a moment only', async () => {
+    useDockStore().reveal = () => true
+    const row = drawRunList()
+    useShowInList()()
+    await afterAFrame()
+    expect(row.classList.contains('flash')).toBe(true)
+    vi.advanceTimersByTime(1600)
+    expect(row.classList.contains('flash')).toBe(false)
   })
 })

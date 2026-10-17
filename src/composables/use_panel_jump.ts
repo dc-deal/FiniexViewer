@@ -3,10 +3,14 @@ import { reportKindId } from '@/panel_kinds'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
+import { useRunsStore } from '@/stores/runs_store'
 import type { PositionRef } from '@/types/context_types'
 
 /** How long a jump waits for its marked row before it gives up. */
 const MARK_WAIT_MS = 2000
+
+/** How long the row *Show in list* led to stays marked — long enough to be found, then gone. */
+const FLASH_MS = 1600
 
 /**
  * Where a section is drawn: its own panel where it is open as one, the run report's column
@@ -27,24 +31,61 @@ function sectionRoot(panelKind: string): HTMLElement | null {
  * A row that never does is one the target panel does not draw — beyond its visible cap, or in a
  * group it folded — and the jump then leaves the mark where it is rather than scrolling to nothing.
  */
-async function scrollToMark(sectionId: string, panelKind: string): Promise<void> {
+async function scrollToRow(
+  panelKind: string,
+  selector: string,
+  place: (row: HTMLElement) => void,
+): Promise<HTMLElement | null> {
   // one tick first, or a row still carrying the PREVIOUS mark would answer
   await nextTick()
   const root = sectionRoot(panelKind)
-  if (!root) return
-  const scrolled = (): boolean => {
-    const row = root.querySelector(`[data-panel="${sectionId}"] .record-row.marked`)
-    row?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-    return row !== null
+  if (!root) return null
+  const found = (): HTMLElement | null => {
+    const row = root.querySelector<HTMLElement>(selector)
+    if (row) place(row)
+    return row
   }
-  if (scrolled()) return
-  const observer = new MutationObserver(() => { if (scrolled()) stop() })
-  const timer = window.setTimeout(stop, MARK_WAIT_MS)
-  function stop(): void {
-    observer.disconnect()
-    window.clearTimeout(timer)
-  }
-  observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
+  const now = found()
+  if (now) return now
+  return new Promise(resolve => {
+    const observer = new MutationObserver(() => {
+      const row = found()
+      if (row) stop(row)
+    })
+    const timer = window.setTimeout(() => stop(null), MARK_WAIT_MS)
+    function stop(row: HTMLElement | null): void {
+      observer.disconnect()
+      window.clearTimeout(timer)
+      resolve(row)
+    }
+    observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
+  })
+}
+
+function scrollToMark(sectionId: string, panelKind: string): void {
+  void scrollToRow(panelKind, `[data-panel="${sectionId}"] .record-row.marked`,
+    row => row.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+}
+
+/**
+ * Centres a row in its own list and nowhere else. `scrollIntoView` also scrolls every ancestor
+ * that overflows, and the run list sits in a view whose own scroll has no way back.
+ */
+function centreInList(row: HTMLElement): void {
+  const list = row.closest<HTMLElement>('.run-list')
+  if (!list) return
+  const listBox = list.getBoundingClientRect()
+  const rowBox = row.getBoundingClientRect()
+  list.scrollBy({ top: rowBox.top + rowBox.height / 2 - (listBox.top + listBox.height / 2), behavior: 'smooth' })
+}
+
+/** Marks a row for a moment: the eye finds it, and it never stays to be mistaken for a choice. */
+function flash(row: HTMLElement): void {
+  row.classList.remove('flash')
+  // a second click while it still shows restarts it rather than ending it
+  void row.offsetWidth
+  row.classList.add('flash')
+  window.setTimeout(() => row.classList.remove('flash'), FLASH_MS)
 }
 
 /**
@@ -76,5 +117,27 @@ export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
     layoutStore.show(sectionId)
     layoutStore.setOpen(sectionId, true)
     void scrollToMark(sectionId, 'run')
+  }
+}
+
+/**
+ * *Show in list*: the run list comes to the front — reopened where it stood if it was closed — and
+ * the chosen run's row is centred in it and marked for a moment, the way an editor reveals a file in
+ * its explorer. The family holding the row is opened first, in case the reader closed it. The row is
+ * not focused: it wears its run's card, which opens on focus and would cover the list unasked.
+ */
+export function useShowInList(): () => void {
+  const dock = useDockStore()
+  const runsStore = useRunsStore()
+  return () => {
+    runsStore.askForChosenRow()
+    dock.reveal('runs', 'command')
+    // a panel just brought out is laid out one frame late; scrolled before that, the row would be
+    // measured against a list that is about to change size
+    window.requestAnimationFrame(() => {
+      void scrollToRow('runs', '.run-list .record-row.picked:not(.record-unseen)', centreInList).then(row => {
+        if (row) flash(row)
+      })
+    })
   }
 }

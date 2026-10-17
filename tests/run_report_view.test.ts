@@ -40,14 +40,35 @@ describe('RunReportView', () => {
     expect(meta.attributes('title')).toBe('simulation · set_x')
   })
 
-  /** The list is a panel of its own: changing the run brings it to the front, nothing unfolds here. */
-  it('brings the run list to the front to change the run', async () => {
+  /** The list is a panel of its own: *Show in list* brings it to the front, nothing unfolds here. */
+  it('shows the chosen run in the run list', async () => {
     chooseRun()
     const opened: string[] = []
     useDockStore().reveal = (kind: string, reason: string) => { opened.push(`${kind} ${reason}`); return true }
     const wrapper = mount(RunReportView)
-    await wrapper.findAll('button').find(node => node.text().includes('Change run'))!.trigger('click')
+    await wrapper.find('.show-in-list').trigger('click')
+    expect(wrapper.find('.show-in-list').text()).toBe('Show in list')
     expect(opened).toEqual(['runs command'])
+  })
+
+  /**
+   * Where the list is on show with the chosen row in view, the way to it would do nothing a glance
+   * does not. Hidden rather than removed, so the line keeps its length while the reader scrolls.
+   */
+  it('offers the way to the list only where the list does not show the run already', async () => {
+    chooseRun()
+    const wrapper = mount(RunReportView)
+    const button = () => wrapper.find('.show-in-list')
+    expect(button().classes()).not.toContain('needless')
+
+    useRunsStore().chosenRowInView = true
+    await flushPromises()
+    // the row in view in a list behind another tab is not in view
+    expect(button().classes()).not.toContain('needless')
+
+    useDockStore().noteShown('runs', true)
+    await flushPromises()
+    expect(button().classes()).toContain('needless')
   })
 
   it('says that no run is chosen, and offers the run list', async () => {

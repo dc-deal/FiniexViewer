@@ -38,6 +38,20 @@ export const useRunsStore = defineStore('runs', () => {
   // a run id the index does not contain — a link or a reloaded URL naming a run that is gone
   const unknownRunId = ref<string | null>(null)
   /**
+   * The chosen run's row stands inside the run list's own view — written by the list, which owns
+   * the rows and their scroll. With the list on show it makes *Show in list* needless.
+   */
+  const chosenRowInView = ref(false)
+  /**
+   * Counts the times something asked to SEE the chosen run's row — *Show in list*. The list answers
+   * by opening the row's family, which the reader may have closed.
+   */
+  const chosenRowAsked = ref(0)
+
+  function askForChosenRow(): void {
+    chosenRowAsked.value += 1
+  }
+  /**
    * The scenarios the reader narrowed to, one step below the run — part of the SELECTION, so the
    * context holds it and a new run clears it there. EMPTY means the whole run, never "nothing".
    *
@@ -194,6 +208,9 @@ export const useRunsStore = defineStore('runs', () => {
     summaryAbsence,
     summaryUnreadable,
     unknownRunId,
+    chosenRowInView,
+    chosenRowAsked,
+    askForChosenRow,
     loadingRuns,
     loadingSummary,
     indexError,

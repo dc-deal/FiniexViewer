@@ -1277,8 +1277,21 @@ PanelDock    [☰ Deployments] [☰ Runs] [▤ Run bundle · 20261012_205715…]
 facet bar and the runs, nothing else; a pick chooses the run (`selectRun`) and brings `run` to the
 front where it is open — a pick is a selection, and a selection never reopens a panel. `run` is the
 BUNDLE: the word is on its tab, *Run bundle · <run id>*, in the Panels menu and on ⇲ (viewer#42), so
-the container has one name wherever it is named. It holds one line naming the run with *Change run*, which brings
-the list forward, and then the report's sections stacked as its members in one column. Its tab
+the container has one name wherever it is named. It holds one line naming the run with *Show in
+list*, and then the report's sections stacked as its members in one column.
+
+**Show in list** (viewer#42, after VS Code's *Reveal in Explorer*; `useShowInList` in
+`use_panel_jump.ts`) brings the run list to the front — reopened where it stood if it was closed —
+opens the family holding the chosen run, centres its row in the list (the list only, never the view
+around it) and marks it for a moment with a dashed edge in the annotation colour that fades
+(`.record-row.flash`; standing still for the same moment without motion). It is not offered where
+the list is on show with that row in view: the dock store keeps which panels are ON SHOW, as each
+panel's host hears it from dockview (`shownIds`, `noteShown`), and the list measures whether the
+chosen row stands in its own view with an IntersectionObserver (`runs_store.chosenRowInView`). The
+button keeps its room while hidden, so the run line does not cut differently while the reader
+scrolls. Where the list's filter or search hides the chosen run, the list says so with *Show every
+run*. The chosen run's family opens WITH the choice and can be closed again; it held itself open
+before, so its heading was a button that did nothing. Its tab
 names the run, so two browser windows comparing two runs are told apart at a glance — cut after the
 date and time, whole in the tab's card (`PanelKind.subtitle`). The run's grade and the narrowing's
 quick bar stand on the bundle's tab, where the report is. The two failures are kept apart in

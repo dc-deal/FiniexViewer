@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import { defineComponent, h } from 'vue'
 import type { DockviewPanelApi } from 'dockview-vue'
 import PanelHost from '@/components/dock/PanelHost.vue'
 import { onPanelShownAgain } from '@/composables/use_panel_visibility'
+import { useDockStore } from '@/stores/dock_store'
 
 const counts = { mounted: 0, shownAgain: 0 }
 
-vi.mock('@/panel_kinds', () => {
+vi.mock('@/panel_kinds', async importOriginal => {
   const Probe = defineComponent({
     setup() {
       counts.mounted += 1
@@ -24,7 +26,8 @@ vi.mock('@/panel_kinds', () => {
     probe: { id: 'probe', title: 'Probe', icon: 'form-list', order: 1, opensByDefault: true, component: Probe },
     broken: { id: 'broken', title: 'Broken', icon: 'form-list', order: 2, opensByDefault: false, component: Broken },
   }
-  return { panelKind: (id: string) => kinds[id] ?? null }
+  // the rest of the module as it is: the dock store the host reports to reads it
+  return { ...await importOriginal<typeof import('@/panel_kinds')>(), panelKind: (id: string) => kinds[id] ?? null }
 })
 
 /** A panel's handle in the dock, reduced to what the host reads: is it on screen, and when that changes. */
@@ -47,6 +50,7 @@ describe('PanelHost', () => {
   beforeEach(() => {
     counts.mounted = 0
     counts.shownAgain = 0
+    setActivePinia(createPinia())
   })
 
   afterEach(() => {
@@ -82,6 +86,24 @@ describe('PanelHost', () => {
     dock.show(true)
     await flushPromises()
     expect(counts.shownAgain).toBe(1)
+  })
+
+  /**
+   * The dock keeps which panels are on show, so one panel can ask about another: the run bundle
+   * offers *Show in list* only where the run list is not already in view.
+   */
+  it('tells the dock whether its panel is on show, and withdraws when it goes', async () => {
+    const dock = fakeApi(true)
+    const wrapper = mount(PanelHost, { props: { kindId: 'probe', api: dock.api } })
+    expect(useDockStore().shownIds).toEqual(['probe'])
+
+    dock.show(false)
+    expect(useDockStore().shownIds).toEqual([])
+    dock.show(true)
+    expect(useDockStore().shownIds).toEqual(['probe'])
+
+    wrapper.unmount()
+    expect(useDockStore().shownIds).toEqual([])
   })
 
   it('stops a panel that throws at its own frame, with a sentence and the stack in the console', async () => {

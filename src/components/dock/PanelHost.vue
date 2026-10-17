@@ -3,6 +3,7 @@ import { onErrorCaptured, onUnmounted, ref } from 'vue'
 import type { DockviewPanelApi } from 'dockview-vue'
 import { panelKind } from '@/panel_kinds'
 import { providePanelVisibility } from '@/composables/use_panel_visibility'
+import { useDockStore } from '@/stores/dock_store'
 import { t } from '@/translate'
 
 /**
@@ -23,11 +24,19 @@ const kind = panelKind(props.kindId)
  */
 const shown = ref(props.api.isVisible)
 const visible = ref(props.api.isVisible)
+// the dock store keeps which panels are on show, so a panel can ask about ANOTHER one — the run
+// bundle offers *Show in list* only where the run list is not already in view
+const dock = useDockStore()
+dock.noteShown(props.kindId, props.api.isVisible)
 const subscription = props.api.onDidVisibilityChange(event => {
   visible.value = event.isVisible
   if (event.isVisible) shown.value = true
+  dock.noteShown(props.kindId, event.isVisible)
 })
-onUnmounted(() => subscription.dispose())
+onUnmounted(() => {
+  subscription.dispose()
+  dock.noteShown(props.kindId, false)
+})
 providePanelVisibility(visible)
 
 /**

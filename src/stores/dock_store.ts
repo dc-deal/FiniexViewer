@@ -108,6 +108,11 @@ export const useDockStore = defineStore('dock', () => {
    * reactive — and the column reads it: a section open as a panel of its own is left out there.
    */
   const openIds = ref<string[]>([])
+  /**
+   * The panels ON SHOW: each the front tab of a visible group, as dockview reports it to the panel's
+   * own host. Open is not on show — a panel behind another tab is open and unseen.
+   */
+  const shownIds = ref<string[]>([])
   let timer: ReturnType<typeof setTimeout> | null = null
   let subscriptions: { dispose(): void }[] = []
   /** The section panel opened last: where the next one goes, as a tab beside it. */
@@ -141,6 +146,13 @@ export const useDockStore = defineStore('dock', () => {
 
   function syncOpen(): void {
     openIds.value = api.value ? api.value.panels.map(panel => panel.id) : []
+  }
+
+  /** A panel's host saying whether its panel is on show — dockview's own per-panel event, exact. */
+  function noteShown(kindId: string, shown: boolean): void {
+    const listed = shownIds.value.includes(kindId)
+    if (shown && !listed) shownIds.value = [...shownIds.value, kindId]
+    if (!shown && listed) shownIds.value = shownIds.value.filter(id => id !== kindId)
   }
 
   /**
@@ -359,6 +371,7 @@ export const useDockStore = defineStore('dock', () => {
     subscriptions = []
     api.value = null
     openIds.value = []
+    shownIds.value = []
   }
 
   /** Adds a closed panel where it last stood, while a panel it stood beside is still open. */
@@ -487,8 +500,8 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   return {
-    api, openIds, dragging,
+    api, openIds, shownIds, dragging,
     attach, detach, reveal, close, openSection, backIntoColumn, showSection, hideSection, reset, flush,
-    dockToEdge, endDrag,
+    dockToEdge, endDrag, noteShown,
   }
 })
