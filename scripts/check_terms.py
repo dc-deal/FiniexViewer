@@ -183,7 +183,11 @@ def our_pairs():
     pairs = {}
     unresolved = []
     for folder, _, names in os.walk(OURS):
-        for name in sorted(names):
+        # by name regardless of case: the walk order decides which component a shared label is
+        # recorded for, and a module's lower-case name sorted it behind every component — moving a
+        # builder out of `BookingPeriodTimeline.vue` into `booking_period_card.ts` re-pointed seven
+        # labels at another component's field, with nothing about their meaning changed
+        for name in sorted(names, key=str.lower):
             if not (name.endswith('.vue') or name.endswith('.ts')):
                 continue
             path = os.path.join(folder, name).replace(os.sep, '/')

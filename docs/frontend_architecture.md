@@ -1698,6 +1698,20 @@ the axis carries, how a period becomes a coloured span. No package was added for
 library would be a dependency for one view, and a proportional bar on a linear scale is a hundred
 lines that stay themeable through the existing tokens.
 
+**The booking periods are FiniexTestingIDE's ledger, and the table reads them as one** (#46, their
+glossary: *journal · ledger · closing*). Every period row carries the card its bar on the timeline
+has — one builder, `runs/booking_period_card.ts` — which holds what a narrow panel's columns gave up;
+the rows stay read-only and can be focused, so the card is not the pointer's alone (`RecordList`,
+a read-only row with a `rowCard`). Each unit of several periods closes with the TOTAL the run's route
+serves (`unit_totals`), a sum line in the same columns. Its *Max DD* is the deepest SINGLE period —
+which is what the column shows, by their document — and its card puts the account's own decline
+beside it, cumulative across the boundaries (`account_max_drawdown` and its share): a fall that runs
+across a boundary is deeper than any one period's, and the two side by side are where that shows. A
+unit of one period draws no total, since its total is that period again. The deployment view draws
+none: its route serves no unit totals. The figures over many periods — a Sharpe, a Calmar, a month's
+drawdown, their *closing* — are not served yet and not computed here; a *Closing* panel waits for
+them (requested 2026-10-18).
+
 **The two outermost axis labels hang INWARDS, and that is layout rather than taste.** A label
 placed at its mark and pulled back by `translate` moves on screen but not in layout, so a centred
 label at the far edge keeps half its box past the chart. The panel around it then offers a

@@ -123,6 +123,15 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
     expect(footnote).not.toContain('Final equity')
   })
 
+  /** A total stands under its unit's periods, so a unit the narrowing left out has none. */
+  it('draws the total of the scenario in focus only', () => {
+    const several = report({ unit_totals: BASE.unit_totals.map(total => ({ ...total, period_count: 2 })) })
+    const wrapper = mountNarrowed(several, [BASE.periods[0]!.unit_name])
+    const totals = wrapper.findAll('.unit-total')
+    expect(totals).toHaveLength(1)
+    expect(totals[0]!.text()).toContain(BASE.periods[0]!.unit_name)
+  })
+
   it('draws the lanes of every chosen scenario, not just the first', () => {
     const wrapper = mountNarrowed(MIXED, ['unit_a', 'unit_b'])
     const labels = wrapper.findAll('.lane-label').map(node => node.text())
@@ -236,6 +245,66 @@ describe('BookingPeriodTable', () => {
     })
     await mount(Host).find('.jump-link').trigger('click')
     expect(way.opened).toEqual([{ what: 'run', id: 'run_b' }])
+  })
+
+  /**
+   * The ledger's sum line: each unit's served total after its last period, in the same columns
+   * (#46). Max DD there is the deepest SINGLE period, which is what the column shows; the account's
+   * own decline across the boundaries is in the total's card.
+   */
+  describe('the total line of a unit', () => {
+    const [first, second] = [BASE.periods[0] as BookingPeriodRow, BASE.periods[1] as BookingPeriodRow]
+    const totals = BASE.unit_totals
+      .filter(total => [first.unit_name, second.unit_name].includes(total.unit_name))
+      // several periods each: a unit of one would repeat its row, and draws no total
+      .map(total => total.unit_name === first.unit_name
+        ? { ...total, period_count: 3, deepest_period_drawdown: 34.1, account_max_drawdown: 66.5 }
+        : { ...total, period_count: 2 })
+
+    function mountWithTotals() {
+      return mount(BookingPeriodTable, {
+        props: { periods: [first, second], keyFields: ['unit_name', 'period_no'], unitTotals: totals },
+      })
+    }
+
+    it('closes each unit with its total, after its last period', () => {
+      const rows = mountWithTotals().findAll('.periods-list .record-row:not(.record-unseen)')
+      expect(rows.map(row => row.classes('unit-total'))).toEqual([false, true, false, true])
+      expect(rows[1]!.text()).toContain(`Σ ${first.unit_name}`)
+    })
+
+    it('shows the deepest single period in its Max DD, and leaves the account decline to its card', () => {
+      const total = mountWithTotals().find('.unit-total')
+      expect(total.text()).toContain('34.10')
+      expect(total.text()).not.toContain('66.50')
+    })
+
+    /** Read-only rows, and still reachable: the card holds what a narrow panel's columns gave up. */
+    it('carries a card on every row, reachable by the keyboard and no control', () => {
+      const rows = mountWithTotals().findAll('.periods-list .record-row:not(.record-unseen)')
+      expect(rows.length).toBeGreaterThan(0)
+      for (const row of rows) {
+        expect(row.classes('readable')).toBe(true)
+        expect(row.attributes('tabindex')).toBe('0')
+        expect(row.element.tagName).not.toBe('BUTTON')
+      }
+    })
+
+    it('draws no total where none is served, as on the deployment view', () => {
+      expect(mountTable([first, second]).find('.unit-total').exists()).toBe(false)
+    })
+
+    /** One period's total is that period again, figure for figure — nothing a reader is missing. */
+    it('draws no total for a unit of one period', () => {
+      const single = mount(BookingPeriodTable, {
+        props: {
+          periods: [first],
+          keyFields: ['unit_name', 'period_no'],
+          unitTotals: [{ ...totals[0]!, period_count: 1 }],
+        },
+      })
+      expect(single.find('.unit-total').exists()).toBe(false)
+    })
   })
 
   it('names a period\'s run as plain text where nothing can open it', () => {

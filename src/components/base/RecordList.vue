@@ -83,6 +83,10 @@ const props = defineProps<{
    * card's trigger must be a single element, and the single element is the row button — which this
    * component owns, deliberately, because that is where the four states and the focus ring live.
    * The caller supplies the cells, so it has eight siblings and no one element to offer.
+   *
+   * A READ-ONLY row carries one too: then the row is no control but can be focused, so its card is
+   * not the pointer's alone — the booking periods' rows, whose card holds what their narrow
+   * columns gave up.
    */
   rowCard?: (row: T) => FigureCard | null
   /**
@@ -550,7 +554,17 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
           that can be chosen is a toggle, and a reader who cannot see the marked edge has nothing
           else to tell a chosen row from an unchosen one.
         -->
-        <div v-if="!isControl(row)" v-bind="rowAttrs(row)"><slot :row="row" marker="" /></div>
+        <!-- a read-only row with something to say: no control, but reachable by the keyboard, so
+             its card is not the pointer's alone — it answers on focus and does nothing on a click -->
+        <HoverCard
+          v-if="!isControl(row) && rowCard?.(row)"
+          :title="rowCard(row)!.title"
+          :details="rowCard(row)!.details"
+          side="top"
+        >
+          <div v-bind="rowAttrs(row)" class="readable" tabindex="0"><slot :row="row" marker="" /></div>
+        </HoverCard>
+        <div v-else-if="!isControl(row)" v-bind="rowAttrs(row)"><slot :row="row" marker="" /></div>
         <HoverCard
           v-else-if="rowCard?.(row)"
           :title="rowCard(row)!.title"
@@ -896,6 +910,17 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
 
 .record-row.inert:hover {
   background-color: transparent;
+}
+
+/* a read-only row with a card answers the pointer with a surface, as the card does: it says the row
+   holds more, and the default cursor says that a click does nothing */
+.record-row.inert.readable:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.record-row.readable:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 
 /* a read-only row keeps its mark under the pointer, where it has no hover of its own to show */

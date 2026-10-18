@@ -79,6 +79,10 @@ const selectedPeriods = computed(() => {
   return props.model.periods.filter(period => showsUnit(units, period.unit_name))
 })
 
+/** Each unit's served total, for the units on show — the table draws it after their periods. */
+const shownTotals = computed(() =>
+  props.model.unit_totals.filter(total => showsUnit(narrowing.units.value, total.unit_name)))
+
 const orderedPeriods = computed(() =>
   orderPeriods(selectedPeriods.value, laneOrder.value, row => row.unit_name)
 )
@@ -148,7 +152,11 @@ const otherCurrencies = computed(() =>
         :periods="orderedPeriods"
         :key-fields="model.keys.periods"
       />
-      <BookingPeriodTable :periods="orderedPeriods" :key-fields="model.keys.periods" />
+      <BookingPeriodTable
+        :periods="orderedPeriods"
+        :key-fields="model.keys.periods"
+        :unit-totals="shownTotals"
+      />
     </template>
 
     <!-- both figures are the RUN's: the deepest drawdown is taken across every period, and the
