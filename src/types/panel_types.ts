@@ -36,8 +36,8 @@ export interface PanelDescriptor {
   /**
    * What a scenario narrowing does to this section: `filters` draws only the chosen scenarios'
    * rows, `marks` keeps every row and marks the chosen ones, `null` means it does not read the
-   * narrowing at all. Opened as a panel of its own, a section carries the narrowing's note where
-   * the narrowing reaches it, and its frame only where the narrowing FILTERS — a frame says *what
+   * narrowing at all. Opened as a panel of its own, a section carries the narrowing's frame only
+   * where the narrowing FILTERS (the narrowing itself is said once, in the menu bar) — a frame says *what
    * you see here is a part*, which is untrue of a list that still shows every row.
    */
   narrowing: 'filters' | 'marks' | null

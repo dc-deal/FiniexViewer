@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import AggregatedPortfolioPanel from '@/components/runs/AggregatedPortfolioPanel.vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
 import type {
@@ -8,6 +9,7 @@ import type {
 } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 import aggregatedFixture from './fixtures/aggregated_portfolio.json'
+import { provideTestSelection } from './scenario_selection_harness'
 
 /**
  * The fold of a run over its scenarios, and the panel's whole discipline is what it LEAVES OUT: the
@@ -56,6 +58,23 @@ function withFold(changes: Partial<AggregatedCurrency['combined']>): AggregatedP
 }
 
 describe('AggregatedPortfolioPanel', () => {
+  /**
+   * The run's money inside the bundle's dashed frame read as the scenario in focus's own. Marked as
+   * the summary is, on the first currency's line, and silent where nothing is narrowed.
+   */
+  it('marks its figures as the whole run while a scenario is in focus', () => {
+    const Host = defineComponent({
+      setup() {
+        provideTestSelection(['unit_a'])
+        return () => h(AggregatedPortfolioPanel, { model: REPORT })
+      },
+    })
+    const marks = mount(Host).findAll('.scope .scope')
+    expect(marks).toHaveLength(1)
+    expect(marks[0]!.attributes('title')).toContain('every scenario')
+    expect(mountPanel().findAll('.scope .scope')).toHaveLength(0)
+  })
+
   it('names the currency and how many scenarios were folded into it', () => {
     expect(mountPanel().find('.scope').text()).toContain('EUR')
     expect(mountPanel().find('.scope').text()).toContain('4 scenarios')

@@ -288,16 +288,12 @@ const scope = computed<Figure[]>(() => {
   <div v-else class="executive">
     <!-- one column of blocks per currency, side by side where there is room for them -->
     <div v-for="(row, index) in model.currencies" :key="row.currency" class="currency">
-      <!-- the scope is drawn in the title's own line, so a narrowing costs this panel no room -->
+      <!-- the scope is drawn in the title's own line, so a narrowing costs this panel no room; the
+           mark says it, its sentence is a hover away — the frame and the menu bar say the rest -->
       <div class="currency-head">
         <h3 class="currency-title">{{ row.currency }}</h3>
-        <p
-          v-if="narrowed && index === 0"
-          class="scope-line"
-          :title="t('These figures cover every scenario, not the ones you narrowed to')"
-        >
-          <ScopeMark />
-          <span class="scope-text">{{ t('These figures cover every scenario, not the ones you narrowed to') }}</span>
+        <p v-if="narrowed && index === 0" class="scope-line">
+          <ScopeMark :title="t('These figures cover every scenario, not only the one in focus')" />
         </p>
       </div>
       <div class="blocks">
@@ -358,13 +354,6 @@ const scope = computed<Figure[]>(() => {
   color: var(--color-annotation);
   font-family: monospace;
   font-size: var(--font-size-sm);
-}
-
-/* one line at any width: the whole sentence is on the title once it no longer fits */
-.scope-text {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .hint {

@@ -7,6 +7,7 @@ import {
 } from 'reka-ui'
 import AccountStatus from '@/components/AccountStatus.vue'
 import MachineStatus from '@/components/MachineStatus.vue'
+import NarrowingStatement from '@/components/NarrowingStatement.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import TopMenu from '@/components/TopMenu.vue'
 import { useSectionStates, type SectionState } from '@/composables/use_section_states'
@@ -174,6 +175,9 @@ function stayOpen(event: Event): void {
       </DropdownMenuPortal>
     </DropdownMenuRoot>
 
+    <!-- the scenario in focus, said once for every panel it narrows; it gives way before anything
+         beside it moves -->
+    <NarrowingStatement class="menu-bar-narrowing" />
     <div class="menu-bar-spacer" />
     <MachineStatus />
     <AccountStatus />
@@ -203,6 +207,12 @@ function stayOpen(event: Event): void {
 
 .menu-bar-spacer {
   flex: 1;
+}
+
+/* the statement may shrink to its mark and its button; the spacer beside it gives way first */
+.menu-bar-narrowing {
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 /* a control in the link ink, with the two-channel states every control here carries */

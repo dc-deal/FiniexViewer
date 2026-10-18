@@ -407,7 +407,7 @@ function isPicked(name: string): boolean {
     <!-- What a click does, and it STAYS once something is picked: swapping it for a line that
          named the choice moved the whole list under the pointer — by a pixel with the hint showing,
          by a line once it was dismissed (2026-10-14). The choice is marked on its rows here, and said
-         once in the Runs quick bar, with the way back to the whole run. -->
+         once in the menu bar, with the way back to the whole run. -->
     <HintLine id="scenario-pick" />
 
     <FacetBar

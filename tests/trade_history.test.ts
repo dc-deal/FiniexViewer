@@ -551,7 +551,7 @@ describe('TradeHistoryPanel', () => {
     it('says the scenario traded nothing, rather than showing the run\'s empty state', () => {
       const wrapper = mountNarrowed(MIXED, ['unit_c'])
       expect(tradeRows(wrapper)).toHaveLength(0)
-      expect(wrapper.find('.hint').text()).toContain('The chosen scenario closed no positions')
+      expect(wrapper.find('.hint').text()).toContain('The scenario in focus closed no positions')
     })
 
     // `count` is the run's own total and can exceed the rows served, so under a narrowing it

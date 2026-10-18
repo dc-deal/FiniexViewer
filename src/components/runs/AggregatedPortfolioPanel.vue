@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
+import ScopeMark from '@/components/base/ScopeMark.vue'
 import {
   SPREAD_NOT_RECORDED, amount, figure, modelledSpreadFigures, numberOrNa, percentFigure, signClass, spreadFigure,
 } from '@/components/runs/report_format'
+import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import type { Figure } from '@/types/figure_types'
 import type { AggregatedCurrency, AggregatedPortfolioReport } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
@@ -28,6 +31,10 @@ import { plural, t } from '@/translate'
 defineProps<{
   model: AggregatedPortfolioReport
 }>()
+
+/** A scenario in focus: these figures stay the run's, and the first currency's line says so. */
+const narrowing = useScenarioSelection()
+const narrowed = computed(() => narrowing.units.value.length > 0)
 
 /**
  * What the run PAID, run-wide. The per-unit split is in the scenario roster's card; there is no
@@ -141,10 +148,15 @@ function holdings(row: AggregatedCurrency): Figure[] {
 
 <template>
   <div class="aggregated-panel">
-    <section v-for="row in model.currencies" :key="row.currency" class="aggregate">
+    <section v-for="(row, index) in model.currencies" :key="row.currency" class="aggregate">
       <p class="scope">
         {{ row.currency }} ·
         {{ plural(row.scenario_count, t('scenario'), t('scenarios')) }}
+        <!-- money of the whole run inside a frame that says "a part": marked, as the summary is -->
+        <ScopeMark
+          v-if="narrowed && index === 0"
+          :title="t('These figures cover every scenario, not only the one in focus')"
+        />
       </p>
 
       <!-- A currency holding BOTH account models is a fold across two different kinds of account,

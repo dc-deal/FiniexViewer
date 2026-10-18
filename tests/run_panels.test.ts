@@ -114,8 +114,10 @@ describe('ExecutivePanel', () => {
       },
     })
     const wrapper = mount(Host)
+    // the mark says it in the line; the sentence is on the mark, a hover away (viewer#42)
     expect(wrapper.find('.scope').text()).toBe('whole run')
-    expect(wrapper.find('.scope-line').text()).toContain('every scenario')
+    expect(wrapper.find('.scope-line').text()).toBe('whole run')
+    expect(wrapper.find('.scope').attributes('title')).toContain('every scenario')
   })
 
   it('stays quiet about scope where nothing is narrowed', () => {
@@ -408,6 +410,7 @@ describe('WarningsErrorsPanel — narrowed to a scenario', () => {
   // The outcome counts every unit the run attempted and has no per-scenario version.
   it('marks the outcome counts as the run\'s', () => {
     expect(mountNarrowed(['unit_a']).find('.scope').text()).toBe('whole run')
+    expect(mountNarrowed(['unit_a']).find('.scope').attributes('title')).toContain('every scenario the run attempted')
     expect(mountNarrowed([]).find('.scope').exists()).toBe(false)
   })
 

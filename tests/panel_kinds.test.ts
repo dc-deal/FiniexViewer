@@ -77,14 +77,16 @@ describe('panel_kinds', () => {
     expect(panelKind(reportKindId('executive'))?.icon).toBe('form-sheet')
   })
 
-  /** A section the narrowing does not change would carry a statement about something else. */
-  it('says the narrowing beside a section exactly where the narrowing reaches it', () => {
+  /**
+   * The narrowing is said ONCE, in the menu bar (viewer#42): beside every group holding a narrowed
+   * panel it stood four times on one screen for one focus. A quick bar holds a panel's own options.
+   */
+  it('leaves the narrowing to the menu bar, with no quick bar on the bundle or a section', () => {
+    expect(panelKind(RUN_BUNDLE)?.quickBar).toBeUndefined()
     for (const section of allPanels()) {
-      const kind = panelKind(reportKindId(section.id))
-      expect(Boolean(kind?.quickBar), section.id).toBe(section.narrowing !== null)
+      expect(panelKind(reportKindId(section.id))?.quickBar, section.id).toBeUndefined()
     }
-    expect(panelKind(reportKindId('trade-history'))?.quickBar).toBeDefined()
-    expect(panelKind(reportKindId('executive'))?.quickBar).toBeUndefined()
+    expect(panelKind('run-chart')?.quickBar).toBeDefined()
   })
 
   /**

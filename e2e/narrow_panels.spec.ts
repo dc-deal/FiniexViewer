@@ -1,5 +1,4 @@
 import { test, expect } from './cdp_fixture'
-import type { Page } from '@playwright/test'
 import { mockApi, FIXTURE_RUN } from './api_mock'
 import { openWith } from './arrangement_seed'
 
@@ -16,32 +15,26 @@ test.beforeEach(async ({ page }) => {
 /** The scenario of the fixture run every narrowing here is made of — one in focus, as the app allows. */
 const FOCUS = 'EURGBP_refusals_01'
 
-/** Whether any tab of the dock went into dockview's overflow menu. */
-async function tabsOverflow(page: Page): Promise<boolean> {
-  return page.locator('.dv-tabs-overflow-dropdown-default').evaluateAll(nodes =>
-    nodes.some(node => (node as HTMLElement).offsetParent !== null))
-}
-
 /**
- * The quick bar gives way first. Before, the narrowing's whole text was the least it would take, so
- * at this width the tabs beside it went into the overflow menu while the text stood in full. The
- * width is chosen so the four tabs fit beside the bar's mark and button, and not beside its whole
- * text — much narrower, the tabs alone are too wide, and no arrangement keeps them all. Measured
- * 2026-10-15, with the run chart's tab and its unit beside the others: 950 to 1000 px.
+ * The scenario in focus is said ONCE, in the menu bar (viewer#42), and in a narrow window it is the
+ * one thing there that gives way: its name shortens, its mark and *Show all* stay whole, and nothing
+ * of the frame — the machine's load, the account, the application menu — is pushed out of the window.
  */
-test('the quick bar shortens its text before a tab goes into the overflow menu', async ({ page }) => {
-  await page.setViewportSize({ width: 975, height: 800 })
+test('the narrowing in the menu bar shortens its name before anything beside it moves', async ({ page }) => {
+  await page.setViewportSize({ width: 760, height: 800 })
   await openWith(page, '/', { run: FIXTURE_RUN, units: [FOCUS] })
 
-  const text = page.locator('[data-quick-bar] .narrowed-text')
+  const text = page.locator('.menu-bar .narrowed-text')
   await expect(text).toHaveText(`Only ${FOCUS}`)
+  await expect(page.locator('.narrowed-head')).toHaveCount(1)
 
-  expect(await tabsOverflow(page)).toBe(false)
-  // shortened, not gone: the text gave up room, and what it cannot lose is still whole
+  // shortened, not gone: the name gave up room, and what it cannot lose is still whole
   expect(await text.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true)
-  const header = await page.locator('.dv-tabs-and-actions-container').first().boundingBox()
-  const button = await page.locator('[data-quick-bar] button', { hasText: 'Show all' }).boundingBox()
-  expect(button!.x + button!.width).toBeLessThanOrEqual(header!.x + header!.width + 0.5)
+  const bar = (await page.locator('.menu-bar').boundingBox())!
+  const button = (await page.locator('.menu-bar .narrowed-head button', { hasText: 'Show all' }).boundingBox())!
+  expect(button.x + button.width).toBeLessThanOrEqual(bar.x + bar.width)
+  const menu = (await page.locator('.menu-bar .menu-trigger').boundingBox())!
+  expect(menu.x + menu.width).toBeLessThanOrEqual(bar.x + bar.width + 0.5)
 })
 
 /**

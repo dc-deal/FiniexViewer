@@ -74,7 +74,6 @@ export const PANEL_KINDS: PanelKind[] = [
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunReportView.vue')),
-    quickBar: defineAsyncComponent(() => import('@/components/RunsQuickBar.vue')),
     status: () => outcomeStatus(useRunsStore().selectedRun?.run_outcome ?? null),
     // its own line follows the run; what its members follow and choose its card adds while they
     // stand in its column — a member open as a panel of its own takes its links with it
@@ -151,9 +150,6 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
       const { default: ReportSection } = await import('@/components/dock/ReportSection.vue')
       return defineComponent({ name: 'ReportSectionPanel', setup: () => () => h(ReportSection, { sectionId: section.id }) })
     }),
-    // the narrowing is said beside every section it reaches, and only there: a section it does not
-    // change would carry a statement about something else
-    ...(section.narrowing ? { quickBar: defineAsyncComponent(() => import('@/components/RunsQuickBar.vue')) } : {}),
     status: () => useRunSectionsStore().failuresOf(section.source).length
       ? { icon: 'status-error', word: t('could not be loaded'), role: 'error' }
       : null,

@@ -115,7 +115,7 @@ const otherCurrencies = computed(() =>
           <!-- a mark in the headline rather than a line of its own: a narrowing moves nothing -->
           <ScopeMark
             v-if="narrowed"
-            :title="t('This check is the whole run — the periods below are those of the chosen scenario')"
+            :title="t('This check is the whole run — the periods below are those of the scenario in focus')"
           />
           {{ verdict.text }}
         </p>
@@ -139,7 +139,7 @@ const otherCurrencies = computed(() =>
 
     <div v-if="!selectedPeriods.length" class="hint">
       {{ narrowed
-        ? t('The chosen scenario booked no periods')
+        ? t('The scenario in focus booked no periods')
         : t('This run booked no periods') }}
     </div>
     <template v-else>
@@ -155,7 +155,7 @@ const otherCurrencies = computed(() =>
          closing equity is the SUM over the units — it was the last period row's own figure, one
          account of several, printed as though it were the run's -->
     <p class="footnote">
-      <ScopeMark v-if="narrowed" />
+      <ScopeMark v-if="narrowed" :title="t('Both figures are the whole run, across every scenario')" />
       {{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }}
       <!-- left out rather than shown as the zero the formatter would make of a null: the run
            states no figure in this currency, which is not a closing equity of nothing -->

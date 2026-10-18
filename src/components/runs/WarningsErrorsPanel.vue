@@ -99,7 +99,7 @@ function hasDetail(row: UnitErrorRow): boolean {
   <div class="warnings-panel">
     <!-- the outcome counts every unit the run attempted, so it stays the RUN's under a narrowing -->
     <div class="outcome" :class="[model.outcome.run_outcome, { quiet }]">
-      <ScopeMark v-if="narrowed" />
+      <ScopeMark v-if="narrowed" :title="t('The outcome counts every scenario the run attempted')" />
       <span v-if="outcomeRecorded" class="outcome-verdict">
         {{ outcomeMark }} {{ model.outcome.run_outcome }}
       </span>

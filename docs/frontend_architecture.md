@@ -1042,7 +1042,7 @@ run 20260927_092959_cd1d9b1e · units ETHUSD_blocks_06, ETHUSD_blocks_09
   warnings/errors   narrowed — but a RUN-scoped warning stays, it is still true
   portfolio         MARKED, never narrowed
   RunsView          the whole column is FRAMED, dashed
-  Runs quick bar    "⌖ Only EURGBP_01 · Show all", beside the tabs
+  menu bar          "⌖ Only EURGBP_01 · Show all", once for every panel
   Run chart         draws the scenario in focus
 ```
 
@@ -1064,10 +1064,11 @@ is dashed, the channel that survives for a reader who cannot separate the hues.
 **A selection never moves the layout.** The frame's room is always there, transparent until a
 narrowing colours it: drawn only on a choice, its border and padding indented every panel and the
 statement above it pushed the column down a line, so what the reader was looking at slid away under
-the click. The statement now sits in the Runs tab's quick bar (`RunsQuickBar`), and every run-wide
-label below is drawn inside a line that already exists — the executive scope in the first currency's
-title row, cut to one line with the whole sentence on its title, and the verdict's as a mark in its
-headline. `run_selection.spec.ts` holds it in a browser: the executive panel's box and the row under
+the click. The statement is said ONCE, in the menu bar (`NarrowingStatement`), because the focus
+reaches every panel and a panel's own bar would repeat it in each group the bundle's members stand in.
+Every run-wide label below is a mark (`ScopeMark`) drawn inside a line that already exists — the
+executive's and Run Totals' on the first currency's title row, the verdict's in its headline — and
+says its whole sentence on its title. `run_selection.spec.ts` holds it in a browser: the executive panel's box and the row under
 the pointer stay exactly where they were.
 
 **It lives in the run's context, because it is SELECTION.** Panel order and collapsed state are
@@ -1084,15 +1085,17 @@ have to forward a run-specific emit, which is the domain leaking into the part t
 it. The app root supplies it (`use_run_report_channels`), so it reaches a section wherever the
 section is drawn.
 
-**Four figures are run-wide and cannot be split, so they are LABELLED rather than filtered:** the
-executive KPI table (one row per CURRENCY), the reconciliation verdict and the deepest-drawdown
-footnote in Booking Periods, and the outcome counts in Warnings & Errors. It was six: the order
+**The figures that are run-wide and cannot be split are LABELLED rather than filtered:** the
+executive KPI table (one row per CURRENCY), Run Totals (a fold over every scenario), the
+reconciliation verdict and the deepest-drawdown footnote in Booking Periods, and the outcome counts
+in Warnings & Errors. Run Totals joined them in viewer#42: inside the bundle's dashed frame its money
+read as the focused scenario's. There were two more once: the order
 funnel and the per-currency analytics stood in Trade History too, and both are gone — 17 of the 19
 fields in `trade_history.analytics[]` are identical in value to `run-summary.currencies[]`, which
 the executive panel prints above them on the same page. The backend confirmed the duplication is
 deliberate (one derivation, two routes) and that the summary's copy is the one to show. A run-wide number sitting unlabelled over one scenario's
 rows reads as that scenario's — the same class of silent wrongness the narrowing exists to remove.
-The executive table matters most of the six because it sits at the TOP: a reader who has just
+The executive table matters most because it sits at the TOP: a reader who has just
 narrowed meets it first. Portfolio is handled by marking instead: its footer is an aggregate with
 no per-unit version, and keeping every row also answers the question narrowing raises there, namely
 how the chosen scenarios compare with the others.
@@ -1102,7 +1105,7 @@ list entry and the first reader to see it could not tell that clicking did anyth
 was real but happened below the fold, and the two panels nearest the click did not react at all.
 Four things fix that class of problem: the scenario name wears the interactive colour and the row
 has a hover surface; the choice is marked on its rows, beside where the click happens; the column
-is framed and the Runs quick bar says what is chosen; and a `HintLine` says what a click does. The
+is framed and the menu bar says what is chosen; and a `HintLine` says what a click does. The
 hint STAYS after a pick: until 2026-10-14 a line naming the choice replaced it, and the swap moved
 the whole list under the pointer — a pixel with the hint showing, a line once it was dismissed.
 
@@ -1293,8 +1296,8 @@ scrolls. Where the list's filter or search hides the chosen run, the list says s
 run*. The chosen run's family opens WITH the choice and can be closed again; it held itself open
 before, so its heading was a button that did nothing. Its tab
 names the run, so two browser windows comparing two runs are told apart at a glance — cut after the
-date and time, whole in the tab's card (`PanelKind.subtitle`). The run's grade and the narrowing's
-quick bar stand on the bundle's tab, where the report is. The two failures are kept apart in
+date and time, whole in the tab's card (`PanelKind.subtitle`). The run's grade stands on the
+bundle's tab, where the report is; the narrowing is said once, in the menu bar. The two failures are kept apart in
 `runs_store`: the index failing is the list's to say (`indexError`), the summary failing the
 report's (`summaryError`) — one shared ref let a broken summary blank the list it was picked from.
 
@@ -1423,12 +1426,12 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
 - **One kind per section, `report-<section id>`** (`reportKindId` in `panel_kinds.ts`), kept out of
   the menu's top level: the Panels menu lists the sections in the submenu *Runs*. Its tab
   shows the FORM — `form-list` for
-  the four lists, `form-sheet` for the others — and the narrowing's quick bar (`RunsQuickBar`)
-  stands beside a section panel where the narrowing reaches the section. The registry says how, in
-  `narrowing`: `filters` (Trade History, Orders, Booking Periods, Warnings & Errors) draws only the
+  the four lists, `form-sheet` for the others — and a section panel carries the narrowing's frame
+  where the narrowing filters the section; the narrowing itself is said in the menu bar. The
+  registry says how a section takes it, in `narrowing`: `filters` (Trade History, Orders, Booking Periods, Warnings & Errors) draws only the
   chosen scenarios' rows, `marks` (Scenarios) keeps every row and marks the chosen ones, `null`
-  does not read it — the Executive Summary reads it and narrows nothing, its own scope line saying
-  the figures are the whole run's. The tab dims its title where the chosen run has nothing for
+  does not read it — the Executive Summary reads it and narrows nothing, its mark saying the
+  figures are the whole run's. The tab dims its title where the chosen run has nothing for
   the section, and shows ✖ *could not be loaded* where the section failed.
 - **`components/dock/ReportSection.vue`** draws the section's component with the model the column
   hands it (`run_sections_store`), behind the same boundary. Where there is nothing to draw the
@@ -1498,13 +1501,17 @@ selects (`AppSelect` with `compact`) — the value is what shows, the name while
 each carries its name for a screen reader. A panel without options leaves the bar empty, and two
 groups side by side each speak for their own front panel.
 
-**The quick bar gives way before a tab does.** The narrowing names the scenario in focus, the whole
-line in its title for a panel too narrow to show it, and says where the run lacks that name.
-Three names once fitted beside a wide panel's tabs and pushed a narrow panel's tabs into their
-overflow menu; with one scenario in focus the count and its card went. The line is a grid whose text track is
-`minmax(0, max-content)`, so the bar's least width is its mark and its button alone, and
-`dock_theme.css` gives dockview's actions container a shrink share of 100 to 1 against the tabs:
-the text shortens with an ellipsis first, and a tab goes into the overflow menu only after it.
+**The quick bar gives way before a tab does.** `dock_theme.css` gives dockview's actions container
+a shrink share of 100 to 1 against the tabs, down to the least width the bar's content declares: the
+bar shortens first, and a tab goes into the overflow menu only after it.
+
+**The narrowing is said once, in the menu bar** (`NarrowingStatement`, viewer#42). It stood in the
+quick bar of the run bundle and of each section panel, so a bundle split into three groups said it
+three times, and a narrow group lost its tabs to it. It names the scenario in focus, the whole line
+in its title where the bar is too narrow to show it, and says where the run lacks that name. The
+line is a grid whose text track is `minmax(0, max-content)`, so its least width is its mark and its
+button alone, and it shrinks before the machine status beside it moves (`e2e/narrow_panels.spec.ts`,
+at 760 px).
 
 **Measured 2026-10-13:** the start bundle grew from 393 to 744 kB (gzip 130 → 210 kB), and that is
 dockview. The timings, taken again the same day on a quiet machine, moved by nothing beyond noise.

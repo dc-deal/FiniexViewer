@@ -70,7 +70,7 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
     const wrapper = mountNarrowed({ ...MIXED, reconciles: false }, ['unit_a'])
     const scope = wrapper.find('.verdict-text .scope')
     expect(scope.text()).toBe('whole run')
-    expect(scope.attributes('title')).toContain('the periods below are those of the chosen scenario')
+    expect(scope.attributes('title')).toContain('the periods below are those of the scenario in focus')
   })
 
   it('says nothing about scope where nothing is narrowed', () => {
@@ -87,6 +87,8 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
   it('marks the footnote figures as the run\'s', () => {
     const wrapper = mountNarrowed(MIXED, ['unit_a'])
     expect(wrapper.find('.footnote .scope').text()).toBe('whole run')
+    // and why, a hover away: it carried no sentence anywhere before
+    expect(wrapper.find('.footnote .scope').attributes('title')).toContain('whole run')
   })
 
   /**
@@ -111,7 +113,7 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
   // A scenario the run declared but that booked nothing — a statement about it, not a bad match.
   it('says the chosen scenario booked nothing, rather than the run', () => {
     const wrapper = mountNarrowed(MIXED, ['unit_c'])
-    expect(wrapper.find('.hint').text()).toContain('The chosen scenario booked no periods')
+    expect(wrapper.find('.hint').text()).toContain('The scenario in focus booked no periods')
   })
 })
 

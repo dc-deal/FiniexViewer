@@ -195,8 +195,8 @@ const missingSections = computed(() => {
         </p>
         <!-- the whole manipulated area is framed, so it can never be mistaken for the whole run.
              The frame is the second channel beside the colour: a reader who cannot separate the
-             hues still sees an edge that was not there before. What is narrowed is said in the
-             quick bar beside the tab, where saying it moves nothing. A frame around nothing frames
+             hues still sees an edge that was not there before. What is narrowed is said once, in
+             the menu bar, where saying it moves nothing. A frame around nothing frames
              no part, so an empty bundle draws none. -->
         <div v-else class="panels" :class="{ narrowed: selectedUnits.length > 0 }">
           <PanelColumn :sources="sources" :pending="pending" />

@@ -7,10 +7,12 @@ import { useRunsStore } from '@/stores/runs_store'
 import { t } from '@/translate'
 
 /**
- * The scenario narrowing, said beside the run report's tab — where it is seen whatever is scrolled, and
- * where saying it moves nothing. It stood above the panel column until 2026-10-13 and pushed the
- * column down a line on every choice (a selection never moves the layout). The column's frame is
- * still drawn in the same annotation colour, so the bar and the edge read as one statement.
+ * The scenario narrowing, said ONCE, in the menu bar (viewer#42, decided 2026-10-16): the focus
+ * belongs to the link, not to a panel, the way an editor shows a global state once in its status
+ * bar. It stood beside the tabs of every group holding a narrowed panel before — four times on one
+ * screen for one narrowing — and above the panel column until 2026-10-13, where it pushed the column
+ * down a line on every choice (a selection never moves the layout). Each narrowed panel still wears
+ * its dashed frame in the same annotation colour, so the statement and the edges read as one.
  */
 const runsStore = useRunsStore()
 const { selectedUnits } = storeToRefs(runsStore)
@@ -52,9 +54,8 @@ const statement = computed(() =>
 <style scoped>
 /*
  * A grid, because the text is the one part that may give way: its track shrinks to nothing while
- * the mark and the button keep their size. The bar's least width is therefore theirs alone, and
- * the dock hands the bar the shortfall first, so a tab goes into the overflow menu only once the
- * text has given up its room.
+ * the mark and the button keep their size. Its least width is therefore theirs alone, so in a
+ * narrow window the name shortens before anything else in the menu bar moves.
  */
 .narrowed-head {
   display: grid;

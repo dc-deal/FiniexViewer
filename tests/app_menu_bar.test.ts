@@ -164,4 +164,20 @@ describe('AppMenuBar', () => {
   it('offers no Layout menu of its own', () => {
     expect(mounted!.findAll('.menu-bar-trigger').map(node => node.text())).toEqual(['Panels ▾'])
   })
+
+  /**
+   * The scenario in focus belongs to the link, not to a panel, so the frame says it ONCE for every
+   * panel it narrows (viewer#42), with the way back to the whole run beside it.
+   */
+  it('says the scenario in focus once, with the way back to the whole run', async () => {
+    expect(mounted!.find('.narrowed-head').exists()).toBe(false)
+    useContextStore().selectRun('r1')
+    useContextStore().toggleUnit('EURUSD_a')
+    await flushPromises()
+    expect(mounted!.findAll('.narrowed-head')).toHaveLength(1)
+    expect(mounted!.find('.narrowed-head').text()).toContain('Only EURUSD_a')
+
+    await mounted!.find('.narrowed-head button').trigger('click')
+    expect(useRunsStore().selectedUnits).toEqual([])
+  })
 })
