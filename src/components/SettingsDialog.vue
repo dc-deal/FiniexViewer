@@ -171,7 +171,7 @@ async function onImportPicked(event: Event): Promise<void> {
         <div class="setting">
           <span class="setting-label">{{ t('Run bundle') }}</span>
           <p class="setting-hint">
-            {{ t('The order of the sections in the run bundle is stored on this machine. A file carries it to another.') }}
+            {{ t('How the run bundle holds its sections — their order, which are folded, pinned or hidden — is stored on this machine. A file carries it to another.') }}
           </p>
         </div>
         <div class="layout-actions">

@@ -126,9 +126,10 @@ describe('panel_kinds', () => {
     })
 
     // the issue's own anchors, so a change to them is a decision and not a slip
-    it('has the run list choose the run, and the run chart follow the run and the scenario it chooses', () => {
+    it('has the run list choose the run, and the run chart follow the run, the scenario it chooses and the position', () => {
       expect(panelKind('runs')?.relations).toEqual({ memberOf: null, follows: [], chooses: ['run'] })
-      expect(panelKind('run-chart')?.relations).toEqual({ memberOf: null, follows: ['run', 'units'], chooses: ['units'] })
+      expect(panelKind('run-chart')?.relations)
+        .toEqual({ memberOf: null, follows: ['run', 'units', 'position'], chooses: ['units'] })
     })
   })
 })

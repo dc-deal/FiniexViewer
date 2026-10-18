@@ -197,8 +197,8 @@ const missingSections = computed(() => {
         <HintLine id="dock-edges" />
         <p v-if="emptied" class="notice empty-bundle">
           {{ everySectionOut
-            ? t("Every section stands as a panel of its own or is hidden — ⇲ on a panel's tab brings it back here, the Panels menu shows a hidden one.")
-            : t("Every section this run carries stands as a panel of its own or is hidden — ⇲ on a panel's tab brings it back here, the Panels menu shows a hidden one.") }}
+            ? t("Every section stands as a panel of its own or is hidden — “Back into the bundle” on a panel's tab brings it back here, the Panels menu shows a hidden one.")
+            : t("Every section this run carries stands as a panel of its own or is hidden — “Back into the bundle” on a panel's tab brings it back here, the Panels menu shows a hidden one.") }}
         </p>
         <!-- the whole manipulated area is framed, so it can never be mistaken for the whole run.
              The frame is the second channel beside the colour: a reader who cannot separate the

@@ -106,7 +106,7 @@ describe('RunReportView', () => {
     for (const section of allPanels()) layout.hide(section.id)
     const wrapper = mount(RunReportView)
     expect(wrapper.find('.empty-bundle').text())
-      .toBe("Every section stands as a panel of its own or is hidden — ⇲ on a panel's tab brings it back here, the Panels menu shows a hidden one.")
+      .toBe("Every section stands as a panel of its own or is hidden — “Back into the bundle” on a panel's tab brings it back here, the Panels menu shows a hidden one.")
     expect(wrapper.findComponent(PanelColumn).exists()).toBe(false)
     expect(wrapper.findAllComponents(HintLine).map(hint => hint.props('id'))).not.toContain('open-as-panel')
   })

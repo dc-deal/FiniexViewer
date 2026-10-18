@@ -70,7 +70,7 @@ describe('tabCard', () => {
   })
 
   it('lists the keys in the order of the link, whatever order they were declared in', () => {
-    expect(row(cardOf('run-chart'), 'Follows')).toBe('the chosen run and the scenario in focus')
+    expect(row(cardOf('run-chart'), 'Follows')).toBe('the chosen run, the scenario in focus and the chosen position')
   })
 
   it('carries no part-of line for a panel that is no member', () => {

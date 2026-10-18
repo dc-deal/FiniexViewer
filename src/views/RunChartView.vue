@@ -42,7 +42,7 @@ onUnmounted(() => chart.detach())
       <span class="hint">{{ t('The run you had open is no longer in the index') }}: {{ unknownRunId }}</span>
     </div>
     <div v-else-if="!selectedRun && indexError" class="state-overlay">
-      <span class="error-msg">{{ indexError }}</span>
+      <span class="error-msg"><AppIcon name="status-error" class="error-mark" />{{ indexError }}</span>
     </div>
     <div v-else-if="waiting" class="state-overlay">
       <AppSpinner />
@@ -54,7 +54,7 @@ onUnmounted(() => chart.detach())
       <span class="hint">{{ t('No unit of this run processed a tick in a market it names') }}</span>
     </div>
     <div v-else-if="coverageError" class="state-overlay">
-      <span class="error-msg">{{ coverageError }}</span>
+      <span class="error-msg"><AppIcon name="status-error" class="error-mark" />{{ coverageError }}</span>
     </div>
     <div v-else-if="unitCoverage === 'none'" class="state-overlay">
       <span class="hint">{{ t('The archive holds no bars for') }} {{ unit.symbol }} · {{ unit.broker }}</span>
@@ -63,7 +63,7 @@ onUnmounted(() => chart.detach())
       <AppSpinner />
     </div>
     <div v-else-if="error" class="state-overlay">
-      <span class="error-msg">{{ error }}</span>
+      <span class="error-msg"><AppIcon name="status-error" class="error-mark" />{{ error }}</span>
     </div>
     <div v-else-if="!bars.length" class="state-overlay">
       <!-- one sentence, the values after it: pieces of a sentence around values cannot be reordered
@@ -106,9 +106,18 @@ onUnmounted(() => chart.detach())
   font-size: var(--font-size-sm);
 }
 
+/* the data or the request is wrong: the error role, and its mark beside it — a colour never travels
+   alone */
 .error-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
   color: var(--color-error);
   font-size: var(--font-size-sm);
+}
+
+.error-mark {
+  flex-shrink: 0;
 }
 
 .notice {

@@ -89,6 +89,14 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
     expect(wrapper.find('.footnote .scope').text()).toBe('whole run')
     // and why, a hover away: it carried no sentence anywhere before
     expect(wrapper.find('.footnote .scope').attributes('title')).toContain('whole run')
+    expect(wrapper.find('.footnote .scope').attributes('title')).toContain('Both figures')
+  })
+
+  /** A run with no closing equity shows the drawdown alone, and the mark speaks of one figure. */
+  it('speaks of one figure where the footnote holds one', () => {
+    const wrapper = mountNarrowed({ ...MIXED, total_final_equity: null }, ['unit_a'])
+    expect(wrapper.find('.footnote .scope').attributes('title'))
+      .toBe('This figure is the whole run, across every scenario')
   })
 
   /**

@@ -155,7 +155,13 @@ const otherCurrencies = computed(() =>
          closing equity is the SUM over the units — it was the last period row's own figure, one
          account of several, printed as though it were the run's -->
     <p class="footnote">
-      <ScopeMark v-if="narrowed" :title="t('Both figures are the whole run, across every scenario')" />
+      <!-- worded by what stands: a run with no closing equity shows the drawdown alone -->
+      <ScopeMark
+        v-if="narrowed"
+        :title="model.total_final_equity !== null
+          ? t('Both figures are the whole run, across every scenario')
+          : t('This figure is the whole run, across every scenario')"
+      />
       <!-- each says how the backend forms it (its booking-periods document): both are served as
            they stand, and with neither on any row a reader took them for figures of ours -->
       <span

@@ -103,9 +103,9 @@ export const PANEL_KINDS: PanelKind[] = [
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunChartView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/RunChartQuickBar.vue')),
-    // it centres on a chosen position only where that position is of the unit it shows, so the
-    // position is not claimed
-    relations: { memberOf: null, follows: ['run', 'units'], chooses: ['units'] },
+    // the position chosen in a list moves what it shows — centred on it, its marks drawn larger —
+    // where that position is of the unit on show, so it is followed like the rest
+    relations: { memberOf: null, follows: ['run', 'units', 'position'], chooses: ['units'] },
   },
   {
     // the FREE chart: any market, no run — opened from the Panels menu
@@ -148,7 +148,7 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
   return {
     id: reportKindId(section.id),
     title: t(section.title),
-    description: t('This section as a panel of its own — ⇲ puts it back into the bundle'),
+    description: t('This section as a panel of its own — “Back into the bundle” on its tab puts it back'),
     icon: LIST_SECTIONS.has(section.id) ? 'form-list' : 'form-sheet',
     order: PANEL_KINDS.length + 1 + index,
     opensByDefault: false,

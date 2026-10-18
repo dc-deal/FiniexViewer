@@ -1405,7 +1405,7 @@ kind              member of   follows                  chooses
 Deployments       —           deployment ¹             deployment · run
 Runs              —           —                        run
 Run bundle        —           run  + its members ²     its members ²
-Run chart         —           run · scenario           scenario
+Run chart         —           run · scenario · position scenario
 Free chart        —           market ¹                 market
 Scenarios         Run bundle  run                      scenario
 Trade History     Run bundle  run · scenario           position
@@ -1422,13 +1422,15 @@ hidden, or absent for the run takes its links with it. The card words them in on
 key, in the link's order: *Follows — the chosen run and the scenario in focus · Chooses — the
 position · Part of — Run bundle*. A test holds every kind to its declaration: a section the
 narrowing filters follows the scenario, one that only marks it does not, and nothing is followed
-that no kind chooses. Not claimed: the run chart centres on a chosen position only where it is of
-the unit it shows, and the run header links a deployment only on a deployment's session.
+that no kind chooses. The run chart follows the position: a position chosen in a list re-centres
+it and draws its marks larger, where it is of the unit on show. Not claimed: the run header links a
+deployment only on a deployment's session, so it does not claim the deployment for every run.
 
 **A section of the run bundle opens as a panel of its own** (viewer#31, decided 2026-10-14). The
 run bundle stays one column and a section the reader wants beside another is pulled out: the button
 among its header's controls (`action-open-panel`) opens it as a docked panel, and ⇲ on that panel's
-tab (`action-back-into-column`, *Back into the bundle*) puts it back in the column. A section is in
+tab (`action-back-into-column`, *Back into the bundle*) puts it back in the column. The texts on
+screen name that button by its title: its drawing is a panel and an arrow, not the ⇲ these notes use. A section is in
 one place at a time. An
 AutoTrader session writes fewer sections than a backtest; the column absorbs that by growing
 shorter, where a grid of eleven panels would have left empty areas or moved.
@@ -1469,7 +1471,7 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
   may start in a section panel. A hint above the column (`open-as-panel`) says how a section comes
   out and goes back.
 - **A bundle the reader emptied says so** (viewer#42): where every section stands as a panel of its
-  own or is hidden, the column gives way to one sentence — *⇲ on a panel's tab brings it back here,
+  own or is hidden, the column gives way to one sentence — *“Back into the bundle” on a panel's tab brings it back here,
   the Panels menu shows a hidden one* — and neither the frame nor the hint, which says the same,
   stands around nothing. Where what is left is sections the run does not carry, the sentence speaks
   of the sections it carries. A run that carries none had nothing taken out, and the lines above the

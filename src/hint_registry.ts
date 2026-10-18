@@ -23,7 +23,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'open-as-panel',
-    text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the bundle. On the tab of that panel, ⇲ puts it back into the bundle and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
+    text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the bundle. On the tab of that panel, “Back into the bundle” puts it back and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
   },
   {
     id: 'bundle-commands',
