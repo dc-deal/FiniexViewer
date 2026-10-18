@@ -4,13 +4,13 @@ A run can hold many scenarios, and the roster is the one list that names all of 
 
 ## The scenario roster — the only complete list of a run
 
-Rendered through `base/RecordList.vue`, twelve columns wide: scenario · symbol · market · currency ·
-broker · tick timespan · ticks · took · trades · net P&L · PF · state. It was a name line over a
+Rendered through `base/RecordList.vue`, one column per field: scenario · symbol · market · currency ·
+broker · tick timespan · ticks · took · trades · win rate · net P&L · PF · max DD · fees · state. It was a name line over a
 prose figures line, which reads as a sentence per scenario and compares across forty of them not at
 all. The reason a scenario produced nothing is the list's spanning detail line, so prose never sets
 a column's width.
 
-Two of the twelve declare a FLOOR rather than a share: the scenario name and the state. Everything
+Two of them declare a FLOOR rather than a share: the scenario name and the state. Everything
 here compresses rather than scrolls at a narrow width, which is the right trade for a panel whose
 width the reader sets — but measured at 900 px the state read `f…` and `s…`, and whether a scenario
 failed is what the list is opened for. Hiding columns outright below some width is the obvious next

@@ -39,15 +39,16 @@ ordinary width of a maximised one here, which is exactly why a ladder topping ou
 engaged. With the fifth rung all three overflow at zero at every measured width.
 
 Each list declares a rank at every rung it needs and no more, because a rank the list does not use
-makes a breakpoint that changes nothing — which reads as a broken one rather than as an absent one:
+makes a breakpoint that changes nothing — which reads as a broken one rather than as an absent one. Measured 2026-10-19 from the ranks each
+list declares:
 
 | list | columns | ladder |
 |---|---|---|
-| `RunPicker` | 10 | 10 → 8 → 7 → 6 → 4 |
-| `TradeHistoryPanel` | 8 | 8 → 6 → 4 → 3 |
+| `RunPicker` | 10 | 10 → 8 → 7 → 5 → 4 |
+| `TradeHistoryPanel` | 9 | 9 → 7 → 4 → 3 |
 | `ScenarioRosterPanel` | 15 | 15 → 11 → 8 → 5 → 3 |
 | `BookingPeriodTable` | 14–15 | 14 → 10 → 8 → 6 → 4 |
-| `SessionsTable` | 6 | 6 → 4 → 3 |
+| `SessionsTable` | 6 | 6 → 4 → 2 |
 | `DeploymentPicker` | 9 | 9 → 7 → 5 → 3 |
 
 What goes first is decided from the DATA where the data can decide it. The roster's `market`,

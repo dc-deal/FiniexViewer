@@ -64,7 +64,7 @@ minute are told apart by the id. `Sep 29, 2026, 12:27 PM` was 22 characters and 
 on purpose: this column is the reader's own zone while the card beside it carries UTC, and a numeric
 `2026-09-29 12:27` reads like the canonical clock that it is not.
 
-**Ten columns, ranked 10 → 8 → 6 → 4, and a card on every row.** What a narrow list keeps is the
+**Ranked columns, and a card on every row.** What a narrow list keeps is the
 question the list exists to answer — WHICH run (`Started`, `Set`), whether it worked (`Outcome`) and
 what it earned (`Net P&L`). `Run id` goes first although it is the row's declared key: it renders as
 the timestamp part of the id, which is the same instant `Started` already shows in words, and two

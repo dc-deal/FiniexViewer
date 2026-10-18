@@ -7,7 +7,7 @@ one level up: a panel names WHAT to open (`openRun(id)`, `openDeployment(id)`) a
 HOW. The app root supplies `openInDock()` (`components/dock/open_in_dock.ts`): it CHOOSES the run or
 the deployment through the stores' own `selectRun` / `selectDeployment` — the context and the load,
 exactly as a pick in their list — and brings that panel to the front through the dock store
-(`dock.open`); no panel knows the dock, and none changed when the routes went. It never calls the
+(`dock.reveal`, as a command); no panel knows the dock, and none changed when the routes went. It never calls the
 context's bare setter: a docked view stays mounted, so nothing reloads behind a context that merely
 changed. Measured 2026-10-14, when the jump did exactly that: a run opened from a deployment showed
 its own sections beside the previous run's executive summary — the sections follow the context, the
@@ -18,7 +18,8 @@ a period's run on the deployment side (`BookingPeriodTable`), a session lane's l
 (`BookingPeriodTimeline` hands `TimelineChart` an `open` per lane — what a lane MEANS stays the
 caller's) and a run's deployment (`RunHeaderPanel`). No panel holds a route or a `RouteLocationRaw`
 any more. Opening one of them in a new tab went with the `RouterLink`, which is accepted: the URL
-carries no selection, and a second tab shares the one arrangement.
+carries no selection, and a new tab starts from the arrangement saved last and keeps its own from
+then on (see [State and Storage](../architecture/state_and_storage.md)).
 
 **The jump from a report row into the chart is not built.** The portfolio row that linked a unit's
 symbol into the chart was deleted, and the jump with it; it returns with the run-bound chart of

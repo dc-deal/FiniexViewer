@@ -139,15 +139,15 @@ one read on the page's clock, from the document's arrival to the first row: the 
 run's panels count as drawn only once the last loading line is gone — a panel keeps its place while
 its section loads, so its header alone no longer says the panel can be read.
 
-**The browser is not in the container.** The image is Alpine on musl and Playwright's browsers are
-glibc builds, so the runner connects over CDP to a browser on the developer's machine —
-**`e2e/order_steps.spec.ts` is the newest, and it says why a browser spec earns its place.** The
+**`e2e/order_steps.spec.ts` says why a browser spec earns its place.** The
 nested step list is a grid INSIDE a row of another grid, which is the arrangement behind two of the
 overflow defects this project has shipped, and no jsdom assertion can see it. The capture is
 NARROWED to one position the way the route is, so the mock answers for that one and an empty stream
 for every other — and the spec narrows the list by the app's own `unit` param first, because
 `pos_eurgbp_1` belongs to four scenarios here and the first row carrying it is in a different one.
 
+**The browser is not in the container.** The image is Alpine on musl and Playwright's browsers are
+glibc builds, so the runner connects over CDP to a browser on the developer's machine —
 `e2e/cdp_fixture.ts` documents the one command that needs. `.npmrc` carries
 `playwright_skip_browser_download=1` so a rebuild never spends a gigabyte on a Chromium that
 cannot start. CI is a separate answer (a compose service on the official image) and shares the

@@ -80,9 +80,6 @@ covered the same stretch. In a real forward-running deployment the two clocks co
 staircase appears on its own. The wall-clock sequence lives in the sessions table, in `started`,
 `ran_hours` and `gap_hours`.
 
-**A vertical rule marks each distinct booking close** — the trading-day anchor every lane shares.
-Distinct instants only, so four sessions closing at one anchor draw one line rather than four.
-
 **A drawdown is rendered as a magnitude, whatever sign arrived.** The backend aligned the booking
 period column to a magnitude, but stored artifacts written before that keep the negative form and
 nothing in the payload distinguishes them. A decline has one direction, so `drawdown()` drops the
