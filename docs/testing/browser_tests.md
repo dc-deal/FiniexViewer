@@ -26,84 +26,104 @@ which is what a spec asserts where it used to read the address bar. There are no
 opens `/`, where Runs is the tab in front, and `showPanel(page, title)` brings another panel forward
 by its tab, the way a reader does.
 
-**What the browser tier is for, concretely.** `run_selection.spec.ts` holds the reload — a real
-`localStorage`, and a real boot from it — and two tabs side by side: each keeps its own run and
-column across a reload, and a new one starts from the last saved. The column is asserted first,
-because a storage shared between tabs fails it every time, where it lost the run only when the other
-tab's delayed save landed in between. `dock.spec.ts` holds the docked panels, which jsdom cannot
-lay out at all: the first arrangement in the suggested order, a tab behind another drawn only once
-it is shown, an arrangement that survives a reload, the way back to the suggested order, a closed
-panel brought back from the Panels menu, About opening as a dialog rather than as a tab, the quick
-bar holding the chart's selection only while the chart is in front, the run bundle's tab carrying the
-grade of a run that did not succeed, and a page that never scrolls — also once the window is made
-smaller, which is what left a panel behind a tab reaching past the bottom; and a panel dropped at the dock's outermost edge spanning that whole edge — along the bottom, where the first arrangement's two columns tell it apart from a drop on one group; and a pick in the run list that leaves a closed run report closed while the run is chosen all the same. `run_selection.spec.ts` also holds the rule that a selection
-never moves the layout — choosing a scenario leaves the executive panel's box and the row under the
-pointer exactly where they were — and a section still on its way keeping its panel standing with a
-loading line, the route held back on purpose.
-`settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per tab,
-and to a frame that stays inside a small window with its content scrolling, and the account standing
-in the menu bar with no tab for it in the settings. `machine_status.spec.ts` holds the machine's
-state in the menu bar — both shares from the captured reading, on one line, its card naming where
-the limit was read — and that a new reading moves nothing beside it: the account keeps its place
-while a share goes from 100 to 9. `open_as_panel.spec.ts` holds a section opened as a panel of its
-own: docked beside the column rather than over it, gone from the column, put back by ⇲ on its
-tab, still opened after a reload, and a jump from the orders landing in the trade history opened
-as a panel. `narrow_panels.spec.ts` holds what narrow room does to what stands beside it: the
-narrowing in the menu bar shortening its name before anything beside it moves, its button still
-whole and inside the bar, the Panels trigger on one line — at 760 px, where the bar fits its mark and button and not its whole text
-— and no figure of the executive summary breaking onto a second line or cut short, at the
-width where they broke; and the run list's facet bar on one line at 1400 and 700 px and on two at
-most at 420 px, measured against the height of one chip. All of them were red against the code
-before them. `show_in_list.spec.ts` holds the way back from the run bundle to the chosen run's row:
-the run list brought forward with the row in view and marked a moment, the row found again once the
-list was scrolled away with only the list scrolled and never its view, and the way not offered
-while the list docked beside the bundle shows the row — offered again once the list scrolls away. `booking_periods.spec.ts` holds the ledger's rows: a unit of two periods closed by its total line, whose card at the pointer names both declines, and a period row that is no control opening its card on a keyboard focus — the capture books one period per unit, so the spec serves it with its first unit booked twice and the rest of the body unchanged. `run_chart.spec.ts` holds the run chart: the chart mark on a trade opening it BESIDE the
-run report, on the trade's unit, drawn on a canvas with its marks counted on the element and the
-position marked in the list; the Panels menu opening it on the first unit with trades; and ONE focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen in the chart narrows the lists to it. `trade_groups.spec.ts` holds the open/closed regimes
-of the scenario groups, and two things only a browser can state: that the group heading resolves to
-the SAME grid as the rows beneath it — read from `getComputedStyle`, which also catches a track
-collapsed to zero — and that a trade opens its fills and they offer nothing to click. The test it
-replaced counted `<th>` against the group row's `colspan`; after the migration both are zero, so it
-would have passed for ever on a subject that no longer exists. `position_link.spec.ts` holds the jump between an
-order and its trade, and every part of it lives in the VIEW rather than in a panel: a CLOSED target
-panel being opened, a HIDDEN one coming back rather than the jump landing nowhere, the position
-reaching the address bar, a marked row still answering the pointer with its hover, a jump from far down the orders SCROLLING its trades into view, and the
-mark surviving a real reload without the page scrolling on its own. The scroll test jumps from the
-LAST link on purpose: the trades of the first one are on screen anyway, so a test on them stayed
-green with the scroll removed (2026-10-12). The fixtures make the trap concrete — `pos_ethusd_1` appears in five scenarios of the order
-history and two of them produced a trade, so the link is drawn twice and the mark lands in one
-scenario rather than in every row carrying that id. `open_in_context.spec.ts` holds the way from
-one VIEW into another — a deployment's session into its run, a run into the deployment it was a
-session of — because a unit test records where a panel asked to go, and only a browser shows the
-shell going there. `panel_boundary.spec.ts` holds the one claim the
-unit suite cannot reach, because it is about the WORKSPACE and not about a panel: a section that
-cannot be drawn takes ONLY itself off the screen. The fault is injected rather than waited for —
-`mockApi` takes an option to serve one named field of one section as a number, so the read throws
-exactly where the original defect did, and the body stays the real capture in every other respect.
-The healthy panel count is measured in the same test rather than written down, since which sections
-a run carries is a property of the captures. Two moments, because they fail differently:
-`warnings-errors` is open by default and throws at FIRST PAINT, which is the shape that cost eleven
-panels at once; the Orders panel is folded and throws when the reader opens it, so the mark also has
-to survive folding it again. `list_ranks.spec.ts` holds the ranks — and, since
-2026-10-09, that **opening a group does not move the columns**, which is the `auto`-track hazard
-the architecture note describes: measured identical to the pixel on the captured index, and a test
-rather than a comment because that is a property of the DATA. It went red on 2026-10-15, when the
-re-captured index put a wider value into a closed family, and since then the run list measures its
-closed families (`measureClosed`), so the guarantee is the code's and the test checks it. A run of two
-account currencies states each figure on its own line beside its trade count — they stood inline as
-`3.74 EUR-22.95 USD` until 2026-10-18, one figure minus another. It is the ONLY instrument for them: jsdom evaluates no
-container queries at all, so the unit suites can assert only that each list declares the same rank
-twice — on the column and on the cell. Whether the browser then acts on it needs a browser. FIVE
-widths — one on each side of every rung, because a rung nothing measures is a rung nobody knows is
-broken — every ranked list on the run view — `.order-list` joined on 2026-10-05, and its absence until then was a real gap, since the panel it replaced was never swept either — and the assertion is a RELATIONSHIP rather than a pixel
-number: the track count, the visible headings and the visible cells are all the count of columns
-whose rank survives the tier the shell measured. It also asserts that every ranked list actually
-gives something up when narrowed, that the run list keeps its card at the narrowest tier, and that
-neither the run list nor the trade list scrolls sideways there. It also holds the OTHER declaration
-that needs two halves: **every figure cell stands under its own heading**, compared as the right edge
-of the INK through a Range so padding does not enter into it. That assertion found three of the four
-lists misaligned by 11 to 172 px, ten columns of ten in the booking periods — every declaration
-correct, the geometry not.
+**What the browser tier is for, concretely.**
+
+- `run_selection.spec.ts` holds the reload — a real `localStorage`, and a real boot from it — and
+  two tabs side by side: each keeps its own run and column across a reload, and a new one starts
+  from the last saved. The column is asserted first, because a storage shared between tabs fails it
+  every time, where it lost the run only when the other tab's delayed save landed in between.
+- `dock.spec.ts` holds the docked panels, which jsdom cannot lay out at all: the first arrangement
+  in the suggested order, a tab behind another drawn only once it is shown, an arrangement that
+  survives a reload, the way back to the suggested order, a closed panel brought back from the
+  Panels menu, About opening as a dialog rather than as a tab, the quick bar holding the chart's
+  selection only while the chart is in front, the run bundle's tab carrying the grade of a run that
+  did not succeed, and a page that never scrolls — also once the window is made smaller, which is
+  what left a panel behind a tab reaching past the bottom; and a panel dropped at the dock's
+  outermost edge spanning that whole edge — along the bottom, where the first arrangement's two
+  columns tell it apart from a drop on one group; and a pick in the run list that leaves a closed
+  run report closed while the run is chosen all the same.
+- `run_selection.spec.ts` also holds the rule that a selection never moves the layout — choosing a
+  scenario leaves the executive panel's box and the row under the pointer exactly where they were —
+  and a section still on its way keeping its panel standing with a loading line, the route held back
+  on purpose.
+- `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per
+  tab, and to a frame that stays inside a small window with its content scrolling, and the account
+  standing in the menu bar with no tab for it in the settings.
+- `machine_status.spec.ts` holds the machine's state in the menu bar — both shares from the captured
+  reading, on one line, its card naming where the limit was read — and that a new reading moves
+  nothing beside it: the account keeps its place while a share goes from 100 to 9.
+- `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
+  rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
+  and a jump from the orders landing in the trade history opened as a panel.
+- `narrow_panels.spec.ts` holds what narrow room does to what stands beside it: the narrowing in the
+  menu bar shortening its name before anything beside it moves, its button still whole and inside
+  the bar, the Panels trigger on one line — at 760 px, where the bar fits its mark and button and
+  not its whole text — and no figure of the executive summary breaking onto a second line or cut
+  short, at the width where they broke; and the run list's facet bar on one line at 1400 and 700 px
+  and on two at most at 420 px, measured against the height of one chip. All of them were red
+  against the code before them.
+- `show_in_list.spec.ts` holds the way back from the run bundle to the chosen run's row: the run
+  list brought forward with the row in view and marked a moment, the row found again once the list
+  was scrolled away with only the list scrolled and never its view, and the way not offered while
+  the list docked beside the bundle shows the row — offered again once the list scrolls away.
+- `booking_periods.spec.ts` holds the ledger's rows: a unit of two periods closed by its total line,
+  whose card at the pointer names both declines, and a period row that is no control opening its
+  card on a keyboard focus — the capture books one period per unit, so the spec serves it with its
+  first unit booked twice and the rest of the body unchanged.
+- `run_chart.spec.ts` holds the run chart: the chart mark on a trade opening it BESIDE the run
+  report, on the trade's unit, drawn on a canvas with its marks counted on the element and the
+  position marked in the list; the Panels menu opening it on the first unit with trades; and ONE
+  focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
+  in the chart narrows the lists to it.
+- `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
+  browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read
+  from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its
+  fills and they offer nothing to click. The test it replaced counted `<th>` against the group row's
+  `colspan`; after the migration both are zero, so it would have passed for ever on a subject that
+  no longer exists.
+- `position_link.spec.ts` holds the jump between an order and its trade, and every part of it lives
+  in the VIEW rather than in a panel: a CLOSED target panel being opened, a HIDDEN one coming back
+  rather than the jump landing nowhere, the position reaching the address bar, a marked row still
+  answering the pointer with its hover, a jump from far down the orders SCROLLING its trades into
+  view, and the mark surviving a real reload without the page scrolling on its own. The scroll test
+  jumps from the LAST link on purpose: the trades of the first one are on screen anyway, so a test
+  on them stayed green with the scroll removed (2026-10-12). The fixtures make the trap concrete —
+  `pos_ethusd_1` appears in five scenarios of the order history and two of them produced a trade, so
+  the link is drawn twice and the mark lands in one scenario rather than in every row carrying that
+  id.
+- `open_in_context.spec.ts` holds the way from one VIEW into another — a deployment's session into
+  its run, a run into the deployment it was a session of — because a unit test records where a panel
+  asked to go, and only a browser shows the shell going there.
+- `panel_boundary.spec.ts` holds the one claim the unit suite cannot reach, because it is about the
+  WORKSPACE and not about a panel: a section that cannot be drawn takes ONLY itself off the screen.
+  The fault is injected rather than waited for — `mockApi` takes an option to serve one named field
+  of one section as a number, so the read throws exactly where the original defect did, and the body
+  stays the real capture in every other respect. The healthy panel count is measured in the same
+  test rather than written down, since which sections a run carries is a property of the captures.
+  Two moments, because they fail differently: `warnings-errors` is open by default and throws at
+  FIRST PAINT, which is the shape that cost eleven panels at once; the Orders panel is folded and
+  throws when the reader opens it, so the mark also has to survive folding it again.
+- `list_ranks.spec.ts` holds the ranks — and, since 2026-10-09, that **opening a group does not move
+  the columns**, which is the `auto`-track hazard the architecture note describes: measured
+  identical to the pixel on the captured index, and a test rather than a comment because that is a
+  property of the DATA. It went red on 2026-10-15, when the re-captured index put a wider value into
+  a closed family, and since then the run list measures its closed families (`measureClosed`), so
+  the guarantee is the code's and the test checks it. A run of two account currencies states each
+  figure on its own line beside its trade count — they stood inline as `3.74 EUR-22.95 USD` until
+  2026-10-18, one figure minus another. It is the ONLY instrument for them: jsdom evaluates no
+  container queries at all, so the unit suites can assert only that each list declares the same rank
+  twice — on the column and on the cell. Whether the browser then acts on it needs a browser. FIVE
+  widths — one on each side of every rung, because a rung nothing measures is a rung nobody knows is
+  broken — every ranked list on the run view — `.order-list` joined on 2026-10-05, and its absence
+  until then was a real gap, since the panel it replaced was never swept either — and the assertion
+  is a RELATIONSHIP rather than a pixel number: the track count, the visible headings and the
+  visible cells are all the count of columns whose rank survives the tier the shell measured. It
+  also asserts that every ranked list actually gives something up when narrowed, that the run list
+  keeps its card at the narrowest tier, and that neither the run list nor the trade list scrolls
+  sideways there. It also holds the OTHER declaration that needs two halves: **every figure cell
+  stands under its own heading**, compared as the right edge of the INK through a Range so padding
+  does not enter into it. That assertion found three of the four lists misaligned by 11 to 172 px,
+  ten columns of ten in the booking periods — every declaration correct, the geometry not.
 
 Three traps it walked into while being written, all now in the spec's own comments. A stored run
 draws NO run list, because the picker collapses once a run is chosen. The booking-period
