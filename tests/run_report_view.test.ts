@@ -111,11 +111,17 @@ describe('RunReportView', () => {
     expect(wrapper.findAllComponents(HintLine).map(hint => hint.props('id'))).not.toContain('open-as-panel')
   })
 
-  /** ⋯ on the bundle's tab is a control nothing else on screen explains (#42). */
-  it('explains what ⋯ on its tab offers', () => {
+  /**
+   * ⋯ on the bundle's tab is a control nothing else on screen explains (#42), and how a section
+   * comes out and goes back is said while there are sections to take out — the emptied bundle's
+   * test holds that the second hint stands down, this one that it is there to stand down.
+   */
+  it('explains what ⋯ on its tab offers, and how a section comes out', () => {
     chooseRun()
     const wrapper = mount(RunReportView)
-    expect(wrapper.findAllComponents(HintLine).map(hint => hint.props('id'))).toContain('bundle-commands')
+    const hints = wrapper.findAllComponents(HintLine).map(hint => hint.props('id'))
+    expect(hints).toContain('bundle-commands')
+    expect(hints).toContain('open-as-panel')
   })
 
   /** What stays in the column the run does not carry, so the sentence speaks of what it carries. */

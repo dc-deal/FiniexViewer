@@ -328,11 +328,6 @@ describe('useDockStore', () => {
     expect(dock.restored).toHaveLength(1)
   })
 
-  /**
-   * dockview stores a panel's title with the layout and restores it as stored. The tab draws the
-   * kind's own title, but the tab's accessible name and the dock's announcements kept the old one
-   * after a rename — the run bundle went on being read out as "Run".
-   */
   /** On show is not open: the hosts say which panels are seen, and a dock taken down sees none. */
   it('keeps which panels are on show as their hosts report it, and forgets it with the dock', () => {
     const store = useDockStore()
@@ -348,6 +343,11 @@ describe('useDockStore', () => {
     expect(store.shownIds).toEqual([])
   })
 
+  /**
+   * dockview stores a panel's title with the layout and restores it as stored. The tab draws the
+   * kind's own title, but the tab's accessible name and the dock's announcements kept the old one
+   * after a rename — the run bundle went on being read out as "Run".
+   */
   it('gives a restored panel the title its kind has now', () => {
     useArrangementStore().setDock({
       grid: { root: { type: 'leaf', data: { id: 'g', views: ['run', 'chart'], activeView: 'run' } } },

@@ -34,9 +34,10 @@ export interface PanelDescriptor {
   source: string
   defaultOpen: boolean
   /**
-   * What a scenario narrowing does to this section: `filters` draws only the chosen scenarios'
-   * rows, `marks` keeps every row and marks the chosen ones, `null` means it does not read the
-   * narrowing at all. Opened as a panel of its own, a section carries the narrowing's frame only
+   * What a scenario narrowing does to this section's ROWS: `filters` draws only the chosen
+   * scenarios' rows, `marks` keeps every row and marks the chosen ones, `null` means its rows do not
+   * change with it — a section of run-wide figures may still mark them as the whole run's while a
+   * scenario is in focus (the Executive Summary, Run Totals). Opened as a panel of its own, a section carries the narrowing's frame only
    * where the narrowing FILTERS (the narrowing itself is said once, in the menu bar) — a frame says *what
    * you see here is a part*, which is untrue of a list that still shows every row.
    */

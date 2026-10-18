@@ -100,12 +100,6 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
   })
 
   /**
-   * A run that booked no period at all states no figure in its currency, and the backend serves
-   * `total_final_equity` as null there. `Intl.NumberFormat` formats null as `0.00` without
-   * complaining, so the footnote printed a closing equity nobody reported. Measured 2026-10-01 on
-   * `20260924_165923_4d6c2f5f` — one run of 45, which is exactly how long such a figure survives.
-   */
-  /**
    * Neither figure stands on any row, and the reader took them for figures of ours (2026-10-18).
    * Each says on hover how the backend forms it.
    */
@@ -116,6 +110,12 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
     expect(titles[1]).toContain('sum of the closing equities')
   })
 
+  /**
+   * A run that booked no period at all states no figure in its currency, and the backend serves
+   * `total_final_equity` as null there. `Intl.NumberFormat` formats null as `0.00` without
+   * complaining, so the footnote printed a closing equity nobody reported. Measured 2026-10-01 on
+   * `20260924_165923_4d6c2f5f` — one run of 45, which is exactly how long such a figure survives.
+   */
   it('leaves out a closing equity the run never reported, rather than printing it as zero', () => {
     const wrapper = mountPanel(report({ total_final_equity: null }))
     const footnote = wrapper.find('.footnote').text()

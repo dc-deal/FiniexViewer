@@ -1036,15 +1036,15 @@ A run holds up to forty scenarios, and the facet bar only narrows the ROSTER. Th
 other half: scenarios are chosen, and the sections that are per-unit follow them.
 
 ```
-run 20260927_092959_cd1d9b1e · units ETHUSD_blocks_06, ETHUSD_blocks_09
+run 20260927_092959_cd1d9b1e · in focus ETHUSD_blocks_06
 
-  roster            marks the rows; a click adds, a second click takes one out
+  roster            marks its row; a click moves the focus, a second click shows the whole run
   trade history     narrowed
   booking periods   narrowed
   warnings/errors   narrowed — but a RUN-scoped warning stays, it is still true
-  portfolio         MARKED, never narrowed
-  RunsView          the whole column is FRAMED, dashed
-  menu bar          "⌖ Only EURGBP_01 · Show all", once for every panel
+  executive, totals MARKED as the whole run, never narrowed
+  run bundle        the whole column is FRAMED, dashed
+  menu bar          "⌖ Only ETHUSD_blocks_06 · Show all", once for every panel
   Run chart         draws the scenario in focus
 ```
 
@@ -1522,8 +1522,10 @@ each carries its name for a screen reader. A panel without options leaves the ba
 groups side by side each speak for their own front panel.
 
 **The quick bar gives way before a tab does.** `dock_theme.css` gives dockview's actions container
-a shrink share of 100 to 1 against the tabs, down to the least width the bar's content declares: the
-bar shortens first, and a tab goes into the overflow menu only after it.
+an overwhelming shrink share against the tabs (`flex-shrink: 1000000`), down to the least width the
+bar's content declares: the bar shortens first, and a tab goes into the overflow menu only after it.
+A share of 100 to 1 still cost the tabs 2 px, and one pixel short is enough for dockview to move a
+tab into that menu (measured at 560 px).
 
 **The narrowing is said once, in the menu bar** (`NarrowingStatement`, viewer#42). It stood in the
 quick bar of the run bundle and of each section panel, so a bundle split into three groups said it
@@ -1540,7 +1542,7 @@ dockview. The timings, taken again the same day on a quiet machine, moved by not
 
 These are the REPORT panels inside the run bundle, the accordion column; since viewer#31 any of them opens as a docked panel of its own. The viewer shows many small panels around one chart rather than one view per page. Three pieces carry that:
 
-- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The column and the Panels menu render from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset bundle* (Panels ▸ Runs) carries it into an arrangement somebody already made.
+- **`src/panel_registry.ts`** — a declarative list of `PanelDescriptor`s: id, title, icon (a registry name, `kind-<id>`), component, the `source` key it reads, and whether it starts open. A plain list rather than a `register()` call, so with a static import graph the order is explicit instead of depending on which module loaded first. The column and the Panels menu render from this list, so a new panel is an entry here, not a rebuild. **The list IS the default order and its principle is stated beside it**: the verdict · the UNIT it is denominated in · what ran · when · the sum · the evidence · whether to trust it · the provenance. The unit is the category the first version of that principle lacked, and its absence misplaced Broker — market type, symbol, contract size and swap decide what a figure MEANS, so it reads second rather than among the breakdowns. Changed 2026-10-07 after days of use, and only *Reset bundle* (behind ⋯ on the bundle's tab) carries it into an arrangement somebody already made.
 - **`src/components/panels/`** — `AccordionPanel` (the shell: collapse, pin, lock, hide, controls revealed on hover and on focus) and `PanelColumn` (the ordered stack, drag to reorder). The column renders from `arrangedPanels` — every panel, switched-off ones included, in the order the reader made — and leaves out what is switched off, what is open as a panel of its own and what this run does not carry. The Panels menu lists the same arrangement (see *Docked Panels*); the section bar that drew it on its side above the column retired on 2026-10-14. The collapsible behaviour, its ARIA wiring and keyboard handling come from Reka UI.
 - **`src/stores/layout_store.ts`** — the panel column's order and state, persisted under its own versioned key `layout.v1`, per browser tab like the arrangement (the selection is in `arrangement.v1`, see *Selection State*).
 

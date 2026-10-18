@@ -1,4 +1,5 @@
 import type { OpenInContext } from '@/composables/use_open_in_context'
+import { RUN_BUNDLE } from '@/panel_kinds'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -22,7 +23,7 @@ export function openInDock(): OpenInContext {
   return {
     openRun: (runId: string) => {
       void runs.selectRun(runId)
-      dock.reveal('run', 'command')
+      dock.reveal(RUN_BUNDLE, 'command')
     },
     openDeployment: (deploymentId: string) => {
       void deployments.selectDeployment(deploymentId)

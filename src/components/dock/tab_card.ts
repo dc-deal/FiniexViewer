@@ -10,8 +10,12 @@ import { listed, t } from '@/translate'
  * so no two tabs word a link differently and no kind can say a link it does not declare.
  */
 
-/** The link's keys in the link's own order, so two cards list the same keys alike. */
-const LINK_ORDER: LinkKey[] = ['run', 'units', 'position', 'deployment', 'market']
+/**
+ * The link's keys in the link's own order, so two cards list the same keys alike. A record rather
+ * than a list: a key added to `LinkKey` is a type error here until it has a place, where a list
+ * left it off every card in silence.
+ */
+const LINK_RANK: Record<LinkKey, number> = { run: 0, units: 1, position: 2, deployment: 3, market: 4 }
 
 /** What a panel follows, named as the thing it follows. */
 const FOLLOWED: Record<LinkKey, string> = {
@@ -34,8 +38,7 @@ const CHOSEN: Record<LinkKey, string> = {
 }
 
 function ordered(keys: LinkKey[]): LinkKey[] {
-  const present = new Set(keys)
-  return LINK_ORDER.filter(key => present.has(key))
+  return [...new Set(keys)].sort((a, b) => LINK_RANK[a] - LINK_RANK[b])
 }
 
 /**

@@ -410,7 +410,7 @@ describe('ScenarioRosterPanel', () => {
 
     /**
      * A pick changes what is MARKED, never what stands where. Swapping the hint for a line naming the
-     * choice moved the whole list under the pointer; the choice is said once, in the Runs quick bar.
+     * choice moved the whole list under the pointer; the choice is said once, in the menu bar.
      */
     it('keeps the hint once something is picked, and marks the choice on its rows only', () => {
       const { wrapper } = mountWithSelection(MIXED, ['eth_a'])

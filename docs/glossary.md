@@ -58,8 +58,8 @@ same idea as the panels of FiniexTestingIDE's AutoTrader console, which these mi
 in the run report and which are open as panels, and where a hidden panel stood last. The part of
 the arrangement that is not a choice of what to show.
 
-**quick bar** — The one to three settings of the panel in front of a tab group, on the right of its
-tabs: a chart's broker, symbol and timeframe.
+**quick bar** — The settings of the panel in front of a tab group, on the right of its tabs: the free
+chart's broker, symbol and timeframe, the run chart's unit and timeframe.
 
 **run-bound chart** — The chart of one unit of a run, its trades marked on the candles — the panel
 *Run chart*, opened beside the run report from the Panels menu or by the chart mark on a trade or
