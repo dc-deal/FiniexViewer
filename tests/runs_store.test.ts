@@ -274,7 +274,6 @@ describe('useRunsStore', () => {
       expect(store.loadingSummary).toBe(false)
     })
 
-    /** The run report's to say — the run list it was picked from stays as it is. */
     /**
      * The run already chosen is not a new one: a second click on its row cleared the scenario in
      * focus and drew the summary through loading again, for nothing. Where the first attempt
@@ -306,6 +305,21 @@ describe('useRunsStore', () => {
       expect(store.summary).toEqual(SUMMARY)
     })
 
+    /** A retry of the run on show is the same run: the focus and the mark it had stay with it. */
+    it('keeps the focus and the mark through a retry of the run already chosen', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      vi.mocked(apiClient.getRunSummary).mockRejectedValueOnce(new Error('boom')).mockResolvedValue(SUMMARY)
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260615_130000')
+      store.toggleUnit('ETHUSD_blocks_03')
+
+      await store.selectRun('20260615_130000')
+      expect(store.summary).toEqual(SUMMARY)
+      expect(store.selectedUnits).toEqual(['ETHUSD_blocks_03'])
+    })
+
+    /** The run report's to say — the run list it was picked from stays as it is. */
     it('surfaces a summary failure as an error message, and leaves the index alone', async () => {
       vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
       vi.mocked(apiClient.getRunSummary).mockRejectedValue(new Error('boom'))
@@ -343,6 +357,61 @@ describe('useRunsStore', () => {
       expect(apiClient.getRuns).toHaveBeenCalledTimes(2)
       expect(store.unknownRunId).toBeNull()
       expect(apiClient.getRunSummary).toHaveBeenCalledWith(later.run_id)
+    })
+
+    /**
+     * An index that could not be read says nothing about the run chosen. Calling it gone sent every
+     * run panel to *no longer in the index* through a backend outage, and kept them there after it.
+     */
+    it('leaves a run unjudged where the index could not be read, and tries again on the next pick', async () => {
+      vi.mocked(apiClient.getRuns).mockRejectedValue(new Error('down'))
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
+      const store = useRunsStore()
+      await store.loadRuns()
+      await store.selectRun('20260615_130000')
+      expect(store.unknownRunId).toBeNull()
+      expect(store.indexError).toBe('Could not load the run index: down')
+      expect(store.awaitingRun).toBe(false)
+
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      await store.selectRun('20260615_130000')
+      expect(store.indexError).toBeNull()
+      expect(store.summary).toEqual(SUMMARY)
+    })
+
+    /** While the index is asked once more for the run, its panels say they load — not "no run". */
+    it('says it awaits the run while the index is asked once more', async () => {
+      let answer: (runs: RunInfo[]) => void = () => {}
+      vi.mocked(apiClient.getRuns).mockResolvedValueOnce([])
+        .mockReturnValueOnce(new Promise(resolve => { answer = resolve }))
+      vi.mocked(apiClient.getRunSummary).mockResolvedValue(SUMMARY)
+      const store = useRunsStore()
+      await store.loadRuns()
+      const picked = store.selectRun('20260615_130000')
+      expect(store.awaitingRun).toBe(true)
+      expect(store.loadingRuns).toBe(false)
+
+      answer(RUNS)
+      await picked
+      expect(store.awaitingRun).toBe(false)
+      expect(store.selectedRun?.run_id).toBe('20260615_130000')
+    })
+
+    /**
+     * A summary still on its way belongs to the run before. A logs-only run picked meanwhile asks for
+     * none, and said it loaded one for good, because the old answer may write nothing.
+     */
+    it('does not keep loading a summary for a logs-only run picked while another was loading', async () => {
+      vi.mocked(apiClient.getRuns).mockResolvedValue(RUNS)
+      vi.mocked(apiClient.getRunSummary).mockReturnValue(new Promise(() => {}))
+      const store = useRunsStore()
+      await store.loadRuns()
+      void store.selectRun('20260615_130000')
+      await Promise.resolve()
+      expect(store.loadingSummary).toBe(true)
+
+      await store.selectRun('20260615_123000')
+      expect(store.loadingSummary).toBe(false)
     })
 
     it('never requests anything while the index is empty', async () => {

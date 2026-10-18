@@ -87,6 +87,15 @@ describe('RunReportView', () => {
     expect(wrapper.text()).toContain('gone_run')
   })
 
+  /** An index that could not be read says nothing about the run: never "no run", never "gone". */
+  it('says an index that could not be read, with a run chosen', () => {
+    useContextStore().selectRun('r1')
+    useRunsStore().indexError = 'Could not load the run index: down'
+    const wrapper = mount(RunReportView)
+    expect(wrapper.find('.notice.failed').text()).toBe('Could not load the run index: down')
+    expect(wrapper.text()).not.toContain('No run is chosen')
+  })
+
   /**
    * Every member taken out: the bundle says why it is empty instead of standing as an empty frame,
    * and the hint that says the same stands down (#42).

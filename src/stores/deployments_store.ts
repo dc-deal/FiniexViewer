@@ -147,11 +147,15 @@ export const useDeploymentsStore = defineStore('deployments', () => {
 
   /**
    * A deployment the reader chose: it becomes the main link's, then it loads. The one already
-   * chosen loads again only where it failed or the ledger did not know it — the same rule as a run.
+   * chosen loads again only where it is not on show — it failed, or the ledger did not know it —
+   * the same rule as a run. Asked by what is LOADED rather than by the error: a quiet refresh of
+   * the ledger clears the shared error, and a deployment that failed could then not be tried again.
    */
   async function selectDeployment(deploymentId: string): Promise<void> {
-    if (deploymentId === selectedDeploymentId.value && error.value === null && unknownDeploymentId.value === null) return
-    context.selectDeployment(deploymentId)
+    const same = deploymentId === selectedDeploymentId.value
+    const shown = (detail.value !== null || loadingDetail.value) && unknownDeploymentId.value === null
+    if (same && shown) return
+    if (!same) context.selectDeployment(deploymentId)
     await loadDeployment(deploymentId)
   }
 

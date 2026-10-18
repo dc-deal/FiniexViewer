@@ -1300,6 +1300,12 @@ date and time, whole in the tab's card (`PanelKind.subtitle`). The run's grade s
 bundle's tab, where the report is; the narrowing is said once, in the menu bar. The two failures are kept apart in
 `runs_store`: the index failing is the list's to say (`indexError`), the summary failing the
 report's (`summaryError`) — one shared ref let a broken summary blank the list it was picked from.
+An index that could not be read says nothing about the chosen run: no panel calls the run gone, and
+the run's panels say the index's failure in the error role. While the index is asked once more for
+a run it did not hold, they say they load (`awaitingRun`) rather than that no run is chosen. A pick
+of the run already on show does nothing; a pick of it after a failure is a retry of the SAME run,
+which keeps its focus and its mark. A section that failed to load is not absent — the run carries
+it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the one rule for both).
 
 - **`src/panel_kinds.ts`** — every kind in the SUGGESTED ORDER, from the general to the particular:
   a deployment holds runs, a run has its chart (operator, 2026-10-13). A kind names its title, the

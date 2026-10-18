@@ -27,7 +27,7 @@ import { t } from '@/translate'
 const runsStore = useRunsStore()
 const {
   selectedRun, selectedUnits, summaryUnreadable, summaryError,
-  unknownRunId, loadingRuns, chosenRowInView,
+  unknownRunId, awaitingRun, indexError, chosenRowInView,
 } = storeToRefs(runsStore)
 const { unreadable, errors: sectionErrors } = storeToRefs(useRunReportsStore())
 const sectionsStore = useRunSectionsStore()
@@ -149,13 +149,18 @@ const missingSections = computed(() => {
     </header>
 
     <div class="run-report-body">
-      <div v-if="loadingRuns" class="state-overlay">
+      <div v-if="awaitingRun" class="state-overlay">
         <AppSpinner />
       </div>
       <div v-else-if="unknownRunId" class="state-overlay">
         <span class="hint">
           {{ t('The run you had open is no longer in the index') }}: {{ unknownRunId }}
         </span>
+      </div>
+      <!-- an index that could not be read says nothing about the run chosen: the failure is said,
+           never "no run is chosen" and never "no longer in the index" -->
+      <div v-else-if="!selectedRun && indexError" class="state-overlay">
+        <p class="notice failed">{{ indexError }}</p>
       </div>
       <div v-else-if="!selectedRun" class="state-overlay state-none">
         <span class="hint">{{ t('No run is chosen — the Runs panel lists them') }}</span>

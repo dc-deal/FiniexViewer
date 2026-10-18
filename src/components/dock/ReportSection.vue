@@ -25,14 +25,14 @@ const props = defineProps<{ sectionId: string }>()
 const descriptor = panelById(props.sectionId)
 const sections = useRunSectionsStore()
 const { sources, pending } = storeToRefs(sections)
-const { selectedRunId, selectedRun, selectedUnits, loadingRuns, unknownRunId, indexError } = storeToRefs(useRunsStore())
+const { selectedRunId, selectedRun, selectedUnits, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
 const model = computed(() => descriptor ? sources.value[descriptor.source] ?? null : null)
 
 /** Framed only where the narrowing FILTERS what is drawn — a list that still shows every row is whole. */
 const framed = computed(() => descriptor?.narrowing === 'filters' && selectedUnits.value.length > 0)
 // the index first: a restored run has no index row until the index has arrived
-const loading = computed(() => loadingRuns.value
+const loading = computed(() => awaitingRun.value
   || (model.value === null && Boolean(descriptor && pending.value[descriptor.source])))
 
 // every failure and every older-schema state among the slots this section reads, said above it —
@@ -48,7 +48,8 @@ const emptyReason = computed<string | null>(() => {
   if (!selectedRunId.value) return t('No run is chosen — the Runs panel lists them')
   if (loading.value) return null
   if (unknownRunId.value) return `${t('The run you had open is no longer in the index')}: ${unknownRunId.value}`
-  if (!selectedRun.value) return indexError.value ?? t('No run is chosen — the Runs panel lists them')
+  // an index that failed is a failure, said in the error role below rather than as an absence
+  if (!selectedRun.value) return indexError.value ? null : t('No run is chosen — the Runs panel lists them')
   if (model.value !== null) return null
   if (failures.value.length || unreadables.value.length) return null
   return sections.absenceOf(descriptor.source)?.detail || t('This run carries no such section')
@@ -80,6 +81,10 @@ watch(model, () => {
     <p v-for="message in unreadables" :key="message" class="notice">{{ message }}</p>
     <LoadingLine v-if="loading" class="panel-loading" />
     <p v-else-if="emptyReason" class="notice absent">{{ emptyReason }}</p>
+    <p v-else-if="selectedRunId && !selectedRun && indexError" class="notice failed">
+      <AppIcon name="status-error" class="mark" />
+      <span>{{ indexError }}</span>
+    </p>
     <p v-else-if="failed" class="notice failed">
       <AppIcon name="status-error" class="mark" />
       <span>{{ t('This section could not be drawn. The rest of the report is unaffected.') }}</span>

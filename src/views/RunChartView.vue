@@ -21,7 +21,7 @@ const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, truncated, loading, error, marks, focusAt,
   priceFormat,
 } = storeToRefs(chart)
-const { selectedRunId, selectedRun, loadingRuns, unknownRunId, indexError } = storeToRefs(useRunsStore())
+const { selectedRunId, selectedRun, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
 // the archive is asked only while a run chart is on show
 onMounted(() => chart.attach())
@@ -35,7 +35,7 @@ onUnmounted(() => chart.detach())
     </div>
     <!-- the run's index row comes before anything about its units: without it the chart said
          "names no market" through every first load of the index — the run report's own order -->
-    <div v-else-if="loadingRuns" class="state-overlay">
+    <div v-else-if="awaitingRun" class="state-overlay">
       <AppSpinner />
     </div>
     <div v-else-if="unknownRunId" class="state-overlay">
