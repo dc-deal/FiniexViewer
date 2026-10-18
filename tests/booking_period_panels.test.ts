@@ -617,10 +617,12 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         order: 'time',
       },
     })
-    // the ledger window is 2026-09-22; the periods are 2026-01-24/25 and the axis follows them
-    const note = wrapper.find('.axis').attributes('title') ?? ''
-    expect(note).toContain('2026-01-24')
-    expect(note).not.toContain('23:1')
+    // the ledger window is 2026-09-22; the periods are 2026-01-24/25 and the axis follows them —
+    // across midnight, so the day turns over on a mark rather than being named once for all
+    expect(wrapper.find('.axis-spacer').text()).toBe('canonical clock · Jan 2026')
+    const ticks = wrapper.findAll('.tick').map(node => node.text())
+    expect(ticks).toContain('25 Jan')
+    expect(ticks.join(' ')).not.toContain('23:1')
   })
 
   /**
@@ -830,5 +832,64 @@ describe('BookingPeriodTimeline — many short slices', () => {
     const wrapper = mountSlices()
     expect(wrapper.find('.gap-label.summary').exists()).toBe(false)
     expect(wrapper.findAll('.gap-label').length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * A year of booking periods is the ordinary case for a bot tested a year at a time (measured
+ * 2026-10-19: 203 and 162 daily periods in two lanes). Its axis marked nothing but its two ends, the
+ * end without a date, and the year stood nowhere.
+ */
+describe('BookingPeriodTimeline — a long scale', () => {
+  const HOUR = 3600_000
+
+  function mountTimeline(periods: BookingPeriodRow[]) {
+    return mount(BookingPeriodTimeline, { props: { periods, keyFields: ['unit_name', 'period_no'], order: 'time' } })
+  }
+
+  /** Twelve periods of a month each, one unit, 2021 from end to end. */
+  function year(): BookingPeriodRow[] {
+    return Array.from({ length: 12 }, (_, index) => period({
+      unit_name: 'alpha',
+      period_no: index + 1,
+      opened_at: new Date(Date.UTC(2021, index, 1, 0, 0, 6)).toISOString(),
+      closed_at: new Date(index < 11 ? Date.UTC(2021, index + 1, 1, 0, 0, 4) : Date.UTC(2021, 11, 31, 23, 59))
+        .toISOString(),
+    }))
+  }
+
+  it('marks a year by its quarters and says the year once, beside the scale', () => {
+    const wrapper = mountTimeline(year())
+    expect(wrapper.findAll('.tick').map(node => node.text())).toEqual(['Apr', 'Jul', 'Oct'])
+    expect(wrapper.find('.axis-spacer').text()).toBe('canonical clock · 2021')
+  })
+
+  /** Across New Year the years stand beside the scale, and the mark where the year turns over names it. */
+  it('names the years of a scale that crosses New Year', () => {
+    const wrapper = mountTimeline([
+      period({ unit_name: 'alpha', opened_at: '2021-11-01T00:00:06Z', closed_at: '2022-02-01T00:00:00Z' }),
+    ])
+    expect(wrapper.find('.axis-spacer').text()).toBe('canonical clock · 2021–2022')
+    expect(wrapper.findAll('.tick').map(node => node.text())).toEqual(['Dec', '2022', 'Feb'])
+  })
+
+  /** Down to its two ends, the axis ends where the periods stop — not a round moment, so it names its day. */
+  it('gives an end its day where the scale spans days', () => {
+    const many = Array.from({ length: 6 }, (_, index) => ({
+      ...period({ unit_name: `unit_${index}`, period_no: 1 }),
+      run_id: `r${index}`,
+      opened_at: new Date(index * 300 * HOUR).toISOString(),
+      closed_at: new Date(index * 300 * HOUR + HOUR).toISOString(),
+    }))
+    const ticks = mountTimeline(many).findAll('.tick').map(node => node.text())
+    expect(ticks.at(-1)).toBe('04 Mar 13:00Z')
+  })
+
+  /** Shorter than a day and still across midnight: no single day holds every mark. */
+  it('names one day for the scale only where every mark falls on it', () => {
+    const across = mountTimeline([period({ opened_at: '2021-03-01T23:00:00Z', closed_at: '2021-03-02T01:00:00Z' })])
+    expect(across.find('.axis').attributes('title')).not.toContain('All times on')
+    const inside = mountTimeline([period({ opened_at: '2021-03-01T09:00:00Z', closed_at: '2021-03-01T17:00:00Z' })])
+    expect(inside.find('.axis').attributes('title')).toContain('All times on 2021-03-01')
   })
 })

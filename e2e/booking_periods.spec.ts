@@ -33,6 +33,25 @@ function twoPeriods(): Captured {
   }
 }
 
+/**
+ * The capture with its first unit booked day after day, edge to edge — the shape of a bot tested a
+ * year at a time, where the ledger closes a period every day.
+ */
+function dailyPeriods(days: number): Captured {
+  const captured = fixture('run_booking_periods.json') as Captured
+  const first = captured.periods[0]!
+  const day = (count: number) => new Date(Date.parse(first.opened_at) + count * 86_400_000).toISOString()
+  const daily = Array.from({ length: days }, (_, index) => ({
+    ...first, period_no: first.period_no + index, opened_at: day(index), closed_at: day(index + 1),
+  }))
+  return {
+    ...captured,
+    periods: [...daily, ...captured.periods.slice(1)],
+    unit_totals: captured.unit_totals.map(total =>
+      total.unit_name === first.unit_name ? { ...total, period_count: days } : total),
+  }
+}
+
 test.beforeEach(async ({ page }) => {
   await mockApi(page)
   // registered after the mock, so it answers first: Playwright tries the newest route first
@@ -62,6 +81,24 @@ test('each unit closes with its total line, and a total says the account own dec
   await expect(card).toBeVisible()
   await expect(card).toContainText('Deepest period drawdown')
   await expect(card).toContainText('Max drawdown')
+})
+
+/**
+ * Drawn with their rings, two hundred daily bars lay each under the next one's ring, all but the
+ * last, and the lane read as empty. The ring is what only a browser paints: the lane draws edge to
+ * edge instead, says so once, and the axis marks the calendar rather than its two bare ends.
+ */
+test('a lane too dense for its rings draws its periods edge to edge, on an axis of the calendar', async ({ page }) => {
+  await page.route('**/api/v1/reports/runs/*/booking-periods', route => route.fulfill({ json: dailyPeriods(200) }))
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const trigger = page.locator('.panel-trigger', { hasText: 'Booking Periods' })
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click()
+  const timeline = page.locator('[data-panel="booking-periods"] .booking-timeline')
+  await expect(timeline.locator('.lane.dense')).toHaveCount(1)
+  await expect(timeline.locator('.dense-note')).toBeVisible()
+  const ring = await timeline.locator('.lane.dense .span').first().evaluate(node => getComputedStyle(node).outlineStyle)
+  expect(ring).toBe('none')
+  await expect(timeline.locator('.tick', { hasText: 'Apr' })).toHaveCount(1)
 })
 
 /** A read-only row reachable by the keyboard: the card opens on focus, and a click does nothing. */

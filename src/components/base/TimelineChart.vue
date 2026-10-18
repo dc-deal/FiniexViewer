@@ -28,6 +28,11 @@ const props = withDefaults(defineProps<{
   /** The whole of it, one hover away — what a short label cannot carry. */
   scaleNote?: string
   /**
+   * Said beneath the lanes where one of them draws its spans edge to edge, too close to set apart.
+   * What a span IS belongs to the caller, so the words are the caller's; empty says nothing.
+   */
+  denseNote?: string
+  /**
    * Remove a stretch where NOTHING is drawn once it exceeds this length, and mark the removal.
    *
    * This breaks the axis, which is only honest because of what is removed: a time axis encodes
@@ -68,6 +73,7 @@ const props = withDefaults(defineProps<{
   labelWidth: 15,
   scaleLabel: '',
   scaleNote: '',
+  denseNote: '',
   collapseGapsLongerThan: 0,
   formatGap: (length: number) => String(length),
   formatRange: undefined,
@@ -225,19 +231,17 @@ const axisTicks = computed<Tick[]>(() => {
     })
   }
   if (!axis.value.breaks.length) {
-    const step = naturalStep(length.value, Math.max(2, props.ticks))
     // Marks on ROUND moments — midnight, six o'clock — rather than on equal divisions of the span.
     // Divided evenly, a four-tick axis over two days reads `23:59:40Z`, which is a quarter of the
     // span and nothing else; the stems under such labels mark nothing a reader recognises. On a
     // natural step they mark the day and the hour, which is what the eye is looking for.
-    const marks: { at: number, label: string, edge: string }[] = []
-    for (let value = Math.ceil(props.from / step) * step; value <= props.to; value += step) {
-      marks.push({
-        at: ((value - props.from) / length.value) * 100,
-        label: props.format(value),
-        edge: 'mid',
-      })
-    }
+    const marks: { at: number, label: string, edge: string }[] = naturalMoments(
+      props.from, props.to, Math.max(2, props.ticks),
+    ).map(value => ({
+      at: ((value - props.from) / length.value) * 100,
+      label: props.format(value),
+      edge: 'mid',
+    }))
     // a span shorter than one step has no round moment inside it, so it keeps its own two ends
     if (marks.length < 2) {
       return [
@@ -271,12 +275,50 @@ const DAY = 24 * HOUR
 const STEPS = [
   MINUTE, 2 * MINUTE, 5 * MINUTE, 10 * MINUTE, 15 * MINUTE, 30 * MINUTE,
   HOUR, 2 * HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR,
-  DAY, 2 * DAY, 7 * DAY, 14 * DAY, 28 * DAY, 91 * DAY, 365 * DAY,
+  DAY, 2 * DAY, 7 * DAY, 14 * DAY,
 ]
 
-/** The smallest step that keeps the marks at or under the count asked for. */
-function naturalStep(span: number, count: number): number {
-  return STEPS.find(step => span / step <= count) ?? STEPS[STEPS.length - 1]!
+/**
+ * Past a fortnight the steps are the CALENDAR's, counted in months — a month, a quarter, half a
+ * year, a year and more — because a month has no fixed length. Counted in days from the epoch
+ * instead, a 91-day step put its marks wherever the division fell, and a year of booking periods
+ * found no 365-day mark inside it at all: the axis kept its two ends and nothing between them
+ * (measured 2026-10-19, `01 Jan … 23:59Z`).
+ */
+const MONTH_STEPS = [1, 3, 6, 12, 24, 60, 120]
+
+/** Midnight UTC on the first day of a month counted from year 0. */
+function monthStart(index: number): number {
+  return Date.UTC(Math.floor(index / 12), index % 12, 1)
+}
+
+/** Every round moment of one step inside the scale: a multiple of a length, or a month's first day. */
+function momentsOf(from: number, to: number, step: { every: number } | { months: number }): number[] {
+  const moments: number[] = []
+  if ('every' in step) {
+    for (let value = Math.ceil(from / step.every) * step.every; value <= to; value += step.every) {
+      moments.push(value)
+    }
+    return moments
+  }
+  const first = new Date(from)
+  let index = first.getUTCFullYear() * 12 + first.getUTCMonth()
+  if (monthStart(index) < from) index += 1
+  // on the step's own multiples, so a quarter starts in January, April, July or October
+  index = Math.ceil(index / step.months) * step.months
+  for (; monthStart(index) <= to; index += step.months) moments.push(monthStart(index))
+  return moments
+}
+
+/** The round moments of the smallest step that keeps the marks at or under the count asked for. */
+function naturalMoments(from: number, to: number, count: number): number[] {
+  const every = STEPS.find(step => (to - from) / step <= count)
+  if (every !== undefined) return momentsOf(from, to, { every })
+  for (const months of MONTH_STEPS) {
+    const moments = momentsOf(from, to, { months })
+    if (moments.length <= count) return moments
+  }
+  return momentsOf(from, to, { months: MONTH_STEPS[MONTH_STEPS.length - 1]! })
 }
 
 /**
@@ -410,10 +452,25 @@ const removedTotal = computed(() =>
   axis.value.breaks.reduce((sum, gap) => sum + gap.length, 0)
 )
 
+/**
+ * How far apart two bars must start for the ring of the second to leave the first in view: the ring
+ * reaches 2 px past either side, and a bar needs colour of its own between the two. Closer than this,
+ * every bar but the last lies under its neighbour's ring — measured 2026-10-19 on a year of daily
+ * booking periods, where each lane showed ONE sliver for some two hundred periods and read as empty.
+ */
+const SET_APART_PX = 6
+
+/** Bars that stand closer than their rings allow, drawn edge to edge instead: each seen, none set apart. */
+function tooCloseToSetApart(bars: { left: number }[]): boolean {
+  if (axisPx.value <= 0) return false
+  const lefts = bars.map(bar => bar.left).sort((a, b) => a - b)
+  return lefts.some((left, index) =>
+    index > 0 && ((left - lefts[index - 1]!) / 100) * axisPx.value < SET_APART_PX)
+}
+
 const drawn = computed(() =>
-  props.lanes.map(lane => ({
-    ...lane,
-    bars: lane.spans.map(span => {
+  props.lanes.map(lane => {
+    const bars = lane.spans.map(span => {
       const left = offset(span.from)
       // a span shorter than a pixel still has to be findable, so width has a floor in CSS
       const width = Math.max(0, offset(span.to) - left)
@@ -421,9 +478,13 @@ const drawn = computed(() =>
       // name is on its card either way
       const caption = captionFor(span.label, span.shortLabel, width)
       return { ...span, left, width, caption }
-    }),
-  }))
+    })
+    return { ...lane, bars, dense: tooCloseToSetApart(bars) }
+  })
 )
+
+/** Edge to edge, two spans of one colour read as one span, and only a sentence can say they are not. */
+const anyDense = computed(() => drawn.value.some(lane => lane.dense))
 </script>
 
 <template>
@@ -475,7 +536,7 @@ const drawn = computed(() =>
         <JumpLink v-if="lane.open" @click="lane.open?.()">{{ lane.label }}</JumpLink>
         <template v-else>{{ lane.label }}</template>
       </span>
-      <div class="lane">
+      <div class="lane" :class="{ dense: lane.dense }">
         <span
           v-for="gap in axis.breaks"
           :key="`gap-${gap.at}`"
@@ -501,6 +562,7 @@ const drawn = computed(() =>
       </div>
     </div>
 
+    <p v-if="anyDense && denseNote" class="dense-note">{{ denseNote }}</p>
   </div>
 </template>
 
@@ -640,6 +702,18 @@ const drawn = computed(() =>
 .span.negative { background-color: var(--color-negative); }
 .span.flat     { background-color: var(--color-text-secondary); }
 
+/* the keyboard's place in the link role, raised over its neighbours — the surface ring hid it */
+.span:focus-visible {
+  z-index: 1;
+  outline-color: var(--color-accent);
+}
+
+/* too close for a ring: edge to edge, so no bar lies under its neighbour's — focus keeps its own */
+.lane.dense .span:not(:focus-visible) {
+  outline: none;
+  border-radius: 0;
+}
+
 /* the label wears ink, never the span colour */
 .span-label {
   font-family: monospace;
@@ -649,46 +723,11 @@ const drawn = computed(() =>
   white-space: nowrap;
 }
 
-.tooltip {
-  position: absolute;
-  z-index: var(--z-chart);
-  transform: translateX(-50%);
-  min-width: 15rem;
-  padding: var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background-color: var(--color-bg-surface);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
-  pointer-events: none;
-}
-
-.tooltip-title {
-  margin: 0 0 var(--space-xs);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-}
-
-.tooltip-rows {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0 var(--space-md);
+/* under the lanes rather than under their labels, where it reads as the lanes' own caption */
+.dense-note {
   margin: 0;
-  font-family: monospace;
+  padding-left: calc(var(--label-width) + var(--space-sm));
   font-size: var(--font-size-sm);
-}
-
-.tooltip-rows dt {
   color: var(--color-text-secondary);
 }
-
-.tooltip-rows dd {
-  margin: 0;
-  text-align: right;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-}
-
-.tooltip-rows dd.positive { color: var(--color-positive); }
-.tooltip-rows dd.negative { color: var(--color-negative); }
 </style>

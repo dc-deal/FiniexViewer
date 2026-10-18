@@ -69,7 +69,9 @@ by its tab, the way a reader does.
 - `booking_periods.spec.ts` holds the ledger's rows: a unit of two periods closed by its total line,
   whose card at the pointer names both declines, and a period row that is no control opening its
   card on a keyboard focus — the capture books one period per unit, so the spec serves it with its
-  first unit booked twice and the rest of the body unchanged.
+  first unit booked twice and the rest of the body unchanged. And a unit booked daily for two
+  hundred days: its lane drawn edge to edge without the ring, said beneath the lanes, on an axis of
+  calendar marks — the ring is paint, which only a browser shows.
 - `run_chart.spec.ts` holds the run chart: the chart mark on a trade opening it BESIDE the run
   report, on the trade's unit, drawn on a canvas with its marks counted on the element and the
   position marked in the list; the Panels menu opening it on the first unit with trades; and ONE

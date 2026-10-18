@@ -46,6 +46,24 @@ narrow panel fourteen percent was a few pixels: `period 12` crowded into a bar 4
 stamps printed into one. Before a measurement exists — jsdom never makes one — the share rule
 still applies.
 
+**A lane too dense for its rings draws its periods edge to edge** (2026-10-19). Every bar wears a
+2 px ring in the surface colour, so two neighbours never read as one bar. A year of daily periods
+puts a bar every pixel or so, and each ring then covered the bar before it: a lane of some two
+hundred periods showed only its last one and read as empty. Where two bars of a lane start less than
+6 px apart, that lane drops the ring and draws them edge to edge — every period in view, two
+neighbours of one colour reading as one band — and one line beneath the lanes says so; each sliver's
+card still names its period. Keyboard focus takes the link colour on the ring, ringed or not.
+
+**Past a fortnight the axis marks the calendar.** Its steps are fixed lengths from a minute to two
+weeks, then months — one, three, six, twelve and more — because a month has no fixed length: a
+91-day step counted from the epoch put its marks wherever the division fell, and a year found no
+365-day mark inside it and kept its two ends alone, the second reading `23:59Z`. A mark names what
+turns over there — the time inside a day, the day, the month, at New Year the year — and what every
+mark shares stands once beside the scale's name: the month and year, the year, or the years from
+first to last. An END of the axis is where the periods stop rather than a round moment, so on a
+scale of several days it carries its day; and *All times on* one day is said only where the scale
+stays inside that calendar day, not merely inside 24 hours.
+
 **The table under the chart carries EVERY field a period has, and stays a table.** It once showed
 eleven of the fifteen the hover card shows, so the list meant to make periods comparable carried
 less than the thing that describes one. The two answer different questions — *what about this one*
