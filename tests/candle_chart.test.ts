@@ -63,7 +63,10 @@ const BARS: ChartBar[] = [
 
 let mounted: VueWrapper | null = null
 
-function mountChart(data: ChartBar[] = BARS, extra: { marks?: ChartMark[], focus?: number | null } = {}): VueWrapper {
+function mountChart(
+  data: ChartBar[] = BARS,
+  extra: { marks?: ChartMark[], focus?: number | null, priceFormat?: { precision: number, minMove: number } | null } = {},
+): VueWrapper {
   mounted = mount(CandleChart, { props: { data, ...extra } })
   return mounted
 }
@@ -254,6 +257,30 @@ describe('CandleChart', () => {
   })
 
   /** The marks are drawn on a canvas, where nothing can read them back — so the element counts them. */
+  /**
+   * The library rounds every price to two decimals unless told otherwise — EURUSD read `1.16` on every
+   * label. A format handed in is the series' from the start, follows a change, and a format taken away
+   * returns the library's own rather than keeping the previous instrument's decimals.
+   */
+  it('draws prices in the format it is handed, and follows a change', async () => {
+    size = { width: 800, height: 400 }
+    const wrapper = mountChart(BARS, { priceFormat: { precision: 5, minMove: 0.00001 } })
+    expect(lw.chart.addCandlestickSeries.mock.calls[0]![0]).toMatchObject({
+      priceFormat: { type: 'price', precision: 5, minMove: 0.00001 },
+    })
+
+    await wrapper.setProps({ priceFormat: { precision: 3, minMove: 0.001 } })
+    expect(lw.series.applyOptions).toHaveBeenLastCalledWith({ priceFormat: { type: 'price', precision: 3, minMove: 0.001 } })
+    await wrapper.setProps({ priceFormat: null })
+    expect(lw.series.applyOptions).toHaveBeenLastCalledWith({ priceFormat: { type: 'price', precision: 2, minMove: 0.01 } })
+  })
+
+  it('leaves the library its own format where it is handed none', () => {
+    size = { width: 800, height: 400 }
+    mountChart()
+    expect(lw.chart.addCandlestickSeries.mock.calls[0]![0]).not.toHaveProperty('priceFormat')
+  })
+
   it('says on its element how many marks it draws', () => {
     size = { width: 800, height: 400 }
     const wrapper = mountChart(BARS, { marks: [mark({}), mark({ role: 'gain' })] })

@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { autoTimeframe, barOf, chartUnits, defaultUnit, focusTime, tradeMarks } from '@/components/runs/run_chart'
-import type { RunInfo, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
+import {
+  autoTimeframe, barOf, chartPriceFormat, chartUnits, defaultUnit, focusTime, tradeMarks, unitTickSize,
+} from '@/components/runs/run_chart'
+import type { BrokerReport, RunInfo, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 
+import brokerFixture from './fixtures/broker.json'
 import runsList from './fixtures/runs_list.json'
 import scenarioFixture from './fixtures/scenario_details.json'
 import tradeFixture from './fixtures/trade_history.json'
@@ -87,6 +90,43 @@ describe('run_chart', () => {
       expect(defaultUnit(units)!.name).toBe(first.name)
       expect(defaultUnit(units)!.block).toBeNull()
       expect(defaultUnit(units.filter(unit => unit.block !== null))).toBeNull()
+    })
+  })
+
+  /**
+   * A price at its instrument's tick size — the backend's rule for showing a price it computed. Without
+   * a format the chart library rounds every price to two decimals, and EURUSD read `1.16` on every label.
+   */
+  describe('the price format', () => {
+    const units = chartUnits({
+      group: 'simulation', windows: runInfo.data_windows, scenarios, config: null, trades,
+    })!
+    const broker = brokerFixture as unknown as BrokerReport
+    const named = (name: string) => units.find(unit => unit.name === name)!
+
+    it('reads the tick size off the broker the unit traded through, for the symbol it names', () => {
+      expect(unitTickSize(broker, named('EURGBP_refusals_01'))).toBe(0.00001)
+      expect(unitTickSize(broker, named('ETHUSD_spot_two_balances'))).toBe(0.01)
+    })
+
+    it('has none while the report is on its way, or where it names no such unit or symbol', () => {
+      const unit = named('EURGBP_refusals_01')
+      expect(unitTickSize(null, unit)).toBeNull()
+      expect(unitTickSize({ ...broker, units: [] }, unit)).toBeNull()
+      expect(unitTickSize(broker, { ...unit, symbol: 'USDJPY' })).toBeNull()
+    })
+
+    it('draws as many decimals as the step has, and moves by the step', () => {
+      expect(chartPriceFormat(0.00001)).toEqual({ precision: 5, minMove: 0.00001 })
+      expect(chartPriceFormat(0.001)).toEqual({ precision: 3, minMove: 0.001 })
+      expect(chartPriceFormat(0.01)).toEqual({ precision: 2, minMove: 0.01 })
+      expect(chartPriceFormat(0.25)).toEqual({ precision: 2, minMove: 0.25 })
+      expect(chartPriceFormat(1)).toEqual({ precision: 0, minMove: 1 })
+    })
+
+    it('hands the chart no format where there is no tick size', () => {
+      expect(chartPriceFormat(null)).toBeNull()
+      expect(chartPriceFormat(0)).toBeNull()
     })
   })
 

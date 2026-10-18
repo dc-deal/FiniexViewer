@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { findCoverage, getBars } from '@/api/api_client'
-import { autoTimeframe, chartUnits, defaultUnit, focusTime, tradeMarks } from '@/components/runs/run_chart'
+import {
+  autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, focusTime, tradeMarks, unitTickSize,
+} from '@/components/runs/run_chart'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
 import { useContextStore } from '@/stores/context_store'
@@ -133,6 +135,10 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   const focusAt = computed<number | null>(() => focusTime(unitTrades.value, focus.value))
 
+  /** The unit's prices at its instrument's tick size, from the run's broker report — null without one. */
+  const priceFormat = computed(() =>
+    unit.value ? chartPriceFormat(unitTickSize(reports.broker, unit.value)) : null)
+
   async function askCoverage(target: ChartUnit): Promise<void> {
     const key = marketKey(target)
     if (coverage.value[key]) return
@@ -238,7 +244,7 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
-    bars, truncated, loading, error, marks, focusAt,
+    bars, truncated, loading, error, marks, focusAt, priceFormat,
     chooseUnit, chooseTimeframe, showPosition, canShow, attach, detach,
   }
 })

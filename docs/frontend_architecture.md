@@ -2290,7 +2290,7 @@ it says so and draws nothing.
   archive only while a run chart is on show (`attach` / `detach` from the view): the units are read
   off what the run report already loaded, so a reader who never opens the panel pays nothing.
 - **`src/components/runs/run_chart.ts`** — the pure half: `chartUnits`, `defaultUnit`,
-  `autoTimeframe`, `barOf`, `tradeMarks`, `focusTime`.
+  `autoTimeframe`, `barOf`, `tradeMarks`, `focusTime`, `unitTickSize`, `chartPriceFormat`.
 - **The units come from what the run states.** A backtest names each unit's market in
   `scenario-details` (`symbol`, `data_broker_type`) and the span its ticks covered
   (`first_tick_time` … `last_tick_time`) — that span is drawn rather than the declared window, which
@@ -2319,6 +2319,13 @@ it says so and draws nothing.
   the root beside the other channels) — so the row in the list and the marks on the candles agree
   on what is being looked at, and that position's marks are drawn larger. A long window is centred
   on where the position opened; a short one is shown whole.
+- **Prices are drawn at the instrument's tick size** (`priceFormat`). The run's broker report names
+  the unit among a broker's scenarios, and that broker's symbol carries `tick_size`
+  (`broker.units[].symbols[]`): its decimals are the chart's precision, the step its least move —
+  EURUSD reads `1.15162` where it read `1.15`. The backend's rule for a price it COMPUTED, such as a
+  quote-driven bar's midpoint, is to round it for display to that tick size (its `prices` document,
+  contract 34). Without a report the library keeps its own format, two decimals for every
+  instrument — which is where the free chart still stands: the market-data routes name no tick size.
 - **Every state says what it is**: no run, the run's units on their way, no unit that can be drawn,
   a market the archive holds nothing for, a window without bars, and a notice where the route cut
   the window — an empty chart says nothing about why it is empty.

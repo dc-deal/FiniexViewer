@@ -17,8 +17,10 @@ import { t } from '@/translate'
  * nothing about why it is empty.
  */
 const chart = useRunChartStore()
-const { units, unit, waiting, unitCoverage, coverageError, timeframe, bars, truncated, loading, error, marks, focusAt }
-  = storeToRefs(chart)
+const {
+  units, unit, waiting, unitCoverage, coverageError, timeframe, bars, truncated, loading, error, marks, focusAt,
+  priceFormat,
+} = storeToRefs(chart)
 const { selectedRunId, selectedRun, loadingRuns, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
 // the archive is asked only while a run chart is on show
@@ -76,7 +78,7 @@ onUnmounted(() => chart.detach())
         <AppIcon name="status-warning" class="notice-mark" />
         {{ t('The window holds more bars than the archive serves at once — a longer timeframe shows all of it') }}
       </p>
-      <CandleChart :data="bars" :marks="marks" :focus="focusAt" />
+      <CandleChart :data="bars" :marks="marks" :focus="focusAt" :price-format="priceFormat" />
     </template>
   </div>
 </template>

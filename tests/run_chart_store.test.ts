@@ -8,9 +8,10 @@ import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import * as apiClient from '@/api/api_client'
 import type { BarAnswer, CoverageResponse } from '@/types/api/bar_types'
-import type { RunConfigReport, RunInfo, TradeHistoryReport } from '@/types/api/report_types'
+import type { BrokerReport, RunConfigReport, RunInfo, TradeHistoryReport } from '@/types/api/report_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 
+import brokerFixture from './fixtures/broker.json'
 import runsList from './fixtures/runs_list.json'
 import scenarioFixture from './fixtures/scenario_details.json'
 import tradeFixture from './fixtures/trade_history.json'
@@ -176,6 +177,19 @@ describe('useRunChartStore', () => {
       .filter(entry => entry.scenario_name === trade.scenario_name && entry.position_id === trade.position_id)
       .map(entry => Date.parse(entry.entry_time) / 1000)
     expect(chart.focusAt).toBe(Math.min(...opened))
+  })
+
+  /** The broker report the root loaded states the tick size; the chart is handed it, and nothing before. */
+  it('hands the chart the price format of the unit\'s instrument once the broker report is there', () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.chooseUnit('EURGBP_refusals_01')
+    expect(chart.priceFormat).toBeNull()
+
+    useRunReportsStore().broker = brokerFixture as unknown as BrokerReport
+    expect(chart.priceFormat).toEqual({ precision: 5, minMove: 0.00001 })
+    chart.chooseUnit('ETHUSD_spot_two_balances')
+    expect(chart.priceFormat).toEqual({ precision: 2, minMove: 0.01 })
   })
 
   it('marks the unit\'s trades on the bars it holds', async () => {

@@ -19,6 +19,11 @@ const props = defineProps<{
   marks?: ChartMark[]
   /** An instant to centre on, in UTC seconds — the position the reader is looking at. */
   focus?: number | null
+  /**
+   * The decimals and the least move of the instrument's prices. Left out, the library's own format
+   * applies, which is two decimals for every instrument.
+   */
+  priceFormat?: { precision: number, minMove: number } | null
 }>()
 
 /** How many bars are on show around a focus, where the whole window would make them too narrow to read. */
@@ -181,7 +186,12 @@ function initChart(size: { width: number, height: number }): void {
   chart.subscribeCrosshairMove(onPointer)
   frameSize.value = size
 
-  series = chart.addCandlestickSeries({ borderVisible: false, ...candleColours(colours) })
+  series = chart.addCandlestickSeries({ borderVisible: false, ...candleColours(colours), ...seriesFormat() })
+}
+
+/** The series' price format where one was handed in — nothing, and the library keeps its own. */
+function seriesFormat(): CandlestickSeriesPartialOptions {
+  return props.priceFormat ? { priceFormat: { type: 'price', ...props.priceFormat } } : {}
 }
 
 /**
@@ -238,6 +248,10 @@ watch(() => props.marks, () => {
   showMarks()
 })
 watch(() => props.focus, () => frame())
+// a format taken away goes back to the library's own (lightweight-charts 4.2.3: two decimals, a
+// least move of 0.01) — applying nothing would keep the previous instrument's decimals
+watch(() => props.priceFormat, () => series?.applyOptions(
+  props.priceFormat ? seriesFormat() : { priceFormat: { type: 'price', precision: 2, minMove: 0.01 } }))
 </script>
 
 <template>

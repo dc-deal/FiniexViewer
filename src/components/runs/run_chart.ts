@@ -1,7 +1,7 @@
 import { rowKey } from '@/api/list_key'
 import { sortInstant } from '@/components/runs/report_format'
 import { entryCard, exitCard } from '@/components/runs/trade_card'
-import type { DataWindow, TradeRow } from '@/types/api/report_types'
+import type { BrokerReport, DataWindow, TradeRow } from '@/types/api/report_types'
 import type { ScenarioRow } from '@/types/api/scenario_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartMark, ChartUnit } from '@/types/run_chart_types'
@@ -84,6 +84,37 @@ export function chartUnits(sources: RunUnitSources): ChartUnit[] | null {
 export function defaultUnit(units: ChartUnit[]): ChartUnit | null {
   const drawable = units.filter(unit => unit.block === null)
   return drawable.find(unit => unit.trades > 0) ?? drawable[0] ?? null
+}
+
+/**
+ * The tick size of the unit's instrument, as the run's broker report states it: the broker the unit
+ * traded through names it among its scenarios, and that broker's symbol carries the tick size. Null
+ * where the report has not arrived or names no such symbol — the chart then keeps its own format.
+ */
+export function unitTickSize(broker: BrokerReport | null, unit: ChartUnit): number | null {
+  if (!broker || !unit.symbol) return null
+  const own = broker.units.find(entry => entry.scenarios.includes(unit.name))
+  const symbol = own?.symbols.find(entry => entry.symbol === unit.symbol)
+  return symbol && symbol.tick_size > 0 ? symbol.tick_size : null
+}
+
+/**
+ * The chart's price format for an instrument quoted in steps of `tickSize`: the decimals the step
+ * has, and the step itself as the least move. The backend's rule for a price it COMPUTED (a bar of a
+ * quote-driven venue is a midpoint) is to round it for display to the instrument's tick size
+ * (its prices document, contract 34); a price the venue wrote already lies on that step. Without a
+ * format the chart library rounds every price to two decimals, so EURUSD read `1.16` on every label.
+ */
+export function chartPriceFormat(tickSize: number | null): { precision: number, minMove: number } | null {
+  if (tickSize === null || !(tickSize > 0)) return null
+  // the decimals of the step, read without its float noise: 0.00001 is 1.0000000000000002e-5 × 10⁵
+  let precision = 0
+  while (precision < 10) {
+    const scaled = tickSize * 10 ** precision
+    if (Math.abs(scaled - Math.round(scaled)) < 1e-9 * Math.max(1, scaled)) break
+    precision++
+  }
+  return { precision, minMove: tickSize }
 }
 
 /**
