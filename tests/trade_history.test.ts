@@ -276,7 +276,7 @@ describe('TradeHistoryPanel', () => {
    * Longer budget than the default, and it is the harness that needs it rather than the assertion:
    * drawing 500 rows costs ~4.8 s in jsdom, measured, because every row is wrapped in its own
    * floating-layer instance. The assertion below can still fail; only the clock moved. The cost
-   * itself is a finding, not a fact of life — see the note in docs/testing_architecture.md.
+   * itself is a finding, not a fact of life — see the note in docs/testing/unit_tests.md.
    */
   it('says how many trades it is not drawing, and out of how many', { timeout: 20_000 }, () => {
     const many = Array.from({ length: 640 }, (_, index) =>

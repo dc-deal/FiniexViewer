@@ -2,7 +2,7 @@
 
 The words of the domain — run, scenario, run unit, report section, broker, deployment — are
 FiniexTestingIDE's, defined in its `docs/glossary.md`, and every label on screen uses them (see
-*The words* in [the frontend architecture](frontend_architecture.md)). This page holds only what
+[The words](interface/figures_and_words_on_screen.md#the-words--the-backends-glossary-adopted-here)). This page holds only what
 that glossary has no word for: the words this viewer coins for its own display.
 
 Each was checked against FiniexTestingIDE's glossary and its documents before it was written here.

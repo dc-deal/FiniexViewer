@@ -123,7 +123,7 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | Browser tests | **Playwright** — a real reload, real storage, real geometry; hygiene rather than a gate |
 | CI | **GitHub Actions** — type-check + tests on every PR and push to master |
 
-Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_architecture.md) · the words this viewer coins: [docs/glossary.md](docs/glossary.md)
+Every document, one line on what each answers: [docs/documentation_index.md](docs/documentation_index.md) · the words this viewer coins: [docs/glossary.md](docs/glossary.md)
 
 ---
 
@@ -142,7 +142,7 @@ Architecture and tech decisions: [docs/frontend_architecture.md](docs/frontend_a
 └─────────────────────────┘                            └──────────────────────────┘
 ```
 
-Two-container topology and request flow: [docs/frontend_architecture.md](docs/frontend_architecture.md)
+Two-container topology and request flow: [docs/architecture/container_topology.md](docs/architecture/container_topology.md)
 
 ---
 
