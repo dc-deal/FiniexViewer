@@ -54,7 +54,7 @@ import type { MachineResources } from '@/types/api/machine_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 33
+const EXPECTED_CONTRACT = 34
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
