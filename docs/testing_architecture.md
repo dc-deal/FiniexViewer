@@ -100,7 +100,9 @@ to survive folding it again. `list_ranks.spec.ts` holds the ranks — and, since
 the architecture note describes: measured identical to the pixel on the captured index, and a test
 rather than a comment because that is a property of the DATA. It went red on 2026-10-15, when the
 re-captured index put a wider value into a closed family, and since then the run list measures its
-closed families (`measureClosed`), so the guarantee is the code's and the test checks it. It is the ONLY instrument for them: jsdom evaluates no
+closed families (`measureClosed`), so the guarantee is the code's and the test checks it. A run of two
+account currencies states each figure on its own line beside its trade count — they stood inline as
+`3.74 EUR-22.95 USD` until 2026-10-18, one figure minus another. It is the ONLY instrument for them: jsdom evaluates no
 container queries at all, so the unit suites can assert only that each list declares the same rank
 twice — on the column and on the cell. Whether the browser then acts on it needs a browser. FIVE
 widths — one on each side of every rung, because a rung nothing measures is a rung nobody knows is

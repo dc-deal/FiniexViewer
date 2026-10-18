@@ -736,20 +736,25 @@ function choose(runId: string): void {
   white-space: nowrap;
 }
 
-/* a column of figures is read downwards, so it is right-aligned and its digits line up; several
-   account currencies stack within the cell rather than widening it */
-.run-pnl {
-  /* a zero has no polarity and therefore no sign colour — but it is still a figure the backend
-     stated, so it reads in plain ink rather than inheriting nothing */
-  color: var(--color-text-primary);
-}
-
 .run-pnl,
 /* read down the column against its neighbours, like every other figure here */
 .run-span {
   text-align: right;
   white-space: nowrap;
   color: var(--color-text-secondary);
+}
+
+/* a column of figures is read downwards, so it is right-aligned and its digits line up; several
+   account currencies stack within the cell rather than widening it. The stacking was declared for
+   the trade counts only, so two currencies read `3.74 EUR-22.95 USD` — one figure minus another */
+.run-pnl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  /* a zero has no polarity and therefore no sign colour — but it is still a figure the backend
+     stated, so it reads in plain ink rather than inheriting nothing. After the shared rule above,
+     which set the secondary ink for both and won over this one while it stood before it */
+  color: var(--color-text-primary);
 }
 
 .run-trades {
