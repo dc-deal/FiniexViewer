@@ -1365,7 +1365,10 @@ report's (`summaryError`) — one shared ref let a broken summary blank the list
   the run index and the ledger afresh, quietly and without a spinner, whenever their panel comes
   back, because a docked panel stays mounted where a route was entered anew.
 - **`PanelTab`** shows the form icon, the title, ONE status where it says something, and ✕, which
-  hides the panel; a section's tab also carries ⇲, *Back into the bundle*. Its card says what the
+  hides the panel; a section's tab also carries ⇲, *Back into the bundle*. A kind that offers
+  commands about itself declares them (`PanelKind.actions`), and its tab carries ⋯ with them — the
+  run bundle's *Collapse all* and *Reset bundle*, explained by the `bundle-commands` hint
+  (viewer#42). The Panels menu held them until then; it now only shows and hides. Its card says what the
   panel is for, the bundle it is part of, what it follows and chooses, and the status in words —
   one builder, `tab_card.ts`, from the kind's declared relations (below). A section's card names
   the whole run in its heading, which its tab has no room for. The run bundle's tab carries the
@@ -1476,10 +1479,11 @@ Panels ▾
 │          ├ ✓ Executive Summary          in the bundle
 │          ├ ✓ Trade History          ⇱   open as a panel
 │          ├   Feed Health                hidden
-│          ├   Scenarios                  struck: the run has none
-│          ├ ─────────
-│          └ Collapse all · Reset bundle
+│          └   Scenarios                  struck: the run has none
 └   Free chart
+
+[▤ Run bundle · 20261012_… ⋯ ✕]     the bundle's own commands, on its tab
+                 └ Collapse all · Reset bundle
 ```
 
 - **Where a panel stood is noted just BEFORE the layout changes** — dockview's `onWillMutateLayout`

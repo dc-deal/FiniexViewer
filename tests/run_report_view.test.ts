@@ -102,6 +102,13 @@ describe('RunReportView', () => {
     expect(wrapper.findAllComponents(HintLine).map(hint => hint.props('id'))).not.toContain('open-as-panel')
   })
 
+  /** ⋯ on the bundle's tab is a control nothing else on screen explains (#42). */
+  it('explains what ⋯ on its tab offers', () => {
+    chooseRun()
+    const wrapper = mount(RunReportView)
+    expect(wrapper.findAllComponents(HintLine).map(hint => hint.props('id'))).toContain('bundle-commands')
+  })
+
   /** What stays in the column the run does not carry, so the sentence speaks of what it carries. */
   it('speaks of the sections the run carries where the rest it does not', () => {
     chooseRun()

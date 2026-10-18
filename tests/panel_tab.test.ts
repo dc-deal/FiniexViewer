@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import type { DockviewPanelApi } from 'dockview-vue'
 import PanelTab from '@/components/dock/PanelTab.vue'
@@ -7,6 +7,7 @@ import HoverCard from '@/components/base/HoverCard.vue'
 import { reportKindId } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
 import { useContextStore } from '@/stores/context_store'
+import { useLayoutStore } from '@/stores/layout_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import type { RunInfo } from '@/types/api/report_types'
@@ -67,6 +68,36 @@ describe('PanelTab', () => {
 
     const main = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
     expect(main.find('.panel-tab-back').exists()).toBe(false)
+  })
+
+  /**
+   * What a panel offers about itself is on its own tab, behind ⋯ (viewer#42) — for the run bundle,
+   * folding its sections and resetting them. A kind with nothing to offer carries no ⋯.
+   */
+  it('offers the bundle\'s own commands behind ⋯, and no ⋯ where a kind has none', async () => {
+    const layout = useLayoutStore()
+    const collapse = vi.spyOn(layout, 'collapseAll')
+    const reset = vi.spyOn(layout, 'reset')
+    const bundle = mount(PanelTab, {
+      props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi },
+      attachTo: document.body,
+    })
+    const more = bundle.find('.panel-tab-more')
+    expect(more.attributes('aria-label')).toBe('Panel commands')
+
+    for (const [id, spy] of [['collapse-all', collapse], ['reset-bundle', reset]] as const) {
+      await more.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      document.querySelector<HTMLElement>(`.menu-item[data-action="${id}"]`)!.click()
+      await flushPromises()
+      expect(spy, id).toHaveBeenCalledOnce()
+    }
+    bundle.unmount()
+
+    for (const kindId of ['runs', 'chart', reportKindId('orders')]) {
+      const other = mount(PanelTab, { props: { kindId, api: fakeApi() as unknown as DockviewPanelApi } })
+      expect(other.find('.panel-tab-more').exists(), kindId).toBe(false)
+    }
   })
 
   /** Two windows comparing two runs tell them apart by the tab; the list's tab names no run. */

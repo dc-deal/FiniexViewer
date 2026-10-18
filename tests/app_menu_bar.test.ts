@@ -140,19 +140,14 @@ describe('AppMenuBar', () => {
     expect(document.querySelectorAll('.menu-toggle.absent')).toHaveLength(0)
   })
 
-  it('collapses the column and resets it from the same submenu', async () => {
-    const layout = useLayoutStore()
-    const collapse = vi.spyOn(layout, 'collapseAll')
-    const reset = vi.spyOn(layout, 'reset')
+  /** The bundle's own commands are on its tab, behind ⋯ (viewer#42): this menu shows and hides. */
+  it('offers nothing in the submenu but showing and hiding', async () => {
     await openRunsSubmenu()
-
-    document.querySelector<HTMLElement>('[data-action="collapse-all"]')!.click()
-    await flushPromises()
-    await openRunsSubmenu()
-    document.querySelector<HTMLElement>('[data-action="reset-column"]')!.click()
-    await flushPromises()
-    expect(collapse).toHaveBeenCalledOnce()
-    expect(reset).toHaveBeenCalledOnce()
+    // the submenu is the content that lists the sections; the menu above it holds its trigger
+    const submenu = sectionEntry('executive').closest('.menu-content')!
+    const entries = [...submenu.querySelectorAll('[role^="menuitem"]')]
+    expect(entries.length).toBeGreaterThan(0)
+    expect(entries.every(entry => entry.getAttribute('role') === 'menuitemcheckbox')).toBe(true)
   })
 
   /** Whose access the viewer works under is part of the frame, beside the application menu. */

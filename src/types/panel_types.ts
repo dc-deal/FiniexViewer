@@ -47,6 +47,18 @@ export interface PanelDescriptor {
 }
 
 /**
+ * A command a panel offers about itself, on its tab's ⋯ — the Panels menu only shows and hides
+ * panels (viewer#42).
+ */
+export interface PanelAction {
+  /** Named on its menu entry (`data-action`). */
+  id: 'collapse-all' | 'reset-bundle'
+  title: string
+  /** Called on the click, so it may reach a store. */
+  run: () => void
+}
+
+/**
  * A tab's one status, shown only where it says something. Its icon never travels alone: the word
  * goes with it, read out with the tab and written in its card.
  */
@@ -92,6 +104,8 @@ export interface PanelKind {
   status?: () => TabStatus | null
   /** Its tab's title dimmed: the panel stands, with nothing of the chosen run to show. */
   muted?: () => boolean
+  /** What its tab's ⋯ offers; a kind without any has no ⋯. */
+  actions?: PanelAction[]
   /** What it follows and chooses, and the bundle it belongs to. Required: every kind declares it. */
   relations: PanelRelations
 }

@@ -1,6 +1,7 @@
 import { defineAsyncComponent, defineComponent, h } from 'vue'
 import { allPanels } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
+import { useLayoutStore } from '@/stores/layout_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
@@ -75,6 +76,12 @@ export const PANEL_KINDS: PanelKind[] = [
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunReportView.vue')),
     status: () => outcomeStatus(useRunsStore().selectedRun?.run_outcome ?? null),
+    // what the bundle offers about its own column, on its tab's ⋯ rather than in the Panels menu,
+    // which only shows and hides (#42)
+    actions: [
+      { id: 'collapse-all', title: t('Collapse all'), run: () => useLayoutStore().collapseAll() },
+      { id: 'reset-bundle', title: t('Reset bundle'), run: () => useLayoutStore().reset() },
+    ],
     // its own line follows the run; what its members follow and choose its card adds while they
     // stand in its column — a member open as a panel of its own takes its links with it
     relations: { memberOf: null, follows: ['run'], chooses: [] },

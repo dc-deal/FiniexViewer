@@ -26,6 +26,10 @@ const HINTS: HintDefinition[] = [
     text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the bundle. On the tab of that panel, ⇲ puts it back into the bundle and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
   },
   {
+    id: 'bundle-commands',
+    text: t('⋯ on the tab of the bundle folds every section at once, or resets the bundle — its sections back in their first order, none of them hidden.'),
+  },
+  {
     id: 'dock-edges',
     text: t('Drag a tab to the outermost edge of the panels to dock it along that whole edge — a column over the full height, a row over the full width.'),
   },

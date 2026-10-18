@@ -183,10 +183,12 @@ const missingSections = computed(() => {
         <p v-for="(message, section) in errorLines" :key="section" class="notice failed">
           {{ message }}
         </p>
-        <!-- how a section comes out of the column, and how it goes back; and how a panel docks
-             along a whole edge of the dock, which nothing on screen shows until a tab is dragged -->
+        <!-- how a section comes out of the column, and how it goes back; what the bundle's tab
+             offers behind ⋯; and how a panel docks along a whole edge of the dock, which nothing
+             on screen shows until a tab is dragged -->
         <!-- an empty bundle says the same as this hint and more, so the hint stands down -->
         <HintLine v-if="!emptied" id="open-as-panel" />
+        <HintLine id="bundle-commands" />
         <HintLine id="dock-edges" />
         <p v-if="emptied" class="notice empty-bundle">
           {{ everySectionOut

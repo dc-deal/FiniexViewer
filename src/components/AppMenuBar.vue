@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
-  DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot,
+  DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot,
   DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
 } from 'reka-ui'
 import AccountStatus from '@/components/AccountStatus.vue'
@@ -13,7 +13,6 @@ import TopMenu from '@/components/TopMenu.vue'
 import { useSectionStates, type SectionState } from '@/composables/use_section_states'
 import { PANEL_KINDS } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
-import { useLayoutStore } from '@/stores/layout_store'
 import type { PanelKind } from '@/types/panel_types'
 import { t } from '@/translate'
 
@@ -28,11 +27,11 @@ import { t } from '@/translate'
  * AREA stand together in its submenu — the run list and the run report under Runs, with the
  * report's sections after them, each with where it is: in the column, open as a panel of its own
  * (⇱), hidden, or struck where the chosen run has none. It replaces the section bar that stood
- * above the column.
+ * above the column. What the run bundle offers about itself — folding its sections, resetting
+ * them — is on the bundle's tab, behind ⋯ (viewer#42), so this menu does nothing but show and hide.
  */
 const dock = useDockStore()
 const { openIds } = storeToRefs(dock)
-const layoutStore = useLayoutStore()
 const sectionStates = useSectionStates()
 
 /** The area whose submenu also lists the run report's sections — where their column stands. */
@@ -145,15 +144,6 @@ function stayOpen(event: Event): void {
                       <span class="menu-label">{{ t(state.section.title) }}</span>
                       <AppIcon v-if="state.place === 'panel'" name="action-open-panel" class="menu-opened" />
                     </DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator class="menu-separator" />
-                    <DropdownMenuItem class="menu-item" data-action="collapse-all" @select="layoutStore.collapseAll()">
-                      <span class="menu-check" aria-hidden="true" />
-                      {{ t('Collapse all') }}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem class="menu-item" data-action="reset-column" @select="layoutStore.reset()">
-                      <span class="menu-check" aria-hidden="true" />
-                      {{ t('Reset bundle') }}
-                    </DropdownMenuItem>
                   </template>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>

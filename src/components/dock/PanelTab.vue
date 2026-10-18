@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { DockviewPanelApi } from 'dockview-vue'
+import {
+  DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger,
+} from 'reka-ui'
 import AppIcon from '@/components/base/AppIcon.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { tabCard } from '@/components/dock/tab_card'
@@ -17,7 +20,8 @@ import { t } from '@/translate'
  * chooses, and the status in words (`tab_card.ts`).
  *
  * Its ✕ HIDES the panel, alike for every panel — the Panels menu shows it again where it stood. A
- * section of the run bundle opened as a panel also carries ⇲, which puts it back into the bundle.
+ * section of the run bundle opened as a panel also carries ⇲, which puts it back into the bundle,
+ * and a kind that offers commands about itself carries ⋯ with them (`PanelKind.actions`).
  *
  * @param kindId The panel's kind.
  * @param api The panel's own handle in the dock, which also closes it.
@@ -69,6 +73,29 @@ const card = computed(() => tabCard(kind, props.api.title ?? props.kindId, membe
       >
         <AppIcon :name="status.icon" />
       </span>
+      <DropdownMenuRoot v-if="kind?.actions?.length">
+        <DropdownMenuTrigger
+          class="panel-tab-button panel-tab-more"
+          :title="t('What this panel offers')"
+          :aria-label="t('Panel commands')"
+        >
+          <AppIcon name="action-more" />
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent class="menu-content" :side-offset="4" align="start">
+            <DropdownMenuItem
+              v-for="action in kind.actions"
+              :key="action.id"
+              class="menu-item"
+              :data-action="action.id"
+              @select="action.run()"
+            >
+              <span class="menu-check" aria-hidden="true" />
+              {{ action.title }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
       <button
         v-if="section"
         type="button"
@@ -141,7 +168,8 @@ const card = computed(() => tabCard(kind, props.api.title ?? props.kindId, membe
 }
 
 /* the same two channels every control here has: the surface AND the border, then the press */
-.panel-tab-button:hover {
+.panel-tab-button:hover,
+.panel-tab-button[data-state='open'] {
   opacity: 1;
   background-color: var(--color-bg-hover);
   border-color: var(--color-border);

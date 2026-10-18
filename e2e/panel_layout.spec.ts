@@ -96,6 +96,26 @@ test('the Panels menu switches a section in the column off and on again', async 
   await expect(entry).toHaveAttribute('data-place', 'column')
 })
 
+/**
+ * The bundle's own commands are on its tab, behind ⋯ (viewer#42). A control inside a dockview tab
+ * shares the tab's pointer handling, which jsdom does not have, so the click is proven here.
+ */
+test('⋯ on the bundle tab folds every section and resets the bundle', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const unfolded = page.locator('.panels .panel-chevron.expanded')
+  await expect(unfolded.first()).toBeVisible()
+  const more = page.locator('.panel-tab[data-kind="run"] .panel-tab-more')
+
+  await more.click()
+  await page.locator('.menu-item[data-action="collapse-all"]').click()
+  await expect(unfolded).toHaveCount(0)
+
+  await more.click()
+  await page.locator('.menu-item[data-action="reset-bundle"]').click()
+  await expect(unfolded.first()).toBeVisible()
+})
+
 /** The same line on the deployment side: it took three lines and broke `Change deployment` in two. */
 test('a narrow Deployments panel keeps its deployment line to one line', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 900 })
