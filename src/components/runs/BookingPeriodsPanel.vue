@@ -156,11 +156,19 @@ const otherCurrencies = computed(() =>
          account of several, printed as though it were the run's -->
     <p class="footnote">
       <ScopeMark v-if="narrowed" :title="t('Both figures are the whole run, across every scenario')" />
-      {{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }}
+      <!-- each says how the backend forms it (its booking-periods document): both are served as
+           they stand, and with neither on any row a reader took them for figures of ours -->
+      <span
+        class="footnote-figure"
+        :title="t('The deepest decline within a single period, across every period of every scenario — a fall across a period boundary is not in it')"
+      >{{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }}</span>
       <!-- left out rather than shown as the zero the formatter would make of a null: the run
            states no figure in this currency, which is not a closing equity of nothing -->
       <template v-if="model.total_final_equity !== null">
-        · {{ t('Final equity, all accounts') }}: {{ amount(model.total_final_equity, model.currency) }}
+        · <span
+          class="footnote-figure"
+          :title="t('The sum of the closing equities of every scenario — a total over separate accounts, which no account ever held')"
+        >{{ t('Final equity, all accounts') }}: {{ amount(model.total_final_equity, model.currency) }}</span>
       </template>
       <template v-if="otherCurrencies.length">
         &nbsp;|&nbsp; {{ t('Other account currencies') }}: {{ otherCurrencies.join(', ') }}
