@@ -1,5 +1,5 @@
 import { nextTick } from 'vue'
-import { reportKindId } from '@/panel_kinds'
+import { RUN_BUNDLE, reportKindId } from '@/panel_kinds'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
@@ -13,16 +13,17 @@ const MARK_WAIT_MS = 2000
 const FLASH_MS = 1600
 
 /**
- * Where a section is drawn: its own panel where it is open as one, the run report's column
- * otherwise. A jump searches there and never in the whole document — a marked row elsewhere is not
- * the one the reader is about to look at.
+ * Where a panel kind is drawn — a section's own panel or the run bundle holding its column, or the
+ * run list for *Show in list*. A jump searches there and never in the whole document: a marked row
+ * elsewhere is not the one the reader is about to look at.
  */
-function sectionRoot(panelKind: string): HTMLElement | null {
+function panelRoot(panelKind: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-panel-kind="${panelKind}"]`)
 }
 
 /**
- * Scroll the marked row into view, once it exists — WAITED FOR, never guessed.
+ * Place a row once it exists — WAITED FOR, never guessed: the marked row of a jump, or the chosen
+ * run's row for *Show in list*. Returns the row, or null where none appeared.
  *
  * The mark is set at the click, so one tick later every row already drawn carries it. A panel the
  * jump had to OPEN is not drawn by then, and no fixed number of ticks is right. Measured
@@ -38,7 +39,7 @@ async function scrollToRow(
 ): Promise<HTMLElement | null> {
   // one tick first, or a row still carrying the PREVIOUS mark would answer
   await nextTick()
-  const root = sectionRoot(panelKind)
+  const root = panelRoot(panelKind)
   if (!root) return null
   const found = (): HTMLElement | null => {
     const row = root.querySelector<HTMLElement>(selector)
@@ -62,9 +63,14 @@ async function scrollToRow(
   })
 }
 
+/** Smooth where the reader allows motion, at once where they asked for none. */
+function motion(): ScrollBehavior {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+}
+
 function scrollToMark(sectionId: string, panelKind: string): void {
   void scrollToRow(panelKind, `[data-panel="${sectionId}"] .record-row.marked`,
-    row => row.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+    row => row.scrollIntoView({ block: 'center', behavior: motion() }))
 }
 
 /**
@@ -76,16 +82,20 @@ function centreInList(row: HTMLElement): void {
   if (!list) return
   const listBox = list.getBoundingClientRect()
   const rowBox = row.getBoundingClientRect()
-  list.scrollBy({ top: rowBox.top + rowBox.height / 2 - (listBox.top + listBox.height / 2), behavior: 'smooth' })
+  list.scrollBy({ top: rowBox.top + rowBox.height / 2 - (listBox.top + listBox.height / 2), behavior: motion() })
 }
+
+/** The removal each flashed row waits for — one per row, so a restart is not cut short by the first. */
+const flashEnds = new WeakMap<HTMLElement, number>()
 
 /** Marks a row for a moment: the eye finds it, and it never stays to be mistaken for a choice. */
 function flash(row: HTMLElement): void {
+  window.clearTimeout(flashEnds.get(row))
   row.classList.remove('flash')
   // a second click while it still shows restarts it rather than ending it
   void row.offsetWidth
   row.classList.add('flash')
-  window.setTimeout(() => row.classList.remove('flash'), FLASH_MS)
+  flashEnds.set(row, window.setTimeout(() => row.classList.remove('flash'), FLASH_MS))
 }
 
 /**
@@ -113,10 +123,10 @@ export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
     // in the column: the run report comes to the front — the jump may start in another panel — and
     // a hidden section is not in the column at all, and a folded one draws nothing, so the jump
     // has to make the target reachable before it can scroll to it
-    dock.reveal('run', 'command')
+    dock.reveal(RUN_BUNDLE, 'command')
     layoutStore.show(sectionId)
     layoutStore.setOpen(sectionId, true)
-    void scrollToMark(sectionId, 'run')
+    void scrollToMark(sectionId, RUN_BUNDLE)
   }
 }
 
@@ -124,7 +134,9 @@ export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
  * *Show in list*: the run list comes to the front — reopened where it stood if it was closed — and
  * the chosen run's row is centred in it and marked for a moment, the way an editor reveals a file in
  * its explorer. The family holding the row is opened first, in case the reader closed it. The row is
- * not focused: it wears its run's card, which opens on focus and would cover the list unasked.
+ * not focused: it wears its run's card, which opens on focus and would cover the list unasked. The
+ * LIST is: focus left on the button stayed on a control hidden behind the list's tab, or hidden
+ * once the row was in view.
  */
 export function useShowInList(): () => void {
   const dock = useDockStore()
@@ -136,7 +148,9 @@ export function useShowInList(): () => void {
     // measured against a list that is about to change size
     window.requestAnimationFrame(() => {
       void scrollToRow('runs', '.run-list .record-row.picked:not(.record-unseen)', centreInList).then(row => {
-        if (row) flash(row)
+        if (!row) return
+        flash(row)
+        row.closest<HTMLElement>('.run-list')?.focus({ preventScroll: true })
       })
     })
   }

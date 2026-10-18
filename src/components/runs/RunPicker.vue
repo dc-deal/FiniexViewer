@@ -371,11 +371,16 @@ const listRef = ref<{ $el: HTMLElement } | null>(null)
  */
 watchPostEffect(onCleanup => {
   void [selectedRunId.value, shown.value, loadingRuns.value, opened.value]
-  runsStore.chosenRowInView = false
   const list = listRef.value?.$el
-  if (!list?.querySelector || typeof IntersectionObserver === 'undefined') return
-  const row = list.querySelector('.record-row.picked:not(.record-unseen)')
-  if (!row) return
+  // no row drawn for the chosen run: it is not in view. Where there is one, the observer's first
+  // answer says so — written false first, the bundle's button showed for a frame on every re-aim
+  const row = list?.querySelector && typeof IntersectionObserver !== 'undefined'
+    ? list.querySelector('.record-row.picked:not(.record-unseen)')
+    : null
+  if (!list || !row) {
+    runsStore.chosenRowInView = false
+    return
+  }
   // the heading stays at the top of the list, so a row under it is not in view
   const head = list.querySelector('.record-head')?.getBoundingClientRect().height ?? 0
   const observer = new IntersectionObserver(
@@ -505,10 +510,6 @@ function choose(runId: string): void {
         :search-placeholder="t('Search runs by id or set')"
       />
 
-      <p v-if="chosenHidden" class="picker-hint chosen-hidden">
-        {{ t('The chosen run is not in this list — the filter or the search hides it') }}
-        <AppButton variant="quiet" @click="showEveryRun">{{ t('Show every run') }}</AppButton>
-      </p>
       <p v-if="!runs.length" class="picker-hint">
         {{ t('The backend reports no runs — its run index is empty') }}
       </p>
@@ -518,6 +519,7 @@ function choose(runId: string): void {
         v-else
         ref="listRef"
         class="run-list"
+        tabindex="-1"
         :rows="shown"
         :columns="columns"
         :row-key="run => run.run_id"
@@ -609,6 +611,12 @@ function choose(runId: string): void {
           </span>
         </template>
       </RecordList>
+      <!-- BELOW the rows: above them, its coming and going on a pick moved every row under the
+           pointer by a line. Here the list's last row gives way instead, and nothing moves -->
+      <p v-if="chosenHidden" class="picker-hint chosen-hidden">
+        {{ t('The chosen run is not in this list — the filter or the search hides it') }}
+        <AppButton variant="quiet" @click="showEveryRun">{{ t('Show every run') }}</AppButton>
+      </p>
     </template>
   </div>
 </template>
@@ -645,6 +653,12 @@ function choose(runId: string): void {
    view, where the rest alone would leave less than one row; measured against the VIEW (`cqh`, the
    runs view is a size container), not the browser window. Everything else about its shape — the
    tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`. */
+/* where *Show in list* leaves the keyboard: the list, with the row it led to centred in it */
+.run-list:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: -1px;
+}
+
 .run-list {
   flex: 1 1 0;
   min-height: 33cqh;

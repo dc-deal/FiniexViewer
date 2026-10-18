@@ -162,4 +162,44 @@ describe('useShowInList', () => {
     vi.advanceTimersByTime(1600)
     expect(row.classList.contains('flash')).toBe(false)
   })
+
+  /** A second *Show in list* while the mark still shows restarts it; the first one's end does not cut it short. */
+  it('restarts the mark on a second call, for its whole moment', async () => {
+    useDockStore().reveal = () => true
+    const row = drawRunList()
+    useShowInList()()
+    await afterAFrame()
+    vi.advanceTimersByTime(1000)
+    useShowInList()()
+    await afterAFrame()
+    vi.advanceTimersByTime(1000)
+    expect(row.classList.contains('flash')).toBe(true)
+    vi.advanceTimersByTime(600)
+    expect(row.classList.contains('flash')).toBe(false)
+  })
+
+  /** The keyboard goes where the reader was led: into the list, never onto the row and its card. */
+  it('leaves the focus in the list, not on the row', async () => {
+    useDockStore().reveal = () => true
+    const row = drawRunList()
+    const list = row.closest<HTMLElement>('.run-list')!
+    list.tabIndex = -1
+    useShowInList()()
+    await afterAFrame()
+    expect(document.activeElement).toBe(list)
+  })
+
+  /** A reader who asked for less motion is taken there at once. */
+  it('scrolls at once where the reader asked for less motion', async () => {
+    useDockStore().reveal = () => true
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }))
+    try {
+      drawRunList()
+      useShowInList()()
+      await afterAFrame()
+      expect(scrolledBy.mock.calls[0]![0]).toMatchObject({ behavior: 'auto' })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })

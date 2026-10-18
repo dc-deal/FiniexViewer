@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import type { DockviewPanelApi } from 'dockview-vue'
 import PanelTab from '@/components/dock/PanelTab.vue'
@@ -98,6 +99,31 @@ describe('PanelTab', () => {
       const other = mount(PanelTab, { props: { kindId, api: fakeApi() as unknown as DockviewPanelApi } })
       expect(other.find('.panel-tab-more').exists(), kindId).toBe(false)
     }
+  })
+
+  /**
+   * The card is the one place that says a panel's links, so it opens for the keyboard too. Dockview
+   * keeps the tab's focus on its own element around this one, and a click focuses it as well — so
+   * only a KEYBOARD focus on that element opens it.
+   */
+  it('opens its card on a keyboard focus of the tab, and closes it when the focus leaves', async () => {
+    const Host = defineComponent({
+      render: () => h('div', { class: 'dv-tab', tabindex: 0 }, [
+        h(PanelTab, { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi }),
+      ]),
+    })
+    const host = mount(Host, { attachTo: document.body })
+    const tab = host.find('.dv-tab').element as HTMLElement
+    tab.matches = (selector: string) => selector === ':focus-visible'
+
+    tab.dispatchEvent(new FocusEvent('focusin'))
+    await flushPromises()
+    expect(document.querySelector('.hover-card')?.textContent).toContain('Runs')
+
+    tab.dispatchEvent(new FocusEvent('focusout'))
+    await flushPromises()
+    expect(document.querySelector('.hover-card')).toBeNull()
+    host.unmount()
   })
 
   /** Two windows comparing two runs tell them apart by the tab; the list's tab names no run. */

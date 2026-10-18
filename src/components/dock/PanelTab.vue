@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { DockviewPanelApi } from 'dockview-vue'
 import {
   DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger,
@@ -54,11 +54,54 @@ const members = computed<PanelKind[]>(() => (states?.value ?? [])
 
 /** Built where the tab is drawn, so the subtitle, the status and the members follow their stores. */
 const card = computed(() => tabCard(kind, props.api.title ?? props.kindId, members.value))
+
+/**
+ * The card for the KEYBOARD as well. Dockview keeps a tab's focus on its own element around this
+ * one, so the card's trigger never hears it; the tab's focus is listened to there instead — and only
+ * a keyboard focus opens it, since a click focuses the tab too and the pointer has its own way in.
+ */
+const root = ref<HTMLElement | null>(null)
+const pointed = ref(false)
+const focused = ref(false)
+let tabElement: HTMLElement | null = null
+
+function keyboardFocus(element: HTMLElement): boolean {
+  try {
+    return element.matches(':focus-visible')
+  } catch {
+    // an engine that does not know the selector: no keyboard card, and the pointer still has one
+    return false
+  }
+}
+
+function onFocusIn(event: FocusEvent): void {
+  focused.value = event.target === tabElement && keyboardFocus(tabElement!)
+}
+
+function onFocusOut(): void {
+  focused.value = false
+}
+
+onMounted(() => {
+  tabElement = root.value?.closest<HTMLElement>('.dv-tab') ?? null
+  tabElement?.addEventListener('focusin', onFocusIn)
+  tabElement?.addEventListener('focusout', onFocusOut)
+})
+
+onUnmounted(() => {
+  tabElement?.removeEventListener('focusin', onFocusIn)
+  tabElement?.removeEventListener('focusout', onFocusOut)
+})
 </script>
 
 <template>
-  <HoverCard :title="card.title" :details="card.details">
-    <div class="panel-tab" :data-kind="kindId">
+  <HoverCard
+    :title="card.title"
+    :details="card.details"
+    :open="pointed || focused"
+    @update:open="value => pointed = value"
+  >
+    <div ref="root" class="panel-tab" :data-kind="kindId">
       <AppIcon v-if="kind" :name="kind.icon" class="panel-tab-icon" />
       <span class="panel-tab-title" :class="{ muted }">{{ title }}</span>
       <span v-if="subtitle" class="panel-tab-subtitle">· {{ subtitle }}</span>

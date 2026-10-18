@@ -96,6 +96,14 @@ test('a jump opens the closed target, marks the position and stores the mark', a
   const marked = page.locator('.trade-list .record-row.marked')
   await expect(marked).toHaveCount(tradesOf(jumped.scenario, jumped.position))
   await expect(marked.first()).toBeVisible()
+
+  // a marked row is still a control: the pointer lifts it like any other row. Its raised surface came
+  // after the hover and the press and outranked both, so it gave no feedback at all until 2026-10-18
+  const surface = () => marked.first().evaluate(node => getComputedStyle(node).backgroundColor)
+  await page.mouse.move(0, 0)
+  const atRest = await surface()
+  await marked.first().hover()
+  await expect.poll(surface).not.toBe(atRest)
 })
 
 /**

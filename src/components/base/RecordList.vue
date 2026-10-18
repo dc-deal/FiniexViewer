@@ -814,7 +814,6 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
 /* the chosen row is marked WHERE the click happened, not only where it takes effect */
 .record-row.picked {
   border-left-color: var(--color-annotation);
-  background-color: var(--color-bg-elevated);
 }
 
 /*
@@ -825,6 +824,15 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
  */
 .record-row.marked {
   border-left-color: var(--color-annotation);
+}
+
+/*
+ * The raised surface AT REST only. Stated plainly, the two rules came after the hover and the press
+ * and outranked them, so a chosen or marked row that is a control gave no feedback under the
+ * pointer; the edge carries the mark through both states.
+ */
+.record-row.picked:not(:hover):not(:active),
+.record-row.marked:not(:hover):not(:active) {
   background-color: var(--color-bg-elevated);
 }
 
@@ -888,6 +896,11 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
 
 .record-row.inert:hover {
   background-color: transparent;
+}
+
+/* a read-only row keeps its mark under the pointer, where it has no hover of its own to show */
+.record-row.inert.marked:hover {
+  background-color: var(--color-bg-elevated);
 }
 
 /* Only the FIRST cell is indented, never the row: padding on the row would shift every column out

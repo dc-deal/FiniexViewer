@@ -754,7 +754,9 @@ between the bar and the rows that a single combined component would have to grow
 
 - **`RecordList.vue`** — generic over its row type. It owns the grid tracks, the sticky headings, the
   row button with its four states, the group heading, an optional spanning prose line, an optional
-  card beside the row, and an optional block of CHILD records. It holds no state, sorts nothing,
+  card beside the row, and an optional block of CHILD records. A chosen (`picked`) or marked row
+  wears the annotation edge always and the raised surface AT REST only, so hover and press still
+  answer under the pointer. It holds no state, sorts nothing,
   filters nothing and folds nothing.
 - **`src/types/list_types.ts`** — `ListColumn` (label, track, whether it is a figure, its rank, and
   an optional `hint`) and `ListGroup` (one partition: key, rows, open). What the card beside a row
@@ -1287,13 +1289,17 @@ list*, and then the report's sections stacked as its members in one column.
 `use_panel_jump.ts`) brings the run list to the front — reopened where it stood if it was closed —
 opens the family holding the chosen run, centres its row in the list (the list only, never the view
 around it) and marks it for a moment with a dashed edge in the annotation colour that fades
-(`.record-row.flash`; standing still for the same moment without motion). It is not offered where
+(`.record-row.flash`; standing still for the same moment without motion, and the scroll at once
+rather than smooth). The keyboard is left in the LIST, never on the row, whose card opens on focus
+and would cover the list unasked; left on the button, it stayed on a control the list had hidden. A
+second call restarts the mark for its whole moment. It is not offered where
 the list is on show with that row in view: the dock store keeps which panels are ON SHOW, as each
 panel's host hears it from dockview (`shownIds`, `noteShown`), and the list measures whether the
 chosen row stands in its own view with an IntersectionObserver (`runs_store.chosenRowInView`). The
 button keeps its room while hidden, so the run line does not cut differently while the reader
 scrolls. Where the list's filter or search hides the chosen run, the list says so with *Show every
-run*. The chosen run's family opens WITH the choice and can be closed again; it held itself open
+run* — BELOW its rows, where the line's coming and going on a pick moves none of them; above them it
+moved every row under the pointer by a line. The chosen run's family opens WITH the choice and can be closed again; it held itself open
 before, so its heading was a button that did nothing. Its tab
 names the run, so two browser windows comparing two runs are told apart at a glance — cut after the
 date and time, whole in the tab's card (`PanelKind.subtitle`). The run's grade stands on the
@@ -1380,7 +1386,9 @@ it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the o
   the whole run in its heading, which its tab has no room for. The run bundle's tab carries the
   backend's grade of the open run (`run_outcome`) where it is not `success` — the icon in the
   warning or error role, its word read out with the tab and written in the card. Where everything
-  went well, the tab says nothing. **`dock_theme.css`** gives
+  went well, the tab says nothing. The card opens for a keyboard focus of the tab as well:
+  dockview keeps that focus on its own element around the tab, so `PanelTab` listens there and opens
+  it only where the focus is the keyboard's (`HoverCard`'s `open`, controlled where a caller needs it). **`dock_theme.css`** gives
   dockview's two themes this app's tokens: a tab behind another keeps the primary ink, because
   muted ink means *disabled* here, and the front tab is marked by its surface AND an accent rule.
 
@@ -1521,7 +1529,7 @@ three times, and a narrow group lost its tabs to it. It names the scenario in fo
 in its title where the bar is too narrow to show it, and says where the run lacks that name. The
 line is a grid whose text track is `minmax(0, max-content)`, so its least width is its mark and its
 button alone, and it shrinks before the machine status beside it moves (`e2e/narrow_panels.spec.ts`,
-at 760 px).
+at 760 px). The *Panels* trigger never gives way: it shared the shortfall once and wrapped its ▾.
 
 **Measured 2026-10-13:** the start bundle grew from 393 to 744 kB (gzip 130 → 210 kB), and that is
 dockview. The timings, taken again the same day on a quiet machine, moved by nothing beyond noise.

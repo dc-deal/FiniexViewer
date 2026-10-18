@@ -35,6 +35,10 @@ test('the narrowing in the menu bar shortens its name before anything beside it 
   expect(button.x + button.width).toBeLessThanOrEqual(bar.x + bar.width)
   const menu = (await page.locator('.menu-bar .menu-trigger').boundingBox())!
   expect(menu.x + menu.width).toBeLessThanOrEqual(bar.x + bar.width + 0.5)
+  // the Panels trigger keeps its one line: it shared the shortfall once and wrapped its ▾
+  const title = (await page.locator('.menu-bar-title').boundingBox())!
+  const panels = (await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).boundingBox())!
+  expect(panels.height).toBeLessThan(title.height * 1.5 + 12)
 })
 
 /**

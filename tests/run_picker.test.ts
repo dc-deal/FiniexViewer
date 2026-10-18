@@ -395,6 +395,9 @@ describe('RunPicker', () => {
 
     await searchFor(wrapper, 'set_kept')
     expect(wrapper.find('.chosen-hidden').text()).toContain('The chosen run is not in this list')
+    // below the rows, where its coming and going on a pick moves none of them
+    const order = wrapper.find('.run-list').element.compareDocumentPosition(wrapper.find('.chosen-hidden').element)
+    expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     await wrapper.find('.chosen-hidden button').trigger('click')
     await flushPromises()
@@ -422,6 +425,31 @@ describe('RunPicker', () => {
 
       wrapper.unmount()
       expect(useRunsStore().chosenRowInView).toBe(false)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  /**
+   * Aimed anew — a quiet refresh of the index, a family opened — the observer answers for itself.
+   * Written out of view first, the bundle's *Show in list* showed for a frame on every re-aim.
+   */
+  it('leaves the answer standing while the observer is aimed anew', async () => {
+    let report: ((entries: { isIntersecting: boolean }[]) => void) | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: (entries: { isIntersecting: boolean }[]) => void) { report = callback }
+      observe(): void {}
+      disconnect(): void {}
+    })
+    try {
+      mountPicker([run({ run_id: 'chosen' }), run({ run_id: 'other' })])
+      useContextStore().selectRun('chosen')
+      await flushPromises()
+      report!([{ isIntersecting: true }])
+
+      useRunsStore().runs = [...useRunsStore().runs]
+      await flushPromises()
+      expect(useRunsStore().chosenRowInView).toBe(true)
     } finally {
       vi.unstubAllGlobals()
     }

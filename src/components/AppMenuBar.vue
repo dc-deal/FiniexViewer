@@ -199,14 +199,17 @@ function stayOpen(event: Event): void {
   flex: 1;
 }
 
-/* the statement may shrink to its mark and its button; the spacer beside it gives way first */
+/* the statement shortens its name and nothing more: its least width is the grid's own — the mark
+   and the button whole, the name's track down to nothing. `min-width: 0` let it shrink past them */
 .menu-bar-narrowing {
-  min-width: 0;
   flex: 0 1 auto;
 }
 
-/* a control in the link ink, with the two-channel states every control here carries */
+/* a control in the link ink, with the two-channel states every control here carries. It never
+   gives way: it shared the bar's shortfall with the narrowing and wrapped its ▾ onto a second line */
 .menu-bar-trigger {
+  flex-shrink: 0;
+  white-space: nowrap;
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid transparent;
   border-radius: 4px;
