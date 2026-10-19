@@ -108,7 +108,7 @@ describe('RunReportView', () => {
     expect(wrapper.find('.empty-bundle').text())
       .toBe("Every section stands as a panel of its own or is hidden — “Back into the bundle” on a panel's tab brings it back here, the Panels menu shows a hidden one.")
     expect(wrapper.findComponent(PanelColumn).exists()).toBe(false)
-    expect(wrapper.findAllComponents(HintLine).map(hint => hint.props('id'))).not.toContain('open-as-panel')
+    expect(wrapper.findAllComponents(HintLine).flatMap(hint => [hint.props('id')].flat())).not.toContain('open-as-panel')
   })
 
   /**
@@ -119,9 +119,17 @@ describe('RunReportView', () => {
   it('explains what ⋯ on its tab offers, and how a section comes out', () => {
     chooseRun()
     const wrapper = mount(RunReportView)
-    const hints = wrapper.findAllComponents(HintLine).map(hint => hint.props('id'))
+    const hints = wrapper.findAllComponents(HintLine).flatMap(hint => [hint.props('id')].flat())
     expect(hints).toContain('bundle-commands')
     expect(hints).toContain('open-as-panel')
+  })
+
+  /** Its hints stand in ONE box with one pair of dismissals, rather than a box for each. */
+  it('says its hints in one box', () => {
+    chooseRun()
+    const wrapper = mount(RunReportView)
+    expect(wrapper.findAllComponents(HintLine)).toHaveLength(1)
+    expect(wrapper.findAll('.hint-line')).toHaveLength(1)
   })
 
   /** What stays in the column the run does not carry, so the sentence speaks of what it carries. */

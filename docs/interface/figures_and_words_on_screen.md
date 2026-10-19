@@ -93,3 +93,8 @@ writes nothing, so a reader who closed the line by accident is not punished for 
 other stored preference — an id the registry no longer contains is dropped, or the list only grows
 and a hint reintroduced under an old id returns already banned. The settings dialog resets both,
 because a banned hint has no other way back: the control that banned it disappeared with it.
+
+**The hints of one place stand in ONE box.** `HintLine` takes one id or several, and several share a
+box and its two dismissals — the run bundle once stacked three boxes over its column, nine lines and
+six clicks to clear. Each hint keeps its own id in the store, so one banned on its own stays away in
+the box too, and a hint added to a place later shows there by itself.

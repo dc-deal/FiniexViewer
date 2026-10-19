@@ -190,11 +190,9 @@ const missingSections = computed(() => {
         </p>
         <!-- how a section comes out of the column, and how it goes back; what the bundle's tab
              offers behind ⋯; and how a panel docks along a whole edge of the dock, which nothing
-             on screen shows until a tab is dragged -->
-        <!-- an empty bundle says the same as this hint and more, so the hint stands down -->
-        <HintLine v-if="!emptied" id="open-as-panel" />
-        <HintLine id="bundle-commands" />
-        <HintLine id="dock-edges" />
+             on screen shows until a tab is dragged — one box, dismissed at once -->
+        <!-- an empty bundle says the same as the first hint and more, so that one stands down -->
+        <HintLine :id="emptied ? ['bundle-commands', 'dock-edges'] : ['open-as-panel', 'bundle-commands', 'dock-edges']" />
         <p v-if="emptied" class="notice empty-bundle">
           {{ everySectionOut
             ? t("Every section stands as a panel of its own or is hidden — “Back into the bundle” on a panel's tab brings it back here, the Panels menu shows a hidden one.")
