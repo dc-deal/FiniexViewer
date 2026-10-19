@@ -98,7 +98,8 @@ test('a lane too dense for its rings draws its periods edge to edge, on an axis 
   await expect(timeline.locator('.dense-note')).toBeVisible()
   const ring = await timeline.locator('.lane.dense .span').first().evaluate(node => getComputedStyle(node).outlineStyle)
   expect(ring).toBe('none')
-  await expect(timeline.locator('.tick', { hasText: 'Apr' })).toHaveCount(1)
+  // the calendar's own marks, word for word: a quarter's start, and New Year naming its year
+  await expect(timeline.locator('.tick')).toHaveText(['2026', 'Apr'])
 })
 
 /**

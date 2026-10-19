@@ -141,10 +141,15 @@ describe('useArrangementStore', () => {
   })
 
   describe('each panel\'s own view', () => {
-    /** Added under version 1: an entry from before the field reads as no view kept, not as a broken one. */
-    it('reads an entry written before panel views as none kept', () => {
-      store({ version: 1, links: {}, bars: {}, chart: {}, runChart: {} })
-      expect(useArrangementStore().panelViews).toEqual({})
+    /**
+     * Added under version 1: an entry from before the field reads as no view kept, not as a broken
+     * one — the rest of it is restored beside the empty views, which a dropped entry would not be.
+     */
+    it('reads an entry written before panel views as none kept, and keeps the rest of it', () => {
+      store({ version: 1, links: {}, bars: {}, chart: { timeframe: 'H1' }, runChart: {} })
+      const arrangement = useArrangementStore()
+      expect(arrangement.panelViews).toEqual({})
+      expect(arrangement.chart.timeframe).toBe('H1')
     })
 
     it('keeps a panel\'s view across a reload, and drops what is not one', async () => {
