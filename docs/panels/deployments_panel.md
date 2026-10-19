@@ -1,6 +1,6 @@
 # Deployments Panel
 
-A deployment is the identity a series of runs share, and the Deployments panel follows one bot across its restarts through the ledger rather than through a run's artifacts. Read this document before you change the panel, `src/components/deployments/` or `deployments_store`. Its heading calls it a view and not a panel workspace because it does not use the registry of report sections; the booking periods it draws are described in [Booking Periods](../runs/booking_periods.md).
+A deployment is the identity a series of runs share, and the Deployments panel follows one bot across its restarts through the ledger rather than through a run's artifacts. Read this document before you change the panel, `src/components/deployments/` or `deployments_store`. Its heading calls it a view and not a panel workspace because it does not use the registry of report sections; the booking periods it draws are described in [Booking periods](../runs/booking_periods.md).
 
 ## Deployments — a second view, deliberately not a panel workspace
 

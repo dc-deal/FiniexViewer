@@ -64,7 +64,7 @@ function costs(row: AggregatedCurrency): Figure[] {
     {
       label: t('Execution rate'),
       value: percentFigure(fold.execution_rate_pct),
-      title: t('Executed orders over submitted plus adopted — the backend\'s own definition. The Executive Summary shows the counts and leaves the rate here, because this is the only route that serves it.'),
+      title: t('Executed orders over submitted plus adopted — the backend\'s own definition. The Executive summary shows the counts and leaves the rate here, because this is the only route that serves it.'),
     },
   ]
   // the maker/taker halves only where a fee of that kind was charged — two zeroes on every forex

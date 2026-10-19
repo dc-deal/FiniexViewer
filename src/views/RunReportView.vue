@@ -83,15 +83,15 @@ const chosenMeta = computed(() => {
  * naming it once is the whole point.
  */
 const SECTION_TITLES: Record<string, string> = {
-  warningsErrors: 'Warnings & Errors',
+  warningsErrors: 'Warnings & errors',
   portfolio: 'Portfolio',
   broker: 'Broker',
-  aggregated: 'Run Totals',
-  pendingOrders: 'Pending Orders',
-  orderHistory: 'Order History',
-  bookingPeriods: 'Booking Periods',
+  aggregated: 'Run totals',
+  pendingOrders: 'Pending orders',
+  orderHistory: 'Order history',
+  bookingPeriods: 'Booking periods',
   config: 'Configuration',
-  tradeHistory: 'Trade History',
+  tradeHistory: 'Trade history',
   scenarios: 'Scenarios',
 }
 
@@ -117,7 +117,7 @@ const missingSections = computed(() => {
   // different causes collided on one empty key and Vue was free to reuse the wrong node
   const byCause = new Map<string, { cause: string, detail: string, sections: string[] }>()
   for (const [slot, absence] of Object.entries(absences.value).filter(([key]) => saidHere(key))) {
-    const title = slot === 'runSummary' ? t('Executive Summary') : t(SECTION_TITLES[slot] ?? slot)
+    const title = slot === 'runSummary' ? t('Executive summary') : t(SECTION_TITLES[slot] ?? slot)
     const seen = byCause.get(absence.cause)
     if (seen) seen.sections.push(title)
     else byCause.set(absence.cause, { cause: absence.cause, detail: absence.detail, sections: [title] })

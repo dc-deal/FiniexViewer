@@ -26,7 +26,7 @@ async function openSection(page: Page, name: string): Promise<void> {
 test('the chart mark on a trade opens the run chart beside the report, on the trade\'s unit', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await openSection(page, 'Trade History')
+  await openSection(page, 'Trade history')
 
   await page.locator('[data-panel="trade-history"] .to-chart').first().click()
 

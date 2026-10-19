@@ -180,7 +180,7 @@ test('picking a value leaves every chip exactly where it was', async ({ page }) 
  * So the column is asserted first: it fails for the old storage every time.
  */
 test('each browser tab keeps its own run and column across a reload, a new one starts from the last saved', async ({ page, context }) => {
-  const tradesOf = (tab: typeof page) => tab.locator('.panel-trigger', { hasText: 'Trade History' })
+  const tradesOf = (tab: typeof page) => tab.locator('.panel-trigger', { hasText: 'Trade history' })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
   await expect(tradesOf(page)).toHaveAttribute('aria-expanded', 'false')

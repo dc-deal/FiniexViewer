@@ -133,7 +133,7 @@ test('narrowing to a scenario is immediate', async ({ page }) => {
  */
 test('the trade list draws within its row cap', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await page.locator('.panel-trigger', { hasText: 'Trade History' }).click()
+  await page.locator('.panel-trigger', { hasText: 'Trade history' }).click()
 
   const ms = await timed('trade history drawn', async () => {
     await page.locator('.trade-history').waitFor({ state: 'visible' })

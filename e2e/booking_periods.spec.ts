@@ -62,7 +62,7 @@ test.beforeEach(async ({ page }) => {
 /** The section open in the bundle, and its period list unfolded. */
 async function openPeriods(page: Page): Promise<void> {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  const trigger = page.locator('.panel-trigger', { hasText: 'Booking Periods' })
+  const trigger = page.locator('.panel-trigger', { hasText: 'Booking periods' })
   if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click()
   await page.locator('[data-panel="booking-periods"] .periods-summary').click()
 }
@@ -91,7 +91,7 @@ test('each unit closes with its total line, and a total says the account own dec
 test('a lane too dense for its rings draws its periods edge to edge, on an axis of the calendar', async ({ page }) => {
   await page.route('**/api/v1/reports/runs/*/booking-periods', route => route.fulfill({ json: dailyPeriods(200) }))
   await openWith(page, '/', { run: FIXTURE_RUN })
-  const trigger = page.locator('.panel-trigger', { hasText: 'Booking Periods' })
+  const trigger = page.locator('.panel-trigger', { hasText: 'Booking periods' })
   if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click()
   const timeline = page.locator('[data-panel="booking-periods"] .booking-timeline')
   await expect(timeline.locator('.lane.dense')).toHaveCount(1)

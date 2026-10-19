@@ -75,7 +75,7 @@ waits one tick for drawn rows to take the mark, then watches the view until the 
 scrolling to nothing: a target beyond the trade list's visible cap, or inside a group it folded, is
 a row that is not there. A fixed number of ticks failed twice — two until 2026-10-12, shorter than
 the URL write the mark then waited for, and one on 2026-10-13, once the mark no longer rode in the
-URL. Nobody saw the first: Trade History stands above Orders, and the trades of
+URL. Nobody saw the first: Trade history stands above Orders, and the trades of
 the first order are on screen without a scroll. Only a jump from far down the orders needs one.
 
 **Three absences draw no link at all**, which is the difference between a jump and a dead end: a

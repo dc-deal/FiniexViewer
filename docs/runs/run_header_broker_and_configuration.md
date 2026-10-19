@@ -2,7 +2,7 @@
 
 Before two runs can be compared, a reader needs to know what each one was: which artifact and which code, what its brokers allowed, and what it was started with. Read this document before you change `RunHeaderPanel`, `BrokerPanel` or `ConfigPanel`.
 
-## Run Header — which artifact am I looking at, and which code made it
+## Run header — which artifact am I looking at, and which code made it
 
 The one section that answers for a run carrying **no report artifacts at all**, and since contract
 26 that is true of the route as well: measured 2026-10-10 on all three logs-only runs in the

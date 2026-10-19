@@ -187,7 +187,7 @@ describe('PanelTab', () => {
     const wrapper = mount(PanelTab, {
       props: { kindId: reportKindId('trade-history'), api: fakeApi() as unknown as DockviewPanelApi },
     })
-    expect(wrapper.findComponent(HoverCard).props('title')).toBe('Trade History · r1')
+    expect(wrapper.findComponent(HoverCard).props('title')).toBe('Trade history · r1')
     expect(wrapper.find('.panel-tab-subtitle').exists()).toBe(false)
   })
 

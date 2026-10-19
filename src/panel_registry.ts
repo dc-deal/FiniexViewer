@@ -44,7 +44,7 @@ import type { PanelDescriptor } from '@/types/panel_types'
 const PANELS: PanelDescriptor[] = [
   {
     id: 'executive',
-    title: 'Executive Summary',
+    title: 'Executive summary',
     icon: 'kind-executive',
     component: ExecutivePanel,
     source: 'runSummary',
@@ -92,7 +92,7 @@ const PANELS: PanelDescriptor[] = [
     // Absent on every run from before the journal existed, which PanelColumn handles by dropping
     // the panel rather than showing it empty.
     id: 'booking-periods',
-    title: 'Booking Periods',
+    title: 'Booking periods',
     icon: 'kind-booking-periods',
     component: BookingPeriodsPanel,
     source: 'bookingPeriods',
@@ -112,7 +112,7 @@ const PANELS: PanelDescriptor[] = [
      * contract would have had to be rebuilt to carry a second model.
      */
     id: 'aggregated-portfolio',
-    title: 'Run Totals',
+    title: 'Run totals',
     icon: 'kind-aggregated-portfolio',
     component: AggregatedPortfolioPanel,
     source: 'aggregated',
@@ -125,7 +125,7 @@ const PANELS: PanelDescriptor[] = [
     // The only place the individual trades exist — every other section is already summed over
     // them. Absent on a run that closed no position.
     id: 'trade-history',
-    title: 'Trade History',
+    title: 'Trade history',
     icon: 'kind-trade-history',
     component: TradeHistoryPanel,
     source: 'tradeHistory',
@@ -160,7 +160,7 @@ const PANELS: PanelDescriptor[] = [
     // Deliberately second, ahead of the console's own late placement: "can this run be trusted"
     // gates reading the numbers below it, and a screen is not read top-to-bottom like a printout.
     id: 'warnings-errors',
-    title: 'Warnings & Errors',
+    title: 'Warnings & errors',
     icon: 'kind-warnings-errors',
     component: WarningsErrorsPanel,
     source: 'warningsErrors',
@@ -171,7 +171,7 @@ const PANELS: PanelDescriptor[] = [
   },
   {
     id: 'feed-health',
-    title: 'Feed Health',
+    title: 'Feed health',
     icon: 'kind-feed-health',
     component: FeedHealthPanel,
     // its own source, not the shared summary: the store answers null where neither half of this
@@ -207,7 +207,7 @@ const PANELS: PanelDescriptor[] = [
      * the header answers 200 while `artifacts` is empty.
      */
     id: 'run-header',
-    title: 'Run Header',
+    title: 'Run header',
     icon: 'kind-run-header',
     component: RunHeaderPanel,
     source: 'header',

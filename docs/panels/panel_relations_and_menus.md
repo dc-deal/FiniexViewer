@@ -18,10 +18,10 @@ Run bundle        —           run  + its members ²     its members ²
 Run chart         —           run · scenario · position scenario
 Free chart        —           market ¹                 market
 Scenarios         Run bundle  run                      scenario
-Trade History     Run bundle  run · scenario           position
+Trade history     Run bundle  run · scenario           position
 Orders            Run bundle  run · scenario           position
-Booking Periods   Run bundle  run · scenario           —
-Warnings & Errors Run bundle  run · scenario           —
+Booking periods   Run bundle  run · scenario           —
+Warnings & errors Run bundle  run · scenario           —
 every other       Run bundle  run                      —
 ```
 
@@ -46,9 +46,9 @@ AutoTrader session writes fewer sections than a backtest; the column absorbs tha
 shorter, where a grid of eleven panels would have left empty areas or moved.
 
 ```
-[☰ Runs] [▤ Run bundle · 20261012_…]     │ [☰ Trade History]
+[☰ Runs] [▤ Run bundle · 20261012_…]     │ [☰ Trade history]
   the bundle's column                      │   the section, with its own scroll
-  ▾ Executive Summary                  ⇱   │
+  ▾ Executive summary                  ⇱   │
   ▸ Orders                             ⇱   │
 ```
 
@@ -57,9 +57,9 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
   shows the FORM — `form-list` for
   the four lists, `form-sheet` for the others — and a section panel carries the narrowing's frame
   where the narrowing filters the section; the narrowing itself is said in the menu bar. The
-  registry says how a section takes it, in `narrowing`: `filters` (Trade History, Orders, Booking Periods, Warnings & Errors) draws only the
+  registry says how a section takes it, in `narrowing`: `filters` (Trade history, Orders, Booking periods, Warnings & errors) draws only the
   chosen scenarios' rows, `marks` (Scenarios) keeps every row and marks the chosen ones, `null`
-  does not read it — the Executive Summary reads it and narrows nothing, its mark saying the
+  does not read it — the Executive summary reads it and narrows nothing, its mark saying the
   figures are the whole run's. The tab dims its title where the chosen run has nothing for
   the section, and shows ✖ *could not be loaded* where the section failed.
 - **`components/dock/ReportSection.vue`** draws the section's component with the model the column
@@ -102,9 +102,9 @@ Panels ▾
 │          ├ ✓ Run bundle
 │          ├ ✓ Run chart
 │          ├ ─────────
-│          ├ ✓ Executive Summary          in the bundle
-│          ├ ✓ Trade History          ⇱   open as a panel
-│          ├   Feed Health                hidden
+│          ├ ✓ Executive summary          in the bundle
+│          ├ ✓ Trade history          ⇱   open as a panel
+│          ├   Feed health                hidden
 │          └   Scenarios                  struck: the run has none
 └   Free chart
 

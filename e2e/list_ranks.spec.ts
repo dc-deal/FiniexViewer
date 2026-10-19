@@ -140,7 +140,7 @@ async function expectFiguresRightAligned(page: Page, selector: string): Promise<
 const RUN_LISTS = ['.run-list', '.roster-list', '.trade-list', '.periods-list', '.order-list']
 
 /** The panels those lists live in. Closed by default, so each has to be asked for. */
-const PANELS = ['Scenarios', 'Trade History', 'Booking Periods', 'Orders']
+const PANELS = ['Scenarios', 'Trade history', 'Booking periods', 'Orders']
 
 // 1800 is above the 80rem rung and 1300 is below it — without a width on each side the fifth
 // tier is never exercised, and a rung nothing measures is a rung nobody knows is broken

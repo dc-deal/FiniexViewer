@@ -81,7 +81,7 @@ test('a jump opens the closed target, marks the position and stores the mark', a
   await openPanel(page, 'Orders')
 
   // the target starts CLOSED — that is what the jump has to deal with
-  const trades = page.locator('.panel-trigger', { hasText: 'Trade History' })
+  const trades = page.locator('.panel-trigger', { hasText: 'Trade history' })
   await expect(trades).toHaveAttribute('aria-expanded', 'false')
 
   await page.locator('.order-list .to-trades').first().click()
@@ -131,13 +131,13 @@ test('a hidden target comes back rather than the jump landing nowhere', async ({
   await openPanel(page, 'Orders')
 
   // switch Trade History off entirely — it leaves the column, not just the open state
-  await page.locator('.panel-header', { hasText: 'Trade History' })
+  await page.locator('.panel-header', { hasText: 'Trade history' })
     .locator('.panel-control[title="Hide panel"]').click()
-  await expect(page.locator('.panel-trigger', { hasText: 'Trade History' })).toHaveCount(0)
+  await expect(page.locator('.panel-trigger', { hasText: 'Trade history' })).toHaveCount(0)
 
   await page.locator('.order-list .to-trades').first().click()
 
-  await expect(page.locator('.panel-trigger', { hasText: 'Trade History' }))
+  await expect(page.locator('.panel-trigger', { hasText: 'Trade history' }))
     .toHaveAttribute('aria-expanded', 'true')
   await expect(page.locator('.trade-list .record-row.marked')).toHaveCount(1)
 })
@@ -148,7 +148,7 @@ test('the mark survives a reload, and the page does not jump on its own', async 
     position: { scenario: TARGET.scenario_name, position: TARGET.position_id },
   })
   await openPanel(page, 'Orders')
-  await openPanel(page, 'Trade History')
+  await openPanel(page, 'Trade history')
 
   // restored in BOTH lists — the whole lifecycle of the position on the order side
   await expect(page.locator('.trade-list .record-row.marked')).toHaveCount(1)
@@ -156,7 +156,7 @@ test('the mark survives a reload, and the page does not jump on its own', async 
 
   // THE POINT: a real reload, and the mark is still there
   await page.reload()
-  await openPanel(page, 'Trade History')
+  await openPanel(page, 'Trade history')
   await expect(page.locator('.trade-list .record-row.marked')).toHaveCount(1)
 
   // One row above is only an achievement because the id is NOT unique: the capture hands it to
@@ -167,7 +167,7 @@ test('the mark survives a reload, and the page does not jump on its own', async 
 
 test('the way back from a trade reaches the orders of its position', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await openPanel(page, 'Trade History')
+  await openPanel(page, 'Trade history')
 
   const orders = page.locator('.panel-trigger', { hasText: 'Orders' })
   await expect(orders).toHaveAttribute('aria-expanded', 'false')

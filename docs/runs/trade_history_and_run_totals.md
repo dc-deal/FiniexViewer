@@ -1,8 +1,8 @@
 # Trade History and Run Totals
 
-Trade History answers which trade, and Run Totals answers what the whole run came to in each account currency. Read this document before you change either panel: it says where each figure comes from and which figures are left out on purpose.
+Trade history answers which trade, and Run totals answers what the whole run came to in each account currency. Read this document before you change either panel: it says where each figure comes from and which figures are left out on purpose.
 
-## Trade History — the only place a single trade exists
+## Trade history — the only place a single trade exists
 
 `runs/TradeHistoryPanel.vue`, rendered through `base/RecordList.vue` — the same list surface the run
 picker uses. Every other section of a run is already summed over these rows, so this is the one that
@@ -79,17 +79,17 @@ had drawn everything — and the cap is counted against the NARROWED set for the
 Virtualisation replaces the cap the day a run exceeds it — `@tanstack/vue-virtual` is already in the
 tree through reka-ui, though it would have to become a direct dependency.
 
-## Run Totals — the fold, minus everything already on screen
+## Run totals — the fold, minus everything already on screen
 
 `GET /reports/runs/{run_id}/aggregated-portfolio`, rendered by `runs/AggregatedPortfolioPanel.vue`
 as `FigureBlock`s, one group of blocks per account currency. Registered with `defaultOpen: false`,
 which IS the disclosure this was asked for — the panel shell already collapses, so nesting it inside
-the Executive Summary would have meant rebuilding that panel's prop contract to carry a second
+the Executive summary would have meant rebuilding that panel's prop contract to carry a second
 model.
 
 **The panel's discipline is what it leaves out.** The response carries 42 fields per currency on top
 of a 21-field headline, and almost all of the headline is `run-summary` again. Measured field by
-field on 2026-09-30 against what the Executive Summary renders: **39 are new**, and four groups of
+field on 2026-09-30 against what the Executive summary renders: **39 are new**, and four groups of
 those are what a reader has no other way to reach — the run-wide cost split (the per-unit version is
 in the roster's card and this total is nowhere else), `highest_equity` with the scenario that reached
 it, the realised `final_balance` beside the equity, and the averages plus the spot holdings. Printing

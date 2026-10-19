@@ -25,7 +25,7 @@ async function withThreshold(page: Page, threshold: number): Promise<void> {
 
 async function openTradeHistory(page: Page): Promise<void> {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await page.locator('.panel-trigger', { hasText: 'Trade History' }).click()
+  await page.locator('.panel-trigger', { hasText: 'Trade history' }).click()
   await expect(page.locator('.trade-history .record-group').first()).toBeVisible()
 }
 

@@ -4,7 +4,7 @@ import { listed, t, plural } from '@/translate'
 describe('t', () => {
   // the marking is the point, not a lookup — a changed return value would be a silent translation
   it('returns its input unchanged', () => {
-    expect(t('Booking Periods')).toBe('Booking Periods')
+    expect(t('Booking periods')).toBe('Booking periods')
   })
 })
 

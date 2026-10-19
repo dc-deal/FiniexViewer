@@ -31,14 +31,14 @@ test('a section opens as a panel of its own beside the column, and ⇲ on its ta
   await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('.panel-column [data-panel="trade-history"]')).toBeVisible()
 
-  await openAsPanel(page, 'Trade History')
+  await openAsPanel(page, 'Trade history')
 
   await expect(page.locator(`${ownPanel('trade-history')} [data-panel="trade-history"]`)).toBeVisible()
   await expect(page.locator('.panel-column [data-panel="trade-history"]')).toHaveCount(0)
   // beside the Runs panel, not over it: both stand on screen at once
   await expect(page.locator('[data-panel-kind="run"] .panel-column')).toBeVisible()
 
-  await page.locator('.dv-tab', { hasText: 'Trade History' }).locator('.panel-tab-back').click()
+  await page.locator('.dv-tab', { hasText: 'Trade history' }).locator('.panel-tab-back').click()
   await expect(page.locator(ownPanel('trade-history'))).toHaveCount(0)
   await expect(page.locator('.panel-column [data-panel="trade-history"]')).toBeVisible()
 })
@@ -46,11 +46,11 @@ test('a section opens as a panel of its own beside the column, and ⇲ on its ta
 /** ✕ hides, alike for every panel; the menu shows it again beside what it stood beside. */
 test('closing a section panel hides it, and the Panels menu shows it again where it stood', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await openAsPanel(page, 'Trade History')
+  await openAsPanel(page, 'Trade history')
   const runs = (await page.locator('[data-panel-kind="run"]').boundingBox())!
   const before = (await page.locator(ownPanel('trade-history')).boundingBox())!
 
-  await page.locator('.dv-tab', { hasText: 'Trade History' }).locator('.panel-tab-close').click()
+  await page.locator('.dv-tab', { hasText: 'Trade history' }).locator('.panel-tab-close').click()
   await expect(page.locator(ownPanel('trade-history'))).toHaveCount(0)
   await expect(page.locator('.panel-column [data-panel="trade-history"]')).toHaveCount(0)
 
@@ -70,7 +70,7 @@ test('closing a section panel hides it, and the Panels menu shows it again where
 /** A rebuild of the dock is not the reader closing anything: the sections come back, not hidden. */
 test('the suggested order gives a section open as a panel back to the column, shown', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await openAsPanel(page, 'Trade History')
+  await openAsPanel(page, 'Trade history')
   await expect(page.locator(ownPanel('trade-history'))).toHaveCount(1)
 
   await page.locator('.menu-trigger').click()
@@ -85,8 +85,8 @@ test('the suggested order gives a section open as a panel back to the column, sh
 
 test('a hidden section still knows where it stood after a reload', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await openAsPanel(page, 'Trade History')
-  await page.locator('.dv-tab', { hasText: 'Trade History' }).locator('.panel-tab-close').click()
+  await openAsPanel(page, 'Trade history')
+  await page.locator('.dv-tab', { hasText: 'Trade history' }).locator('.panel-tab-close').click()
   await expect.poll(() => page.evaluate(() =>
     Boolean(JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').places?.['report-trade-history'])))
     .toBe(true)
@@ -103,7 +103,7 @@ test('a hidden section still knows where it stood after a reload', async ({ page
 
 test('a section opened as a panel is still one after a reload', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await openAsPanel(page, 'Trade History')
+  await openAsPanel(page, 'Trade history')
   // the arrangement is written once the layout holds still
   await expect.poll(() => page.evaluate(() =>
     Boolean(JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').dock?.panels?.['report-trade-history'])))
@@ -118,7 +118,7 @@ test('a section opened as a panel is still one after a reload', async ({ page })
 /** The jump looks where the section IS: in its own panel, once it has one. */
 test('a jump from the orders lands in the trade history opened as a panel', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await openAsPanel(page, 'Trade History')
+  await openAsPanel(page, 'Trade history')
 
   const orders = page.locator('.panel-column .panel-trigger', { hasText: 'Orders' })
   if ((await orders.getAttribute('aria-expanded')) !== 'true') await orders.click()

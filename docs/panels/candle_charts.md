@@ -13,7 +13,7 @@ it says so and draws nothing.
 
 ```
 [☰ Runs][▤ Run · 20261012_205715]          │ [◫ Run chart · EURGBP_refus…]   EURGBP_refusals_01 ▾ · M1 ▾
-  Trade History                             │   ▲ entry: up below the bar (long), down above it (short)
+  Trade history                             │   ▲ entry: up below the bar (long), down above it (short)
   pos_eurgbp_1 ↗ ◫  long  +0.68 EUR ──────► │   ● exit: on the other side, + or − as a word,
                                             │     the colour its polarity
 ```

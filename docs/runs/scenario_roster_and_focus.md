@@ -80,7 +80,7 @@ statement above it pushed the column down a line, so what the reader was looking
 the click. The statement is said ONCE, in the menu bar (`NarrowingStatement`), because the focus
 reaches every panel and a panel's own bar would repeat it in each group the bundle's members stand in.
 Every run-wide label below is a mark (`ScopeMark`) drawn inside a line that already exists — the
-executive's and Run Totals' on the first currency's title row, the verdict's in its headline — and
+executive's and Run totals' on the first currency's title row, the verdict's in its headline — and
 says its whole sentence on its title. `run_selection.spec.ts` holds it in a browser: the executive panel's box and the row under
 the pointer stay exactly where they were.
 
@@ -99,11 +99,11 @@ it. The app root supplies it (`use_run_report_channels`), so it reaches a sectio
 section is drawn.
 
 **The figures that are run-wide and cannot be split are LABELLED rather than filtered:** the
-executive KPI table (one row per CURRENCY), Run Totals (a fold over every scenario), the
-reconciliation verdict and the deepest-drawdown footnote in Booking Periods, and the outcome counts
-in Warnings & Errors. Run Totals joined them in viewer#42: inside the bundle's dashed frame its money
+executive KPI table (one row per CURRENCY), Run totals (a fold over every scenario), the
+reconciliation verdict and the deepest-drawdown footnote in Booking periods, and the outcome counts
+in Warnings & errors. Run totals joined them in viewer#42: inside the bundle's dashed frame its money
 read as the focused scenario's. There were two more once: the order
-funnel and the per-currency analytics stood in Trade History too, and both are gone — 17 of the 19
+funnel and the per-currency analytics stood in Trade history too, and both are gone — 17 of the 19
 fields in `trade_history.analytics[]` are identical in value to `run-summary.currencies[]`, which
 the executive panel prints above them on the same page. The backend confirmed the duplication is
 deliberate (one derivation, two routes) and that the summary's copy is the one to show. A run-wide number sitting unlabelled over one scenario's

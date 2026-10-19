@@ -42,7 +42,7 @@ const Fickle = defineComponent({
 function mountWith(content: unknown, resetOn: unknown = 'run-a') {
   return mount(AccordionPanel, {
     props: {
-      title: 'Executive Summary',
+      title: 'Executive summary',
       icon: 'kind-executive',
       open: true,
       pinned: false,
@@ -83,7 +83,7 @@ describe('AccordionPanel as an error boundary', () => {
     expect(wrapper.find('.panel-failed').text()).toContain('could not be drawn')
     // the panel is still a panel: its title and its controls are untouched — asserted by what they
     // are, not by how many, since a header that gains a control is no failure of the boundary
-    expect(wrapper.find('.panel-title').text()).toBe('Executive Summary')
+    expect(wrapper.find('.panel-title').text()).toBe('Executive summary')
     expect(wrapper.find('.panel-control[title="Hide panel"]').exists()).toBe(true)
     expect(wrapper.find('[data-action="open-as-panel"]').exists()).toBe(true)
   })

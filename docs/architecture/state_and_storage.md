@@ -149,7 +149,7 @@ back. It needs an answer in the change that moves the backing, not before — th
 document yet.
 
 **The first real setting is the scenario threshold.** Above that many units a panel makes the
-summary primary and the individual unit secondary — Trade History collapses each unit to its group
+summary primary and the individual unit secondary — Trade history collapses each unit to its group
 row, which still carries the name, the net, the fees and the trade count. A thirteen-scenario run
 is already hard to read and a forty-scenario run is unreadable; the threshold is what lets the
 presentation know how many units it is dealing with. Nothing is ever hidden silently.
