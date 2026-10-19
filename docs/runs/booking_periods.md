@@ -25,6 +25,17 @@ none: its route serves no unit totals. The figures over many periods — a Sharp
 drawdown, their *closing* — are not served yet and not computed here; a *Closing* panel waits for
 them (requested 2026-10-18).
 
+**Nothing run-wide stands under the table, and as a panel of its own the table fills it**
+(2026-10-19). A footnote printed the deepest period drawdown over every scenario and the final
+equity of all accounts; nobody read it, the second stood in the executive summary already — with
+the account's own deepest drawdown and the scenario it fell in — and a unit's deepest period
+drawdown stays on its total's card. What is left below the rows is a caveat, and only where it
+applies: *Other account currencies*, because the rows are one currency's. The table's list was
+capped at half the panel whatever stood around it, so the rest stood empty below while it already
+scrolled; as a panel of its own (`useFillsPanel`) the table now takes what the timeline leaves,
+the whole of it scrolling with its headings sticky. In the bundle's column the sections stack,
+and the list keeps its cap of half the view, as on the deployment view.
+
 **The two outermost axis labels hang INWARDS, and that is layout rather than taste.** A label
 placed at its mark and pulled back by `translate` moves on screen but not in layout, so a centred
 label at the far edge keeps half its box past the chart. The panel around it then offers a

@@ -40,6 +40,12 @@ const props = defineProps<{
    * period, in the same columns. Absent on the deployment view, whose route serves none.
    */
   unitTotals?: BookingPeriodUnitTotal[]
+  /**
+   * Set where the table is the last thing in a panel of its own: the panel gives it the height that
+   * is left and the whole table scrolls in it, its headings sticky. Off beside other sections — the
+   * deployment view — where the list keeps its own cap of half the view and scrolls itself.
+   */
+  fill?: boolean
 }>()
 
 /** The table unfolded; closed by default. The panel around it decides whether the choice is kept. */
@@ -216,7 +222,7 @@ const bands = computed<ListBand[]>(() => [
        what a reader comes for, the rows are the backup. `details` brings the keyboard and
        screen-reader semantics with it instead of us re-implementing them. Opened, it stays open
        across a run change and a reload — the panel keeps the choice as its own view. -->
-  <details class="periods" :open="open" @toggle="onToggle">
+  <details class="periods" :class="{ fill }" :open="open" @toggle="onToggle">
     <summary class="periods-summary">
       {{ plural(periods.length, t('booking period'), t('booking periods')) }}
       <!-- the currency, stated ONCE for the whole table instead of in every amount -->
@@ -323,6 +329,17 @@ const bands = computed<ListBand[]>(() => [
   /* of the view that holds the table, not of the browser window */
   max-height: 50cqh;
   overflow-y: auto;
+}
+
+/* filling its panel: the whole table scrolls, and the list is no scroll box of its own — one would
+   hold the sticky headings inside a box that never moves while the rows scroll past them */
+.periods.fill {
+  overflow-y: auto;
+}
+
+.periods.fill .periods-list {
+  max-height: none;
+  overflow-y: visible;
 }
 
 .periods-list :deep(.record-row) > span {

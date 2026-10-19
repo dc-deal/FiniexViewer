@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
+import { provideFillsPanel } from '@/composables/use_fills_panel'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestOpenInContext } from './open_in_context_harness'
 import type { TestOpenInContext } from './open_in_context_harness'
@@ -76,51 +77,33 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
   it('says nothing about scope where nothing is narrowed', () => {
     const wrapper = mountNarrowed(MIXED, [])
     expect(wrapper.find('.verdict-text .scope').exists()).toBe(false)
-    expect(wrapper.find('.footnote .scope').exists()).toBe(false)
   })
 
   /**
-   * The deepest drawdown is taken across EVERY period and the final equity is the account's, so
-   * neither can be split per scenario. Left unlabelled under a narrowed chart they read as the
-   * chosen scenario's.
+   * No run-wide figure under the table (2026-10-19): the final equity over all accounts stands in
+   * the executive summary with the account's deepest drawdown, and a unit's deepest period
+   * drawdown on its total's card. The line was never read, and it pushed the table up.
    */
-  it('marks the footnote figures as the run\'s', () => {
-    const wrapper = mountNarrowed(MIXED, ['unit_a'])
-    expect(wrapper.find('.footnote .scope').text()).toBe('whole run')
-    // and why, a hover away: it carried no sentence anywhere before
-    expect(wrapper.find('.footnote .scope').attributes('title')).toContain('whole run')
-    expect(wrapper.find('.footnote .scope').attributes('title')).toContain('Both figures')
+  it('prints no run-wide figure under the table', () => {
+    const text = mountPanel(report({})).text()
+    expect(text).not.toContain('Deepest period drawdown')
+    expect(text).not.toContain('Final equity, all accounts')
   })
 
-  /** A run with no closing equity shows the drawdown alone, and the mark speaks of one figure. */
-  it('speaks of one figure where the footnote holds one', () => {
-    const wrapper = mountNarrowed({ ...MIXED, total_final_equity: null }, ['unit_a'])
-    expect(wrapper.find('.footnote .scope').attributes('title'))
-      .toBe('This figure is the whole run, across every scenario')
-  })
-
-  /**
-   * Neither figure stands on any row, and the reader took them for figures of ours (2026-10-18).
-   * Each says on hover how the backend forms it.
-   */
-  it('says how the backend forms each footnote figure', () => {
-    const titles = mountPanel(report({})).findAll('.footnote-figure').map(node => node.attributes('title'))
-    expect(titles).toHaveLength(2)
-    expect(titles[0]).toContain('within a single period')
-    expect(titles[1]).toContain('sum of the closing equities')
-  })
-
-  /**
-   * A run that booked no period at all states no figure in its currency, and the backend serves
-   * `total_final_equity` as null there. `Intl.NumberFormat` formats null as `0.00` without
-   * complaining, so the footnote printed a closing equity nobody reported. Measured 2026-10-01 on
-   * `20260924_165923_4d6c2f5f` — one run of 45, which is exactly how long such a figure survives.
-   */
-  it('leaves out a closing equity the run never reported, rather than printing it as zero', () => {
-    const wrapper = mountPanel(report({ total_final_equity: null }))
-    const footnote = wrapper.find('.footnote').text()
-    expect(footnote).toContain('Deepest period drawdown')
-    expect(footnote).not.toContain('Final equity')
+  /** A panel of its own gives the table the height the rest leaves; in the bundle's column it keeps its cap. */
+  it('lets the period table fill a panel of its own, and only there', () => {
+    const Alone = defineComponent({
+      setup() {
+        provideFillsPanel()
+        return () => h(BookingPeriodsPanel, { model: BASE })
+      },
+    })
+    const alone = mount(Alone)
+    expect(alone.find('.booking-periods').classes()).toContain('filling')
+    expect(alone.findComponent(BookingPeriodTable).props('fill')).toBe(true)
+    const stacked = mountPanel(BASE)
+    expect(stacked.find('.booking-periods').classes()).not.toContain('filling')
+    expect(stacked.findComponent(BookingPeriodTable).props('fill')).toBe(false)
   })
 
   /** A total stands under its unit's periods, so a unit the narrowing left out has none. */
@@ -212,14 +195,15 @@ describe('BookingPeriodsPanel — the reconciliation', () => {
 
   it('names the other account currencies without repeating the one on show', () => {
     const wrapper = mountPanel(report({ currency: 'JPY', currencies: ['JPY', 'USD'] }))
-    const footnote = wrapper.find('.footnote').text()
-    expect(footnote).toContain('USD')
-    expect(footnote).not.toContain('JPY, ')
+    const note = wrapper.find('.currencies-note').text()
+    expect(note).toContain('USD')
+    expect(note).not.toContain('JPY')
   })
 
+  /** The rows are one currency's: only where the run booked another is there anything to say. */
   it('stays silent about other currencies when there are none', () => {
-    const wrapper = mountPanel(report({ currencies: [] }))
-    expect(wrapper.find('.footnote').text()).not.toContain('Other account currencies')
+    expect(mountPanel(report({ currencies: [] })).find('.currencies-note').exists()).toBe(false)
+    expect(mountPanel(report({ currency: 'JPY', currencies: ['JPY'] })).find('.currencies-note').exists()).toBe(false)
   })
 })
 

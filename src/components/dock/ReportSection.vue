@@ -3,6 +3,7 @@ import { computed, onErrorCaptured, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppIcon from '@/components/base/AppIcon.vue'
 import LoadingLine from '@/components/base/LoadingLine.vue'
+import { provideFillsPanel } from '@/composables/use_fills_panel'
 import { panelById } from '@/panel_registry'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
@@ -23,6 +24,8 @@ import { t } from '@/translate'
 const props = defineProps<{ sectionId: string }>()
 
 const descriptor = panelById(props.sectionId)
+// the section is the whole panel here, so a list in it may take the height the rest leaves
+provideFillsPanel()
 const sections = useRunSectionsStore()
 const { sources, pending } = storeToRefs(sections)
 const { selectedRunId, selectedRun, selectedUnits, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())

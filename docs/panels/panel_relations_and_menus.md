@@ -75,7 +75,10 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
   section* where the run's artifact list lacks it, since which pipeline writes which section is the
   backend's rule. A size container, so the lists measure their caps against this panel, and framed
   dashed where the narrowing FILTERS it, like the column: a frame says *what you see is a part*,
-  which is untrue of a list that still shows every row.
+  which is untrue of a list that still shows every row. It also tells the section it is the whole
+  panel (`provideFillsPanel`, `composables/use_fills_panel.ts`): the booking periods then give
+  their table the height the timeline leaves, where in the column, among stacked sections, it keeps
+  its cap.
 - **Where a section stands is derived, never stored.** The dock store keeps `openIds` from
   dockview's own `onDidAddPanel` / `onDidRemovePanel`, and the column leaves out a section whose
   panel is open; its place in `layout.v1` stays, so ⇲ restores it and a reset of the dock gives

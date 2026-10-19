@@ -78,6 +78,8 @@ by its tab, the way a reader does.
   hundred days: its lane drawn edge to edge without the ring, said beneath the lanes, on an axis of
   calendar marks — the ring is paint, which only a browser shows. And the period list, once opened,
   still open after a real reload and in the section opened as a panel of its own.
+  And as a panel of its own the table reaches the bottom of it, the whole table scrolling with its
+  headings sticky, while in the bundle's column its list keeps its cap — only a browser lays out.
 - `run_chart.spec.ts` holds the run chart: the chart mark on a trade opening it BESIDE the run
   report, on the trade's unit, drawn on a canvas with its marks counted on the element and the
   position marked in the list; the Panels menu opening it on the first unit with trades; the opening

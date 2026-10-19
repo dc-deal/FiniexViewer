@@ -120,6 +120,43 @@ test('the period list stays open across a reload and as a panel of its own', asy
   await expect(page.locator('[data-panel-kind="report-booking-periods"] details.periods')).toHaveAttribute('open', '')
 })
 
+/**
+ * As a panel of its own the period table takes what the timeline leaves. Its cap was half the
+ * panel, whatever stood around it, so the rest stood empty below it while the table already
+ * scrolled — seen on screen 2026-10-19, about 80 px. In the bundle's column it keeps its cap.
+ */
+test('as a panel of its own the period table reaches the bottom of its panel', async ({ page }) => {
+  await page.route('**/api/v1/reports/runs/*/booking-periods', route => route.fulfill({ json: dailyPeriods(60) }))
+  await openPeriods(page)
+  const stacked = page.locator('.panel-column details.periods .periods-list')
+  expect(await stacked.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
+
+  const header = page.locator('.panel-column .panel-header', { hasText: 'Booking periods' })
+  await header.hover()
+  await header.locator('[data-action="open-as-panel"]').click()
+  const section = page.locator('[data-panel-kind="report-booking-periods"] .report-section')
+  const table = section.locator('details.periods')
+  await expect(table).toHaveAttribute('open', '')
+
+  // long enough to scroll, or a short table would end early for the right reason
+  expect(await table.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
+  const inset = await section.evaluate(element => {
+    const style = getComputedStyle(element)
+    return parseFloat(style.paddingBottom) + parseFloat(style.borderBottomWidth)
+  })
+  // the last thing in the panel: the table, or the note on other currencies the capture's run has
+  const last = (await section.locator('.booking-periods > *').last().boundingBox())!
+  const sectionBox = (await section.boundingBox())!
+  expect(sectionBox.y + sectionBox.height - inset - (last.y + last.height)).toBeLessThanOrEqual(1)
+
+  // the whole table scrolls now, and its column headings stay at the top of it
+  await table.evaluate(element => { element.scrollTop = 400 })
+  const heading = (await table.locator('.record-head > span').first().boundingBox())!
+  const tableTop = (await table.boundingBox())!.y
+  expect(heading.y).toBeGreaterThanOrEqual(tableTop - 1)
+  expect(heading.y).toBeLessThan(tableTop + 60)
+})
+
 /** A read-only row reachable by the keyboard: the card opens on focus, and a click does nothing. */
 test('a period row opens its card on a keyboard focus, and is no control', async ({ page }) => {
   await openPeriods(page)

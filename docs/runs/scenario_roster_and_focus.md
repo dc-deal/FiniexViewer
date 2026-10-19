@@ -100,7 +100,7 @@ section is drawn.
 
 **The figures that are run-wide and cannot be split are LABELLED rather than filtered:** the
 executive KPI table (one row per CURRENCY), Run totals (a fold over every scenario), the
-reconciliation verdict and the deepest-drawdown footnote in Booking periods, and the outcome counts
+reconciliation verdict in Booking periods, and the outcome counts
 in Warnings & errors. Run totals joined them in viewer#42: inside the bundle's dashed frame its money
 read as the focused scenario's. There were two more once: the order
 funnel and the per-currency analytics stood in Trade history too, and both are gone — 17 of the 19
