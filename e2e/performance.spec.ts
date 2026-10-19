@@ -140,3 +140,43 @@ test('the trade list draws within its row cap', async ({ page }) => {
   })
   expect(ms).toBeLessThan(3000)
 })
+
+/**
+ * The run chart since it draws for itself (viewer#41): its own drawing host places and paints every
+ * layer on each move of the view, where the library's markers did that inside the library. Two
+ * figures, on the fixture's busiest unit — 21 events over 1,075 bars: a unit chosen until its marks
+ * stand on the candles, and a zoom step until the frame after it has painted, the mean of ten.
+ */
+test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
+  await expect(unitSelect).toBeEnabled()
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBeGreaterThan(0)
+
+  const drawn = await timed('run chart — a unit drawn', async () => {
+    await unitSelect.selectOption('ETHUSD_spot_two_balances')
+    // on the page's own frames, not at a test poll's intervals
+    await page.waitForFunction(
+      () => document.querySelector('[data-panel-kind="run-chart"] .candle-chart')?.getAttribute('data-events') === '21',
+      undefined,
+      { polling: 'raf' },
+    )
+  })
+
+  const box = (await chart.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  const steps = 10
+  const started = Date.now()
+  for (let step = 0; step < steps; step++) {
+    await page.mouse.wheel(0, step < steps / 2 ? 400 : -400)
+    // the frame after the wheel paints every layer again; the one after that has painted them
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  }
+  const perStep = Math.round((Date.now() - started) / steps)
+  timings.push({ label: 'run chart — a zoom step drawn (mean)', ms: perStep })
+
+  expect(drawn).toBeLessThan(3000)
+  expect(perStep).toBeLessThan(500)
+})

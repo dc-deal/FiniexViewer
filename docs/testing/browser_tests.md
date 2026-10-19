@@ -169,7 +169,11 @@ ordinary run (`npm run test:perf`, one worker) because its budgets fail under co
 figure also carries the test browser's own stall before it asks for the page, so it prints a second
 one read on the page's clock, from the document's arrival to the first row: the app alone. And a
 run's panels count as drawn only once the last loading line is gone — a panel keeps its place while
-its section loads, so its header alone no longer says the panel can be read.
+its section loads, so its header alone no longer says the panel can be read. Since the run chart
+draws for itself (viewer#41) it measures that too, on the fixture's busiest unit: a unit chosen until
+its marks stand on the candles, read on the page's own frames, and a zoom step until the frame after
+it has painted, the mean of ten — a figure that carries two round trips to the browser per step, so
+it is read against its own earlier column, never as the drawing's cost alone.
 
 **`e2e/order_steps.spec.ts` says why a browser spec earns its place.** The
 nested step list is a grid INSIDE a row of another grid, which is the arrangement behind two of the
