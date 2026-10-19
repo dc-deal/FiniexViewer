@@ -89,7 +89,7 @@ const drawn = computed<DrawnFacet[]>(() =>
   })
 )
 
-const narrowed = computed(() => isNarrowed(props.selection, props.search))
+const narrowed = computed(() => isNarrowed(props.selection, props.search, props.facets.map(facet => facet.id)))
 
 /** How many facets wait behind `+N` — the last ones, as the row reports them. */
 const hiddenCount = ref(0)
