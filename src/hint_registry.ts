@@ -19,7 +19,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'quick-bar',
-    text: t('The bar beside the tabs holds what the panel in front shows — for the chart, its broker, symbol and timeframe.'),
+    text: t('The bar beside the tabs holds what the panel in front shows — for the free chart its broker, symbol and timeframe, for the run chart its unit and timeframe.'),
   },
   {
     id: 'open-as-panel',

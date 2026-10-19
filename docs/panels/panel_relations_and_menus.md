@@ -128,8 +128,8 @@ Panels ▾
   ✕ goes the same way through `hideSection`. A rebuild of the dock — a reset — hides nothing.
 
 **The quick bar beside a group's tabs** holds the few options of the panel in FRONT of that group
-(`QuickBar`, from the kind's `quickBar`): for the chart, its broker, symbol and timeframe as compact
-selects (`AppSelect` with `compact`) — the value is what shows, the name while nothing is chosen, and
+(`QuickBar`, from the kind's `quickBar`): for the free chart its broker, symbol and timeframe, for
+the run chart its unit and timeframe, as compact selects (`AppSelect` with `compact`) — the value is what shows, the name while nothing is chosen, and
 each carries its name for a screen reader. A panel without options leaves the bar empty, and two
 groups side by side each speak for their own front panel.
 

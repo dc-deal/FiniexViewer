@@ -157,8 +157,8 @@ const PANELS: PanelDescriptor[] = [
     chooses: ['position'],
   },
   {
-    // Deliberately second, ahead of the console's own late placement: "can this run be trusted"
-    // gates reading the numbers below it, and a screen is not read top-to-bottom like a printout.
+    // Eighth, and deliberately — a broken run is the exception, and the daily work is reading
+    // balance sheets: its tab carries a signal rather than a position (see the head of this list).
     id: 'warnings-errors',
     title: 'Warnings & errors',
     icon: 'kind-warnings-errors',

@@ -1,4 +1,4 @@
-import type { Polarity } from '@/types/figure_types'
+import type { Figure, Polarity } from '@/types/figure_types'
 
 /**
  * One drawn span. `from` and `to` are positions on the CALLER's scale — the chart does not know
@@ -21,11 +21,11 @@ export interface TimelineSpan {
   /** One line naming the span, shown as the tooltip's heading. */
   title: string
   /**
-   * The span's figures, for the hover layer. Label and value are already rendered by the caller —
-   * the chart formats nothing, because it does not know what any of these mean. `tone` colours the
-   * value ('positive' | 'negative'), and is left empty where a figure has no polarity.
+   * The span's figures, for the hover layer — the `Figure` a card shows. Label and value are already
+   * rendered by the caller: the chart formats nothing, because it does not know what any of these
+   * mean. `tone` colours the value, and is left empty where a figure has no polarity.
    */
-  details?: { label: string, value: string, tone?: string }[]
+  details?: Figure[]
 }
 
 /** One horizontal lane. What a lane MEANS is the caller's decision, never the chart's. */

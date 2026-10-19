@@ -267,7 +267,6 @@ describe('CandleChart', () => {
     })
   })
 
-  /** The marks are drawn on a canvas, where nothing can read them back — so the element counts them. */
   /**
    * The library rounds every price to two decimals unless told otherwise — EURUSD read `1.16` on every
    * label. A format handed in is the series' from the start, follows a change, and a format taken away
@@ -304,6 +303,7 @@ describe('CandleChart', () => {
     expect(10_000 * options.timeScale.minBarSpacing).toBeLessThanOrEqual(500)
   })
 
+  /** The marks are drawn on a canvas, where nothing can read them back — so the element counts them. */
   it('says on its element how many marks it draws', () => {
     size = { width: 800, height: 400 }
     const wrapper = mountChart(BARS, { marks: [mark({}), mark({ role: 'positive' })] })
