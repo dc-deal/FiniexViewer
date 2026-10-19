@@ -77,12 +77,15 @@ export function tabCard(kind: PanelKind | null, fallbackTitle: string, members: 
   const bundle = kind.relations.memberOf ? panelKind(kind.relations.memberOf) : null
   const subtitle = kind.subtitle?.() ?? bundle?.subtitle?.() ?? null
   const relations = relationsWith(kind, members)
-  const follows = followedFromElsewhere(kind, relations.follows)
+  const follows = [
+    ...followedFromElsewhere(kind, relations.follows).map(key => FOLLOWED[key]),
+    ...(kind.relations.chartInFront ? [t('the chart last in front')] : []),
+  ]
   const status = kind.status?.() ?? null
   const details: Figure[] = [
     { label: t('Shows'), value: kind.description },
     ...(bundle ? [{ label: t('Part of'), value: bundle.title }] : []),
-    ...(follows.length ? [{ label: t('Follows'), value: listed(follows.map(key => FOLLOWED[key])) }] : []),
+    ...(follows.length ? [{ label: t('Follows'), value: listed(follows) }] : []),
     ...(relations.chooses.length
       ? [{ label: t('Chooses'), value: listed(relations.chooses.map(key => CHOSEN[key])) }]
       : []),

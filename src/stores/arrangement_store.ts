@@ -6,9 +6,13 @@ import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext, PositionRef } from '@/types/context_types'
 import { VIEW_FOLDS, VIEW_ROW_CAPS } from '@/types/arrangement_types'
 import type {
-  DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredPanelView, StoredRows, StoredRunChart,
+  DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredLayers, StoredPanelView, StoredRows, StoredRunChart,
   ViewFold, ViewRowList,
 } from '@/types/arrangement_types'
+import { CHART_LAYER_IDS } from '@/types/chart_drawing_types'
+import type { ChartLayerId } from '@/types/chart_drawing_types'
+import { LAYER_OPACITY_MIN, LAYER_OPTION_IDS } from '@/types/layer_types'
+import type { LayerOptionId } from '@/types/layer_types'
 
 const STORAGE_KEY = 'arrangement.v1'
 const SCHEMA_VERSION = 1
@@ -101,6 +105,38 @@ function readRows(value: unknown): StoredRows | undefined {
   return Object.keys(keys).length ? { scope, keys } : undefined
 }
 
+/** Known layer ids, each once — a name this build does not draw is never copied. */
+function readLayerIds(value: unknown): ChartLayerId[] {
+  const found = texts(value).filter((id): id is ChartLayerId => (CHART_LAYER_IDS as readonly string[]).includes(id))
+  return found.filter((id, index) => found.indexOf(id) === index)
+}
+
+/** A chart's drawing layers, field by field — whether they fit the chart is decided where it is read. */
+function readLayers(value: unknown): StoredLayers | undefined {
+  const stored = record(value)
+  const layers: StoredLayers = {}
+  for (const field of ['order', 'hidden'] as const) {
+    const ids = readLayerIds(stored[field])
+    if (ids.length) layers[field] = ids
+  }
+  // a share below the least one, or the whole of it, is no opacity to keep
+  const opacity = record(stored['opacity'])
+  const faint: Partial<Record<ChartLayerId, number>> = {}
+  for (const id of CHART_LAYER_IDS) {
+    const value = opacity[id]
+    if (typeof value === 'number' && value >= LAYER_OPACITY_MIN && value < 100) faint[id] = Math.round(value)
+  }
+  if (Object.keys(faint).length) layers.opacity = faint
+  const options = record(stored['options'])
+  const switched: Partial<Record<LayerOptionId, boolean>> = {}
+  for (const option of LAYER_OPTION_IDS) {
+    const on = options[option]
+    if (typeof on === 'boolean') switched[option] = on
+  }
+  if (Object.keys(switched).length) layers.options = switched
+  return Object.keys(layers).length ? layers : undefined
+}
+
 /** Each panel's view, field by field: a name this build does not know is never copied, an empty entry is none. */
 function readPanelViews(value: unknown): Record<string, StoredPanelView> {
   const views: Record<string, StoredPanelView> = {}
@@ -110,6 +146,8 @@ function readPanelViews(value: unknown): Record<string, StoredPanelView> {
     if (Object.keys(expanded).length) view.expanded = expanded
     const rows = readRows(record(stored)['rows'])
     if (rows) view.rows = rows
+    const layers = readLayers(record(stored)['layers'])
+    if (layers) view.layers = layers
     if (Object.keys(view).length) views[id] = view
   }
   return views
@@ -246,6 +284,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
     const kept: StoredPanelView = {}
     if (Object.keys(view.expanded ?? {}).length) kept.expanded = view.expanded
     if (view.rows && Object.keys(view.rows.keys).length) kept.rows = view.rows
+    if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
     const next = { ...panelViews.value }
     if (Object.keys(kept).length) next[panel] = kept
     else delete next[panel]

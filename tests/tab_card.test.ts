@@ -31,6 +31,13 @@ describe('tabCard', () => {
     expect(row(card, 'Chooses')).toBe('the position')
   })
 
+  /** Focus is not a link: the Layers panel follows the chart last in front, and chooses nothing. */
+  it('says the Layers panel follows the chart last in front', () => {
+    const card = cardOf('layers')
+    expect(row(card, 'Follows')).toBe('the chart last in front')
+    expect(row(card, 'Chooses')).toBeUndefined()
+  })
+
   /** A section's tab has no room for the run; its card's heading names the whole of it. */
   it('heads the card of a section with the run its bundle shows', () => {
     useRunsStore().runs = [{ run_id: '20261012_205715_c3b41fff' } as RunInfo]

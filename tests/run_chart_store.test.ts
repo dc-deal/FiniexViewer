@@ -261,6 +261,38 @@ describe('useRunChartStore', () => {
     expect(layer('entry-exit').every(drawing => drawing.kind === 'line')).toBe(true)
   })
 
+  /** The Layers panel's choices, kept with the run chart's own view, decide what is handed to the chart. */
+  it('draws the layers as the reader arranged them in the Layers panel', async () => {
+    chooseFixtureRun()
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 })),
+      truncated: false,
+    })
+    const unitName = firstWithOpenings()
+    const traded = trades.trades.find(row => row.scenario_name === unitName)!
+    useRunReportsStore().tradeHistory = {
+      ...trades,
+      trades: trades.trades.map(row => row === traded ? { ...row, stop_loss: 0.86, take_profit: 0.89 } : row),
+    }
+    useArrangementStore().setPanelView('run-chart', {
+      layers: {
+        order: ['trades', 'levels', 'entry-exit'], hidden: ['entry-exit'], opacity: { levels: 40 },
+        options: { 'trade-signs': false, 'every-position': true },
+      },
+    })
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    // back to front as moved, the hidden one not handed over at all, the fainter one at its share
+    expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1])).toEqual([['trades', 1], ['levels', 0.4]])
+    const [trading, levels] = chart.layers
+    expect(trading!.drawings.length).toBeGreaterThan(0)
+    expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.text === '')).toBe(true)
+    // every position's levels with no position looked at: drawn, none of them putting its price on the axis
+    expect(levels!.drawings.map(drawing => drawing.kind === 'segment' && [drawing.label, drawing.focused]))
+      .toEqual([['SL', false], ['TP', false]])
+  })
+
   /** What overlaps at the zoom on screen is drawn as one — and nothing is lost by it. */
   it('gathers the marks at the width the chart reports a bar to have, and loses none', async () => {
     chooseFixtureRun()

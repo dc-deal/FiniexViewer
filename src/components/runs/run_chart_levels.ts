@@ -9,8 +9,8 @@ import { t } from '@/translate'
 
 /**
  * The levels of the position looked at, and the line from its entry to its exit (viewer#41) — for
- * that position alone: drawn for every position they become a tangle. Pure functions over what the
- * run's reports already hold.
+ * that position alone unless the reader asks the Layers panel for every position's levels: drawn
+ * for every position they are a lot to read. Pure functions over what the run's reports already hold.
  *
  * A level is the trade row's `stop_loss` / `take_profit`, *"the levels that were set"*, held from
  * the row's entry to its exit; the rows of a position closed in parts overlap, so no end has to be
@@ -34,6 +34,7 @@ function barIn(barTimes: number[], instant: number, cutAt: number | null): numbe
 
 function level(
   id: string, label: 'SL' | 'TP', price: number, from: number, to: number | null, held: string, position: string,
+  focused: boolean,
 ): SegmentDrawing {
   const details: Figure[] = [
     { label: WORD[label], value: String(price) },
@@ -49,17 +50,20 @@ function level(
     // the stop is where the loss is taken, the target where the profit is: the polarity of the
     // outcome at that price — the word beside it says which, so the colour only reinforces it
     role: label === 'SL' ? 'negative' : 'positive',
+    focused,
     card: { title: `${WORD[label]} · ${position}`, details },
   }
 }
 
 /**
- * The stop and the target of the position looked at: one segment per trade row that set one, and
- * for a position still open at the end, its levels to the edge of the window. `cutAt` is the last
- * bar of a window the route cut — nothing past it has a candle.
+ * The stops and the targets of the trade rows given: one segment per row that set one, and for each
+ * position still open at the end, its levels to the edge of the window. `looked` is the position
+ * looked at — only its levels put their price on the axis. `cutAt` is the last bar of a window the
+ * route cut — nothing past it has a candle.
  */
 export function positionLevels(
-  trades: TradeRow[], key: string[], open: OpenPosition | null, barTimes: number[], cutAt: number | null,
+  trades: TradeRow[], key: string[], open: OpenPosition[], looked: string | null, barTimes: number[],
+  cutAt: number | null,
 ): SegmentDrawing[] {
   const segments: SegmentDrawing[] = []
   for (const trade of trades) {
@@ -70,20 +74,25 @@ export function positionLevels(
     const to = cutAt !== null && exit > cutAt ? null : barOf(barTimes, exit)
     const held = `${utcInstant(trade.entry_time)} – ${utcInstant(trade.exit_time)}`
     const row = rowKey(trade, key)
+    const focused = trade.position_id === looked
     if (trade.stop_loss !== null) {
-      segments.push(level(`level|SL|${row}`, 'SL', trade.stop_loss, from, to, held, trade.position_id))
+      segments.push(level(`level|SL|${row}`, 'SL', trade.stop_loss, from, to, held, trade.position_id, focused))
     }
     if (trade.take_profit !== null) {
-      segments.push(level(`level|TP|${row}`, 'TP', trade.take_profit, from, to, held, trade.position_id))
+      segments.push(level(`level|TP|${row}`, 'TP', trade.take_profit, from, to, held, trade.position_id, focused))
     }
   }
-  if (open) {
-    const from = barIn(barTimes, seconds(open.entry_time), cutAt)
-    if (from !== null) {
-      const id = `level|open|${open.position_id}`
-      const held = `${utcInstant(open.entry_time)} – ${t('still open at the end')}`
-      if (open.stop_loss !== null) segments.push(level(`${id}|SL`, 'SL', open.stop_loss, from, null, held, open.position_id))
-      if (open.take_profit !== null) segments.push(level(`${id}|TP`, 'TP', open.take_profit, from, null, held, open.position_id))
+  for (const entry of open) {
+    const from = barIn(barTimes, seconds(entry.entry_time), cutAt)
+    if (from === null) continue
+    const focused = entry.position_id === looked
+    const id = `level|open|${entry.position_id}`
+    const held = `${utcInstant(entry.entry_time)} – ${t('still open at the end')}`
+    if (entry.stop_loss !== null) {
+      segments.push(level(`${id}|SL`, 'SL', entry.stop_loss, from, null, held, entry.position_id, focused))
+    }
+    if (entry.take_profit !== null) {
+      segments.push(level(`${id}|TP`, 'TP', entry.take_profit, from, null, held, entry.position_id, focused))
     }
   }
   return segments

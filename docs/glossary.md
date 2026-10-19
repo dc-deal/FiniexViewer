@@ -30,6 +30,10 @@ axis). Not a venue's *balance sheet* (`venue_balances`).
 **free chart** — The chart of a market — a broker, a symbol and a timeframe — chosen with no run
 behind it: the panel *Free chart*, opened from the Panels menu. See *run-bound chart*.
 
+**Layers panel** — The panel that arranges what a chart draws beside its candles, one row per
+*drawing layer*: FiniexTestingIDE's word for one switchable set of drawings on a run's chart, and
+their own name for this panel. Their glossary never uses *layer* alone, and neither does this one.
+
 **link** — The set of choices a group of panels shares: a run, its narrowing and its marked
 position, a deployment, a market. A list writes the choice it makes; every panel reads the choices
 it needs. Not the HTTP `Link` header the API sends.

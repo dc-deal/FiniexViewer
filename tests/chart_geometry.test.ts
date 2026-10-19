@@ -24,7 +24,7 @@ function mark(fields: Partial<ChartMark>): ChartMark {
 }
 
 const SEGMENT: SegmentDrawing = {
-  kind: 'segment', id: 'level|SL|a', from: 1, to: 2, price: 250, label: 'SL', role: 'negative',
+  kind: 'segment', id: 'level|SL|a', from: 1, to: 2, price: 250, label: 'SL', role: 'negative', focused: true,
   card: { title: 'Stop loss · a', details: [] },
 }
 const LINE: LineDrawing = {

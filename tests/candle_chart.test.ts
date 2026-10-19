@@ -274,7 +274,7 @@ describe('CandleChart', () => {
       size = { width: 800, height: 400 }
       const level: SegmentDrawing = {
         kind: 'segment', id: 'level|SL|unit|pos_1|7', from: BARS[0]!.time, to: BARS[1]!.time, price: 1.05,
-        label: 'SL', role: 'negative', card: { title: 'Stop loss · pos_1', details: [] },
+        label: 'SL', role: 'negative', focused: true, card: { title: 'Stop loss · pos_1', details: [] },
       }
       const wrapper = mount(CandleChart, { props: { data: BARS, layers: [{ id: 'levels', drawings: [level] }, ...tradesLayer(MARKS)] } })
       mounted = wrapper

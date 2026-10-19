@@ -27,7 +27,7 @@ starts with the first group.
 | [Jumps Between Panels](panels/panel_jumps.md) | How a panel sends the reader to another view without knowing the dock: into a run or a deployment, and between an order and the trades of its position |
 | [Deployments Panel](panels/deployments_panel.md) | A bot read across its restarts: choosing a deployment from the ledger, one row per deployment and account currency, the change marks, and a refused grant |
 | [Candle Charts](panels/candle_charts.md) | The run chart with a unit's trades on its candles, and `CandleChart` over Lightweight Charts: first real size, theme repaint, and what the pointer is over |
-| [Chart Drawings and Layers](panels/chart_drawings_and_layers.md) | What a chart draws for itself — marks, levels, lines — through one drawing host, layer by layer: placed, painted and found under the pointer |
+| [Chart Drawings and Layers](panels/chart_drawings_and_layers.md) | What a chart draws for itself — marks, levels, lines — through one drawing host, layer by layer: placed, painted and found under the pointer; and the Layers panel that shows, hides, dims and orders them |
 
 ## Runs
 
@@ -45,7 +45,7 @@ starts with the first group.
 
 | Document | Description |
 |----------|-------------|
-| [Theme, Buttons and Icons](interface/theme_buttons_and_icons.md) | Colour tokens and roles for both themes, `AppButton` and `JumpLink` with each state on two channels, and the registry that names an icon by its meaning |
+| [Theme, Buttons and Icons](interface/theme_buttons_and_icons.md) | Colour tokens and roles for both themes, `AppButton` and `JumpLink` with each state on two channels, `AppSwitch` and `AppSlider` — the one on/off and the one scale for the whole app — a change of state that moves nothing, and the registry that names an icon by its meaning |
 | [Figures and Words on Screen](interface/figures_and_words_on_screen.md) | Units and `n/a` for what was never measured, why no figure is computed here, FiniexTestingIDE's vocabulary, the `t()` marker with `plural()`, and the hint registry |
 | [Menu Bar Status](interface/menu_bar_status.md) | What the menu bar always states: the identity from `GET /api/v1/caller`, the machine's load from `GET /api/v1/machine-resources`, and the scenario in focus |
 

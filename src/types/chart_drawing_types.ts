@@ -11,8 +11,11 @@ import type { ChartMark } from '@/types/run_chart_types'
 /**
  * A set of drawings switched as one — a *drawing layer* in FiniexTestingIDE's glossary (contract
  * 35): the trades' marks, the levels of the position in focus, and the line from its entry to its exit.
+ * Ours, so a closed set — a name read back from storage is checked against it; `layer_registry.ts`
+ * describes each and says which chart draws which.
  */
-export type ChartLayerId = 'trades' | 'levels' | 'entry-exit'
+export const CHART_LAYER_IDS = ['levels', 'entry-exit', 'trades'] as const
+export type ChartLayerId = typeof CHART_LAYER_IDS[number]
 
 /** What a drawing's colour says — a role, never a colour; the shape and the word say it first. */
 export type DrawingRole = Polarity | 'mixed' | 'entry'
@@ -27,6 +30,8 @@ export interface SegmentDrawing {
   /** The word the segment carries where it starts — `SL`, `TP`. */
   label: string
   role: DrawingRole
+  /** Of the position looked at — only its levels put their price on the axis. */
+  focused: boolean
   card: FigureCard
 }
 
@@ -46,4 +51,6 @@ export type ChartDrawing = ChartMark | SegmentDrawing | LineDrawing
 export interface ChartLayer {
   id: ChartLayerId
   drawings: ChartDrawing[]
+  /** Drawn at this share of its strength (0–1), so the layers in front read first — set in the Layers panel. */
+  opacity?: number
 }

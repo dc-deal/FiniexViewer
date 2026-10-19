@@ -73,6 +73,8 @@ export interface PlacedLine {
 
 export interface PlacedLayer {
   id: ChartLayerId
+  /** The share of its strength it is painted at, 0–1. */
+  opacity: number
   marks: PlacedMark[]
   segments: PlacedSegment[]
   lines: PlacedLine[]
@@ -86,7 +88,9 @@ export interface PlacedLayer {
  * What falls off the scale is left out, never drawn at a guessed place.
  */
 export function placeLayer(layer: ChartLayer, bars: ReadonlyMap<number, BarRange>, scale: ChartScale): PlacedLayer {
-  const placed: PlacedLayer = { id: layer.id, marks: [], segments: [], lines: [], reach: { above: 0, below: 0 } }
+  const placed: PlacedLayer = {
+    id: layer.id, opacity: layer.opacity ?? 1, marks: [], segments: [], lines: [], reach: { above: 0, below: 0 },
+  }
   const taken = new Map<string, number>()
   for (const drawing of layer.drawings) {
     if (drawing.kind === 'marker') {

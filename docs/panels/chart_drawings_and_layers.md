@@ -24,14 +24,14 @@ CandleChart :layers ──► ChartDrawingHost (series primitive, stage `normal`
 **One host, not a primitive per layer.** The library paints primitives in the order they were
 attached and hit-tests them by its own ranking, so an order of layers built from several primitives
 would mean detaching and attaching them again on every reorder, and the one painted on top need not
-be the one found. In a list the order is just the list — what the Layers panel will rearrange.
+be the one found. In a list the order is just the list — what the Layers panel rearranges (below).
 
 **The trades' marks moved here from the library's markers.** Those stood fixed directly behind the
 candles' own drawing and could take no place in an order of layers, and no marker was ever narrower
 than 12 px, so on a long window they covered their neighbours. Drawn here, a mark is as wide as its
 bar, between 5 and 12 px, and the mark of the position looked at half as large again.
 
-The layers today, from back to front: `levels` · `entry-exit` · `trades`.
+The layers by default, from back to front: `levels` · `entry-exit` · `trades`.
 
 ## Drawings — in testingide#379's vocabulary
 
@@ -64,7 +64,9 @@ they are tested without a canvas.
 
 ## The levels and the line of the position looked at — `run_chart_levels.ts`
 
-For that position alone: drawn for every position they become a tangle.
+For that position alone, unless the Layers panel asks for every position's levels — drawn for every
+position they are a lot to read, and then only the position looked at puts its prices on the axis,
+or every position's would bury it in tags.
 
 - **A level** is the trade row's `stop_loss` / `take_profit` — *"the levels that were set"* — held
   from the row's entry to its exit; the rows of a position closed in parts overlap, so no end has to
@@ -78,8 +80,41 @@ For that position alone: drawn for every position they become a tangle.
 - **Past the last bar of a window the route cut** nothing is drawn: what began there has no candle,
   and a level that ends there runs to the edge.
 
+## The Layers panel — arranging the layers
+
+A panel of its own (kind `layers`), opened from the chart's quick bar (`≡ Layers`) as a narrow split
+to the right of the chart it arranges, at any width of the dock: as a tab it would hide that chart.
+It works on the chart LAST IN FRONT (`dock.lastChart`) — focus, not a selection, so no link key
+carries it, the way VS Code's Outline follows the editor in front; its tab card says *Follows — the
+chart last in front*. Another panel coming to the front, the Layers panel itself among them, leaves
+it on the same chart. *Layers panel* is FiniexTestingIDE's own name for it; each row is a *drawing
+layer* in their glossary.
+
+```
+Run chart · ETHUSD_aug_sep
+(━●) ▸ Trades              no signs   ◐
+(━●) ▾ Entry–exit line                ◐ 40%
+         Order  ↑ front  ↓ back
+(●━) ▸ Levels                hidden   ◐
+      ▣ Candles   always behind the layers
+```
+
+- **The register** is `src/layer_registry.ts`: each layer's title, what it draws and its one option,
+  and which chart draws which layers, back to front (`chartLayers`). The free chart draws none today.
+- **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
+  hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
+  the row opens the rest — its option (the trades' signs; the levels of every position rather than
+  of the one looked at) and its place, one step at a time. The closed row says what differs.
+- **Kept with the chart's own view**, `panelViews[<chart id>].layers`: only what differs from the
+  chart's own arrangement, reconciled whenever it is read — a layer the chart no longer draws is
+  left out, one it draws since stands where its own order puts it (`arrangeLayers`, `keptLayers`).
+- **The run chart's store applies it.** A hidden layer is not handed to the chart at all; a fainter
+  one carries its `opacity`, and the host paints that layer whole at it.
+
 ## How it is tested
 
+- `layer_registry.test.ts`, `use_chart_layers.test.ts`, `layers_view.test.ts` — the register and the
+  reconciling, the arrangement written as only what differs, and the panel at its controls.
 - `chart_geometry.test.ts` — placing and the hit test over a scale of plain numbers.
 - `chart_drawing_host.test.ts` — the host against the few library calls it makes, and its painting
   against a canvas context that records what it was told to draw (jsdom has no canvas).

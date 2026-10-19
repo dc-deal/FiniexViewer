@@ -96,6 +96,45 @@ the class lost to the link shape's inherited font, and the run ids were drawn at
 **What is still not an `AppButton`:** the entries of a menu, the accordion header, the JSON fold,
 and the option rows inside a facet's popover. Those are menu items and disclosure headers rather
 than buttons — a different control type with a different shape, not the same one written twice.
+The on/off lever is a control of its own, below.
+
+## Switches — `AppSwitch`, one on/off for the whole app
+
+**Every on/off choice outside a menu is a lever** (operator, 2026-10-19), decided once so that no
+panel invents its own: a track with a knob, `role="switch"` with `aria-checked`. A menu keeps its
+tick — there the whole entry is the switch, and every menu reads that way. There are no checkboxes:
+two models for one choice is the inconsistency this document exists to prevent.
+
+```
+(●━━)  off        (━━●)  on        ◐ 70%   ← a slider's handle, below
+```
+
+- **The state is FORM first.** The knob stands left for off and right for on, which survives
+  greyscale and red-green colour blindness; the link colour of the track only reinforces it.
+- **The four states are the buttons'.** Hover rings the track in the link colour, in both positions;
+  the press sinks it a pixel; focus takes the outline; disabled wears the muted ink and edge.
+- **Its word is part of the click** (`label`), because a reader aims at the word as often as at the
+  lever. Without one, the caller names it with `aria-label` — the Layers panel's rows, whose title
+  opens the row instead.
+
+## Sliders — `AppSlider`, a share set by a lever that opens from its handle
+
+**A setting along a scale is a handle where the thing is, and a vertical lever that opens from it**
+(operator, 2026-10-19), the way a fader or a volume control opens. The handle shows the value where
+it is below the top of the scale; a click opens the lever in a popover, and what it moves is drawn
+while it moves. Vertical, because a row in a narrow panel has height to spare and no width. It is
+built on reka-ui's slider rather than the browser's range input, whose colours follow the browser's
+look rather than the tokens. The arrows step, Home and End go to the ends, Escape closes. One user so
+far: a drawing layer's opacity.
+
+## A change of state moves nothing
+
+**A control keeps its size whatever it shows, and so does the row it stands in** (operator, on
+screen, 2026-10-19). A toggle that drew a frame only while on changed its width, and the title
+beside it moved at every click; a hint whose dismissals stood beside its text squeezed the text to
+one word a line in a 240 px panel. So a glyph or a value that changes gets a fixed width (a
+`min-width` in `ch`); an off state is said by the knob and by greying the row, never by taking a
+frame away; and a box's actions wrap below its text before the text is squeezed (`HintLine`).
 
 ## Icons — `AppIcon` and the registry
 

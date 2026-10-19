@@ -139,8 +139,9 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
     }
     const series = this._series
     const colours = this._colours
+    // only the levels of the position looked at: every position's would bury the axis in tags
     this._axisViews = series && colours
-      ? this._placed.flatMap(layer => layer.segments).map(placed => {
+      ? this._placed.flatMap(layer => layer.segments).filter(placed => placed.segment.focused).map(placed => {
         const text = series.priceFormatter().format(placed.segment.price)
         return {
           coordinate: () => placed.y,
@@ -164,12 +165,13 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
 /**
  * One placed layer onto the canvas: its levels as dashed rules with their word, its lines, then
  * its marks — the shape, and its count or sign beyond it in the same colour, since a colour never
- * travels alone.
+ * travels alone. A layer set fainter in the Layers panel is painted so, whole.
  */
 export function paintLayer(
   context: CanvasRenderingContext2D, layer: PlacedLayer, colours: DrawingColours, font: string,
 ): void {
   context.save()
+  if (layer.opacity < 1) context.globalAlpha = layer.opacity
   context.font = font
   context.lineWidth = 1
   for (const placed of layer.segments) {

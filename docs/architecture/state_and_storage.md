@@ -35,7 +35,8 @@ arrangement.v1 = { version: 1,
                    runChart: { run, unit, timeframe },
                    dock:  <dockview's toJSON()>,  places: { <panel id>: { besides, direction, index?, size? } },
                    panelViews: { <panel id>: { expanded: { 'periods-table': true },
-                                               rows: { scope: <run id>, keys: { 'groups-closed': [<scenario>] } } } } }
+                                               rows: { scope: <run id>, keys: { 'groups-closed': [<scenario>] } } },
+                                 <chart id>: { layers: { order, hidden, opacity: { levels: 40 }, options } } } }
 ```
 
 It is reconciled field by field on load, never trusted: a field of the wrong shape is left empty,
@@ -54,6 +55,13 @@ through `use_panel_view`: `PanelHost` names the panel it draws, `PanelViewScope`
 the column, and `useViewExpanded(fold)` is a writable boolean — without a host it lives for one
 mount, as it did before anything was kept. Added under version 1: an entry written before it reads as
 nothing kept, so no version had to change.
+
+**A chart's drawing layers are part of its view** (viewer#41): `layers` under the chart's dock id,
+written by the Layers panel through `use_chart_layers` and read by the chart's store — the order
+moved, the layers hidden, an opacity below the whole, an option switched; only what differs from the
+chart's own arrangement, and nothing at all for a chart nobody arranged. Read field by field like the
+rest — a layer or an option this build does not know is never copied, an opacity outside 10–99 % is
+none — and reconciled against the layers the chart draws whenever it is used. Bound to no run.
 
 **`rows` keeps row keys of ONE run** — in Trade History the trades whose fills are open and the units
 opened or closed by hand, in Orders the scenarios closed by hand — under `scope`, the run the panel's

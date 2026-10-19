@@ -119,6 +119,21 @@ export const PANEL_KINDS: PanelKind[] = [
     quickBar: defineAsyncComponent(() => import('@/components/ChartQuickBar.vue')),
     relations: { memberOf: null, follows: ['market'], chooses: ['market'] },
   },
+  {
+    /*
+     * The drawing LAYERS of the chart last in front (viewer#41): each shown or hidden, drawn quiet,
+     * in front of or behind the others. Opened from the chart's quick bar, as a narrow split beside
+     * the chart it arranges — never as a tab over it.
+     */
+    id: 'layers',
+    title: t('Layers'),
+    description: t('What the chart last in front draws beside its candles, layer by layer — shown or hidden, quiet, in front of or behind the others'),
+    icon: 'form-list',
+    order: 6,
+    opensByDefault: false,
+    component: defineAsyncComponent(() => import('@/views/LayersView.vue')),
+    relations: { memberOf: null, follows: [], chooses: [], chartInFront: true },
+  },
 ]
 
 /**

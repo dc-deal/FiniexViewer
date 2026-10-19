@@ -8,6 +8,7 @@ import { entryExitLines, positionLevels } from '@/components/runs/run_chart_leve
 import {
   barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
 } from '@/components/runs/run_chart_marks'
+import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
 import { useContextStore } from '@/stores/context_store'
@@ -15,12 +16,15 @@ import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
-import type { ChartLayer } from '@/types/chart_drawing_types'
+import type { ChartDrawing, ChartLayer, ChartLayerId } from '@/types/chart_drawing_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartMark, ChartUnit, TimeframeOffer } from '@/types/run_chart_types'
 
 /** One market's coverage as asked — the answer, or that the archive holds nothing for it. */
 type CoverageEntry = CoverageResponse | 'none'
+
+/** The run chart's dock id — the drawing layers the reader arranged for it are kept under it. */
+const RUN_CHART = 'run-chart'
 
 function marketKey(unit: ChartUnit): string {
   return `${unit.broker}/${unit.symbol}`
@@ -184,17 +188,36 @@ export const useRunChartStore = defineStore('runChart', () => {
     return looked ? unitPortfolio.value?.open_positions.find(entry => entry.position_id === looked.position) ?? null : null
   })
 
+  /** The chart's drawing layers as the reader arranged them in the Layers panel, back to front. */
+  const arranged = computed(() => arrangeLayers(RUN_CHART, arrangement.panelViews[RUN_CHART]?.layers))
+
   /**
-   * What the chart draws, layer by layer, each in front of the one before: the levels of the
-   * position looked at, the line from its entry to its exit, and the marks of every trade in front.
+   * What the chart draws, layer by layer, each in front of the one before, as the reader arranged
+   * them — by default the levels of the position looked at, the line from its entry to its exit, and
+   * the marks of every trade in front. A hidden layer is not handed over at all.
    */
   const layers = computed<ChartLayer[]>(() => {
     const key = reports.tradeHistory?.keys.trades ?? []
-    return [
-      { id: 'levels', drawings: positionLevels(focusTrades.value, key, focusOpen.value, barTimes.value, cutAt.value) },
-      { id: 'entry-exit', drawings: entryExitLines(focusTrades.value, key, barTimes.value, cutAt.value) },
-      { id: 'trades', drawings: marks.value },
-    ]
+    const looked = focus.value?.position ?? null
+    const drawings: Record<ChartLayerId, (option: boolean | null) => ChartDrawing[]> = {
+      levels: every => every
+        ? positionLevels(
+          unitTrades.value, key, unitPortfolio.value?.open_positions ?? [], looked, barTimes.value, cutAt.value,
+        )
+        : positionLevels(
+          focusTrades.value, key, focusOpen.value ? [focusOpen.value] : [], looked, barTimes.value, cutAt.value,
+        ),
+      'entry-exit': () => entryExitLines(focusTrades.value, key, barTimes.value, cutAt.value),
+      // without their signs the marks keep their shapes, and a gathered mark's card still counts it
+      trades: signs => signs === false ? marks.value.map(mark => ({ ...mark, text: '' })) : marks.value,
+    }
+    return arranged.value
+      .filter(state => state.shown)
+      .map(state => ({
+        id: state.id,
+        drawings: drawings[state.id](state.option),
+        ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
+      }))
   })
 
   /** A finer timeframe that draws apart the marks some candles hold together — where one does. */

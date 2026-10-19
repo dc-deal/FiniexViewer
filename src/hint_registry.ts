@@ -19,7 +19,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'quick-bar',
-    text: t('The bar beside the tabs holds what the panel in front shows — for the free chart its broker, symbol and timeframe, for the run chart its unit and timeframe.'),
+    text: t('The bar beside the tabs holds what the panel in front shows — for the free chart its broker, symbol and timeframe, for the run chart its unit and timeframe, and ≡ Layers, which opens beside it what it draws.'),
   },
   {
     id: 'open-as-panel',
@@ -36,6 +36,10 @@ const HINTS: HintDefinition[] = [
   {
     id: 'facet-bar',
     text: t('⌕ opens the search. Where the panel is narrow, the filters that do not fit wait behind +N, each with its values and counts.'),
+  },
+  {
+    id: 'layers',
+    text: t('Front layer first: the lever shows or hides a layer, ◐ sets how strongly it is drawn, and a click on the layer opens the rest — its option, its place in front of or behind the others. The candles stay behind them all.'),
   },
   {
     id: 'chart-marks',

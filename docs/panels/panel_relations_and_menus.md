@@ -17,6 +17,7 @@ Runs              —           —                        run
 Run bundle        —           run  + its members ²     its members ²
 Run chart         —           run · scenario · position scenario
 Free chart        —           market ¹                 market
+Layers            —           the chart in front ³     —
 Scenarios         Run bundle  run                      scenario
 Trade history     Run bundle  run · scenario           position
 Orders            Run bundle  run · scenario           position
@@ -35,6 +36,11 @@ narrowing filters follows the scenario, one that only marks it does not, and not
 that no kind chooses. The run chart follows the position: a position chosen in a list re-centres
 it and draws its marks larger, where it is of the unit on show. Not claimed: the run header links a
 deployment only on a deployment's session, so it does not claim the deployment for every run.
+³ FOCUS, not a link (viewer#41): the Layers panel works on the chart last in front, kept by the dock
+store as `lastChart` from dockview's `onDidActivePanelChange` — a panel whose kind draws layers of
+its own; any other coming to the front leaves it as it was. `PanelRelations.chartInFront` declares
+it, and the card says *Follows — the chart last in front* (see
+[Chart Drawings and Layers](chart_drawings_and_layers.md)).
 
 **A section of the run bundle opens as a panel of its own** (viewer#31, decided 2026-10-14). The
 run bundle stays one column and a section the reader wants beside another is pulled out: the button
@@ -106,7 +112,8 @@ Panels ▾
 │          ├ ✓ Trade history          ⇱   open as a panel
 │          ├   Feed health                hidden
 │          └   Scenarios                  struck: the run has none
-└   Free chart
+├   Free chart
+└   Layers
 
 [▤ Run bundle · 20261012_… ⋯ ✕]     the bundle's own commands, on its tab
                  └ Collapse all · Reset bundle
@@ -122,14 +129,16 @@ Panels ▾
   unless it was the only one: a place is also the record that the panel was hidden.
 - **Showing a panel again** uses its place while one of the panels it stood beside is still open,
   at the size it had; otherwise a main panel opens beside the active one, and a section goes back
-  into the column, whose panel comes to the front.
+  into the column, whose panel comes to the front. The Layers panel opens first as a split 240 px
+  wide to the right of the chart last in front, at any width of the dock — as a tab it would hide
+  the chart it arranges.
 - **A section's panel closed is a section hidden** (`onDidRemovePanel`), however it was closed —
   its tab's ✕ or the menu. Only ⇲ sends it into the column, which forgets its place; the column's own
   ✕ goes the same way through `hideSection`. A rebuild of the dock — a reset — hides nothing.
 
 **The quick bar beside a group's tabs** holds the few options of the panel in FRONT of that group
 (`QuickBar`, from the kind's `quickBar`): for the free chart its broker, symbol and timeframe, for
-the run chart its unit and timeframe, as compact selects (`AppSelect` with `compact`) — the value is what shows, the name while nothing is chosen, and
+the run chart its unit and timeframe and `≡ Layers` — marked while the Layers panel is open — as compact selects (`AppSelect` with `compact`) — the value is what shows, the name while nothing is chosen, and
 each carries its name for a screen reader. A panel without options leaves the bar empty, and two
 groups side by side each speak for their own front panel.
 

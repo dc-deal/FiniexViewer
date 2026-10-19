@@ -51,7 +51,7 @@ describe('AppMenuBar', () => {
   /** The menu reads the way the first arrangement does; the run report's column has a submenu. */
   it('offers the panels worked in, in the suggested order, each with the form it takes', async () => {
     const items = await openMenu('Panels')
-    expect(items.map(item => item.dataset['kind'] ?? item.dataset['area'])).toEqual(['deployments', 'runs', 'chart'])
+    expect(items.map(item => item.dataset['kind'] ?? item.dataset['area'])).toEqual(['deployments', 'runs', 'chart', 'layers'])
     expect(kindEntry('chart').querySelector('[data-icon="form-chart"]')).not.toBeNull()
   })
 

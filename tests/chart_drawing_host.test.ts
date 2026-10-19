@@ -29,8 +29,12 @@ const LAYERS: ChartLayer[] = [
   {
     id: 'levels',
     drawings: [{
-      kind: 'segment', id: 'level|SL|a', from: 1, to: 2, price: 250, label: 'SL', role: 'negative',
+      kind: 'segment', id: 'level|SL|a', from: 1, to: 2, price: 250, label: 'SL', role: 'negative', focused: true,
       card: { title: 'Stop loss · a', details: [] },
+    }, {
+      // another position's stop, drawn where the reader asks for every position's levels
+      kind: 'segment', id: 'level|SL|b', from: 1, to: 2, price: 220, label: 'SL', role: 'negative', focused: false,
+      card: { title: 'Stop loss · b', details: [] },
     }],
   },
   { id: 'trades', drawings: [mark({}), mark({ id: 'entry|a', shape: 'arrowUp', position: 'belowBar', role: 'entry', text: '' })] },
@@ -88,12 +92,26 @@ describe('ChartDrawingHost', () => {
     expect(host.hitTest(700, 20)).toBeNull()
   })
 
-  it('puts the price of every level on the axis, in the colour of its role', () => {
+  /** Every position's levels would bury the axis in tags: only the position looked at puts its prices there. */
+  it('puts the price of each level of the position looked at on the axis, in the colour of its role', () => {
     const host = new ChartDrawingHost()
     attachTo(host)
     host.setDrawings(LAYERS, BARS, COLOURS)
-    const [label] = host.priceAxisViews()
-    expect([label!.text(), label!.coordinate(), label!.backColor(), label!.textColor()]).toEqual(['250.00', 250, '#a00', '#111'])
+    const labels = host.priceAxisViews()
+    expect(labels).toHaveLength(1)
+    expect([labels[0]!.text(), labels[0]!.coordinate(), labels[0]!.backColor(), labels[0]!.textColor()])
+      .toEqual(['250.00', 250, '#a00', '#111'])
+  })
+
+  /** A layer set fainter is painted at its share, whole; a layer as it is, at full strength. */
+  it('paints a layer at the opacity it was given, and leaves the others at full strength', () => {
+    const scale = { x: (time: number) => time * 10, y: (price: number) => 500 - price, spacing: 80, width: 800 }
+    const faint = recordingContext()
+    paintLayer(faint.context, placeLayer({ ...LAYERS[1]!, opacity: 0.4 }, BARS, scale), COLOURS, '10px Probe Sans')
+    expect(faint.calls).toContain('globalAlpha=0.4')
+    const plain = recordingContext()
+    paintLayer(plain.context, placeLayer(LAYERS[1]!, BARS, scale), COLOURS, '10px Probe Sans')
+    expect(plain.calls.some(call => call.startsWith('globalAlpha='))).toBe(false)
   })
 
   /** Room beyond the candles for the marks that stand beyond them; a level asks for none. */

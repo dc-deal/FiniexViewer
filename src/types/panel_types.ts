@@ -18,6 +18,12 @@ export interface PanelRelations {
   follows: LinkKey[]
   /** The link keys a control in its content chooses. */
   chooses: LinkKey[]
+  /**
+   * It works on the chart last in front rather than on a link (viewer#41): which panel is in front
+   * is FOCUS, not a selection, so no link key carries it — the way VS Code's Outline follows the
+   * editor in front.
+   */
+  chartInFront?: boolean
 }
 
 /**

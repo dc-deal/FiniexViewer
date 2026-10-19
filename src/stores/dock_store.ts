@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import type { DockviewApi, GroupNavigationDirection, IDockviewPanel } from 'dockview-vue'
 import { reconcileLayout } from '@/components/dock/dock_layout'
+import { chartLayers } from '@/layer_registry'
 import { PANEL_KINDS, RUN_BUNDLE, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
@@ -32,6 +33,12 @@ const OPENS_RIGHT_OF: Record<string, string> = { 'run-chart': COLUMN_KIND }
 
 /** The share of the dock's width a split of its own takes in the first arrangement — the report keeps the larger part. */
 const SPLIT_SHARE = 0.4
+
+/** The panel that arranges the drawing layers of the chart last in front (viewer#41). */
+const LAYERS_KIND = 'layers'
+
+/** The width the Layers panel opens at — a list of a few rows, beside the chart that keeps the room. */
+const LAYERS_WIDTH = 240
 
 /** The four edges of the whole dock a dragged panel can be docked along. */
 export type DockEdge = 'left' | 'right' | 'top' | 'bottom'
@@ -113,6 +120,12 @@ export const useDockStore = defineStore('dock', () => {
    * own host. Open is not on show — a panel behind another tab is open and unseen.
    */
   const shownIds = ref<string[]>([])
+  /**
+   * The chart last in front — a panel whose kind draws layers of its own — or null where none is
+   * open: what the Layers panel arranges. FOCUS, not a selection, so no link carries it; another
+   * panel coming to the front, the Layers panel itself among them, leaves it as it was.
+   */
+  const lastChart = ref<string | null>(null)
   let timer: ReturnType<typeof setTimeout> | null = null
   let subscriptions: { dispose(): void }[] = []
   /** The section panel opened last: where the next one goes, as a tab beside it. */
@@ -146,6 +159,15 @@ export const useDockStore = defineStore('dock', () => {
 
   function syncOpen(): void {
     openIds.value = api.value ? api.value.panels.map(panel => panel.id) : []
+  }
+
+  /** An open chart that draws layers of its own, the first in the dock — or null. */
+  function anyChart(dock: DockviewApi): string | null {
+    return dock.panels.find(panel => chartLayers(panel.id).length)?.id ?? null
+  }
+
+  function noteActive(panel: IDockviewPanel | undefined): void {
+    if (panel && chartLayers(panel.id).length) lastChart.value = panel.id
   }
 
   /** A panel's host saying whether its panel is on show — dockview's own per-panel event, exact. */
@@ -285,6 +307,7 @@ export const useDockStore = defineStore('dock', () => {
    */
   function onRemoved(panel: IDockviewPanel): void {
     syncOpen()
+    if (panel.id === lastChart.value) lastChart.value = api.value ? anyChart(api.value) : null
     if (restoring) return
     const section = sectionOfKind(panel.id)
     if (!section) return
@@ -331,11 +354,14 @@ export const useDockStore = defineStore('dock', () => {
     arrangement.keepPanelViews(kind => panelKind(kind) !== null)
     flush()
     syncOpen()
+    lastChart.value = anyChart(dock)
+    noteActive(dock.activePanel)
     subscriptions = [
       dock.onDidLayoutChange(scheduleSave),
       dock.onWillMutateLayout(recordPlaces),
       dock.onDidAddPanel(syncOpen),
       dock.onDidRemovePanel(onRemoved),
+      dock.onDidActivePanelChange(event => noteActive(event.panel)),
       dock.onWillDragPanel(event => { dragging.value = { panel: event.panel.id } }),
       dock.onWillDragGroup(event => { dragging.value = { group: event.group.id } }),
       dock.onDidDrop(endDrag),
@@ -375,6 +401,7 @@ export const useDockStore = defineStore('dock', () => {
     api.value = null
     openIds.value = []
     shownIds.value = []
+    lastChart.value = null
   }
 
   /** Adds a closed panel where it last stood, while a panel it stood beside is still open. */
@@ -390,10 +417,16 @@ export const useDockStore = defineStore('dock', () => {
 
   /**
    * Opens a closed kind: where it last stood while a panel it stood beside is still open; else where
-   * its kind first opens, and beside the active one.
+   * its kind first opens, and beside the active one. The Layers panel opens as a narrow split to the
+   * right of the chart it arranges, at any width of the dock — as a tab it would hide that chart.
    */
   function openClosed(dock: DockviewApi, kindId: string): void {
     if (placeAgain(dock, kindId)) return
+    const chart = lastChart.value
+    if (kindId === LAYERS_KIND && chart && dock.getPanel(chart)) {
+      add(dock, kindId, { referencePanel: chart, direction: 'right' }, LAYERS_WIDTH)
+      return
+    }
     const anchor = OPENS_RIGHT_OF[kindId]
     const active = dock.activePanel?.id
     if (anchor && dock.getPanel(anchor)) {
@@ -497,13 +530,16 @@ export const useDockStore = defineStore('dock', () => {
     } finally {
       restoring = false
     }
+    // the rebuild removed every chart on the way; the one it put back is the chart to arrange
+    lastChart.value = anyChart(dock)
+    noteActive(dock.activePanel)
     arrangement.setPlaces({})
     flush()
     syncOpen()
   }
 
   return {
-    api, openIds, shownIds, dragging,
+    api, openIds, shownIds, dragging, lastChart,
     attach, detach, reveal, close, openSection, backIntoColumn, showSection, hideSection, reset, flush,
     dockToEdge, endDrag, noteShown,
   }

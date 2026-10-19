@@ -62,10 +62,18 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
   const groupDrags: ((event: { group: FakeGroup }) => void)[] = []
   const drops: (() => void)[] = []
   const edgeGroups: FakeEdgeGroup[] = []
+  // dockview announces the panel in front whenever another one comes there
+  const fronted: ((event: { panel: FakePanel | undefined }) => void)[] = []
 
   const panels = () => row.flatMap(group => group.panels)
   const find = (id: string) => panels().find(panel => panel.id === id)
   const mutate = () => willMutate.forEach(listener => listener())
+
+  function front(id: string | null): void {
+    if (id === active) return
+    active = id
+    fronted.forEach(listener => listener({ panel: find(id ?? '') }))
+  }
 
   function newGroup(at: number): FakeGroup {
     const group: FakeGroup = {
@@ -89,7 +97,7 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     if (!from.panels.length) row.splice(row.indexOf(from), 1)
     panel.group = target
     target.panels.push(panel)
-    active = panel.id
+    front(panel.id)
   }
 
   function addPanel(spec: FakeAdd): void {
@@ -108,7 +116,7 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
       group,
       title: spec.title ?? spec.id,
       api: {
-        setActive: () => { active = spec.id },
+        setActive: () => front(spec.id),
         close: () => close(spec.id),
         moveTo: ({ group: target }) => movePanel(panel, target),
         setTitle: (title: string) => { panel.title = title },
@@ -119,7 +127,7 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
       : group.panels.length
     group.panels.splice(index, 0, panel)
     // dockview brings a panel it adds to the front, unless told otherwise
-    active = spec.id
+    front(spec.id)
     arrived.forEach(listener => listener(panel))
   }
 
@@ -131,7 +139,7 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     group.panels.splice(group.panels.indexOf(panel), 1)
     if (!group.panels.length) row.splice(row.indexOf(group), 1)
     left.forEach(listener => listener(panel))
-    if (active === id) active = panels()[0]?.id ?? null
+    if (active === id) front(panels()[0]?.id ?? null)
   }
 
   const api = {
@@ -205,6 +213,10 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     onDidDrop: (listener: () => void) => {
       drops.push(listener)
       return { dispose: () => { drops.splice(drops.indexOf(listener), 1) } }
+    },
+    onDidActivePanelChange: (listener: (event: { panel: FakePanel | undefined }) => void) => {
+      fronted.push(listener)
+      return { dispose: () => { fronted.splice(fronted.indexOf(listener), 1) } }
     },
   }
   return {
@@ -462,6 +474,43 @@ describe('useDockStore', () => {
     store.reveal('run-chart', 'command')
     expect(dock.rows()).toEqual([['deployments', 'runs', 'run'], ['run-chart']])
     expect(dock.active()).toBe('run-chart')
+  })
+
+  describe('the Layers panel and the chart last in front', () => {
+    /** Focus, not a selection: another panel coming to the front leaves the chart to arrange as it was. */
+    it('follows the chart last in front, keeps it while another panel comes forward, and lets it go with it', () => {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      expect(store.lastChart).toBe('run-chart')
+      store.reveal('runs', 'command')
+      expect(store.lastChart).toBe('run-chart')
+      dock.close('run-chart')
+      expect(store.lastChart).toBeNull()
+      store.reveal('run-chart', 'command')
+      expect(store.lastChart).toBe('run-chart')
+    })
+
+    /** As a tab it would hide the chart it arranges — so a narrow split beside it, at any width of the dock. */
+    it('opens as a narrow split to the right of the chart it arranges, where the dock is narrow too', () => {
+      const dock = fakeDock({ width: 1000 })
+      const store = useDockStore()
+      store.attach(dock.api)
+      store.reveal('run-chart', 'command')
+      store.reveal('layers', 'command')
+      expect(dock.rows()).toEqual([['deployments', 'runs', 'run', 'run-chart'], ['layers']])
+      expect(dock.width('layers')).toBe(240)
+      expect(dock.active()).toBe('layers')
+      expect(store.lastChart).toBe('run-chart')
+    })
+
+    it('finds the chart again after the dock is laid out anew', () => {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      store.reset()
+      expect(store.lastChart).toBe('run-chart')
+    })
   })
 
   /** A new panel is appended with its default: a layout stored before the run chart opened by default. */

@@ -1,5 +1,7 @@
+import type { ChartLayerId } from '@/types/chart_drawing_types'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext } from '@/types/context_types'
+import type { LayerOptionId } from '@/types/layer_types'
 
 /**
  * One facet bar's state, as it is stored.
@@ -69,6 +71,20 @@ export const VIEW_ROW_CAPS = {
 } as const
 export type ViewRowList = keyof typeof VIEW_ROW_CAPS
 
+/**
+ * How the reader arranged a chart's drawing layers in the Layers panel (viewer#41) — only what
+ * differs from the chart's own: an order moved, a layer hidden or drawn fainter, an option switched.
+ * Reconciled against the layers the chart draws whenever it is read.
+ */
+export interface StoredLayers {
+  /** Back to front, where the reader moved a layer. */
+  order?: ChartLayerId[]
+  hidden?: ChartLayerId[]
+  /** In percent, only where below 100. */
+  opacity?: Partial<Record<ChartLayerId, number>>
+  options?: Partial<Record<LayerOptionId, boolean>>
+}
+
 /** The rows a panel keeps, and the run they were kept for — under any other they count for nothing. */
 export interface StoredRows {
   /** The run the keys were kept for, as the panel's own model names it. */
@@ -87,6 +103,8 @@ export interface StoredPanelView {
   expanded?: Partial<Record<ViewFold, boolean>>
   /** Bound to the run on show, so never part of a named layout. */
   rows?: StoredRows
+  /** A chart's drawing layers, bound to no run — the Layers panel writes them under the chart's id. */
+  layers?: StoredLayers
 }
 
 /** Everything stored under the one versioned key. */

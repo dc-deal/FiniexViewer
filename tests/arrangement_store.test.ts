@@ -218,5 +218,34 @@ describe('useArrangementStore', () => {
       expect(kept).toHaveLength(VIEW_ROW_CAPS['fills-open'])
       expect(kept.at(-1)).toBe(keys.at(-1))
     })
+
+    /** A chart's drawing layers, field by field: a layer or an option this build does not know is not copied. */
+    it('keeps how a chart\'s layers were arranged, and drops what no layer of this build is', async () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: {
+          'run-chart': {
+            layers: {
+              order: ['trades', 'no-such-layer', 'levels', 'trades'],
+              hidden: ['levels', 7],
+              // the whole is no opacity to keep, nor a share below the least one, nor a layer unknown
+              opacity: { trades: 40, levels: 100, 'entry-exit': 5, 'no-such-layer': 50 },
+              options: { 'every-position': true, 'trade-signs': 'no', 'no-such-option': true },
+            },
+          },
+          // nothing left of it is no entry
+          'chart': { layers: { hidden: ['no-such-layer'] } },
+        },
+      })
+      const arrangement = useArrangementStore()
+      expect(arrangement.panelViews).toEqual({
+        'run-chart': {
+          layers: { order: ['trades', 'levels'], hidden: ['levels'], opacity: { trades: 40 }, options: { 'every-position': true } },
+        },
+      })
+      arrangement.setPanelView('run-chart', { layers: { opacity: { levels: 50 } } })
+      await nextTick()
+      expect(stored()['panelViews']).toEqual({ 'run-chart': { layers: { opacity: { levels: 50 } } } })
+    })
   })
 })
