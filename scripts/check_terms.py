@@ -106,6 +106,8 @@ ONE_NAME_TWO_THINGS = {
     'name': "a scenario's name, a run's set: the field every object has for what it is called",
     'lots': "a trade row's lots are what that trade closed, a position still open what was left of it",
     'measured_at': 'one instant framed by two situations: when a reading was taken, and how old the one on screen has grown',
+    'duration_s': "a trade's duration is how long it was held, a sweep's the spread of its runs' starts",
+    'error_count': "a run's errors, and a sweep's combinations that produced no usable data",
 }
 
 CONSOLE_LABEL = re.compile(r'["\']\s*([A-Z][A-Za-z0-9 /&%().\'-]{1,30}?):\s*(?:\{|\s*["\'])')

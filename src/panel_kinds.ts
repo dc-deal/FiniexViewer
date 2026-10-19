@@ -46,13 +46,28 @@ export const PANEL_KINDS: PanelKind[] = [
     relations: { memberOf: null, follows: ['deployment'], chooses: ['deployment', 'run'] },
   },
   {
+    /*
+     * The parameter searches (viewer#32): every sweep on record, and the chosen one's combinations
+     * ranked by the objective it declared — the order is the route's. Like a deployment, a sweep
+     * is a family of runs, so it stands beside the deployments; a combination opens its run.
+     */
+    id: 'sweeps',
+    title: t('Sweeps'),
+    description: t("Every parameter search on record, and the chosen one's combinations ranked by its own objective"),
+    icon: 'form-list',
+    order: 2,
+    opensByDefault: false,
+    component: defineAsyncComponent(() => import('@/views/SweepsView.vue')),
+    relations: { memberOf: null, follows: ['sweep'], chooses: ['sweep', 'run'] },
+  },
+  {
     // the LIST: a pick here chooses the run and brings its report to the front
     id: 'runs',
     title: t('Runs'),
     menuTitle: t('Run list'),
     description: t('The runs the backend has stored — pick one to read its report'),
     icon: 'form-list',
-    order: 2,
+    order: 3,
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunsView.vue')),
@@ -71,7 +86,7 @@ export const PANEL_KINDS: PanelKind[] = [
     subtitle: () => useRunsStore().selectedRunId,
     description: t('The report of the chosen run, its sections one below the other — any of them opens as a panel of its own'),
     icon: 'form-sheet',
-    order: 3,
+    order: 4,
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunReportView.vue')),
@@ -98,7 +113,7 @@ export const PANEL_KINDS: PanelKind[] = [
     subtitle: () => useRunChartStore().unit?.name ?? null,
     description: t('One unit of the chosen run on its candles, its positions marked where they opened and its trades where they closed'),
     icon: 'form-chart',
-    order: 4,
+    order: 5,
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunChartView.vue')),
@@ -113,7 +128,7 @@ export const PANEL_KINDS: PanelKind[] = [
     title: t('Free chart'),
     description: t('Candles of the market data, by broker, symbol and timeframe'),
     icon: 'form-chart',
-    order: 5,
+    order: 6,
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/ChartView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/ChartQuickBar.vue')),
@@ -129,7 +144,7 @@ export const PANEL_KINDS: PanelKind[] = [
     title: t('Layers'),
     description: t('What the chart last in front draws beside its candles, layer by layer — shown or hidden, quiet, in front of or behind the others'),
     icon: 'form-list',
-    order: 6,
+    order: 7,
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/LayersView.vue')),
     relations: { memberOf: null, follows: [], chooses: [], chartInFront: true },
@@ -137,14 +152,14 @@ export const PANEL_KINDS: PanelKind[] = [
   {
     /*
      * What runs on the machine (viewer#49), from FiniexTestingIDE's activity list: opened from the
-     * Panels menu or by a click on the menu bar's CPU and memory. It follows no link — the machine
-     * is one — and asks the list only while it is on show.
+     * Panels menu, which the menu bar's card names. It follows no link — the machine is one — and
+     * asks the list only while it is on show.
      */
     id: 'activities',
     title: t('Activities'),
     description: t('What runs on the machine right now — every backtest, sweep, session, import, the test suite and the server, with the memory each holds'),
     icon: 'form-list',
-    order: 7,
+    order: 8,
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/ActivitiesView.vue')),
     relations: { memberOf: null, follows: [], chooses: [] },

@@ -42,6 +42,10 @@ const HINTS: HintDefinition[] = [
     text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. Rest the pointer on a row for its command line, its code and who started it."),
   },
   {
+    id: 'sweeps',
+    text: t('Every parameter search on record. Pick one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first. A click on a combination opens its run.'),
+  },
+  {
     id: 'layers',
     text: t('Front layer first: the lever shows or hides a layer, ◐ sets how strongly it is drawn, and a click on the layer opens the rest — its option, its place in front of or behind the others. The candles stay behind them all.'),
   },

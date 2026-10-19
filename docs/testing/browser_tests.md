@@ -57,6 +57,9 @@ by its tab, the way a reader does.
   the captured server row marked as this server, and asking nothing more while another tab of its
   group stands in front of it — a panel kept in the page stays mounted behind its tab, which only a
   real dock shows.
+- `sweeps.spec.ts` holds the parameter searches: the Sweeps panel opened from the Panels menu, a
+  sweep picked from its list, its combinations in the order the route ranked them with the first
+  marked ★, and a combination bringing its run to the front in the run bundle.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel.

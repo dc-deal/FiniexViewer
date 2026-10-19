@@ -14,6 +14,8 @@ export interface OpenInContext {
   openRun: (runId: string) => void
   /** Put the reader in front of this deployment's history. */
   openDeployment: (deploymentId: string) => void
+  /** Put the reader in front of this sweep's ranked combinations. */
+  openSweep: (sweepId: string) => void
   /**
    * Can the reader be sent anywhere at all? A panel mounted on its own has no host to send them
    * to, and draws the name as the plain text it is rather than as a way in that leads nowhere.
@@ -30,6 +32,7 @@ export function provideOpenInContext(open: OpenInContext): void {
 const NOWHERE: OpenInContext = {
   openRun: () => {},
   openDeployment: () => {},
+  openSweep: () => {},
   canOpen: false,
 }
 

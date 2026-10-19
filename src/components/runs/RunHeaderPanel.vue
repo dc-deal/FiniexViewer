@@ -22,7 +22,7 @@ const props = defineProps<{
 
 const info = computed(() => props.model.info)
 const served = computed(() => props.model.served)
-const { openDeployment, canOpen } = useOpenInContext()
+const { openDeployment, openSweep, canOpen } = useOpenInContext()
 
 interface Membership {
   label: string
@@ -48,7 +48,11 @@ const belongsTo = computed<Membership | null>(() => {
     }
   }
   if (info.value.parent_kind === 'sweep') {
-    return { label: t('Combination in sweep'), id: parentId, open: null }
+    return {
+      label: t('Combination in sweep'),
+      id: parentId,
+      open: canOpen ? () => openSweep(parentId) : null,
+    }
   }
   // a kind we do not know is still a membership — shown without claiming what it means
   return { label: t('Belongs to'), id: parentId, open: null }

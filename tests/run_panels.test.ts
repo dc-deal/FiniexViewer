@@ -798,15 +798,15 @@ describe('RunHeaderPanel', () => {
     expect(value!.text()).toBe('deploy_20260922_121648')
   })
 
-  /** A sweep has no view of its own yet, so its id is named and not offered as a way in. */
-  it('offers no way into a sweep, which nothing can open yet', () => {
-    const { wrapper } = mountWithWayOut({
+  /** A sweep has a panel of its own since viewer#32: its id opens its ranking, where the run stands among the others. */
+  it('turns a sweep parent into a way in, to its ranked combinations', async () => {
+    const { wrapper, way } = mountWithWayOut({
       group: 'simulation',
       parent_id: 'sweep_20260830_154907',
       parent_kind: 'sweep',
     })
-    expect(wrapper.text()).toContain('sweep_20260830_154907')
-    expect(wrapper.find('.jump-link').exists()).toBe(false)
+    await wrapper.find('.jump-link').trigger('click')
+    expect(way.opened).toEqual([{ what: 'sweep', id: 'sweep_20260830_154907' }])
   })
 
   /**

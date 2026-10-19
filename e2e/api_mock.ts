@@ -263,6 +263,20 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       return route.fulfill(absent('artifact_not_produced', `No capture for ledger '${section}'`))
     }
 
+    // the SWEEP plane: every search on record, and the one captured ranked by its objective
+    if (path === '/api/v1/sweeps') {
+      return route.fulfill({ json: fixture('sweeps_list.json'), headers: CONTRACT })
+    }
+
+    const sweep = /^\/api\/v1\/sweeps\/([^/]+)$/.exec(path)
+    if (sweep) {
+      const captured = fixture('sweep_detail.json') as { sweep_id: string }
+      if (sweep[1] !== captured.sweep_id) {
+        return route.fulfill(absent('sweep_not_found', `Only ${captured.sweep_id} is captured`))
+      }
+      return route.fulfill({ json: captured, headers: CONTRACT })
+    }
+
     return route.fulfill(absent('not_mocked', `No fixture routes ${path}`))
   })
 }

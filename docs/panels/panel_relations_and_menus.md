@@ -13,6 +13,7 @@ is the chooser and the follower of a key, never one panel over another.
 ```
 kind              member of   follows                  chooses
 Deployments       —           deployment ¹             deployment · run
+Sweeps            —           sweep ¹                  sweep · run
 Runs              —           —                        run
 Run bundle        —           run  + its members ²     its members ²
 Run chart         —           run · scenario · position scenario
@@ -108,6 +109,7 @@ inventory that silently shortens is not one.
 ```
 Panels ▾
 ├ ✓ Deployments
+├   Sweeps
 ├   Runs ▸ ┬ ✓ Run list
 │          ├ ✓ Run bundle
 │          ├ ✓ Run chart
