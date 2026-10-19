@@ -18,7 +18,7 @@ import { plural, t } from '@/translate'
 
 /**
  * The width a mark takes on the chart, in pixels: lightweight-charts draws no shape narrower than
- * 12 px (4.2.3), and a margin keeps two from touching.
+ * 12 px (5.2.1, as 4.2.3 did), and a margin keeps two from touching.
  */
 export const MARK_FOOTPRINT_PX = 15
 

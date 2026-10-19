@@ -104,6 +104,15 @@ it says so and draws nothing.
 
 [Lightweight Charts](https://github.com/tradingview/lightweight-charts) is a purpose-built OHLCV charting library: small bundle, good performance, minimal API surface. It handles candle rendering, time axis, crosshair, and resize natively.
 
+**Version 5 since 2026-10-19** (5.2.1; 4.2.3 was the last of version 4). A series is added as
+`addSeries(CandlestickSeries, …)`, and the markers are a plugin of the series, `createSeriesMarkers`,
+attached once when the chart is built. It came before the chart's first own drawing (viewer#41): version
+5 renames the primitive types such a drawing is written against, and it answers the pointer for the
+position it is at, where 4.2.3 ran the crosshair event before the hit test of the same move and so
+reported the thing under the PREVIOUS position — harmless on a 12 px marker, wrong on a 1 px line. The
+dev server bundles the library once and keeps it: after an upgrade it serves the old one until it is
+started again (`docker restart finiex-viewer`).
+
 **Alternatives considered:**
 - **ECharts** — general-purpose, heavier, more configuration overhead for financial data.
 - **Recharts / Chart.js** — not optimised for candlestick OHLCV; significant custom work needed.
@@ -138,8 +147,8 @@ before, measured on the canvas. The crosshair's two axis labels keep the library
 and it is how TradingView draws it.
 
 **Everything drawn says what it is, at the pointer — through ONE register** (`CandleChart.vue`).
-The library reports the id of the thing under the pointer as `hoveredObjectId`, for a marker (its
-`id`) and for a series primitive (the `externalId` its `hitTest` answers) alike. The chart keeps a
+The library reports the id of the thing under the pointer as `hoveredInfo.objectId`, for a marker
+(its `id`) and for a series primitive (the `externalId` its `hitTest` answers) alike. The chart keeps a
 register of id → `FigureCard` and shows the card of whatever is under the pointer in a `ChartCard`:
 placed from the pointer, on the side with more room, inside the chart's frame, and taking no pointer
 events so the chart keeps them. The marks are the register's first source — an exit's id is its
@@ -148,11 +157,12 @@ trade row's declared key, an opening's is the position's, and their cards come f
 come to say a trade differently. The algo's drawings (testingide#379) are planned as primitives, and
 a primitive brings its id and its card to the same register — as a second input to it, since today
 the register is built from the marks it is handed and nothing else.
-Measured in the browser on 2026-10-16: the library reported `exit|EURGBP_refusals_01|pos_eurgbp_1|379`
-under the pointer and the card showed that trade. That half has no spec: the marks are paint on a
-canvas, the library ignores synthetic pointer events, and finding a mark with real ones costs 36 ms a
-step over the whole pane. Re-check it by hand when the library is upgraded — version 5 moves the
-markers into a plugin.
+Measured in the browser on 2026-10-16 with version 4: the library reported
+`exit|EURGBP_refusals_01|pos_eurgbp_1|379` under the pointer and the card showed that trade; again on
+2026-10-19 with 5.2.1, a real pointer on the one mark of `EURGBP_left_open` showed the card of
+`pos_eurgbp_1`, still open. That half has no spec: the marks are paint on a canvas, the library
+ignores synthetic pointer events, and finding a mark with real ones costs 36 ms a step over the whole
+pane. Re-check it by hand when the library is upgraded.
 
 The card's look is the app's, not one component's: `src/styles/card.css` holds it, and
 `base/FigureCardBody.vue` says what a card says — its heading and its pairs, each pair carrying its

@@ -19,12 +19,16 @@ const lw = vi.hoisted(() => {
   const zoom: { change: (() => void) | null, range: { from: number, to: number } | null, width: number } = {
     change: null, range: { from: 0, to: 100 }, width: 600,
   }
-  const series = { setData, setMarkers, applyOptions: vi.fn<(options: Record<string, unknown>) => void>() }
+  const series = { setData, applyOptions: vi.fn<(options: Record<string, unknown>) => void>() }
+  /** The candlestick series' definition, as the library exports it — what `addSeries` is handed. */
+  const CandlestickSeries = { type: 'Candlestick' }
+  /** Since version 5 the markers are a plugin attached to the series, and it holds `setMarkers`. */
+  const createSeriesMarkers = vi.fn<(owner: typeof series) => { setMarkers: typeof setMarkers }>(() => ({ setMarkers }))
   /** What the library calls as the pointer moves — held so a test can move it. */
   const pointer: { move: ((param: Record<string, unknown>) => void) | null } = { move: null }
   const chart = {
     subscribeCrosshairMove: vi.fn((handler: (param: Record<string, unknown>) => void) => { pointer.move = handler }),
-    addCandlestickSeries: vi.fn<(options: Record<string, unknown>) => typeof series>(() => series),
+    addSeries: vi.fn<(definition: typeof CandlestickSeries, options: Record<string, unknown>) => typeof series>(() => series),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
     timeScale: vi.fn(() => ({
       fitContent,
@@ -39,11 +43,16 @@ const lw = vi.hoisted(() => {
   const createChart = vi.fn<(container: HTMLElement, options: Record<string, unknown>) => typeof chart>(
     () => chart
   )
-  return { chart, series, pointer, zoom, setData, setMarkers, setVisibleLogicalRange, fitContent, createChart }
+  return {
+    chart, series, pointer, zoom, setData, setMarkers, setVisibleLogicalRange, fitContent, createChart,
+    CandlestickSeries, createSeriesMarkers,
+  }
 })
 
 vi.mock('lightweight-charts', () => ({
   createChart: lw.createChart,
+  createSeriesMarkers: lw.createSeriesMarkers,
+  CandlestickSeries: lw.CandlestickSeries,
   ColorType: { Solid: 'solid' },
 }))
 
@@ -242,13 +251,13 @@ describe('CandleChart', () => {
       const wrapper = mountChart(BARS, { marks: MARKS })
       expect(wrapper.find('.chart-card').exists()).toBe(false)
 
-      lw.pointer.move!({ hoveredObjectId: 'exit|unit|pos_1|7', point: { x: 100, y: 80 } })
+      lw.pointer.move!({ hoveredInfo: { objectId: 'exit|unit|pos_1|7' }, point: { x: 100, y: 80 } })
       await nextTick()
       expect(wrapper.find('.chart-card').text()).toContain('pos_1 · long 0.1')
       expect(wrapper.find('.chart-card').text()).toContain('-0.40 EUR')
 
       // a thing the register does not know, and no thing at all, both show nothing
-      lw.pointer.move!({ hoveredObjectId: 'line|elsewhere', point: { x: 100, y: 80 } })
+      lw.pointer.move!({ hoveredInfo: { objectId: 'line|elsewhere' }, point: { x: 100, y: 80 } })
       await nextTick()
       expect(wrapper.find('.chart-card').exists()).toBe(false)
       lw.pointer.move!({ point: { x: 300, y: 80 } })
@@ -259,7 +268,7 @@ describe('CandleChart', () => {
     it('drops a card whose mark is gone', async () => {
       size = { width: 800, height: 400 }
       const wrapper = mountChart(BARS, { marks: MARKS })
-      lw.pointer.move!({ hoveredObjectId: 'entry|unit|pos_1', point: { x: 100, y: 80 } })
+      lw.pointer.move!({ hoveredInfo: { objectId: 'entry|unit|pos_1' }, point: { x: 100, y: 80 } })
       await nextTick()
       expect(wrapper.find('.chart-card').exists()).toBe(true)
       await wrapper.setProps({ marks: [] })
@@ -275,7 +284,7 @@ describe('CandleChart', () => {
   it('draws prices in the format it is handed, and follows a change', async () => {
     size = { width: 800, height: 400 }
     const wrapper = mountChart(BARS, { priceFormat: { precision: 5, minMove: 0.00001 } })
-    expect(lw.chart.addCandlestickSeries.mock.calls[0]![0]).toMatchObject({
+    expect(lw.chart.addSeries.mock.calls[0]![1]).toMatchObject({
       priceFormat: { type: 'price', precision: 5, minMove: 0.00001 },
     })
 
@@ -288,7 +297,7 @@ describe('CandleChart', () => {
   it('leaves the library its own format where it is handed none', () => {
     size = { width: 800, height: 400 }
     mountChart()
-    expect(lw.chart.addCandlestickSeries.mock.calls[0]![0]).not.toHaveProperty('priceFormat')
+    expect(lw.chart.addSeries.mock.calls[0]![1]).not.toHaveProperty('priceFormat')
   })
 
   /**
@@ -304,6 +313,14 @@ describe('CandleChart', () => {
   })
 
   /** The marks are drawn on a canvas, where nothing can read them back — so the element counts them. */
+  /** Version 5 draws markers through a plugin of the series: attached once, when the chart is built. */
+  it('attaches the markers to its candles once, when it is built', () => {
+    size = { width: 800, height: 400 }
+    mountChart()
+    expect(lw.createSeriesMarkers).toHaveBeenCalledTimes(1)
+    expect(lw.createSeriesMarkers.mock.calls[0]![0]).toBe(lw.series)
+  })
+
   it('says on its element how many marks it draws', () => {
     size = { width: 800, height: 400 }
     const wrapper = mountChart(BARS, { marks: [mark({}), mark({ role: 'positive' })] })
@@ -357,7 +374,7 @@ describe('CandleChart', () => {
         rightPriceScale: { borderColor: '#000003' },
         timeScale: { borderColor: '#000003' },
       })
-      expect(lw.chart.addCandlestickSeries).toHaveBeenCalledWith({
+      expect(lw.chart.addSeries).toHaveBeenCalledWith(lw.CandlestickSeries, {
         borderVisible: false,
         upColor: '#000005',
         downColor: '#000006',
@@ -448,7 +465,7 @@ describe('CandleChart', () => {
       expect(lw.chart.applyOptions.mock.lastCall![0]).toMatchObject({
         layout: { background: { color: '#ffff01' } },
       })
-      expect(lw.chart.addCandlestickSeries.mock.lastCall![0]).toMatchObject({ upColor: '#ffff05' })
+      expect(lw.chart.addSeries.mock.lastCall![1]).toMatchObject({ upColor: '#ffff05' })
     })
 
     /** A chart that is gone must not be painted: the library refuses a removed chart. */

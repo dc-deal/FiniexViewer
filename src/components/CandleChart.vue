@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue'
-import { createChart, ColorType } from 'lightweight-charts'
+import { CandlestickSeries, ColorType, createChart, createSeriesMarkers } from 'lightweight-charts'
 import type {
-  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, MouseEventParams,
-  UTCTimestamp,
+  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, ISeriesMarkersPluginApi,
+  MouseEventParams, Time, UTCTimestamp,
 } from 'lightweight-charts'
 import ChartCard from '@/components/base/ChartCard.vue'
 import type { ChartBar } from '@/types/api/bar_types'
@@ -50,6 +50,8 @@ const MIN_BAR_SPACING = 0.05
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
 let series: ISeriesApi<'Candlestick'> | null = null
+/** The series' markers — a plugin of their own since lightweight-charts 5, attached to the series. */
+let markers: ISeriesMarkersPluginApi<Time> | null = null
 let resizeObserver: ResizeObserver | null = null
 let themeObserver: MutationObserver | null = null
 
@@ -74,7 +76,7 @@ const events = computed(() => (props.marks ?? []).reduce((sum, mark) => sum + (m
 const pointed = shallowRef<{ card: FigureCard, x: number, y: number } | null>(null)
 
 function onPointer(param: MouseEventParams): void {
-  const id = param.hoveredObjectId
+  const id = param.hoveredInfo?.objectId
   const card = typeof id === 'string' ? cards.value.get(id) : undefined
   pointed.value = card && param.point ? { card, x: param.point.x, y: param.point.y } : null
 }
@@ -127,9 +129,9 @@ function markColour(mark: ChartMark, colours: ChartColours): string {
 }
 
 function showMarks(): void {
-  if (!series) return
+  if (!markers) return
   const colours = readColours()
-  series.setMarkers((props.marks ?? []).map(mark => ({
+  markers.setMarkers((props.marks ?? []).map(mark => ({
     time: mark.time as UTCTimestamp,
     position: mark.position,
     shape: mark.shape,
@@ -212,7 +214,8 @@ function initChart(size: { width: number, height: number }): void {
   chart.timeScale().subscribeVisibleLogicalRangeChange(reportSpacing)
   frameSize.value = size
 
-  series = chart.addCandlestickSeries({ borderVisible: false, ...candleColours(colours), ...seriesFormat() })
+  series = chart.addSeries(CandlestickSeries, { borderVisible: false, ...candleColours(colours), ...seriesFormat() })
+  markers = createSeriesMarkers(series)
 }
 
 /** The width of a bar on screen: the plot's width over the bars in view, however far zoomed. */
@@ -282,7 +285,7 @@ watch(() => props.marks, () => {
   showMarks()
 })
 watch(() => props.focus, () => frame())
-// a format taken away goes back to the library's own (lightweight-charts 4.2.3: two decimals, a
+// a format taken away goes back to the library's own (lightweight-charts 5.2.1: two decimals, a
 // least move of 0.01) — applying nothing would keep the previous instrument's decimals
 watch(() => props.priceFormat, () => series?.applyOptions(
   props.priceFormat ? seriesFormat() : { priceFormat: { type: 'price', precision: 2, minMove: 0.01 } }))
