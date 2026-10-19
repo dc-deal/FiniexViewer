@@ -7,7 +7,7 @@ import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import { bytes, clockTime, duration, sortInstant, startedAt, utcInstant } from '@/components/runs/report_format'
+import { bytes, clockTime, duration, largerFirst, sortInstant, startedAt, utcInstant } from '@/components/runs/report_format'
 import { rowKey } from '@/api/list_key'
 import { useFacetState } from '@/composables/use_facet_state'
 import { useDockStore } from '@/stores/dock_store'
@@ -63,8 +63,7 @@ const facets: FacetDefinition<ActivityRow>[] = [
 
 const sorts: SortDefinition<ActivityRow>[] = [
   { id: 'newest', label: 'newest', compare: (a, b) => sortInstant(b.started_at) - sortInstant(a.started_at) },
-  // memory that could not be read sorts last: it is no figure, and certainly not the smallest
-  { id: 'memory', label: 'memory', compare: (a, b) => (b.rss_bytes ?? -1) - (a.rss_bytes ?? -1) },
+  { id: 'memory', label: 'memory', compare: (a, b) => largerFirst(a.rss_bytes, b.rss_bytes) },
   { id: 'longest', label: 'longest running', compare: (a, b) => b.uptime_s - a.uptime_s },
 ]
 
@@ -231,7 +230,7 @@ const unreadable = computed(() => activities.value?.unreadable_activity_ids.leng
           </span>
           <span :data-rank="3" class="figure-cell">{{ duration(row.uptime_s / 3600) }}</span>
           <span :data-rank="1" class="figure-cell" :class="{ 'warning-msg': row.rss_bytes === null }">
-            <AppIcon v-if="row.rss_bytes === null" name="status-warning" class="notice-mark" />{{ memory(row) }}
+            <AppIcon v-if="row.rss_bytes === null" name="status-warning" class="notice-mark" /> {{ memory(row) }}
           </span>
           <span :data-rank="4" class="cell-text" :title="row.origin_channel ?? undefined">{{ row.origin_channel ?? '—' }}</span>
           <span :data-rank="4" class="cell-text" :title="row.git_commit ? `${code(row)} · ${row.git_commit}` : code(row)">
@@ -269,13 +268,18 @@ const unreadable = computed(() => activities.value?.unreadable_activity_ids.leng
 
 .notice {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-xs);
   margin: 0;
 }
 
 .notice-mark {
   flex-shrink: 0;
+}
+
+/* held on the FIRST line of a notice that wraps, where the words it belongs to begin */
+.notice > .notice-mark {
+  margin-top: 0.15em;
 }
 
 /* the data or the request is wrong: the error role, its mark beside it — a colour never travels alone */

@@ -3,7 +3,7 @@ import { computed, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppIcon from '@/components/base/AppIcon.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
-import { bytes, clockTime, percentFigure } from '@/components/runs/report_format'
+import { bytes, clockTime, largerFirst, percentFigure } from '@/components/runs/report_format'
 import { useMachineStore } from '@/stores/machine_store'
 import type { Figure } from '@/types/figure_types'
 import type { IconName } from '@/types/icon_types'
@@ -44,17 +44,25 @@ function cut(text: string): string {
 }
 
 /**
- * What runs, in one line: the server's own row left out — it is the one answering — at most two
- * named in their own words and the rest counted, the way a list says how many rows it shows.
+ * What runs, in one line: the server's own row left out — it is the one answering — every other
+ * counted, the way a list says how many rows it shows, and the two that hold the most memory and
+ * run on their own named in their own words: the card hangs under the machine's memory, and what
+ * fills it is the question. One running inside another is part of it and holds its memory there:
+ * named, a sweep's backtest hid a test suite that held gigabytes (browser pass, 2026-10-19).
  */
 const running = computed(() => {
   const list = activities.value
   if (!list) return activitiesError.value ? t('could not be read') : t('asking the server …')
   const others = list.activities.filter(row => row.activity_id !== list.server_activity_id)
   if (!others.length) return t('only this server')
-  const named = others.slice(0, 2).map(row => `${row.activity_kind} ${cut(row.activity_label)}`)
-  const more = others.length > 2 ? [`+${others.length - 2} ${t('more')}`] : []
-  return [String(others.length), ...named, ...more].join(' · ')
+  const listed = new Set(list.activities.map(row => row.activity_id))
+  const named = others
+    .filter(row => !row.parent_activity_id || !listed.has(row.parent_activity_id))
+    .sort((a, b) => largerFirst(a.rss_bytes, b.rss_bytes))
+    .slice(0, 2)
+    .map(row => `${row.activity_kind} ${cut(row.activity_label)}`)
+  const more = others.length - named.length
+  return [String(others.length), ...named, ...(more > 0 ? [`+${more} ${t('more')}`] : [])].join(' · ')
 })
 
 /**

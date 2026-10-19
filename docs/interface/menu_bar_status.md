@@ -73,9 +73,12 @@ CPU  15% · Memory  17% · ⚠ as of 14:37:22      the readings have stopped arr
 - **The polling starts at the app root**, like the caller, so the store holds one reading for
   whoever shows it: the menu bar now, a System panel later (viewer#31, S6).
 - **The card also says what runs on the machine** (viewer#49), in one line under *Running*:
-  `2 · backtest my_set__sweep_… · test_suite` — the server's own row left out, it is the one
-  answering; at most two named, in their own words, the rest counted; `only this server` where
-  nothing else runs. `/activities` is asked only while the card is open (`update:open`), on the
+  `5 · sweep my_sweep · test_suite test suite · +3 more` — the server's own row left out, it is the
+  one answering; every other counted, and the two that hold the most memory and run on their own
+  named in their own words, because the card hangs under the machine's memory and what fills it is
+  the question. One running inside another is part of it and holds its memory there: named, a
+  sweep's backtest hid a test suite that held gigabytes. `only this server` where nothing else
+  runs. `/activities` is asked only while the card is open (`update:open`), on the
   same beat. The line beneath it, *Every activity — Panels ▸ Activities*, names the panel that lists
   them all ([Activities Panel](../panels/activities_panel.md)).
 - **The figures are no control.** A click that opened the Activities panel was tried on 2026-10-19

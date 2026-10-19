@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  bytes, modelledSpreadFigures, polarity, shortHash, signClass, sortInstant, spreadFigure, utcInstant,
+  bytes, largerFirst, modelledSpreadFigures, polarity, shortHash, signClass, sortInstant, spreadFigure, utcInstant,
 } from '@/components/runs/report_format'
 
 /**
@@ -38,6 +38,13 @@ describe('report_format', () => {
 
     it('gives 0 for a stamp that is not a date, so it sorts last under newest', () => {
       expect(sortInstant('not-a-date')).toBe(0)
+    })
+  })
+
+  describe('largerFirst', () => {
+    /** A size that could not be read is no figure, and certainly not the smallest. */
+    it('sorts the larger first, and one that could not be read after every figure, a zero included', () => {
+      expect([0, null, 3_100_000_000, 7_100_000_000].sort(largerFirst)).toEqual([7_100_000_000, 3_100_000_000, 0, null])
     })
   })
 

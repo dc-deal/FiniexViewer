@@ -129,6 +129,26 @@ describe('MachineStatus', () => {
       expect(detail(wrapper, 'Running')?.value).toBe('3 · test_suite test suite · backtest my_set__sweep_20261018_1402… · +1 more')
     })
 
+    /**
+     * The card hangs under the machine's memory, so it names what holds the most. One running
+     * inside another is part of it: named, a sweep's backtest hid what else runs.
+     */
+    it('names the two that hold the most memory and run on their own, and counts the ones inside another', () => {
+      useMachineStore().activities = {
+        ...ACTIVITIES,
+        activities: [
+          SERVER,
+          activity({ activity_id: 'import', activity_kind: 'import', activity_label: 'kraken', rss_bytes: 200_000_000 }),
+          activity({ activity_id: 'inside', activity_kind: 'backtest', activity_label: 'c003', parent_activity_id: 'sweep', rss_bytes: 0 }),
+          activity({ activity_id: 'session', activity_kind: 'autotrader_session', activity_label: 'mock', rss_bytes: null }),
+          activity({ activity_id: 'tests', activity_kind: 'test_suite', activity_label: 'test suite', rss_bytes: 3_100_000_000 }),
+          activity({ activity_id: 'sweep', activity_kind: 'sweep', activity_label: 'my_sweep', rss_bytes: 7_100_000_000 }),
+        ],
+      }
+      const wrapper = mountWith(READING)
+      expect(detail(wrapper, 'Running')?.value).toBe('5 · sweep my_sweep · test_suite test suite · +3 more')
+    })
+
     it('says only the server runs where nothing else does, and why the line is missing where it could not be read', () => {
       useMachineStore().activities = ACTIVITIES
       expect(detail(mountWith(READING), 'Running')?.value).toBe('only this server')

@@ -156,6 +156,14 @@ export function sortInstant(iso: string): number {
   return Number.isNaN(at) ? 0 : at
 }
 
+/**
+ * Two sizes compared larger first, for a sort. One that could not be read (`null`) sorts last: it
+ * is no figure, and certainly not the smallest.
+ */
+export function largerFirst(a: number | null, b: number | null): number {
+  return (b ?? -1) - (a ?? -1)
+}
+
 /** The polarity of a figure, by its sign — the one rule behind every colour that says gain or loss. */
 export function polarity(value: number): Polarity {
   if (value > 0) return 'positive'

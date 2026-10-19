@@ -87,7 +87,8 @@ The app's own building blocks, the way the deployment and run lists are built: a
 - `activities_view.test.ts` — asked only while on show; rows newest first with each beneath its
   parent and the server marked; memory as served, inside a parent and unreadable; the card; notices
   only where something is off.
-- `machine_status.test.ts` — the card's *Running* line, the server left out and the rest counted;
-  asked while the card is open; the panel named, and the figures no control.
+- `machine_status.test.ts` — the card's *Running* line, the server left out, the two that hold the
+  most memory and run on their own named, the rest counted; asked while the card is open; the panel
+  named, and the figures no control.
 - `e2e/activities.spec.ts` — the card in a real browser, and the panel asking nothing while another
   tab of its group stands in front of it.
