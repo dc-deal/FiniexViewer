@@ -328,16 +328,23 @@ describe('useDockStore', () => {
     expect(dock.restored).toHaveLength(1)
   })
 
-  /** A kind this build no longer has takes its place with it, and leaves no neighbour list naming it. */
-  it('drops the place of a retired kind when it attaches, and the retired kind from every place', () => {
+  /**
+   * A kind this build no longer has takes its place with it, and leaves the neighbour lists. A place
+   * whose every neighbour is gone stays as it was: it is also the record that the reader HID the
+   * panel, and dropped, a hidden run chart came back on the next start.
+   */
+  it('drops the place of a retired kind when it attaches, and keeps a hidden panel\'s', () => {
     const arrangement = useArrangementStore()
     arrangement.setPlaces({
       retired: { besides: ['runs'], direction: 'right' },
       chart: { besides: ['retired', 'runs'], direction: 'within', index: 1 },
-      deployments: { besides: ['retired'], direction: 'left' },
+      'run-chart': { besides: ['retired'], direction: 'right', size: 500 },
     })
     useDockStore().attach(fakeDock().api)
-    expect(arrangement.places).toEqual({ chart: { besides: ['runs'], direction: 'within', index: 1 } })
+    expect(arrangement.places).toEqual({
+      chart: { besides: ['runs'], direction: 'within', index: 1 },
+      'run-chart': { besides: ['retired'], direction: 'right', size: 500 },
+    })
   })
 
   /** A kind this build no longer has takes its kept view with it; a panel merely hidden keeps its own. */

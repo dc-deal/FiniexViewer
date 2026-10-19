@@ -118,7 +118,8 @@ Panels ▾
   its index among them, or the panels of the neighbouring group (`adjacentGroupInDirection`), the
   side, and the width or height its own group had. Kept as `places` in `arrangement.v1`, so a panel
   hidden before a reload still comes back where it stood; on attach the places are kept against the
-  kinds, so a retired kind's place goes, and so does its name from the panels another stood beside.
+  kinds, so a retired kind's place goes, and so does its name from the panels another stood beside —
+  unless it was the only one: a place is also the record that the panel was hidden.
 - **Showing a panel again** uses its place while one of the panels it stood beside is still open,
   at the size it had; otherwise a main panel opens beside the active one, and a section goes back
   into the column, whose panel comes to the front.

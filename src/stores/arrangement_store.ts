@@ -265,16 +265,20 @@ export const useArrangementStore = defineStore('arrangement', () => {
   }
 
   /**
-   * Keeps the places of the panels `known` accepts, each beside known panels only; a place left
-   * beside none is none. Without it a retired kind's place, and a neighbour list naming one, were
-   * copied forward by every write of the places.
+   * Keeps the places of the panels `known` accepts, each beside known panels only. Without it a
+   * retired kind's place, and a neighbour list naming one, were copied forward by every write.
+   *
+   * A place whose EVERY neighbour is gone keeps them as they were: a place is also the record that
+   * the reader HID the panel — the bundle and the run chart come back on start unless one exists —
+   * and dropped, it brought a hidden panel back on the next start. Shown again, such a panel opens
+   * where one with no place does.
    */
   function keepPlaces(known: (panel: string) => boolean): void {
     const kept: Record<string, DockPlace> = {}
     for (const [id, place] of Object.entries(places.value)) {
       if (!known(id)) continue
       const besides = place.besides.filter(known)
-      if (besides.length) kept[id] = { ...place, besides }
+      kept[id] = besides.length ? { ...place, besides } : place
     }
     if (JSON.stringify(kept) !== JSON.stringify(places.value)) places.value = kept
   }
