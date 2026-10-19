@@ -4,6 +4,7 @@ import { findCoverage, getBars } from '@/api/api_client'
 import {
   autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
 } from '@/components/runs/run_chart'
+import { entryExitLines, positionLevels } from '@/components/runs/run_chart_levels'
 import {
   barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
 } from '@/components/runs/run_chart_marks'
@@ -14,6 +15,7 @@ import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
+import type { ChartLayer } from '@/types/chart_drawing_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartMark, ChartUnit, TimeframeOffer } from '@/types/run_chart_types'
 
@@ -139,6 +141,14 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   const barTimes = computed(() => bars.value.map(bar => bar.time))
 
+  /**
+   * The last bar of a window the route CUT, or null. The bars after it were never drawn, and an
+   * event among them would stand on that last bar — weeks from where it happened (measured
+   * 2026-10-19: a unit cut at M1 piled fifteen marks onto its last candle). Past it nothing is
+   * placed for certain, so nothing is drawn there; the notice says the window was cut.
+   */
+  const cutAt = computed(() => truncated.value ? barTimes.value.at(-1) ?? null : null)
+
   /** Every opening and exit of the unit on show, one mark each, in time order. */
   const events = computed<ChartMark[]>(() => {
     const all = [
@@ -148,12 +158,8 @@ export const useRunChartStore = defineStore('runChart', () => {
       ),
       ...exitMarks(unitTrades.value, reports.tradeHistory?.keys.trades ?? [], barTimes.value, focus.value),
     ].sort((a, b) => a.time - b.time)
-    // Where the route CUT the window, the bars after the last one served were never drawn, and an
-    // event among them would stand on that last bar — weeks away from where it happened (measured
-    // 2026-10-19: a unit cut at M1 piled fifteen marks onto its last candle). Past the last bar's
-    // open nothing is placed for certain, so nothing is drawn there; the notice says the window was cut.
-    const last = barTimes.value.at(-1)
-    return truncated.value && last !== undefined ? all.filter(mark => mark.at <= last) : all
+    const cut = cutAt.value
+    return cut !== null ? all.filter(mark => mark.at <= cut) : all
   })
 
   /** The width of a bar on screen, as the chart last reported it — null before it has drawn. */
@@ -167,6 +173,29 @@ export const useRunChartStore = defineStore('runChart', () => {
    * the number of bars a mark covers changes, not on every scroll.
    */
   const marks = computed<ChartMark[]>(() => gatherMarks(events.value, barTimes.value, perMark.value))
+
+  /** The trade rows of the position looked at, and its entry in `open_positions` where it ended open. */
+  const focusTrades = computed(() => {
+    const looked = focus.value
+    return looked ? unitTrades.value.filter(trade => trade.position_id === looked.position) : []
+  })
+  const focusOpen = computed(() => {
+    const looked = focus.value
+    return looked ? unitPortfolio.value?.open_positions.find(entry => entry.position_id === looked.position) ?? null : null
+  })
+
+  /**
+   * What the chart draws, layer by layer, each in front of the one before: the levels of the
+   * position looked at, the line from its entry to its exit, and the marks of every trade in front.
+   */
+  const layers = computed<ChartLayer[]>(() => {
+    const key = reports.tradeHistory?.keys.trades ?? []
+    return [
+      { id: 'levels', drawings: positionLevels(focusTrades.value, key, focusOpen.value, barTimes.value, cutAt.value) },
+      { id: 'entry-exit', drawings: entryExitLines(focusTrades.value, key, barTimes.value, cutAt.value) },
+      { id: 'trades', drawings: marks.value },
+    ]
+  })
 
   /** A finer timeframe that draws apart the marks some candles hold together — where one does. */
   const offer = computed<TimeframeOffer | null>(() => {
@@ -307,7 +336,7 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
-    bars, truncated, loading, error, events, marks, offer, focusAt, priceFormat,
+    bars, truncated, loading, error, events, marks, layers, offer, focusAt, priceFormat,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach,
   }
 })

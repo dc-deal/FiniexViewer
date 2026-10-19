@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue'
-import { CandlestickSeries, ColorType, createChart, createSeriesMarkers } from 'lightweight-charts'
+import { CandlestickSeries, ColorType, createChart } from 'lightweight-charts'
 import type {
-  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, ISeriesMarkersPluginApi,
-  MouseEventParams, Time, UTCTimestamp,
+  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, MouseEventParams, UTCTimestamp,
 } from 'lightweight-charts'
 import ChartCard from '@/components/base/ChartCard.vue'
+import { ChartDrawingHost, type DrawingColours } from '@/components/chart_drawing_host'
+import type { BarRange } from '@/components/chart_geometry'
 import type { ChartBar } from '@/types/api/bar_types'
+import type { ChartLayer } from '@/types/chart_drawing_types'
 import type { FigureCard } from '@/types/figure_types'
-import type { ChartMark } from '@/types/run_chart_types'
 
 const props = defineProps<{
   data: ChartBar[]
   /**
-   * Where positions opened and trades closed — drawn on the candles they fell in, several that would
-   * cover each other as one. Their count stands on the element as `data-marks`, what they stand for
-   * as `data-events`: the canvas draws them where no assertion can read them back.
+   * What the chart draws beside its candles, layer by layer, in front of them and each in front of
+   * the one before — marks, levels, lines. What is drawn is counted on the element (`data-marks`,
+   * `data-events`, `data-drawings`): a canvas cannot be read back by an assertion.
    */
-  marks?: ChartMark[]
+  layers?: ChartLayer[]
   /** An instant to centre on, in UTC seconds — the position the reader is looking at. */
   focus?: number | null
   /**
@@ -50,8 +51,8 @@ const MIN_BAR_SPACING = 0.05
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
 let series: ISeriesApi<'Candlestick'> | null = null
-/** The series' markers — a plugin of their own since lightweight-charts 5, attached to the series. */
-let markers: ISeriesMarkersPluginApi<Time> | null = null
+/** What the chart draws for itself — one series primitive for every layer. */
+let host: ChartDrawingHost | null = null
 let resizeObserver: ResizeObserver | null = null
 let themeObserver: MutationObserver | null = null
 
@@ -61,16 +62,22 @@ const frameSize = ref({ width: 0, height: 0 })
 /**
  * Every drawn thing that can say what it is, by the id the library reports under the pointer.
  *
- * ONE register, and the trade marks are only its first source. The library reports an id for a
- * marker (its `id`) and for a series primitive (the `externalId` its `hitTest` answers) alike, and
- * primitives are how the drawings an algo makes will reach this chart (testingide#379): a new kind
- * of drawing brings its id and its card, as a second input beside the marks — today the register is
- * built from the marks alone.
+ * ONE register over every layer: a mark, a level and a line each bring their id and their card, and
+ * the host's hit test answers with that id. The drawings an algo makes (testingide#379) will come
+ * the same way, as one more layer.
  */
-const cards = computed(() => new Map<string, FigureCard>((props.marks ?? []).map(mark => [mark.id, mark.card])))
+const drawings = computed(() => (props.layers ?? []).flatMap(layer => layer.drawings))
+const cards = computed(() => new Map<string, FigureCard>(drawings.value.map(drawing => [drawing.id, drawing.card])))
 
-/** How many events the marks stand for — a gathered mark for each of its members. */
-const events = computed(() => (props.marks ?? []).reduce((sum, mark) => sum + (mark.count ?? 1), 0))
+/** The marks drawn, and how many events they stand for — a gathered mark for each of its members. */
+const markCount = computed(() => drawings.value.filter(drawing => drawing.kind === 'marker').length)
+const events = computed(() => drawings.value.reduce(
+  (sum, drawing) => sum + (drawing.kind === 'marker' ? drawing.count ?? 1 : 0), 0))
+/** Each layer and how many drawings it holds — `levels:2 entry-exit:1 trades:12`. */
+const drawingCounts = computed(() => (props.layers ?? []).map(layer => `${layer.id}:${layer.drawings.length}`).join(' '))
+
+/** The range of every bar drawn, by its time — what the marks stand away from. */
+const barRanges = computed(() => new Map<number, BarRange>(props.data.map(bar => [bar.time, { high: bar.high, low: bar.low }])))
 
 /** The card under the pointer, and where the pointer is — null off every drawn thing. */
 const pointed = shallowRef<{ card: FigureCard, x: number, y: number } | null>(null)
@@ -118,28 +125,25 @@ function readColours(): ChartColours {
 }
 
 /**
- * A mark's colour by its role — a result is the polarity of a figure; the shape says the rest. A
- * gathered mark whose results point different ways claims neither: quiet, like a flat one.
+ * A drawing's colour by its role — a result is the polarity of a figure; the shape and the word say
+ * the rest. A gathered mark whose results point different ways claims neither: quiet, like a flat
+ * one. An entry is a fact about the trade, not a result: plain ink.
  */
-function markColour(mark: ChartMark, colours: ChartColours): string {
-  if (mark.role === 'positive') return colours.rise
-  if (mark.role === 'negative') return colours.fall
-  if (mark.role === 'flat' || mark.role === 'mixed') return colours.quiet
-  return colours.mark
+function drawingColours(colours: ChartColours): DrawingColours {
+  return {
+    roles: {
+      positive: colours.rise,
+      negative: colours.fall,
+      flat: colours.quiet,
+      mixed: colours.quiet,
+      entry: colours.mark,
+    },
+    surface: colours.surface,
+  }
 }
 
-function showMarks(): void {
-  if (!markers) return
-  const colours = readColours()
-  markers.setMarkers((props.marks ?? []).map(mark => ({
-    time: mark.time as UTCTimestamp,
-    position: mark.position,
-    shape: mark.shape,
-    color: markColour(mark, colours),
-    text: mark.text,
-    size: mark.focused ? 2 : 1,
-    id: mark.id,
-  })))
+function showDrawings(): void {
+  host?.setDrawings(props.layers ?? [], barRanges.value, drawingColours(readColours()))
 }
 
 /**
@@ -215,7 +219,8 @@ function initChart(size: { width: number, height: number }): void {
   frameSize.value = size
 
   series = chart.addSeries(CandlestickSeries, { borderVisible: false, ...candleColours(colours), ...seriesFormat() })
-  markers = createSeriesMarkers(series)
+  host = new ChartDrawingHost()
+  series.attachPrimitive(host)
 }
 
 /** The width of a bar on screen: the plot's width over the bars in view, however far zoomed. */
@@ -240,13 +245,13 @@ function repaint(): void {
   const colours = readColours()
   chart.applyOptions(chartColours(colours))
   series.applyOptions(candleColours(colours))
-  showMarks()
+  showDrawings()
 }
 
 function showData(data: ChartBar[]): void {
   if (!series) return
   series.setData(data.map(b => ({ ...b, time: b.time as UTCTimestamp })))
-  showMarks()
+  showDrawings()
   frame()
 }
 
@@ -279,10 +284,10 @@ onUnmounted(() => {
 
 // bars that arrive before the chart has a size wait for it: onResize hands them over at build time
 watch(() => props.data, newData => showData(newData))
-// a card of a mark that is gone is not shown on: the next move of the pointer finds what is there
-watch(() => props.marks, () => {
+// a card of a drawing that is gone is not shown on: the next move of the pointer finds what is there
+watch(() => props.layers, () => {
   pointed.value = null
-  showMarks()
+  showDrawings()
 })
 watch(() => props.focus, () => frame())
 // a format taken away goes back to the library's own (lightweight-charts 5.2.1: two decimals, a
@@ -292,7 +297,7 @@ watch(() => props.priceFormat, () => series?.applyOptions(
 </script>
 
 <template>
-  <div class="candle-chart" :data-marks="marks?.length ?? 0" :data-events="events">
+  <div class="candle-chart" :data-marks="markCount" :data-events="events" :data-drawings="drawingCounts">
     <!-- what is drawn, counted on the element above: the canvas cannot be read back. `data-events`
          counts what the marks stand for, a gathered one for each of its members -->
     <div ref="container" class="candle-canvas" />

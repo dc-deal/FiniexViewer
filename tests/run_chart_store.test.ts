@@ -232,6 +232,35 @@ describe('useRunChartStore', () => {
     expect(chart.events.some(mark => mark.at > last)).toBe(true)
   })
 
+  /** The position looked at brings its levels and the line from its entry to its exit; no other does. */
+  it('draws the levels and the line of the position looked at, and of no other', async () => {
+    chooseFixtureRun()
+    // the unit's whole hour, a bar a minute
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 })),
+      truncated: false,
+    })
+    // no trade of the fixture set a level: one row is given a stop and a target, as a run with levels serves them
+    const unitName = firstWithOpenings()
+    const traded = trades.trades.find(row => row.scenario_name === unitName)!
+    useRunReportsStore().tradeHistory = {
+      ...trades,
+      trades: trades.trades.map(row => row === traded ? { ...row, stop_loss: 0.86, take_profit: 0.89 } : row),
+    }
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const layer = (id: string) => chart.layers.find(entry => entry.id === id)!.drawings
+    expect(chart.layers.map(entry => entry.id)).toEqual(['levels', 'entry-exit', 'trades'])
+    expect(layer('levels')).toEqual([])
+    expect(layer('trades').length).toBeGreaterThan(0)
+
+    chart.showPosition({ scenario: traded.scenario_name, position: traded.position_id })
+    await flushPromises()
+    expect(layer('levels').map(drawing => drawing.kind === 'segment' && drawing.label)).toEqual(['SL', 'TP'])
+    expect(layer('entry-exit').every(drawing => drawing.kind === 'line')).toBe(true)
+  })
+
   /** What overlaps at the zoom on screen is drawn as one — and nothing is lost by it. */
   it('gathers the marks at the width the chart reports a bar to have, and loses none', async () => {
     chooseFixtureRun()

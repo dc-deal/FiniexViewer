@@ -44,6 +44,8 @@ export interface Opening extends OrderHistoryRow {
  * exits whose results point different ways.
  */
 export interface ChartMark {
+  /** What it is among a chart's drawings — beside a `segment` and a `line`. */
+  kind: 'marker'
   /** UTC seconds: the OPEN of the bar the event fell in, which is how the bars are stamped. */
   time: number
   /** UTC seconds: the instant of the event itself — of the first one, for a gathered mark. */

@@ -78,7 +78,8 @@ by its tab, the way a reader does.
   position marked in the list; the Panels menu opening it on the first unit with trades; the opening
   of a position the run ended with still open marked, though it has no trade; marks that would cover
   each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
-  the chart leaving the whole chart inside its panel; and ONE
+  the chart leaving the whole chart inside its panel; the levels of the position looked at painted
+  on a real canvas, from a position the mock hands a stop and a target; and ONE
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
   in the chart narrows the lists to it.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a

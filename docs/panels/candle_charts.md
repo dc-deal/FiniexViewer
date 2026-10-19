@@ -148,16 +148,17 @@ before, measured on the canvas. The crosshair's two axis labels keep the library
 and it is how TradingView draws it.
 
 **Everything drawn says what it is, at the pointer — through ONE register** (`CandleChart.vue`).
-The library reports the id of the thing under the pointer as `hoveredInfo.objectId`, for a marker
-(its `id`) and for a series primitive (the `externalId` its `hitTest` answers) alike. The chart keeps a
+What the chart draws for itself — the marks, the levels, the lines — comes through its drawing host,
+layer by layer ([Chart Drawings and Layers](chart_drawings_and_layers.md)). The library reports the
+id of the thing under the pointer as `hoveredInfo.objectId`, for a series primitive (the
+`externalId` its `hitTest` answers) as it did for its own markers. The chart keeps a
 register of id → `FigureCard` and shows the card of whatever is under the pointer in a `ChartCard`:
 placed from the pointer, on the side with more room, inside the chart's frame, and taking no pointer
 events so the chart keeps them. The marks are the register's first source — an exit's id is its
 trade row's declared key, an opening's is the position's, and their cards come from
 `runs/trade_card.ts`, the same builder as the card beside a row in the trade list, so the two cannot
-come to say a trade differently. The algo's drawings (testingide#379) are planned as primitives, and
-a primitive brings its id and its card to the same register — as a second input to it, since today
-the register is built from the marks it is handed and nothing else.
+come to say a trade differently. A level and a line bring theirs the same way, and so will the
+algo's drawings (testingide#379), as one more layer.
 Measured in the browser on 2026-10-16 with version 4: the library reported
 `exit|EURGBP_refusals_01|pos_eurgbp_1|379` under the pointer and the card showed that trade; again on
 2026-10-19 with 5.2.1, a real pointer on the one mark of `EURGBP_left_open` showed the card of

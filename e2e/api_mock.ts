@@ -124,6 +124,12 @@ const CONTRACT = {
  */
 interface ApiMockOptions {
   corrupt?: { section: string, field: string }
+  /**
+   * Levels set on one position's trade rows. No trade of the fixture run set a stop or a target, so
+   * a check of the levels the run chart draws hands one position the two that a run with levels
+   * serves — the rest of the capture stays as it was.
+   */
+  levels?: { scenario: string, position: string, stopLoss: number, takeProfit: number }
 }
 
 /** A number where a list belongs: `.filter` on it throws, which is how the original defect landed. */
@@ -213,6 +219,13 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       const body = fixture(file) as Record<string, unknown>
       if (options.corrupt && options.corrupt.section === section) {
         body[options.corrupt.field] = WRONG_SHAPE
+      }
+      const levels = options.levels
+      if (levels && section === 'trade-history') {
+        body['trades'] = (body['trades'] as Record<string, unknown>[]).map(row =>
+          row['scenario_name'] === levels.scenario && row['position_id'] === levels.position
+            ? { ...row, stop_loss: levels.stopLoss, take_profit: levels.takeProfit }
+            : row)
       }
       return route.fulfill({ json: body, headers: CONTRACT })
     }

@@ -97,6 +97,7 @@ export function openingMarks(
     if (time === null) continue
     const long = row.direction === 'long'
     marks.push({
+      kind: 'marker',
       time,
       at,
       position: long ? 'belowBar' : 'aboveBar',
@@ -131,6 +132,7 @@ export function exitMarks(
     if (time === null) continue
     const result = polarity(trade.net_pnl)
     marks.push({
+      kind: 'marker',
       time,
       at,
       position: trade.direction === 'long' ? 'aboveBar' : 'belowBar',
@@ -193,6 +195,7 @@ function gathered(members: ChartMark[]): ChartMark {
   const roles = new Set(members.map(member => member.role))
   const role = first.role === 'entry' ? 'entry' : roles.size === 1 ? first.role : 'mixed'
   return {
+    kind: 'marker',
     time: first.time,
     at: first.at,
     position: first.position,

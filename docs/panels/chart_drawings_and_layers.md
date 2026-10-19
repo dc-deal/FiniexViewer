@@ -1,0 +1,89 @@
+# Chart Drawings and Layers
+
+What a chart draws for itself beside its candles — the run chart's marks, the levels and the line of
+the position in focus — and how it is drawn, placed and found under the pointer. Read this before
+you change `chart_drawing_host.ts`, `chart_geometry.ts` or `run_chart_levels.ts`. How the run chart
+picks its unit, timeframe and bars is in [Candle Charts](candle_charts.md).
+
+## One host, layers in a list (viewer#41)
+
+The chart draws through ONE series primitive of its candles, `ChartDrawingHost`, attached when the
+chart is built. It is handed LAYERS — `ChartLayer { id, drawings }` — and paints them in list order,
+each in front of the one before; a hit is searched the other way round, front first, so what is seen
+on top is what is found.
+
+```
+CandleChart :layers ──► ChartDrawingHost (series primitive, stage `normal`, in front of the candles)
+                          ├─ updateAllViews   placeLayer() per layer, on every move of the view
+                          ├─ paneViews        one renderer: paintLayer() per layer, in order
+                          ├─ hitTest          hitDrawing() → its id → hoveredInfo.objectId → the card
+                          ├─ priceAxisViews   each level's price on the axis, in its role's colour
+                          └─ autoscaleInfo    room above and below the candles for the marks
+```
+
+**One host, not a primitive per layer.** The library paints primitives in the order they were
+attached and hit-tests them by its own ranking, so an order of layers built from several primitives
+would mean detaching and attaching them again on every reorder, and the one painted on top need not
+be the one found. In a list the order is just the list — what the Layers panel will rearrange.
+
+**The trades' marks moved here from the library's markers.** Those stood fixed directly behind the
+candles' own drawing and could take no place in an order of layers, and no marker was ever narrower
+than 12 px, so on a long window they covered their neighbours. Drawn here, a mark is as wide as its
+bar, between 5 and 12 px, and the mark of the position looked at half as large again.
+
+The layers today, from back to front: `levels` · `entry-exit` · `trades`.
+
+## Drawings — in testingide#379's vocabulary
+
+`src/types/chart_drawing_types.ts`. Every drawing carries the id the chart reports under the pointer
+and the card it shows there; a time is the open of a bar drawn.
+
+| kind | what | from |
+|---|---|---|
+| marker (`ChartMark`) | an opening ↑↓ or an exit ●, single or gathered `×N` | [Candle Charts](candle_charts.md) |
+| `segment { from, to, price }` | a level held from one bar to another — `to` null: to the window's edge | `run_chart_levels.ts` |
+| `line { from, to }` | two points joined: where a trade entered and where it left | `run_chart_levels.ts` |
+
+A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry`), read from the
+theme tokens by the chart and handed to the host — a canvas cannot read CSS. The shape and the word
+come first: a level carries `SL` or `TP`, a mark its sign or its count, so the colour only reinforces.
+
+## Placing — `chart_geometry.ts`
+
+Plain functions over a `ChartScale` (time → x, price → y, the width of a bar, the pane's width), so
+they are tested without a canvas.
+
+- **A mark stands beyond its bar** — above its high, below its low — and the next mark of the same
+  bar and side beyond it, its text beyond its shape. The reach of the stack is what `autoscaleInfo`
+  asks the price scale to leave free, so the outermost mark is not cut off.
+- **A segment runs from its first bar to its last**, or to the pane's edge where it is open.
+- **What falls off the scale is left out**, never drawn at a guessed place — the library places only
+  times that stand on its scale.
+- **The hit test** searches the layer in front first; within a layer a mark — a point — wins over a
+  line or a level, which are found within 4 px of their stroke.
+
+## The levels and the line of the position looked at — `run_chart_levels.ts`
+
+For that position alone: drawn for every position they become a tangle.
+
+- **A level** is the trade row's `stop_loss` / `take_profit` — *"the levels that were set"* — held
+  from the row's entry to its exit; the rows of a position closed in parts overlap, so no end has to
+  be chosen. A position still open at the end holds the levels its entry in the portfolio's
+  `open_positions` states, from its entry to the window's edge. `SL` is drawn in the loss's role,
+  `TP` in the profit's — the polarity of the outcome at that price — dashed, with the word at its start.
+- **The line** joins each trade row's entry price and time to its exit's, in the polarity of its
+  result; none where both fall in one candle.
+- **A level that moved is not served** (measured 2026-10-19: no event carries a stop, no position's
+  rows differ in their levels) — asked of FiniexTestingIDE; until then a trailed stop is drawn flat.
+- **Past the last bar of a window the route cut** nothing is drawn: what began there has no candle,
+  and a level that ends there runs to the edge.
+
+## How it is tested
+
+- `chart_geometry.test.ts` — placing and the hit test over a scale of plain numbers.
+- `chart_drawing_host.test.ts` — the host against the few library calls it makes, and its painting
+  against a canvas context that records what it was told to draw (jsdom has no canvas).
+- `run_chart_levels.test.ts` — the levels and the line from served fields.
+- `candle_chart.test.ts` — what the chart hands its host: the layers, every bar's range, the colours.
+- `e2e/run_chart.spec.ts` — the levels painted on a real canvas, from a capture whose position the
+  mock hands a stop and a target (no trade of the fixture run set one).

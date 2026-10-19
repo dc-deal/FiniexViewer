@@ -165,3 +165,19 @@ test('the hint above the run chart leaves the whole chart inside its panel', asy
   const inner = (await chart.boundingBox())!
   expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height + 1)
 })
+
+/**
+ * The position looked at brings its stop and its target as levels, painted by the chart's own
+ * drawing host — on a real canvas, which jsdom does not have. No trade of the fixture set a level,
+ * so the mock hands one position the two a run with levels serves.
+ */
+test('the run chart draws the levels of the position looked at', async ({ page }) => {
+  await mockApi(page, { levels: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1', stopLoss: 0.875, takeProfit: 0.882 } })
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', {
+    run: FIXTURE_RUN, units: ['EURGBP_refusals_01'], position: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1' },
+  })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/levels:2/)
+  await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
+})

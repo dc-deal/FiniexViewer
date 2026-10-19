@@ -20,7 +20,7 @@ import { t } from '@/translate'
  */
 const chart = useRunChartStore()
 const {
-  units, unit, waiting, unitCoverage, coverageError, timeframe, bars, truncated, loading, error, marks, offer, focusAt,
+  units, unit, waiting, unitCoverage, coverageError, timeframe, bars, truncated, loading, error, layers, offer, focusAt,
   priceFormat,
 } = storeToRefs(chart)
 const { selectedRunId, selectedRun, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
@@ -79,7 +79,7 @@ onUnmounted(() => chart.detach())
     <CandleChart
       v-else
       :data="bars"
-      :marks="marks"
+      :layers="layers"
       :focus="focusAt"
       :price-format="priceFormat"
       @spacing="chart.setSpacing"
