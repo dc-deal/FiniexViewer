@@ -502,6 +502,9 @@ describe('BookingPeriodTimeline', () => {
   it('drops a period whose timestamps cannot be read rather than guessing one', () => {
     const wrapper = mountTimeline([period(), period({ opened_at: 'not a time' })])
     expect(wrapper.findAll('.span')).toHaveLength(1)
+    // nor does the dropped one speak beside the scale: the year there is the drawn periods'
+    expect(wrapper.find('.axis-spacer').text()).toBe('canonical clock · Oct 2025')
+    expect(wrapper.html()).not.toContain('NaN')
   })
 
   it('renders nothing at all when there is nothing to place', () => {

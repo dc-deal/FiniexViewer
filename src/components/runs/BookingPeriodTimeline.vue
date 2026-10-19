@@ -218,7 +218,9 @@ const MONTHS = [
  * started in April showed `Apr · Jul · Oct · 2022`, and which year the first three were in stood
  * nowhere (seen 2026-10-19).
  */
-const stamps = computed(() => props.periods.flatMap(period => [
+// the DRAWN periods' stamps: one that cannot be read is left off the chart, and read here it put
+// `2025–NaN` beside the scale
+const stamps = computed(() => usable.value.flatMap(period => [
   new Date(period.opened_at), new Date(period.closed_at),
 ]))
 
