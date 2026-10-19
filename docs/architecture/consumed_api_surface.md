@@ -10,8 +10,8 @@ The backend exposes two planes. The viewer consumes both, and treats them differ
 GET /api/v1/health                                    open, no token
 GET /api/v1/timeframes                                open, no token
 GET /api/v1/caller                                    token, no grant — who the server takes us to be
-GET /api/v1/brokers                                   token, no grant
-GET /api/v1/brokers/{broker}/symbols
+GET /api/v1/brokers                                   a `brokers` grant since contract 35, as the routes below
+GET /api/v1/brokers/{broker}/symbols                   each symbol with its `tick_size` (contract 35)
 GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage   404 where the archive holds nothing (`findCoverage`)
 GET /api/v1/brokers/{broker}/symbols/{symbol}/bars       the bars that OPEN in the range; `X-Bar-Truncated` read
 ```
@@ -20,6 +20,11 @@ GET /api/v1/brokers/{broker}/symbols/{symbol}/bars       the bars that OPEN in t
 period (`X-Bar-Time-Basis: open`), and never cuts quietly: a range past its cap of 10,000 is
 answered with the cap's worth and `X-Bar-Truncated: true` (their `market-data` document).
 `getBars` returns both, so a shortened answer is never drawn as a whole one.
+
+**Without a grant, a service only describes itself** (FiniexTestingIDE, for every service, 2026-10-19):
+what an installation holds or does sits behind a grant — since contract 35 the broker list on the
+`brokers` surface and `/machine-resources` on a new `machine` surface, with `/activities`, what runs
+on the machine, beside it (not consumed yet). The viewer's token carries both.
 
 The two open routes are open by decision, not by omission: `/health` is the liveness check, and
 `/timeframes` is the app's own static configuration rather than data about a venue or a run. Useful

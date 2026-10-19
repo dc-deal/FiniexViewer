@@ -46,7 +46,8 @@ nothing, so a stale one costs a line of text.
 
 ## How full the machine is — `GET /api/v1/machine-resources`
 
-Contract 31. The machine is the one the server, the backtests and the live sessions share, and memory
+Contract 31, behind the `machine` grant since contract 35 — without it the route answers 403 and the
+reading is marked as stopped. The machine is the one the server, the backtests and the live sessions share, and memory
 that runs out is the moment a process is ended by the operating system — nothing refuses politely
 before that. `MachineStatus` draws it in the menu bar, before the account:
 

@@ -7,6 +7,103 @@
   ],
   "runs": [
     {
+      "run_id": "20261018_105012_fde28d5d",
+      "group": "simulation",
+      "name": "report_coverage_reference",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-18T10:50:12.672432+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "76988fb0d45da74a48c37ae0ce3a72daa54f66aa6f2c75f6a9d22d9a4e2dc4fe",
+      "app_version": "1.4.0",
+      "git_commit": "021342c8",
+      "config_snapshot": "report_coverage_reference.json",
+      "reporting": "expected",
+      "size_bytes": 984397,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURGBP_refusals_01",
+          "start_date": "2025-10-31T05:00:00+00:00",
+          "end_date": "2025-10-31T06:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_refusals_02",
+          "start_date": "2025-10-10T06:00:00+00:00",
+          "end_date": "2025-10-10T07:00:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_spot_two_balances",
+          "start_date": "2026-02-10T10:00:00+00:00",
+          "end_date": "2026-02-10T20:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_before_the_archive",
+          "start_date": "2024-01-10T10:00:00+00:00",
+          "end_date": "2024-01-10T11:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_left_open",
+          "start_date": "2025-10-10T06:00:00+00:00",
+          "end_date": "2025-10-10T07:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_partial_close",
+          "start_date": "2025-10-31T05:00:00+00:00",
+          "end_date": "2025-10-31T06:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 34,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "EUR",
+          "net_pnl": 3.740203674122538,
+          "total_trades": 8
+        },
+        {
+          "currency": "USD",
+          "net_pnl": -23.29977697838381,
+          "total_trades": 10
+        }
+      ],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 6,
+      "log_warning_count": 39,
+      "tick_timespan_seconds": 72133.049,
+      "has_reports": true
+    },
+    {
       "run_id": "20261017_133028_2330aabe",
       "group": "simulation",
       "name": "report_coverage_reference",
@@ -83,7 +180,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "EUR",
@@ -12320,5 +12417,5 @@
       "has_reports": true
     }
   ],
-  "count": 155
+  "count": 156
 }

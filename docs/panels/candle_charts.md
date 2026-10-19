@@ -73,7 +73,8 @@ it says so and draws nothing.
   EURUSD reads `1.15162` where it read `1.15`. The backend's rule for a price it COMPUTED, such as a
   quote-driven bar's midpoint, is to round it for display to that tick size (its `prices` document,
   contract 34). Without a report the library keeps its own format, two decimals for every
-  instrument — which is where the free chart still stands: the market-data routes name no tick size.
+  instrument — which is where the free chart still stands: the symbols list names each symbol's
+  `tick_size` since contract 35, and the free chart does not read it yet (viewer#47).
 - **Marks that would cover each other are drawn as ONE, with a count** (viewer#41, decided
   2026-10-19). What a reader sees as density is overlap: measured over the archive, two events rarely
   share a candle at the timeframe drawn, but 2,000 bars on 600 px are 0.3 px each and the library

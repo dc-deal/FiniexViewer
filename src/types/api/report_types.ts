@@ -821,6 +821,18 @@ export interface BookingPeriodRow {
    * lost by dropping a sign that means nothing here.
    */
   max_drawdown: number
+  /**
+   * What the period CARRIES beside what it did (contract 35): the account's decline since its equity
+   * curve began — a session continues the curve of the one before wherever its profile carries the
+   * risk history over — with its share, ALREADY a percentage; and what was still open at the seal.
+   * `max_drawdown` above is the period's own amount, and no per-period share of it is served.
+   * `null` on a run's own route where the run was recorded before contract 35; a deployment's route
+   * serves what its ledger recorded.
+   */
+  account_max_drawdown: number | null
+  account_max_dd_pct: number | null
+  unrealized_pnl: number | null
+  open_position_count: number | null
 }
 
 /**
