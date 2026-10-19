@@ -328,6 +328,18 @@ describe('useDockStore', () => {
     expect(dock.restored).toHaveLength(1)
   })
 
+  /** A kind this build no longer has takes its place with it, and leaves no neighbour list naming it. */
+  it('drops the place of a retired kind when it attaches, and the retired kind from every place', () => {
+    const arrangement = useArrangementStore()
+    arrangement.setPlaces({
+      retired: { besides: ['runs'], direction: 'right' },
+      chart: { besides: ['retired', 'runs'], direction: 'within', index: 1 },
+      deployments: { besides: ['retired'], direction: 'left' },
+    })
+    useDockStore().attach(fakeDock().api)
+    expect(arrangement.places).toEqual({ chart: { besides: ['runs'], direction: 'within', index: 1 } })
+  })
+
   /** A kind this build no longer has takes its kept view with it; a panel merely hidden keeps its own. */
   it('drops the view kept for a retired kind when it attaches, and keeps the rest', () => {
     const arrangement = useArrangementStore()

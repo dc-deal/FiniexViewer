@@ -265,6 +265,21 @@ export const useArrangementStore = defineStore('arrangement', () => {
   }
 
   /**
+   * Keeps the places of the panels `known` accepts, each beside known panels only; a place left
+   * beside none is none. Without it a retired kind's place, and a neighbour list naming one, were
+   * copied forward by every write of the places.
+   */
+  function keepPlaces(known: (panel: string) => boolean): void {
+    const kept: Record<string, DockPlace> = {}
+    for (const [id, place] of Object.entries(places.value)) {
+      if (!known(id)) continue
+      const besides = place.besides.filter(known)
+      if (besides.length) kept[id] = { ...place, besides }
+    }
+    if (JSON.stringify(kept) !== JSON.stringify(places.value)) places.value = kept
+  }
+
+  /**
    * Keeps the views of the panels `known` accepts. The dock store calls it, because it knows the
    * kinds: this store must not import the register, which imports a store that imports this one.
    */
@@ -275,6 +290,6 @@ export const useArrangementStore = defineStore('arrangement', () => {
 
   return {
     bars, chart, runChart, dock, places, panelViews,
-    setFacets, setTimeframe, setRunChart, setDock, setPlaces, setPanelView, keepPanelViews,
+    setFacets, setTimeframe, setRunChart, setDock, setPlaces, keepPlaces, setPanelView, keepPanelViews,
   }
 })
