@@ -172,13 +172,24 @@ describe('SweepRanking', () => {
   it('ranks each account currency apart, each under its own heading', () => {
     const rows = [
       combination({ run_id: 'run_a', currency: 'USD' }),
-      combination({ run_id: 'run_b', currency: 'USD' }),
+      combination({ run_id: 'run_b', currency: 'USD', expectancy: 1 }),
       combination({ run_id: 'run_a', currency: 'EUR' }),
     ]
     const { wrapper } = mountRanking({ combinations: rows })
     expect(wrapper.findAll('.currency-heading').map(head => head.text())).toEqual(['USD', 'EUR'])
     expect(places(wrapper)).toEqual(['1 ★', '2', '1 ★'])
     expect(wrapper.find('.ranked-by').text()).toContain('within each account currency')
+  })
+
+  /** A tie has no single winner: every row that ties the first on the objective shares its star. */
+  it('shares the star among the rows that tie the first on the objective', () => {
+    const rows = [
+      combination({ run_id: 'run_a', net_pnl: 0 }),
+      combination({ run_id: 'run_b', net_pnl: 0 }),
+      combination({ run_id: 'run_c', net_pnl: -5 }),
+    ]
+    const { wrapper } = mountRanking({ objective: 'net_pnl', maximize: true, combinations: rows })
+    expect(places(wrapper)).toEqual(['1 ★', '2 ★', '3'])
   })
 
   it('says where the sweep declared no objective, and which the backend ranked by instead', () => {

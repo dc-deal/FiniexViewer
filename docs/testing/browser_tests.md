@@ -183,7 +183,9 @@ its section loads, so its header alone no longer says the panel can be read. Sin
 draws for itself (viewer#41) it measures that too, on the fixture's busiest unit: a unit chosen until
 its marks stand on the candles, read on the page's own frames, and a zoom step until the frame after
 it has painted, the mean of ten — a figure that carries two round trips to the browser per step, so
-it is read against its own earlier column, never as the drawing's cost alone.
+it is read against its own earlier column, never as the drawing's cost alone. And a sweep's ranking
+at the size a real search reaches (viewer#32): 500 combinations built from the capture, timed from
+the pick until the 500th row stands — what says whether the ranking needs a row cap.
 
 **`e2e/order_steps.spec.ts` says why a browser spec earns its place.** The
 nested step list is a grid INSIDE a row of another grid, which is the arrangement behind two of the

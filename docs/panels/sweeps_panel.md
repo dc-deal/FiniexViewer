@@ -27,7 +27,8 @@ and direction the sweep declared — or, where it declared neither, by the one i
 `objective` and `maximize` instead. Nothing here re-sorts or re-ranks:
 
 - the rows stand in the served order, numbered; the first of each currency carries ★ — a position,
-  not a figure;
+  not a figure — and so does every row that ties it on the objective: a tie has no single winner
+  (measured 2026-10-19, all four combinations of `sweep_20261008_223212` read `net_pnl` 0.0);
 - the objective's column is marked in its heading (`Expectancy ▼`, highest first) and printed in
   weight, formatted as the executive summary formats the same field;
 - two currencies are two rankings, each under its own heading and each starting at 1;
@@ -85,8 +86,8 @@ sweep_… · strategy · combinations · started* and *Change sweep* — so the 
   run already stands in the run index is not measured yet; it is measured on a running sweep.
 - **Parameter importance and an interaction heatmap** — the later half of viewer#32, sourced from
   FiniexTestingIDE's own analyses.
-- **A row cap.** The ranking draws every combination; a sweep of several hundred is measured in the
-  speed run before a cap is added.
+- **A row cap.** The ranking draws every combination: 500 of them stood in 671 ms against the
+  preview bundle (2026-10-19, the machine under intermittent load), so none is needed at that size.
 
 ## How it is tested
 

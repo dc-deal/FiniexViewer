@@ -46,6 +46,22 @@ const places = computed(() => {
   return numbered
 })
 
+/** The objective's served value, read by the field the response names. */
+function objectiveValue(row: SweepCombination): unknown {
+  return (row as unknown as Record<string, unknown>)[props.detail.objective]
+}
+
+/**
+ * Whether a row stands first: the first of its currency, and every row that ties it on the
+ * objective — equality of the served value, nothing ranked here. A tie has no single winner: four
+ * combinations of `sweep_20261008_223212` all read `net_pnl` 0.0 (measured 2026-10-19), and a star
+ * on the first alone would name one.
+ */
+function standsFirst(row: SweepCombination): boolean {
+  const first = rowsOf(row.currency)[0]
+  return first !== undefined && objectiveValue(first) === objectiveValue(row)
+}
+
 /** The objective's label as the app's other lists print it; one this version does not know, as named. */
 const OBJECTIVE_LABELS: Record<string, string> = {
   expectancy: t('Expectancy'),
@@ -67,7 +83,7 @@ function objectiveFigure(row: SweepCombination): string {
     case 'account_max_drawdown': return magnitude(row.account_max_drawdown, row.currency)
   }
   // their vocabulary may grow: the field the response names, read by that name
-  const value = (row as unknown as Record<string, unknown>)[props.detail.objective]
+  const value = objectiveValue(row)
   return typeof value === 'number' ? figure(value) : t('n/a')
 }
 
@@ -78,38 +94,42 @@ interface Kpi {
   tone?: (row: SweepCombination) => string
 }
 
-/** What else a combination is judged on — its objective's own column left out, which stands first. */
+/**
+ * What else a combination is judged on — its objective's own column left out, which stands first.
+ * Every figure column keeps a floor its heading fits in: the parameters and the run give way
+ * instead, each whole on its title (at 960 px the headings were cut one after the other).
+ */
 const KPIS: Kpi[] = [
   {
     id: 'net_pnl',
-    column: { label: t('Net P&L'), width: 'minmax(0, 14fr)', figure: true, rank: 1 },
+    column: { label: t('Net P&L'), width: 'minmax(7rem, 14fr)', figure: true, rank: 1 },
     text: row => amount(row.net_pnl, row.currency),
     tone: row => signClass(row.net_pnl),
   },
   {
     id: 'total_trades',
-    column: { label: t('Trades'), width: 'minmax(0, 7fr)', figure: true, rank: 2 },
+    column: { label: t('Trades'), width: 'minmax(4.5rem, 7fr)', figure: true, rank: 2 },
     text: row => String(row.total_trades),
   },
   {
     // what a mean R rests on — "a small count beside a striking expectancy is the thing to show"
     id: 'r_trade_count',
-    column: { label: t('R trades'), width: 'minmax(0, 7fr)', figure: true, rank: 2, hint: t('How many trades the R figures rest on') },
+    column: { label: t('R trades'), width: 'minmax(5.5rem, 7fr)', figure: true, rank: 2, hint: t('How many trades the R figures rest on') },
     text: row => String(row.r_trade_count),
   },
   {
     id: 'win_rate',
-    column: { label: t('Win rate'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
+    column: { label: t('Win rate'), width: 'minmax(5.5rem, 8fr)', figure: true, rank: 3 },
     text: row => percentOrNa(row.win_rate, row.total_trades),
   },
   {
     id: 'profit_factor',
-    column: { label: t('PF'), width: 'minmax(0, 6fr)', figure: true, rank: 3 },
+    column: { label: t('PF'), width: 'minmax(3.5rem, 6fr)', figure: true, rank: 3 },
     text: row => numberOrNa(row.profit_factor, row.total_trades),
   },
   {
     id: 'account_max_drawdown',
-    column: { label: t('Max DD'), width: 'minmax(0, 11fr)', figure: true, rank: 4 },
+    column: { label: t('Max DD'), width: 'minmax(7rem, 11fr)', figure: true, rank: 4 },
     text: row => magnitude(row.account_max_drawdown, row.currency),
   },
 ]
@@ -119,11 +139,11 @@ const kpis = computed(() => KPIS.filter(kpi =>
   kpi.id !== props.detail.objective && (kpi.id !== 'r_trade_count' || props.detail.objective === 'expectancy')))
 
 const columns = computed<ListColumn[]>(() => [
-  { label: '#', width: 'minmax(2.5rem, 4fr)', rank: 1 },
+  { label: '#', width: 'minmax(3.5rem, 4fr)', rank: 1 },
   { label: t('Parameters'), width: 'minmax(0, 24fr)', rank: 1 },
   {
     label: `${objectiveLabel.value} ${props.detail.maximize ? '▼' : '▲'}`,
-    width: 'minmax(0, 11fr)',
+    width: 'minmax(8rem, 11fr)',
     figure: true,
     rank: 1,
     hint: props.detail.maximize ? t('The ranking, highest first') : t('The ranking, lowest first'),
@@ -202,7 +222,6 @@ function card(row: SweepCombination): FigureCard {
       title: t('Dirty covers every repository a part of the run came from, and also code whose state could not be determined'),
     },
     { label: t('Logic version'), value: row.logic_version === null ? t('unknown') : String(row.logic_version) },
-    { label: t('Strategy'), value: `${row.decision_logic_type} ${row.decision_version}` },
     { label: t('Parameters hash'), value: shortHash(row.param_hash), title: row.param_hash },
     { label: t('Settings hash'), value: row.profile_hash ? shortHash(row.profile_hash) : t('not recorded'), title: row.profile_hash || undefined },
     {
@@ -245,7 +264,7 @@ function open(row: SweepCombination): void {
     <p v-if="pruned" class="notice warning-msg">
       <AppIcon name="status-warning" class="notice-mark" />
       {{ plural(pruned, t('combination'), t('combinations')) }}
-      {{ t('lost their run records to a prune — their figures can no longer be checked') }}
+      {{ t('whose run records a prune removed — the figures can no longer be checked against them') }}
     </p>
 
     <p v-if="!detail.combinations.length" class="hint">{{ t('No combination produced usable data') }}</p>
@@ -265,10 +284,10 @@ function open(row: SweepCombination): void {
           <span
             :data-rank="1"
             class="figure-cell place"
-            :class="{ best: places.get(keyOf(row)) === 1 }"
-            :title="places.get(keyOf(row)) === 1 ? t('First in the ranking — the best by its objective') : undefined"
+            :class="{ best: standsFirst(row) }"
+            :title="standsFirst(row) ? (places.get(keyOf(row)) === 1 ? t('First in the ranking — the best by its objective') : t('Tied with the first on its objective')) : undefined"
           >
-            {{ places.get(keyOf(row)) }}<template v-if="places.get(keyOf(row)) === 1"> ★</template>
+            {{ places.get(keyOf(row)) }}<template v-if="standsFirst(row)"> ★</template>
           </span>
           <span :data-rank="1" :title="parametersTitle(row)">{{ parametersText(row) }}</span>
           <span :data-rank="1" class="figure-cell objective">{{ objectiveFigure(row) }}</span>

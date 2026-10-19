@@ -1,5 +1,5 @@
 import { test, expect } from './cdp_fixture'
-import { mockApi, revealFixtureRun, FIXTURE_RUN } from './api_mock'
+import { fixture, mockApi, revealFixtureRun, FIXTURE_RUN } from './api_mock'
 import { openWith, FIXTURES_SHOWN } from './arrangement_seed'
 
 /**
@@ -179,4 +179,35 @@ test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) =>
 
   expect(drawn).toBeLessThan(3000)
   expect(perStep).toBeLessThan(500)
+})
+
+/**
+ * A sweep's ranking at the size a real search reaches (viewer#32): 500 combinations built from the
+ * captured sweep. The ranking draws every row, and this says whether it needs a cap — timed from
+ * the pick until the last row stands, on the page's own frames.
+ */
+test('a sweep of 500 combinations is ranked on screen quickly', async ({ page }) => {
+  const detail = fixture('sweep_detail.json') as { sweep_id: string, combinations: { run_id: string }[] }
+  const combinations = Array.from({ length: 500 }, (_, index) => ({
+    ...detail.combinations[index % detail.combinations.length]!,
+    run_id: `20261019_000000_${String(index).padStart(8, '0')}`,
+  }))
+  await page.route(`**/api/v1/sweeps/${detail.sweep_id}`, route => route.fulfill({ json: { ...detail, combinations, count: 500 } }))
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.goto('/')
+  await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).click()
+  await page.locator('.menu-item[data-kind="sweeps"]').click()
+  await page.keyboard.press('Escape')
+  const sweep = page.locator('[data-panel-kind="sweeps"] .sweep-list .record-row', { hasText: detail.sweep_id })
+  await sweep.waitFor()
+
+  const ms = await timed('sweep — 500 combinations ranked', async () => {
+    await sweep.click()
+    await page.waitForFunction(
+      () => document.querySelectorAll('[data-panel-kind="sweeps"] .ranking-list .record-row').length === 500,
+      undefined,
+      { polling: 'raf' },
+    )
+  })
+  expect(ms).toBeLessThan(3000)
 })
