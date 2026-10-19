@@ -12,6 +12,7 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   levels: {
     title: t('Levels'),
     description: t('The stop loss and take profit that were set, held from the entry to the exit'),
+    emptyHint: t('Drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw.'),
     option: {
       id: 'every-position',
       label: t('every position'),
@@ -23,10 +24,12 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   'entry-exit': {
     title: t('Entry–exit line'),
     description: t('Where each trade of the position looked at entered, and where it left'),
+    emptyHint: t('Drawn for the position looked at — choose one in the trade history or the orders. A trade that entered and left in one candle draws no line.'),
   },
   trades: {
     title: t('Trades'),
     description: t('Where each position opened and each trade closed'),
+    emptyHint: t('The unit on show opened no position in the window drawn.'),
     option: {
       id: 'trade-signs',
       label: t('signs'),

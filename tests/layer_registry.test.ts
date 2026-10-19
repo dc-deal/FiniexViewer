@@ -12,6 +12,7 @@ describe('layer_registry', () => {
       const layer = layerDefinition(id)
       expect(layer.title).not.toBe('')
       expect(layer.description).not.toBe('')
+      expect(layer.emptyHint).not.toBe('')
     }
   })
 

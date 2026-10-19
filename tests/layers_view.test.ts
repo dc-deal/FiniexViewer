@@ -64,7 +64,18 @@ describe('LayersView', () => {
     expect(row(wrapper, 'levels').find('[data-action="open"]').attributes('aria-expanded')).toBe('true')
     await row(wrapper, 'levels').find('[data-action="option"]').trigger('click')
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ options: { 'every-position': true } })
-    expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('every position')
+    expect(row(wrapper, 'levels').find('.layer-summary').text()).toContain('every position')
+  })
+
+  /** A lever that changes nothing on screen looked broken: the row says there is nothing to draw, and why. */
+  it('says a shown layer has nothing to draw, and why, and says nothing of a hidden one', async () => {
+    // no run chosen: the run chart has nothing to draw on any layer
+    const wrapper = mountOn('run-chart')
+    const summary = row(wrapper, 'levels').find('.layer-summary')
+    expect(summary.text()).toBe('nothing to draw')
+    expect(summary.attributes('title')).toContain('position looked at')
+    await row(wrapper, 'levels').find('[data-action="show"]').trigger('click')
+    expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
   })
 
   /** One place at a time; the front layer goes no further forward, the back one no further back. */

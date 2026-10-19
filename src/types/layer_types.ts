@@ -27,6 +27,8 @@ export interface LayerDefinition {
   title: string
   /** What it draws, in one line. */
   description: string
+  /** Why it may have nothing to draw — said where it has nothing, so a lever that changes nothing is explained. */
+  emptyHint: string
   option?: LayerOption
 }
 

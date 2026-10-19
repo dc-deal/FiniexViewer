@@ -9,8 +9,10 @@ import { useChartLayers } from '@/composables/use_chart_layers'
 import { layerDefinition, layerSummary } from '@/layer_registry'
 import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
+import { useRunChartStore } from '@/stores/run_chart_store'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import { LAYER_OPACITY_MIN } from '@/types/layer_types'
+import type { LayerState } from '@/types/layer_types'
 import { t } from '@/translate'
 
 /**
@@ -31,6 +33,23 @@ const chartName = computed(() => {
   const subtitle = kind.subtitle?.() ?? null
   return subtitle ? `${kind.title} · ${subtitle}` : kind.title
 })
+
+/**
+ * The layers that are shown and have nothing to draw, by id — the run chart's, the one chart that
+ * draws layers today. Said in the row, with why: a lever that changes nothing on screen looked
+ * broken until it said so (operator, on screen, 2026-10-19 — no position looked at, so neither the
+ * levels nor the line had anything to draw).
+ */
+const runChart = useRunChartStore()
+const empty = computed(() => {
+  if (lastChart.value !== 'run-chart') return new Set<ChartLayerId>()
+  return new Set(runChart.layers.filter(layer => !layer.drawings.length).map(layer => layer.id))
+})
+
+/** The closed row's word: what differs from the default, and that there is nothing to draw. */
+function summary(id: ChartLayerId, row: LayerState): string {
+  return [layerSummary(row), ...(empty.value.has(id) ? [t('nothing to draw')] : [])].filter(Boolean).join(' · ')
+}
 
 /** The rows opened — this mount's own, the way a list's folds are until it keeps them. */
 const opened = ref(new Set<ChartLayerId>())
@@ -76,7 +95,9 @@ function toggle(id: ChartLayerId): void {
             >
               <span class="layer-marker" aria-hidden="true">{{ opened.has(row.id) ? '▾' : '▸' }}</span>
               <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
-              <span class="layer-summary">{{ layerSummary(row) }}</span>
+              <span class="layer-summary" :title="empty.has(row.id) ? layerDefinition(row.id).emptyHint : undefined">
+                {{ summary(row.id, row) }}
+              </span>
             </button>
             <AppSlider
               :model-value="row.opacity"

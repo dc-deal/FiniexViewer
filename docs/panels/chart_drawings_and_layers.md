@@ -110,7 +110,10 @@ Run chart · ETHUSD_aug_sep
 - **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
   the row opens the rest — its option (the trades' signs; the levels of every position rather than
-  of the one looked at) and its place, one step at a time. The closed row says what differs.
+  of the one looked at) and its place, one step at a time. The closed row says what differs — and,
+  for a shown layer with nothing to draw, *nothing to draw*, with why on hover: the levels and the
+  line draw for the position looked at alone, so with none chosen their levers changed nothing on
+  screen and looked broken (2026-10-19).
 - **Kept with the chart's own view**, `panelViews[<chart id>].layers`: only what differs from the
   chart's own arrangement, reconciled whenever it is read — a layer the chart no longer draws is
   left out, one it draws since stands where its own order puts it (`arrangeLayers`, `keptLayers`).
