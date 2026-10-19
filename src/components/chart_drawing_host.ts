@@ -85,19 +85,27 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
     return this._views
   }
 
-  /** The price of every level on the axis, in the colour of its role. */
+  /** The price of each level of the position looked at on the axis, in the colour of its role. */
   priceAxisViews(): readonly ISeriesPrimitiveAxisView[] {
     return this._axisViews
   }
 
   /**
    * Room above and below the candles for the marks that stand beyond them, so the price scale
-   * leaves it rather than cutting the outermost ones off. Levels ask for none: a distant stop would
-   * squash every candle into a line.
+   * leaves it rather than cutting the outermost ones off — and the levels of the position looked at
+   * inside the scale. A stop or a target usually stands beyond the candles on screen, and asked for
+   * no room it was drawn off the scale, where nobody saw it (#41's browser pass, 2026-10-19). Only the
+   * position looked at: every position's levels would squash the candles into a line, and a reader
+   * who wants the candles' full height hides the levels in the Layers panel.
    */
   autoscaleInfo(): AutoscaleInfo | null {
-    if (!this._reach.above && !this._reach.below) return null
-    return { priceRange: null, margins: { above: this._reach.above, below: this._reach.below } }
+    const prices = this._layers.flatMap(layer => layer.drawings)
+      .flatMap(drawing => drawing.kind === 'segment' && drawing.focused ? [drawing.price] : [])
+    if (!prices.length && !this._reach.above && !this._reach.below) return null
+    return {
+      priceRange: prices.length ? { minValue: Math.min(...prices), maxValue: Math.max(...prices) } : null,
+      margins: { above: this._reach.above, below: this._reach.below },
+    }
   }
 
   /** The drawing under the pointer, its id reported by the library as `hoveredInfo.objectId`. */

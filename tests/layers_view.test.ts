@@ -44,12 +44,13 @@ describe('LayersView', () => {
     expect(wrapper.find('.chart-name').text()).toBe('Run chart')
   })
 
-  it('hides a layer at its lever, and the row says so', async () => {
+  /** Grey is enough: the lever's position says it, and nothing in the row changes its size. */
+  it('hides a layer at its lever, and the row goes grey', async () => {
     const wrapper = mountOn('run-chart')
     await row(wrapper, 'levels').find('[data-action="show"]').trigger('click')
     expect(row(wrapper, 'levels').attributes('data-shown')).toBe('false')
+    expect(row(wrapper, 'levels').classes()).toContain('off')
     expect(row(wrapper, 'levels').find('[data-action="show"]').attributes('aria-checked')).toBe('false')
-    expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('hidden')
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ hidden: ['levels'] })
   })
 

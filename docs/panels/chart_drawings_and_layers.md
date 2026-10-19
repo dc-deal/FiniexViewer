@@ -18,7 +18,7 @@ CandleChart :layers ──► ChartDrawingHost (series primitive, stage `normal`
                           ├─ paneViews        one renderer: paintLayer() per layer, in order
                           ├─ hitTest          hitDrawing() → its id → hoveredInfo.objectId → the card
                           ├─ priceAxisViews   each level's price on the axis, in its role's colour
-                          └─ autoscaleInfo    room above and below the candles for the marks
+                          └─ autoscaleInfo    room for the marks, the levels looked at inside the scale
 ```
 
 **One host, not a primitive per layer.** The library paints primitives in the order they were
@@ -68,6 +68,12 @@ For that position alone, unless the Layers panel asks for every position's level
 position they are a lot to read, and then only the position looked at puts its prices on the axis,
 or every position's would bury it in tags.
 
+**The price scale holds the levels of the position looked at** (`autoscaleInfo`). A stop or a target
+usually stands beyond the candles on screen, and before this it was drawn off the scale where nobody
+saw it — found by the element shots of #41's browser pass, 2026-10-19. Every position's levels do not
+stretch it, or the candles would shrink to a line; a reader who wants the candles' full height
+switches the levels off in the Layers panel.
+
 - **A level** is the trade row's `stop_loss` / `take_profit` — *"the levels that were set"* — held
   from the row's entry to its exit; the rows of a position closed in parts overlap, so no end has to
   be chosen. A position still open at the end holds the levels its entry in the portfolio's
@@ -94,9 +100,9 @@ layer* in their glossary.
 Run chart · ETHUSD_aug_sep
 (━●) ▸ Trades              no signs   ◐
 (━●) ▾ Entry–exit line                ◐ 40%
-         Order  ↑ front  ↓ back
-(●━) ▸ Levels                hidden   ◐
-      ▣ Candles   always behind the layers
+         ↑ front  ↓ back
+(●━) ▸ Levels                         ◐        ← switched off: the row grey
+      ▣ Candles              at the back
 ```
 
 - **The register** is `src/layer_registry.ts`: each layer's title, what it draws and its one option,

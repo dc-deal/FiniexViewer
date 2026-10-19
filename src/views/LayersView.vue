@@ -76,7 +76,7 @@ function toggle(id: ChartLayerId): void {
             >
               <span class="layer-marker" aria-hidden="true">{{ opened.has(row.id) ? '▾' : '▸' }}</span>
               <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
-              <span class="layer-summary">{{ row.shown ? layerSummary(row) : t('hidden') }}</span>
+              <span class="layer-summary">{{ layerSummary(row) }}</span>
             </button>
             <AppSlider
               :model-value="row.opacity"
@@ -99,7 +99,6 @@ function toggle(id: ChartLayerId): void {
               @update:model-value="on => setOption(row.id, on)"
             />
             <div class="option-line">
-              <span class="option-name">{{ t('Order') }}</span>
               <AppButton
                 size="compact"
                 variant="quiet"
@@ -127,7 +126,7 @@ function toggle(id: ChartLayerId): void {
           <div class="layer-row">
             <span class="fixed-mark" aria-hidden="true">▣</span>
             <span class="layer-title">{{ t('Candles') }}</span>
-            <span class="layer-summary">{{ t('always behind the layers') }}</span>
+            <span class="layer-summary">{{ t('at the back') }}</span>
           </div>
         </li>
       </ul>
@@ -209,21 +208,26 @@ function toggle(id: ChartLayerId): void {
 }
 
 .layer-title {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* the title comes first: the summary gives way an overwhelming share faster, so a narrow panel
+   cuts it before the title — at 240 px a summary beside the candles had squeezed their title out */
 .layer-summary {
-  flex-shrink: 0;
+  flex: 0 1000 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
-/* a hidden layer's row goes grey, nothing more: the lever's position and the word say it too, and
-   nothing in the row changes its size (operator, on screen, 2026-10-19) */
+/* a hidden layer's row goes grey, nothing more: the lever's position says it too, and nothing in
+   the row changes its size (operator, on screen, 2026-10-19) */
 .layer.off .layer-title {
   color: var(--color-text-secondary);
 }
@@ -245,10 +249,6 @@ function toggle(id: ChartLayerId): void {
   align-items: center;
   gap: var(--space-xs);
   min-height: 24px;
-}
-
-.option-name {
-  color: var(--color-text-secondary);
 }
 
 /* the candles are not arranged: a mark where the lever stands elsewhere, the same width */

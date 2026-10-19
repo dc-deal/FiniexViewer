@@ -114,16 +114,22 @@ describe('ChartDrawingHost', () => {
     expect(plain.calls.some(call => call.startsWith('globalAlpha='))).toBe(false)
   })
 
-  /** Room beyond the candles for the marks that stand beyond them; a level asks for none. */
-  it('asks the price scale for room for its marks, and none where it has no marks', () => {
+  /**
+   * Room beyond the candles for the marks, and the levels of the position looked at inside the scale
+   * — a stop beyond the candles was drawn where nobody saw it. Another position's level does not
+   * stretch the scale.
+   */
+  it('asks the price scale for room for its marks and for the levels looked at, and for nothing without them', () => {
     const host = new ChartDrawingHost()
     attachTo(host)
     host.setDrawings(LAYERS, BARS, COLOURS)
     const room = host.autoscaleInfo()!
-    expect(room.priceRange).toBeNull()
+    expect(room.priceRange).toEqual({ minValue: 250, maxValue: 250 })
     expect(room.margins!.above).toBeGreaterThan(0)
     expect(room.margins!.below).toBeGreaterThan(0)
-    host.setDrawings([LAYERS[0]!], BARS, COLOURS)
+    host.setDrawings([LAYERS[1]!], BARS, COLOURS)
+    expect(host.autoscaleInfo()!.priceRange).toBeNull()
+    host.setDrawings([], BARS, COLOURS)
     expect(host.autoscaleInfo()).toBeNull()
   })
 
