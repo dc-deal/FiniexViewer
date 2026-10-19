@@ -75,7 +75,8 @@ by its tab, the way a reader does.
   still open after a real reload and in the section opened as a panel of its own.
 - `run_chart.spec.ts` holds the run chart: the chart mark on a trade opening it BESIDE the run
   report, on the trade's unit, drawn on a canvas with its marks counted on the element and the
-  position marked in the list; the Panels menu opening it on the first unit with trades; and ONE
+  position marked in the list; the Panels menu opening it on the first unit with trades; the opening
+  of a position the run ended with still open marked, though it has no trade; and ONE
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
   in the chart narrows the lists to it.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a

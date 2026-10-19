@@ -9,8 +9,8 @@ import { useRunsStore } from '@/stores/runs_store'
 import { t } from '@/translate'
 
 /**
- * The run-bound chart: one unit of the chosen run on its candles, its trades marked where they
- * opened and closed. Which unit and which timeframe is the chart's own choice, in its quick bar.
+ * The run-bound chart: one unit of the chosen run on its candles, its positions marked where they
+ * opened and its trades where they closed. Which unit and which timeframe is the chart's own choice, in its quick bar.
  *
  * Every state says what it is — no run, the run's units on their way, a unit nothing can be drawn
  * for, a market the archive holds nothing for, a window without bars — because an empty chart says

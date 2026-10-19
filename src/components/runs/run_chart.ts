@@ -1,16 +1,12 @@
-import { rowKey } from '@/api/list_key'
-import { polarity, sortInstant } from '@/components/runs/report_format'
-import { entryCard, exitCard } from '@/components/runs/trade_card'
-import type { BrokerReport, DataWindow, TradeRow } from '@/types/api/report_types'
+import { executedOpenings } from '@/components/runs/run_chart_marks'
+import type { BrokerReport, DataWindow, OrderHistoryRow } from '@/types/api/report_types'
 import type { ScenarioRow } from '@/types/api/scenario_types'
-import type { PositionRef } from '@/types/context_types'
-import type { Polarity } from '@/types/figure_types'
-import type { ChartMark, ChartUnit } from '@/types/run_chart_types'
+import type { ChartUnit } from '@/types/run_chart_types'
 
 /**
  * What the run chart reads off a run, as pure functions over what the run's reports already hold:
- * which units it can be pointed at, the timeframe a window is drawn in, and where each trade sits
- * on its candles. Nothing here fetches.
+ * which units it can be pointed at, the timeframe a window is drawn in, and the bar an instant
+ * falls in. Where the marks stand is `run_chart_marks.ts`. Nothing here fetches.
  */
 
 function text(value: unknown): string | null {
@@ -25,7 +21,8 @@ export interface RunUnitSources {
   scenarios: ScenarioRow[] | null
   /** The run's resolved configuration — an untyped record, read here only for a session's market. */
   config: Record<string, unknown> | null
-  trades: TradeRow[] | null
+  /** The run's order history, whose executed openings name the positions each unit opened. */
+  orders: OrderHistoryRow[] | null
 }
 
 /**
@@ -39,8 +36,8 @@ export interface RunUnitSources {
  * and declares only a start: its window stays open to the end of what the archive covers.
  */
 export function chartUnits(sources: RunUnitSources): ChartUnit[] | null {
-  const tradesOf = (name: string): number =>
-    (sources.trades ?? []).filter(trade => trade.scenario_name === name).length
+  const opened = executedOpenings(sources.orders ?? [])
+  const openingsOf = (name: string): number => opened.filter(row => row.scenario_name === name).length
 
   if (sources.group === 'simulation') {
     if (!sources.scenarios) return null
@@ -58,7 +55,7 @@ export function chartUnits(sources: RunUnitSources): ChartUnit[] | null {
         symbol,
         from,
         to: text(row?.last_tick_time),
-        trades: tradesOf(name),
+        openings: openingsOf(name),
         block: !from ? 'no-ticks' : !broker || !symbol ? 'no-market' : null,
       }
     })
@@ -73,18 +70,19 @@ export function chartUnits(sources: RunUnitSources): ChartUnit[] | null {
     symbol,
     from: text(window.start_date),
     to: text(window.end_date),
-    trades: tradesOf(window.unit_name),
+    openings: openingsOf(window.unit_name),
     block: !broker || !symbol ? 'no-market' : null,
   }))
 }
 
 /**
  * The unit the chart opens on where nothing is in focus and nothing was chosen (viewer#31, decided
- * 2026-10-14): the first unit with trades, else the first that can be drawn at all.
+ * 2026-10-14): the first unit that opened a position — closed or not — else the first that can be
+ * drawn at all.
  */
 export function defaultUnit(units: ChartUnit[]): ChartUnit | null {
   const drawable = units.filter(unit => unit.block === null)
-  return drawable.find(unit => unit.trades > 0) ?? drawable[0] ?? null
+  return drawable.find(unit => unit.openings > 0) ?? drawable[0] ?? null
 }
 
 /**
@@ -136,97 +134,4 @@ export function autoTimeframe(
     .sort((a, b) => a.minutes - b.minutes)
   if (!known.length) return null
   return (known.find(entry => windowMinutes / entry.minutes <= limit) ?? known.at(-1)!).timeframe
-}
-
-/**
- * The bar an instant falls in: the last one that OPENED at or before it, looked up in the bars
- * served — never computed from a period's length. A bar is stamped with the open of its period
- * (`X-Bar-Time-Basis: open`), and a period that does not start on a multiple of its length (a
- * trading day, a week) would put a computed mark on a bar that does not exist; lightweight-charts
- * snaps a mark between two bars onto the NEXT one. Null before the first bar.
- */
-export function barOf(barTimes: number[], instant: number): number | null {
-  let low = 0
-  let high = barTimes.length - 1
-  let found: number | null = null
-  while (low <= high) {
-    const middle = (low + high) >> 1
-    if (barTimes[middle]! <= instant) {
-      found = barTimes[middle]!
-      low = middle + 1
-    } else {
-      high = middle - 1
-    }
-  }
-  return found
-}
-
-function seconds(iso: string): number {
-  return sortInstant(iso) / 1000
-}
-
-/** An exit's result as a word, beside its colour — a colour never travels alone. */
-const SIGN_WORD: Record<Polarity, string> = { positive: '+', negative: '−', flat: '0' }
-
-/**
- * Where a unit's trades opened and closed, on the candles drawn. The entry is an arrow in the
- * direction of the trade — up below the bar for a long, down above it for a short — and the exit a
- * circle on the other side, coloured by the sign of the net result and carrying the sign as a word,
- * since a colour never travels alone. A position closed in parts has one entry and an exit per part.
- * An event before the first bar drawn has no candle and gets no mark.
- *
- * Every mark carries an id and the card it shows at the pointer. An exit is a trade row, so its id
- * is the row's declared `key`; an entry is the position's, one per position in the unit.
- */
-export function tradeMarks(
-  trades: TradeRow[], key: string[], barTimes: number[], focus: PositionRef | null,
-): ChartMark[] {
-  const marks: ChartMark[] = []
-  const entered = new Set<string>()
-  for (const trade of trades) {
-    const long = trade.direction === 'long'
-    const focused = focus !== null
-      && focus.scenario === trade.scenario_name && focus.position === trade.position_id
-    if (!entered.has(trade.position_id)) {
-      entered.add(trade.position_id)
-      const time = barOf(barTimes, seconds(trade.entry_time))
-      if (time !== null) {
-        marks.push({
-          time,
-          position: long ? 'belowBar' : 'aboveBar',
-          shape: long ? 'arrowUp' : 'arrowDown',
-          role: 'entry',
-          text: '',
-          focused,
-          id: `entry|${trade.scenario_name}|${trade.position_id}`,
-          card: entryCard(trade),
-        })
-      }
-    }
-    const time = barOf(barTimes, seconds(trade.exit_time))
-    if (time === null) continue
-    const result = polarity(trade.net_pnl)
-    marks.push({
-      time,
-      position: long ? 'aboveBar' : 'belowBar',
-      shape: 'circle',
-      role: result,
-      text: SIGN_WORD[result],
-      focused,
-      id: `exit|${rowKey(trade, key)}`,
-      card: exitCard(trade),
-    })
-  }
-  // the chart takes its marks in time order
-  return marks.sort((a, b) => a.time - b.time)
-}
-
-/** The instant a position opened, in UTC seconds — where the chart centres on it — or null. */
-export function focusTime(trades: TradeRow[], focus: PositionRef | null): number | null {
-  if (!focus) return null
-  const entries = trades
-    .filter(trade => trade.scenario_name === focus.scenario && trade.position_id === focus.position)
-    .map(trade => seconds(trade.entry_time))
-    .filter(time => time > 0)
-  return entries.length ? Math.min(...entries) : null
 }

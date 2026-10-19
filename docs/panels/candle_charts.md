@@ -5,7 +5,7 @@ The run chart stands beside the run bundle so that a trade in a list and the can
 ## The run chart — one unit of a run on its candles
 
 The chart beside the run (viewer#31, the item #21 left open): one unit of the chosen run on its
-candles, its trades marked where they opened and closed. A panel of the kind `run-chart` in the
+candles, its positions marked where they opened and its trades where they closed. A panel of the kind `run-chart` in the
 area *Runs*, part of the first arrangement beside the run report (see [Docked Panels](panel_dock.md)), so a trade
 in the list and its candle are one glance apart; hidden, it comes back from the Panels menu, and
 the chart mark on a trade or an order brings it to the front on that position. With no run chosen
@@ -22,7 +22,20 @@ it says so and draws nothing.
   archive only while a run chart is on show (`attach` / `detach` from the view): the units are read
   off what the run report already loaded, so a reader who never opens the panel pays nothing.
 - **`src/components/runs/run_chart.ts`** — the pure half: `chartUnits`, `defaultUnit`,
-  `autoTimeframe`, `barOf`, `tradeMarks`, `focusTime`, `unitTickSize`, `chartPriceFormat`.
+  `autoTimeframe`, `unitTickSize`, `chartPriceFormat`.
+- **`src/components/runs/run_chart_marks.ts`** — where the marks stand: `barOf`, `executedOpenings`,
+  `openingMarks`, `exitMarks`, `focusTime`.
+- **Every position that opened has a mark, closed or not — one source per mark** (FiniexTestingIDE,
+  2026-10-16). An OPENING is the order history's executed `open` row, which every position has; an
+  EXIT is a trade row, which carries its result. Until 2026-10-19 the entries came from the trade
+  history, so a position the run ended with still open had none: on `20261012_131126_88b20443`,
+  thirteen positions opened and the chart drew one arrow. The source moved without moving a mark — an
+  opening's `event_time` and `executed_price` equal the trade row's `entry_time` and `entry_price` on
+  1,969 of 1,969 rows. An opening's card says how the position opened and, where the run ended with
+  it still open, what the portfolio's `open_positions` states of it then: the lots left, the last
+  price and the unrealised P&L at it — in the backend's words a mark, not a result. A position the run
+  inherited from an earlier session has no opening in its own run and gets no entry mark; its trade
+  rows' `entry_time` is still where the chart centres on it.
 - **The units come from what the run states.** A backtest names each unit's market in
   `scenario-details` (`symbol`, `data_broker_type`) and the span its ticks covered
   (`first_tick_time` … `last_tick_time`) — that span is drawn rather than the declared window, which
@@ -34,7 +47,7 @@ it says so and draws nothing.
   chart. A unit chosen in the chart's quick bar puts it in focus for every panel, and the focus
   cleared leaves the chart where it was. With no focus the chart shows its own choice, kept per run
   in the arrangement (`runChart`) and made by the chart mark on a trade or an order, else the first
-  unit with trades. The chart mark moves a focus that stands on another unit, and sets none where
+  unit that opened a position. The chart mark moves a focus that stands on another unit, and sets none where
   there was none — the lists keep showing the whole run.
 - **The timeframe is the finest the archive renders for the market that draws the window in at
   most 2,000 bars** — an hour of a backtest in M1, a session of weeks in hours — unless the reader
@@ -98,11 +111,12 @@ The library reports the id of the thing under the pointer as `hoveredObjectId`, 
 `id`) and for a series primitive (the `externalId` its `hitTest` answers) alike. The chart keeps a
 register of id → `FigureCard` and shows the card of whatever is under the pointer in a `ChartCard`:
 placed from the pointer, on the side with more room, inside the chart's frame, and taking no pointer
-events so the chart keeps them. The trade marks are the register's first source — an exit's id is
-its trade row's declared key, an entry's is the position's, and their cards come from
+events so the chart keeps them. The marks are the register's first source — an exit's id is its
+trade row's declared key, an opening's is the position's, and their cards come from
 `runs/trade_card.ts`, the same builder as the card beside a row in the trade list, so the two cannot
 come to say a trade differently. The algo's drawings (testingide#379) are planned as primitives, and
-a primitive brings its id and its card to the same register; nothing else changes.
+a primitive brings its id and its card to the same register — as a second input to it, since today
+the register is built from the marks it is handed and nothing else.
 Measured in the browser on 2026-10-16: the library reported `exit|EURGBP_refusals_01|pos_eurgbp_1|379`
 under the pointer and the card showed that trade. That half has no spec: the marks are paint on a
 canvas, the library ignores synthetic pointer events, and finding a mark with real ones costs 36 ms a

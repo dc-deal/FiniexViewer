@@ -1,3 +1,4 @@
+import type { OrderHistoryRow } from '@/types/api/report_types'
 import type { FigureCard, Polarity } from '@/types/figure_types'
 
 /**
@@ -18,13 +19,26 @@ export interface ChartUnit {
   from: string | null
   /** ISO-8601, or null where the window is OPEN — a session runs on to the end of the coverage. */
   to: string | null
-  /** The unit's rows in the trade history. */
-  trades: number
+  /** The positions the unit opened — its executed openings in the order history. */
+  openings: number
   block: ChartUnitBlock | null
 }
 
 /**
- * Where a trade opened or closed, on its candle. The ROLE is what the chart colours by — the shape
+ * An executed opening of the order history that names its position, its instant, its direction,
+ * its price and its lots — every one measured does (2026-10-19, 1,448 of them over 110 runs). The
+ * nullable fields are null on the rows that did not execute.
+ */
+export interface Opening extends OrderHistoryRow {
+  position_id: string
+  event_time: string
+  direction: string
+  executed_price: number
+  executed_lots: number
+}
+
+/**
+ * Where a position opened or a trade closed, on its candle. The ROLE is what the chart colours by — the shape
  * and the text carry the meaning on their own, so the colour only reinforces it.
  */
 export interface ChartMark {

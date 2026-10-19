@@ -8,10 +8,14 @@ import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import * as apiClient from '@/api/api_client'
 import type { BarAnswer, CoverageResponse } from '@/types/api/bar_types'
-import type { BrokerReport, RunConfigReport, RunInfo, TradeHistoryReport } from '@/types/api/report_types'
+import type {
+  BrokerReport, OrderHistoryReport, PortfolioReport, RunConfigReport, RunInfo, TradeHistoryReport,
+} from '@/types/api/report_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 
 import brokerFixture from './fixtures/broker.json'
+import orderFixture from './fixtures/order_history.json'
+import portfolioFixture from './fixtures/portfolio.json'
 import runsList from './fixtures/runs_list.json'
 import scenarioFixture from './fixtures/scenario_details.json'
 import tradeFixture from './fixtures/trade_history.json'
@@ -27,6 +31,8 @@ const RUNS = (runsList as unknown as { runs: RunInfo[] }).runs
 const runInfo = RUNS.find(run => run.run_id === RUN)!
 const scenarios = scenarioFixture as unknown as ScenarioDetailsReport
 const trades = tradeFixture as unknown as TradeHistoryReport
+const orders = orderFixture as unknown as OrderHistoryReport
+const portfolio = portfolioFixture as unknown as PortfolioReport
 const unitRow = (name: string) => scenarios.units.find(unit => unit.name === name)!
 
 const COVERAGE: CoverageResponse = {
@@ -50,12 +56,21 @@ function chooseFixtureRun(): void {
   const reports = useRunReportsStore()
   reports.scenarios = scenarios
   reports.tradeHistory = trades
+  reports.orderHistory = orders
+  reports.portfolio = portfolio
 }
 
-/** The unit the chart opens on: the first of the run with trades. */
-function firstWithTrades(): string {
+/** The executed opening of a position — where it opened, closed later or not. */
+function openingOf(scenario: string, position: string) {
+  return orders.orders.find(row => row.scenario_name === scenario && row.position_id === position
+    && row.action === 'open' && row.status === 'executed')!
+}
+
+/** The unit the chart opens on: the first of the run that opened a position. */
+function firstWithOpenings(): string {
   return runInfo.data_windows!.map(window => window.unit_name)
-    .find(name => unitRow(name).first_tick_time && trades.trades.some(trade => trade.scenario_name === name))!
+    .find(name => unitRow(name).first_tick_time && orders.orders.some(row =>
+      row.scenario_name === name && row.action === 'open' && row.status === 'executed'))!
 }
 
 describe('useRunChartStore', () => {
@@ -76,7 +91,7 @@ describe('useRunChartStore', () => {
     const chart = useRunChartStore()
     await flushPromises()
     expect(chart.units!.map(unit => unit.name)).toEqual(runInfo.data_windows!.map(window => window.unit_name))
-    expect(chart.unit!.name).toBe(firstWithTrades())
+    expect(chart.unit!.name).toBe(firstWithOpenings())
     expect(apiClient.findCoverage).not.toHaveBeenCalled()
     expect(apiClient.getBars).not.toHaveBeenCalled()
   })
@@ -86,7 +101,7 @@ describe('useRunChartStore', () => {
     const chart = useRunChartStore()
     chart.attach()
     await flushPromises()
-    const row = unitRow(firstWithTrades())
+    const row = unitRow(firstWithOpenings())
     expect(apiClient.findCoverage).toHaveBeenCalledWith(row.data_broker_type, row.symbol)
     expect(chart.timeframe).toBe('M1')
     // from one period before the first tick: the route answers the bars that OPEN in the range
@@ -173,10 +188,7 @@ describe('useRunChartStore', () => {
     await flushPromises()
     expect(chart.unit!.name).toBe('EURGBP_refusals_02')
     expect(useContextStore().main.run.position).toEqual({ scenario: trade.scenario_name, position: trade.position_id })
-    const opened = trades.trades
-      .filter(entry => entry.scenario_name === trade.scenario_name && entry.position_id === trade.position_id)
-      .map(entry => Date.parse(entry.entry_time) / 1000)
-    expect(chart.focusAt).toBe(Math.min(...opened))
+    expect(chart.focusAt).toBe(Date.parse(openingOf(trade.scenario_name, trade.position_id).event_time!) / 1000)
   })
 
   /** The broker report the root loaded states the tick size; the chart is handed it, and nothing before. */
@@ -192,13 +204,36 @@ describe('useRunChartStore', () => {
     expect(chart.priceFormat).toEqual({ precision: 2, minMove: 0.01 })
   })
 
-  it('marks the unit\'s trades on the bars it holds', async () => {
+  it('marks the unit\'s openings and trades on the bars it holds', async () => {
     chooseFixtureRun()
     const chart = useRunChartStore()
     chart.attach()
     await flushPromises()
-    // every mark stands on a bar that was served
+    // every mark stands on a bar that was served, in the order the chart takes them
+    expect(chart.marks.some(mark => mark.role === 'entry')).toBe(true)
     expect(chart.marks.every(mark => [1761886800, 1761886860].includes(mark.time))).toBe(true)
+    expect(chart.marks.map(mark => mark.time)).toEqual([...chart.marks.map(mark => mark.time)].sort())
+  })
+
+  /** A position the run ended with still open has no trade — its opening is marked all the same. */
+  it('marks the opening of a position that never closed, and says in its card it was still open', async () => {
+    chooseFixtureRun()
+    // the unit traded on 2025-10-10 from 06:00 UTC: bars of its own hour, not the shared answer's
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: [
+        { t: 1760076000, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 },
+        { t: 1760076060, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 },
+      ],
+      truncated: false,
+    })
+    const chart = useRunChartStore()
+    chart.chooseUnit('EURGBP_left_open')
+    chart.attach()
+    await flushPromises()
+    const open = portfolio.units.find(row => row.name === 'EURGBP_left_open')!.open_positions[0]!
+    const mark = chart.marks.find(entry => entry.id === `entry|EURGBP_left_open|${open.position_id}`)!
+    expect(mark.card.details.find(pair => pair.label === 'Still open')!.value).toBe(String(open.lots))
+    expect(trades.trades.some(trade => trade.scenario_name === 'EURGBP_left_open')).toBe(false)
   })
 
   it('says the archive holds nothing for a market it does not know, and asks for no bars', async () => {

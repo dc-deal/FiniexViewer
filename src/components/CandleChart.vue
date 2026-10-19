@@ -44,7 +44,8 @@ const frameSize = ref({ width: 0, height: 0 })
  * ONE register, and the trade marks are only its first source. The library reports an id for a
  * marker (its `id`) and for a series primitive (the `externalId` its `hitTest` answers) alike, and
  * primitives are how the drawings an algo makes will reach this chart (testingide#379): a new kind
- * of drawing brings its id and its card, and nothing here changes.
+ * of drawing brings its id and its card, as a second input beside the marks — today the register is
+ * built from the marks alone.
  */
 const cards = computed(() => new Map<string, FigureCard>((props.marks ?? []).map(mark => [mark.id, mark.card])))
 

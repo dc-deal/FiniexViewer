@@ -457,14 +457,24 @@ describe('OrdersPanel', () => {
       expect(wrapper.find('.to-trades').exists()).toBe(false)
     })
 
-    /** The same position on its candles: offered where it has trades and the chart can draw it. */
-    it('offers the run chart for a position with trades, pointed at the position', async () => {
+    /**
+     * The same position on its candles: offered for every position that OPENED and that the chart
+     * can draw — one the run ended with still open has no trade, and its opening is marked all the same.
+     */
+    it('offers the run chart for a position that opened and never closed, pointed at the position', async () => {
       const shown: PositionRef[] = []
+      const opened = model([
+        order({ order_id: 'pos_1', status: 'pending' }),
+        order({
+          order_id: 'pos_1', status: 'executed', position_id: 'pos_1', event_time: '2026-06-15T13:00:00+00:00',
+          executed_price: 2400.5, executed_lots: 0.1,
+        }),
+      ], [unit()], null)
       const Host = defineComponent({
         setup() {
           provideTestPositionLink(null, 'all')
           provideChartLink({ canShow: scenario => scenario === SCENARIO, show: ref => { shown.push(ref) } })
-          return () => h(OrdersPanel, { model: WITH_TRADE })
+          return () => h(OrdersPanel, { model: opened })
         },
       })
       const wrapper = mount(Host, { global: { plugins: [createPinia()] } })
@@ -472,7 +482,7 @@ describe('OrdersPanel', () => {
       expect(shown).toEqual([{ scenario: SCENARIO, position: 'pos_1' }])
     })
 
-    it('offers no run chart for a position that produced no trade', () => {
+    it('offers no run chart for a position that never opened', () => {
       const Host = defineComponent({
         setup() {
           provideTestPositionLink(null, 'all')

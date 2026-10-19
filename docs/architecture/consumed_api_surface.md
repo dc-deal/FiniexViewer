@@ -33,14 +33,14 @@ GET /api/v1/reports/runs                              run index — the only rou
 GET /api/v1/reports/runs/{run_id}/run-summary         cross-section KPIs, summed over all units
 GET /api/v1/reports/runs/{run_id}/scenario-details    the ROSTER — every scenario, produced or not
 GET /api/v1/reports/runs/{run_id}/warnings-errors     tiered warnings, per-unit errors, run outcome
-GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down per unit
+GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down per unit, and the positions still open
 GET /api/v1/reports/runs/{run_id}/booking-periods     the bookkeeping stretches, plus a completeness check
 GET /api/v1/reports/runs/{run_id}/config              what the run was commissioned with
 GET /api/v1/reports/runs/{run_id}/trade-history       every closed position, with its excursions
 GET /api/v1/reports/runs/{run_id}/broker              the venues, their symbols and their rules
 GET /api/v1/reports/runs/{run_id}/aggregated-portfolio  the fold, per account currency
 GET /api/v1/reports/runs/{run_id}/pending-orders      what became of a scenario's orders
-GET /api/v1/reports/runs/{run_id}/order-history       the orders themselves, as records
+GET /api/v1/reports/runs/{run_id}/order-history       the orders themselves, as records — and where each position opened
 GET /api/v1/reports/runs/{run_id}/order-events        the STEPS between those records
 GET /api/v1/reports/runs/{run_id}/...                 5 further per-section reports (not yet consumed)
 ```

@@ -13,6 +13,7 @@ import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import type { PositionRef } from '@/types/context_types'
 import { useOrderSteps } from '@/composables/use_order_steps'
 import { utcInstant } from '@/components/runs/report_format'
+import { executedOpenings } from '@/components/runs/run_chart_marks'
 import type { ListColumn } from '@/types/list_types'
 import type {
   OrderEvent,
@@ -88,6 +89,14 @@ const traded = computed(() => new Set(
 ))
 
 /**
+ * The positions that opened, as `scenario~position` — every one has candles to show it on, closed
+ * or not: the run chart marks where it opened.
+ */
+const openedPositions = computed(() => new Set(
+  executedOpenings(props.model.history.orders).map(row => `${row.scenario_name}~${row.position_id}`)
+))
+
+/**
  * The position a row belongs to — read from `order_id`, which IS the position id (their glossary:
  * *"Not an order's own id: the id of the POSITION the order belongs to"*). `position_id` is null
  * until the fill, so it cannot carry the link on the row that OPENS a position.
@@ -106,9 +115,9 @@ function hasTrades(order: OrderHistoryRow): boolean {
   return traded.value.has(`${order.scenario_name}~${positionOf(order)}`)
 }
 
-/** A position with trades has candles to show them on: the run chart on its unit. */
+/** A position that opened has candles to show it on: the run chart on its unit. */
 function canChart(order: OrderHistoryRow): boolean {
-  return hasTrades(order) && chartLink.canShow(order.scenario_name)
+  return openedPositions.value.has(`${order.scenario_name}~${positionOf(order)}`) && chartLink.canShow(order.scenario_name)
 }
 
 function jumpToTrades(order: OrderHistoryRow): void {

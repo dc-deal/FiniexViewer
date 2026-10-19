@@ -639,8 +639,6 @@ export interface PortfolioUnitRow {
   /**
    * Open at the close of the run. `final_equity_valued` says whether the valuation succeeded — an
    * equity figure that could not be marked is not the same as one that came out at zero.
-   * `open_positions` is on the wire as well and deliberately not mirrored yet: it needs a type of
-   * its own, and no panel reads it.
    */
   unrealized_pnl: number
   final_equity: number
@@ -665,6 +663,35 @@ export interface PortfolioUnitRow {
   maker_fee: number
   taker_fee: number
   fill_fees_by_source: FillFeesBySource
+  /**
+   * One entry per position still open when the run ended — the only route that says so: a run no
+   * longer flattens its positions at the end, so a position still open is reported as what it is
+   * (their portfolio document). Read by the run chart's opening card.
+   */
+  open_positions: OpenPosition[]
+}
+
+/**
+ * A position still open at the end of the run. `lots` is what was left of it after any partial
+ * close — served, never the opening less its closes — and `unrealized_pnl` its value at
+ * `last_price`: in their words *"a mark, not a result"*.
+ */
+export interface OpenPosition {
+  position_id: string
+  direction: string        // 'long' | 'short'
+  lots: number
+  entry_price: number
+  entry_time: string
+  last_price: number
+  unrealized_pnl: number
+  // false where the position could not be marked — not the same as a mark of zero
+  valued: boolean
+  // null where no level was set
+  stop_loss: number | null
+  take_profit: number | null
+  // where a level is held — `local` on every one measured, '' where none was set
+  protective_level_enforcement: string
+  take_profit_enforcement: string
 }
 
 /** The fills of one fee source, and what their fees came to in the row's account currency. */

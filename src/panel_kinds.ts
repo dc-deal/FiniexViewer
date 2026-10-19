@@ -96,7 +96,7 @@ export const PANEL_KINDS: PanelKind[] = [
     id: 'run-chart',
     title: t('Run chart'),
     subtitle: () => useRunChartStore().unit?.name ?? null,
-    description: t('One unit of the chosen run on its candles, its trades marked where they opened and closed'),
+    description: t('One unit of the chosen run on its candles, its positions marked where they opened and its trades where they closed'),
     icon: 'form-chart',
     order: 4,
     opensByDefault: true,

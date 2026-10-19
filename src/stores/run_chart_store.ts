@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { findCoverage, getBars } from '@/api/api_client'
 import {
-  autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, focusTime, tradeMarks, unitTickSize,
+  autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
 } from '@/components/runs/run_chart'
+import { executedOpenings, exitMarks, focusTime, openingMarks } from '@/components/runs/run_chart_marks'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
 import { useContextStore } from '@/stores/context_store'
@@ -23,7 +24,7 @@ function marketKey(unit: ChartUnit): string {
 
 /**
  * The run-bound chart (viewer#31, the item #21 left open): one unit of the chosen run on its
- * candles, its trades marked where they opened and closed.
+ * candles, its positions marked where they opened and its trades where they closed.
  *
  * The UNIT is the scenario in focus (operator, 2026-10-16): one focus for the lists and the chart,
  * so they show the same case. Choosing a unit in the chart's quick bar puts it in focus; the focus
@@ -49,20 +50,20 @@ export const useRunChartStore = defineStore('runChart', () => {
   const units = computed<ChartUnit[] | null>(() => {
     const run = runsStore.selectedRun
     if (!run) return null
-    // the trade counts decide the default unit, so it waits for them rather than changing after
-    if (reports.loadingTradeHistory) return null
+    // the counts of openings decide the default unit, so it waits for them rather than changing after
+    if (reports.loadingOrderHistory) return null
     return chartUnits({
       group: run.group,
       windows: run.data_windows,
       scenarios: reports.scenarios?.units ?? null,
       config: reports.config?.config ?? null,
-      trades: reports.tradeHistory?.trades ?? null,
+      orders: reports.orderHistory?.orders ?? null,
     })
   })
 
   /** Whether the run's sources are still arriving — said as loading, never as "names no market". */
   const waiting = computed(() => runsStore.selectedRun !== null && units.value === null
-    && (reports.loadingScenarios || reports.loadingConfig || reports.loadingTradeHistory))
+    && (reports.loadingScenarios || reports.loadingConfig || reports.loadingOrderHistory))
 
   /** The reader's choice, where it was made for the run on show. */
   const choice = computed(() =>
@@ -128,12 +129,25 @@ export const useRunChartStore = defineStore('runChart', () => {
     return marked && marked.scenario === unit.value?.name ? marked : null
   })
 
-  const marks = computed<ChartMark[]>(() =>
-    tradeMarks(
-      unitTrades.value, reports.tradeHistory?.keys.trades ?? [], bars.value.map(bar => bar.time), focus.value,
-    ))
+  const unitOpenings = computed(() =>
+    executedOpenings(reports.orderHistory?.orders ?? []).filter(row => row.scenario_name === unit.value?.name))
 
-  const focusAt = computed<number | null>(() => focusTime(unitTrades.value, focus.value))
+  /** The unit's row in the portfolio — what its positions still open at the end stood at. */
+  const unitPortfolio = computed(() => reports.portfolio?.units.find(row => row.name === unit.value?.name) ?? null)
+
+  const marks = computed<ChartMark[]>(() => {
+    const barTimes = bars.value.map(bar => bar.time)
+    return [
+      ...openingMarks(
+        unitOpenings.value, unitPortfolio.value?.open_positions ?? [], unitTrades.value,
+        unitPortfolio.value?.currency ?? '', barTimes, focus.value,
+      ),
+      ...exitMarks(unitTrades.value, reports.tradeHistory?.keys.trades ?? [], barTimes, focus.value),
+    // the chart takes its marks in time order
+    ].sort((a, b) => a.time - b.time)
+  })
+
+  const focusAt = computed<number | null>(() => focusTime(unitOpenings.value, unitTrades.value, focus.value))
 
   /** The unit's prices at its instrument's tick size, from the run's broker report — null without one. */
   const priceFormat = computed(() =>

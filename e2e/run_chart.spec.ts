@@ -107,3 +107,20 @@ test('the scenario in focus is the one on the run chart, whichever side chose it
   await expect(page.locator('.narrowed-head').first()).toContainText(other)
   await expect(page.locator('.scenario-roster .record-row.picked .roster-name')).toHaveText(other)
 })
+
+/**
+ * A position the run ended with still open has no trade row, and until the openings came from the
+ * order history it had no mark at all. The fixture run's `EURGBP_left_open` opened one position and
+ * closed none: its one mark is that opening.
+ */
+test('the run chart marks the opening of a position that never closed', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
+  await expect(unitSelect).toBeEnabled()
+  await unitSelect.selectOption('EURGBP_left_open')
+
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBe(1)
+  await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
+})
