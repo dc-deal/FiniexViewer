@@ -46,17 +46,19 @@ function dismiss(): void {
     <span class="hint-text">
       <span v-for="hint in shown" :key="hint.id" class="hint-part">{{ hint.text }}</span>
     </span>
-    <AppButton
-      variant="quiet"
-      :title="several ? t('Do not show these hints again') : t('Do not show this hint again')"
-      @click="ban"
-    >{{ t('Never again') }}</AppButton>
-    <AppButton
-      variant="quiet"
-      :aria-label="several ? t('Dismiss these hints') : t('Dismiss this hint')"
-      :title="several ? t('Dismiss — they return next visit') : t('Dismiss — it returns next visit')"
-      @click="dismiss"
-    >✕</AppButton>
+    <span class="hint-actions">
+      <AppButton
+        variant="quiet"
+        :title="several ? t('Do not show these hints again') : t('Do not show this hint again')"
+        @click="ban"
+      >{{ t('Never again') }}</AppButton>
+      <AppButton
+        variant="quiet"
+        :aria-label="several ? t('Dismiss these hints') : t('Dismiss this hint')"
+        :title="several ? t('Dismiss — they return next visit') : t('Dismiss — it returns next visit')"
+        @click="dismiss"
+      >✕</AppButton>
+    </span>
   </p>
 </template>
 
@@ -65,8 +67,12 @@ function dismiss(): void {
    Not the annotation role it wore until 2026-10-13: that colour and its dashed edge mean "the
    thing changed here", the scenario narrowing, and a hint in the same pink read as a second
    selection (operator, on screen). */
+/* The dismissals wrap BELOW the text where the panel is too narrow for both side by side: beside it
+   they left a 240 px panel's text one word wide, a column that filled the panel (operator, on
+   screen, 2026-10-19). The text's basis is the width it must keep before they make way. */
 .hint-line {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-xs);
   margin: 0 0 var(--space-sm);
@@ -84,7 +90,8 @@ function dismiss(): void {
 }
 
 .hint-text {
-  flex: 1;
+  flex: 1 1 24ch;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -92,8 +99,11 @@ function dismiss(): void {
 
 /* the two dismissals are CONTROLS, so they keep the link ink AppButton gives them — muted ink is
    what this app reserves for a control that cannot be used, and `Never again` in it was read twice
-   before it was read as a button (operator, 2026-10-13) */
-.hint-line .app-button.quiet {
+   before it was read as a button (operator, 2026-10-13). They move as one, to the right edge. */
+.hint-actions {
+  display: inline-flex;
   flex-shrink: 0;
+  gap: var(--space-xs);
+  margin-left: auto;
 }
 </style>
