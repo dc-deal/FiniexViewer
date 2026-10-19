@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { defineComponent, h } from 'vue'
-import { providePanelView, useViewExpanded } from '@/composables/use_panel_view'
+import { providePanelView, useViewExpanded, useViewRows } from '@/composables/use_panel_view'
 import { useArrangementStore } from '@/stores/arrangement_store'
 
 /** A panel that shows its period list or not, the way the booking periods do. */
@@ -14,11 +14,11 @@ const Reader = defineComponent({
 })
 
 /** A host naming the panel it draws, the way the dock's panel host and the bundle's column do. */
-function hosted(panel: string) {
+function hosted(panel: string, inner: ReturnType<typeof defineComponent> = Reader) {
   return defineComponent({
     setup() {
       providePanelView(panel)
-      return () => h(Reader)
+      return () => h(inner)
     },
   })
 }
@@ -57,5 +57,56 @@ describe('use_panel_view', () => {
     expect(wrapper.find('button').classes()).toContain('open')
     expect(useArrangementStore().panelViews).toEqual({})
     expect(mount(Reader).find('button').classes()).toContain('closed')
+  })
+
+  describe('rows of one run', () => {
+    /** The rows a panel under `panel` keeps for whatever `scope` names at the moment of asking. */
+    function rowsUnder(panel: string, scope: () => string | null) {
+      let rows!: ReturnType<typeof useViewRows>
+      const Inner = defineComponent({
+        setup() {
+          rows = useViewRows('fills-open', scope)
+          return () => h('i')
+        },
+      })
+      mount(hosted(panel, Inner))
+      return rows
+    }
+
+    it('keeps the rows of the run on show, and finds none of them under another', () => {
+      let run = 'run_1'
+      const rows = rowsUnder('report-trade-history', () => run)
+      rows.set('t1', true)
+      expect(rows.has('t1')).toBe(true)
+      run = 'run_2'
+      expect(rows.has('t1')).toBe(false)
+      expect(useArrangementStore().panelViews['report-trade-history']?.rows)
+        .toEqual({ scope: 'run_1', keys: { 'fills-open': ['t1'] } })
+    })
+
+    /** A panel keeps ONE run's rows: the first change under another replaces them whole. */
+    it('replaces the rows whole when another run writes', () => {
+      let run = 'run_1'
+      const rows = rowsUnder('report-trade-history', () => run)
+      rows.set('t1', true)
+      run = 'run_2'
+      rows.set('t9', true)
+      expect(useArrangementStore().panelViews['report-trade-history']?.rows)
+        .toEqual({ scope: 'run_2', keys: { 'fills-open': ['t9'] } })
+    })
+
+    it('keeps nothing for a key set back off', () => {
+      const rows = rowsUnder('report-trade-history', () => 'run_1')
+      rows.toggle('t1')
+      rows.toggle('t1')
+      expect(useArrangementStore().panelViews).toEqual({})
+    })
+
+    it('keeps nothing where no run is on show to bind the rows to', () => {
+      const rows = rowsUnder('report-trade-history', () => null)
+      rows.set('t1', true)
+      expect(rows.has('t1')).toBe(false)
+      expect(useArrangementStore().panelViews).toEqual({})
+    })
   })
 })

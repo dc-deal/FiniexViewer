@@ -55,6 +55,29 @@ export const VIEW_FOLDS = ['periods-table'] as const
 export type ViewFold = typeof VIEW_FOLDS[number]
 
 /**
+ * The lists of row keys a panel keeps for ONE run, with how many each keeps — the newest. A list
+ * joins with the component that reads it, and holds the key that list itself declares for a row or
+ * a group. A cap bounds what is remembered and stands above what a reader reaches by hand.
+ */
+export const VIEW_ROW_CAPS = {
+  /** Trade History: the trades whose fills are shown, by the trade's declared key. */
+  'fills-open': 100,
+  /** Trade History: scenario groups opened by hand past the threshold. */
+  'groups-opened': 100,
+  /** Trade History and Orders: scenario groups closed by hand. */
+  'groups-closed': 100,
+} as const
+export type ViewRowList = keyof typeof VIEW_ROW_CAPS
+
+/** The rows a panel keeps, and the run they were kept for — under any other they count for nothing. */
+export interface StoredRows {
+  /** The run the keys were kept for, as the panel's own model names it. */
+  scope: string
+  /** Each list's keys, oldest first. */
+  keys: Partial<Record<ViewRowList, string[]>>
+}
+
+/**
  * What one panel keeps of HOW it shows its content, under its dock id: a section keeps one entry,
  * in the bundle's column and as a panel of its own alike. Never WHAT is shown — that is the link's,
  * and nothing here repeats it. Only what differs from a default is stored.
@@ -62,6 +85,8 @@ export type ViewFold = typeof VIEW_FOLDS[number]
 export interface StoredPanelView {
   /** Bound to no run: true shown, false hidden, against the fold's default. */
   expanded?: Partial<Record<ViewFold, boolean>>
+  /** Bound to the run on show, so never part of a named layout. */
+  rows?: StoredRows
 }
 
 /** Everything stored under the one versioned key. */

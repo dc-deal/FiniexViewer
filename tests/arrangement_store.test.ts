@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
+import { VIEW_ROW_CAPS } from '@/types/arrangement_types'
 
 const KEY = 'arrangement.v1'
 const RUN = '20261012_074826_88026ae2'
@@ -190,6 +191,37 @@ describe('useArrangementStore', () => {
       arrangement.setPanelView('retired-kind', { expanded: { 'periods-table': true } })
       arrangement.keepPanelViews(panel => panel !== 'retired-kind')
       expect(Object.keys(arrangement.panelViews)).toEqual(['deployments'])
+    })
+
+    /** Rows of ONE run: kept with the run they were opened for, each list deduplicated, newest last. */
+    it('keeps the rows a panel opened for one run, and drops what cannot be one', () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: {
+          'report-trade-history': {
+            rows: {
+              scope: RUN,
+              keys: { 'fills-open': ['t1', 't2', 't1'], 'groups-closed': ['unit_a', 7], 'no-such-list': ['x'] },
+            },
+          },
+          // rows with no run to bind them to are no rows
+          'report-orders': { rows: { keys: { 'groups-closed': ['unit_a'] } } },
+        },
+      })
+      expect(useArrangementStore().panelViews).toEqual({
+        'report-trade-history': { rows: { scope: RUN, keys: { 'fills-open': ['t2', 't1'], 'groups-closed': ['unit_a'] } } },
+      })
+    })
+
+    it('keeps no more of a list than its cap, the newest', () => {
+      const keys = Array.from({ length: VIEW_ROW_CAPS['fills-open'] + 30 }, (_, index) => `t${index}`)
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: { 'report-trade-history': { rows: { scope: RUN, keys: { 'fills-open': keys } } } },
+      })
+      const kept = useArrangementStore().panelViews['report-trade-history']?.rows?.keys['fills-open'] ?? []
+      expect(kept).toHaveLength(VIEW_ROW_CAPS['fills-open'])
+      expect(kept.at(-1)).toBe(keys.at(-1))
     })
   })
 })

@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest'
-import { createPinia } from 'pinia'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import OrdersPanel from '@/components/runs/OrdersPanel.vue'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideChartLink } from '@/composables/use_chart_link'
+import { providePanelView } from '@/composables/use_panel_view'
 import { provideTestPositionLink } from './position_link_harness'
 import type { PositionRef } from '@/types/context_types'
 import { provideTestOrderSteps, step } from './order_steps_harness'
@@ -941,5 +942,42 @@ describe('OrdersPanel', () => {
     // no host supplies the step capability here, so a position heading opens nothing
     expect(wrapper.findAll('.order-list .record-row button')).toHaveLength(0)
     expect(wrapper.findAll('button').length).toBe(wrapper.findAll('.group-name').length)
+  })
+})
+
+/**
+ * A scenario group closed by hand is kept as the panel's own view, for the run on show: a remount
+ * finds it closed, and another run starts with every group open, because its scenarios are its own.
+ */
+describe('OrdersPanel — kept for the run on show', () => {
+  function mountKept(value: Model) {
+    const Host = defineComponent({
+      setup() {
+        providePanelView('report-orders')
+        return () => h(OrdersPanel, { model: value })
+      },
+    })
+    return mount(Host)
+  }
+
+  function underRun(value: Model, runId: string): Model {
+    return { ...value, history: { ...value.history, run_id: runId } }
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
+  it('finds a scenario closed by hand closed again for the same run, and open for another', async () => {
+    const value = model([order({ order_id: 'pos_1', status: 'pending' })])
+    const first = mountKept(value)
+    const open = first.findAll('.order-list .record-row').length
+    await first.find('.order-list .record-group.outer').trigger('click')
+    expect(first.findAll('.order-list .record-row').length).toBeLessThan(open)
+    first.unmount()
+
+    expect(mountKept(value).findAll('.order-list .record-row').length).toBeLessThan(open)
+    expect(mountKept(underRun(value, 'another_run')).findAll('.order-list .record-row')).toHaveLength(open)
   })
 })

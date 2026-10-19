@@ -8,6 +8,7 @@ import RecordList from '@/components/base/RecordList.vue'
 import OrderStepList from '@/components/runs/OrderStepList.vue'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { useChartLink } from '@/composables/use_chart_link'
+import { useViewRows } from '@/composables/use_panel_view'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import type { PositionRef } from '@/types/context_types'
 import { useOrderSteps } from '@/composables/use_order_steps'
@@ -363,22 +364,20 @@ function statusTone(order: OrderHistoryRow): string {
 
 const REFUSED = new Set(['rejected', 'denied', 'undelivered', 'unaccounted'])
 
-const collapsed = ref(new Set<string>())
+/** The scenarios the reader closed by hand — kept as the panel's own view for the run on show. */
+const closedGroups = useViewRows('groups-closed', () => props.model.history.run_id)
 
+// the positions opened are NOT kept: each one brought back would ask for its step stream again
 watch(() => props.model.history.run_id, () => {
-  collapsed.value = new Set()
   opened.value = new Set()
 })
 
 function isExpanded(scenario: string): boolean {
-  return !collapsed.value.has(scenario)
+  return !closedGroups.has(scenario)
 }
 
 function toggleGroup(scenario: string): void {
-  const next = new Set(collapsed.value)
-  if (next.has(scenario)) next.delete(scenario)
-  else next.add(scenario)
-  collapsed.value = next
+  closedGroups.toggle(scenario)
 }
 
 /**

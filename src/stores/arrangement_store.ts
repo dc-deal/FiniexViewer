@@ -4,9 +4,10 @@ import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
 import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext, PositionRef } from '@/types/context_types'
-import { VIEW_FOLDS } from '@/types/arrangement_types'
+import { VIEW_FOLDS, VIEW_ROW_CAPS } from '@/types/arrangement_types'
 import type {
-  DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredPanelView, StoredRunChart, ViewFold,
+  DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredPanelView, StoredRows, StoredRunChart,
+  ViewFold, ViewRowList,
 } from '@/types/arrangement_types'
 
 const STORAGE_KEY = 'arrangement.v1'
@@ -88,12 +89,31 @@ function readExpanded(value: unknown): Partial<Record<ViewFold, boolean>> {
   return expanded
 }
 
+/** Rows of one run: none without the run they were kept for; a repeated key keeps its newest place. */
+function readRows(value: unknown): StoredRows | undefined {
+  const stored = record(value)
+  const scope = text(stored['scope'])
+  if (!scope) return undefined
+  const lists = record(stored['keys'])
+  const keys: Partial<Record<ViewRowList, string[]>> = {}
+  for (const list of Object.keys(VIEW_ROW_CAPS) as ViewRowList[]) {
+    const found = texts(lists[list])
+    const kept = found.filter((key, index) => found.lastIndexOf(key) === index).slice(-VIEW_ROW_CAPS[list])
+    if (kept.length) keys[list] = kept
+  }
+  return Object.keys(keys).length ? { scope, keys } : undefined
+}
+
 /** Each panel's view, field by field: a name this build does not know is never copied, an empty entry is none. */
 function readPanelViews(value: unknown): Record<string, StoredPanelView> {
   const views: Record<string, StoredPanelView> = {}
   for (const [id, stored] of Object.entries(record(value))) {
+    const view: StoredPanelView = {}
     const expanded = readExpanded(record(stored)['expanded'])
-    if (Object.keys(expanded).length) views[id] = { expanded }
+    if (Object.keys(expanded).length) view.expanded = expanded
+    const rows = readRows(record(stored)['rows'])
+    if (rows) view.rows = rows
+    if (Object.keys(view).length) views[id] = view
   }
   return views
 }
@@ -235,8 +255,11 @@ export const useArrangementStore = defineStore('arrangement', () => {
    * nothing — a `<details>` reports a toggle also when a kept value opens it on mount.
    */
   function setPanelView(panel: string, view: StoredPanelView): void {
+    const kept: StoredPanelView = {}
+    if (Object.keys(view.expanded ?? {}).length) kept.expanded = view.expanded
+    if (view.rows && Object.keys(view.rows.keys).length) kept.rows = view.rows
     const next = { ...panelViews.value }
-    if (Object.keys(view.expanded ?? {}).length) next[panel] = view
+    if (Object.keys(kept).length) next[panel] = kept
     else delete next[panel]
     if (JSON.stringify(next) !== JSON.stringify(panelViews.value)) panelViews.value = next
   }

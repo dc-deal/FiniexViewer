@@ -83,7 +83,8 @@ by its tab, the way a reader does.
   from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its
   fills and they offer nothing to click. The test it replaced counted `<th>` against the group row's
   `colspan`; after the migration both are zero, so it would have passed for ever on a subject that
-  no longer exists.
+  no longer exists. And a unit closed by hand still closed after a real reload, the panel's own view
+  kept for the run on show.
 - `position_link.spec.ts` holds the jump between an order and its trade, and every part of it lives
   in the VIEW rather than in a panel: a CLOSED target panel being opened, a HIDDEN one coming back
   rather than the jump landing nowhere, the position reaching the address bar, a marked row still

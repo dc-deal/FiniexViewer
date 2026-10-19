@@ -1,7 +1,8 @@
 import { computed, inject, provide, ref } from 'vue'
 import type { InjectionKey, WritableComputedRef } from 'vue'
 import { useArrangementStore } from '@/stores/arrangement_store'
-import type { StoredPanelView, ViewFold } from '@/types/arrangement_types'
+import { VIEW_ROW_CAPS } from '@/types/arrangement_types'
+import type { StoredPanelView, ViewFold, ViewRowList } from '@/types/arrangement_types'
 
 /** How a panel's own view is read and kept — the host decides where, the panel only asks. */
 interface PanelViewChannel {
@@ -45,6 +46,48 @@ export function useViewExpanded(fold: ViewFold, fallback = false): WritableCompu
       channel.write({ ...channel.read(), expanded })
     },
   })
+}
+
+/** A panel's keys of one list, for the run it shows. */
+interface ViewRows {
+  has: (key: string) => boolean
+  set: (key: string, on: boolean) => void
+  toggle: (key: string) => void
+}
+
+/**
+ * The keys of one list a panel keeps for the run it shows — the scope read at USE, from the panel's
+ * own model, never from a link and never watched. Under any other run they count for nothing, and the
+ * first change there replaces them whole, so a panel keeps one run's rows. Capped, the newest kept.
+ *
+ * @param list Which list.
+ * @param scope The run the panel shows, `() => props.model.run_id`; where it names none, nothing is kept.
+ */
+export function useViewRows(list: ViewRowList, scope: () => string | null): ViewRows {
+  const channel = inject(PANEL_VIEW, null) ?? ownView()
+
+  function current(): string[] {
+    const rows = channel.read().rows
+    return rows && rows.scope === scope() ? rows.keys[list] ?? [] : []
+  }
+
+  function set(key: string, on: boolean): void {
+    const run = scope()
+    if (run === null) return
+    const view = channel.read()
+    const keys = view.rows?.scope === run ? { ...view.rows.keys } : {}
+    const others = (keys[list] ?? []).filter(kept => kept !== key)
+    const next = on ? [...others, key].slice(-VIEW_ROW_CAPS[list]) : others
+    if (next.length) keys[list] = next
+    else delete keys[list]
+    channel.write({ ...view, rows: Object.keys(keys).length ? { scope: run, keys } : undefined })
+  }
+
+  return {
+    has: key => current().includes(key),
+    set,
+    toggle: key => set(key, !current().includes(key)),
+  }
 }
 
 function ownView(): PanelViewChannel {

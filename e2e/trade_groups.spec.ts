@@ -70,6 +70,18 @@ test('below the threshold they start open and a click closes one', async ({ page
   expect(await tradeRows(page).count()).toBeLessThan(before)
 })
 
+/** A unit closed by hand is the panel's own view for the run on show: a real reload finds it closed. */
+test('a unit closed by hand stays closed across a reload', async ({ page }) => {
+  await withThreshold(page, 99)
+  await openTradeHistory(page)
+  const group = page.locator('.trade-history .record-group').first()
+  await group.click()
+  await expect(group.locator('.record-marker')).toHaveText('▸')
+
+  await page.reload()
+  await expect(page.locator('.trade-history .record-group').first().locator('.record-marker')).toHaveText('▸')
+})
+
 /**
  * The group heading must span exactly the columns the list declares — no more, no less.
  *

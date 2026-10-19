@@ -1,10 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import { defineComponent, h, ref } from 'vue'
 import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { provideChartLink } from '@/composables/use_chart_link'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
+import { providePanelView } from '@/composables/use_panel_view'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestPositionLink } from './position_link_harness'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
@@ -838,5 +840,69 @@ describe('TradeHistoryPanel', () => {
       const first = wrapper.find('.record-row').findAll(':scope > span')[0]!
       expect(first.text()).toContain(trade().position_id)
     })
+  })
+})
+
+/**
+ * What a reader opened or closed in the list is kept as the panel's own view, for the run on show:
+ * a remount — a run chosen again, the section taken out of the column and back — finds it as it was,
+ * and another run starts from the threshold again, because its units are other units.
+ */
+describe('TradeHistoryPanel — kept for the run on show', () => {
+  function twoUnits(runId: string): TradeHistoryReport {
+    const names = ['unit_a', 'unit_b']
+    return report({
+      run_id: runId,
+      trades: names.map((name, index) => trade({ position_id: `pos_${index}`, scenario_name: name })),
+      count: 2,
+      scenario_totals: names.map(name => ({
+        ...BASE.scenario_totals[0]!, scenario_name: name, trade_count: 1, net_pnl: 5,
+      })),
+    })
+  }
+
+  function mountKept(history: TradeHistoryReport) {
+    const display = ref<DisplaySettings>({ ...DEFAULT_SETTINGS, scenarioThreshold: 6 })
+    const Host = defineComponent({
+      setup() {
+        provideDisplaySettings(display)
+        providePanelView('report-trade-history')
+        return () => h(TradeHistoryPanel, { model: history })
+      },
+    })
+    return mount(Host)
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
+  /** The trade rows, without the rows of the fills opened under one of them. */
+  function tradesOnShow(wrapper: VueWrapper) {
+    return tradeRows(wrapper).filter(row => !row.element.closest('.fill-list'))
+  }
+
+  it('finds a unit closed by hand, and the fills opened under a trade, again for the same run', async () => {
+    const first = mountKept(twoUnits('run_1'))
+    await first.findAll('.record-group')[0]!.trigger('click')
+    await tradesOnShow(first)[0]!.trigger('click')
+    expect(first.find('.fill-list').exists()).toBe(true)
+    first.unmount()
+
+    const again = mountKept(twoUnits('run_1'))
+    // unit_a stays closed, so the one trade on show is unit_b's — with its fills open
+    expect(tradesOnShow(again)).toHaveLength(1)
+    expect(again.find('.fill-list').exists()).toBe(true)
+  })
+
+  it('starts another run from the threshold again', async () => {
+    const first = mountKept(twoUnits('run_1'))
+    await first.findAll('.record-group')[0]!.trigger('click')
+    first.unmount()
+
+    const other = mountKept(twoUnits('run_2'))
+    expect(other.find('.fill-list').exists()).toBe(false)
+    expect(tradesOnShow(other)).toHaveLength(2)
   })
 })

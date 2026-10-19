@@ -34,7 +34,8 @@ arrangement.v1 = { version: 1,
                    chart: { timeframe },
                    runChart: { run, unit, timeframe },
                    dock:  <dockview's toJSON()>,  places: { <panel id>: { besides, direction, index?, size? } },
-                   panelViews: { <panel id>: { expanded: { 'periods-table': true } } } }
+                   panelViews: { <panel id>: { expanded: { 'periods-table': true },
+                                               rows: { scope: <run id>, keys: { 'groups-closed': [<scenario>] } } } } }
 ```
 
 It is reconciled field by field on load, never trusted: a field of the wrong shape is left empty,
@@ -54,6 +55,15 @@ through `use_panel_view`: `PanelHost` names the panel it draws, `PanelViewScope`
 the column, and `useViewExpanded(fold)` is a writable boolean — without a host it lives for one
 mount, as it did before anything was kept. Added under version 1: an entry written before it reads as
 nothing kept, so no version had to change.
+
+**`rows` keeps row keys of ONE run** — in Trade History the trades whose fills are open and the units
+opened or closed by hand, in Orders the scenarios closed by hand — under `scope`, the run the panel's
+own model names, read at use and never watched. Under any other run they count for nothing, and the
+first change there replaces them whole, so a panel keeps one run's rows; going back before that
+finds them again. `useViewRows(list, scope)` reads and writes them, each list keeps its newest
+hundred (`VIEW_ROW_CAPS`), and a named layout may carry `expanded` but never `rows`, which belong to
+what is shown. The positions opened in Orders are not kept: each one brought back would ask for its
+step stream again.
 
 **Each browser tab keeps its own** (`src/tab_storage.ts`, viewer#31, 2026-10-14) — the arrangement
 and the column's `layout.v1` alike, which is what makes a second window the way to compare two runs.
