@@ -65,14 +65,6 @@ export function reconcile(stored: WorkspaceState): WorkspaceState {
 }
 
 /**
- * The stored arrangement, or nothing — and an entry from an older schema is REMOVED rather than
- * converted.
- *
- * The project is alpha and the arrangement is a convenience: code that exists only to read a shape
- * nobody writes any more is an artifact, and it would outlive the one day it was useful. Deleting
- * the key rather than ignoring it is the other half of that — an entry left behind is the artifact.
- */
-/**
  * Where the UNPINNED group starts, or null when there is nothing to separate.
  *
  * The column draws it as a line between the two groups, over what it actually draws. Null where
@@ -84,6 +76,14 @@ export function pinnedBoundary(panels: PanelState[]): number | null {
   return pinned > 0 && pinned < panels.length ? pinned : null
 }
 
+/**
+ * The stored arrangement, or nothing — and an entry from an older schema is REMOVED rather than
+ * converted.
+ *
+ * The project is alpha and the arrangement is a convenience: code that exists only to read a shape
+ * nobody writes any more is an artifact, and it would outlive the one day it was useful. Deleting
+ * the key rather than ignoring it is the other half of that — an entry left behind is the artifact.
+ */
 function readStored(): WorkspaceState | null {
   try {
     const raw = readTabEntry(STORAGE_KEY)
@@ -105,7 +105,6 @@ export const useLayoutStore = defineStore('layout', () => {
   const workspace = ref<WorkspaceState>(stored ? reconcile(stored) : buildDefaultWorkspace())
 
   const activeLayout = computed(() => workspace.value.layouts[workspace.value.active]!)
-  const layoutNames = computed(() => Object.keys(workspace.value.layouts))
 
   /**
    * THE arrangement — every panel, switched off ones included, in the order the reader made.
@@ -150,7 +149,7 @@ export const useLayoutStore = defineStore('layout', () => {
     persist()
   }
 
-  /** Lock exempts a panel from "collapse all" and from width-driven auto-collapse. */
+  /** Lock exempts a panel from "collapse all". */
   function toggleLock(id: string): void {
     const panel = find(id)
     if (!panel) return
@@ -231,7 +230,6 @@ export const useLayoutStore = defineStore('layout', () => {
   return {
     workspace,
     activeLayout,
-    layoutNames,
     arrangedPanels,
     visiblePanels,
     setOpen,
