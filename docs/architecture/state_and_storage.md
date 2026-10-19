@@ -41,8 +41,7 @@ arrangement.v1 = { version: 1,
 It is reconciled field by field on load, never trusted: a field of the wrong shape is left empty,
 an entry of another schema version is REMOVED rather than converted, and a corrupt one counts as
 none. The timeframe belongs to the CHART, not to the link — it says how one chart is drawn, not what
-is selected. The chart selection's former keys (`sel.broker`, `sel.symbol`, `sel.timeframe`) are
-removed on start. `dock` and `places` are the dock store's (see [Docked Panels](../panels/panel_dock.md)).
+is selected. `dock` and `places` are the dock store's (see [Docked Panels](../panels/panel_dock.md)).
 
 **Each panel keeps its own view in `panelViews`** (viewer#46) — HOW it shows its content, never
 WHAT, which is the link's. A record by the panel's dock id, the id `places` uses, so a section keeps

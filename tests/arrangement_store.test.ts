@@ -91,16 +91,6 @@ describe('useArrangementStore', () => {
   })
 
   /** Where the chart selection was kept before — removed, and never read. */
-  it('removes the keys the chart selection used to live under', () => {
-    localStorage.setItem('sel.broker', 'mt5')
-    localStorage.setItem('sel.symbol', 'EURUSD')
-    localStorage.setItem('sel.timeframe', 'H1')
-    useArrangementStore()
-    expect(['sel.broker', 'sel.symbol', 'sel.timeframe'].map(key => localStorage.getItem(key)))
-      .toEqual([null, null, null])
-    expect(useContextStore().main.market.broker).toBeNull()
-  })
-
   /** Absent means the default applies; empty means the reader cleared it — the two must survive a reload apart. */
   it('keeps a cleared bar apart from an untouched one across a reload', async () => {
     const arrangement = useArrangementStore()

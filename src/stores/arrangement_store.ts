@@ -13,9 +13,6 @@ import type {
 const STORAGE_KEY = 'arrangement.v1'
 const SCHEMA_VERSION = 1
 
-/** Where the chart selection was kept before it moved here — removed, never read (alpha). */
-const RETIRED_KEYS = ['sel.broker', 'sel.symbol', 'sel.timeframe']
-
 function text(value: unknown): string | null {
   return typeof value === 'string' && value !== '' ? value : null
 }
@@ -179,14 +176,6 @@ function readStored(): StoredArrangement | null {
   }
 }
 
-function forget(key: string): void {
-  try {
-    localStorage.removeItem(key)
-  } catch {
-    // blocked storage: nothing was kept, so nothing has to go
-  }
-}
-
 /**
  * The selection and the per-bar state, stored under ONE versioned key and restored on load.
  *
@@ -197,7 +186,6 @@ function forget(key: string): void {
 export const useArrangementStore = defineStore('arrangement', () => {
   const context = useContextStore()
 
-  RETIRED_KEYS.forEach(forget)
   const stored = readStored()
   if (stored) context.restore(stored.links)
 
