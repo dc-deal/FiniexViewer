@@ -90,6 +90,13 @@ describe('useSettingsStore', () => {
     expect(store.settings.tradeRowCap).toBe(200)
   })
 
+  /** Dropped whole, and removed: an entry nothing will read again is not left behind. */
+  it('removes an entry of another version rather than leaving it', () => {
+    write({ ...saved({ theme: 'light' }), version: 99 })
+    expect(useSettingsStore().settings).toEqual(DEFAULT_SETTINGS)
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
   it('survives a corrupt entry rather than failing to start', () => {
     localStorage.setItem(STORAGE_KEY, '{not json')
     expect(useSettingsStore().settings).toEqual(DEFAULT_SETTINGS)

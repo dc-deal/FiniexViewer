@@ -218,6 +218,8 @@ export const useLayoutStore = defineStore('layout', () => {
     try {
       const parsed = JSON.parse(text) as WorkspaceState
       if (!parsed || typeof parsed !== 'object' || !parsed.layouts) return false
+      // another version is refused, as a stored one is removed: its fields may mean something else
+      if (parsed.version !== SCHEMA_VERSION) return false
       workspace.value = reconcile(parsed)
       persist()
       return true

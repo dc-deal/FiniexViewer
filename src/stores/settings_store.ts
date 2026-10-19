@@ -49,7 +49,13 @@ export function reconcile(stored: unknown): Settings {
 function readStored(): unknown {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : null
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    // another version's entry is removed rather than left behind: nothing will ever read it again
+    if (parsed && typeof parsed === 'object' && (parsed as Partial<StoredSettings>).version !== SCHEMA_VERSION) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+    return parsed
   } catch {
     // a corrupt or unreadable entry is the same as none — a preference never breaks the app
     return null

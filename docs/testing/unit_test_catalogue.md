@@ -19,9 +19,9 @@ Every file is under `tests/`; the captured responses the suites read are in `tes
 - **`use_chart_binding.test.ts`** — a timeframe the symbol has no coverage for cleared, a covered one kept
 - **`use_facet_state.test.ts`** — an untouched bar on its defaults and storing nothing, narrowing, search and sort brought back, a CLEARED bar kept cleared rather than given its default back, and the scope: a narrowing stored for another run dropped with its sort kept, the same run restored, and a run change under a mounted bar dropping the narrowing and storing the new scope
 - **`use_panel_view.test.ts`** — a fold kept under the panel its host names, found again by a second mount under the same panel and only there, nothing kept for a fold set back to its default, and without a host a view that lives for one mount and is stored nowhere; and rows kept for the run on show, none of them found under another run, replaced whole when another run writes, nothing kept for a key set back off or where no run is on show
-- **`layout_store.test.ts`** — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import
-- **`settings_store.test.ts`** — per-field reconciliation (unknown key dropped, missing key defaulted, out-of-range refused), the schema-version discard, setters that ignore rather than clamp, and the display subset handed to panels
-- **`hints_store.test.ts`** — reconciliation (a retired id dropped, an unknown version discarded, no duplicates), a dismissal that lasts the session and is never written down, a ban that outlives the visit, and the reset that undoes both
+- **`layout_store.test.ts`** — reconciliation against the registry, pin/lock semantics, hide/show, reorder, export-import; an import of another version refused
+- **`settings_store.test.ts`** — per-field reconciliation (unknown key dropped, missing key defaulted, out-of-range refused), the schema-version discard, setters that ignore rather than clamp, and the display subset handed to panels; an entry of another version removed rather than left behind
+- **`hints_store.test.ts`** — reconciliation (a retired id dropped, an unknown version discarded, no duplicates), a dismissal that lasts the session and is never written down, a ban that outlives the visit, and the reset that undoes both; a ban list of another version removed rather than left behind
 
 ### Data stores and the API
 

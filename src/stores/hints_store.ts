@@ -39,7 +39,12 @@ export const useHintsStore = defineStore('hints', () => {
   function load(): void {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      banned.value = raw ? reconcile(JSON.parse(raw)) : []
+      const parsed: unknown = raw ? JSON.parse(raw) : null
+      // another version's entry is removed rather than left behind: nothing will ever read it again
+      if (parsed && typeof parsed === 'object' && (parsed as Partial<StoredHints>).version !== SCHEMA_VERSION) {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+      banned.value = parsed ? reconcile(parsed) : []
     } catch {
       // unreadable or blocked storage is not an error a reader can act on — every hint simply shows
       banned.value = []

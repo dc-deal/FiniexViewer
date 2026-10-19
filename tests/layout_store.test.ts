@@ -203,6 +203,13 @@ describe('useLayoutStore', () => {
     expect(store.visiblePanels.map(p => p.id)).not.toContain(id)
   })
 
+  /** Another version is refused, as a stored one is removed: its fields may mean something else. */
+  it('refuses an import of another version', () => {
+    const store = useLayoutStore()
+    const other = { ...JSON.parse(store.exportLayout()) as object, version: 1 }
+    expect(store.importLayout(JSON.stringify(other))).toBe(false)
+  })
+
   it('refuses an import that is not a workspace, without throwing', () => {
     const store = useLayoutStore()
     const before = store.visiblePanels.map(p => p.id)
