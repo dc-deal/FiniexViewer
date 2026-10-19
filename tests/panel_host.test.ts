@@ -5,6 +5,7 @@ import { defineComponent, h } from 'vue'
 import type { DockviewPanelApi } from 'dockview-vue'
 import PanelHost from '@/components/dock/PanelHost.vue'
 import { onPanelShownAgain } from '@/composables/use_panel_visibility'
+import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
 
 const counts = { mounted: 0, shownAgain: 0 }
@@ -22,9 +23,18 @@ vi.mock('@/panel_kinds', async importOriginal => {
       return () => { throw new Error('a panel that cannot draw') }
     },
   })
+  const { useViewExpanded } = await import('@/composables/use_panel_view')
+  const Keeper = defineComponent({
+    setup() {
+      // the panel asks for its own view and opens a fold; WHERE that is kept is the host's to say
+      useViewExpanded('periods-table').value = true
+      return () => h('p', { class: 'keeper' }, 'kept')
+    },
+  })
   const kinds: Record<string, object> = {
     probe: { id: 'probe', title: 'Probe', icon: 'form-list', order: 1, opensByDefault: true, component: Probe },
     broken: { id: 'broken', title: 'Broken', icon: 'form-list', order: 2, opensByDefault: false, component: Broken },
+    keeper: { id: 'keeper', title: 'Keeper', icon: 'form-list', order: 3, opensByDefault: false, component: Keeper },
   }
   // the rest of the module as it is: the dock store the host reports to reads it
   return { ...await importOriginal<typeof import('@/panel_kinds')>(), panelKind: (id: string) => kinds[id] ?? null }
@@ -119,5 +129,12 @@ describe('PanelHost', () => {
   it('says so for a kind this version does not know', () => {
     const wrapper = mount(PanelHost, { props: { kindId: 'retired', api: fakeApi(true).api } })
     expect(wrapper.text()).toContain('This panel could not be drawn')
+  })
+
+  /** The host names the panel it draws: what the panel keeps of its own view stands under that id. */
+  it('keeps what its panel keeps of its view under the panel\'s id', async () => {
+    mount(PanelHost, { props: { kindId: 'keeper', api: fakeApi(true).api } })
+    await flushPromises()
+    expect(useArrangementStore().panelViews['keeper']).toEqual({ expanded: { 'periods-table': true } })
   })
 })

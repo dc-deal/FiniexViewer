@@ -42,6 +42,15 @@ const props = defineProps<{
   unitTotals?: BookingPeriodUnitTotal[]
 }>()
 
+/** The table unfolded; closed by default. The panel around it decides whether the choice is kept. */
+const open = defineModel<boolean>('open', { default: false })
+
+function onToggle(event: Event): void {
+  // also fired when a kept value opens the table on mount: the value is the same then, and the
+  // store writes nothing for it
+  open.value = (event.target as HTMLDetailsElement).open
+}
+
 /**
  * The periods in the order they were handed — grouped by unit, `orderPeriods` — with each unit's
  * total after its LAST period. A total whose unit has no period on show is not drawn: the
@@ -205,8 +214,9 @@ const bands = computed<ListBand[]>(() => [
 <template>
   <!-- Closed by default, and a native <details> rather than a custom toggle: the chart above is
        what a reader comes for, the rows are the backup. `details` brings the keyboard and
-       screen-reader semantics with it instead of us re-implementing them. -->
-  <details class="periods">
+       screen-reader semantics with it instead of us re-implementing them. Opened, it stays open
+       across a run change and a reload — the panel keeps the choice as its own view. -->
+  <details class="periods" :open="open" @toggle="onToggle">
     <summary class="periods-summary">
       {{ plural(periods.length, t('booking period'), t('booking periods')) }}
       <!-- the currency, stated ONCE for the whole table instead of in every amount -->

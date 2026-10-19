@@ -230,6 +230,19 @@ describe('BookingPeriodTable', () => {
     })
   }
 
+  /** The panel keeps whether the list is open: the table takes it, and reports the reader's toggle. */
+  it('opens as its panel says, and reports a toggle', async () => {
+    const wrapper = mount(BookingPeriodTable, {
+      props: { periods: [period()], keyFields: ['unit_name', 'period_no'], open: true },
+    })
+    const details = wrapper.find('details').element as HTMLDetailsElement
+    expect(details.open).toBe(true)
+    details.open = false
+    // jsdom fires `toggle` as a task of its own, not within the tick that changed it
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(wrapper.emitted('update:open')?.at(-1)).toEqual([false])
+  })
+
   /** Where the rows span several runs, a row's run is the way into it — given a host to go to. */
   it('opens the run a period belongs to', async () => {
     let way!: TestOpenInContext

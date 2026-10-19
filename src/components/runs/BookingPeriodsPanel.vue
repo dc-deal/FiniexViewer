@@ -6,6 +6,7 @@ import ScopeMark from '@/components/base/ScopeMark.vue'
 import { amount, magnitude } from '@/components/runs/report_format'
 import { orderPeriods } from '@/components/runs/period_order'
 import { useDisplaySettings } from '@/composables/use_display_settings'
+import { useViewExpanded } from '@/composables/use_panel_view'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import type { LaneOrder } from '@/types/settings_types'
 import type { BookingPeriodsReport } from '@/types/api/report_types'
@@ -70,6 +71,9 @@ watch(() => display.value.laneOrder, order => { laneOrder.value = order })
  *
  * `unit_name` is the unit's identity here, the same value the roster calls `name`.
  */
+// whether the reader left the period list open — kept as this panel's own view, across runs and reloads
+const periodsOpen = useViewExpanded('periods-table')
+
 const narrowing = useScenarioSelection()
 const narrowed = computed(() => narrowing.units.value.length > 0)
 
@@ -153,6 +157,7 @@ const otherCurrencies = computed(() =>
         :key-fields="model.keys.periods"
       />
       <BookingPeriodTable
+        v-model:open="periodsOpen"
         :periods="orderedPeriods"
         :key-fields="model.keys.periods"
         :unit-totals="shownTotals"

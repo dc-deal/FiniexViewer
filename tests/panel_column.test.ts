@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
+import PanelViewScope from '@/components/panels/PanelViewScope.vue'
 import { useDockStore } from '@/stores/dock_store'
+import runSummary from './fixtures/run_summary.json'
 
 /**
  * A ResizeObserver that reports when the test says so — the column remembers the height a panel's
@@ -61,6 +63,13 @@ describe('PanelColumn', () => {
     await wrapper.setProps({ sources: { runSummary: null }, pending: { runSummary: true } })
     const loading = wrapper.find('[data-panel="executive"] .panel-loading')
     expect((loading.element as HTMLElement).style.minHeight).toBe('240px')
+  })
+
+  /** A section keeps its view under the dock id it has as a panel of its own: one view in both places. */
+  it('names each section by the id it has as a panel of its own', () => {
+    const wrapper = mountColumn({ runSummary })
+    const scope = wrapper.find('[data-panel="executive"]').findComponent(PanelViewScope)
+    expect(scope.props('panel')).toBe('report-executive')
   })
 })
 

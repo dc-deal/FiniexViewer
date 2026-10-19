@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { useDeploymentBinding } from '@/composables/use_deployment_binding'
+import { useViewExpanded } from '@/composables/use_panel_view'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
@@ -24,6 +25,9 @@ const {
 
 // loads the ledger listing and brings back the deployment the reader had open
 useDeploymentBinding()
+
+// whether the reader left the period list open — kept as this panel's own view, across deployments
+const periodsOpen = useViewExpanded('periods-table')
 
 /**
  * One order for the chart and the table beneath it. Across a deployment a lane is the SESSION —
@@ -124,7 +128,7 @@ const showDeployment = computed(() =>
             :key-fields="periods.key"
             :sessions="detail?.sessions ?? []"
           />
-          <BookingPeriodTable :periods="orderedPeriods" :key-fields="periods.key" show-run />
+          <BookingPeriodTable v-model:open="periodsOpen" :periods="orderedPeriods" :key-fields="periods.key" show-run />
         </section>
       </template>
     </div>

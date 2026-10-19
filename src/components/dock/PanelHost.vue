@@ -3,6 +3,7 @@ import { onErrorCaptured, onUnmounted, ref } from 'vue'
 import type { DockviewPanelApi } from 'dockview-vue'
 import { panelKind } from '@/panel_kinds'
 import { providePanelVisibility } from '@/composables/use_panel_visibility'
+import { providePanelView } from '@/composables/use_panel_view'
 import { useDockStore } from '@/stores/dock_store'
 import { t } from '@/translate'
 
@@ -38,6 +39,8 @@ onUnmounted(() => {
   dock.noteShown(props.kindId, false)
 })
 providePanelVisibility(visible)
+// what the panel keeps of its own view, under its dock id — the kind's, while a kind has one panel
+providePanelView(props.kindId)
 
 /**
  * A panel that throws stops HERE: the dock and every other panel stay standing, and the reader

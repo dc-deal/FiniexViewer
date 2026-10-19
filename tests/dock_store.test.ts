@@ -328,6 +328,15 @@ describe('useDockStore', () => {
     expect(dock.restored).toHaveLength(1)
   })
 
+  /** A kind this build no longer has takes its kept view with it; a panel merely hidden keeps its own. */
+  it('drops the view kept for a retired kind when it attaches, and keeps the rest', () => {
+    const arrangement = useArrangementStore()
+    arrangement.setPanelView('retired', { expanded: { 'periods-table': true } })
+    arrangement.setPanelView('deployments', { expanded: { 'periods-table': true } })
+    useDockStore().attach(fakeDock().api)
+    expect(Object.keys(arrangement.panelViews)).toEqual(['deployments'])
+  })
+
   /** On show is not open: the hosts say which panels are seen, and a dock taken down sees none. */
   it('keeps which panels are on show as their hosts report it, and forgets it with the dock', () => {
     const store = useDockStore()

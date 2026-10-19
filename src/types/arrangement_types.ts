@@ -46,6 +46,24 @@ export interface DockPlace {
   size?: number
 }
 
+/**
+ * The parts of a panel it can show or hide, and keeps for itself. Ours, so a closed set: a typo
+ * fails the type-check, and a stored name is checked against it. A name joins with the component
+ * that reads it.
+ */
+export const VIEW_FOLDS = ['periods-table'] as const
+export type ViewFold = typeof VIEW_FOLDS[number]
+
+/**
+ * What one panel keeps of HOW it shows its content, under its dock id: a section keeps one entry,
+ * in the bundle's column and as a panel of its own alike. Never WHAT is shown — that is the link's,
+ * and nothing here repeats it. Only what differs from a default is stored.
+ */
+export interface StoredPanelView {
+  /** Bound to no run: true shown, false hidden, against the fold's default. */
+  expanded?: Partial<Record<ViewFold, boolean>>
+}
+
 /** Everything stored under the one versioned key. */
 export interface StoredArrangement {
   version: number
@@ -57,4 +75,6 @@ export interface StoredArrangement {
   dock: object | null
   /** Where each panel stood when it was last open, by panel id — a hidden one comes back there. */
   places: Record<string, DockPlace>
+  /** Each panel's own view, by dock id — read here by shape, kept against the kinds by the dock store. */
+  panelViews: Record<string, StoredPanelView>
 }

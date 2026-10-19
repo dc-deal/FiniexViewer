@@ -4,7 +4,10 @@ import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
 import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext, PositionRef } from '@/types/context_types'
-import type { DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredRunChart } from '@/types/arrangement_types'
+import { VIEW_FOLDS } from '@/types/arrangement_types'
+import type {
+  DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredPanelView, StoredRunChart, ViewFold,
+} from '@/types/arrangement_types'
 
 const STORAGE_KEY = 'arrangement.v1'
 const SCHEMA_VERSION = 1
@@ -75,6 +78,26 @@ function readPlaces(value: unknown): Record<string, DockPlace> {
   return places
 }
 
+function readExpanded(value: unknown): Partial<Record<ViewFold, boolean>> {
+  const stored = record(value)
+  const expanded: Partial<Record<ViewFold, boolean>> = {}
+  for (const fold of VIEW_FOLDS) {
+    const shown = stored[fold]
+    if (typeof shown === 'boolean') expanded[fold] = shown
+  }
+  return expanded
+}
+
+/** Each panel's view, field by field: a name this build does not know is never copied, an empty entry is none. */
+function readPanelViews(value: unknown): Record<string, StoredPanelView> {
+  const views: Record<string, StoredPanelView> = {}
+  for (const [id, stored] of Object.entries(record(value))) {
+    const expanded = readExpanded(record(stored)['expanded'])
+    if (Object.keys(expanded).length) views[id] = { expanded }
+  }
+  return views
+}
+
 function readSelection(value: unknown): FacetSelection | undefined {
   if (typeof value !== 'object' || value === null) return undefined
   const selection: FacetSelection = {}
@@ -124,7 +147,12 @@ function readStored(): StoredArrangement | null {
       timeframe: text(storedRunChart['timeframe']),
     }
     const dock = typeof parsed['dock'] === 'object' && parsed['dock'] !== null ? parsed['dock'] : null
-    return { version: SCHEMA_VERSION, links, bars, chart, runChart, dock, places: readPlaces(parsed['places']) }
+    return {
+      version: SCHEMA_VERSION, links, bars, chart, runChart, dock,
+      places: readPlaces(parsed['places']),
+      // added under version 1: an entry written before it reads as no view kept, which is the truth
+      panelViews: readPanelViews(parsed['panelViews']),
+    }
   } catch {
     // a corrupt or unreadable entry is the same as none — never a broken start
     return null
@@ -160,6 +188,8 @@ export const useArrangementStore = defineStore('arrangement', () => {
   const dock = shallowRef<object | null>(stored?.dock ?? null)
   // replaced whole as well, by the dock store, which owns what a place means
   const places = shallowRef<Record<string, DockPlace>>(stored?.places ?? {})
+  // replaced whole on every change, one panel's entry at a time — see `setPanelView`
+  const panelViews = shallowRef<Record<string, StoredPanelView>>(stored?.panelViews ?? {})
 
   function persist(): void {
     const arrangement: StoredArrangement = {
@@ -170,6 +200,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       runChart: runChart.value,
       dock: dock.value,
       places: places.value,
+      panelViews: panelViews.value,
     }
     // this tab's own, and the start of the next new one — a full or blocked storage must not break
     // the app: the selection still works, unstored
@@ -177,7 +208,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
   }
 
   watch([() => context.links, bars, chart, runChart], persist, { deep: true })
-  watch([dock, places], persist)
+  watch([dock, places, panelViews], persist)
 
   function setFacets(bar: string, facets: StoredFacets): void {
     bars.value = { ...bars.value, [bar]: facets }
@@ -199,5 +230,28 @@ export const useArrangementStore = defineStore('arrangement', () => {
     runChart.value = next
   }
 
-  return { bars, chart, runChart, dock, places, setFacets, setTimeframe, setRunChart, setDock, setPlaces }
+  /**
+   * One panel's view. An entry left with nothing in it is removed, and the same view again writes
+   * nothing — a `<details>` reports a toggle also when a kept value opens it on mount.
+   */
+  function setPanelView(panel: string, view: StoredPanelView): void {
+    const next = { ...panelViews.value }
+    if (Object.keys(view.expanded ?? {}).length) next[panel] = view
+    else delete next[panel]
+    if (JSON.stringify(next) !== JSON.stringify(panelViews.value)) panelViews.value = next
+  }
+
+  /**
+   * Keeps the views of the panels `known` accepts. The dock store calls it, because it knows the
+   * kinds: this store must not import the register, which imports a store that imports this one.
+   */
+  function keepPanelViews(known: (panel: string) => boolean): void {
+    const kept = Object.entries(panelViews.value).filter(([id]) => known(id))
+    if (kept.length < Object.keys(panelViews.value).length) panelViews.value = Object.fromEntries(kept)
+  }
+
+  return {
+    bars, chart, runChart, dock, places, panelViews,
+    setFacets, setTimeframe, setRunChart, setDock, setPlaces, setPanelView, keepPanelViews,
+  }
 })

@@ -138,4 +138,58 @@ describe('useArrangementStore', () => {
     expect(places['sideways']).toBeUndefined()
     expect(places['odd-size']).toEqual({ besides: ['runs'], direction: 'left' })
   })
+
+  describe('each panel\'s own view', () => {
+    /** Added under version 1: an entry from before the field reads as no view kept, not as a broken one. */
+    it('reads an entry written before panel views as none kept', () => {
+      store({ version: 1, links: {}, bars: {}, chart: {}, runChart: {} })
+      expect(useArrangementStore().panelViews).toEqual({})
+    })
+
+    it('keeps a panel\'s view across a reload, and drops what is not one', async () => {
+      const arrangement = useArrangementStore()
+      arrangement.setPanelView('report-booking-periods', { expanded: { 'periods-table': true } })
+      await nextTick()
+      const raw = stored()
+      raw['panelViews'] = {
+        ...(raw['panelViews'] as object),
+        deployments: { expanded: { 'periods-table': 'yes', 'no-such-fold': true } },
+        'run-chart': 'open',
+      }
+      store(raw)
+
+      setActivePinia(createPinia())
+      expect(useArrangementStore().panelViews).toEqual({
+        'report-booking-periods': { expanded: { 'periods-table': true } },
+      })
+    })
+
+    /** Only what differs from a default is kept, so a view set back to it leaves no entry behind. */
+    it('removes an entry left with nothing in it', async () => {
+      const arrangement = useArrangementStore()
+      arrangement.setPanelView('deployments', { expanded: { 'periods-table': true } })
+      arrangement.setPanelView('deployments', { expanded: {} })
+      await nextTick()
+      expect(arrangement.panelViews).toEqual({})
+      expect(stored()['panelViews']).toEqual({})
+    })
+
+    /** A `<details>` reports a toggle also when a kept value opens it: the same view writes nothing. */
+    it('writes nothing for the same view again', async () => {
+      const arrangement = useArrangementStore()
+      arrangement.setPanelView('deployments', { expanded: { 'periods-table': true } })
+      await nextTick()
+      const before = arrangement.panelViews
+      arrangement.setPanelView('deployments', { expanded: { 'periods-table': true } })
+      expect(arrangement.panelViews).toBe(before)
+    })
+
+    it('keeps only the views of the panels the caller still knows', () => {
+      const arrangement = useArrangementStore()
+      arrangement.setPanelView('deployments', { expanded: { 'periods-table': true } })
+      arrangement.setPanelView('retired-kind', { expanded: { 'periods-table': true } })
+      arrangement.keepPanelViews(panel => panel !== 'retired-kind')
+      expect(Object.keys(arrangement.panelViews)).toEqual(['deployments'])
+    })
+  })
 })

@@ -326,6 +326,8 @@ export const useDockStore = defineStore('dock', () => {
     } catch {
       arrangeDefault(dock)
     }
+    // a view kept for a kind this build no longer has goes with it; a hidden panel's view stays
+    arrangement.keepPanelViews(kind => panelKind(kind) !== null)
     flush()
     syncOpen()
     subscriptions = [

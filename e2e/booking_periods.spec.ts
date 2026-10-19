@@ -101,6 +101,24 @@ test('a lane too dense for its rings draws its periods edge to edge, on an axis 
   await expect(timeline.locator('.tick', { hasText: 'Apr' })).toHaveCount(1)
 })
 
+/**
+ * Whether the period list is open is the panel's own view, kept in the arrangement: a reload finds
+ * it open, and so does the section opened as a panel of its own — one id in both places.
+ */
+test('the period list stays open across a reload and as a panel of its own', async ({ page }) => {
+  await openPeriods(page)
+  const list = page.locator('[data-panel="booking-periods"] details.periods')
+  await expect(list).toHaveAttribute('open', '')
+
+  await page.reload()
+  await expect(list).toHaveAttribute('open', '')
+
+  const header = page.locator('.panel-column .panel-header', { hasText: 'Booking periods' })
+  await header.hover()
+  await header.locator('[data-action="open-as-panel"]').click()
+  await expect(page.locator('[data-panel-kind="report-booking-periods"] details.periods')).toHaveAttribute('open', '')
+})
+
 /** A read-only row reachable by the keyboard: the card opens on focus, and a click does nothing. */
 test('a period row opens its card on a keyboard focus, and is no control', async ({ page }) => {
   await openPeriods(page)

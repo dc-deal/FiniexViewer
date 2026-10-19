@@ -33,7 +33,8 @@ arrangement.v1 = { version: 1,
                    bars:  { 'run-picker': { selection, search, sort }, 'scenario-roster': { …, scope: <run id> } },
                    chart: { timeframe },
                    runChart: { run, unit, timeframe },
-                   dock:  <dockview's toJSON()>,  places: { <panel id>: { besides, direction, index?, size? } } }
+                   dock:  <dockview's toJSON()>,  places: { <panel id>: { besides, direction, index?, size? } },
+                   panelViews: { <panel id>: { expanded: { 'periods-table': true } } } }
 ```
 
 It is reconciled field by field on load, never trusted: a field of the wrong shape is left empty,
@@ -41,6 +42,18 @@ an entry of another schema version is REMOVED rather than converted, and a corru
 none. The timeframe belongs to the CHART, not to the link — it says how one chart is drawn, not what
 is selected. The chart selection's former keys (`sel.broker`, `sel.symbol`, `sel.timeframe`) are
 removed on start. `dock` and `places` are the dock store's (see [Docked Panels](../panels/panel_dock.md)).
+
+**Each panel keeps its own view in `panelViews`** (viewer#46) — HOW it shows its content, never
+WHAT, which is the link's. A record by the panel's dock id, the id `places` uses, so a section keeps
+ONE entry in the bundle's column and as a panel of its own. `expanded` holds the folds a panel can
+open — today the booking-period list, `periods-table` — and is bound to no run: the list stays open
+across a run change, a reload and ⇱ / ⇲. Only what differs from a default is stored, a name this
+build does not know is never read, and the dock store drops the entry of a kind this build no longer
+has when it attaches; the bundle's reset and the dock's leave it alone. A panel reads and writes it
+through `use_panel_view`: `PanelHost` names the panel it draws, `PanelViewScope` names a section in
+the column, and `useViewExpanded(fold)` is a writable boolean — without a host it lives for one
+mount, as it did before anything was kept. Added under version 1: an entry written before it reads as
+nothing kept, so no version had to change.
 
 **Each browser tab keeps its own** (`src/tab_storage.ts`, viewer#31, 2026-10-14) — the arrangement
 and the column's `layout.v1` alike, which is what makes a second window the way to compare two runs.
@@ -84,8 +97,8 @@ not ask for it:
 
 | | What it is | Where it lives | Needs an account? |
 |---|---|---|---|
-| **Selection** | which run, scenario, deployment, symbol, timeframe, filter | `arrangement.v1`, per browser tab | never |
-| **Presentation** | panel order, collapsed state, theme, thresholds, caps | the column's `layout.v1` per browser tab; the settings in `localStorage` | no |
+| **Selection** | which run, scenario, deployment, symbol, filter | the links and bars of `arrangement.v1`, per browser tab | never |
+| **Presentation** | panel order and placement, collapsed state, a panel's own folds, a list's sort, a chart's timeframe, theme, thresholds, caps | per browser tab the column's `layout.v1` and the rest of `arrangement.v1` — `dock`, `places`, `panelViews`, the timeframes; the settings in `localStorage` | no |
 | **Operation** | writing, triggering a run, changing a configuration | nowhere yet | **yes — and only this** |
 
 Two consequences follow. **A settings menu needs no user system**: everything it holds today is
