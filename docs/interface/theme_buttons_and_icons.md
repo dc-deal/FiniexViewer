@@ -1,6 +1,6 @@
 # Theme, Buttons and Icons
 
-Every surface, control and glyph in the viewer comes from a small set of shared parts, and this document describes them. Read it before you add a colour, a control or an icon, so that the new part takes a role the existing ones already carry instead of inventing its own.
+Every surface, control and glyph in the viewer comes from a small set of shared parts, and this document describes them. Read it before you add a colour, a control or an icon, so that the new part takes a role the existing ones already carry instead of inventing its own. The building blocks themselves, one line each, are mapped in [UI Building Blocks](ui_building_blocks.md).
 
 ## Theming — CSS Custom Properties
 

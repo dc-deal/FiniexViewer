@@ -171,6 +171,11 @@ bash scripts/e2e.sh e2e/one.spec.ts --workers=1
 
 ---
 
+## Contributing
+
+How a change is made here — what it carries, the checks it passes, and the UI building blocks every
+screen is drawn from: [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

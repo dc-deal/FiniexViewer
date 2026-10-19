@@ -45,6 +45,7 @@ starts with the first group.
 
 | Document | Description |
 |----------|-------------|
+| [UI Building Blocks](interface/ui_building_blocks.md) | Every building block the screens are drawn from, one line each with where it lives and where it is described, and the rule: only these, and how a new one is added |
 | [Theme, Buttons and Icons](interface/theme_buttons_and_icons.md) | Colour tokens and roles for both themes, `AppButton` and `JumpLink` with each state on two channels, `AppSwitch` and `AppSlider` — the one on/off and the one scale for the whole app — a change of state that moves nothing, and the registry that names an icon by its meaning |
 | [Figures and Words on Screen](interface/figures_and_words_on_screen.md) | Units and `n/a` for what was never measured, why no figure is computed here, FiniexTestingIDE's vocabulary, the `t()` marker with `plural()`, and the hint registry |
 | [Menu Bar Status](interface/menu_bar_status.md) | What the menu bar always states: the identity from `GET /api/v1/caller`, the machine's load from `GET /api/v1/machine-resources`, and the scenario in focus |
