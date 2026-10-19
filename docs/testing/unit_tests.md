@@ -28,7 +28,7 @@ npx vitest
 
 ## Configuration
 
-**`vitest.config.ts`** — extends `vite.config.ts` via `mergeConfig` so that the `@/` path alias, Vue plugin, and other Vite settings are inherited automatically. Only the `test.environment` key is added.
+**`vitest.config.ts`** — extends `vite.config.ts` via `mergeConfig` so that the `@/` path alias, Vue plugin, and other Vite settings are inherited automatically. It adds the jsdom environment, the setup file `tests/setup.ts`, and `include` pinned to `tests/**/*.test.ts` — Vitest's default pattern is repository-wide and collected the Playwright specs the moment `e2e/` appeared.
 
 ---
 
@@ -77,7 +77,7 @@ says what moved. Then raise `EXPECTED_CONTRACT` in `api_contract.test.ts` in the
 
 ```bash
 python scripts/capture_fixtures.py --dry   # what would move, nothing written
-python scripts/capture_fixtures.py         # all nineteen, or nothing
+python scripts/capture_fixtures.py         # every target, or nothing
 ```
 
 **When a refresh is needed, and when it is not.** It is needed when the contract changes SHAPE — a
@@ -144,9 +144,8 @@ one for every trade, so it is still 500 instances on a 500-row draw.
 
 The cost itself should not stay. `HoverCard` mounts one tooltip PROVIDER per instance, where the
 primitive expects a single provider high in the tree and one root per item. Lifting it is a change
-to a shared base component used in three places — `base/RecordList.vue`, `base/TimelineChart.vue` and
-`runs/BookingPeriodTimeline.vue` through the chart — so it is recorded here rather than done on the
-way.
+to a shared base component used across the app — list rows, timeline bars, the tabs' cards and the
+menu bar's status — so it is recorded here rather than done on the way.
 
 ### Missing browser interfaces (`tests/setup.ts`)
 

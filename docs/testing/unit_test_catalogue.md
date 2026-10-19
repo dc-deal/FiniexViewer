@@ -34,6 +34,7 @@ Every file is under `tests/`; the captured responses the suites read are in `tes
 - **`deployments_store.test.ts`** — ledger listing, the row identity the ledger DECLARED kept rather than dropped, the authority guard on an unknown id, sessions and periods loaded together, the two-currency case, a forbidden surface as its own state, and a refresh with no spinner in place of the ledger, and an id the ledger does not list asked for once more before it is called gone, and the deployment already chosen left as it is when picked again — but loaded once more where it failed, even after a quiet refresh cleared the error
 - **`api_client.test.ts`** — request construction, endpoint paths, query params, response mapping, 404 / 409 / 403 mapping, and a 409 read as a stale artifact with the backend's sentence on every report route; the bars route's `X-Bar-Truncated` carried on with the rows
 - **`api_contract.test.ts`** — the captured fixtures against the contract they were taken under, each list's declared row key, and the machine reading stating its own thresholds, with reasons exactly where it is not ok
+- **`report_artifacts.test.ts`** — whether a run carries a section, answered from the artifacts it actually persisted: the two pipelines told apart as the captured index has them, nothing suppressed for a run that wrote nothing, an unmapped section let through, and the two sections the report stands on never gated
 
 ### The dock, its panels and the menu bar
 

@@ -70,7 +70,8 @@ and the column's `layout.v1` alike, which is what makes a second window the way 
 A tab reads its own `sessionStorage` entry. A NEW tab has none: it adopts the last one any tab saved
 and keeps it as its own, so another tab's later write never reaches it, not even on a reload. Every
 write goes to both — the tab's own, and `localStorage` as the start of the next new tab. Settings
-and dismissed hints are the reader's, not the tab's, and stay in `localStorage` alone.
+and banned hints are the reader's, not the tab's, and stay in `localStorage` alone; a hint merely
+dismissed is stored nowhere and returns next visit.
 
 **Adopted at the READ, not at the first write.** With one shared key, measured in the browser on
 2026-10-14, a reload brought back the column the OTHER window had changed every time — the column's
