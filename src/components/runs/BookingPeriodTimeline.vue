@@ -5,7 +5,7 @@ import TimelineChart from '@/components/base/TimelineChart.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
 import { periodFigures, periodTitle, type PeriodRow } from '@/components/runs/booking_period_card'
-import { duration, utcInstant } from '@/components/runs/report_format'
+import { duration, polarity, utcInstant } from '@/components/runs/report_format'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { LaneOrder } from '@/types/settings_types'
 import type { TimelineLane, TimelineSpan } from '@/types/timeline_types'
@@ -69,13 +69,6 @@ const usable = computed(() =>
   )
 )
 
-/** Colour carries polarity, so a flat result stays neutral rather than claiming a direction. */
-function tone(netPnl: number): string {
-  if (netPnl > 0) return 'positive'
-  if (netPnl < 0) return 'negative'
-  return 'flat'
-}
-
 function span(period: PeriodRow, from: number, to: number): TimelineSpan {
   return {
     id: rowKey(period, props.keyFields),
@@ -86,7 +79,7 @@ function span(period: PeriodRow, from: number, to: number): TimelineSpan {
     label: `${t('period')} ${period.period_no}`,
     // what is left when the bar is a sliver: the number alone still identifies it
     shortLabel: String(period.period_no),
-    tone: tone(period.net_pnl),
+    tone: polarity(period.net_pnl),
     // one card for the bar and for the table's row (`booking_period_card.ts`)
     title: periodTitle(period),
     details: periodFigures(period),

@@ -1,4 +1,10 @@
 /**
+ * Which way a figure points — what its colour says. `flat` is a result with no direction: zero
+ * claims neither polarity, so it is drawn in the quiet ink rather than a gain's or a loss's colour.
+ */
+export type Polarity = 'positive' | 'negative' | 'flat'
+
+/**
  * One label/value pair in a `FigureBlock`.
  *
  * The value arrives ALREADY FORMATTED. The block places figures; it never formats them, because

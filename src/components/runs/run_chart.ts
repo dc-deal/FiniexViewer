@@ -1,9 +1,10 @@
 import { rowKey } from '@/api/list_key'
-import { sortInstant } from '@/components/runs/report_format'
+import { polarity, sortInstant } from '@/components/runs/report_format'
 import { entryCard, exitCard } from '@/components/runs/trade_card'
 import type { BrokerReport, DataWindow, TradeRow } from '@/types/api/report_types'
 import type { ScenarioRow } from '@/types/api/scenario_types'
 import type { PositionRef } from '@/types/context_types'
+import type { Polarity } from '@/types/figure_types'
 import type { ChartMark, ChartUnit } from '@/types/run_chart_types'
 
 /**
@@ -164,6 +165,9 @@ function seconds(iso: string): number {
   return sortInstant(iso) / 1000
 }
 
+/** An exit's result as a word, beside its colour — a colour never travels alone. */
+const SIGN_WORD: Record<Polarity, string> = { positive: '+', negative: '−', flat: '0' }
+
 /**
  * Where a unit's trades opened and closed, on the candles drawn. The entry is an arrow in the
  * direction of the trade — up below the bar for a long, down above it for a short — and the exit a
@@ -201,13 +205,13 @@ export function tradeMarks(
     }
     const time = barOf(barTimes, seconds(trade.exit_time))
     if (time === null) continue
-    const net = trade.net_pnl
+    const result = polarity(trade.net_pnl)
     marks.push({
       time,
       position: long ? 'aboveBar' : 'belowBar',
       shape: 'circle',
-      role: net > 0 ? 'gain' : net < 0 ? 'loss' : 'flat',
-      text: net > 0 ? '+' : net < 0 ? '−' : '0',
+      role: result,
+      text: SIGN_WORD[result],
       focused,
       id: `exit|${rowKey(trade, key)}`,
       card: exitCard(trade),

@@ -1,4 +1,4 @@
-import type { FigureCard } from '@/types/figure_types'
+import type { FigureCard, Polarity } from '@/types/figure_types'
 
 /**
  * Why a unit of a run cannot be drawn on the run chart. A code, not a sentence: the words are the
@@ -32,7 +32,7 @@ export interface ChartMark {
   time: number
   position: 'aboveBar' | 'belowBar'
   shape: 'arrowUp' | 'arrowDown' | 'circle'
-  role: 'entry' | 'gain' | 'loss' | 'flat'
+  role: 'entry' | Polarity
   text: string
   /** A mark of the position the reader is looking at — drawn larger. */
   focused: boolean

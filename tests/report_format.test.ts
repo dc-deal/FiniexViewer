@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  bytes, modelledSpreadFigures, shortHash, sortInstant, spreadFigure, utcInstant,
+  bytes, modelledSpreadFigures, polarity, shortHash, signClass, sortInstant, spreadFigure, utcInstant,
 } from '@/components/runs/report_format'
 
 /**
@@ -38,6 +38,20 @@ describe('report_format', () => {
 
     it('gives 0 for a stamp that is not a date, so it sorts last under newest', () => {
       expect(sortInstant('not-a-date')).toBe(0)
+    })
+  })
+
+  /**
+   * One rule for every colour that says gain or loss — a list cell, a timeline span, a mark on the
+   * run chart. It was written three times, and zero is where three copies can come to disagree.
+   */
+  describe('polarity', () => {
+    it('reads a figure by its sign, and zero as flat', () => {
+      expect([12.5, -0.01, 0].map(polarity)).toEqual(['positive', 'negative', 'flat'])
+    })
+
+    it('leaves a flat cell without a colour class', () => {
+      expect([12.5, -0.01, 0].map(signClass)).toEqual(['positive', 'negative', ''])
     })
   })
 

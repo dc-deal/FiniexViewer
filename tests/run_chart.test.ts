@@ -173,7 +173,7 @@ describe('run_chart', () => {
     it('marks a long\'s entry below its bar and its exit above, on the bars they fell in', () => {
       expect(tradeMarks([long], KEY, bars, null)).toMatchObject([
         { time: 1761886800, position: 'belowBar', shape: 'arrowUp', role: 'entry', text: '', focused: false },
-        { time: 1761886920, position: 'aboveBar', shape: 'circle', role: 'gain', text: '+', focused: false },
+        { time: 1761886920, position: 'aboveBar', shape: 'circle', role: 'positive', text: '+', focused: false },
       ])
     })
 
@@ -181,7 +181,7 @@ describe('run_chart', () => {
       const short = trade({ ...long, direction: 'short', net_pnl: -0.4 })
       expect(tradeMarks([short], KEY, bars, null).map(mark => [mark.position, mark.shape, mark.role, mark.text])).toEqual([
         ['aboveBar', 'arrowDown', 'entry', ''],
-        ['belowBar', 'circle', 'loss', '−'],
+        ['belowBar', 'circle', 'negative', '−'],
       ])
     })
 
@@ -227,10 +227,10 @@ describe('run_chart', () => {
       const labels = (role: string) => marks.find(mark => mark.role === role)!.card.details.map(pair => pair.label)
       expect(labels('entry')).toContain('Opened')
       expect(labels('entry')).not.toContain('Net P&L')
-      expect(labels('loss')).toEqual(expect.arrayContaining(['Closed', 'Closed by', 'Net P&L']))
+      expect(labels('negative')).toEqual(expect.arrayContaining(['Closed', 'Closed by', 'Net P&L']))
       // the close is named only where one was recorded
-      expect(labels('gain')).not.toContain('Closed by')
-      expect(marks.find(mark => mark.role === 'loss')!.card.details.find(pair => pair.label === 'Net P&L'))
+      expect(labels('positive')).not.toContain('Closed by')
+      expect(marks.find(mark => mark.role === 'negative')!.card.details.find(pair => pair.label === 'Net P&L'))
         .toMatchObject({ tone: 'negative' })
     })
   })

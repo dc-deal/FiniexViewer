@@ -1,3 +1,5 @@
+import type { Polarity } from '@/types/figure_types'
+
 /**
  * One drawn span. `from` and `to` are positions on the CALLER's scale — the chart does not know
  * whether they are instants, tick indices or anything else, which is what keeps one component
@@ -14,8 +16,8 @@ export interface TimelineSpan {
    * dropping it: the hover card carries every figure either way.
    */
   shortLabel?: string
-  /** Polarity, never rank: 'positive' | 'negative' | 'flat'. */
-  tone: string
+  /** Polarity, never rank. */
+  tone: Polarity
   /** One line naming the span, shown as the tooltip's heading. */
   title: string
   /**

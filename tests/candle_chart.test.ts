@@ -215,7 +215,7 @@ describe('CandleChart', () => {
       }),
       mark({
         id: 'exit|unit|pos_1|7',
-        role: 'loss',
+        role: 'negative',
         card: { title: 'pos_1 · long 0.1', details: [{ label: 'Net', value: '-0.40 EUR', tone: 'negative' }] },
       }),
     ]
@@ -283,7 +283,7 @@ describe('CandleChart', () => {
 
   it('says on its element how many marks it draws', () => {
     size = { width: 800, height: 400 }
-    const wrapper = mountChart(BARS, { marks: [mark({}), mark({ role: 'gain' })] })
+    const wrapper = mountChart(BARS, { marks: [mark({}), mark({ role: 'positive' })] })
     expect(wrapper.attributes('data-marks')).toBe('2')
   })
 
@@ -348,8 +348,8 @@ describe('CandleChart', () => {
       size = { width: 800, height: 400 }
       mountChart(BARS, { marks: [
         mark({ role: 'entry', focused: true }),
-        mark({ role: 'gain', shape: 'circle', position: 'aboveBar', text: '+' }),
-        mark({ role: 'loss', shape: 'circle', text: '−' }),
+        mark({ role: 'positive', shape: 'circle', position: 'aboveBar', text: '+' }),
+        mark({ role: 'negative', shape: 'circle', text: '−' }),
         mark({ role: 'flat', shape: 'circle', text: '0' }),
       ] })
 

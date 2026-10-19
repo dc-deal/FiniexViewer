@@ -95,8 +95,8 @@ function readColours(): ChartColours {
 
 /** A mark's colour by its role — a result is the polarity of a figure; the shape says the rest. */
 function markColour(mark: ChartMark, colours: ChartColours): string {
-  if (mark.role === 'gain') return colours.rise
-  if (mark.role === 'loss') return colours.fall
+  if (mark.role === 'positive') return colours.rise
+  if (mark.role === 'negative') return colours.fall
   if (mark.role === 'flat') return colours.quiet
   return colours.mark
 }

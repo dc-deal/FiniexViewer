@@ -1,4 +1,4 @@
-import type { Figure } from '@/types/figure_types'
+import type { Figure, Polarity } from '@/types/figure_types'
 import { t } from '@/translate'
 
 // Fixed locale on purpose: the rest of the panels format with toFixed (dot decimals), and a
@@ -156,11 +156,17 @@ export function sortInstant(iso: string): number {
   return Number.isNaN(at) ? 0 : at
 }
 
-/** Sign class for P&L-denominated cells. Empty for zero — no colour claim on a flat result. */
-export function signClass(value: number): string {
+/** The polarity of a figure, by its sign — the one rule behind every colour that says gain or loss. */
+export function polarity(value: number): Polarity {
   if (value > 0) return 'positive'
   if (value < 0) return 'negative'
-  return ''
+  return 'flat'
+}
+
+/** Sign class for P&L-denominated cells. Empty for zero — no colour claim on a flat result. */
+export function signClass(value: number): string {
+  const sign = polarity(value)
+  return sign === 'flat' ? '' : sign
 }
 
 /**
