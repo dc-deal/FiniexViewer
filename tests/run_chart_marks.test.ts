@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
-  barOf, executedOpenings, exitMarks, focusTime, openingMarks,
+  SERVED_BAR_MAX, barOf, barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
 } from '@/components/runs/run_chart_marks'
 import type {
   OpenPosition, OrderHistoryReport, OrderHistoryRow, PortfolioReport, TradeHistoryReport, TradeRow,
 } from '@/types/api/report_types'
-import type { Opening } from '@/types/run_chart_types'
+import type { ChartMark, Opening } from '@/types/run_chart_types'
 
 import orderFixture from './fixtures/order_history.json'
 import portfolioFixture from './fixtures/portfolio.json'
@@ -180,6 +180,113 @@ describe('run_chart_marks', () => {
     ]
     expect(marks.filter(mark => mark.role === 'entry')).toHaveLength(unitOpenings.length)
     expect(marks.every(mark => times.includes(mark.time))).toBe(true)
+  })
+
+  /** A mark is never narrower than the library's 12 px: at a bar of 0.5 px it covers thirty bars. */
+  describe('barsPerMark', () => {
+    it('counts the bars one mark covers at the width a bar has on screen', () => {
+      expect(barsPerMark(null)).toBe(1)
+      expect(barsPerMark(20)).toBe(1)
+      expect(barsPerMark(6)).toBe(3)
+      expect(barsPerMark(0.5)).toBe(30)
+    })
+  })
+
+  describe('gatherMarks', () => {
+    // ten bars a minute apart, 05:00 to 05:09
+    const bars = Array.from({ length: 10 }, (_, index) => 1761886800 + index * 60)
+    function entryAt(bar: number, position: string): ChartMark {
+      return openingMarks(
+        [opening({ ...longOpening, position_id: position, event_time: new Date((bars[bar]! + 5) * 1000).toISOString() })],
+        [], [], 'EUR', bars, null,
+      )[0]!
+    }
+    function exitAt(bar: number, position: string, net: number): ChartMark {
+      return exitMarks([trade({
+        ...long, position_id: position, exit_tick_index: bar, net_pnl: net,
+        exit_time: new Date((bars[bar]! + 5) * 1000).toISOString(),
+      })], KEY, bars, null)[0]!
+    }
+
+    it('draws marks that do not cover each other as they are', () => {
+      const marks = [entryAt(0, 'pos_1'), entryAt(5, 'pos_2')]
+      expect(gatherMarks(marks, bars, 3)).toEqual(marks)
+    })
+
+    /** One mark with a count where several would cover each other — its id and card its own. */
+    it('gathers the marks of one kind and side that one mark would cover', () => {
+      const [first, ...rest] = gatherMarks([entryAt(0, 'pos_1'), entryAt(1, 'pos_2'), entryAt(2, 'pos_3'), entryAt(3, 'pos_4')], bars, 3)
+      expect(first).toMatchObject({ time: bars[0], role: 'entry', text: '×3', count: 3, id: 'gathered|entry|unit|pos_1' })
+      // the next group starts where the first one's reach ends
+      expect(rest).toHaveLength(1)
+      expect(rest[0]!.count).toBeUndefined()
+    })
+
+    it('never gathers an opening with an exit, nor a mark above the bar with one below it', () => {
+      const short = openingMarks([opening({ ...longOpening, position_id: 'pos_9', direction: 'short' })], [], [], 'EUR', bars, null)[0]!
+      expect(gatherMarks([entryAt(0, 'pos_1'), exitAt(0, 'pos_2', 1), short], bars, 3)).toHaveLength(3)
+    })
+
+    /** An exit's sign stands before the count, and a mixed bundle claims no direction. */
+    it('writes a gathered exit\'s results as one sign, or as mixed where they differ', () => {
+      const gains = gatherMarks([exitAt(0, 'pos_1', 1), exitAt(1, 'pos_2', 2)], bars, 3)
+      expect(gains[0]).toMatchObject({ role: 'positive', text: '+×2' })
+      const mixed = gatherMarks([exitAt(0, 'pos_1', 1), exitAt(1, 'pos_2', -2), exitAt(2, 'pos_3', 0)], bars, 3)
+      expect(mixed[0]).toMatchObject({ role: 'mixed', text: '±×3' })
+    })
+
+    it('leaves the position looked at standing apart', () => {
+      const focused = { ...entryAt(1, 'pos_2'), focused: true }
+      const marks = gatherMarks([entryAt(0, 'pos_1'), focused, entryAt(2, 'pos_3')], bars, 3)
+      expect(marks.find(mark => mark.focused)).toBe(focused)
+      expect(marks.find(mark => mark.count === 2)).toBeDefined()
+    })
+
+    /** The card lists the members one line each, a handful at most — never a total. */
+    it('lists the members in the card, eight at most, and sums nothing', () => {
+      const members = Array.from({ length: 10 }, (_, index) => exitAt(index % 10, `pos_${index}`, 1))
+      const [gathered] = gatherMarks(members, bars, 30)
+      expect(gathered!.card.title).toBe('10 trades closed')
+      const labels = gathered!.card.details.map(pair => pair.label)
+      expect(labels[0]).toBe('Between')
+      expect(labels.slice(1, 9)).toEqual(members.slice(0, 8).map(member => member.line.label))
+      expect(labels.at(-1)).toBe('+2')
+      expect(labels).not.toContain('Net P&L')
+    })
+  })
+
+  /**
+   * A finer timeframe offered where it draws apart marks that share a candle — and only there:
+   * marks of one instant no timeframe separates, and a window too long for it is not offered.
+   */
+  describe('timeframeOffer', () => {
+    const MINUTES: Record<string, number> = { M1: 1, M5: 5, M15: 15, H1: 60 }
+    const minutesFor = (timeframe: string): number | undefined => MINUTES[timeframe]
+    const COVERED = ['M1', 'M5', 'M15', 'H1']
+    const HOUR = [1761886800]
+    function exitAtSecond(second: number, position: string): ChartMark {
+      return exitMarks([trade({
+        ...long, position_id: position, exit_tick_index: second,
+        exit_time: new Date((HOUR[0]! + second) * 1000).toISOString(),
+      })], KEY, HOUR, null)[0]!
+    }
+
+    it('offers the coarsest finer timeframe that draws the marks of a candle apart', () => {
+      // seven and a half minutes apart: M5 draws them apart, M15 does not
+      const offer = timeframeOffer([exitAtSecond(30, 'pos_1'), exitAtSecond(480, 'pos_2')], 'H1', COVERED, minutesFor, 24 * 60)
+      expect(offer).toEqual({ timeframe: 'M5', candles: 1, apart: 1, at: HOUR[0]! + 30 })
+    })
+
+    it('offers nothing where the marks share an instant, or where no candle holds two', () => {
+      expect(timeframeOffer([exitAtSecond(30, 'pos_1'), exitAtSecond(30, 'pos_2')], 'H1', COVERED, minutesFor, 60)).toBeNull()
+      expect(timeframeOffer([exitAtSecond(30, 'pos_1')], 'H1', COVERED, minutesFor, 60)).toBeNull()
+    })
+
+    /** M5 would draw them apart, but past its 10,000 bars the route cuts the window. */
+    it('offers nothing the route would cut: the window past its bars at that timeframe', () => {
+      const marks = [exitAtSecond(30, 'pos_1'), exitAtSecond(480, 'pos_2')]
+      expect(timeframeOffer(marks, 'H1', COVERED, minutesFor, (SERVED_BAR_MAX + 1) * 5)).toBeNull()
+    })
   })
 
   describe('focusTime', () => {

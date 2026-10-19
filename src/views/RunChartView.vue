@@ -4,6 +4,8 @@ import { storeToRefs } from 'pinia'
 import CandleChart from '@/components/CandleChart.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
+import HintLine from '@/components/base/HintLine.vue'
+import ChartNotices from '@/components/runs/ChartNotices.vue'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { t } from '@/translate'
@@ -18,7 +20,7 @@ import { t } from '@/translate'
  */
 const chart = useRunChartStore()
 const {
-  units, unit, waiting, unitCoverage, coverageError, timeframe, bars, truncated, loading, error, marks, focusAt,
+  units, unit, waiting, unitCoverage, coverageError, timeframe, bars, truncated, loading, error, marks, offer, focusAt,
   priceFormat,
 } = storeToRefs(chart)
 const { selectedRunId, selectedRun, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
@@ -30,6 +32,8 @@ onUnmounted(() => chart.detach())
 
 <template>
   <div class="run-chart-view">
+    <!-- what the shapes mean, once: above the states, so it pushes the chart at mount and never again -->
+    <HintLine id="chart-marks" />
     <div v-if="!selectedRunId" class="state-overlay">
       <span class="hint">{{ t('Choose a run to see its trades on the candles') }}</span>
     </div>
@@ -72,14 +76,16 @@ onUnmounted(() => chart.detach())
         {{ t('The archive holds no bars in the window this unit covered') }}: {{ unit.name }} · {{ unit.symbol }} · {{ timeframe }}
       </span>
     </div>
-    <template v-else>
-      <!-- the route never cuts quietly, and neither does the chart: said where it shows -->
-      <p v-if="truncated" class="notice">
-        <AppIcon name="status-warning" class="notice-mark" />
-        {{ t('The window holds more bars than the archive serves at once — a longer timeframe shows all of it') }}
-      </p>
-      <CandleChart :data="bars" :marks="marks" :focus="focusAt" :price-format="priceFormat" />
-    </template>
+    <CandleChart
+      v-else
+      :data="bars"
+      :marks="marks"
+      :focus="focusAt"
+      :price-format="priceFormat"
+      @spacing="chart.setSpacing"
+    >
+      <ChartNotices :truncated="truncated" :offer="offer" @accept="chart.acceptOffer" />
+    </CandleChart>
   </div>
 </template>
 
@@ -120,20 +126,4 @@ onUnmounted(() => chart.detach())
   flex-shrink: 0;
 }
 
-.notice {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  margin: 0;
-  padding: var(--space-xs) var(--space-sm);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-/* something to weigh before trusting what is beside it: the warning role, with its word */
-.notice-mark {
-  flex-shrink: 0;
-  color: var(--color-warning);
-}
 </style>

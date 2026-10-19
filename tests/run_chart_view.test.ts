@@ -85,15 +85,24 @@ describe('RunChartView', () => {
     const chart = wrapper.find('.candle-chart')
     expect(chart.exists()).toBe(true)
     expect(Number(chart.attributes('data-marks'))).toBeGreaterThan(0)
-    expect(wrapper.find('.notice').exists()).toBe(false)
+    expect(wrapper.find('.chart-notice').exists()).toBe(false)
+  })
+
+  /** What the shapes mean, said once over the chart — and dismissible, like every hint. */
+  it('explains the shapes of its marks in a hint line', async () => {
+    chooseFixtureRun()
+    const wrapper = await mountView()
+    expect(wrapper.text()).toContain('↑↓ a position opened')
   })
 
   it('says so where the route answered with less than the window holds', async () => {
     vi.mocked(apiClient.getBars).mockResolvedValue({ bars: barsOver('2025-10-31T05:00:00Z', '2025-10-31T05:10:00Z'), truncated: true })
     chooseFixtureRun()
     const wrapper = await mountView()
-    expect(wrapper.find('.notice').text()).toContain('more bars than the archive serves at once')
-    expect(wrapper.find('.notice [data-icon="status-warning"]').exists()).toBe(true)
+    // inside the chart's frame, over the plot — never a line that moves the chart down
+    const notice = wrapper.find('.candle-chart .chart-notice')
+    expect(notice.text()).toContain('more bars than the archive serves at once')
+    expect(notice.find('[data-icon="status-warning"]').exists()).toBe(true)
   })
 
   it('names the market the archive holds nothing for', async () => {

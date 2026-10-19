@@ -13,8 +13,9 @@ import type { ChartMark } from '@/types/run_chart_types'
 const props = defineProps<{
   data: ChartBar[]
   /**
-   * Where trades opened and closed — drawn on the candles they fell in. Their count stands on the
-   * element as `data-marks`: the canvas draws them where no assertion can read them back.
+   * Where positions opened and trades closed — drawn on the candles they fell in, several that would
+   * cover each other as one. Their count stands on the element as `data-marks`, what they stand for
+   * as `data-events`: the canvas draws them where no assertion can read them back.
    */
   marks?: ChartMark[]
   /** An instant to centre on, in UTC seconds — the position the reader is looking at. */
@@ -26,8 +27,25 @@ const props = defineProps<{
   priceFormat?: { precision: number, minMove: number } | null
 }>()
 
+const emit = defineEmits<{
+  /**
+   * The width of one bar on screen, in pixels, whenever the reader zooms or the chart is resized —
+   * what a caller gathers marks by that would otherwise cover each other.
+   */
+  spacing: [width: number]
+}>()
+
 /** How many bars are on show around a focus, where the whole window would make them too narrow to read. */
 const FOCUS_SPAN = 150
+
+/**
+ * The narrowest a bar may be drawn, in pixels. The library's own floor is 0.5 px, and fitting a
+ * window to the chart stops there: 2,000 bars then need 1,000 px, and on a chart narrower than that
+ * the window's start — and every mark on it — was out of view at first look (measured 2026-10-19:
+ * a unit of 1,217 H4 bars at the default split showed from mid-February of a window that began in
+ * January). Low enough for the route's 10,000 bars to fit 500 px.
+ */
+const MIN_BAR_SPACING = 0.05
 
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
@@ -48,6 +66,9 @@ const frameSize = ref({ width: 0, height: 0 })
  * built from the marks alone.
  */
 const cards = computed(() => new Map<string, FigureCard>((props.marks ?? []).map(mark => [mark.id, mark.card])))
+
+/** How many events the marks stand for — a gathered mark for each of its members. */
+const events = computed(() => (props.marks ?? []).reduce((sum, mark) => sum + (mark.count ?? 1), 0))
 
 /** The card under the pointer, and where the pointer is — null off every drawn thing. */
 const pointed = shallowRef<{ card: FigureCard, x: number, y: number } | null>(null)
@@ -94,11 +115,14 @@ function readColours(): ChartColours {
   }
 }
 
-/** A mark's colour by its role — a result is the polarity of a figure; the shape says the rest. */
+/**
+ * A mark's colour by its role — a result is the polarity of a figure; the shape says the rest. A
+ * gathered mark whose results point different ways claims neither: quiet, like a flat one.
+ */
 function markColour(mark: ChartMark, colours: ChartColours): string {
   if (mark.role === 'positive') return colours.rise
   if (mark.role === 'negative') return colours.fall
-  if (mark.role === 'flat') return colours.quiet
+  if (mark.role === 'flat' || mark.role === 'mixed') return colours.quiet
   return colours.mark
 }
 
@@ -181,13 +205,22 @@ function initChart(size: { width: number, height: number }): void {
   chart = createChart(container.value, {
     width: size.width,
     height: size.height,
-    timeScale: { timeVisible: true },
+    timeScale: { timeVisible: true, minBarSpacing: MIN_BAR_SPACING },
   })
   chart.applyOptions(chartColours(colours))
   chart.subscribeCrosshairMove(onPointer)
+  chart.timeScale().subscribeVisibleLogicalRangeChange(reportSpacing)
   frameSize.value = size
 
   series = chart.addCandlestickSeries({ borderVisible: false, ...candleColours(colours), ...seriesFormat() })
+}
+
+/** The width of a bar on screen: the plot's width over the bars in view, however far zoomed. */
+function reportSpacing(): void {
+  if (!chart) return
+  const range = chart.timeScale().getVisibleLogicalRange()
+  const bars = range ? range.to - range.from : 0
+  if (bars > 0) emit('spacing', chart.timeScale().width() / bars)
 }
 
 /** The series' price format where one was handed in — nothing, and the library keeps its own. */
@@ -256,8 +289,13 @@ watch(() => props.priceFormat, () => series?.applyOptions(
 </script>
 
 <template>
-  <div class="candle-chart" :data-marks="marks?.length ?? 0">
+  <div class="candle-chart" :data-marks="marks?.length ?? 0" :data-events="events">
+    <!-- what is drawn, counted on the element above: the canvas cannot be read back. `data-events`
+         counts what the marks stand for, a gathered one for each of its members -->
     <div ref="container" class="candle-canvas" />
+    <!-- notices stand INSIDE the frame, over the plot: a line above it would move the chart each
+         time one appeared, and a selection never moves the layout -->
+    <slot />
     <ChartCard
       v-if="pointed"
       :card="pointed.card"
@@ -270,9 +308,13 @@ watch(() => props.priceFormat, () => series?.applyOptions(
 </template>
 
 <style scoped>
-/* the frame a card is placed in: the library draws into the canvas element beside it */
+/* the frame a card is placed in: the library draws into the canvas element beside it.
+   In a column with a line above it — a hint — it takes the room left, not the column's whole
+   height: sized to 100% it overflowed by that line, and the panel clipped its time axis */
 .candle-chart {
   position: relative;
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
   height: 100%;
 }

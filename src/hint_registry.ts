@@ -38,6 +38,10 @@ const HINTS: HintDefinition[] = [
     text: t('⌕ opens the search. Where the panel is narrow, the filters that do not fit wait behind +N, each with its values and counts.'),
   },
   {
+    id: 'chart-marks',
+    text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
+  },
+  {
     id: 'position-link',
     text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back; the chart mark beside it opens the run chart on that position. A partial close books several trades of one position, so all of them are marked.'),
   },

@@ -59,6 +59,9 @@ it says so and draws nothing.
   length only widens the ask; a mark stands on a bar SERVED, the last one that opened at or before
   the event, never on one computed from a period's length — a trading day or a week does not start
   on a multiple of its length, and lightweight-charts snaps a mark between bars onto the next one.
+  Where the route CUT the window, an event past the last bar's open gets no mark: it would stand on
+  that last bar, weeks from where it happened — measured 2026-10-19, a unit cut at M1 piled fifteen
+  marks onto its last candle.
 - **What it centres on is the link's marked position.** The chart mark on a row marks the position
   (`context.mark`), sets the chart's unit and opens the panel (`use_chart_link.ts`, provided at
   the root beside the other channels) — so the row in the list and the marks on the candles agree
@@ -71,6 +74,28 @@ it says so and draws nothing.
   quote-driven bar's midpoint, is to round it for display to that tick size (its `prices` document,
   contract 34). Without a report the library keeps its own format, two decimals for every
   instrument — which is where the free chart still stands: the market-data routes name no tick size.
+- **Marks that would cover each other are drawn as ONE, with a count** (viewer#41, decided
+  2026-10-19). What a reader sees as density is overlap: measured over the archive, two events rarely
+  share a candle at the timeframe drawn, but 2,000 bars on 600 px are 0.3 px each and the library
+  draws no mark narrower than 12 px. So marks of one kind and one side of the bar gather when they
+  stand within a mark's width of the group's first — one candle zoomed in, several zoomed out — and
+  split again as the reader zooms in, the way TradingView groups its executions. The chart reports
+  the width of a bar on every zoom (`spacing`), and `gatherMarks` regroups only when the bars a mark
+  covers change. A gathered mark reads `×3`, an exit's sign before the count (`+×3`, `−×2`, `±×3`
+  where the results point different ways, quiet like a flat one) — a bare `+3` beside the gain colour
+  would read as an amount. Its card lists the members one line each, at most eight and then
+  `+N more`, and sums nothing. The position the reader is looking at is never gathered.
+- **A finer timeframe is offered where one draws the marks of a candle apart** — and only there.
+  The automatic timeframe already is the finest within its 2,000 bars, so the offer looks at every
+  covered timeframe finer than the one drawn that still draws the window within the route's 10,000,
+  coarsest first. Two instants at least one period apart never share a bar, whatever the bars'
+  alignment, so no bar is computed. Measured 2026-10-19: in 72 of 137 such candles the exits share
+  one instant, and no timeframe parts those. Taken, the chart draws in it centred on the first such
+  candle, until the reader chooses a timeframe or a position again.
+- **Notices stand inside the plot, in its top-left corner** (`ChartNotices.vue`) — the window the
+  route cut, and the offer. A line above the chart moved it each time one appeared, and a selection
+  never moves the layout. A hint above it explains the shapes once, and the chart takes the room it
+  leaves rather than overflowing the panel by it, which clipped its time axis.
 - **Every state says what it is**: no run, the run's units on their way, no unit that can be drawn,
   a market the archive holds nothing for, a window without bars, and a notice where the route cut
   the window — an empty chart says nothing about why it is empty.
@@ -85,6 +110,12 @@ it says so and draws nothing.
 - **Custom WebGL/Canvas** — full control but months of work with no financial primitives.
 
 Lightweight Charts becomes limiting if we need complex multi-pane indicator layouts or a professional trading UI. For v0.1–v0.2 scope (read-only candle display), it is the right choice.
+
+**A window is fitted whole, however narrow the chart** (`CandleChart.vue`). The library's least bar
+width is 0.5 px, and fitting stops there: 2,000 bars then need 1,000 px, and on a narrower chart the
+window's start was out of view — measured 2026-10-19, a unit of 1,217 H4 bars at the default split
+showed from mid-February of a window that began in January. The chart sets it to 0.05 px, so the
+route's 10,000 bars fit 500 px.
 
 **The chart is built at its first REAL size, and a collapse to nothing is ignored** (`CandleChart.vue`).
 A container of 0×0 is a panel not yet laid out or not in view; a chart created or fitted at that

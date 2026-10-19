@@ -15,6 +15,10 @@ const lw = vi.hoisted(() => {
   const setData = vi.fn<(data: unknown[]) => void>()
   const setMarkers = vi.fn<(marks: Record<string, unknown>[]) => void>()
   const setVisibleLogicalRange = vi.fn<(range: { from: number, to: number }) => void>()
+  /** The bars in view and the plot's width, as the library reports them — set by a test to zoom. */
+  const zoom: { change: (() => void) | null, range: { from: number, to: number } | null, width: number } = {
+    change: null, range: { from: 0, to: 100 }, width: 600,
+  }
   const series = { setData, setMarkers, applyOptions: vi.fn<(options: Record<string, unknown>) => void>() }
   /** What the library calls as the pointer moves — held so a test can move it. */
   const pointer: { move: ((param: Record<string, unknown>) => void) | null } = { move: null }
@@ -22,14 +26,20 @@ const lw = vi.hoisted(() => {
     subscribeCrosshairMove: vi.fn((handler: (param: Record<string, unknown>) => void) => { pointer.move = handler }),
     addCandlestickSeries: vi.fn<(options: Record<string, unknown>) => typeof series>(() => series),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
-    timeScale: vi.fn(() => ({ fitContent, setVisibleLogicalRange })),
+    timeScale: vi.fn(() => ({
+      fitContent,
+      setVisibleLogicalRange,
+      subscribeVisibleLogicalRangeChange: (handler: () => void) => { zoom.change = handler },
+      getVisibleLogicalRange: () => zoom.range,
+      width: () => zoom.width,
+    })),
     resize: vi.fn<(width: number, height: number) => void>(),
     remove: vi.fn(),
   }
   const createChart = vi.fn<(container: HTMLElement, options: Record<string, unknown>) => typeof chart>(
     () => chart
   )
-  return { chart, series, pointer, setData, setMarkers, setVisibleLogicalRange, fitContent, createChart }
+  return { chart, series, pointer, zoom, setData, setMarkers, setVisibleLogicalRange, fitContent, createChart }
 })
 
 vi.mock('lightweight-charts', () => ({
@@ -73,8 +83,9 @@ function mountChart(
 
 function mark(fields: Partial<ChartMark>): ChartMark {
   return {
-    time: BARS[0]!.time, position: 'belowBar', shape: 'arrowUp', role: 'entry', text: '', focused: false,
-    id: 'entry|unit|pos_1', card: { title: 'pos_1 · long 0.1', details: [] },
+    time: BARS[0]!.time, at: BARS[0]!.time, position: 'belowBar', shape: 'arrowUp', role: 'entry', text: '',
+    focused: false, id: 'entry|unit|pos_1', card: { title: 'pos_1 · long 0.1', details: [] },
+    line: { label: 'pos_1', value: 'long 0.1' },
     ...fields,
   }
 }
@@ -281,6 +292,18 @@ describe('CandleChart', () => {
     expect(lw.chart.addCandlestickSeries.mock.calls[0]![0]).not.toHaveProperty('priceFormat')
   })
 
+  /**
+   * Fitted at the library's own floor of 0.5 px a bar, 2,000 bars needed 1,000 px, and on a narrower
+   * chart the window's start was out of view at first look.
+   */
+  it('lets a long window fit a narrow chart, below the library\'s own least bar width', () => {
+    size = { width: 800, height: 400 }
+    mountChart()
+    const options = lw.createChart.mock.lastCall![1] as { timeScale: { minBarSpacing: number } }
+    // the route serves at most 10,000 bars at once: they fit 500 px
+    expect(10_000 * options.timeScale.minBarSpacing).toBeLessThanOrEqual(500)
+  })
+
   it('says on its element how many marks it draws', () => {
     size = { width: 800, height: 400 }
     const wrapper = mountChart(BARS, { marks: [mark({}), mark({ role: 'positive' })] })
@@ -351,16 +374,46 @@ describe('CandleChart', () => {
         mark({ role: 'positive', shape: 'circle', position: 'aboveBar', text: '+' }),
         mark({ role: 'negative', shape: 'circle', text: '−' }),
         mark({ role: 'flat', shape: 'circle', text: '0' }),
+        mark({ role: 'mixed', shape: 'circle', text: '±×3', count: 3 }),
       ] })
 
+      // a gathered mark whose results point different ways claims neither: quiet, like a flat one
       expect(lw.setMarkers.mock.lastCall![0].map(entry => [entry['color'], entry['size']])).toEqual([
-        ['#000007', 2], ['#000005', 1], ['#000006', 1], ['#000002', 1],
+        ['#000007', 2], ['#000005', 1], ['#000006', 1], ['#000002', 1], ['#000002', 1],
       ])
       expect(lw.setMarkers.mock.lastCall![0][1]).toMatchObject({ shape: 'circle', position: 'aboveBar', text: '+' })
 
       document.documentElement.dataset.theme = 'light'
       await flushPromises()
-      expect(lw.setMarkers.mock.lastCall![0].map(entry => entry['color'])).toEqual(['#ffff07', '#ffff05', '#ffff06', '#ffff02'])
+      expect(lw.setMarkers.mock.lastCall![0].map(entry => entry['color'])).toEqual(['#ffff07', '#ffff05', '#ffff06', '#ffff02', '#ffff02'])
+    })
+
+    /** The width of a bar is what overlapping marks are gathered by, so the chart reports every zoom. */
+    it('reports the width a bar has on screen whenever the reader zooms', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart()
+      lw.zoom.range = { from: 10, to: 110 }
+      lw.zoom.width = 600
+      lw.zoom.change!()
+      expect(wrapper.emitted('spacing')!.at(-1)).toEqual([6])
+      const before = wrapper.emitted('spacing')!.length
+      lw.zoom.range = null
+      lw.zoom.change!()
+      expect(wrapper.emitted('spacing')!.length).toBe(before)
+    })
+
+    it('counts what the marks stand for, a gathered one for each of its members', () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(BARS, { marks: [mark({ id: 'gathered|a', count: 3, text: '×3' }), mark({ id: 'b' })] })
+      expect(wrapper.find('.candle-chart').attributes('data-marks')).toBe('2')
+      expect(wrapper.find('.candle-chart').attributes('data-events')).toBe('4')
+    })
+
+    /** Notices stand over the plot: a line above it would move the chart each time one appeared. */
+    it('places what it is handed inside its frame', () => {
+      size = { width: 800, height: 400 }
+      mounted = mount(CandleChart, { props: { data: BARS }, slots: { default: '<p class="probe">notice</p>' } })
+      expect(mounted.find('.candle-chart .probe').exists()).toBe(true)
     })
 
     it('repaints when the theme changes, without being built again', async () => {

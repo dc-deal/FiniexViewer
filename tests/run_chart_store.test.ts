@@ -215,6 +215,65 @@ describe('useRunChartStore', () => {
     expect(chart.marks.map(mark => mark.time)).toEqual([...chart.marks.map(mark => mark.time)].sort())
   })
 
+  /** A window the route cut ends at its last bar: an event past it has no candle, not the last one. */
+  it('draws nothing past the last bar of a window the route cut', async () => {
+    chooseFixtureRun()
+    vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true })
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const last = ANSWER.bars.at(-1)!.t
+    expect(chart.events.every(mark => mark.at <= last)).toBe(true)
+
+    vi.mocked(apiClient.getBars).mockResolvedValue(ANSWER)
+    chart.chooseTimeframe('M5')
+    await flushPromises()
+    // the same unit uncut: its later events stand on the last bar, which reaches to its last tick
+    expect(chart.events.some(mark => mark.at > last)).toBe(true)
+  })
+
+  /** What overlaps at the zoom on screen is drawn as one — and nothing is lost by it. */
+  it('gathers the marks at the width the chart reports a bar to have, and loses none', async () => {
+    chooseFixtureRun()
+    // the unit's whole hour, a bar a minute, so its marks stand on bars of their own
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 })),
+      truncated: false,
+    })
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const stood = (marks: { count?: number }[]) => marks.reduce((sum, mark) => sum + (mark.count ?? 1), 0)
+    chart.setSpacing(100)
+    const apart = chart.marks.length
+    expect(stood(chart.marks)).toBe(chart.events.length)
+    chart.setSpacing(0.1)
+    expect(chart.marks.length).toBeLessThan(apart)
+    expect(stood(chart.marks)).toBe(chart.events.length)
+  })
+
+  /**
+   * Several marks in one candle that a finer timeframe draws apart: the offer names it, and taking
+   * it draws the chart in it, centred on the first such candle — until the reader chooses again.
+   */
+  it('offers a finer timeframe where one draws a candle\'s marks apart, and centres on it when taken', async () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    chart.chooseTimeframe('M5')
+    await flushPromises()
+    const offer = chart.offer!
+    expect(offer.timeframe).toBe('M1')
+    expect(offer.apart).toBeGreaterThan(0)
+
+    chart.acceptOffer()
+    await flushPromises()
+    expect(chart.timeframe).toBe('M1')
+    expect(chart.focusAt).toBe(offer.at)
+    chart.chooseTimeframe('M5')
+    expect(chart.focusAt).toBeNull()
+  })
+
   /** A position the run ended with still open has no trade — its opening is marked all the same. */
   it('marks the opening of a position that never closed, and says in its card it was still open', async () => {
     chooseFixtureRun()

@@ -4,7 +4,9 @@ import { findCoverage, getBars } from '@/api/api_client'
 import {
   autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
 } from '@/components/runs/run_chart'
-import { executedOpenings, exitMarks, focusTime, openingMarks } from '@/components/runs/run_chart_marks'
+import {
+  barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
+} from '@/components/runs/run_chart_marks'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
 import { useContextStore } from '@/stores/context_store'
@@ -13,7 +15,7 @@ import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
 import type { PositionRef } from '@/types/context_types'
-import type { ChartMark, ChartUnit } from '@/types/run_chart_types'
+import type { ChartMark, ChartUnit, TimeframeOffer } from '@/types/run_chart_types'
 
 /** One market's coverage as asked — the answer, or that the archive holds nothing for it. */
 type CoverageEntry = CoverageResponse | 'none'
@@ -135,19 +137,49 @@ export const useRunChartStore = defineStore('runChart', () => {
   /** The unit's row in the portfolio — what its positions still open at the end stood at. */
   const unitPortfolio = computed(() => reports.portfolio?.units.find(row => row.name === unit.value?.name) ?? null)
 
-  const marks = computed<ChartMark[]>(() => {
-    const barTimes = bars.value.map(bar => bar.time)
-    return [
+  const barTimes = computed(() => bars.value.map(bar => bar.time))
+
+  /** Every opening and exit of the unit on show, one mark each, in time order. */
+  const events = computed<ChartMark[]>(() => {
+    const all = [
       ...openingMarks(
         unitOpenings.value, unitPortfolio.value?.open_positions ?? [], unitTrades.value,
-        unitPortfolio.value?.currency ?? '', barTimes, focus.value,
+        unitPortfolio.value?.currency ?? '', barTimes.value, focus.value,
       ),
-      ...exitMarks(unitTrades.value, reports.tradeHistory?.keys.trades ?? [], barTimes, focus.value),
-    // the chart takes its marks in time order
+      ...exitMarks(unitTrades.value, reports.tradeHistory?.keys.trades ?? [], barTimes.value, focus.value),
     ].sort((a, b) => a.time - b.time)
+    // Where the route CUT the window, the bars after the last one served were never drawn, and an
+    // event among them would stand on that last bar — weeks away from where it happened (measured
+    // 2026-10-19: a unit cut at M1 piled fifteen marks onto its last candle). Past the last bar's
+    // open nothing is placed for certain, so nothing is drawn there; the notice says the window was cut.
+    const last = barTimes.value.at(-1)
+    return truncated.value && last !== undefined ? all.filter(mark => mark.at <= last) : all
   })
 
-  const focusAt = computed<number | null>(() => focusTime(unitOpenings.value, unitTrades.value, focus.value))
+  /** The width of a bar on screen, as the chart last reported it — null before it has drawn. */
+  const spacing = ref<number | null>(null)
+
+  /** How many bars a mark covers at that width — what the marks are gathered by. */
+  const perMark = computed(() => barsPerMark(spacing.value))
+
+  /**
+   * The marks as drawn: what overlaps at the zoom on screen gathered into one. Recomputed only when
+   * the number of bars a mark covers changes, not on every scroll.
+   */
+  const marks = computed<ChartMark[]>(() => gatherMarks(events.value, barTimes.value, perMark.value))
+
+  /** A finer timeframe that draws apart the marks some candles hold together — where one does. */
+  const offer = computed<TimeframeOffer | null>(() => {
+    if (!timeframe.value || !window.value) return null
+    const minutes = (Date.parse(window.value.to) - Date.parse(window.value.from)) / 60_000
+    return timeframeOffer(events.value, timeframe.value, coveredTimeframes.value, timeframeStore.minutesFor, minutes)
+  })
+
+  /** Where the chart centres after the offer was taken — until the reader looks elsewhere. */
+  const offerAt = ref<number | null>(null)
+
+  const focusAt = computed<number | null>(() =>
+    offerAt.value ?? focusTime(unitOpenings.value, unitTrades.value, focus.value))
 
   /** The unit's prices at its instrument's tick size, from the run's broker report — null without one. */
   const priceFormat = computed(() =>
@@ -208,6 +240,9 @@ export const useRunChartStore = defineStore('runChart', () => {
     () => { if (viewers.value) void loadBars() },
   )
 
+  // the place the offer centred on belongs to the unit and the position it was taken for
+  watch(() => [unit.value?.name, focus.value?.position] as const, () => { offerAt.value = null })
+
   // the focus cleared leaves the chart where it was: the unit it showed becomes its own choice.
   // Only within one run — a new run clears the focus too, and its chart starts afresh
   watch(() => [runsStore.selectedRunId, focused.value] as const, ([run, now], [runBefore, before]) => {
@@ -229,7 +264,21 @@ export const useRunChartStore = defineStore('runChart', () => {
   }
 
   function chooseTimeframe(next: string): void {
+    offerAt.value = null
     remember({ timeframe: next })
+  }
+
+  /** Takes the offer: the finer timeframe, centred on the first candle it draws apart. */
+  function acceptOffer(): void {
+    const taken = offer.value
+    if (!taken) return
+    remember({ timeframe: taken.timeframe })
+    offerAt.value = taken.at
+  }
+
+  /** The width of a bar on screen, as the chart reports it on every zoom. */
+  function setSpacing(next: number): void {
+    spacing.value = next
   }
 
   /**
@@ -258,7 +307,7 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
-    bars, truncated, loading, error, marks, focusAt, priceFormat,
-    chooseUnit, chooseTimeframe, showPosition, canShow, attach, detach,
+    bars, truncated, loading, error, events, marks, offer, focusAt, priceFormat,
+    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach,
   }
 })

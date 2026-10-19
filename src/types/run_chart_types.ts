@@ -1,5 +1,5 @@
 import type { OrderHistoryRow } from '@/types/api/report_types'
-import type { FigureCard, Polarity } from '@/types/figure_types'
+import type { Figure, FigureCard, Polarity } from '@/types/figure_types'
 
 /**
  * Why a unit of a run cannot be drawn on the run chart. A code, not a sentence: the words are the
@@ -38,20 +38,42 @@ export interface Opening extends OrderHistoryRow {
 }
 
 /**
- * Where a position opened or a trade closed, on its candle. The ROLE is what the chart colours by — the shape
- * and the text carry the meaning on their own, so the colour only reinforces it.
+ * Where a position opened or a trade closed, on its candle — or, GATHERED, several of one kind that
+ * stand closer than a mark is wide. The ROLE is what the chart colours by — the shape and the text
+ * carry the meaning on their own, so the colour only reinforces it. `mixed` is a gathered mark of
+ * exits whose results point different ways.
  */
 export interface ChartMark {
   /** UTC seconds: the OPEN of the bar the event fell in, which is how the bars are stamped. */
   time: number
+  /** UTC seconds: the instant of the event itself — of the first one, for a gathered mark. */
+  at: number
   position: 'aboveBar' | 'belowBar'
   shape: 'arrowUp' | 'arrowDown' | 'circle'
-  role: 'entry' | Polarity
+  role: 'entry' | Polarity | 'mixed'
   text: string
-  /** A mark of the position the reader is looking at — drawn larger. */
+  /** A mark of the position the reader is looking at — drawn larger, and never gathered. */
   focused: boolean
   /** What the chart library reports while the pointer rests on the mark — the key of its card. */
   id: string
   /** What the mark is, said at the pointer: which position, and how it opened or ended. */
   card: FigureCard
+  /** The mark in one line — its row in the card of a gathered mark. */
+  line: Figure
+  /** How many marks a gathered mark stands for. Absent on a single one. */
+  count?: number
+}
+
+/**
+ * A finer timeframe that draws apart the marks some candles hold together — offered only where it
+ * does, and only within what the route serves at once. `at` is the first of those candles, in UTC
+ * seconds, where the chart centres when the offer is taken.
+ */
+export interface TimeframeOffer {
+  timeframe: string
+  /** The candles that hold several marks of one kind at the timeframe drawn. */
+  candles: number
+  /** How many of them the offered timeframe draws apart. */
+  apart: number
+  at: number
 }

@@ -124,3 +124,44 @@ test('the run chart marks the opening of a position that never closed', async ({
   await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBe(1)
   await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
 })
+
+/**
+ * What overlaps on screen is drawn as one mark with a count, and splits again as the reader zooms
+ * in. The fixture's `ETHUSD_spot_two_balances` opened eleven positions and closed ten trades over
+ * eighteen hours — 1,075 bars of a minute; zoomed out, a mark covers hours of them.
+ */
+test('marks that would cover each other are drawn as one, and split as the reader zooms in', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
+  await expect(unitSelect).toBeEnabled()
+  await unitSelect.selectOption('ETHUSD_spot_two_balances')
+
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-events'))).toBe(21)
+  const box = (await chart.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+
+  // out: the marks of hours stand within one mark's width, and gather
+  for (let step = 0; step < 8; step++) await page.mouse.wheel(0, 400)
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBeLessThan(21)
+  const gathered = Number(await chart.getAttribute('data-marks'))
+
+  // in again: they split, and nothing was lost on the way
+  for (let step = 0; step < 16; step++) await page.mouse.wheel(0, -400)
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBeGreaterThan(gathered)
+  expect(Number(await chart.getAttribute('data-events'))).toBe(21)
+})
+
+/** A line above the chart — the hint on its shapes — takes room from it, never its time axis. */
+test('the hint above the run chart leaves the whole chart inside its panel', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const panel = page.locator('[data-panel-kind="run-chart"]')
+  await expect(panel.getByText('a position opened')).toBeVisible()
+  const chart = panel.locator('.candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBeGreaterThan(0)
+  const outer = (await panel.boundingBox())!
+  const inner = (await chart.boundingBox())!
+  expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height + 1)
+})
