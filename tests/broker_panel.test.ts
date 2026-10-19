@@ -119,6 +119,16 @@ describe('BrokerPanel', () => {
     expect(scenarios?.title).toContain('USDJPY_window_04')
   })
 
+  /** The hash digests less than the block shows: two equal hashes do not mean equal leverage. */
+  it('says one hover away what the config hash digests, and what it leaves out', () => {
+    const figures = mountPanel(report([MARGIN])).findAllComponents(FigureBlock)[0]
+      ?.props('figures') ?? []
+    const hash = figures.find(figure => figure.label === 'Config hash')
+    expect(hash?.value).toBe('d42aab69')
+    expect(hash?.title).toContain('fee structure')
+    expect(hash?.title).toContain('Leverage')
+  })
+
   describe('the sentence that is the point of the panel', () => {
     /**
      * Two stored runs put forex at 1:500 with hedging beside crypto at 1:1 with none. A drawdown

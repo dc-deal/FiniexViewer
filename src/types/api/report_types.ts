@@ -245,8 +245,10 @@ export interface RunInfo {
   // What kind of family parent_id names, null whenever parent_id is. Read this rather than
   // deriving it from `group`: the two axes were one field once and could not express both.
   parent_kind: string | null
-  // Content hash of the configuration the run was produced from — two runs sharing it were
-  // produced by the same stand, which is what `changed` on a deployment is derived from.
+  // Content identity of the configuration file the run was GIVEN, as that file stood when the run
+  // started — two runs naming one id were given the same configuration. Not what it ran with (an
+  // AutoTrader session's is `rendered_config_id` on the header), and every combination of a sweep
+  // names the sweep's base set. A deployment's `changed` compares something else.
   config_id: string
   // Whether the run was expected to report at all; 'expected' on a normal run
   reporting: string
@@ -1191,15 +1193,21 @@ export interface BrokerUnit {
   margin_call_level: number
   stopout_level: number
   hedging_allowed: boolean
-  // content hash of the broker configuration — two units sharing it were configured identically
+  // Digest of the symbol specifications and the fee structure ONLY — leverage, margin_mode,
+  // margin_call_level, stopout_level and hedging_allowed stand beside it and are compared directly.
+  // Since contract 36 a fetch time no longer moves it; where the symbols carry one (a dynamic broker
+  // such as `kraken_spot`), a row recorded before that differs from a later one over the same
+  // values, so such hashes compare only within one side of contract 36.
   config_hash: string
   /**
    * The frozen broker configuration itself, beside the hash that only digests it (contract 19).
-   * An AutoTrader session freezes at its start what it trades with — the venue's symbol
-   * specifications, the seed's fee structure, the detected fee tier — and this names that content.
+   * A run freezes at its start what it trades with — the venue's symbol specifications, the fee
+   * structure, the detected fee tier — and this names that content: an AutoTrader session since
+   * contract 19, a backtest since contract 36.
    *
-   * EMPTY on a simulation unit, which reads the archive's broker files when it runs, and on any
-   * session recorded before contract 19. It is not on the API as a document: this is the id only.
+   * EMPTY on a backtest recorded before contract 36, on a session recorded before contract 19, and
+   * wherever the copy could not be written. For comparing, not a handle: no route serves the frozen
+   * content.
    */
   broker_config_id: string
   // which scenarios of the run traded through this broker, by the unit name every other section

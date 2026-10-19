@@ -33,7 +33,9 @@ export interface DeploymentRow {
   // null where no idle stretch exists at all — a deployment of one session has nothing between
   // its sessions. An absence, and 0 would claim a measured stretch of no length.
   longest_gap_hours: number | null
-  // true when the sessions were not all produced by one configuration
+  // true when the sessions did not all run under one profile: one set of strategy parameters, one
+  // operational configuration and one place for their orders. Neither the code each session ran
+  // nor its broker configuration is compared.
   changed: boolean
   /**
    * Where this deployment's orders went, as the DISTINCT values of its sessions (contract 23):

@@ -120,7 +120,11 @@ function conditions(unit: BrokerUnit): Figure[] {
         ? t('Opposing positions in one symbol can be held at the same time.')
         : t('An opposing order nets against the position instead of opening a second one.'),
     },
-    { label: t('Config hash'), value: unit.config_hash },
+    {
+      label: t('Config hash'),
+      value: unit.config_hash,
+      title: t('A digest of the symbol specifications and the fee structure. Leverage, margin and hedging stand beside it.'),
+    },
     // the count is the VALUE, so the label is the bare noun: `plural` puts the number in front of
     // the word, and a label of "2 Scenarios" beside a value of "2" says it twice
     {

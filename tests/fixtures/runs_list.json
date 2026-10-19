@@ -7,6 +7,47 @@
   ],
   "runs": [
     {
+      "run_id": "20261019_175536_b1f679ab",
+      "group": "autotrader",
+      "name": "mock_session_test",
+      "artifacts": [],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "start_time": "2026-10-19T17:55:36.584352+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "440b1bbaa9e1baed73584521d245097c3f78e69f1fbc81473a31c873f4ccc4e9",
+      "app_version": "1.4.0",
+      "git_commit": "c26ecbb4",
+      "config_snapshot": "mock_session_test.json",
+      "reporting": "expected",
+      "size_bytes": 0,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "mock_session_test",
+          "start_date": "2026-01-25T02:19:46+00:00",
+          "end_date": "2026-01-26T02:14:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 35,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
       "run_id": "20261019_172007_01652e18",
       "group": "autotrader",
       "name": "mock_session_test",
@@ -12458,5 +12499,5 @@
       "has_reports": true
     }
   ],
-  "count": 157
+  "count": 158
 }
