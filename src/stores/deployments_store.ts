@@ -7,6 +7,7 @@ import {
 } from '@/api/api_client'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import { useContextStore } from '@/stores/context_store'
+import { describeFailure } from '@/stores/describe_failure'
 import type {
   DeploymentBookingPeriodsReport,
   DeploymentDetail,
@@ -51,11 +52,6 @@ export const useDeploymentsStore = defineStore('deployments', () => {
   const selectedRows = computed(() =>
     deployments.value.filter(row => row.deployment_id === selectedDeploymentId.value)
   )
-
-  function describeFailure(e: unknown, action: string): string {
-    const detailText = e instanceof Error ? e.message : String(e)
-    return `${action}: ${detailText}`
-  }
 
   function clearLoaded(): void {
     detail.value = null

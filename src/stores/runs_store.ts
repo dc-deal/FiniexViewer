@@ -3,16 +3,11 @@ import { ref, computed } from 'vue'
 import { getRuns, getRunSummary } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { useContextStore } from '@/stores/context_store'
+import { describeFailure } from '@/stores/describe_failure'
 import { isAbsent } from '@/types/api/absence_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { RunInfo, RunSummary } from '@/types/api/report_types'
 import { t } from '@/translate'
-
-/** Failure text for the UI: says what failed, keeps the detail, never shows a stack trace. */
-function describeFailure(error: unknown, action: string): string {
-  const detail = error instanceof Error ? error.message : String(error)
-  return `${action}: ${detail}`
-}
 
 export const useRunsStore = defineStore('runs', () => {
   const context = useContextStore()
