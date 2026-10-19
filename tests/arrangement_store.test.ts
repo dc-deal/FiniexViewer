@@ -41,6 +41,19 @@ describe('useArrangementStore', () => {
     expect(arrangement.runChart).toEqual({ run: RUN, unit: 'EURGBP_partial_close', timeframe: 'M5' })
   })
 
+  /** A link stored before sweeps had a key reads as none chosen: a field added needs no new version. */
+  it('restores the chosen sweep, and reads a link stored without one as none chosen', () => {
+    store({ version: 1, links: { A: { run: { id: RUN, units: [], position: null }, sweep: { id: 'sweep_20261012_210055' } } } })
+    useArrangementStore()
+    expect(useContextStore().main.sweep).toEqual({ id: 'sweep_20261012_210055' })
+
+    localStorage.clear()
+    setActivePinia(createPinia())
+    store({ version: 1, links: { A: { run: { id: RUN, units: [], position: null } } } })
+    useArrangementStore()
+    expect(useContextStore().main.sweep).toEqual({ id: null })
+  })
+
   it('writes every change of the selection back', async () => {
     useArrangementStore()
     useContextStore().selectRun(RUN)

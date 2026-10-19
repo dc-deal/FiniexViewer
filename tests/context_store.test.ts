@@ -60,6 +60,15 @@ describe('useContextStore', () => {
     expect(store.main.market).toEqual({ broker: 'kraken_spot', symbol: null })
   })
 
+  /** A sweep is a family of runs, chosen apart from any one of them: choosing it leaves the run as it was. */
+  it('chooses a sweep without touching the run', () => {
+    const store = useContextStore()
+    store.selectRun('20261012_210101_fcb871d7')
+    store.selectSweep('sweep_20261012_210055')
+    expect(store.main.sweep).toEqual({ id: 'sweep_20261012_210055' })
+    expect(store.main.run.id).toBe('20261012_210101_fcb871d7')
+  })
+
   /** A reload is not a new run: what was stored comes back as it was, mark and narrowing included. */
   it('restores stored links without cascading, and always keeps the main link', () => {
     const store = useContextStore()

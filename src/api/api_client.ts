@@ -9,6 +9,7 @@ import type { CallerIdentity } from '@/types/api/caller_types'
 import type { ActivityList, MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
   BookingPeriodsReport,
@@ -380,6 +381,32 @@ export async function getDeploymentBookingPeriods(
     // A deployment's absence is a different question from a report section's — an unknown id is a
     // stale link, which `deployments_store` already renders as its own state. Left as null on
     // purpose rather than folded into the section mechanism.
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
+/** Every parameter search on record, newest first — the third plane beside runs and deployments. */
+export async function getSweeps(): Promise<SweepList> {
+  try {
+    const response = await http.get<SweepList>('/sweeps')
+    return response.data
+  } catch (error) {
+    raiseIfForbidden(error, 'sweeps')
+    throw error
+  }
+}
+
+/**
+ * One sweep's combinations, ranked by the route within each currency. Null when the ledger knows
+ * no such sweep (`404 sweep_not_found`): a stale link, rendered as its own state like a deployment's.
+ */
+export async function getSweep(sweepId: string): Promise<SweepDetail | null> {
+  try {
+    const response = await http.get<SweepDetail>(`/sweeps/${sweepId}`)
+    return response.data
+  } catch (error) {
+    raiseIfForbidden(error, 'sweeps')
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
     throw error
   }

@@ -58,6 +58,20 @@ GET /api/v1/deployments/{deployment_id}               the sessions, oldest first
 GET /api/v1/deployments/{deployment_id}/booking-periods   every period of every session, in one call
 ```
 
+**Sweep plane** — parameter searches, on their own grant surface `sweeps` (viewer#32):
+
+```
+GET /api/v1/sweeps                                    one row per sweep, newest first
+GET /api/v1/sweeps/{sweep_id}                         its combinations, RANKED by the route within each currency
+```
+
+A **sweep is not a run** either: its combinations are runs whose index row names it (`parent_kind:
+"sweep"`). The route folds each run's ledger rows into one per account currency (`key: ["run_id",
+"currency"]`), ranks them by the objective the sweep declared — or names the one it used instead —
+and leaves error combinations out, which the list's `error_count` still counts. Nothing here
+re-sorts: the order is the answer. `404 sweep_not_found` is a stale link, like a deployment's
+(`sweeps_store.unknownSweepId`).
+
 **Machine surface** — the machine the server, the backtests and the sessions share, on the `machine`
 grant since contract 35. Both are READINGS, made to be asked every few seconds; `machine_store`
 holds the last answer of each and says its age once the readings stop arriving.

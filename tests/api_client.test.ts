@@ -34,6 +34,8 @@ import {
   getTradeHistory,
   getRunHeader,
   getScenarioDetails,
+  getSweep,
+  getSweeps,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
@@ -46,6 +48,8 @@ import runBookingPeriodsFixture from './fixtures/run_booking_periods.json'
 import deploymentsFixture from './fixtures/deployments_list.json'
 import deploymentDetailFixture from './fixtures/deployment_detail.json'
 import deploymentPeriodsFixture from './fixtures/deployment_booking_periods.json'
+import sweepsListFixture from './fixtures/sweeps_list.json'
+import sweepDetailFixture from './fixtures/sweep_detail.json'
 import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
 import brokerFixture from './fixtures/broker.json'
@@ -480,6 +484,33 @@ describe('api_client', () => {
     it('maps 404 to null on the detail — an id the ledger lost is an absence', async () => {
       mockGet.mockRejectedValue({ response: { status: 404 } })
       expect(await getDeployment('deploy_gone')).toBeNull()
+    })
+  })
+
+  describe('sweeps', () => {
+    it('reads the list of sweeps', async () => {
+      mockGet.mockResolvedValue({ data: sweepsListFixture })
+      const result = await getSweeps()
+      expect(mockGet).toHaveBeenCalledWith('/sweeps')
+      expect(result.sweeps.length).toBeGreaterThan(0)
+    })
+
+    it('reads one sweep\'s ranked combinations by its id', async () => {
+      mockGet.mockResolvedValue({ data: sweepDetailFixture })
+      const result = await getSweep(sweepDetailFixture.sweep_id)
+      expect(mockGet).toHaveBeenCalledWith(`/sweeps/${sweepDetailFixture.sweep_id}`)
+      expect(result?.combinations.length).toBeGreaterThan(0)
+    })
+
+    it('maps `404 sweep_not_found` to null — a stale link, not a failure', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'sweep_not_found' } } })
+      expect(await getSweep('sweep_gone')).toBeNull()
+    })
+
+    it('names the `sweeps` surface where the token carries nothing on it', async () => {
+      mockGet.mockRejectedValue({ response: { status: 403, data: { error: 'forbidden' } } })
+      await expect(getSweeps()).rejects.toThrow(/sweeps/)
+      await expect(getSweep('sweep_20261012_210055')).rejects.toBeInstanceOf(SurfaceForbiddenError)
     })
   })
 

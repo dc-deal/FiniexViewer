@@ -15,7 +15,7 @@ import { listed, t } from '@/translate'
  * than a list: a key added to `LinkKey` is a type error here until it has a place, where a list
  * left it off every card in silence.
  */
-const LINK_RANK: Record<LinkKey, number> = { run: 0, units: 1, position: 2, deployment: 3, market: 4 }
+const LINK_RANK: Record<LinkKey, number> = { run: 0, units: 1, position: 2, deployment: 3, sweep: 4, market: 5 }
 
 /** What a panel follows, named as the thing it follows. */
 const FOLLOWED: Record<LinkKey, string> = {
@@ -23,6 +23,7 @@ const FOLLOWED: Record<LinkKey, string> = {
   units: t('the scenario in focus'),
   position: t('the chosen position'),
   deployment: t('the chosen deployment'),
+  sweep: t('the chosen sweep'),
   // not "the market": on screen *Market* is a scenario's market type, and their glossary's
   // `market` is an order type; the chart's own selects say Broker and Symbol
   market: t('the broker and symbol'),
@@ -34,6 +35,7 @@ const CHOSEN: Record<LinkKey, string> = {
   units: t('the scenario in focus'),
   position: t('the position'),
   deployment: t('the deployment'),
+  sweep: t('the sweep'),
   market: t('the broker and symbol'),
 }
 

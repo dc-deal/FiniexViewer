@@ -81,6 +81,11 @@ LIVE_RUN = '20261007_152959_0275a107'
 # the main history, whose last session is again killed before its close.
 DEPLOY = 'deploy_20261012_205734'
 
+# The sweep the ranking fixtures come from: a stored search of several combinations, every one of
+# them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get
+# right. The preflight below checks exactly that; any sweep it accepts can replace this one.
+SWEEP = 'sweep_20261012_210055'
+
 TARGETS = [
     ('runs_list.json', 'reports/runs'),
     # The record a run writes BEFORE anything else. Captured from the simulation run
@@ -112,6 +117,9 @@ TARGETS = [
     ('deployments_list.json', 'deployments'),
     ('deployment_detail.json', f'deployments/{DEPLOY}'),
     ('deployment_booking_periods.json', f'deployments/{DEPLOY}/booking-periods'),
+    # the third plane: every parameter search, and one of them ranked by its own objective
+    ('sweeps_list.json', 'sweeps'),
+    ('sweep_detail.json', f'sweeps/{SWEEP}'),
     # A READING, not a record: its figures are whatever the machine held at capture time, so a
     # re-capture moves them every time. Nothing asserts a figure, only the shape and the rules
     # the answer states about itself.
@@ -292,6 +300,15 @@ deployments = try_fetch('deployments') or {}
 if DEPLOY not in {row.get('deployment_id') for row in deployments.get('deployments') or []}:
     sys.exit(f'pinned DEPLOY {DEPLOY} is ABSENT. It supplies the ledger fixtures; any deployment '
              'serving `booking-periods` can replace it.')
+
+sweeps = try_fetch('sweeps') or {}
+pinned_sweep = next((row for row in sweeps.get('sweeps') or [] if row.get('sweep_id') == SWEEP), None)
+if pinned_sweep is None:
+    sys.exit(f'pinned SWEEP {SWEEP} is ABSENT. It supplies the ranking fixtures; any sweep of several '
+             'combinations, all of them ok, with a declared objective can replace it.')
+if pinned_sweep['run_count'] < 2 or pinned_sweep['error_count'] or not pinned_sweep['objective']:
+    sys.exit(f'pinned SWEEP {SWEEP} no longer QUALIFIES: run_count {pinned_sweep["run_count"]}, '
+             f'error_count {pinned_sweep["error_count"]}, objective {pinned_sweep["objective"]!r}.')
 
 # ---- fetch everything, THEN write. A target that fails stops the whole capture. ----
 

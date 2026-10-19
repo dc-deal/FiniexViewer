@@ -41,12 +41,15 @@ function readLink(value: unknown): LinkContext {
   const stored = record(value)
   const run = record(stored['run'])
   const deployment = record(stored['deployment'])
+  const sweep = record(stored['sweep'])
   const market = record(stored['market'])
   const link = emptyLink()
   // one scenario in focus at most: the controls set no more, and a stored list is reconciled, not trusted
   const units = texts(run['units']).slice(0, 1)
   link.run = { id: text(run['id']), units, position: readPosition(run['position']) }
   link.deployment = { id: text(deployment['id']) }
+  // a link stored before sweeps had a key reads as none chosen: an added field needs no new version
+  link.sweep = { id: text(sweep['id']) }
   link.market = { broker: text(market['broker']), symbol: text(market['symbol']) }
   return link
 }
