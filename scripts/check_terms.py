@@ -23,8 +23,8 @@ A document NAME is recorded and a line number is not, deliberately: a renamed do
 and a shifted line fails silently.
 
 **The register is keyed on the label TEXT, not on label plus component — decided 2026-10-08 and
-left as it is.** Where the same word appears in two components for two fields, one entry survives
-and the walk order decides which; both carry a note saying so. Measured that day: 2 of 146 labels
+left as it is.** Where the same word appears in two components for two fields, one entry survived
+and the walk order decided which; both carried a note saying so. Measured that day: 2 of 146 labels
 collide (`Started` → `start_time` here and `started` there, and `Max DD`). A key of
 `Label@Component` would settle them and turn a linguistic key into a technical one — every recorded
 judgement would then hang on a file name and break on the next rename. Two documented collisions are
@@ -49,7 +49,7 @@ words it may begin with are listed here instead, and a regeneration preserves wh
 
 **It finds CHANGE, not wrongness.** That a column head reads badly is a judgement, made once and
 kept in `note`; a comparison can never find it, because nothing moves. What a comparison does find
-is the four things that move underneath a label:
+is the five things that move underneath a label:
 
   1. a label we render that the register does not know            (a new panel, unjudged)
   2. a label whose FIELD changed                                  (we re-pointed it)
@@ -103,6 +103,7 @@ ONE_NAME_TWO_THINGS = {
     'used_pct': 'the machine reports one for the processor and one for the memory',
     'emergency_reason': 'one reason, framed by when it struck: at the first tick, or later',
     'unit_count': "a currency's block counts its accounts, the run its scenarios — one account each",
+    'name': "a scenario's name, a run's set: the field every object has for what it is called",
 }
 
 CONSOLE_LABEL = re.compile(r'["\']\s*([A-Z][A-Za-z0-9 /&%().\'-]{1,30}?):\s*(?:\{|\s*["\'])')
@@ -312,6 +313,16 @@ def their_console():
     return labels
 
 
+def marker_only(note):
+    """A note that is nothing but the marker `--baseline` writes where a label could not be joined.
+
+    No person wrote it, so it overrules nothing: a label that joins now is recorded, and its readings
+    count for the check that runs the other way. Taken for a judgement, it hid eight labels that join
+    today, and two fields under two words with them (measured 2026-10-19).
+    """
+    return re.fullmatch(r'unresolved \S+\.(?:vue|ts)', note.strip()) is not None
+
+
 def recorded(entry):
     """The fields an entry names, as a LIST whichever form it is written in.
 
@@ -372,7 +383,7 @@ def baseline():
         # register must keep saying so — otherwise the next regeneration quietly reinstates a
         # mapping a person already refuted, and a register that asserts a false pair is worse than
         # one that admits a gap.
-        if note.startswith('unresolved'):
+        if note.startswith('unresolved') and not marker_only(note):
             entries[label] = {'field': None, 'doc': None, 'their': None,
                               'ours': before.get('ours'), 'note': note, 'same_as': before.get('same_as')}
             continue
@@ -385,7 +396,7 @@ def baseline():
             'doc': docs.get(field[0]),
             'their': label if label in console else None,
             'ours': before.get('ours'),
-            'note': note,
+            'note': '' if marker_only(note) else note,
             'same_as': before.get('same_as'),
         }
     # A judgement recorded against a label whose field could not be joined is still a judgement,
@@ -401,7 +412,7 @@ def baseline():
         # A judgement already written stays word for word: an `unresolved` that explains itself, or
         # a display term, which names no field by definition. Rebuilt around the marker, a note that
         # BEGAN with `unresolved` kept the empty text before it and lost its reason (2026-10-19).
-        if note.startswith(('unresolved', 'display-term')):
+        if note.startswith(('unresolved', 'display-term')) and not marker_only(note):
             entries[label] = {'field': None, 'doc': None, 'their': None, 'ours': before.get('ours'),
                               'note': note, 'same_as': before.get('same_as')}
             continue
@@ -438,6 +449,9 @@ def check():
         elif recorded(known) and set(recorded(known)) != set(field):
             findings.append(f'  MOVED    "{label}" now renders {", ".join(field)}, '
                             f'the register says {", ".join(recorded(known))}')
+        elif not recorded(known) and marker_only(known.get('note') or ''):
+            findings.append(f'  MOVED    "{label}" now renders {", ".join(field)}, '
+                            'the register has it unresolved')
 
     # The other way round: one field under two words, which a reader takes for two things. Only a
     # label beside ONE field names it plainly, and a label the register holds unresolved names
@@ -445,7 +459,8 @@ def check():
     words = {}
     for label, fields, path, line in readings:
         known = register.get(label)
-        if len(fields) != 1 or fields[0] in ONE_NAME_TWO_THINGS or (known and not recorded(known)):
+        judged = known and not recorded(known) and not marker_only(known.get('note') or '')
+        if len(fields) != 1 or fields[0] in ONE_NAME_TWO_THINGS or judged:
             continue
         words.setdefault(fields[0], {}).setdefault(word_of(label, register), f'{path}:{line}')
     for field, seen in sorted(words.items()):

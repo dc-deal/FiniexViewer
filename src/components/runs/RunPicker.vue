@@ -217,7 +217,7 @@ const columns: ListColumn[] = [
   { label: t('Run id'), width: 'auto', rank: 5 },
   // How much MARKET the run read — what the scenario roster puts first for the same reason: it is
   // the figure that says how big a run was, and nothing else on the row carries it.
-  { label: t('Market time'), width: 'auto', figure: true, rank: 4 },
+  { label: t('Tick timespan'), width: 'auto', figure: true, rank: 4 },
   { label: t('Outcome'), width: 'auto', rank: 1 },
   { label: t('Net P&L'), width: 'auto', figure: true, rank: 1 },
   { label: t('Trades'), width: 'auto', figure: true, rank: 3 },

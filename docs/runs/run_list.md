@@ -21,8 +21,8 @@ The row says what the run DID, from the index response itself and without a requ
 ```
 ⌕  Pipeline ▾  Artifacts ▾  Reporting ▾  …  +2 ▾       ✕ clear   12 of 46   Sort: newest ▾
 
-Started        Pipeline    Set                       Run id            Market time  Outcome    Net P&L      Trades
-Sep 25, 11:52  simulation  ETHUSD_blocks_robustness  20260925_095227…     464.0 h  ✓ success  −317.36 USD  85 trades
+Started        Pipeline    Set                       Run id            Tick timespan  Outcome    Net P&L      Trades
+Sep 25, 11:52  simulation  ETHUSD_blocks_robustness  20260925_095227…       464.0 h  ✓ success  −317.36 USD  85 trades
 ```
 
 The run id is shortened to its timestamp with the whole value one hover away: the eight hex
