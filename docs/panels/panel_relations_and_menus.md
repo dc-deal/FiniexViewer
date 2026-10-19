@@ -18,6 +18,7 @@ Run bundle        —           run  + its members ²     its members ²
 Run chart         —           run · scenario · position scenario
 Free chart        —           market ¹                 market
 Layers            —           the chart in front ³     —
+Activities        —           —                        —
 Scenarios         Run bundle  run                      scenario
 Trade history     Run bundle  run · scenario           position
 Orders            Run bundle  run · scenario           position
@@ -113,7 +114,8 @@ Panels ▾
 │          ├   Feed health                hidden
 │          └   Scenarios                  struck: the run has none
 ├   Free chart
-└   Layers
+├   Layers
+└   Activities
 
 [▤ Run bundle · 20261012_… ⋯ ✕]     the bundle's own commands, on its tab
                  └ Collapse all · Reset bundle

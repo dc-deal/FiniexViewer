@@ -52,6 +52,11 @@ by its tab, the way a reader does.
 - `machine_status.spec.ts` holds the machine's state in the menu bar — both shares from the captured
   reading, on one line, its card naming where the limit was read — and that a new reading moves
   nothing beside it: the account keeps its place while a share goes from 100 to 9.
+- `activities.spec.ts` holds what runs on the machine: the menu bar's card saying it in one line, the
+  server left out and the panel named; and the Activities panel opened from the Panels menu, listing
+  the captured server row marked as this server, and asking nothing more while another tab of its
+  group stands in front of it — a panel kept in the page stays mounted behind its tab, which only a
+  real dock shows.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel.

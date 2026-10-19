@@ -184,6 +184,17 @@ export function magnitude(value: number, currency: string): string {
 }
 
 /**
+ * The time of day of a reading, in the reader's own zone — `19:03:45`: for a figure measured just
+ * now, whose date says nothing. A stamp that is not a date is shown as it came. One copy for the
+ * menu bar's machine status and the Activities panel.
+ */
+export function clockTime(iso: string): string {
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return iso
+  return new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(at)
+}
+
+/**
  * A stretch of time in the unit that keeps it truthful. Seconds below a minute on purpose: a
  * session that ran 22 seconds rounds to "0 min", which reads as one that never ran at all.
  */

@@ -24,7 +24,7 @@ answered with the cap's worth and `X-Bar-Truncated: true` (their `market-data` d
 **Without a grant, a service only describes itself** (FiniexTestingIDE, for every service, 2026-10-19):
 what an installation holds or does sits behind a grant — since contract 35 the broker list on the
 `brokers` surface and `/machine-resources` on a new `machine` surface, with `/activities`, what runs
-on the machine, beside it (not consumed yet). The viewer's token carries both.
+on the machine, beside it (both below, *Machine surface*). The viewer's token carries both.
 
 The two open routes are open by decision, not by omission: `/health` is the liveness check, and
 `/timeframes` is the app's own static configuration rather than data about a venue or a run. Useful
@@ -56,6 +56,16 @@ GET /api/v1/reports/runs/{run_id}/...                 5 further per-section repo
 GET /api/v1/deployments                               one row per (deployment x account currency)
 GET /api/v1/deployments/{deployment_id}               the sessions, oldest first
 GET /api/v1/deployments/{deployment_id}/booking-periods   every period of every session, in one call
+```
+
+**Machine surface** — the machine the server, the backtests and the sessions share, on the `machine`
+grant since contract 35. Both are READINGS, made to be asked every few seconds; `machine_store`
+holds the last answer of each and says its age once the readings stop arriving.
+
+```
+GET /api/v1/machine-resources                         how full it is — the menu bar's CPU and memory, every 5 s
+GET /api/v1/activities                                what runs on it — only while the Activities panel is on
+                                                      show or the menu bar's card is open (viewer#49)
 ```
 
 A **deployment is not a run**: no header, no directory, no artifacts of its own. It is an identity

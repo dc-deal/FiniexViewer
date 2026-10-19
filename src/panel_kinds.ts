@@ -134,6 +134,21 @@ export const PANEL_KINDS: PanelKind[] = [
     component: defineAsyncComponent(() => import('@/views/LayersView.vue')),
     relations: { memberOf: null, follows: [], chooses: [], chartInFront: true },
   },
+  {
+    /*
+     * What runs on the machine (viewer#49), from FiniexTestingIDE's activity list: opened from the
+     * Panels menu or by a click on the menu bar's CPU and memory. It follows no link — the machine
+     * is one — and asks the list only while it is on show.
+     */
+    id: 'activities',
+    title: t('Activities'),
+    description: t('What runs on the machine right now — every backtest, sweep, session, import, the test suite and the server, with the memory each holds'),
+    icon: 'form-list',
+    order: 7,
+    opensByDefault: false,
+    component: defineAsyncComponent(() => import('@/views/ActivitiesView.vue')),
+    relations: { memberOf: null, follows: [], chooses: [] },
+  },
 ]
 
 /**

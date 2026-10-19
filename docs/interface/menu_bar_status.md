@@ -72,6 +72,15 @@ CPU  15% · Memory  17% · ⚠ as of 14:37:22      the readings have stopped arr
   that, so a reading that stopped arriving is visibly old rather than silently current.
 - **The polling starts at the app root**, like the caller, so the store holds one reading for
   whoever shows it: the menu bar now, a System panel later (viewer#31, S6).
+- **The card also says what runs on the machine** (viewer#49), in one line under *Running*:
+  `2 · backtest my_set__sweep_… · test_suite` — the server's own row left out, it is the one
+  answering; at most two named, in their own words, the rest counted; `only this server` where
+  nothing else runs. `/activities` is asked only while the card is open (`update:open`), on the
+  same beat. The line beneath it, *Every activity — Panels ▸ Activities*, names the panel that lists
+  them all ([Activities Panel](../panels/activities_panel.md)).
+- **The figures are no control.** A click that opened the Activities panel was tried on 2026-10-19
+  and taken back: as a button the status wore the link colour and a frame on hover, too loud for the
+  menu bar's quiet figures. The card names the panel instead.
 - The processors' `used_pct` and `window_s` are both null on the first reading after a restart of
   the server: the bar shows `—`, and the card says there is no window yet.
 

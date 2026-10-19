@@ -105,6 +105,7 @@ ONE_NAME_TWO_THINGS = {
     'unit_count': "a currency's block counts its accounts, the run its scenarios — one account each",
     'name': "a scenario's name, a run's set: the field every object has for what it is called",
     'lots': "a trade row's lots are what that trade closed, a position still open what was left of it",
+    'measured_at': 'one instant framed by two situations: when a reading was taken, and how old the one on screen has grown',
 }
 
 CONSOLE_LABEL = re.compile(r'["\']\s*([A-Z][A-Za-z0-9 /&%().\'-]{1,30}?):\s*(?:\{|\s*["\'])')

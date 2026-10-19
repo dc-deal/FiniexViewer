@@ -6,7 +6,7 @@ import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { ApiBar, BarAnswer, CoverageResponse } from '@/types/api/bar_types'
 import type { CallerIdentity } from '@/types/api/caller_types'
-import type { MachineResources } from '@/types/api/machine_types'
+import type { ActivityList, MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
@@ -467,10 +467,29 @@ export async function getCaller(): Promise<CallerIdentity> {
 const MACHINE_READ_TIMEOUT_MS = 4000
 
 /**
- * How full the machine is (contract 31). A token and no grant, like `/caller`. Meant to be asked
- * every few seconds — the route reads no file of the project, and costs the server next to nothing.
+ * How full the machine is (contract 31), on the `machine` surface since contract 35. Meant to be
+ * asked every few seconds — the route reads no file of the project, and costs the server next to
+ * nothing.
  */
 export async function getMachineResources(): Promise<MachineResources> {
   const response = await http.get<MachineResources>('/machine-resources', { timeout: MACHINE_READ_TIMEOUT_MS })
   return response.data
+}
+
+/**
+ * What runs on the machine (contract 35) — made to be asked every few seconds; a reading costs the
+ * server about a tenth of a second. A 403 is the `machine` surface missing from the token. A list
+ * that exists and cannot be read is a `500 activity_registry_unreadable` — "could not read" is not
+ * "nothing runs" — and its sentence is passed on as it is written.
+ */
+export async function getActivities(): Promise<ActivityList> {
+  try {
+    const response = await http.get<ActivityList>('/activities', { timeout: MACHINE_READ_TIMEOUT_MS })
+    return response.data
+  } catch (error) {
+    raiseIfForbidden(error, 'machine')
+    const sentence = axios.isAxiosError(error) ? (error.response?.data as { detail?: string } | undefined)?.detail : undefined
+    if (sentence) throw new Error(sentence)
+    throw error
+  }
 }

@@ -158,6 +158,11 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       return route.fulfill({ json: fixture('machine_resources.json'), headers: CONTRACT })
     }
 
+    // what ran on the machine at capture time: the server's own row at least
+    if (path === '/api/v1/activities') {
+      return route.fulfill({ json: fixture('activities.json'), headers: CONTRACT })
+    }
+
     /*
      * The MARKET plane, for the run chart: the coverage of the two markets the fixture run traded,
      * and the M1 bars captured over its units' spans. A market or timeframe not captured answers

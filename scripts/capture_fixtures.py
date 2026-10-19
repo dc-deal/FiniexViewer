@@ -116,6 +116,9 @@ TARGETS = [
     # re-capture moves them every time. Nothing asserts a figure, only the shape and the rules
     # the answer states about itself.
     ('machine_resources.json', 'machine-resources'),
+    # A READING as well: what runs on the machine at capture time — the server's own row at least.
+    # Tests build the other rows from it; nothing asserts which activities happened to run.
+    ('activities.json', 'activities'),
     # The two markets the fixture run traded, for the run chart. A READING as well: the archive
     # grows, so `end` moves with every capture and nothing asserts it.
     # the server's timeframes with their lengths — what the run chart orders and picks them by

@@ -2,9 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useMachineStore, POLL_MS } from '@/stores/machine_store'
 import * as apiClient from '@/api/api_client'
+import type { ActivityList } from '@/types/api/machine_types'
 import reading from './fixtures/machine_resources.json'
+import activityFixture from './fixtures/activities.json'
 
-vi.mock('@/api/api_client', () => ({ getMachineResources: vi.fn() }))
+vi.mock('@/api/api_client', () => ({ getMachineResources: vi.fn(), getActivities: vi.fn() }))
+
+const activities = activityFixture as unknown as ActivityList
 
 let visibility: DocumentVisibilityState = 'visible'
 
@@ -19,6 +23,7 @@ describe('useMachineStore', () => {
     vi.useFakeTimers()
     setActivePinia(createPinia())
     vi.mocked(apiClient.getMachineResources).mockReset()
+    vi.mocked(apiClient.getActivities).mockReset()
     visibility = 'visible'
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => visibility })
   })
@@ -111,5 +116,59 @@ describe('useMachineStore', () => {
     store.stop()
     await vi.advanceTimersByTimeAsync(POLL_MS * 3)
     expect(apiClient.getMachineResources).toHaveBeenCalledTimes(1)
+  })
+
+  describe('what runs on the machine', () => {
+    /** A reading costs the server a tenth of a second: asked while someone reads it, and only then. */
+    it('asks for the list only while someone reads it, on the same beat, until the last reader goes', async () => {
+      vi.mocked(apiClient.getMachineResources).mockResolvedValue(reading)
+      vi.mocked(apiClient.getActivities).mockResolvedValue(activities)
+      const store = useMachineStore()
+      store.start()
+      await vi.advanceTimersByTimeAsync(POLL_MS * 2)
+      expect(apiClient.getActivities).not.toHaveBeenCalled()
+
+      const stopPanel = store.watchActivities()
+      const stopCard = store.watchActivities()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(apiClient.getActivities).toHaveBeenCalledTimes(1)
+      expect(store.activities?.server_activity_id).toBe(activities.server_activity_id)
+      await vi.advanceTimersByTimeAsync(POLL_MS)
+      expect(apiClient.getActivities).toHaveBeenCalledTimes(2)
+
+      // a reader that stops twice counts once: the card still reads
+      stopPanel()
+      stopPanel()
+      await vi.advanceTimersByTimeAsync(POLL_MS)
+      expect(apiClient.getActivities).toHaveBeenCalledTimes(3)
+      stopCard()
+      await vi.advanceTimersByTimeAsync(POLL_MS * 2)
+      expect(apiClient.getActivities).toHaveBeenCalledTimes(3)
+    })
+
+    /** "Could not read" is not "nothing runs": the last list stays, and the backend's sentence is said. */
+    it('keeps the last list through a failure, says why, and calls it old once three polls brought nothing', async () => {
+      vi.mocked(apiClient.getMachineResources).mockResolvedValue(reading)
+      vi.mocked(apiClient.getActivities)
+        .mockResolvedValueOnce(activities)
+        .mockRejectedValue(new Error('the list of what runs on the machine could not be read'))
+      const store = useMachineStore()
+      store.start()
+      store.watchActivities()
+      await vi.advanceTimersByTimeAsync(POLL_MS)
+      expect(store.activities).not.toBeNull()
+      expect(store.activitiesError).toContain('could not be read')
+      expect(store.activitiesStale).toBe(false)
+      await vi.advanceTimersByTimeAsync(POLL_MS * 3)
+      expect(store.activitiesStale).toBe(true)
+    })
+
+    it('asks nothing for a reader while the page is hidden', async () => {
+      vi.mocked(apiClient.getActivities).mockResolvedValue(activities)
+      showPage('hidden')
+      useMachineStore().watchActivities()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(apiClient.getActivities).not.toHaveBeenCalled()
+    })
   })
 })
