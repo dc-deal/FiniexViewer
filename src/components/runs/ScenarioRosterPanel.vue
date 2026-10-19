@@ -324,7 +324,6 @@ function card(row: ScenarioRow): FigureCard | null {
   if (unit.drawdown_restarts) {
     details.push({ label: t('Drawdown restarts'), value: String(unit.drawdown_restarts) })
   }
-  details.push({ label: t('Fees charged'), value: money(unit.fees_charged) })
   return { title: `${row.name} · ${unit.currency}`, details }
 }
 

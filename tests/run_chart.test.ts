@@ -226,11 +226,11 @@ describe('run_chart', () => {
 
       const labels = (role: string) => marks.find(mark => mark.role === role)!.card.details.map(pair => pair.label)
       expect(labels('entry')).toContain('Opened')
-      expect(labels('entry')).not.toContain('Net')
-      expect(labels('loss')).toEqual(expect.arrayContaining(['Closed', 'Closed by', 'Net']))
+      expect(labels('entry')).not.toContain('Net P&L')
+      expect(labels('loss')).toEqual(expect.arrayContaining(['Closed', 'Closed by', 'Net P&L']))
       // the close is named only where one was recorded
       expect(labels('gain')).not.toContain('Closed by')
-      expect(marks.find(mark => mark.role === 'loss')!.card.details.find(pair => pair.label === 'Net'))
+      expect(marks.find(mark => mark.role === 'loss')!.card.details.find(pair => pair.label === 'Net P&L'))
         .toMatchObject({ tone: 'negative' })
     })
   })

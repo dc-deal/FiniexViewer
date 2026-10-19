@@ -540,6 +540,8 @@ describe('ScenarioRosterPanel', () => {
         total_trades: 3, total_fees: 0, fees_charged: 2.36, taker_fee: 2.36,
       }))
       expect(differs['Charged']).toBe('2.36 EUR')
+      // once: an unconditional `Fees charged` at the end of the card said it a second time
+      expect(differs).not.toHaveProperty('Fees charged')
 
       // and absent where they agree: a figure on every row would be noise, and on a forex run the
       // two are equal. The captured fixture is itself the differing case, which is why this half

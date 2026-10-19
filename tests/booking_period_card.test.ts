@@ -57,7 +57,7 @@ describe('booking_period_card', () => {
     it('puts the deepest single period beside the account own decline, each saying which it is', () => {
       const details = unitTotalCard(across).details
       const period = pair(details, 'Deepest period drawdown')!
-      const account = pair(details, 'Max drawdown')!
+      const account = pair(details, 'Deepest drawdown')!
       expect(period.value).toContain('34.10')
       expect(period.title).toContain('within a single period')
       expect(account.value).toContain('66.50')

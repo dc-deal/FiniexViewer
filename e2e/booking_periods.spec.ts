@@ -80,7 +80,7 @@ test('each unit closes with its total line, and a total says the account own dec
   const card = page.locator('.hover-card')
   await expect(card).toBeVisible()
   await expect(card).toContainText('Deepest period drawdown')
-  await expect(card).toContainText('Max drawdown')
+  await expect(card).toContainText('Deepest drawdown')
 })
 
 /**

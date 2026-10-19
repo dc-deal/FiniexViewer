@@ -119,7 +119,7 @@ function account(row: RunSummaryCurrency): Figure[] {
   figures.push(
     { label: t('Initial capital'), value: amount(row.total_initial_balance, row.currency) },
     {
-      label: t('Max drawdown'),
+      label: t('Deepest drawdown'),
       value: `${magnitude(row.account_max_drawdown, row.currency)} (${percentFigure(row.account_max_dd_pct)})`,
       title: t('A magnitude: the sign is not reliable across the archive. The percentage is already multiplied.'),
     },
@@ -133,7 +133,7 @@ function account(row: RunSummaryCurrency): Figure[] {
      */
     row.final_equity === null
       ? {
-          label: t('Final equity'),
+          label: t('Final equity, all accounts'),
           value: amount(row.total_final_equity, row.currency),
           title: t('The SUM over the accounts named above: no single one held it. Where a currency has one account this is that account, and the word means what it says.'),
         }

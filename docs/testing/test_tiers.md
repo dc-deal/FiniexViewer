@@ -98,10 +98,13 @@ automated; its instrument is a browser and a deliberate look. Two scripts suppor
   entry per line so a changed word is a one-line diff. **The register carries the MAPPING and never
   the MEANING:** which field a label renders, and the name of the document that defines it. What the
   field means is fetched from the backend when it is wanted, because a stored copy of someone else's
-  glossary is wrong the day they reword it with nothing saying so. It prints nothing when everything
-  agrees, and otherwise
-  names a label the register does not know, a label whose field moved, a field gone from the
-  backend's consumer documentation, or one of its console labels that changed. **It finds change, not
+  glossary is wrong the day they reword it with nothing saying so. **Every place a label stands
+  counts** (2026-10-19): an entry holds every field its label names, wherever it stands, where it
+  once held the first place's alone — and `Max drawdown` stood on another field in two panels unseen.
+  It prints nothing when everything agrees, and otherwise names a label the register does not know,
+  a label whose field moved, a field gone from the backend's consumer documentation, one of its
+  console labels that changed, or ONE field under two words — a word's forms counted as one: the
+  casing of running text, a trailing colon, a short form the register links with `same_as`. **It finds change, not
   wrongness:** that a column head reads badly is a judgement, recorded once in the register's `note`
   column and preserved across a regeneration, because no comparison can surface something that never
   moves. Measured 2026-10-07: a renamed field reached the screen as `undefined` and a person found it

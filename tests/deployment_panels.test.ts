@@ -168,12 +168,12 @@ describe('DeploymentHeader', () => {
   // a deliberate restart mints a fresh deployment_id.
   it('names the identity that survives a rename', () => {
     const wrapper = mount(DeploymentHeader, { props: { row: BASE_ROW } })
-    expect(wrapper.text()).toContain(BASE_ROW.bot_id)
+    expect(wrapper.text()).toContain(`bot id: ${BASE_ROW.bot_id}`)
   })
 
   it('stays silent about it where the profile declares none', () => {
     const wrapper = mount(DeploymentHeader, { props: { row: { ...BASE_ROW, bot_id: '' } } })
-    expect(wrapper.text()).not.toContain('bot:')
+    expect(wrapper.text()).not.toContain('bot id:')
   })
 
   it('warns where the sessions were not all produced by one configuration', () => {

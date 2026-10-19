@@ -115,7 +115,7 @@ export function unitTotalCard(total: BookingPeriodUnitTotal): FigureCard {
         title: t('The deepest decline within a single period — what the Max DD column shows'),
       },
       {
-        label: t('Max drawdown'),
+        label: t('Deepest drawdown'),
         value: `${magnitude(total.account_max_drawdown, total.currency)} (${percentFigure(total.account_max_dd_pct)})`,
         title: t("The account's own decline, cumulative from the unit's start — from the deployment's start for a session of one. A fall across a period boundary is deeper than any one period's own"),
       },

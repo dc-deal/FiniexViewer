@@ -157,7 +157,7 @@ describe('ExecutivePanel', () => {
     expect(f['Avg win R']).toBe('+1.40R')
     expect(f['Avg loss R']).toBe('-0.90R')
     // positive magnitude by contract, no abs() applied; the percentage is already multiplied
-    expect(f['Max drawdown']).toContain('54.90 USD')
+    expect(f['Deepest drawdown']).toContain('54.90 USD')
   })
 
   // The currency heads its own group of blocks rather than being one figure among them.
@@ -179,6 +179,17 @@ describe('ExecutivePanel', () => {
     expect(f['Final equity']).toBe('9,949.40 USD')
     expect(f['Still open']).toBe('2')
     expect(f['Unrealized']).toBe('-12.50 USD')
+  })
+
+  /**
+   * Several accounts close with several balances, and the backend names their sum apart from any
+   * one of them (`final_equity: null`, `total_final_equity`). Under the one account's word the sum
+   * claimed a balance nobody held — the word says it is a sum, as the booking periods' footnote does.
+   */
+  it('names a sum over several accounts as a sum, never as one balance', () => {
+    const f = figures({ ...MEASURED, unit_count: 8, final_equity: null, total_final_equity: 79_512.3 })
+    expect(f['Final equity, all accounts']).toBe('79,512.30 USD')
+    expect(f['Final equity']).toBeUndefined()
   })
 
   // An unrealised 0.00 beside "0 open" reads as a figure somebody measured. Neither line appears.
@@ -275,7 +286,7 @@ describe('ExecutivePanel', () => {
     const many = figures({ ...MEASURED, unit_count: 8, account_max_drawdown_unit: 'GBPUSD_feb' })
     expect(many['Accounts']).toBe('8')
     expect(many['Deepest account']).toBe('GBPUSD_feb')
-    expect(many['Max drawdown']).not.toContain('GBPUSD_feb')
+    expect(many['Deepest drawdown']).not.toContain('GBPUSD_feb')
 
     const one = figures({ ...MEASURED, unit_count: 1, account_max_drawdown_unit: 'GBPUSD_feb' })
     expect(one['Accounts']).toBeUndefined()

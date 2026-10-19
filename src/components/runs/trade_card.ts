@@ -24,7 +24,7 @@ function entry(trade: TradeRow): Figure {
 }
 
 function net(trade: TradeRow): Figure {
-  return { label: t('Net'), value: amount(trade.net_pnl, trade.currency), tone: signClass(trade.net_pnl) }
+  return { label: t('Net P&L'), value: amount(trade.net_pnl, trade.currency), tone: signClass(trade.net_pnl) }
 }
 
 /** '' means the close was not attributed — shown only where it says something. */

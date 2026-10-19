@@ -35,7 +35,7 @@ defineProps<{
       </span>
       <!-- bot_id is the only identity that does not move: the name above it is a label an
            operator improves, and a deliberate restart mints a fresh deployment_id -->
-      <span v-if="row.bot_id">{{ t('bot') }}: {{ row.bot_id }}</span>
+      <span v-if="row.bot_id">{{ t('bot id') }}: {{ row.bot_id }}</span>
       <span v-if="row.changed" class="changed" :title="t('The sessions were not all produced by one configuration')">
         ⚠ {{ t('configuration moved') }}
       </span>

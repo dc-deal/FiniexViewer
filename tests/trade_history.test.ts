@@ -234,7 +234,7 @@ describe('TradeHistoryPanel', () => {
 
     it('gives the whole split in the card beside the heading', () => {
       const split = cardOf(mountPanel(costs()), 'forex · EUR')
-      expect(split.map(pair => pair.label)).toEqual(expect.arrayContaining(['Gross', 'Net', 'Fees', 'Spread']))
+      expect(split.map(pair => pair.label)).toEqual(expect.arrayContaining(['Gross', 'Net P&L', 'Fees', 'Spread']))
       expect(split.find(pair => pair.label === 'Fees')?.value).toContain('swap')
       expect(split.find(pair => pair.label === 'Spread')?.value).toBe('2.50 EUR')
     })

@@ -66,9 +66,9 @@ const columns: ListColumn[] = [
   /*
    * LAST, where it was sixth, and the move is structural rather than cosmetic.
    *
-   * The group heading is three cells over eight tracks — the name over five, the net over one, the
-   * count and fees over the last two. That arithmetic is fixed at eight, and a rank that gives up
-   * a column leaves it spanning tracks the grid no longer has. Counted from the END it holds at
+   * The group heading was three cells over eight tracks — the name over five, the net over one, the
+   * count and fees over the last two. That arithmetic was fixed at eight, and a rank that gives up
+   * a column left it spanning tracks the grid no longer had. Counted from the END it holds at
    * every width: the name takes everything but the last track, the net takes the last one.
    *
    * Reading order gains by it besides. Opened · Held · worst · best · net is the life of the trade
@@ -246,7 +246,7 @@ function groupCard(group: ListGroup<TradeRow>): FigureCard | null {
     title: `${group.key} · ${total.currency}`,
     details: [
       { label: t('Gross'), value: money(total.gross_pnl), tone: signClass(total.gross_pnl) },
-      { label: t('Net'), value: money(total.net_pnl), tone: signClass(total.net_pnl) },
+      { label: t('Net P&L'), value: money(total.net_pnl), tone: signClass(total.net_pnl) },
       { label: t('Fees'), value: `${money(total.total_fees)} · ${t('swap')} ${total.total_swap.toFixed(2)}` },
       {
         label: t('Spread'),
