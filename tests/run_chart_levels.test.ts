@@ -31,9 +31,14 @@ const OPEN: OpenPosition = {
  */
 describe('run_chart_levels', () => {
   describe('positionLevels', () => {
-    it('holds a set stop and target from the trade\'s entry to its exit, on their prices', () => {
+    /**
+     * The levels on a trade row are those in force when its close was booked, after any move: known
+     * at the exit alone, so drawn at its bar alone, and never back to the entry.
+     */
+    it('draws a set stop and target at the bar of the exit alone, on their prices', () => {
       const [stop, target] = positionLevels([trade({ stop_loss: 1.05, take_profit: 1.3 })], KEY, [], 'pos_1', BARS, null)
-      expect(stop).toMatchObject({ kind: 'segment', label: 'SL', role: 'negative', price: 1.05, from: BARS[0], to: BARS[2] })
+      expect(stop).toMatchObject({ kind: 'segment', label: 'SL', role: 'negative', price: 1.05, from: BARS[2], to: BARS[2] })
+      expect(stop!.card.details.find(pair => pair.label === 'In force at')?.title).toContain('not recorded')
       expect(target).toMatchObject({ label: 'TP', role: 'positive', price: 1.3 })
       expect(stop!.id).not.toBe(target!.id)
       expect(stop!.card.title).toBe('Stop loss · pos_1')
@@ -43,11 +48,11 @@ describe('run_chart_levels', () => {
       expect(positionLevels([trade({})], KEY, [], 'pos_1', BARS, null)).toEqual([])
     })
 
-    /** A position the run ended with still open holds its levels to the edge of the window. */
-    it('holds the levels of a position still open at the end to the edge of the window', () => {
+    /** A position the run ended with still open: its levels as they stand at the end, at the last bar. */
+    it('draws the levels of a position still open at the end at the last bar', () => {
       const [stop] = positionLevels([], KEY, [OPEN], 'pos_1', BARS, null)
-      expect(stop).toMatchObject({ label: 'SL', price: 1.05, from: BARS[1], to: null })
-      expect(stop!.card.details.map(pair => pair.value).join(' ')).toContain('still open at the end')
+      expect(stop).toMatchObject({ label: 'SL', price: 1.05, from: BARS[2], to: BARS[2] })
+      expect(stop!.card.details.map(pair => pair.value).join(' ')).toContain('still open')
     })
 
     /** Every position's levels, where the reader asks for them — only the one looked at is marked as such. */
@@ -61,12 +66,12 @@ describe('run_chart_levels', () => {
       ])
     })
 
-    /** Past the last bar of a CUT window there is no candle: what began there is not drawn. */
-    it('draws nothing that began past the last bar of a cut window, and runs one that ends there to the edge', () => {
-      const late = trade({ stop_loss: 1.05, entry_time: '2025-10-31T05:30:00+00:00', exit_time: '2025-10-31T05:40:00+00:00' })
+    /** Past the last bar of a CUT window there is no candle: a level known only there is not drawn. */
+    it('draws nothing whose exit lies past the last bar of a cut window', () => {
       const across = trade({ stop_loss: 1.05, exit_time: '2025-10-31T05:40:00+00:00' })
-      expect(positionLevels([late], KEY, [], 'pos_1', BARS, BARS[2]!)).toEqual([])
-      expect(positionLevels([across], KEY, [], 'pos_1', BARS, BARS[2]!)[0]).toMatchObject({ from: BARS[0], to: null })
+      expect(positionLevels([across], KEY, [], 'pos_1', BARS, BARS[2]!)).toEqual([])
+      const inside = trade({ stop_loss: 1.05, exit_time: '2025-10-31T05:01:30+00:00' })
+      expect(positionLevels([inside], KEY, [], 'pos_1', BARS, BARS[2]!)[0]).toMatchObject({ from: BARS[1], to: BARS[1] })
     })
   })
 

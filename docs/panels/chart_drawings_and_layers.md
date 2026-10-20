@@ -41,7 +41,7 @@ and the card it shows there; a time is the open of a bar drawn.
 | kind | what | from |
 |---|---|---|
 | marker (`ChartMark`) | an opening ↑↓ or an exit ●, single or gathered `×N` | [Candle Charts](candle_charts.md) |
-| `segment { from, to, price }` | a level held from one bar to another — `to` null: to the window's edge | `run_chart_levels.ts` |
+| `segment { from, to, price }` | a level held from one bar to another — `to` null: to the window's edge; `from` equal to `to`: known at that bar alone, a short stroke ending there | `run_chart_levels.ts` |
 | `line { from, to }` | two points joined: where a trade entered and where it left | `run_chart_levels.ts` |
 
 A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry`), read from the
@@ -74,17 +74,22 @@ saw it — found by the element shots of #41's browser pass, 2026-10-19. Every p
 stretch it, or the candles would shrink to a line; a reader who wants the candles' full height
 switches the levels off in the Layers panel.
 
-- **A level** is the trade row's `stop_loss` / `take_profit` — *"the levels that were set"* — held
-  from the row's entry to its exit; the rows of a position closed in parts overlap, so no end has to
-  be chosen. A position still open at the end holds the levels its entry in the portfolio's
-  `open_positions` states, from its entry to the window's edge. `SL` is drawn in the loss's role,
-  `TP` in the profit's — the polarity of the outcome at that price — dashed, with the word at its start.
+- **A level** is the trade row's `stop_loss` / `take_profit` — *"the levels in force when this row's
+  close was booked — after any move, not the levels at entry"* (their trade-history document). It is
+  known at the exit alone, so it is drawn there alone: a short dashed stroke ending at the exit's
+  bar, its card saying when it was in force. Drawn flat back to the entry it showed a trailed stop
+  where it never stood — 100 of the 108 positions with two rows in the sweeps of a trailing logic
+  moved theirs (FiniexTestingIDE, 2026-10-20). A position still open at the end has the levels its
+  entry in the portfolio's `open_positions` states at the end of the record, drawn at the last bar.
+  `SL` is drawn in the loss's role, `TP` in the profit's — the polarity of the outcome at that
+  price — dashed, with the word at its start.
 - **The line** joins each trade row's entry price and time to its exit's, in the polarity of its
   result; none where both fall in one candle.
-- **A level that moved is not served** (measured 2026-10-19: no event carries a stop, no position's
-  rows differ in their levels) — asked of FiniexTestingIDE; until then a trailed stop is drawn flat.
-- **Past the last bar of a window the route cut** nothing is drawn: what began there has no candle,
-  and a level that ends there runs to the edge.
+- **Where a level stood before the exit is not served.** A backtest records no moved stop, and a
+  session only where the venue holds it; the levels at entry and every move are testingide#618's
+  (contract 37 or a later one). Until then nothing is drawn for the time before the exit.
+- **Past the last bar of a window the route cut** nothing is drawn: a level known only past it has
+  no candle to stand at.
 
 ## The Layers panel — arranging the layers
 

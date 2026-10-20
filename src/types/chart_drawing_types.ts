@@ -20,7 +20,11 @@ export type ChartLayerId = typeof CHART_LAYER_IDS[number]
 /** What a drawing's colour says — a role, never a colour; the shape and the word say it first. */
 export type DrawingRole = Polarity | 'mixed' | 'entry'
 
-/** A price held from one bar to another — a stop loss, a target. `to` null: to the window's edge. */
+/**
+ * A price held from one bar to another — a stop loss, a target. `to` null: to the window's edge.
+ * `from` equal to `to`: known at that bar alone, drawn as a short stroke ending there — nothing is
+ * claimed for the time before it.
+ */
 export interface SegmentDrawing {
   kind: 'segment'
   id: string

@@ -69,6 +69,12 @@ describe('chart_geometry', () => {
     expect(placed.segments.map(segment => [segment.x1, segment.x2, segment.y])).toEqual([[10, 20, 250], [10, 800, 250]])
   })
 
+  /** A level known at one bar alone, as a trade row's is at its exit: a short stroke ending there, no span. */
+  it('draws a level known at one bar alone as a short stroke ending at that bar', () => {
+    const placed = placeLayer({ id: 'levels', drawings: [{ ...SEGMENT, from: 2, to: 2 }] }, BARS, SCALE)
+    expect(placed.segments.map(segment => [segment.x1, segment.x2, segment.y])).toEqual([[-4, 20, 250]])
+  })
+
   it('joins a line\'s two points', () => {
     const placed = placeLayer({ id: 'entry-exit', drawings: [LINE] }, BARS, SCALE)
     expect(placed.lines[0]).toMatchObject({ x1: 10, y1: 250, x2: 20, y2: 210 })

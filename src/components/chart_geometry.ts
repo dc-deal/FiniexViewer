@@ -31,6 +31,8 @@ const MARK_GAP_PX = 2
 export const MARK_TEXT_PX = 10
 /** How far from a level or a line the pointer may rest and still be on it. */
 const HIT_TOLERANCE_PX = 4
+/** How far a level known at one bar alone reaches back from it: a short stroke, never a span. */
+const LEVEL_AT_PX = 24
 
 /**
  * The size a mark is drawn at: as wide as its bar, between a floor still readable and the library's
@@ -112,8 +114,9 @@ export function placeLayer(layer: ChartLayer, bars: ReadonlyMap<number, BarRange
       const beyond = size / 2 + 1 + MARK_TEXT_PX / 2
       placed.marks.push({ mark: drawing, x, y, size, textY: drawing.text ? (above ? y - beyond : y + beyond) : null })
     } else if (drawing.kind === 'segment') {
-      const x1 = scale.x(drawing.from)
       const x2 = drawing.to === null ? scale.width : scale.x(drawing.to)
+      // known at one bar alone: a stroke ending at it, so no time before it is drawn as held
+      const x1 = drawing.from === drawing.to ? (x2 === null ? null : x2 - LEVEL_AT_PX) : scale.x(drawing.from)
       const y = scale.y(drawing.price)
       if (x1 === null || x2 === null || y === null) continue
       placed.segments.push({ segment: drawing, x1, x2, y })

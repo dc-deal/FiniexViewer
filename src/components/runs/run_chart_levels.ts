@@ -12,12 +12,13 @@ import { t } from '@/translate'
  * that position alone unless the reader asks the Layers panel for every position's levels: drawn
  * for every position they are a lot to read. Pure functions over what the run's reports already hold.
  *
- * A level is the trade row's `stop_loss` / `take_profit`, *"the levels that were set"*, held from
- * the row's entry to its exit; the rows of a position closed in parts overlap, so no end has to be
- * chosen. A position still open at the end holds the levels the portfolio's `open_positions` states
- * from its entry to the edge of the window. Measured 2026-10-19: no position's rows ever differ in
- * their levels, and no event records a stop that moved — whether a moved stop is recorded anywhere
- * is asked of FiniexTestingIDE, and until it is answered a trailed stop would be drawn flat.
+ * A level is the trade row's `stop_loss` / `take_profit`: *"the levels in force when this row's
+ * close was booked — after any move, not the levels at entry"* (their trade-history document). So it
+ * is drawn at the bar of the row's exit alone: where it stood before is not recorded, and drawn flat
+ * back to the entry it showed a trailed stop where it never stood — 100 of the 108 positions with two
+ * rows in the sweeps of a trailing logic moved theirs (FiniexTestingIDE, 2026-10-20). A position
+ * still open at the end has the levels the portfolio's `open_positions` states at the end of the
+ * record, drawn at the last bar. The levels at entry and every move are testingide#618's.
  */
 
 function seconds(iso: string): number {
@@ -33,18 +34,21 @@ function barIn(barTimes: number[], instant: number, cutAt: number | null): numbe
 }
 
 function level(
-  id: string, label: 'SL' | 'TP', price: number, from: number, to: number | null, held: string, position: string,
-  focused: boolean,
+  id: string, label: 'SL' | 'TP', price: number, at: number, when: string, position: string, focused: boolean,
 ): SegmentDrawing {
   const details: Figure[] = [
     { label: WORD[label], value: String(price) },
-    { label: t('Held'), value: held },
+    {
+      label: t('In force at'),
+      value: when,
+      title: t('The level in force when the close was booked, after any move. Where it stood before is not recorded.'),
+    },
   ]
   return {
     kind: 'segment',
     id,
-    from,
-    to,
+    from: at,
+    to: at,
     price,
     label,
     // the stop is where the loss is taken, the target where the profit is: the polarity of the
@@ -56,10 +60,10 @@ function level(
 }
 
 /**
- * The stops and the targets of the trade rows given: one segment per row that set one, and for each
- * position still open at the end, its levels to the edge of the window. `looked` is the position
- * looked at — only its levels put their price on the axis. `cutAt` is the last bar of a window the
- * route cut — nothing past it has a candle.
+ * The stops and the targets of the trade rows given: one level per row that had one, at its exit's
+ * bar, and for each position still open at the end, its levels at the last bar. `looked` is the
+ * position looked at — only its levels put their price on the axis. `cutAt` is the last bar of a
+ * window the route cut — nothing past it has a candle.
  */
 export function positionLevels(
   trades: TradeRow[], key: string[], open: OpenPosition[], looked: string | null, barTimes: number[],
@@ -67,32 +71,32 @@ export function positionLevels(
 ): SegmentDrawing[] {
   const segments: SegmentDrawing[] = []
   for (const trade of trades) {
-    const from = barIn(barTimes, seconds(trade.entry_time), cutAt)
-    if (from === null) continue
-    const exit = seconds(trade.exit_time)
-    // an exit past the cut runs to the edge of what is drawn
-    const to = cutAt !== null && exit > cutAt ? null : barOf(barTimes, exit)
-    const held = `${utcInstant(trade.entry_time)} – ${utcInstant(trade.exit_time)}`
+    // an exit past the cut has no candle to stand at
+    const at = barIn(barTimes, seconds(trade.exit_time), cutAt)
+    if (at === null) continue
+    const when = utcInstant(trade.exit_time)
     const row = rowKey(trade, key)
     const focused = trade.position_id === looked
     if (trade.stop_loss !== null) {
-      segments.push(level(`level|SL|${row}`, 'SL', trade.stop_loss, from, to, held, trade.position_id, focused))
+      segments.push(level(`level|SL|${row}`, 'SL', trade.stop_loss, at, when, trade.position_id, focused))
     }
     if (trade.take_profit !== null) {
-      segments.push(level(`level|TP|${row}`, 'TP', trade.take_profit, from, to, held, trade.position_id, focused))
+      segments.push(level(`level|TP|${row}`, 'TP', trade.take_profit, at, when, trade.position_id, focused))
     }
   }
+  const last = barTimes[barTimes.length - 1]
+  if (last === undefined) return segments
   for (const entry of open) {
-    const from = barIn(barTimes, seconds(entry.entry_time), cutAt)
-    if (from === null) continue
+    // opened past the cut: not on the drawn window at all
+    if (barIn(barTimes, seconds(entry.entry_time), cutAt) === null) continue
     const focused = entry.position_id === looked
     const id = `level|open|${entry.position_id}`
-    const held = `${utcInstant(entry.entry_time)} – ${t('still open at the end')}`
+    const when = t('the end of the record, still open')
     if (entry.stop_loss !== null) {
-      segments.push(level(`${id}|SL`, 'SL', entry.stop_loss, from, null, held, entry.position_id, focused))
+      segments.push(level(`${id}|SL`, 'SL', entry.stop_loss, last, when, entry.position_id, focused))
     }
     if (entry.take_profit !== null) {
-      segments.push(level(`${id}|TP`, 'TP', entry.take_profit, from, null, held, entry.position_id, focused))
+      segments.push(level(`${id}|TP`, 'TP', entry.take_profit, last, when, entry.position_id, focused))
     }
   }
   return segments

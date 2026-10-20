@@ -11,7 +11,7 @@ import { t } from '@/translate'
 const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   levels: {
     title: t('Levels'),
-    description: t('The stop loss and take profit that were set, held from the entry to the exit'),
+    description: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded'),
     emptyHint: t('Drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw.'),
     option: {
       id: 'every-position',
