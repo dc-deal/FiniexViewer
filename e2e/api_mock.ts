@@ -130,6 +130,11 @@ interface ApiMockOptions {
    * serves — the rest of the capture stays as it was.
    */
   levels?: { scenario: string, position: string, stopLoss: number, takeProfit: number }
+  /**
+   * Rows appended to the captured activities. The capture holds the server alone, so an activity
+   * that runs something is built from the server's row by the spec that needs one.
+   */
+  activities?: Record<string, unknown>[]
 }
 
 /** A number where a list belongs: `.filter` on it throws, which is how the original defect landed. */
@@ -160,7 +165,9 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
 
     // what ran on the machine at capture time: the server's own row at least
     if (path === '/api/v1/activities') {
-      return route.fulfill({ json: fixture('activities.json'), headers: CONTRACT })
+      const captured = fixture('activities.json') as { activities: unknown[] }
+      const json = options.activities ? { ...captured, activities: [...captured.activities, ...options.activities] } : captured
+      return route.fulfill({ json, headers: CONTRACT })
     }
 
     /*

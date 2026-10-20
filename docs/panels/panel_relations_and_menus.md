@@ -19,7 +19,7 @@ Run bundle        —           run  + its members ²     its members ²
 Run chart         —           run · scenario · position scenario
 Free chart        —           market ¹                 market
 Layers            —           the chart in front ³     —
-Activities        —           —                        —
+Activities        —           —                        run · sweep
 Scenarios         Run bundle  run                      scenario
 Trade history     Run bundle  run · scenario           position
 Orders            Run bundle  run · scenario           position

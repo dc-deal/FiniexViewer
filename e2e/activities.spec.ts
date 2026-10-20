@@ -1,5 +1,5 @@
 import { test, expect } from './cdp_fixture'
-import { fixture, mockApi } from './api_mock'
+import { FIXTURE_RUN, fixture, mockApi } from './api_mock'
 
 /**
  * What runs on the machine, in a real browser: the menu bar's card says it in one line, and the
@@ -85,4 +85,28 @@ test('every activity row is one line tall, also in a German locale', async ({ co
   }).map(cell => cell.textContent?.trim())))
   expect(wrapped).toEqual([])
   await german.close()
+})
+
+/**
+ * An activity leads to what it runs (viewer#32): a backtest's label opens its run in the run bundle,
+ * as a session's run does in the Deployments — a running one too, which the run index lists already
+ * (measured 2026-10-19 on a sweep the operator started).
+ */
+test('an activity opens its run from its label', async ({ page }) => {
+  const raw = fixture('activities.json') as { server_activity_id: string, activities: Record<string, unknown>[] }
+  const serverRow = raw.activities.find(row => row['activity_id'] === raw.server_activity_id)!
+  await mockApi(page, {
+    activities: [{
+      ...serverRow, activity_id: 'act_backtest', activity_kind: 'backtest', activity_label: 'fixture backtest',
+      run_id: FIXTURE_RUN, pid: 4242,
+    }],
+  })
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.goto('/')
+  await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).click()
+  await page.locator('.menu-item[data-kind="activities"]').click()
+  await page.keyboard.press('Escape')
+
+  await page.locator('[data-panel-kind="activities"] .jump-link', { hasText: 'fixture backtest' }).click()
+  await expect(page.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
 })

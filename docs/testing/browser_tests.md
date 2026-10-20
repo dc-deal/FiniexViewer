@@ -58,7 +58,8 @@ by its tab, the way a reader does.
   the captured server row marked as this server, and asking nothing more while another tab of its
   group stands in front of it — a panel kept in the page stays mounted behind its tab, which only a
   real dock shows; and every cell of a narrow panel on one line in a German locale, counted by the
-  lines its text stands on, in a context of its own since the locale is the context's.
+  lines its text stands on, in a context of its own since the locale is the context's; and a
+  backtest's label opening its run in the run bundle, the activity built from the server's row.
 - `sweeps.spec.ts` holds the parameter searches: the Sweeps panel opened from the Panels menu, a
   sweep opened in its one list, its combinations beneath it in the order the route ranked them with
   the first marked ★, and a combination chosen as a run, its report coming forward in the run bundle.

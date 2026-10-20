@@ -39,7 +39,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'activities',
-    text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. Rest the pointer on a row for its command line, its code and who started it."),
+    text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. A label marked ↗ opens its run, or its sweep. Rest the pointer on a row for its command line, its code and who started it."),
   },
   {
     id: 'sweeps',

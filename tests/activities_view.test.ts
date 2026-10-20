@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import { defineComponent, h } from 'vue'
 import ActivitiesView from '@/views/ActivitiesView.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { useDockStore } from '@/stores/dock_store'
 import { useMachineStore } from '@/stores/machine_store'
 import type { ActivityList, ActivityRow } from '@/types/api/machine_types'
 import type { FigureCard } from '@/types/figure_types'
+import { provideTestOpenInContext } from './open_in_context_harness'
+import type { TestOpenInContext } from './open_in_context_harness'
 import activityFixture from './fixtures/activities.json'
 
 /**
@@ -83,7 +86,12 @@ describe('ActivitiesView', () => {
     const wrapper = mountWith(LIST)
     const labels = cells(wrapper, '.activity-label')
     // the suite, the sweep with its backtest beneath it, the server last
-    expect(labels.map(label => label.split(' ')[0])).toEqual(['test', 'my_sweep', '↳', SERVER.activity_label.split(' ')[0]])
+    expect(labels).toHaveLength(4)
+    expect(labels[0]).toContain(SUITE.activity_label)
+    expect(labels[1]).toContain(SWEEP.activity_label)
+    expect(labels[2]!.startsWith('↳')).toBe(true)
+    expect(labels[2]).toContain(CHILD.activity_label)
+    expect(labels[3]).toContain(SERVER.activity_label)
     expect(wrapper.findAll('.record-row:not(.record-unseen) .activity-label.nested')).toHaveLength(1)
     expect(labels.at(-1)).toContain('this server')
   })
@@ -119,5 +127,40 @@ describe('ActivitiesView', () => {
     const failed = mountWith(null)
     expect(failed.find('.notice.error-msg').text()).toContain('could not be read')
     expect(failed.find('.activity-list').exists()).toBe(false)
+  })
+
+  /** An activity leads to what it runs: its run, else its sweep — a link, as a session's run is. */
+  describe('the way to what an activity runs', () => {
+    function mountHosted(canOpen = true): { wrapper: VueWrapper, way: TestOpenInContext } {
+      const machine = useMachineStore()
+      machine.activities = LIST
+      vi.spyOn(machine, 'watchActivities').mockReturnValue(() => {})
+      useDockStore().noteShown('activities', true)
+      let way: TestOpenInContext = { opened: [] }
+      const Host = defineComponent({
+        setup() {
+          way = provideTestOpenInContext(canOpen)
+          return () => h(ActivitiesView)
+        },
+      })
+      mounted = mount(Host)
+      return { wrapper: mounted, way }
+    }
+
+    it('opens a run from its label, and a sweep where the activity names no run', async () => {
+      const { wrapper, way } = mountHosted()
+      const links = wrapper.findAll('.activity-label .jump-link')
+      // the server and the test suite run nothing there is to open
+      expect(links).toHaveLength(2)
+      await links.find(link => link.text().includes(CHILD.activity_label))!.trigger('click')
+      await links.find(link => link.text().includes(SWEEP.activity_label))!.trigger('click')
+      expect(way.opened).toEqual([{ what: 'run', id: CHILD.run_id }, { what: 'sweep', id: SWEEP.sweep_id }])
+    })
+
+    it('names every activity as plain text where nothing can open it', () => {
+      const { wrapper } = mountHosted(false)
+      expect(wrapper.findAll('.activity-label .jump-link')).toHaveLength(0)
+      expect(cells(wrapper, '.activity-label').join(' ')).toContain(CHILD.activity_label)
+    })
   })
 })

@@ -162,7 +162,8 @@ export const PANEL_KINDS: PanelKind[] = [
     order: 8,
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/ActivitiesView.vue')),
-    relations: { memberOf: null, follows: [], chooses: [] },
+    // an activity's label opens its run, or its sweep
+    relations: { memberOf: null, follows: [], chooses: ['run', 'sweep'] },
   },
 ]
 

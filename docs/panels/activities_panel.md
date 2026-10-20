@@ -59,6 +59,12 @@ sentence where it sent one — `500 activity_registry_unreadable` means "could n
 The app's own building blocks, the way the deployment and run lists are built: a `FacetBar` over a
 `RecordList`, rows inert (nothing to pick), a card on each.
 
+- **The label leads to what the activity runs** (viewer#32): its run, else its sweep — a sweep's
+  combination names both, and its run is the nearer. A link (↗) like a session's run in the
+  Deployments, so a `command` that brings the run bundle or the Sweeps panel forward. A running
+  backtest opens too: it stands in the run index while it runs (measured 2026-10-19 on a sweep the
+  operator started — its running combination listed, its outcome null).
+
 - **Columns**, ranked for a narrow panel: Started, Kind and Label, Uptime, Memory, Origin, Code. Every
   cell stays on one line and cuts itself off at its track with the whole value on hover — uncut,
   `autotrader_session` ran on into the label beside it, and in a German locale `19. Okt., 23:43` and
@@ -77,8 +83,6 @@ The app's own building blocks, the way the deployment and run lists are built: a
 
 ## Not yet
 
-- **A jump from an activity to its run** — whether a running backtest's run already stands in the run
-  index is not measured; until then the run id is in the card.
 - **States beyond `running`** — `queued`, `finished` and `failed` are declared for a queue that will
   write into the same list; they show as their word when they come.
 
@@ -88,9 +92,10 @@ The app's own building blocks, the way the deployment and run lists are built: a
   through a failure with the reason, called old after three silent polls, asked nothing while hidden.
 - `activities_view.test.ts` — asked only while on show; rows newest first with each beneath its
   parent and the server marked; memory as served, inside a parent and unreadable; the card; notices
-  only where something is off.
+  only where something is off; the label opening a run, else a sweep.
 - `machine_status.test.ts` — the card's *Running* line, the server left out, the two that hold the
   most memory and run on their own named, the rest counted; asked while the card is open; the panel
   named, and the figures no control.
-- `e2e/activities.spec.ts` — the card in a real browser, and the panel asking nothing while another
-  tab of its group stands in front of it.
+- `e2e/activities.spec.ts` — the card in a real browser, the panel asking nothing while another tab
+  of its group stands in front of it, every row on one line in a German locale, and a backtest's
+  label opening its run.

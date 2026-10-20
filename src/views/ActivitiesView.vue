@@ -5,11 +5,13 @@ import AppIcon from '@/components/base/AppIcon.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { bytes, clockTime, duration, largerFirst, sortInstant, startedAt, utcInstant } from '@/components/runs/report_format'
 import { rowKey } from '@/api/list_key'
 import { useFacetState } from '@/composables/use_facet_state'
+import { useOpenInContext } from '@/composables/use_open_in_context'
 import { useDockStore } from '@/stores/dock_store'
 import { useMachineStore } from '@/stores/machine_store'
 import type { ActivityRow } from '@/types/api/machine_types'
@@ -128,6 +130,22 @@ function nestedRow(row: ActivityRow): boolean {
   return parent !== null && shown.value.includes(parent)
 }
 
+const { openRun, openSweep, canOpen } = useOpenInContext()
+
+/**
+ * Where an activity leads: its run, else its sweep — a combination names both, and its run is the
+ * nearer. A run still running stands in the run index already (measured 2026-10-19 on a sweep the
+ * operator started: its running combination was listed, its outcome null), so it opens like any.
+ */
+function jumpOf(row: ActivityRow): { open: () => void, title: string } | null {
+  if (!canOpen) return null
+  const run = row.run_id
+  if (run) return { open: () => openRun(run), title: t('Open this run') }
+  const sweep = row.sweep_id
+  if (sweep) return { open: () => openSweep(sweep), title: t('Open this sweep') }
+  return null
+}
+
 /**
  * Its memory as the answer states it: an activity inside another holds none of its own — its
  * processes count toward the one that started them — and one that could not be read says so.
@@ -227,7 +245,8 @@ const unreadable = computed(() => activities.value?.unreadable_activity_ids.leng
           <span :data-rank="1" :title="row.activity_kind">{{ row.activity_kind }}</span>
           <span :data-rank="1" class="activity-label" :class="{ nested: nestedRow(row) }" :title="row.activity_label">
             <span v-if="nestedRow(row)" class="activity-nest" aria-hidden="true">↳</span>
-            {{ row.activity_label }}
+            <JumpLink v-if="jumpOf(row)" :title="jumpOf(row)!.title" @click="jumpOf(row)!.open()">{{ row.activity_label }}</JumpLink>
+            <template v-else>{{ row.activity_label }}</template>
             <span v-if="row.activity_id === serverId" class="activity-mark">{{ t('this server') }}</span>
           </span>
           <span :data-rank="3" class="figure-cell">{{ duration(row.uptime_s / 3600) }}</span>
@@ -308,7 +327,9 @@ const unreadable = computed(() => activities.value?.unreadable_activity_ids.leng
   padding-left: 0.5em;
 }
 
+/* its own gap: the label beside it is a link or plain text, and neither brings a space along */
 .activity-nest {
+  margin-right: 1ch;
   color: var(--color-text-secondary);
 }
 
