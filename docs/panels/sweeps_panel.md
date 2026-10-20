@@ -78,7 +78,8 @@ splits, and several sweeps can stand open at once, to be compared.
   `components/sweeps/sweep_rows.ts`, plain functions over the served answers.
 - **A click on a combination chooses its run, as the run list chooses one**: the run becomes the
   link's, every panel that follows it switches, and the run bundle comes forward
-  (`reveal(…, 'selection')`). The row of the run chosen is marked.
+  (`reveal(…, 'selection')`) — unless it stands as a tab beside the list, which a pick never covers.
+  The row of the run chosen is marked.
 - **Parameters** by the last part of their configuration key, the whole key on the title and in the
   card. The card carries every figure a combination is judged on and the fields that make it
   comparable: the code, its logic version, the parameter and settings fingerprints, how many

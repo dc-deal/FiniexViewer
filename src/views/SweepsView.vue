@@ -36,7 +36,7 @@ useSweepBinding()
       <p v-if="unknownSweepId" class="hint">
         {{ t('The sweep you had open is no longer in the ledger') }}: {{ unknownSweepId }}
       </p>
-      <SweepList @chosen="dock.reveal(RUN_BUNDLE, 'selection')" />
+      <SweepList @chosen="dock.reveal(RUN_BUNDLE, 'selection', 'sweeps')" />
     </template>
   </div>
 </template>

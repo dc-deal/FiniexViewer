@@ -439,9 +439,14 @@ export const useDockStore = defineStore('dock', () => {
    * Shows a kind's panel — THE way every jump, link and pick shows one, so its rule lives in one
    * place (VS Code's `openView` as the model, operator 2026-10-16). The panel comes to the front
    * wherever it stands, in its own group. A closed one opens for a `command` only, never for a
-   * `selection` (see `RevealReason`). Says whether the panel is on show now.
+   * `selection` (see `RevealReason`). Says whether the panel is open now.
+   *
+   * @param from The panel a `selection` was made in. A pick never covers it: where the target stands
+   *   as a tab in the same group, it stays behind — the pick still chose, and every panel following
+   *   it switched. Picking through a sweep's ranking with the run bundle as a tab beside it hid the
+   *   ranking at every click (operator, 2026-10-20). A `command` still comes to the front.
    */
-  function reveal(kindId: string, reason: RevealReason): boolean {
+  function reveal(kindId: string, reason: RevealReason, from?: string): boolean {
     const dock = api.value
     if (!dock) return false
     if (!dock.getPanel(kindId)) {
@@ -449,6 +454,8 @@ export const useDockStore = defineStore('dock', () => {
       openClosed(dock, kindId)
     }
     const panel = dock.getPanel(kindId)
+    const source = reason === 'selection' && from ? dock.getPanel(from) : undefined
+    if (panel && source && source.group === panel.group) return true
     panel?.api.setActive()
     return panel !== undefined
   }

@@ -26,7 +26,7 @@ onPanelShownAgain(() => { void runsStore.loadRuns(true) })
     <p v-if="indexError" class="error-msg"><AppIcon name="status-error" class="error-mark" />{{ indexError }}</p>
     <!-- a pick is a selection: the run's report comes to the front where it is open, and a report
          the reader closed stays closed — every other panel shows the run all the same -->
-    <RunPicker v-else @chosen="dock.reveal(RUN_BUNDLE, 'selection')" />
+    <RunPicker v-else @chosen="dock.reveal(RUN_BUNDLE, 'selection', 'runs')" />
   </div>
 </template>
 

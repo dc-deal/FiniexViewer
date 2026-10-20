@@ -440,6 +440,33 @@ describe('useDockStore', () => {
     expect(dock.ids()).toContain('run')
   })
 
+  /**
+   * A pick never covers the panel it was made in (operator, 2026-10-20): with the run bundle as a tab
+   * beside the list, every click in the list hid the list. In another group it still comes forward.
+   */
+  it('leaves a picked target behind where it shares the picking panel\'s group, and brings it forward elsewhere', () => {
+    const dock = fakeDock()
+    const store = useDockStore()
+    store.attach(dock.api)
+    const runs = dock.api.getPanel('runs')!
+    const run = dock.api.getPanel('run')!
+
+    // the default layout: the bundle a tab beside the list — the pick leaves it behind
+    expect(run.group).toBe(runs.group)
+    store.reveal('runs', 'command')
+    expect(store.reveal('run', 'selection', 'runs')).toBe(true)
+    expect(dock.active()).toBe('runs')
+    // a command still comes to the front, whatever stands beside it
+    store.reveal('run', 'command')
+    expect(dock.active()).toBe('run')
+
+    // the bundle dragged beside the chart, a group of its own: the pick brings it forward
+    run.api.moveTo({ group: dock.api.getPanel('run-chart')!.group })
+    store.reveal('runs', 'command')
+    expect(store.reveal('run', 'selection', 'runs')).toBe(true)
+    expect(dock.active()).toBe('run')
+  })
+
   it('brings an open panel to the front, and opens a closed one beside the active one', () => {
     const dock = fakeDock()
     const store = useDockStore()

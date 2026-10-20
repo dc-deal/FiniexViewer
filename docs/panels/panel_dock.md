@@ -20,7 +20,8 @@ PanelDock    [☰ Deployments] [☰ Runs] [▤ Run bundle · 20261012_205715…]
 
 **The run list and the run bundle are two panels** (viewer#31, 2026-10-14). `runs` is the LIST — the
 facet bar and the runs, nothing else; a pick chooses the run (`selectRun`) and brings `run` to the
-front where it is open — a pick is a selection, and a selection never reopens a panel. `run` is the
+front where it is open — a pick is a selection, and a selection never reopens a panel, nor covers
+the list it was made in: where `run` stands as a tab beside the list, it stays behind. `run` is the
 BUNDLE: the word is on its tab, *Run bundle · <run id>*, in the Panels menu and on ⇲ (viewer#42), so
 the container has one name wherever it is named. It holds one line naming the run with *Show in
 list*, and then the report's sections stacked as its members in one column.
@@ -99,6 +100,11 @@ it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the o
   it stood; a `selection` (a pick in a list) never does. Seven call sites each decided that on their
   own before, and a pick in the run list reopened the run report the reader had closed, every
   section of it already out as a panel of its own.
+- **A pick never covers the panel it was made in** (operator, 2026-10-20). A `selection` names the
+  panel it came from, and where the target stands as a tab in that panel's group, it is left behind:
+  the pick still chose, and every panel following the link switched. Picking through a sweep's
+  ranking with the run bundle as a tab beside it hid the ranking at every click. In another group
+  the target still comes forward, and a `command` always does.
 - **A panel docks along a whole edge of the dock** (`DockEdges.vue`, operator 2026-10-16). Dragged
   to the outermost edge, a tab becomes a column over the dock's full height or a row over its full
   width, a quarter of it to start with; a drop on a group only splits that group. dockview has edge
