@@ -47,7 +47,7 @@ GET /api/v1/reports/runs/{run_id}/aggregated-portfolio  the fold, per account cu
 GET /api/v1/reports/runs/{run_id}/pending-orders      what became of a scenario's orders
 GET /api/v1/reports/runs/{run_id}/order-history       the orders themselves, as records — and where each position opened
 GET /api/v1/reports/runs/{run_id}/order-events        the STEPS between those records
-GET /api/v1/reports/runs/{run_id}/...                 5 further per-section reports (not yet consumed)
+GET /api/v1/reports/runs/{run_id}/...                 the further per-section reports, not yet consumed
 ```
 
 **Ledger plane** — a bot's life across its restarts, on its own grant surface `deployments`:
@@ -132,7 +132,7 @@ reading a directory listing, and nothing may parse it, so the kind comes from `p
 repeated word is the price of not deriving. Settled by FiniexTestingIDE on 2026-10-12, which keeps
 the id format as it is.
 
-A **sweep combination is structurally an ordinary run**: measured against a standalone run, all fourteen report routes answer with identical field sets, so the existing panels render one without a change. What a sweep adds is not a report shape but a level above it — the ranking of its combinations by the objective it declared, and the parameters that were varied. Those live on `GET /api/v1/sweeps` and `GET /api/v1/sweeps/{sweep_id}`, which are known and not yet consumed.
+A **sweep combination is structurally an ordinary run**: measured against a standalone run, all fourteen report routes answer with identical field sets, so the existing panels render one without a change. What a sweep adds is not a report shape but a level above it — the ranking of its combinations by the objective it declared, and the parameters that were varied. Those live on `GET /api/v1/sweeps` and `GET /api/v1/sweeps/{sweep_id}`, which the Sweeps panel reads ([Sweeps panel](../panels/sweeps_panel.md)).
 
 **Not every report route answers for every run.** `group` decides:
 

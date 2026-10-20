@@ -1707,11 +1707,11 @@ export interface ReconcileDivergence {
  * balances on a `reconcile` line that did not turn.
  *
  * **A `reconcile` line is written only where the picture CHANGES** — a divergence starting or
- * ending — so a session whose venue never disagrees writes none. That is every session in our
- * archive, and testingide said on 2026-10-08 that it cannot be arranged at a real venue on
- * request: *"stop waiting for an instance."* The shapes above are therefore typed from their
- * document (`order-events`, section *The venue parts, field by field*), which they wrote for
- * exactly this — *"type them from here rather than from an instance."*
+ * ending — so a session whose venue never disagrees writes none. The field study
+ * `20261012_072038_b60404ee` carries two (measured 2026-10-20): seq 50 `divergent`, an orphan order
+ * `pos_ethusd_15`, and seq 105 `clean` again. The shapes above are typed from their document
+ * (`order-events`, section *The venue parts, field by field*), which they wrote for exactly this —
+ * *"type them from here rather than from an instance."*
  */
 export interface BrokerTruthRow {
   scenario_name: string
