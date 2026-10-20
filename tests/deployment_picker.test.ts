@@ -129,6 +129,15 @@ describe('DeploymentPicker', () => {
     expect(rows(wrapper)).toHaveLength(0)
   })
 
+  /** A low view gives the list the whole panel while it stands open, so the view has to know. */
+  it('says whether its list stands open', async () => {
+    const wrapper = mountPicker([deployment()])
+    expect(wrapper.emitted('listShown')?.at(-1)).toEqual([true])
+    useContextStore().selectDeployment('deploy_20260927_132812')
+    await flushPromises()
+    expect(wrapper.emitted('listShown')?.at(-1)).toEqual([false])
+  })
+
   /** The history below is what the reader came for, so the list gets out of the way. */
   it('collapses to one line once a deployment is chosen, and reopens on request', async () => {
     const wrapper = mountPicker([deployment()])

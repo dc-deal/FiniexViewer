@@ -27,7 +27,9 @@ configuration moved — were invisible until something had been chosen, which is
 defect one level shallower: a reader choosing a deployment is choosing between its HISTORIES.
 
 Nine columns ranked 9 → 7 → 5 → 3, a card for the rest, and the list collapses to one line once a
-deployment is chosen. `Bot` is rank 1 beside the id deliberately: the id is minted per deployment
+deployment is chosen. Open again, it takes a third of the view beside the history — and in a view
+lower than 40rem it stands alone and takes the whole of it, because a third of a short panel left
+a strip for each half (operator, 2026-10-20); a pick folds it away and the history returns. `Bot` is rank 1 beside the id deliberately: the id is minted per deployment
 and says nothing a reader recognises, while `bot` is what the profile is CALLED — and neither alone
 answers *is this the one I mean*, because the id is a stamp and an operator improves the name.
 

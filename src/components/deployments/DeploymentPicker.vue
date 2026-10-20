@@ -186,6 +186,11 @@ const open = ref(selectedDeploymentId.value === null)
 
 watch(selectedDeploymentId, id => { open.value = id === null })
 
+/** Whether the list stands open: in a low panel the view then gives it the whole height. */
+const emit = defineEmits<{ listShown: [shown: boolean] }>()
+
+watch(open, shown => emit('listShown', shown), { immediate: true })
+
 /**
  * A pick folds the list away. The watch above sees only a CHANGE, so picking the deployment already
  * chosen — after *Change deployment* opened the list again — left the list standing open.
@@ -357,6 +362,22 @@ const chosenCard = computed(() => chosen.value ? card(chosen.value) : null)
 .deployment-list {
   max-height: 33cqh;
   overflow-y: auto;
+}
+
+/* In a LOW view the open list stands alone and takes the rest of it: a third of a short panel
+   left a strip for each half (operator, 2026-10-20). The view hides the history meanwhile; the
+   threshold is the same as there. */
+@container (max-height: 40rem) {
+  .deployment-picker {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .deployment-list {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
 }
 
 .deployment-list :deep(.record-row) > span {

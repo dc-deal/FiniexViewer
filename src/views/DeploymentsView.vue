@@ -29,6 +29,9 @@ useDeploymentBinding()
 // whether the reader left the period list open — kept as this panel's own view, across deployments
 const periodsOpen = useViewExpanded('periods-table')
 
+// whether the picker's list stands open — a low view then gives it the whole height
+const listShown = ref(false)
+
 /**
  * One order for the chart and the table beneath it. Across a deployment a lane is the SESSION —
  * `unit_name` is the profile name and identical in every session.
@@ -61,9 +64,9 @@ const showDeployment = computed(() =>
 </script>
 
 <template>
-  <div class="deployments-view">
+  <div class="deployments-view" :class="{ 'list-shown': listShown }">
     <header class="deployments-header">
-      <DeploymentPicker />
+      <DeploymentPicker @list-shown="shown => listShown = shown" />
     </header>
 
     <div class="deployments-body">
@@ -163,6 +166,23 @@ const showDeployment = computed(() =>
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+/* A LOW view cannot hold the list and the history together: a third of it for the list left a strip
+   for the history (operator, 2026-10-20). While the list stands open it takes the view alone, and a
+   pick folds it away and brings the history back. 40rem is where a tall panel still holds both. */
+@container (max-height: 40rem) {
+  .list-shown .deployments-header {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-bottom: none;
+  }
+
+  .list-shown .deployments-body {
+    display: none;
+  }
 }
 
 .state-overlay {
