@@ -168,9 +168,13 @@ function costs(line: Parameters<typeof feeSplit>[0], currency: string): string {
  * data says why: over ten drawn periods, eight had no trades at all, so `Win rate` and `PF` read
  * `n/a` on eight of ten rows. `Opening` and `Equity band` describe the same movement that
  * `Final equity` closes, and that one is rank 1.
+ *
+ * The unit's floor is the one that gives: the four of rank 1 summed to 26rem with it at 8rem, and a
+ * run bundle 493 px wide holds 410 px of list — the table scrolled sideways by six (measured
+ * 2026-10-20). A long unit name is cut in the narrowest tier; its card says it whole.
  */
 const columns = computed<ListColumn[]>(() => [
-  { label: t('Unit'), width: 'minmax(8rem, 16fr)', rank: 1 },
+  { label: t('Unit'), width: 'minmax(7rem, 16fr)', rank: 1 },
   ...(props.showRun ? [{ label: t('Run'), width: 'minmax(0, 16fr)', rank: 4 } as ListColumn] : []),
   {
     /*
