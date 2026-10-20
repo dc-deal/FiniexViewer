@@ -8,9 +8,10 @@ import { plural, t } from '@/translate'
 /**
  * The cards of the booking periods — FiniexTestingIDE's ledger (their glossary: *journal · ledger ·
  * closing*). A period's card says what the period DID, its own figures: what it booked, its rates,
- * its band and its decline. A unit total's card adds what the ACCOUNT carried across the periods,
- * which no period row can say: the account's own drawdown, cumulative over the boundaries. Every
- * figure is served; nothing here is computed beyond the formatting.
+ * its band and its decline — and, since contract 35, what it CARRIES at its seal: the account's
+ * decline so far and what was still open. A unit total's card says what the account carried across
+ * all its periods: the account's own drawdown, cumulative over the boundaries. Every figure is
+ * served; nothing here is computed beyond the formatting.
  */
 
 /** A period row from either scope: the deployment-wide route adds the run that booked it. */
@@ -63,8 +64,39 @@ export function periodFigures(period: PeriodRow): Figure[] {
     { label: t('Opening'), value: period.opening_equity === null ? t('n/a') : money(period.opening_equity) },
     { label: t('Equity band'), value: `${money(period.min_equity)} … ${money(period.max_equity)}` },
     { label: t('Final equity'), value: money(period.final_equity) },
+    ...carriedFigures(period, money),
   ]
   if (period.run_id) rows.unshift({ label: t('Run'), value: period.run_id })
+  return rows
+}
+
+/**
+ * What the period CARRIES beside what it did (their booking-periods document: *"what the day did"*
+ * and *"what it carried"*): the account's decline up to the seal, which repeats down the column until
+ * a deeper fall moves it, and what was still open when the period was sealed. Nothing where the
+ * record does not hold them — a run recorded before contract 35 serves them null on its own route —
+ * and nothing open is nothing said.
+ */
+function carriedFigures(period: PeriodRow, money: (value: number) => string): Figure[] {
+  const rows: Figure[] = []
+  if (period.account_max_drawdown !== null) {
+    const decline = magnitude(period.account_max_drawdown, period.currency)
+    rows.push({
+      label: t('Deepest drawdown'),
+      value: period.account_max_dd_pct === null ? decline : `${decline} (${percentFigure(period.account_max_dd_pct)})`,
+      title: t("What the period carries: the account's decline so far, up to the period's seal. What the period itself did is its Max DD."),
+    })
+  }
+  if (period.open_position_count) {
+    rows.push({
+      label: t('Still open'),
+      value: String(period.open_position_count),
+      title: t('Positions still open when the period was sealed'),
+    })
+    if (period.unrealized_pnl !== null) {
+      rows.push({ label: t('Unrealized'), value: money(period.unrealized_pnl), tone: signClass(period.unrealized_pnl) })
+    }
+  }
   return rows
 }
 

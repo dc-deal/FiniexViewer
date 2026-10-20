@@ -15,7 +15,12 @@ lines that stay themeable through the existing tokens.
 glossary: *journal · ledger · closing*). Every period row carries the card its bar on the timeline
 has — one builder, `runs/booking_period_card.ts` — which holds what a narrow panel's columns gave up;
 the rows stay read-only and can be focused, so the card is not the pointer's alone (`RecordList`,
-a read-only row with a `rowCard`). Each unit of several periods closes with the TOTAL the run's route
+a read-only row with a `rowCard`). A period's card says what the period DID and, since contract 35,
+what it CARRIES at its seal — their two kinds of figure: the account's decline so far
+(`account_max_drawdown` with its share, *Deepest drawdown*), which repeats down the column until a
+deeper fall moves it, and where something was still open, how many positions (*Still open*) and
+their unrealised result (*Unrealized*). Nothing open is nothing said, and a run recorded before
+contract 35 serves the four null on its own route, so its cards say none of it. Each unit of several periods closes with the TOTAL the run's route
 serves (`unit_totals`), a sum line in the same columns. Its *Max DD* is the deepest SINGLE period —
 which is what the column shows, by their document — and its card puts the account's own decline
 beside it, cumulative across the boundaries (`account_max_drawdown` and its share): a fall that runs
@@ -23,7 +28,8 @@ across a boundary is deeper than any one period's, and the two side by side are 
 unit of one period draws no total, since its total is that period again. The deployment view draws
 none: its route serves no unit totals. The figures over many periods — a Sharpe, a Calmar, a month's
 drawdown, their *closing* — are not served yet and not computed here; a *Closing* panel waits for
-them (requested 2026-10-18).
+them: testingide#617 (announced 2026-10-20, contract 37 or later) serves them per unit, or per
+deployment across its sessions.
 
 **Nothing run-wide stands under the table, and as a panel of its own the table fills it**
 (2026-10-19). A footnote printed the deepest period drawdown over every scenario and the final

@@ -4,9 +4,12 @@ import type { BookingPeriodRow, BookingPeriodUnitTotal, BookingPeriodsReport } f
 import type { Figure } from '@/types/figure_types'
 
 import fixture from './fixtures/run_booking_periods.json'
+import deploymentFixture from './fixtures/deployment_booking_periods.json'
 
 const REPORT: BookingPeriodsReport = fixture
 const PERIOD = REPORT.periods[0] as BookingPeriodRow
+// recorded since contract 35, so its periods carry the account's state at each seal
+const CARRYING = deploymentFixture.periods as BookingPeriodRow[]
 const TOTAL = REPORT.unit_totals[0] as BookingPeriodUnitTotal
 
 function pair(figures: Figure[], label: string): Figure | undefined {
@@ -41,6 +44,36 @@ describe('booking_period_card', () => {
 
     it('puts the cost split on its fees', () => {
       expect(pair(periodCard(PERIOD).details, 'Fees')?.title).toContain('besides, not part of this total')
+    })
+
+    /**
+     * What the period CARRIES beside what it did (contract 35): the account's decline up to its seal,
+     * and what was still open then — read from the deployment capture, whose periods hold them.
+     */
+    it('says what it carries at its seal: the account decline so far, and what was still open', () => {
+      const open = CARRYING.find(period => (period.open_position_count ?? 0) > 0)!
+      const details = periodCard(open).details
+      expect(pair(details, 'Deepest drawdown')?.value).toContain('%')
+      expect(pair(details, 'Deepest drawdown')?.title).toContain('up to the period')
+      expect(pair(details, 'Still open')?.value).toBe(String(open.open_position_count))
+      expect(pair(details, 'Unrealized')?.value).toContain(open.currency)
+    })
+
+    /** Nothing open is nothing said; the decline it carries stands all the same. */
+    it('says nothing of open positions where none was open at the seal', () => {
+      const flat = CARRYING.find(period => period.open_position_count === 0)!
+      const details = periodCard(flat).details
+      expect(pair(details, 'Deepest drawdown')).toBeDefined()
+      expect(pair(details, 'Still open')).toBeUndefined()
+      expect(pair(details, 'Unrealized')).toBeUndefined()
+    })
+
+    /** A run recorded before contract 35 serves the four null on its own route: nothing is said. */
+    it('says nothing it carries where the record does not hold it', () => {
+      const labels = periodCard(PERIOD).details.map(figure => figure.label)
+      expect(PERIOD.account_max_drawdown).toBeNull()
+      expect(labels).not.toContain('Deepest drawdown')
+      expect(labels).not.toContain('Still open')
     })
   })
 
