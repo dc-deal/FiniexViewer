@@ -72,7 +72,9 @@ const sorts: SortDefinition<ActivityRow>[] = [
  * started, for how long, who started it and from which code go first.
  */
 const columns: ListColumn[] = [
-  { label: t('Started'), width: 'minmax(0, 11fr)', rank: 2 },
+  // a floor its date fits on one line in the reader's own zone: `19. Okt., 23:43` broke after the
+  // comma in a German locale, and every row stood two lines tall (operator, on screen, 2026-10-19)
+  { label: t('Started'), width: 'minmax(8rem, 11fr)', rank: 2 },
   // `autotrader_session` and `discovery_cache_build` are the longest words: room for them where there is room
   { label: t('Kind'), width: 'minmax(0, 15fr)', rank: 1 },
   { label: t('Label'), width: 'minmax(8rem, 30fr)', rank: 1 },
@@ -222,18 +224,18 @@ const unreadable = computed(() => activities.value?.unreadable_activity_ids.leng
       >
         <template #default="{ row }">
           <span :data-rank="2">{{ startedAt(row.started_at) }}</span>
-          <span :data-rank="1" class="cell-text" :title="row.activity_kind">{{ row.activity_kind }}</span>
+          <span :data-rank="1" :title="row.activity_kind">{{ row.activity_kind }}</span>
           <span :data-rank="1" class="activity-label" :class="{ nested: nestedRow(row) }" :title="row.activity_label">
             <span v-if="nestedRow(row)" class="activity-nest" aria-hidden="true">↳</span>
             {{ row.activity_label }}
             <span v-if="row.activity_id === serverId" class="activity-mark">{{ t('this server') }}</span>
           </span>
           <span :data-rank="3" class="figure-cell">{{ duration(row.uptime_s / 3600) }}</span>
-          <span :data-rank="1" class="figure-cell" :class="{ 'warning-msg': row.rss_bytes === null }">
+          <span :data-rank="1" class="figure-cell" :class="{ 'warning-msg': row.rss_bytes === null }" :title="memory(row)">
             <AppIcon v-if="row.rss_bytes === null" name="status-warning" class="notice-mark" /> {{ memory(row) }}
           </span>
-          <span :data-rank="4" class="cell-text" :title="row.origin_channel ?? undefined">{{ row.origin_channel ?? '—' }}</span>
-          <span :data-rank="4" class="cell-text" :title="row.git_commit ? `${code(row)} · ${row.git_commit}` : code(row)">
+          <span :data-rank="4" :title="row.origin_channel ?? undefined">{{ row.origin_channel ?? '—' }}</span>
+          <span :data-rank="4" :title="row.git_commit ? `${code(row)} · ${row.git_commit}` : code(row)">
             {{ code(row) }}
           </span>
         </template>
@@ -292,10 +294,10 @@ const unreadable = computed(() => activities.value?.unreadable_activity_ids.leng
   color: var(--color-warning);
 }
 
-/* every text cell cuts itself off at its track: uncut, `autotrader_session` ran on into the label
-   beside it (operator, on screen, 2026-10-19) — the whole value is on hover */
-.cell-text,
-.activity-label {
+/* every cell stays on one line and cuts itself off at its track: uncut, `autotrader_session` ran on
+   into the label beside it, and `in its parent` broke onto a second line (operator, on screen,
+   2026-10-19) — the whole value is on hover */
+.activity-list :deep(.record-row) > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

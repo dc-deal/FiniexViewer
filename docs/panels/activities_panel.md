@@ -60,8 +60,10 @@ The app's own building blocks, the way the deployment and run lists are built: a
 `RecordList`, rows inert (nothing to pick), a card on each.
 
 - **Columns**, ranked for a narrow panel: Started, Kind and Label, Uptime, Memory, Origin, Code. Every
-  text cell cuts itself off at its track with the whole value on hover — uncut, `autotrader_session`
-  ran on into the label beside it.
+  cell stays on one line and cuts itself off at its track with the whole value on hover — uncut,
+  `autotrader_session` ran on into the label beside it, and in a German locale `19. Okt., 23:43` and
+  `in its parent` broke onto a second line, so every row stood two lines tall. *Started* has a
+  floor its date fits in.
 - **Facets**: Kind, Origin (`origin_channel`), Code (`working_tree`, `.` shown as *same as the
   server*). The search reads the label, the run id and the command line. Sorted newest, by memory
   (unreadable last) or by uptime.

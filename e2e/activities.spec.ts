@@ -53,3 +53,36 @@ test('the Activities panel lists what runs, and asks nothing while another tab s
   await page.waitForTimeout(6000)
   expect(asked).toBe(before)
 })
+
+/**
+ * A date in the reader's own zone and language can be longer than the English one: in a German
+ * locale `19. Okt., 23:43` broke after its comma and `in its parent` onto a second line, so every
+ * row stood two lines tall (operator, on screen, 2026-10-19). One line each, in any locale.
+ */
+test('every activity row is one line tall, also in a German locale', async ({ context }) => {
+  // a context of its own: the locale is the context's, and the suite's is English
+  const german = await context.browser()!.newContext({ locale: 'de-DE' })
+  const page = await german.newPage()
+  await mockApi(page)
+  // a narrow panel, as the operator's was: below the first arrangement's columns it spans the
+  // window, which at 700 px still shows when an activity started — in a share too small for the date
+  await page.setViewportSize({ width: 700, height: 900 })
+  await page.goto('/')
+  await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).click()
+  await page.locator('.menu-item[data-kind="activities"]').click()
+  await page.keyboard.press('Escape')
+
+  const rows = page.locator('[data-panel-kind="activities"] .record-row')
+  await expect(rows.first()).toBeVisible()
+  // the locale took: the month is German
+  await expect(rows.first().locator('[data-rank="2"]')).toContainText('.')
+  // the lines each cell's TEXT stands on, counted by their tops: a capture of one row cannot be
+  // compared with another row
+  const wrapped = await rows.evaluateAll(list => list.flatMap(row => [...row.children].filter(cell => {
+    const range = document.createRange()
+    range.selectNodeContents(cell)
+    return new Set([...range.getClientRects()].map(box => Math.round(box.top))).size > 1
+  }).map(cell => cell.textContent?.trim())))
+  expect(wrapped).toEqual([])
+  await german.close()
+})
