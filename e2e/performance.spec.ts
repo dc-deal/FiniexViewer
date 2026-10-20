@@ -89,6 +89,11 @@ test('a run opens its panels quickly', async ({ page }) => {
   // the clock starts, the way `run_selection.spec.ts` reaches it. Without both, the click found no
   // row: this spec runs only on a perf pass, so it went unnoticed from the day the default filter
   // and the folding arrived until 2026-10-12.
+  // the report beside the list, as the first arrangement stands it on a screen this wide
+  // (2026-10-20): the pick alone is timed. Until then the pick also brought the report forward and
+  // drew it the first time; at 1280 px it now stays behind the list, and a second click would time
+  // the test's own round trip
+  await page.setViewportSize({ width: 1400, height: 900 })
   await openWith(page, '/', FIXTURES_SHOWN)
   await page.locator('.run-list .record-row:not(.record-unseen)').first().waitFor({ state: 'visible' })
   await revealFixtureRun(page)
@@ -101,9 +106,7 @@ test('a run opens its panels quickly', async ({ page }) => {
       .click()
     await page.locator('.panel-trigger').first().waitFor({ state: 'visible' })
     // a panel keeps its place while its section loads, so a drawn frame is not yet a usable
-    // panel: the figure ends when the last loading line is gone. Since the run report is a panel
-    // of its own (2026-10-14) the click also brings it to the front and draws it the first time —
-    // part of the figure from then on
+    // panel: the figure ends when the last loading line is gone
     await expect(page.locator('.panel-loading')).toHaveCount(0)
   })
   expect(ms).toBeLessThan(3000)
@@ -148,7 +151,8 @@ test('the trade list draws within its row cap', async ({ page }) => {
  * stand on the candles, and a zoom step until the frame after it has painted, the mean of ten.
  */
 test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  // the chart beside the report, the first arrangement's third column (operator, 2026-10-20)
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
   await expect(unitSelect).toBeEnabled()
