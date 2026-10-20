@@ -168,8 +168,12 @@ const missingSections = computed(() => {
       </div>
       <template v-else>
         <!-- a missing or unreadable section does not hide the ones that are there -->
+        <!-- `artifacts` read with `reporting` (their runs document): a session still running, or one
+             that died before its report phase, is not a run kept as logs only -->
         <p v-if="!selectedRun.has_reports" class="notice">
-          {{ t('This run exists as logs only — it carries no report artifacts') }}
+          {{ selectedRun.reporting === 'expected'
+            ? t('This run has no report — it is still running, or it died before its report phase')
+            : t('This run exists as logs only — it was never meant to write a report') }}
         </p>
         <!-- one line per REASON, never one per absent section -->
         <p v-for="missing in missingSections" :key="missing.cause" class="notice absent">

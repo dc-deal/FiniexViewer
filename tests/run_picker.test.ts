@@ -170,6 +170,17 @@ describe('RunPicker', () => {
   })
 
   /**
+   * No artifacts but `reporting: expected` is a run that never got to its report — still running,
+   * or it died first (their runs document reads the two fields as a pair). It is not logs only.
+   */
+  it('marks a run that never got to its report apart from one kept as logs only', () => {
+    const wrapper = mountPicker([run({ run_id: 'unreported', has_reports: false, reporting: 'expected' })])
+    const mark = rowFor(wrapper, 'unreported').find('.run-mark.logs')
+    expect(mark.text()).toBe('no report')
+    expect(mark.attributes('title')).toContain('Still running, or it died before its report phase')
+  })
+
+  /**
    * The whole reason the cascade went. Measured over the real index: 40 runs in 29 (group, set)
    * pairs, so a set dropdown held 29 entries while the run dropdown below it held one to six.
    */

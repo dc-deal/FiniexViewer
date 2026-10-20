@@ -607,7 +607,13 @@ function choose(runId: string): void {
               v-if="run.parent_kind && !showsFamilyHead(familyOf(run))"
               class="run-mark"
             >{{ run.parent_kind }}</span>
-            <span v-if="!run.has_reports" class="run-mark logs">{{ t('logs only') }}</span>
+            <!-- `artifacts` read with `reporting`, as their runs document asks: without the pair a
+                 run that never got to its report and one never meant to write any look alike -->
+            <span
+              v-if="!run.has_reports"
+              class="run-mark logs"
+              :title="run.reporting === 'expected' ? t('Still running, or it died before its report phase') : undefined"
+            >{{ run.reporting === 'expected' ? t('no report') : t('logs only') }}</span>
           </span>
         </template>
       </RecordList>

@@ -40,6 +40,19 @@ describe('RunReportView', () => {
     expect(meta.attributes('title')).toBe('simulation · set_x')
   })
 
+  /**
+   * A run without reports is said by the pair their runs document reads: `reporting: expected` is a
+   * run that never got to its report — still running, or it died first — and only `none` is a run
+   * kept as logs only.
+   */
+  it('tells a run that never got to its report from one kept as logs only', () => {
+    chooseRun({ has_reports: false, reporting: 'expected' })
+    expect(mount(RunReportView).find('.notice').text()).toContain('still running, or it died before its report phase')
+    setActivePinia(createPinia())
+    chooseRun({ has_reports: false, reporting: 'none' })
+    expect(mount(RunReportView).find('.notice').text()).toContain('never meant to write a report')
+  })
+
   /** The list is a panel of its own: *Show in list* brings it to the front, nothing unfolds here. */
   it('shows the chosen run in the run list', async () => {
     chooseRun()

@@ -65,13 +65,15 @@ describe('useRunReportsLoading', () => {
     expect(apiClient.getRunConfig).toHaveBeenCalledWith('a')
   })
 
-  it('asks a run kept as logs only for its header alone', async () => {
+  /** The configuration is the run's source, not an artifact: a run without reports answers it too. */
+  it('asks a run without reports for its header and its configuration alone', async () => {
     useRunsStore().runs = [row('a', [], false)]
     choose('a')
     mountLoading()
     await flushPromises()
     expect(apiClient.getRunHeader).toHaveBeenCalledWith('a')
-    expect(apiClient.getRunConfig).not.toHaveBeenCalled()
+    expect(apiClient.getRunConfig).toHaveBeenCalledWith('a')
+    expect(apiClient.getTradeHistory).not.toHaveBeenCalled()
   })
 
   /** After a reload the id is back before the index is — the load waits for the run itself. */
