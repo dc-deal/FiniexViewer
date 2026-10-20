@@ -89,9 +89,16 @@ It folded to one line once a run was chosen until then, because forty rows above
 pushed every one of them off the screen.
 
 **The narrowing is kept too**, as the bar's entry in `arrangement.v1` (`use_facet_state`).
-`Purpose` is the one facet that opens with a value picked, and the default is applied as an
-ordinary selection rather than behind it: a chip shows it, `clear` removes it, and a cleared bar
-stays cleared after a reload. That shape is GitHub's `is:issue state:open`.
+`Purpose` and `Parent` open with a value picked, and the default is applied as an ordinary
+selection rather than behind it: a chip shows it, `clear` removes it, and a cleared bar stays
+cleared after a reload. That shape is GitHub's `is:issue state:open`. `Purpose` leaves the fixtures
+out; `Parent` keeps the runs that **stand alone** — their phrase for a run with no `parent_id` — and
+those whose parent's kind was never recorded (operator, 2026-10-20). A sweep's combinations are held
+by the Sweeps panel and a deployment's sessions by the Deployments panel, each a click from its run,
+so the list leaves them to those. Left out, never removed: measured that day, 7 of 82 such runs are
+in no list of their own — sessions that never closed, a combination with no report — and `Parent`
+brings them back. Where the default leaves the chosen run out, the notice below the list names the
+sweep or the deployment it belongs to and leads to its panel; the bar's entry is `bars['runs']`.
 
 **The list GROUPS by family, and a family of one stays a plain row.** Measured 2026-10-09 over 85
 runs: 42 lines instead of 85, 14 of them a family and 28 a run standing alone.

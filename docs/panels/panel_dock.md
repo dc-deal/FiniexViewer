@@ -33,7 +33,9 @@ around it) and marks it for a moment with a dashed edge in the annotation colour
 (`.record-row.flash`; standing still for the same moment without motion, and the scroll at once
 rather than smooth). The keyboard is left in the LIST, never on the row, whose card opens on focus
 and would cover the list unasked; left on the button, it stayed on a control the list had hidden. A
-second call restarts the mark for its whole moment. It is not offered where
+second call restarts the mark for its whole moment. A sweep's combination and a deployment's
+session lead to the list that holds them instead — the Sweeps or the Deployments panel, through
+`openInDock` — since the run list leaves them out by default (2026-10-20). It is not offered where
 the list is on show with that row in view: the dock store keeps which panels are ON SHOW, as each
 panel's host hears it from dockview (`shownIds`, `noteShown`), and the list measures whether the
 chosen row stands in its own view with an IntersectionObserver (`runs_store.chosenRowInView`). The

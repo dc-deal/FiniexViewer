@@ -29,7 +29,7 @@ export const SEEDED = 'e2e-seeded'
  * from is itself a fixture, so a spec that clicks it asks for them — the way a reader would, by
  * picking the value.
  */
-export const FIXTURES_SHOWN: Seed = { bars: { 'run-picker': { selection: { purpose: ['fixture'] } } } }
+export const FIXTURES_SHOWN: Seed = { bars: { runs: { selection: { purpose: ['fixture'] } } } }
 
 /**
  * Opens `path` on a stored arrangement — what a reader finds who comes back to the app. The

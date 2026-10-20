@@ -9,6 +9,7 @@ import AppSpinner from '@/components/base/AppSpinner.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
+import { useOpenInContext } from '@/composables/use_open_in_context'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListColumn } from '@/types/list_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
@@ -31,7 +32,7 @@ import { plural, t } from '@/translate'
 const runsStore = useRunsStore()
 const { runs, selectedRun, selectedRunId, loadingRuns } = storeToRefs(runsStore)
 
-// the narrowing is stored with the arrangement (`bars['run-picker']`), so a reload keeps it
+// the narrowing is stored with the arrangement (`bars['runs']`), so a reload keeps it
 /**
  * A run whose purpose nobody stated. **THEIR word since 2026-10-09**, decided on their side after
  * we asked: *"`unstated` → `unknown`. It is the word our documents already use for exactly this."*
@@ -41,6 +42,13 @@ const { runs, selectedRun, selectedRunId, loadingRuns } = storeToRefs(runsStore)
  * those rows no value would DROP them the moment it is used.
  */
 const UNKNOWN = 'unknown'
+
+/**
+ * A run with no parent, in their words: `parent_id` *"is null when the run stands alone"* (their
+ * run-kinds document). A parent id without a kind is a run indexed before the field existed, and it
+ * reads `unknown` rather than standing alone.
+ */
+const STANDS_ALONE = 'stands alone'
 
 /**
  * What the list opens with: everything except the fixtures.
@@ -56,10 +64,15 @@ const UNKNOWN = 'unknown'
  * The three values are named rather than derived, so a FOURTH purpose would be hidden here
  * silently. `api_contract.test.ts` asserts the served vocabulary against this list for that
  * reason: a new word turns the suite red instead of quietly shortening the list.
+ *
+ * **And only the runs that stand alone** (operator, 2026-10-20): a sweep's combinations are held by
+ * the Sweeps panel and a deployment's sessions by the Deployments panel, each a click from there to
+ * its run. Left out, never removed — measured that day, 7 of 82 such runs are in no list of their
+ * own (sessions that never closed, a combination with no report), and `Parent` brings them back.
  */
-const SHOWN_BY_DEFAULT = { purpose: ['regular', 'certificate', UNKNOWN] }
+const SHOWN_BY_DEFAULT = { purpose: ['regular', 'certificate', UNKNOWN], parent: [STANDS_ALONE, UNKNOWN] }
 
-const { selection, search, sort } = useFacetState('run-picker', 'newest', { defaultSelection: SHOWN_BY_DEFAULT })
+const { selection, search, sort } = useFacetState('runs', 'newest', { defaultSelection: SHOWN_BY_DEFAULT })
 
 /** A value the row does not state is not offered — an empty option reads as a category. */
 function stated(value: string | null): string[] {
@@ -90,7 +103,8 @@ const facets: FacetDefinition<RunInfo>[] = [
    * We had been about to put the run header's `origin` block on the same screen, which would have
    * meant two unrelated `Origin` in one window. Nobody noticed until the counting.
    */
-  { id: 'parent', label: 'Parent', valuesOf: row => stated(row.parent_kind) },
+  // every row has a value here, so the default can keep the runs that stand alone
+  { id: 'parent', label: 'Parent', valuesOf: row => [row.parent_kind ?? (row.parent_id ? UNKNOWN : STANDS_ALONE)] },
   { id: 'version', label: 'Version', valuesOf: row => stated(row.app_version) },
   /**
    * What a run is FOR (contract 24), and the one facet that starts with a value picked. It never
@@ -360,6 +374,23 @@ function showEveryRun(): void {
   search.value = ''
 }
 
+const { openSweep, openDeployment, canOpen } = useOpenInContext()
+
+/**
+ * Where `Parent` alone leaves the chosen run out, its own list holds it — a sweep's combination the
+ * Sweeps panel, a deployment's session the Deployments panel — and the notice leads there rather
+ * than to every run: the list it would fill is the one the default keeps short.
+ */
+const heldElsewhere = computed(() => {
+  const run = selectedRun.value
+  const parents = selection.value['parent'] ?? []
+  if (!run?.parent_id || !canOpen || !parents.length || parents.includes(run.parent_kind ?? '')) return null
+  const parent = run.parent_id
+  if (run.parent_kind === 'sweep') return { button: t('Show in Sweeps'), open: () => openSweep(parent) }
+  if (run.parent_kind === 'deployment') return { button: t('Show in Deployments'), open: () => openDeployment(parent) }
+  return null
+})
+
 const listRef = ref<{ $el: HTMLElement } | null>(null)
 
 /**
@@ -620,8 +651,14 @@ function choose(runId: string): void {
       <!-- BELOW the rows: above them, its coming and going on a pick moved every row under the
            pointer by a line. Here the list's last row gives way instead, and nothing moves -->
       <p v-if="chosenHidden" class="picker-hint chosen-hidden">
-        {{ t('The chosen run is not in this list — the filter or the search hides it') }}
-        <AppButton variant="quiet" @click="showEveryRun">{{ t('Show every run') }}</AppButton>
+        <template v-if="heldElsewhere">
+          {{ t('The chosen run belongs to') }} {{ selectedRun?.parent_kind }} {{ selectedRun?.parent_id }}
+          <AppButton variant="quiet" @click="heldElsewhere.open">{{ heldElsewhere.button }}</AppButton>
+        </template>
+        <template v-else>
+          {{ t('The chosen run is not in this list — the filter or the search hides it') }}
+          <AppButton variant="quiet" @click="showEveryRun">{{ t('Show every run') }}</AppButton>
+        </template>
       </p>
     </template>
   </div>

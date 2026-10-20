@@ -1,4 +1,5 @@
 import { nextTick } from 'vue'
+import { openInDock } from '@/components/dock/open_in_dock'
 import { RUN_BUNDLE, reportKindId } from '@/panel_kinds'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
@@ -137,11 +138,18 @@ export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
  * not focused: it wears its run's card, which opens on focus and would cover the list unasked. The
  * LIST is: focus left on the button stayed on a control hidden behind the list's tab, or hidden
  * once the row was in view.
+ *
+ * A sweep's combination and a deployment's session are held by their own lists, which the run list
+ * leaves them to by default (2026-10-20): the way back leads there, through the one implementation
+ * every other way out of a panel uses.
  */
 export function useShowInList(): () => void {
   const dock = useDockStore()
   const runsStore = useRunsStore()
   return () => {
+    const run = runsStore.selectedRun
+    if (run?.parent_id && run.parent_kind === 'sweep') return openInDock().openSweep(run.parent_id)
+    if (run?.parent_id && run.parent_kind === 'deployment') return openInDock().openDeployment(run.parent_id)
     runsStore.askForChosenRow()
     dock.reveal('runs', 'command')
     // a panel just brought out is laid out one frame late; scrolled before that, the row would be

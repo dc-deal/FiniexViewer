@@ -6,6 +6,9 @@ import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { useRunsStore } from '@/stores/runs_store'
+import { useDeploymentsStore } from '@/stores/deployments_store'
+import { useSweepsStore } from '@/stores/sweeps_store'
+import type { RunInfo } from '@/types/api/report_types'
 
 const MARK = { scenario: 'EURGBP_partial_close', position: 'pos_eurgbp_1' }
 
@@ -137,6 +140,26 @@ describe('useShowInList', () => {
     await new Promise(resolve => window.requestAnimationFrame(resolve))
     await flushPromises()
   }
+
+  /**
+   * A sweep's combination and a deployment's session are held by their own lists, which the run list
+   * leaves them to: the way back leads there and not to the run list.
+   */
+  it.each([
+    ['sweep', 'sweeps'],
+    ['deployment', 'deployments'],
+  ] as const)('leads a %s run to the list that holds it', (kind, panel) => {
+    const brought: string[] = []
+    useDockStore().reveal = (id: string, reason: string) => { brought.push(`${id} ${reason}`); return true }
+    const chose = kind === 'sweep'
+      ? vi.spyOn(useSweepsStore(), 'selectSweep').mockResolvedValue()
+      : vi.spyOn(useDeploymentsStore(), 'selectDeployment').mockResolvedValue()
+    useRunsStore().runs = [{ run_id: 'child', parent_id: `${kind}_1`, parent_kind: kind } as RunInfo]
+    useContextStore().selectRun('child')
+    useShowInList()()
+    expect(brought).toEqual([`${panel} command`])
+    expect(chose).toHaveBeenCalledWith(`${kind}_1`)
+  })
 
   /** VS Code's *Reveal in Explorer*: the list comes to the front, the row is centred and marked. */
   it('brings the run list to the front, opens the family of the row, and centres the row in the list', async () => {
