@@ -26,13 +26,19 @@ trades marked where they opened and closed; a card at the pointer says which tra
 
 ![The run list, folded by family, beside the run chart](docs/images/runs_list_dark.png)
 
-**The run list.** The children of one sweep or one deployment stand under a single heading, a facet
-bar on one line narrows the list, and a pick shows the run in every panel at once.
+**The run list.** A facet bar on one line narrows the list, and a pick shows the run in every panel at
+once. A sweep's combinations and a deployment's sessions are left to panels of their own — the
+Sweeps panel ranks a parameter search by the objective it declared — and fold under one heading
+where the filter lets them in.
 
 ![A deployment, its sessions and the booking periods across them](docs/images/deployment_dark.png)
 
 **A live bot across its restarts.** Sessions are separate runs, so the view says when they are not
 one series rather than adding them up — and the periods of all of them share one clock.
+
+**What runs on the machine.** The Activities panel lists what FiniexTestingIDE is running — a
+backtest, a sweep, a live session, an import, its test suite, the API server itself — each beneath
+the one it runs inside, with the memory it holds; a label opens its run or its sweep.
 
 ---
 
