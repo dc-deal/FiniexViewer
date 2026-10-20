@@ -30,7 +30,11 @@
       "final_equity": 10000.620549942867,
       "min_equity": 9999.65494175951,
       "max_equity": 10000.93053087197,
-      "max_drawdown": 0.4370934875896637
+      "max_drawdown": 0.4370934875896637,
+      "account_max_drawdown": null,
+      "account_max_dd_pct": null,
+      "unrealized_pnl": null,
+      "open_position_count": null
     },
     {
       "unit_name": "EURGBP_partial_close",
@@ -52,7 +56,11 @@
       "final_equity": 9999.954589633075,
       "min_equity": 9999.55659161332,
       "max_equity": 10000.340988604657,
-      "max_drawdown": 0.46603312576189637
+      "max_drawdown": 0.46603312576189637,
+      "account_max_drawdown": null,
+      "account_max_dd_pct": null,
+      "unrealized_pnl": null,
+      "open_position_count": null
     },
     {
       "unit_name": "EURGBP_refusals_01",
@@ -74,7 +82,11 @@
       "final_equity": 9999.886882972578,
       "min_equity": 9997.840950414105,
       "max_equity": 10000.796148935979,
-      "max_drawdown": 2.9544918777246494
+      "max_drawdown": 2.9544918777246494,
+      "account_max_drawdown": null,
+      "account_max_dd_pct": null,
+      "unrealized_pnl": null,
+      "open_position_count": null
     },
     {
       "unit_name": "EURGBP_refusals_02",
@@ -96,7 +108,11 @@
       "final_equity": 9996.094662783964,
       "min_equity": 9992.880665433066,
       "max_equity": 10003.105020842902,
-      "max_drawdown": 10.22435540983679
+      "max_drawdown": 10.22435540983679,
+      "account_max_drawdown": null,
+      "account_max_dd_pct": null,
+      "unrealized_pnl": null,
+      "open_position_count": null
     }
   ],
   "unit_totals": [

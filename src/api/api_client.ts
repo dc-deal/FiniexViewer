@@ -6,9 +6,10 @@ import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { ApiBar, BarAnswer, CoverageResponse } from '@/types/api/bar_types'
 import type { CallerIdentity } from '@/types/api/caller_types'
-import type { MachineResources } from '@/types/api/machine_types'
+import type { ActivityList, MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
   BookingPeriodsReport,
@@ -385,6 +386,32 @@ export async function getDeploymentBookingPeriods(
   }
 }
 
+/** Every parameter search on record, newest first — the third plane beside runs and deployments. */
+export async function getSweeps(): Promise<SweepList> {
+  try {
+    const response = await http.get<SweepList>('/sweeps')
+    return response.data
+  } catch (error) {
+    raiseIfForbidden(error, 'sweeps')
+    throw error
+  }
+}
+
+/**
+ * One sweep's combinations, ranked by the route within each currency. Null when the ledger knows
+ * no such sweep (`404 sweep_not_found`): a stale link, rendered as its own state like a deployment's.
+ */
+export async function getSweep(sweepId: string): Promise<SweepDetail | null> {
+  try {
+    const response = await http.get<SweepDetail>(`/sweeps/${sweepId}`)
+    return response.data
+  } catch (error) {
+    raiseIfForbidden(error, 'sweeps')
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
+}
+
 /**
  * The configuration a run was commissioned with, resolved from the run-config store.
  *
@@ -467,10 +494,29 @@ export async function getCaller(): Promise<CallerIdentity> {
 const MACHINE_READ_TIMEOUT_MS = 4000
 
 /**
- * How full the machine is (contract 31). A token and no grant, like `/caller`. Meant to be asked
- * every few seconds — the route reads no file of the project, and costs the server next to nothing.
+ * How full the machine is (contract 31), on the `machine` surface since contract 35. Meant to be
+ * asked every few seconds — the route reads no file of the project, and costs the server next to
+ * nothing.
  */
 export async function getMachineResources(): Promise<MachineResources> {
   const response = await http.get<MachineResources>('/machine-resources', { timeout: MACHINE_READ_TIMEOUT_MS })
   return response.data
+}
+
+/**
+ * What runs on the machine (contract 35) — made to be asked every few seconds; a reading costs the
+ * server about a tenth of a second. A 403 is the `machine` surface missing from the token. A list
+ * that exists and cannot be read is a `500 activity_registry_unreadable` — "could not read" is not
+ * "nothing runs" — and its sentence is passed on as it is written.
+ */
+export async function getActivities(): Promise<ActivityList> {
+  try {
+    const response = await http.get<ActivityList>('/activities', { timeout: MACHINE_READ_TIMEOUT_MS })
+    return response.data
+  } catch (error) {
+    raiseIfForbidden(error, 'machine')
+    const sentence = axios.isAxiosError(error) ? (error.response?.data as { detail?: string } | undefined)?.detail : undefined
+    if (sentence) throw new Error(sentence)
+    throw error
+  }
 }

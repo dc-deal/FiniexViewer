@@ -83,6 +83,10 @@ const props = defineProps<{
    * card's trigger must be a single element, and the single element is the row button — which this
    * component owns, deliberately, because that is where the four states and the focus ring live.
    * The caller supplies the cells, so it has eight siblings and no one element to offer.
+   *
+   * A READ-ONLY row carries one too: then the row is no control but can be focused, so its card is
+   * not the pointer's alone — the booking periods' rows, whose card holds what their narrow
+   * columns gave up.
    */
   rowCard?: (row: T) => FigureCard | null
   /**
@@ -550,7 +554,17 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
           that can be chosen is a toggle, and a reader who cannot see the marked edge has nothing
           else to tell a chosen row from an unchosen one.
         -->
-        <div v-if="!isControl(row)" v-bind="rowAttrs(row)"><slot :row="row" marker="" /></div>
+        <!-- a read-only row with something to say: no control, but reachable by the keyboard, so
+             its card is not the pointer's alone — it answers on focus and does nothing on a click -->
+        <HoverCard
+          v-if="!isControl(row) && rowCard?.(row)"
+          :title="rowCard(row)!.title"
+          :details="rowCard(row)!.details"
+          side="top"
+        >
+          <div v-bind="rowAttrs(row)" class="readable" tabindex="0"><slot :row="row" marker="" /></div>
+        </HoverCard>
+        <div v-else-if="!isControl(row)" v-bind="rowAttrs(row)"><slot :row="row" marker="" /></div>
         <HoverCard
           v-else-if="rowCard?.(row)"
           :title="rowCard(row)!.title"
@@ -814,6 +828,25 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
 /* the chosen row is marked WHERE the click happened, not only where it takes effect */
 .record-row.picked {
   border-left-color: var(--color-annotation);
+}
+
+/*
+ * `marked` is a caller's class (`rowClass`): the rows of the position a reader jumped to, in the
+ * trade history and the orders. Drawn here, the way the chosen row is, so both lists mark alike —
+ * they each carried their own rule on a `--color-bg-raised` no theme defines, which drew nothing
+ * from 2026-10-05 on. Edge and surface together: a surface step alone is too weak to be seen.
+ */
+.record-row.marked {
+  border-left-color: var(--color-annotation);
+}
+
+/*
+ * The raised surface AT REST only. Stated plainly, the two rules came after the hover and the press
+ * and outranked them, so a chosen or marked row that is a control gave no feedback under the
+ * pointer; the edge carries the mark through both states.
+ */
+.record-row.picked:not(:hover):not(:active),
+.record-row.marked:not(:hover):not(:active) {
   background-color: var(--color-bg-elevated);
 }
 
@@ -879,6 +912,22 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   background-color: transparent;
 }
 
+/* a read-only row with a card answers the pointer with a surface, as the card does: it says the row
+   holds more, and the default cursor says that a click does nothing */
+.record-row.inert.readable:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.record-row.readable:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* a read-only row keeps its mark under the pointer, where it has no hover of its own to show */
+.record-row.inert.marked:hover {
+  background-color: var(--color-bg-elevated);
+}
+
 /* Only the FIRST cell is indented, never the row: padding on the row would shift every column out
    of the alignment the whole component exists to produce. */
 .record-list.grouping .record-row > :first-child {
@@ -906,15 +955,27 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
 
 /* A boundary in the list, in the annotation role and DASHED — it marks that the thing changed
    here, which is exactly what that role is for, and the dash is the second channel so it does not
-   rest on hue alone. Above the row, because it is about the gap and not about the row. */
+   rest on hue alone. Above the row, because it is about the gap and not about the row.
+   The words stand ON the rule, half a row high: a boundary between two rows is not a row of its
+   own (operator, 2026-10-20). */
 .record-lead {
   grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
   margin: 0;
-  padding: var(--space-xs) var(--space-sm);
-  border-top: 1px dashed var(--color-annotation);
+  padding: 0 var(--space-sm);
   color: var(--color-annotation);
   font-family: monospace;
   font-size: var(--font-size-sm);
+  line-height: 1.1;
+}
+
+.record-lead::before,
+.record-lead::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed var(--color-annotation);
 }
 
 /* prose spanning every track: a sentence in a column would set the column's width */
@@ -937,9 +998,34 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   border-bottom: 1px solid var(--color-border);
 }
 
+/*
+ * The row *Show in list* led to, for a moment: a dashed edge in the annotation colour — "here it
+ * is", not "something is wrong" — on a raised surface, fading out. Never the accent, which is the
+ * keyboard's focus ring and would read as one.
+ */
+.record-row.flash {
+  animation: record-flash 1.6s ease-out;
+}
+
+@keyframes record-flash {
+  0%, 55% {
+    outline: 2px dashed var(--color-annotation);
+    outline-offset: -2px;
+    background-color: var(--color-bg-hover);
+  }
+  100% {
+    outline: 2px dashed transparent;
+    outline-offset: -2px;
+  }
+}
+
+/* without motion the mark stands still for the same moment instead of fading */
 @media (prefers-reduced-motion: reduce) {
-  .record-row {
-    transition: none;
+  .record-row.flash {
+    animation: none;
+    outline: 2px dashed var(--color-annotation);
+    outline-offset: -2px;
+    background-color: var(--color-bg-hover);
   }
 }
 </style>

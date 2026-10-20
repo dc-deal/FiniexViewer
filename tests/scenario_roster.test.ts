@@ -410,7 +410,7 @@ describe('ScenarioRosterPanel', () => {
 
     /**
      * A pick changes what is MARKED, never what stands where. Swapping the hint for a line naming the
-     * choice moved the whole list under the pointer; the choice is said once, in the Runs quick bar.
+     * choice moved the whole list under the pointer; the choice is said once, in the menu bar.
      */
     it('keeps the hint once something is picked, and marks the choice on its rows only', () => {
       const { wrapper } = mountWithSelection(MIXED, ['eth_a'])
@@ -508,6 +508,20 @@ describe('ScenarioRosterPanel', () => {
       expect(pairs['Ticks modelled']?.title).toContain('f'.repeat(64))
     })
 
+    /**
+     * `drawdown_started_at` is on the wall clock — when measuring began, in a backtest when the scenario
+     * valued its first tick — never an instant of the data. Labelled as when a drawdown began, it read
+     * as a market moment.
+     */
+    it('says on which clock the drawdown curve began', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { drawdown_started_at: '2026-10-07T14:41:24+00:00' })])))
+      const details = wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]
+      const began = details.find(pair => pair.label === 'Drawdown curve began')!
+      expect(began.value).toBe('2026-10-07 14:41:24Z · wall clock')
+      expect(began.title).toContain('never an instant of the data')
+      expect(details.map(pair => pair.label)).not.toContain('Drawdown began')
+    })
+
     it('says nothing of modelled quotes where the unit read recorded ones', () => {
       const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner')])))
       const labels = (wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]).map(pair => pair.label)
@@ -540,6 +554,8 @@ describe('ScenarioRosterPanel', () => {
         total_trades: 3, total_fees: 0, fees_charged: 2.36, taker_fee: 2.36,
       }))
       expect(differs['Charged']).toBe('2.36 EUR')
+      // once: an unconditional `Fees charged` at the end of the card said it a second time
+      expect(differs).not.toHaveProperty('Fees charged')
 
       // and absent where they agree: a figure on every row would be noise, and on a forex run the
       // two are equal. The captured fixture is itself the differing case, which is why this half

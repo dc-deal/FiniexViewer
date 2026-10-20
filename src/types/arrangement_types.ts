@@ -1,5 +1,7 @@
+import type { ChartLayerId } from '@/types/chart_drawing_types'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext } from '@/types/context_types'
+import type { LayerOptionId } from '@/types/layer_types'
 
 /**
  * One facet bar's state, as it is stored.
@@ -46,6 +48,65 @@ export interface DockPlace {
   size?: number
 }
 
+/**
+ * The parts of a panel it can show or hide, and keeps for itself. Ours, so a closed set: a typo
+ * fails the type-check, and a stored name is checked against it. A name joins with the component
+ * that reads it.
+ */
+export const VIEW_FOLDS = ['periods-table'] as const
+export type ViewFold = typeof VIEW_FOLDS[number]
+
+/**
+ * The lists of row keys a panel keeps for ONE run, with how many each keeps — the newest. A list
+ * joins with the component that reads it, and holds the key that list itself declares for a row or
+ * a group. A cap bounds what is remembered and stands above what a reader reaches by hand.
+ */
+export const VIEW_ROW_CAPS = {
+  /** Trade History: the trades whose fills are shown, by the trade's declared key. */
+  'fills-open': 100,
+  /** Trade History: scenario groups opened by hand past the threshold. */
+  'groups-opened': 100,
+  /** Trade History and Orders: scenario groups closed by hand. */
+  'groups-closed': 100,
+} as const
+export type ViewRowList = keyof typeof VIEW_ROW_CAPS
+
+/**
+ * How the reader arranged a chart's drawing layers in the Layers panel (viewer#41) — only what
+ * differs from the chart's own: an order moved, a layer hidden or drawn fainter, an option switched.
+ * Reconciled against the layers the chart draws whenever it is read.
+ */
+export interface StoredLayers {
+  /** Back to front, where the reader moved a layer. */
+  order?: ChartLayerId[]
+  hidden?: ChartLayerId[]
+  /** In percent, only where below 100. */
+  opacity?: Partial<Record<ChartLayerId, number>>
+  options?: Partial<Record<LayerOptionId, boolean>>
+}
+
+/** The rows a panel keeps, and the run they were kept for — under any other they count for nothing. */
+export interface StoredRows {
+  /** The run the keys were kept for, as the panel's own model names it. */
+  scope: string
+  /** Each list's keys, oldest first. */
+  keys: Partial<Record<ViewRowList, string[]>>
+}
+
+/**
+ * What one panel keeps of HOW it shows its content, under its dock id: a section keeps one entry,
+ * in the bundle's column and as a panel of its own alike. Never WHAT is shown — that is the link's,
+ * and nothing here repeats it. Only what differs from a default is stored.
+ */
+export interface StoredPanelView {
+  /** Bound to no run: true shown, false hidden, against the fold's default. */
+  expanded?: Partial<Record<ViewFold, boolean>>
+  /** Bound to the run on show, so never part of a named layout. */
+  rows?: StoredRows
+  /** A chart's drawing layers, bound to no run — the Layers panel writes them under the chart's id. */
+  layers?: StoredLayers
+}
+
 /** Everything stored under the one versioned key. */
 export interface StoredArrangement {
   version: number
@@ -57,4 +118,6 @@ export interface StoredArrangement {
   dock: object | null
   /** Where each panel stood when it was last open, by panel id — a hidden one comes back there. */
   places: Record<string, DockPlace>
+  /** Each panel's own view, by dock id — read here by shape, kept against the kinds by the dock store. */
+  panelViews: Record<string, StoredPanelView>
 }

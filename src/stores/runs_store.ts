@@ -3,16 +3,11 @@ import { ref, computed } from 'vue'
 import { getRuns, getRunSummary } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { useContextStore } from '@/stores/context_store'
+import { describeFailure } from '@/stores/describe_failure'
 import { isAbsent } from '@/types/api/absence_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { RunInfo, RunSummary } from '@/types/api/report_types'
 import { t } from '@/translate'
-
-/** Failure text for the UI: says what failed, keeps the detail, never shows a stack trace. */
-function describeFailure(error: unknown, action: string): string {
-  const detail = error instanceof Error ? error.message : String(error)
-  return `${action}: ${detail}`
-}
 
 export const useRunsStore = defineStore('runs', () => {
   const context = useContextStore()
@@ -22,6 +17,14 @@ export const useRunsStore = defineStore('runs', () => {
   const selectedRunId = computed(() => context.main.run.id)
   const summary = ref<RunSummary | null>(null)
   const loadingRuns = ref(false)
+  /** The index asked once more for a run it did not hold — quietly, so the list keeps its rows. */
+  const findingRun = ref(false)
+  /**
+   * The chosen run is not resolved yet, and a panel about it says it loads: the index is on its
+   * way, or is being asked once more for the run. Without the second half the run's panels said
+   * *No run is chosen* through the whole re-ask, and the run chart that the run names no market.
+   */
+  const awaitingRun = computed(() => loadingRuns.value || findingRun.value)
   const loadingSummary = ref(false)
   /**
    * Two failures, two places: the INDEX failing is the run list's to say, the SUMMARY failing the
@@ -37,6 +40,20 @@ export const useRunsStore = defineStore('runs', () => {
   const summaryUnreadable = ref<string | null>(null)
   // a run id the index does not contain — a link or a reloaded URL naming a run that is gone
   const unknownRunId = ref<string | null>(null)
+  /**
+   * The chosen run's row stands inside the run list's own view — written by the list, which owns
+   * the rows and their scroll. With the list on show it makes *Show in list* needless.
+   */
+  const chosenRowInView = ref(false)
+  /**
+   * Counts the times something asked to SEE the chosen run's row — *Show in list*. The list answers
+   * by opening the row's family, which the reader may have closed.
+   */
+  const chosenRowAsked = ref(0)
+
+  function askForChosenRow(): void {
+    chosenRowAsked.value += 1
+  }
   /**
    * The scenarios the reader narrowed to, one step below the run — part of the SELECTION, so the
    * context holds it and a new run clears it there. EMPTY means the whole run, never "nothing".
@@ -92,6 +109,10 @@ export const useRunsStore = defineStore('runs', () => {
 
   function clearRun(): void {
     summary.value = null
+    // a summary still on its way belongs to the run before: its answer writes nothing once the
+    // choice has moved on, its `finally` included — so a logs-only run picked meanwhile, which asks
+    // for no summary, said it loaded one for good
+    loadingSummary.value = false
     summaryError.value = null
     summaryMissing.value = false
     summaryAbsence.value = null
@@ -156,10 +177,18 @@ export const useRunsStore = defineStore('runs', () => {
     // a run the index does not know YET is not a run that is gone: a deployment can name a session
     // newer than the index this panel loaded, so the index is asked once more before saying so
     if (!run) {
-      await loadRuns(true)
+      findingRun.value = true
+      try {
+        await loadRuns(true)
+      } finally {
+        findingRun.value = false
+      }
       if (selectedRunId.value !== runId) return
       run = runs.value.find(entry => entry.run_id === runId)
     }
+    // an index that could not be read says nothing about the run: the failure is the index's to say,
+    // and claiming the run was gone sent every run panel to *no longer in the index* through an outage
+    if (!run && indexError.value !== null) return
     if (!run) {
       unknownRunId.value = runId
       return
@@ -169,9 +198,20 @@ export const useRunsStore = defineStore('runs', () => {
     await loadSummary(runId)
   }
 
-  /** A NEW run: the context's cascade clears the old run's narrowing and mark, then it loads. */
+  /**
+   * A NEW run: the context's cascade clears the old run's narrowing and mark, then it loads.
+   *
+   * The run already chosen is not a new one. A second click on its row — or *Open this run* on a
+   * session that is already open — cleared the scenario in focus and the marked position and drew
+   * the summary through loading again, for nothing. It still loads again where the first attempt
+   * failed, the index did not know the run or could not be read, so a pick stays the way to try once
+   * more — and such a retry is the SAME run: it keeps the focus and the mark, with no cascade.
+   */
   async function selectRun(runId: string): Promise<void> {
-    context.selectRun(runId)
+    const same = runId === selectedRunId.value
+    const shown = selectedRun.value !== null && summaryError.value === null && unknownRunId.value === null
+    if (same && shown) return
+    if (!same) context.selectRun(runId)
     await loadRun(runId)
   }
 
@@ -186,7 +226,11 @@ export const useRunsStore = defineStore('runs', () => {
     summaryAbsence,
     summaryUnreadable,
     unknownRunId,
+    chosenRowInView,
+    chosenRowAsked,
+    askForChosenRow,
     loadingRuns,
+    awaitingRun,
     loadingSummary,
     indexError,
     summaryError,

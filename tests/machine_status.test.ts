@@ -1,14 +1,22 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import MachineStatus from '@/components/MachineStatus.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { useMachineStore } from '@/stores/machine_store'
-import type { MachineResources } from '@/types/api/machine_types'
+import type { ActivityList, ActivityRow, MachineResources } from '@/types/api/machine_types'
 import type { Figure } from '@/types/figure_types'
 import captured from './fixtures/machine_resources.json'
+import activityFixture from './fixtures/activities.json'
 
 const READING: MachineResources = captured
+const ACTIVITIES = activityFixture as unknown as ActivityList
+/** The captured server row — every other row here is built from it. */
+const SERVER = ACTIVITIES.activities.find(row => row.activity_id === ACTIVITIES.server_activity_id)!
+
+function activity(fields: Partial<ActivityRow>): ActivityRow {
+  return { ...SERVER, ...fields }
+}
 
 function mountWith(reading: MachineResources | null, failed = false) {
   const machine = useMachineStore()
@@ -103,5 +111,70 @@ describe('MachineStatus', () => {
     const wrapper = mountWith({ ...READING, cpu: { ...READING.cpu, used_pct: null, window_s: null } })
     expect(detail(wrapper, 'Busy')?.value).toBe('no window yet')
     expect(wrapper.find('.machine-value').element.textContent!.trim()).toBe('—')
+  })
+
+  describe('what runs on the machine', () => {
+    /** The server is the one answering: left out of the line, at most two named, the rest counted. */
+    it('names what runs in one line, the server left out and the rest counted', () => {
+      useMachineStore().activities = {
+        ...ACTIVITIES,
+        activities: [
+          SERVER,
+          activity({ activity_id: 'a1', activity_kind: 'test_suite', activity_label: 'test suite' }),
+          activity({ activity_id: 'a2', activity_kind: 'backtest', activity_label: 'my_set__sweep_20261018_140200_ab12cd34_c003' }),
+          activity({ activity_id: 'a3', activity_kind: 'import', activity_label: 'kraken' }),
+        ],
+      }
+      const wrapper = mountWith(READING)
+      expect(detail(wrapper, 'Running')?.value).toBe('3 · test_suite test suite · backtest my_set__sweep_20261018_1402… · +1 more')
+    })
+
+    /**
+     * The card hangs under the machine's memory, so it names what holds the most. One running
+     * inside another is part of it: named, a sweep's backtest hid what else runs.
+     */
+    it('names the two that hold the most memory and run on their own, and counts the ones inside another', () => {
+      useMachineStore().activities = {
+        ...ACTIVITIES,
+        activities: [
+          SERVER,
+          activity({ activity_id: 'import', activity_kind: 'import', activity_label: 'kraken', rss_bytes: 200_000_000 }),
+          activity({ activity_id: 'inside', activity_kind: 'backtest', activity_label: 'c003', parent_activity_id: 'sweep', rss_bytes: 0 }),
+          activity({ activity_id: 'session', activity_kind: 'autotrader_session', activity_label: 'mock', rss_bytes: null }),
+          activity({ activity_id: 'tests', activity_kind: 'test_suite', activity_label: 'test suite', rss_bytes: 3_100_000_000 }),
+          activity({ activity_id: 'sweep', activity_kind: 'sweep', activity_label: 'my_sweep', rss_bytes: 7_100_000_000 }),
+        ],
+      }
+      const wrapper = mountWith(READING)
+      expect(detail(wrapper, 'Running')?.value).toBe('5 · sweep my_sweep · test_suite test suite · +3 more')
+    })
+
+    it('says only the server runs where nothing else does, and why the line is missing where it could not be read', () => {
+      useMachineStore().activities = ACTIVITIES
+      expect(detail(mountWith(READING), 'Running')?.value).toBe('only this server')
+      const machine = useMachineStore()
+      machine.activities = null
+      machine.activitiesError = 'Could not read what runs on the machine: Network Error'
+      expect(detail(mountWith(READING), 'Running')?.value).toBe('could not be read')
+    })
+
+    /** A closed card has nobody reading the list, so the list is asked only while it is open. */
+    it('asks for the list while the card is open, and no longer once it closes', async () => {
+      const machine = useMachineStore()
+      const stopReading = vi.fn()
+      const watch = vi.spyOn(machine, 'watchActivities').mockReturnValue(stopReading)
+      const wrapper = mountWith(READING)
+      wrapper.findComponent(HoverCard).vm.$emit('update:open', true)
+      expect(watch).toHaveBeenCalledTimes(1)
+      wrapper.findComponent(HoverCard).vm.$emit('update:open', false)
+      expect(stopReading).toHaveBeenCalledTimes(1)
+    })
+
+    /** No click: the figures stay quiet text, and the card names the panel that lists every activity. */
+    it('names the panel that lists every activity, and is no control itself', () => {
+      const wrapper = mountWith(READING)
+      expect(detail(wrapper, 'Every activity')?.value).toBe('Panels ▸ Activities')
+      expect(wrapper.find('button').exists()).toBe(false)
+    })
   })
 })

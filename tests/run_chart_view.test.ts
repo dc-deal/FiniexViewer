@@ -3,6 +3,7 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RunChartView from '@/views/RunChartView.vue'
 import RunChartQuickBar from '@/components/RunChartQuickBar.vue'
+import AppSpinner from '@/components/base/AppSpinner.vue'
 import { useContextStore } from '@/stores/context_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
@@ -84,15 +85,24 @@ describe('RunChartView', () => {
     const chart = wrapper.find('.candle-chart')
     expect(chart.exists()).toBe(true)
     expect(Number(chart.attributes('data-marks'))).toBeGreaterThan(0)
-    expect(wrapper.find('.notice').exists()).toBe(false)
+    expect(wrapper.find('.chart-notice').exists()).toBe(false)
+  })
+
+  /** What the shapes mean, said once over the chart — and dismissible, like every hint. */
+  it('explains the shapes of its marks in a hint line', async () => {
+    chooseFixtureRun()
+    const wrapper = await mountView()
+    expect(wrapper.text()).toContain('↑↓ a position opened')
   })
 
   it('says so where the route answered with less than the window holds', async () => {
     vi.mocked(apiClient.getBars).mockResolvedValue({ bars: barsOver('2025-10-31T05:00:00Z', '2025-10-31T05:10:00Z'), truncated: true })
     chooseFixtureRun()
     const wrapper = await mountView()
-    expect(wrapper.find('.notice').text()).toContain('more bars than the archive serves at once')
-    expect(wrapper.find('.notice [data-icon="status-warning"]').exists()).toBe(true)
+    // inside the chart's frame, over the plot — never a line that moves the chart down
+    const notice = wrapper.find('.candle-chart .chart-notice')
+    expect(notice.text()).toContain('more bars than the archive serves at once')
+    expect(notice.find('[data-icon="status-warning"]').exists()).toBe(true)
   })
 
   it('names the market the archive holds nothing for', async () => {
@@ -109,6 +119,22 @@ describe('RunChartView', () => {
     const wrapper = await mountView()
     expect(wrapper.find('.candle-chart').exists()).toBe(false)
     expect(wrapper.text()).toContain(`The archive holds no bars in the window this unit covered: ${useRunChartStore().unit!.name}`)
+  })
+
+  /** Without its index row the chart said "names no market" through every first load of the index. */
+  it('waits for the index rather than saying the run names no market', async () => {
+    useContextStore().selectRun(RUN)
+    useRunsStore().loadingRuns = true
+    const wrapper = await mountView()
+    expect(wrapper.text()).not.toContain('names no market')
+    expect(wrapper.findComponent(AppSpinner).exists()).toBe(true)
+  })
+
+  it('names the run the index no longer holds', async () => {
+    useContextStore().selectRun('gone_run')
+    useRunsStore().unknownRunId = 'gone_run'
+    const wrapper = await mountView()
+    expect(wrapper.text()).toContain('The run you had open is no longer in the index: gone_run')
   })
 
   it('says a run names no market where its source has arrived without one', async () => {

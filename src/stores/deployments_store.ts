@@ -7,6 +7,7 @@ import {
 } from '@/api/api_client'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import { useContextStore } from '@/stores/context_store'
+import { describeFailure } from '@/stores/describe_failure'
 import type {
   DeploymentBookingPeriodsReport,
   DeploymentDetail,
@@ -51,11 +52,6 @@ export const useDeploymentsStore = defineStore('deployments', () => {
   const selectedRows = computed(() =>
     deployments.value.filter(row => row.deployment_id === selectedDeploymentId.value)
   )
-
-  function describeFailure(e: unknown, action: string): string {
-    const detailText = e instanceof Error ? e.message : String(e)
-    return `${action}: ${detailText}`
-  }
 
   function clearLoaded(): void {
     detail.value = null
@@ -145,9 +141,17 @@ export const useDeploymentsStore = defineStore('deployments', () => {
     }
   }
 
-  /** A deployment the reader chose: it becomes the main link's, then it loads. */
+  /**
+   * A deployment the reader chose: it becomes the main link's, then it loads. The one already
+   * chosen loads again only where it is not on show — it failed, or the ledger did not know it —
+   * the same rule as a run. Asked by what is LOADED rather than by the error: a quiet refresh of
+   * the ledger clears the shared error, and a deployment that failed could then not be tried again.
+   */
   async function selectDeployment(deploymentId: string): Promise<void> {
-    context.selectDeployment(deploymentId)
+    const same = deploymentId === selectedDeploymentId.value
+    const shown = (detail.value !== null || loadingDetail.value) && unknownDeploymentId.value === null
+    if (same && shown) return
+    if (!same) context.selectDeployment(deploymentId)
     await loadDeployment(deploymentId)
   }
 

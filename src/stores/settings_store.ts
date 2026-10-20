@@ -49,7 +49,13 @@ export function reconcile(stored: unknown): Settings {
 function readStored(): unknown {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : null
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    // another version's entry is removed rather than left behind: nothing will ever read it again
+    if (parsed && typeof parsed === 'object' && (parsed as Partial<StoredSettings>).version !== SCHEMA_VERSION) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+    return parsed
   } catch {
     // a corrupt or unreadable entry is the same as none — a preference never breaks the app
     return null
@@ -59,10 +65,11 @@ function readStored(): unknown {
 /**
  * Presentation state, and only presentation state.
  *
- * What the user is LOOKING AT — run, scenario, symbol, filters — belongs in the URL, because that
- * is what makes a shared link mean something. How they ARRANGED it belongs here. The two never
- * swap places: a layout in a link shares a preference nobody asked for, and a selection in local
- * storage makes the link meaningless.
+ * What the user is LOOKING AT — run, scenario, symbol, filters — belongs to the link and the
+ * arrangement (`arrangement.v1`), stored per browser tab. How they prefer the app to BEHAVE belongs
+ * here, shared by every tab. The two never swap places: a preference stored with one tab's
+ * selection would leave the other tabs, and a selection here would follow the reader into a tab
+ * comparing another run.
  *
  * One versioned key, so the whole of it moves in one step the day a backend serves it per user.
  */

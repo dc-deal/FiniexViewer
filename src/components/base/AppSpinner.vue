@@ -1,5 +1,9 @@
+<script setup lang="ts">
+import { t } from '@/translate'
+</script>
+
 <template>
-  <div class="app-spinner" role="status" aria-label="Loading" />
+  <div class="app-spinner" role="status" :aria-label="t('Loading')" />
 </template>
 
 <style scoped>
@@ -14,5 +18,12 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* without motion the ring stands still; its role and its label still say that something loads */
+@media (prefers-reduced-motion: reduce) {
+  .app-spinner {
+    animation: none;
+  }
 }
 </style>

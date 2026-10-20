@@ -156,9 +156,15 @@ export const useRunSectionsStore = defineStore('run_sections', () => {
     })
   }
 
-  /** A chosen run that has nothing for this section: no model, and none on its way. */
+  /**
+   * A chosen run that has nothing for this section: no model, none on its way — and none that
+   * FAILED or predates the schema. Those the run carries: a failure is said as one, and counting it
+   * here struck the section in the Panels menu and had the emptied bundle say the run did not carry
+   * what had merely failed to load.
+   */
   function lacks(source: string): boolean {
     return runs.selectedRun !== null && sources.value[source] == null && !pending.value[source]
+      && failuresOf(source).length === 0 && unreadablesOf(source).length === 0
   }
 
   /**

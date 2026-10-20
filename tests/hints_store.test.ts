@@ -44,6 +44,13 @@ describe('useHintsStore', () => {
     expect(useHintsStore().isVisible(KNOWN)).toBe(true)
   })
 
+  /** Dropped whole, and removed: an entry nothing will read again is not left behind. */
+  it('removes a ban list of another version rather than leaving it', () => {
+    localStorage.setItem('hints.v1', JSON.stringify({ version: 99, banned: [KNOWN] }))
+    expect(useHintsStore().isVisible(KNOWN)).toBe(true)
+    expect(localStorage.getItem('hints.v1')).toBeNull()
+  })
+
   /**
    * The two levels answer different things, and the difference is the whole point: a dismissal
    * means "not now" and must not punish a reader who closed the line by accident.

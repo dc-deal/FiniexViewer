@@ -1,5 +1,30 @@
 import type { Component } from 'vue'
+import type { LinkKey } from '@/types/context_types'
 import type { IconName } from '@/types/icon_types'
+
+/**
+ * How a panel relates to the others — declared as data, so its tab's card can say it in words and
+ * a test can hold every kind to it (viewer#42, VS Code's view register as the model). "Who controls
+ * whom" is the writer and the reader of a link, never one panel over another.
+ */
+export interface PanelRelations {
+  /** The bundle it is a member of — the kind whose column holds it — or null. */
+  memberOf: string | null
+  /**
+   * The link keys whose change changes what it SHOWS: other figures, other rows, another unit
+   * drawn. A key it only marks a row by is not followed — a list that stays whole does not follow
+   * the pick it shows.
+   */
+  follows: LinkKey[]
+  /** The link keys a control in its content chooses. */
+  chooses: LinkKey[]
+  /**
+   * It works on the chart last in front rather than on a link (viewer#41): which panel is in front
+   * is FOCUS, not a selection, so no link key carries it — the way VS Code's Outline follows the
+   * editor in front.
+   */
+  chartInFront?: boolean
+}
 
 /**
  * What a panel declares about itself. A panel is presentation only: it receives its model as a
@@ -15,13 +40,29 @@ export interface PanelDescriptor {
   source: string
   defaultOpen: boolean
   /**
-   * What a scenario narrowing does to this section: `filters` draws only the chosen scenarios'
-   * rows, `marks` keeps every row and marks the chosen ones, `null` means it does not read the
-   * narrowing at all. Opened as a panel of its own, a section carries the narrowing's note where
-   * the narrowing reaches it, and its frame only where the narrowing FILTERS — a frame says *what
+   * What a scenario narrowing does to this section's ROWS: `filters` draws only the chosen
+   * scenarios' rows, `marks` keeps every row and marks the chosen ones, `null` means its rows do not
+   * change with it — a section of run-wide figures may still mark them as the whole run's while a
+   * scenario is in focus (the Executive Summary, Run Totals). Opened as a panel of its own, a section carries the narrowing's frame only
+   * where the narrowing FILTERS (the narrowing itself is said once, in the menu bar) — a frame says *what
    * you see here is a part*, which is untrue of a list that still shows every row.
    */
   narrowing: 'filters' | 'marks' | null
+  /** What the section follows and chooses, the same in the bundle and as a panel of its own. */
+  follows: LinkKey[]
+  chooses: LinkKey[]
+}
+
+/**
+ * A command a panel offers about itself, on its tab's ⋯ — the Panels menu only shows and hides
+ * panels (viewer#42).
+ */
+export interface PanelAction {
+  /** Named on its menu entry (`data-action`). */
+  id: 'collapse-all' | 'reset-bundle'
+  title: string
+  /** Called on the click, so it may reach a store. */
+  run: () => void
 }
 
 /**
@@ -70,6 +111,10 @@ export interface PanelKind {
   status?: () => TabStatus | null
   /** Its tab's title dimmed: the panel stands, with nothing of the chosen run to show. */
   muted?: () => boolean
+  /** What its tab's ⋯ offers; a kind without any has no ⋯. */
+  actions?: PanelAction[]
+  /** What it follows and chooses, and the bundle it belongs to. Required: every kind declares it. */
+  relations: PanelRelations
 }
 
 /** Per-panel arrangement, the part the user controls and the part that is persisted. */

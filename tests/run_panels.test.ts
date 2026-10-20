@@ -114,8 +114,10 @@ describe('ExecutivePanel', () => {
       },
     })
     const wrapper = mount(Host)
+    // the mark says it in the line; the sentence is on the mark, a hover away (viewer#42)
     expect(wrapper.find('.scope').text()).toBe('whole run')
-    expect(wrapper.find('.scope-line').text()).toContain('every scenario')
+    expect(wrapper.find('.scope-line').text()).toBe('whole run')
+    expect(wrapper.find('.scope').attributes('title')).toContain('every scenario')
   })
 
   it('stays quiet about scope where nothing is narrowed', () => {
@@ -155,7 +157,7 @@ describe('ExecutivePanel', () => {
     expect(f['Avg win R']).toBe('+1.40R')
     expect(f['Avg loss R']).toBe('-0.90R')
     // positive magnitude by contract, no abs() applied; the percentage is already multiplied
-    expect(f['Max drawdown']).toContain('54.90 USD')
+    expect(f['Deepest drawdown']).toContain('54.90 USD')
   })
 
   // The currency heads its own group of blocks rather than being one figure among them.
@@ -177,6 +179,17 @@ describe('ExecutivePanel', () => {
     expect(f['Final equity']).toBe('9,949.40 USD')
     expect(f['Still open']).toBe('2')
     expect(f['Unrealized']).toBe('-12.50 USD')
+  })
+
+  /**
+   * Several accounts close with several balances, and the backend names their sum apart from any
+   * one of them (`final_equity: null`, `total_final_equity`). Under the one account's word the sum
+   * claimed a balance nobody held — the word says it is a sum, as the booking periods' footnote does.
+   */
+  it('names a sum over several accounts as a sum, never as one balance', () => {
+    const f = figures({ ...MEASURED, unit_count: 8, final_equity: null, total_final_equity: 79_512.3 })
+    expect(f['Final equity, all accounts']).toBe('79,512.30 USD')
+    expect(f['Final equity']).toBeUndefined()
   })
 
   // An unrealised 0.00 beside "0 open" reads as a figure somebody measured. Neither line appears.
@@ -263,6 +276,13 @@ describe('ExecutivePanel', () => {
       .toBe('80,000.00 USD')
   })
 
+  /** Their portfolio document: the CASH the accounts started with — at spot not the holding of the base asset. */
+  it('says on hover that the initial capital is the cash alone', () => {
+    const wrapper = mount(ExecutivePanel, { props: { model: summaryWith({ ...MEASURED, total_initial_balance: 80_000 }) } })
+    const capital = wrapper.findAll('.figure').find(pair => pair.find('dt').text() === 'Initial capital')!
+    expect(capital.attributes('title')).toContain('do not subtract to a result')
+  })
+
   /**
    * A run of several accounts says so at the head of the block, and names which one the drawdown
    * trio belongs to — both on their own lines, because a count and a scenario name are not figures
@@ -273,7 +293,7 @@ describe('ExecutivePanel', () => {
     const many = figures({ ...MEASURED, unit_count: 8, account_max_drawdown_unit: 'GBPUSD_feb' })
     expect(many['Accounts']).toBe('8')
     expect(many['Deepest account']).toBe('GBPUSD_feb')
-    expect(many['Max drawdown']).not.toContain('GBPUSD_feb')
+    expect(many['Deepest drawdown']).not.toContain('GBPUSD_feb')
 
     const one = figures({ ...MEASURED, unit_count: 1, account_max_drawdown_unit: 'GBPUSD_feb' })
     expect(one['Accounts']).toBeUndefined()
@@ -408,6 +428,7 @@ describe('WarningsErrorsPanel — narrowed to a scenario', () => {
   // The outcome counts every unit the run attempted and has no per-scenario version.
   it('marks the outcome counts as the run\'s', () => {
     expect(mountNarrowed(['unit_a']).find('.scope').text()).toBe('whole run')
+    expect(mountNarrowed(['unit_a']).find('.scope').attributes('title')).toContain('every scenario the run attempted')
     expect(mountNarrowed([]).find('.scope').exists()).toBe(false)
   })
 
@@ -784,15 +805,15 @@ describe('RunHeaderPanel', () => {
     expect(value!.text()).toBe('deploy_20260922_121648')
   })
 
-  /** A sweep has no view of its own yet, so its id is named and not offered as a way in. */
-  it('offers no way into a sweep, which nothing can open yet', () => {
-    const { wrapper } = mountWithWayOut({
+  /** A sweep has a panel of its own since viewer#32: its id opens its ranking, where the run stands among the others. */
+  it('turns a sweep parent into a way in, to its ranked combinations', async () => {
+    const { wrapper, way } = mountWithWayOut({
       group: 'simulation',
       parent_id: 'sweep_20260830_154907',
       parent_kind: 'sweep',
     })
-    expect(wrapper.text()).toContain('sweep_20260830_154907')
-    expect(wrapper.find('.jump-link').exists()).toBe(false)
+    await wrapper.find('.jump-link').trigger('click')
+    expect(way.opened).toEqual([{ what: 'sweep', id: 'sweep_20260830_154907' }])
   })
 
   /**

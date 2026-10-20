@@ -7,6 +7,7 @@ import { useLayoutStore, pinnedBoundary } from '@/stores/layout_store'
 import { reportKindId } from '@/panel_kinds'
 import { panelById } from '@/panel_registry'
 import AccordionPanel from '@/components/panels/AccordionPanel.vue'
+import PanelViewScope from '@/components/panels/PanelViewScope.vue'
 import LoadingLine from '@/components/base/LoadingLine.vue'
 import type { PanelState } from '@/types/panel_types'
 import type { IconName } from '@/types/icon_types'
@@ -123,7 +124,10 @@ const order = computed({
           class="panel-loading"
           :style="{ minHeight: heightOf(panel.state.id) }"
         />
-        <component :is="panel.component" v-else :model="panel.model" />
+        <!-- under the dock id the section has as a panel of its own: one view in both places -->
+        <PanelViewScope v-else :panel="reportKindId(panel.state.id)">
+          <component :is="panel.component" :model="panel.model" />
+        </PanelViewScope>
       </div>
     </AccordionPanel>
   </VueDraggable>

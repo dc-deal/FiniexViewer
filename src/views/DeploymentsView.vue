@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { useDeploymentBinding } from '@/composables/use_deployment_binding'
+import { useViewExpanded } from '@/composables/use_panel_view'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
@@ -24,6 +25,12 @@ const {
 
 // loads the ledger listing and brings back the deployment the reader had open
 useDeploymentBinding()
+
+// whether the reader left the period list open — kept as this panel's own view, across deployments
+const periodsOpen = useViewExpanded('periods-table')
+
+// whether the picker's list stands open — a low view then gives it the whole height
+const listShown = ref(false)
 
 /**
  * One order for the chart and the table beneath it. Across a deployment a lane is the SESSION —
@@ -57,9 +64,9 @@ const showDeployment = computed(() =>
 </script>
 
 <template>
-  <div class="deployments-view">
+  <div class="deployments-view" :class="{ 'list-shown': listShown }">
     <header class="deployments-header">
-      <DeploymentPicker />
+      <DeploymentPicker @list-shown="shown => listShown = shown" />
     </header>
 
     <div class="deployments-body">
@@ -89,16 +96,18 @@ const showDeployment = computed(() =>
       </div>
 
       <template v-else-if="showDeployment">
-        <!-- ABOVE the table, never beside it: by the time a reader reaches a change mark in the
-             third row they have already added up the column above it -->
-        <AdvisoryNotice v-if="detail?.advisory" :advisory="detail.advisory" />
+        <!-- the deployment's own line, above every currency: an unfinished run has no ledger row
+             and so no currency, and the advisory speaks of the whole history -->
         <p v-if="detail" class="counts">
-          {{ plural(detail.count, t('session'), t('sessions')) }} ·
+          <span>{{ plural(detail.count, t('session'), t('sessions')) }}</span>
           <!-- the WHY is on the title: the number is the fact, the explanation is a caveat -->
           <span
             :class="{ flagged: detail.unfinished > 0 }"
             :title="t('Runs that never reached their close, so the ledger holds no row for them')"
           >{{ detail.unfinished }} {{ t('unfinished') }}</span>
+          <!-- ABOVE the table, never beside it: by the time a reader reaches a change mark in the
+               third row they have already added up the column above it -->
+          <AdvisoryNotice v-if="detail.advisory" :advisory="detail.advisory" />
         </p>
 
         <section v-for="row in selectedRows" :key="row.currency" class="currency-block">
@@ -124,7 +133,7 @@ const showDeployment = computed(() =>
             :key-fields="periods.key"
             :sessions="detail?.sessions ?? []"
           />
-          <BookingPeriodTable :periods="orderedPeriods" :key-fields="periods.key" show-run />
+          <BookingPeriodTable v-model:open="periodsOpen" :periods="orderedPeriods" :key-fields="periods.key" show-run />
         </section>
       </template>
     </div>
@@ -153,10 +162,37 @@ const showDeployment = computed(() =>
 .deployments-body {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-md);
+  padding: 0 var(--space-md) var(--space-md);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+/* No room ABOVE the content inside a scroll area: a sticky list heading sticks to the area's padding
+   edge, and whatever scrolled past it showed through that room (operator, 2026-10-20 — the trade
+   history, the orders, the deployment's sessions). The room is a spacer that scrolls away with the
+   content instead. */
+.deployments-body::before {
+  /* no height of its own: the gap after it is the room */
+  content: '';
+  flex: none;
+}
+
+/* A LOW view cannot hold the list and the history together: a third of it for the list left a strip
+   for the history (operator, 2026-10-20). While the list stands open it takes the view alone, and a
+   pick folds it away and brings the history back. 40rem is where a tall panel still holds both. */
+@container (max-height: 40rem) {
+  .list-shown .deployments-header {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-bottom: none;
+  }
+
+  .list-shown .deployments-body {
+    display: none;
+  }
 }
 
 .state-overlay {
@@ -192,6 +228,10 @@ const showDeployment = computed(() =>
 }
 
 .counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs) var(--space-md);
   margin: 0;
   font-family: monospace;
   font-size: var(--font-size-sm);

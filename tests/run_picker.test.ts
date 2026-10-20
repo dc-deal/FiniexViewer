@@ -1,13 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import { defineComponent, h } from 'vue'
 import RunPicker from '@/components/runs/RunPicker.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
+import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 import { searchFor } from './facet_harness'
+import { provideTestOpenInContext } from './open_in_context_harness'
+import type { TestOpenInContext } from './open_in_context_harness'
 
 /**
  * A row on SHOW. The run list also draws the rows of its closed families, with no height and unseen,
@@ -170,6 +174,17 @@ describe('RunPicker', () => {
   })
 
   /**
+   * No artifacts but `reporting: expected` is a run that never got to its report — still running,
+   * or it died first (their runs document reads the two fields as a pair). It is not logs only.
+   */
+  it('marks a run that never got to its report apart from one kept as logs only', () => {
+    const wrapper = mountPicker([run({ run_id: 'unreported', has_reports: false, reporting: 'expected' })])
+    const mark = rowFor(wrapper, 'unreported').find('.run-mark.logs')
+    expect(mark.text()).toBe('no report')
+    expect(mark.attributes('title')).toContain('Still running, or it died before its report phase')
+  })
+
+  /**
    * The whole reason the cascade went. Measured over the real index: 40 runs in 29 (group, set)
    * pairs, so a set dropdown held 29 entries while the run dropdown below it held one to six.
    */
@@ -217,6 +232,14 @@ describe('RunPicker', () => {
    * carry their own (`..._c000` through `..._c008`).
    */
   describe('the families it folds', () => {
+    // a sweep's and a deployment's runs are left to their own lists by default: these show the list
+    // once `Parent` lets them in, as the reader does
+    beforeEach(() => {
+      useArrangementStore().setFacets('runs', {
+        selection: { purpose: ['regular', 'certificate', 'unknown'] }, search: '', sort: 'newest', scope: null,
+      })
+    })
+
     it('folds a set into one line and gives its runs back on a click', async () => {
       const wrapper = mountPicker([
         run({ run_id: 'late', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
@@ -365,6 +388,94 @@ describe('RunPicker', () => {
       await flushPromises()
       expect(rowIds(wrapper)).toEqual(['pickedone', 'other'])
     })
+
+    /**
+     * Opened WITH the choice rather than held open: a heading that could not close the family was a
+     * button that did nothing. *Show in list* opens it again where the reader closed it.
+     */
+    it('lets the reader close the family of the chosen run, and opens it again when the row is asked for', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'pickedone', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
+        run({ run_id: 'other', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
+      ])
+      useContextStore().selectRun('pickedone')
+      await flushPromises()
+      await wrapper.find('.record-group').trigger('click')
+      expect(rowIds(wrapper)).toEqual([])
+
+      useRunsStore().askForChosenRow()
+      await flushPromises()
+      expect(rowIds(wrapper)).toEqual(['pickedone', 'other'])
+    })
+  })
+
+  /** A chosen run the filter hides is said where the list is, with the way to see it. */
+  it('says where the filter hides the chosen run, and shows every run on request', async () => {
+    const wrapper = mountPicker([run({ run_id: 'kept' }), run({ run_id: 'chosen' })])
+    useContextStore().selectRun('chosen')
+    await flushPromises()
+    expect(wrapper.find('.chosen-hidden').exists()).toBe(false)
+
+    await searchFor(wrapper, 'set_kept')
+    expect(wrapper.find('.chosen-hidden').text()).toContain('The chosen run is not in this list')
+    // below the rows, where its coming and going on a pick moves none of them
+    const order = wrapper.find('.run-list').element.compareDocumentPosition(wrapper.find('.chosen-hidden').element)
+    expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    await wrapper.find('.chosen-hidden button').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.chosen-hidden').exists()).toBe(false)
+    expect(rowIds(wrapper)).toContain('chosen')
+  })
+
+  /**
+   * Whether the chosen row stands in the list's own view is the browser's to measure: the list
+   * hands the answer to the store, and takes it back when it goes.
+   */
+  it('reports whether the chosen row stands in its view, and takes it back on unmount', async () => {
+    let report: ((entries: { isIntersecting: boolean }[]) => void) | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: (entries: { isIntersecting: boolean }[]) => void) { report = callback }
+      observe(): void {}
+      disconnect(): void {}
+    })
+    try {
+      const wrapper = mountPicker([run({ run_id: 'chosen' })])
+      useContextStore().selectRun('chosen')
+      await flushPromises()
+      report!([{ isIntersecting: true }])
+      expect(useRunsStore().chosenRowInView).toBe(true)
+
+      wrapper.unmount()
+      expect(useRunsStore().chosenRowInView).toBe(false)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  /**
+   * Aimed anew — a quiet refresh of the index, a family opened — the observer answers for itself.
+   * Written out of view first, the bundle's *Show in list* showed for a frame on every re-aim.
+   */
+  it('leaves the answer standing while the observer is aimed anew', async () => {
+    let report: ((entries: { isIntersecting: boolean }[]) => void) | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: (entries: { isIntersecting: boolean }[]) => void) { report = callback }
+      observe(): void {}
+      disconnect(): void {}
+    })
+    try {
+      mountPicker([run({ run_id: 'chosen' }), run({ run_id: 'other' })])
+      useContextStore().selectRun('chosen')
+      await flushPromises()
+      report!([{ isIntersecting: true }])
+
+      useRunsStore().runs = [...useRunsStore().runs]
+      await flushPromises()
+      expect(useRunsStore().chosenRowInView).toBe(true)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('narrows the list by a facet, and says how many of how many are left', async () => {
@@ -410,6 +521,58 @@ describe('RunPicker', () => {
    * What each run DID, from the index row itself (contract 15). This is the feature that replaced
    * one `run-summary` request per row — forty requests to fill a list of forty.
    */
+  /**
+   * A sweep's combinations and a deployment's sessions are held by panels of their own, each a click
+   * from its run (operator, 2026-10-20). The list leaves them out by default — out, never removed:
+   * `Parent` brings them back.
+   */
+  describe('what it leaves to the lists of their own', () => {
+    it('lists the runs that stand alone, and those whose parent is of a kind not recorded', () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'solo' }),
+        run({ run_id: 'combination', name: 'base__sweep_1_c001', parent_id: 'sweep_1', parent_kind: 'sweep' }),
+        run({ run_id: 'session', name: 'bot', parent_id: 'deploy_1', parent_kind: 'deployment' }),
+        run({ run_id: 'early', name: 'old', parent_id: 'sweep_0', parent_kind: null }),
+      ])
+      expect([...rowIds(wrapper)].sort()).toEqual(['early', 'solo'])
+    })
+
+    function mountHosted(rows: RunInfo[]): { wrapper: VueWrapper, way: TestOpenInContext } {
+      useRunsStore().runs = rows
+      let way: TestOpenInContext = { opened: [] }
+      const Host = defineComponent({
+        setup() {
+          way = provideTestOpenInContext()
+          return () => h(RunPicker)
+        },
+      })
+      return { wrapper: mount(Host, { attachTo: document.body }), way }
+    }
+
+    /** Chosen in the Sweeps panel, a combination is out of this list: the notice leads to the one that holds it. */
+    it('leads from a chosen run that its own list holds to that list', async () => {
+      const { wrapper, way } = mountHosted([
+        run({ run_id: 'solo' }),
+        run({ run_id: 'combination', name: 'base__sweep_1_c001', parent_id: 'sweep_1', parent_kind: 'sweep' }),
+      ])
+      useContextStore().selectRun('combination')
+      await flushPromises()
+      const notice = wrapper.find('.chosen-hidden')
+      expect(notice.text()).toContain('The chosen run belongs to sweep sweep_1')
+      await notice.find('button').trigger('click')
+      expect(way.opened).toEqual([{ what: 'sweep', id: 'sweep_1' }])
+      wrapper.unmount()
+    })
+
+    it('says a run that the search hides the way it did, offering every run', async () => {
+      const { wrapper } = mountHosted([run({ run_id: 'solo' }), run({ run_id: 'other', name: 'other_set' })])
+      useContextStore().selectRun('solo')
+      await searchFor(wrapper, 'other_set')
+      expect(wrapper.find('.chosen-hidden').text()).toContain('Show every run')
+      wrapper.unmount()
+    })
+  })
+
   describe('what the row says the run did', () => {
     /** The four figure CELLS of a row, read together — each is a track of the list's own grid. */
     function figuresFor(wrapper: VueWrapper, id: string): string {

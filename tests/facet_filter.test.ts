@@ -187,6 +187,12 @@ describe('isNarrowed', () => {
   ])('reads %s as %s', (_label, selection, search, expected) => {
     expect(isNarrowed(selection as Record<string, string[]>, search as string)).toBe(expected)
   })
+
+  /** A pick kept for a facet the bar no longer has narrows nothing, so it is no narrowing. */
+  it('counts only the facets the bar has', () => {
+    expect(isNarrowed({ retired: ['x'] }, '', ['market'])).toBe(false)
+    expect(isNarrowed({ retired: ['x'], market: ['crypto'] }, '', ['market'])).toBe(true)
+  })
 })
 
 describe('sortRows', () => {

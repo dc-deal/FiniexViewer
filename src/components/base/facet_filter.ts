@@ -92,9 +92,14 @@ export function toggleValue(
   return result
 }
 
-export function isNarrowed(selection: FacetSelection, search = ''): boolean {
+/**
+ * Whether anything narrows the list: a search, or a value picked in a facet the bar HAS. A pick
+ * stored for a facet since retired narrows nothing — `applyFacets` reads only the bar's own — so it
+ * must not light the clear control either.
+ */
+export function isNarrowed(selection: FacetSelection, search = '', facets?: string[]): boolean {
   if (search.trim()) return true
-  return Object.values(selection).some(picked => picked.length > 0)
+  return Object.entries(selection).some(([facet, picked]) => picked.length > 0 && (!facets || facets.includes(facet)))
 }
 
 /** Sorted copy. A sort the caller does not know is ignored rather than throwing. */

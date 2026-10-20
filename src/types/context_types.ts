@@ -22,11 +22,22 @@ export interface DeploymentContext {
   id: string | null
 }
 
+/** The parameter search a link shows — a sweep is a family of runs, chosen apart from any one of them. */
+export interface SweepContext {
+  id: string | null
+}
+
 /** The market a free chart shows. The timeframe is the chart's own, not the link's. */
 export interface MarketContext {
   broker: string | null
   symbol: string | null
 }
+
+/**
+ * One part of a link a panel can follow or choose: the run, its scenario in focus (`units`), its
+ * marked position, the deployment, the sweep, the market. Ours, so a union — a typo fails the type-check.
+ */
+export type LinkKey = 'run' | 'units' | 'position' | 'deployment' | 'sweep' | 'market'
 
 /**
  * Everything one LINK holds — the selection the panels of that link share. A panel reads its link
@@ -35,5 +46,6 @@ export interface MarketContext {
 export interface LinkContext {
   run: RunContext
   deployment: DeploymentContext
+  sweep: SweepContext
   market: MarketContext
 }

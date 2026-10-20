@@ -124,6 +124,17 @@ const CONTRACT = {
  */
 interface ApiMockOptions {
   corrupt?: { section: string, field: string }
+  /**
+   * Levels set on one position's trade rows. No trade of the fixture run set a stop or a target, so
+   * a check of the levels the run chart draws hands one position the two that a run with levels
+   * serves — the rest of the capture stays as it was.
+   */
+  levels?: { scenario: string, position: string, stopLoss: number, takeProfit: number }
+  /**
+   * Rows appended to the captured activities. The capture holds the server alone, so an activity
+   * that runs something is built from the server's row by the spec that needs one.
+   */
+  activities?: Record<string, unknown>[]
 }
 
 /** A number where a list belongs: `.filter` on it throws, which is how the original defect landed. */
@@ -150,6 +161,13 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
 
     if (path === '/api/v1/machine-resources') {
       return route.fulfill({ json: fixture('machine_resources.json'), headers: CONTRACT })
+    }
+
+    // what ran on the machine at capture time: the server's own row at least
+    if (path === '/api/v1/activities') {
+      const captured = fixture('activities.json') as { activities: unknown[] }
+      const json = options.activities ? { ...captured, activities: [...captured.activities, ...options.activities] } : captured
+      return route.fulfill({ json, headers: CONTRACT })
     }
 
     /*
@@ -214,6 +232,13 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       if (options.corrupt && options.corrupt.section === section) {
         body[options.corrupt.field] = WRONG_SHAPE
       }
+      const levels = options.levels
+      if (levels && section === 'trade-history') {
+        body['trades'] = (body['trades'] as Record<string, unknown>[]).map(row =>
+          row['scenario_name'] === levels.scenario && row['position_id'] === levels.position
+            ? { ...row, stop_loss: levels.stopLoss, take_profit: levels.takeProfit }
+            : row)
+      }
       return route.fulfill({ json: body, headers: CONTRACT })
     }
 
@@ -243,6 +268,20 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
         })
       }
       return route.fulfill(absent('artifact_not_produced', `No capture for ledger '${section}'`))
+    }
+
+    // the SWEEP plane: every search on record, and the one captured ranked by its objective
+    if (path === '/api/v1/sweeps') {
+      return route.fulfill({ json: fixture('sweeps_list.json'), headers: CONTRACT })
+    }
+
+    const sweep = /^\/api\/v1\/sweeps\/([^/]+)$/.exec(path)
+    if (sweep) {
+      const captured = fixture('sweep_detail.json') as { sweep_id: string }
+      if (sweep[1] !== captured.sweep_id) {
+        return route.fulfill(absent('sweep_not_found', `Only ${captured.sweep_id} is captured`))
+      }
+      return route.fulfill({ json: captured, headers: CONTRACT })
     }
 
     return route.fulfill(absent('not_mocked', `No fixture routes ${path}`))

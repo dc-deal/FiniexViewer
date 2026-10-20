@@ -177,6 +177,36 @@ describe('deployments_store', () => {
       expect(apiClient.getDeployment).toHaveBeenCalledWith(ID)
     })
 
+    /** The one already chosen is not a new choice: it is not cleared and fetched again for nothing. */
+    it('leaves the deployment already chosen as it is', async () => {
+      resolveAll()
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      await store.selectDeployment(ID)
+      await store.selectDeployment(ID)
+      expect(apiClient.getDeployment).toHaveBeenCalledTimes(1)
+      expect(store.detail).not.toBeNull()
+    })
+
+    /**
+     * A quiet refresh of the ledger clears the shared error. A deployment that failed to load was
+     * then refused a second pick, and stood with its header and nothing under it.
+     */
+    it('loads a deployment that failed once more, after a quiet refresh cleared the error', async () => {
+      resolveAll()
+      vi.mocked(apiClient.getDeployment).mockRejectedValueOnce(new Error('restarting'))
+      const store = useDeploymentsStore()
+      await store.loadDeployments()
+      await store.selectDeployment(ID)
+      expect(store.detail).toBeNull()
+
+      await store.loadDeployments(true)
+      expect(store.error).toBeNull()
+      await store.selectDeployment(ID)
+      expect(apiClient.getDeployment).toHaveBeenCalledTimes(2)
+      expect(store.detail).not.toBeNull()
+    })
+
     it('clears the previous deployment before loading the next', async () => {
       resolveAll()
       const store = useDeploymentsStore()

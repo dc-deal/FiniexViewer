@@ -2,7 +2,7 @@
 
 The words of the domain — run, scenario, run unit, report section, broker, deployment — are
 FiniexTestingIDE's, defined in its `docs/glossary.md`, and every label on screen uses them (see
-*The words* in [the frontend architecture](frontend_architecture.md)). This page holds only what
+[The words](interface/figures_and_words_on_screen.md#the-words--the-backends-glossary-adopted-here)). This page holds only what
 that glossary has no word for: the words this viewer coins for its own display.
 
 Each was checked against FiniexTestingIDE's glossary and its documents before it was written here.
@@ -17,7 +17,8 @@ one versioned key and kept per browser tab: a new tab starts from the last one s
 which is only a placement.
 
 **bundle** — A panel whose content is other panels, its *members*, stacked one below the other: the
-run report is one, its report sections the members. Not *group* — in FiniexTestingIDE `group` is a
+run report is one, its report sections the members. The word is on screen: the panel *Run bundle*,
+`Runs ▸ Run bundle` in the Panels menu, ⇲ *Back into the bundle* on a member's tab. Not *group* — in FiniexTestingIDE `group` is a
 run's pipeline, and in the dock library a group is a stack of tabs. Not *container*, which is their
 Docker container and the CSS size container a panel declares. Not the build's *bundle*, the
 JavaScript a production build emits, which the performance figures call the *start bundle*.
@@ -29,6 +30,10 @@ axis). Not a venue's *balance sheet* (`venue_balances`).
 **free chart** — The chart of a market — a broker, a symbol and a timeframe — chosen with no run
 behind it: the panel *Free chart*, opened from the Panels menu. See *run-bound chart*.
 
+**Layers panel** — The panel that arranges what a chart draws beside its candles, one row per
+*drawing layer*: FiniexTestingIDE's word for one switchable set of drawings on a run's chart, and
+their own name for this panel. Their glossary never uses *layer* alone, and neither does this one.
+
 **link** — The set of choices a group of panels shares: a run, its narrowing and its marked
 position, a deployment, a market. A list writes the choice it makes; every panel reads the choices
 it needs. Not the HTTP `Link` header the API sends.
@@ -36,14 +41,14 @@ it needs. Not the HTTP `Link` header the API sends.
 **list panel** — A panel whose form is a list and whose pick opens something: the run list, the
 deployments. Never a member of a bundle.
 
-**member** — A panel inside a bundle: a report section in the run report. It opens as a panel of its
+**member** — A panel inside a bundle: a report section in the run bundle. It opens as a panel of its
 own and goes back. Not the *member* of an archive FiniexTestingIDE re-imports, a file inside a zip.
 
-**menu bar** — The frame above the panels: the app's name, the Panels menu, the machine's load, the
-account and the application menu. It is never closed or moved.
+**menu bar** — The frame above the panels: the app's name, the Panels menu, the *narrowing* while
+one is set, the machine's load, the account and the application menu. It is never closed or moved.
 
 **narrowing** — Putting one of a run's units in focus, so that the report sections which map over
-units show only it, or mark it, and the *run-bound chart* draws it. Stated in the quick bar, and drawn as a dashed border — the
+units show only it, or mark it, and the *run-bound chart* draws it. Stated once, in the menu bar, and drawn as a dashed border — the
 *narrowing frame* — around the run report, and around a section opened as a panel where it filters
 that section's rows. Not the *subscription narrowing* of a worker in FiniexTestingIDE, and the
 frame is not their recorded state *frame*.
@@ -57,8 +62,8 @@ same idea as the panels of FiniexTestingIDE's AutoTrader console, which these mi
 in the run report and which are open as panels, and where a hidden panel stood last. The part of
 the arrangement that is not a choice of what to show.
 
-**quick bar** — The one to three settings of the panel in front of a tab group, on the right of its
-tabs: a chart's broker, symbol and timeframe, or a report's narrowing.
+**quick bar** — The settings of the panel in front of a tab group, on the right of its tabs: the free
+chart's broker, symbol and timeframe, the run chart's unit and timeframe.
 
 **run-bound chart** — The chart of one unit of a run, its trades marked on the candles — the panel
 *Run chart*, opened beside the run report from the Panels menu or by the chart mark on a trade or

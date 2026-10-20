@@ -24,9 +24,9 @@ async function openSection(page: Page, name: string): Promise<void> {
  * candles — and the position marked, so the list and the chart agree on what is looked at.
  */
 test('the chart mark on a trade opens the run chart beside the report, on the trade\'s unit', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await openSection(page, 'Trade History')
+  await openSection(page, 'Trade history')
 
   await page.locator('[data-panel="trade-history"] .to-chart').first().click()
 
@@ -51,10 +51,12 @@ test('the chart mark on a trade opens the run chart beside the report, on the tr
 /**
  * Part of the first arrangement (operator, 2026-10-15): on a screen wide enough to share, the run
  * chart stands beside the report from the start, on the first unit with trades — and below that
- * width it is a tab after the report, so the report keeps the room its lists need.
+ * width it is a tab after the report, so the report keeps the room its lists need. Three columns —
+ * the lists, the report, the chart — from about 1780 px, which is why this spec runs at 1800
+ * (operator, 2026-10-20).
  */
 test('the first arrangement puts the run chart beside the report where the screen is wide enough', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
 
@@ -83,7 +85,7 @@ test('below that width the run chart is a tab after the report', async ({ page }
  * the one the run chart draws, and a unit chosen in the chart narrows every list to it.
  */
 test('the scenario in focus is the one on the run chart, whichever side chose it', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await openSection(page, 'Scenarios')
   const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
@@ -106,4 +108,78 @@ test('the scenario in focus is the one on the run chart, whichever side chose it
   await unitSelect.selectOption(other)
   await expect(page.locator('.narrowed-head').first()).toContainText(other)
   await expect(page.locator('.scenario-roster .record-row.picked .roster-name')).toHaveText(other)
+})
+
+/**
+ * A position the run ended with still open has no trade row, and until the openings came from the
+ * order history it had no mark at all. The fixture run's `EURGBP_left_open` opened one position and
+ * closed none: its one mark is that opening.
+ */
+test('the run chart marks the opening of a position that never closed', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
+  await expect(unitSelect).toBeEnabled()
+  await unitSelect.selectOption('EURGBP_left_open')
+
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBe(1)
+  await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
+})
+
+/**
+ * What overlaps on screen is drawn as one mark with a count, and splits again as the reader zooms
+ * in. The fixture's `ETHUSD_spot_two_balances` opened eleven positions and closed ten trades over
+ * eighteen hours — 1,075 bars of a minute; zoomed out, a mark covers hours of them.
+ */
+test('marks that would cover each other are drawn as one, and split as the reader zooms in', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
+  await expect(unitSelect).toBeEnabled()
+  await unitSelect.selectOption('ETHUSD_spot_two_balances')
+
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-events'))).toBe(21)
+  const box = (await chart.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+
+  // out: the marks of hours stand within one mark's width, and gather
+  for (let step = 0; step < 8; step++) await page.mouse.wheel(0, 400)
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBeLessThan(21)
+  const gathered = Number(await chart.getAttribute('data-marks'))
+
+  // in again: they split, and nothing was lost on the way
+  for (let step = 0; step < 16; step++) await page.mouse.wheel(0, -400)
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBeGreaterThan(gathered)
+  expect(Number(await chart.getAttribute('data-events'))).toBe(21)
+})
+
+/** A line above the chart — the hint on its shapes — takes room from it, never its time axis. */
+test('the hint above the run chart leaves the whole chart inside its panel', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const panel = page.locator('[data-panel-kind="run-chart"]')
+  await expect(panel.getByText('a position opened')).toBeVisible()
+  const chart = panel.locator('.candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBeGreaterThan(0)
+  const outer = (await panel.boundingBox())!
+  const inner = (await chart.boundingBox())!
+  expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height + 1)
+})
+
+/**
+ * The position looked at brings its stop and its target as levels, painted by the chart's own
+ * drawing host — on a real canvas, which jsdom does not have. No trade of the fixture set a level,
+ * so the mock hands one position the two a run with levels serves.
+ */
+test('the run chart draws the levels of the position looked at', async ({ page }) => {
+  await mockApi(page, { levels: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1', stopLoss: 0.875, takeProfit: 0.882 } })
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', {
+    run: FIXTURE_RUN, units: ['EURGBP_refusals_01'], position: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1' },
+  })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/levels:2/)
+  await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
 })

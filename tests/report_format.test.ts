@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  bytes, modelledSpreadFigures, shortHash, sortInstant, spreadFigure, utcInstant,
+  bytes, largerFirst, modelledSpreadFigures, polarity, shortHash, signClass, sortInstant, spreadFigure, utcInstant,
+  utcSpan,
 } from '@/components/runs/report_format'
 
 /**
@@ -30,6 +31,25 @@ describe('report_format', () => {
     })
   })
 
+  describe('utcSpan', () => {
+    it('says the date once where both ends fall on the same UTC day', () => {
+      expect(utcSpan('2026-10-12T20:57:34+00:00', '2026-10-12T20:59:06+00:00'))
+        .toBe('2026-10-12 20:57:34Z → 20:59:06Z')
+    })
+
+    /** The same day on the reader's clock is not the same day on UTC: the date comes back. */
+    it('says both dates where the stretch crosses midnight UTC', () => {
+      expect(utcSpan('2026-10-12T23:59:00+00:00', '2026-10-13T00:01:00+00:00'))
+        .toBe('2026-10-12 23:59:00Z → 2026-10-13 00:01:00Z')
+      expect(utcSpan('2026-10-13T01:30:00+02:00', '2026-10-13T00:10:00+00:00'))
+        .toBe('2026-10-12 23:30:00Z → 2026-10-13 00:10:00Z')
+    })
+
+    it('leaves a hole for an end that is not a date, rather than borrowing the other one', () => {
+      expect(utcSpan('2026-10-12T20:57:34+00:00', null)).toBe('2026-10-12 20:57:34Z → ')
+    })
+  })
+
   describe('sortInstant', () => {
     /** Compared as text, `+02:00` would sort after a `Z` stamp that is an hour LATER. */
     it('orders by the instant, not by the text of the offset', () => {
@@ -38,6 +58,27 @@ describe('report_format', () => {
 
     it('gives 0 for a stamp that is not a date, so it sorts last under newest', () => {
       expect(sortInstant('not-a-date')).toBe(0)
+    })
+  })
+
+  describe('largerFirst', () => {
+    /** A size that could not be read is no figure, and certainly not the smallest. */
+    it('sorts the larger first, and one that could not be read after every figure, a zero included', () => {
+      expect([0, null, 3_100_000_000, 7_100_000_000].sort(largerFirst)).toEqual([7_100_000_000, 3_100_000_000, 0, null])
+    })
+  })
+
+  /**
+   * One rule for every colour that says gain or loss — a list cell, a timeline span, a mark on the
+   * run chart. It was written three times, and zero is where three copies can come to disagree.
+   */
+  describe('polarity', () => {
+    it('reads a figure by its sign, and zero as flat', () => {
+      expect([12.5, -0.01, 0].map(polarity)).toEqual(['positive', 'negative', 'flat'])
+    })
+
+    it('leaves a flat cell without a colour class', () => {
+      expect([12.5, -0.01, 0].map(signClass)).toEqual(['positive', 'negative', ''])
     })
   })
 

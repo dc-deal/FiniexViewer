@@ -19,11 +19,15 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'quick-bar',
-    text: t('The bar beside the tabs holds what the panel in front shows — for the chart, its broker, symbol and timeframe.'),
+    text: t('The bar beside the tabs holds what the panel in front shows — for the free chart its broker, symbol and timeframe, for the run chart its unit and timeframe, and ≡ Layers, which opens beside it what it draws.'),
   },
   {
     id: 'open-as-panel',
-    text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the column. On the tab of that panel, ⇲ puts it back into the column and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
+    text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the bundle. On the tab of that panel, “Back into the bundle” puts it back and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
+  },
+  {
+    id: 'bundle-commands',
+    text: t('⋯ on the tab of the bundle folds every section at once, or resets the bundle — its sections back in their first order, none of them hidden.'),
   },
   {
     id: 'dock-edges',
@@ -32,6 +36,22 @@ const HINTS: HintDefinition[] = [
   {
     id: 'facet-bar',
     text: t('⌕ opens the search. Where the panel is narrow, the filters that do not fit wait behind +N, each with its values and counts.'),
+  },
+  {
+    id: 'activities',
+    text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. A label marked ↗ opens its run, or its sweep. Rest the pointer on a row for its command line, its code and who started it."),
+  },
+  {
+    id: 'sweeps',
+    text: t('Every parameter search on record. Open one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first, and any tied with it. A click on a combination chooses its run, as the run list does.'),
+  },
+  {
+    id: 'layers',
+    text: t('Front layer first: the lever shows or hides a layer, ◐ sets how strongly it is drawn, and a click on the layer opens the rest — its option, its place in front of or behind the others. The candles stay behind them all.'),
+  },
+  {
+    id: 'chart-marks',
+    text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },
   {
     id: 'position-link',

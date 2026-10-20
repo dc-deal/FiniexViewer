@@ -46,11 +46,11 @@
 
 /*
  * The quick bar gives way before a tab does: it takes the whole shortfall, down to the least width
- * its own content declares — the narrowing's mark and button, its text being the part that
- * shortens — and only then do the tabs. Flex shares a shortfall in proportion, so the share has to
- * be overwhelming: at 100 to 1 the tabs still lost 2 px, and one pixel short is enough for dockview
- * to move a tab into its overflow menu (measured at 560 px). Before, the bar could not shrink at
- * all, and a narrow panel's tabs went into that menu while a scenario list stood beside them in full.
+ * its own content declares, and only then do the tabs. Flex shares a shortfall in proportion, so
+ * the share has to be overwhelming: at 100 to 1 the tabs still lost 2 px, and one pixel short is
+ * enough for dockview to move a tab into its overflow menu (measured at 560 px). It was measured
+ * with the scenario narrowing in the bar, which stands in the menu bar since viewer#42; a chart's
+ * selects are what it holds now.
  */
 .dockview-theme-dark .dv-right-actions-container,
 .dockview-theme-light .dv-right-actions-container {

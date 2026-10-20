@@ -21,6 +21,8 @@ import tradeHistory from './fixtures/trade_history.json'
 import scenarioDetails from './fixtures/scenario_details.json'
 import manifest from './fixtures/capture_manifest.json'
 import machineResources from './fixtures/machine_resources.json'
+import sweepsList from './fixtures/sweeps_list.json'
+import sweepDetail from './fixtures/sweep_detail.json'
 
 import type {
   AggregatedPortfolioReport,
@@ -44,6 +46,7 @@ import type {
 } from '@/types/api/deployment_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { MachineResources } from '@/types/api/machine_types'
+import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
 
 /**
  * The contract this code was written against. The backend stamps every response with
@@ -54,7 +57,7 @@ import type { MachineResources } from '@/types/api/machine_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 33
+const EXPECTED_CONTRACT = 36
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -90,6 +93,10 @@ const EXPECTED_KEYS = {
   // the run summary's two: its per-currency KPIs, and the units it declared and produced nothing for
   summaryCurrencies: ['currency'],
   summaryUnitsAbsent: ['name'],
+  sweeps: ['sweep_id'],
+  // one row per run AND account currency: the ledger books a row per period, and the route folds
+  // them back per currency — keyed on the run alone, a two-currency combination loses one
+  sweepCombinations: ['run_id', 'currency'],
 }
 
 describe('api contract', () => {
@@ -137,6 +144,22 @@ describe('api contract', () => {
     const typed: DeploymentDetail = deploymentDetail
     expect(typed.sessions.length).toBeGreaterThan(0)
     expect(typed.key).toEqual(EXPECTED_KEYS.sessions)
+  })
+
+  it('the sweep list is keyed by the sweep', () => {
+    const typed: SweepList = sweepsList
+    expect(typed.sweeps.length).toBeGreaterThan(0)
+    expect(typed.key).toEqual(EXPECTED_KEYS.sweeps)
+  })
+
+  /** The ranking used an objective, and the response says which: the sweep's own, or the fallback it names. */
+  it("a sweep's combinations are keyed per run and account currency, and name the objective they were ranked by", () => {
+    const typed: SweepDetail = sweepDetail
+    expect(typed.combinations.length).toBeGreaterThan(0)
+    expect(typed.key).toEqual(EXPECTED_KEYS.sweepCombinations)
+    expect(typed.objective).not.toBe('')
+    // an error combination never ranks, so the route leaves it out of the list
+    expect(typed.combinations.every(row => row.status === 'ok')).toBe(true)
   })
 
   it('deployment-scoped periods need the run to be unique', () => {

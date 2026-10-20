@@ -1,5 +1,5 @@
 import { test, expect } from './cdp_fixture'
-import { mockApi, revealFixtureRun, FIXTURE_RUN } from './api_mock'
+import { fixture, mockApi, revealFixtureRun, FIXTURE_RUN } from './api_mock'
 import { openWith, FIXTURES_SHOWN } from './arrangement_seed'
 
 /**
@@ -89,6 +89,11 @@ test('a run opens its panels quickly', async ({ page }) => {
   // the clock starts, the way `run_selection.spec.ts` reaches it. Without both, the click found no
   // row: this spec runs only on a perf pass, so it went unnoticed from the day the default filter
   // and the folding arrived until 2026-10-12.
+  // the report beside the list, as the first arrangement stands it on a screen this wide
+  // (2026-10-20): the pick alone is timed. Until then the pick also brought the report forward and
+  // drew it the first time; at 1280 px it now stays behind the list, and a second click would time
+  // the test's own round trip
+  await page.setViewportSize({ width: 1400, height: 900 })
   await openWith(page, '/', FIXTURES_SHOWN)
   await page.locator('.run-list .record-row:not(.record-unseen)').first().waitFor({ state: 'visible' })
   await revealFixtureRun(page)
@@ -101,9 +106,7 @@ test('a run opens its panels quickly', async ({ page }) => {
       .click()
     await page.locator('.panel-trigger').first().waitFor({ state: 'visible' })
     // a panel keeps its place while its section loads, so a drawn frame is not yet a usable
-    // panel: the figure ends when the last loading line is gone. Since the run report is a panel
-    // of its own (2026-10-14) the click also brings it to the front and draws it the first time —
-    // part of the figure from then on
+    // panel: the figure ends when the last loading line is gone
     await expect(page.locator('.panel-loading')).toHaveCount(0)
   })
   expect(ms).toBeLessThan(3000)
@@ -133,10 +136,82 @@ test('narrowing to a scenario is immediate', async ({ page }) => {
  */
 test('the trade list draws within its row cap', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
-  await page.locator('.panel-trigger', { hasText: 'Trade History' }).click()
+  await page.locator('.panel-trigger', { hasText: 'Trade history' }).click()
 
   const ms = await timed('trade history drawn', async () => {
     await page.locator('.trade-history').waitFor({ state: 'visible' })
+  })
+  expect(ms).toBeLessThan(3000)
+})
+
+/**
+ * The run chart since it draws for itself (viewer#41): its own drawing host places and paints every
+ * layer on each move of the view, where the library's markers did that inside the library. Two
+ * figures, on the fixture's busiest unit — 21 events over 1,075 bars: a unit chosen until its marks
+ * stand on the candles, and a zoom step until the frame after it has painted, the mean of ten.
+ */
+test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) => {
+  // the chart beside the report, the first arrangement's third column (operator, 2026-10-20)
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
+  await expect(unitSelect).toBeEnabled()
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBeGreaterThan(0)
+
+  const drawn = await timed('run chart — a unit drawn', async () => {
+    await unitSelect.selectOption('ETHUSD_spot_two_balances')
+    // on the page's own frames, not at a test poll's intervals
+    await page.waitForFunction(
+      () => document.querySelector('[data-panel-kind="run-chart"] .candle-chart')?.getAttribute('data-events') === '21',
+      undefined,
+      { polling: 'raf' },
+    )
+  })
+
+  const box = (await chart.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  const steps = 10
+  const started = Date.now()
+  for (let step = 0; step < steps; step++) {
+    await page.mouse.wheel(0, step < steps / 2 ? 400 : -400)
+    // the frame after the wheel paints every layer again; the one after that has painted them
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  }
+  const perStep = Math.round((Date.now() - started) / steps)
+  timings.push({ label: 'run chart — a zoom step drawn (mean)', ms: perStep })
+
+  expect(drawn).toBeLessThan(3000)
+  expect(perStep).toBeLessThan(500)
+})
+
+/**
+ * A sweep's ranking at the size a real search reaches (viewer#32): 500 combinations built from the
+ * captured sweep. The ranking draws every row, and this says whether it needs a cap — timed from
+ * the sweep opened until the last row stands, on the page's own frames.
+ */
+test('a sweep of 500 combinations is ranked on screen quickly', async ({ page }) => {
+  const detail = fixture('sweep_detail.json') as { sweep_id: string, combinations: { run_id: string }[] }
+  const combinations = Array.from({ length: 500 }, (_, index) => ({
+    ...detail.combinations[index % detail.combinations.length]!,
+    run_id: `20261019_000000_${String(index).padStart(8, '0')}`,
+  }))
+  await page.route(`**/api/v1/sweeps/${detail.sweep_id}`, route => route.fulfill({ json: { ...detail, combinations, count: 500 } }))
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.goto('/')
+  await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).click()
+  await page.locator('.menu-item[data-kind="sweeps"]').click()
+  await page.keyboard.press('Escape')
+  const sweep = page.locator(`[data-panel-kind="sweeps"] .sweep-list .record-group:has([data-sweep="${detail.sweep_id}"])`)
+  await sweep.waitFor()
+
+  const ms = await timed('sweep — 500 combinations ranked', async () => {
+    await sweep.click()
+    await page.waitForFunction(
+      () => document.querySelectorAll('[data-panel-kind="sweeps"] .sweep-list .run-id').length === 500,
+      undefined,
+      { polling: 'raf' },
+    )
   })
   expect(ms).toBeLessThan(3000)
 })

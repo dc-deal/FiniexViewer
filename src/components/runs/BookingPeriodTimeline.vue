@@ -4,10 +4,8 @@ import AppButton from '@/components/base/AppButton.vue'
 import TimelineChart from '@/components/base/TimelineChart.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
-import {
-  amount, magnitude, duration, numberOrNa, percentOrNa, signClass, utcInstant,
-} from '@/components/runs/report_format'
-import type { BookingPeriodRow } from '@/types/api/report_types'
+import { periodFigures, periodTitle, type PeriodRow } from '@/components/runs/booking_period_card'
+import { duration, polarity, utcInstant } from '@/components/runs/report_format'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { LaneOrder } from '@/types/settings_types'
 import type { TimelineLane, TimelineSpan } from '@/types/timeline_types'
@@ -36,8 +34,6 @@ import { plural, t } from '@/translate'
  *
  * The wall-clock sequence lives in the sessions table, in `started` / `ran` / `gap_hours`.
  */
-type PeriodRow = BookingPeriodRow & { run_id?: string }
-
 const props = defineProps<{
   periods: PeriodRow[]
   /** The key tuple the response declares — a period is not unique by period_no alone. */
@@ -73,46 +69,6 @@ const usable = computed(() =>
   )
 )
 
-/** Colour carries polarity, so a flat result stays neutral rather than claiming a direction. */
-function tone(netPnl: number): string {
-  if (netPnl > 0) return 'positive'
-  if (netPnl < 0) return 'negative'
-  return 'flat'
-}
-
-/**
- * Everything the row below says about this period, for the hover layer — including the EQUITY
- * BAND, which the table leaves out for width. The band is what keeps a booked result readable: a
- * trade belongs to the period it CLOSED in, so a position opened on one day and closed the next
- * puts its whole result on the second. The booked figure and the account movement then differ by
- * exactly the unrealised movement across the boundary, and a reader without the band concludes
- * that something is broken.
- */
-function details(period: PeriodRow): { label: string, value: string, tone?: string }[] {
-  const rows = [
-    { label: t('Opened'), value: utcInstant(period.opened_at) },
-    { label: t('Closed'), value: utcInstant(period.closed_at) },
-    { label: t('Reason'), value: period.reason },
-    { label: t('Trades'), value: String(period.trade_count) },
-    {
-      label: t('Net P&L'),
-      value: amount(period.net_pnl, period.currency),
-      tone: signClass(period.net_pnl),
-    },
-    { label: t('Win rate'), value: percentOrNa(period.win_rate, period.trade_count) },
-    { label: t('PF'), value: numberOrNa(period.profit_factor, period.trade_count) },
-    { label: t('Fees'), value: amount(period.total_fees, period.currency) },
-    { label: t('Max DD'), value: magnitude(period.max_drawdown, period.currency) },
-    {
-      label: t('Equity band'),
-      value: `${amount(period.min_equity, period.currency)} … ${amount(period.max_equity, period.currency)}`,
-    },
-    { label: t('Final equity'), value: amount(period.final_equity, period.currency) },
-  ]
-  if (period.run_id) rows.unshift({ label: t('Run'), value: period.run_id })
-  return rows
-}
-
 function span(period: PeriodRow, from: number, to: number): TimelineSpan {
   return {
     id: rowKey(period, props.keyFields),
@@ -123,9 +79,10 @@ function span(period: PeriodRow, from: number, to: number): TimelineSpan {
     label: `${t('period')} ${period.period_no}`,
     // what is left when the bar is a sliver: the number alone still identifies it
     shortLabel: String(period.period_no),
-    tone: tone(period.net_pnl),
-    title: `${period.unit_name} · ${t('booking period')} ${period.period_no}`,
-    details: details(period),
+    tone: polarity(period.net_pnl),
+    // one card for the bar and for the table's row (`booking_period_card.ts`)
+    title: periodTitle(period),
+    details: periodFigures(period),
   }
 }
 
@@ -192,14 +149,19 @@ const scope = computed(() => {
   }
 })
 
-const DAY_MS = 24 * 60 * 60 * 1000
+/** The calendar day of an instant, `2025-10-13`. */
+function utcDay(value: number): string {
+  return new Date(value).toISOString().slice(0, 10)
+}
 
 /**
- * A scale shorter than a day gets clock-only ticks and names its date ONCE, beneath the axis.
+ * A scale inside ONE calendar day gets clock-only ticks and names its date ONCE, beneath the axis.
  * Five full timestamps do not fit the width and collide into each other, which is the one defect
- * the validator cannot see — it checks colour, not layout.
+ * the validator cannot see — it checks colour, not layout. The calendar day rather than 24 hours: a
+ * scale from 23:00 to 01:00 is shorter than a day and still crosses midnight, and *All times on*
+ * its first day was then wrong for every mark after it.
  */
-const withinOneDay = computed(() => scope.value.to - scope.value.from < DAY_MS)
+const withinOneDay = computed(() => utcDay(scope.value.from) === utcDay(scope.value.to))
 
 const scaleNote = computed(() => {
   const clock = props.sessions?.length
@@ -215,8 +177,12 @@ const scaleNote = computed(() => {
  *
  * `2025-10-13 00:00:00Z` on every mark is twenty characters of which sixteen repeat, and the axis
  * then reads as a wall of stamps rather than as a scale. The big charting tools all do the same
- * thing here: the date appears where the day turns over, and everything inside a day is a time.
- * The part every mark shares — the month and the year — is stated ONCE beside the scale's name.
+ * thing here: the date appears where the day turns over, the month where the month does and the
+ * year where the year does, and everything inside a day is a time. The part every mark shares —
+ * the month and the year, or the year — is stated ONCE beside the scale's name.
+ *
+ * An END is the exception: it is where the periods stop rather than a round moment, so on a scale
+ * of several days it carries its day as well. `23:59Z` alone at the end of a year said nothing.
  *
  * Seconds are gone deliberately: at a step of an hour or a day they are always `00`, and the whole
  * instant is still on the row itself and in the table below.
@@ -228,7 +194,11 @@ function axisFormat(value: number): string {
   const clock = `${String(at.getUTCHours()).padStart(2, '0')}:`
     + `${String(at.getUTCMinutes()).padStart(2, '0')}Z`
   if (withinOneDay.value) return clock
-  return midnight ? day : clock
+  if (!midnight) return value === scope.value.from || value === scope.value.to ? `${day} ${clock}` : clock
+  if (at.getUTCDate() !== 1) return day
+  // New Year names its year where the scale crosses one — the mark is where it turns over
+  if (at.getUTCMonth() !== 0 || years.value.length < 2) return MONTHS[at.getUTCMonth()]!
+  return String(at.getUTCFullYear())
 }
 
 const MONTHS = [
@@ -236,18 +206,29 @@ const MONTHS = [
 ]
 
 /**
- * The month and year every mark shares, or null where the periods span more than one month — then
- * the marks carry the day themselves and there is nothing common to hoist.
+ * What the marks leave unsaid, said once beside the scale's name: the month and year where the
+ * periods fall in one month, else the year, else the years from first to last — a scale that
+ * started in April showed `Apr · Jul · Oct · 2022`, and which year the first three were in stood
+ * nowhere (seen 2026-10-19).
  */
-const sharedMonth = computed(() => {
-  const stamps = props.periods.flatMap(period => [
-    new Date(period.opened_at), new Date(period.closed_at),
-  ])
-  if (!stamps.length) return null
-  const first = stamps[0]!
-  const key = (at: Date) => `${at.getUTCFullYear()}-${at.getUTCMonth()}`
-  if (stamps.some(at => key(at) !== key(first))) return null
-  return `${MONTHS[first.getUTCMonth()]} ${first.getUTCFullYear()}`
+// the DRAWN periods' stamps: one that cannot be read is left off the chart, and read here it put
+// `2025–NaN` beside the scale
+const stamps = computed(() => usable.value.flatMap(period => [
+  new Date(period.opened_at), new Date(period.closed_at),
+]))
+
+/** The calendar years the periods fall in, earliest first. */
+const years = computed(() => [...new Set(stamps.value.map(at => at.getUTCFullYear()))].sort((a, b) => a - b))
+
+const sharedPart = computed(() => {
+  const first = stamps.value[0]
+  if (!first) return null
+  const month = (at: Date) => `${at.getUTCFullYear()}-${at.getUTCMonth()}`
+  if (stamps.value.every(at => month(at) === month(first))) {
+    return `${MONTHS[first.getUTCMonth()]} ${first.getUTCFullYear()}`
+  }
+  const [earliest, latest] = [years.value[0]!, years.value[years.value.length - 1]!]
+  return earliest === latest ? String(earliest) : `${earliest}–${latest}`
 })
 
 const HOUR_MS = 60 * 60 * 1000
@@ -316,8 +297,9 @@ function rangeLabel(from: number, to: number): string {
       :from="scope.from"
       :to="scope.to"
       :format="axisFormat"
-      :scale-label="sharedMonth ? `${t('canonical clock')} · ${sharedMonth}` : t('canonical clock')"
+      :scale-label="sharedPart ? `${t('canonical clock')} · ${sharedPart}` : t('canonical clock')"
       :scale-note="scaleNote"
+      :dense-note="t('Too close to draw apart at this width — a sliver per period, named on its card.')"
       natural-time
       :collapse-gaps-longer-than="longestSpan"
       :format-gap="gapLabel"

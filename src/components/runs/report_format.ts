@@ -1,4 +1,4 @@
-import type { Figure } from '@/types/figure_types'
+import type { Figure, Polarity } from '@/types/figure_types'
 import { t } from '@/translate'
 
 // Fixed locale on purpose: the rest of the panels format with toFixed (dot decimals), and a
@@ -111,11 +111,30 @@ const utcClock = new Intl.DateTimeFormat('en-GB', {
  * damaged `start_time` is a case the column beside it already handles.
  */
 export function utcInstant(iso: string | null): string {
-  if (iso === null) return ''
-  if (Number.isNaN(new Date(iso).getTime())) return ''
+  const part = utcParts(iso)
+  if (!part) return ''
+  return `${part['year']}-${part['month']}-${part['day']} ${part['hour']}:${part['minute']}:${part['second']}Z`
+}
+
+/** The pieces of an instant on the UTC clock; null for none and for a stamp that is not a date. */
+function utcParts(iso: string | null): Record<string, string> | null {
+  if (iso === null) return null
+  if (Number.isNaN(new Date(iso).getTime())) return null
   const part: Record<string, string> = {}
   for (const piece of utcClock.formatToParts(new Date(iso))) part[piece.type] = piece.value
-  return `${part['year']}-${part['month']}-${part['day']} ${part['hour']}:${part['minute']}:${part['second']}Z`
+  return part
+}
+
+/**
+ * A stretch between two UTC instants, the date said once where both fall on the same day:
+ * `2026-10-12 20:57:34Z → 20:59:06Z`. A deployment's first and last session start.
+ */
+export function utcSpan(from: string | null, to: string | null): string {
+  const start = utcParts(from)
+  const end = utcParts(to)
+  const sameDay = start !== null && end !== null
+    && start['year'] === end['year'] && start['month'] === end['month'] && start['day'] === end['day']
+  return `${utcInstant(from)} → ${sameDay ? `${end['hour']}:${end['minute']}:${end['second']}Z` : utcInstant(to)}`
 }
 
 /**
@@ -156,11 +175,25 @@ export function sortInstant(iso: string): number {
   return Number.isNaN(at) ? 0 : at
 }
 
-/** Sign class for P&L-denominated cells. Empty for zero — no colour claim on a flat result. */
-export function signClass(value: number): string {
+/**
+ * Two sizes compared larger first, for a sort. One that could not be read (`null`) sorts last: it
+ * is no figure, and certainly not the smallest.
+ */
+export function largerFirst(a: number | null, b: number | null): number {
+  return (b ?? -1) - (a ?? -1)
+}
+
+/** The polarity of a figure, by its sign — the one rule behind every colour that says gain or loss. */
+export function polarity(value: number): Polarity {
   if (value > 0) return 'positive'
   if (value < 0) return 'negative'
-  return ''
+  return 'flat'
+}
+
+/** Sign class for P&L-denominated cells. Empty for zero — no colour claim on a flat result. */
+export function signClass(value: number): string {
+  const sign = polarity(value)
+  return sign === 'flat' ? '' : sign
 }
 
 /**
@@ -175,6 +208,17 @@ export function signClass(value: number): string {
  */
 export function magnitude(value: number, currency: string): string {
   return amount(Math.abs(value), currency)
+}
+
+/**
+ * The time of day of a reading, in the reader's own zone — `19:03:45`: for a figure measured just
+ * now, whose date says nothing. A stamp that is not a date is shown as it came. One copy for the
+ * menu bar's machine status and the Activities panel.
+ */
+export function clockTime(iso: string): string {
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return iso
+  return new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(at)
 }
 
 /**

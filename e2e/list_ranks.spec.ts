@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_RUN } from './api_mock'
-import { openWith } from './arrangement_seed'
+import { openWith, showPanel, FIXTURES_SHOWN } from './arrangement_seed'
 import { expectHeadingsReadable } from './list_geometry'
 
 /**
@@ -140,7 +140,7 @@ async function expectFiguresRightAligned(page: Page, selector: string): Promise<
 const RUN_LISTS = ['.run-list', '.roster-list', '.trade-list', '.periods-list', '.order-list']
 
 /** The panels those lists live in. Closed by default, so each has to be asked for. */
-const PANELS = ['Scenarios', 'Trade History', 'Booking Periods', 'Orders']
+const PANELS = ['Scenarios', 'Trade history', 'Booking periods', 'Orders']
 
 // 1800 is above the 80rem rung and 1300 is below it — without a width on each side the fifth
 // tier is never exercised, and a rung nothing measures is a rung nobody knows is broken
@@ -230,7 +230,9 @@ for (const width of WIDTHS) {
  * breakpoint that changes nothing, which is worse than no breakpoint because it is believed.
  */
 test('every ranked list gives columns up as it narrows', async ({ page }) => {
-  await page.setViewportSize({ width: 1900, height: 1200 })
+  // the widest every list can be: below the two columns of the first arrangement every panel is a
+  // tab of one group, at the full width of the dock — wider, the run list stands in a column of 470
+  await page.setViewportSize({ width: 1320, height: 1200 })
   await openEverything(page)
   const wide: Record<string, number> = {}
   for (const holder of HOLDERS) {
@@ -331,6 +333,22 @@ test('neither the run list nor the trade list scrolls sideways when narrow', asy
  * The edges compared are the INK's, through a Range over the contents, so a cell's padding does not
  * enter into it. The tolerance is the padding difference between a heading and a cell.
  */
+/**
+ * A run of two account currencies states two figures, one per line beside its trade count. The
+ * stacking was declared for the counts only, so the figures stood inline as `3.74 EUR-22.95 USD`:
+ * one figure minus another. Found on the browser pass of 2026-10-18.
+ */
+test('a run of two account currencies states each figure on its own line', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, ...FIXTURES_SHOWN })
+  await showPanel(page, 'Runs')
+  const figures = page.locator('.run-list .record-row.picked:not(.record-unseen) .run-pnl > span')
+  await expect(figures).toHaveCount(2)
+  const [first, second] = [(await figures.nth(0).boundingBox())!, (await figures.nth(1).boundingBox())!]
+  expect(second.y).toBeGreaterThanOrEqual(first.y + first.height - 1)
+  expect(Math.abs(first.x + first.width - (second.x + second.width))).toBeLessThan(2)
+})
+
 test('every figure cell stands under its own heading', async ({ page }) => {
   await page.setViewportSize({ width: 1900, height: 1200 })
   await openEverything(page)

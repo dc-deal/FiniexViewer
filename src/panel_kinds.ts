@@ -1,6 +1,7 @@
 import { defineAsyncComponent, defineComponent, h } from 'vue'
 import { allPanels } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
+import { useLayoutStore } from '@/stores/layout_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
@@ -17,6 +18,9 @@ function outcomeStatus(outcome: string | null): TabStatus | null {
   const failed = outcome === 'failed' || outcome === 'crashed'
   return { icon: failed ? 'status-error' : 'status-warning', word: outcome, role: failed ? 'error' : 'warning' }
 }
+
+/** The run bundle's kind: the panel whose column holds the run report's sections as its members. */
+export const RUN_BUNDLE = 'run'
 
 /**
  * Every kind of docked panel, in the SUGGESTED ORDER: from the general to the particular — a
@@ -38,6 +42,23 @@ export const PANEL_KINDS: PanelKind[] = [
     order: 1,
     opensByDefault: true,
     component: defineAsyncComponent(() => import('@/views/DeploymentsView.vue')),
+    // the deployment it follows is the one it chooses itself until a bundle shows it (#43)
+    relations: { memberOf: null, follows: ['deployment'], chooses: ['deployment', 'run'] },
+  },
+  {
+    /*
+     * The parameter searches (viewer#32): every sweep on record, and the chosen one's combinations
+     * ranked by the objective it declared — the order is the route's. Like a deployment, a sweep
+     * is a family of runs, so it stands beside the deployments; a combination opens its run.
+     */
+    id: 'sweeps',
+    title: t('Sweeps'),
+    description: t("Every parameter search on record, and the chosen one's combinations ranked by its own objective"),
+    icon: 'form-list',
+    order: 2,
+    opensByDefault: false,
+    component: defineAsyncComponent(() => import('@/views/SweepsView.vue')),
+    relations: { memberOf: null, follows: ['sweep'], chooses: ['sweep', 'run'] },
   },
   {
     // the LIST: a pick here chooses the run and brings its report to the front
@@ -46,29 +67,39 @@ export const PANEL_KINDS: PanelKind[] = [
     menuTitle: t('Run list'),
     description: t('The runs the backend has stored — pick one to read its report'),
     icon: 'form-list',
-    order: 2,
+    order: 3,
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunsView.vue')),
+    // it marks the chosen run on a list that stays whole: a list does not follow the pick it shows
+    relations: { memberOf: null, follows: [], chooses: ['run'] },
   },
   {
     /*
      * The BUNDLE a pick opens: the chosen run's report, its sections stacked one below the other as
      * its members, any of which opens as a panel of its own (viewer#31, 2026-10-14). The tab names
-     * the run, so two windows comparing two runs can be told apart at a glance.
+     * the run, so two windows comparing two runs can be told apart at a glance — and says *bundle*,
+     * the word the glossary gives the container, so the tab, the menu and ⇲ name it alike (#42).
      */
-    id: 'run',
-    title: t('Run'),
-    menuTitle: t('Run report'),
+    id: RUN_BUNDLE,
+    title: t('Run bundle'),
     subtitle: () => useRunsStore().selectedRunId,
-    description: t('A run and the reports it left behind'),
+    description: t('The report of the chosen run, its sections one below the other — any of them opens as a panel of its own'),
     icon: 'form-sheet',
-    order: 3,
+    order: 4,
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunReportView.vue')),
-    quickBar: defineAsyncComponent(() => import('@/components/RunsQuickBar.vue')),
     status: () => outcomeStatus(useRunsStore().selectedRun?.run_outcome ?? null),
+    // what the bundle offers about its own column, on its tab's ⋯ rather than in the Panels menu,
+    // which only shows and hides (#42)
+    actions: [
+      { id: 'collapse-all', title: t('Collapse all'), run: () => useLayoutStore().collapseAll() },
+      { id: 'reset-bundle', title: t('Reset bundle'), run: () => useLayoutStore().reset() },
+    ],
+    // its own line follows the run; what its members follow and choose its card adds while they
+    // stand in its column — a member open as a panel of its own takes its links with it
+    relations: { memberOf: null, follows: ['run'], chooses: [] },
   },
   {
     /*
@@ -80,13 +111,16 @@ export const PANEL_KINDS: PanelKind[] = [
     id: 'run-chart',
     title: t('Run chart'),
     subtitle: () => useRunChartStore().unit?.name ?? null,
-    description: t('One unit of the chosen run on its candles, its trades marked where they opened and closed'),
+    description: t('One unit of the chosen run on its candles, its positions marked where they opened and its trades where they closed'),
     icon: 'form-chart',
-    order: 4,
+    order: 5,
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunChartView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/RunChartQuickBar.vue')),
+    // the position chosen in a list moves what it shows — centred on it, its marks drawn larger —
+    // where that position is of the unit on show, so it is followed like the rest
+    relations: { memberOf: null, follows: ['run', 'units', 'position'], chooses: ['units'] },
   },
   {
     // the FREE chart: any market, no run — opened from the Panels menu
@@ -94,10 +128,42 @@ export const PANEL_KINDS: PanelKind[] = [
     title: t('Free chart'),
     description: t('Candles of the market data, by broker, symbol and timeframe'),
     icon: 'form-chart',
-    order: 5,
+    order: 6,
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/ChartView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/ChartQuickBar.vue')),
+    relations: { memberOf: null, follows: ['market'], chooses: ['market'] },
+  },
+  {
+    /*
+     * The drawing LAYERS of the chart last in front (viewer#41): each shown or hidden, drawn quiet,
+     * in front of or behind the others. Opened from the chart's quick bar, as a narrow split beside
+     * the chart it arranges — never as a tab over it.
+     */
+    id: 'layers',
+    title: t('Layers'),
+    description: t('What the chart last in front draws beside its candles, layer by layer — shown or hidden, quiet, in front of or behind the others'),
+    icon: 'form-list',
+    order: 7,
+    opensByDefault: false,
+    component: defineAsyncComponent(() => import('@/views/LayersView.vue')),
+    relations: { memberOf: null, follows: [], chooses: [], chartInFront: true },
+  },
+  {
+    /*
+     * What runs on the machine (viewer#49), from FiniexTestingIDE's activity list: opened from the
+     * Panels menu, which the menu bar's card names. It follows no link — the machine is one — and
+     * asks the list only while it is on show.
+     */
+    id: 'activities',
+    title: t('Activities'),
+    description: t('What runs on the machine right now — every backtest, sweep, session, import, the test suite and the server, with the memory each holds'),
+    icon: 'form-list',
+    order: 8,
+    opensByDefault: false,
+    component: defineAsyncComponent(() => import('@/views/ActivitiesView.vue')),
+    // an activity's label opens its run, or its sweep
+    relations: { memberOf: null, follows: [], chooses: ['run', 'sweep'] },
   },
 ]
 
@@ -106,7 +172,7 @@ export const PANEL_KINDS: PanelKind[] = [
  * the run list where none is yet (viewer#31, decided 2026-10-14).
  */
 export function firstActiveKind(): string {
-  return useContextStore().main.run.id !== null ? 'run' : 'runs'
+  return useContextStore().main.run.id !== null ? RUN_BUNDLE : 'runs'
 }
 
 /** The sections whose panel is a LIST; every other section reads as a sheet of figures. */
@@ -128,7 +194,7 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
   return {
     id: reportKindId(section.id),
     title: t(section.title),
-    description: t('A section of the run report as a panel of its own — ⇲ puts it back in the column'),
+    description: t('This section as a panel of its own — “Back into the bundle” on its tab puts it back'),
     icon: LIST_SECTIONS.has(section.id) ? 'form-list' : 'form-sheet',
     order: PANEL_KINDS.length + 1 + index,
     opensByDefault: false,
@@ -137,13 +203,11 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
       const { default: ReportSection } = await import('@/components/dock/ReportSection.vue')
       return defineComponent({ name: 'ReportSectionPanel', setup: () => () => h(ReportSection, { sectionId: section.id }) })
     }),
-    // the narrowing is said beside every section it reaches, and only there: a section it does not
-    // change would carry a statement about something else
-    ...(section.narrowing ? { quickBar: defineAsyncComponent(() => import('@/components/RunsQuickBar.vue')) } : {}),
     status: () => useRunSectionsStore().failuresOf(section.source).length
       ? { icon: 'status-error', word: t('could not be loaded'), role: 'error' }
       : null,
     muted: () => useRunSectionsStore().lacks(section.source),
+    relations: { memberOf: RUN_BUNDLE, follows: section.follows, chooses: section.chooses },
   }
 }
 
@@ -159,4 +223,9 @@ const REPORT_KINDS: PanelKind[] = allPanels().map(reportKind)
 /** A kind by its id, or null for one this version does not know — a stored panel can outlive it. */
 export function panelKind(id: string): PanelKind | null {
   return PANEL_KINDS.find(kind => kind.id === id) ?? REPORT_KINDS.find(kind => kind.id === id) ?? null
+}
+
+/** Every kind there is: the top level and one per section of the run report. */
+export function allPanelKinds(): PanelKind[] {
+  return [...PANEL_KINDS, ...REPORT_KINDS]
 }

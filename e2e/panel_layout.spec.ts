@@ -71,7 +71,7 @@ for (const width of WIDTHS) {
  * panel's height went by before the first section. The run line ends in an ellipsis, and the
  * sections are switched in the Panels menu since the bar retired (2026-10-14).
  */
-test('a narrow Runs panel keeps its run line to one line', async ({ page }) => {
+test('a narrow run bundle keeps its run line to one line', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   const line = (await page.locator('.picker-chosen .chosen-id').boundingBox())!
@@ -96,6 +96,26 @@ test('the Panels menu switches a section in the column off and on again', async 
   await expect(entry).toHaveAttribute('data-place', 'column')
 })
 
+/**
+ * The bundle's own commands are on its tab, behind ⋯ (viewer#42). A control inside a dockview tab
+ * shares the tab's pointer handling, which jsdom does not have, so the click is proven here.
+ */
+test('⋯ on the bundle tab folds every section and resets the bundle', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const unfolded = page.locator('.panels .panel-chevron.expanded')
+  await expect(unfolded.first()).toBeVisible()
+  const more = page.locator('.panel-tab[data-kind="run"] .panel-tab-more')
+
+  await more.click()
+  await page.locator('.menu-item[data-action="collapse-all"]').click()
+  await expect(unfolded).toHaveCount(0)
+
+  await more.click()
+  await page.locator('.menu-item[data-action="reset-bundle"]').click()
+  await expect(unfolded.first()).toBeVisible()
+})
+
 /** The same line on the deployment side: it took three lines and broke `Change deployment` in two. */
 test('a narrow Deployments panel keeps its deployment line to one line', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 900 })
@@ -106,4 +126,34 @@ test('a narrow Deployments panel keeps its deployment line to one line', async (
   await expect(line).toBeVisible()
   const id = (await line.locator('.chosen-id').boundingBox())!
   expect((await line.boundingBox())!.height).toBeLessThan(id.height * 1.5)
+})
+
+/**
+ * A list's heading sticks flush to the top of the area it scrolls in. With room above it inside the
+ * area, whatever scrolled past showed through that room — the trade history, the orders and a
+ * deployment's sessions, seen on screen 2026-10-20.
+ */
+test('a list heading sticks flush to the top of the area it scrolls in', async ({ page }) => {
+  // low enough that the trade history, open as a panel of its own, has to scroll
+  await page.setViewportSize({ width: 1300, height: 460 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const header = page.locator('.panel-column .panel-header', { hasText: 'Trade history' })
+  await header.hover()
+  await header.locator('[data-action="open-as-panel"]').click()
+  const panel = '[data-panel-kind="report-trade-history"]'
+  await expect(page.locator(`${panel} [data-panel="trade-history"]`)).toBeVisible()
+
+  const gap = await page.evaluate(selector => new Promise<number>(resolve => {
+    const area = document.querySelector<HTMLElement>(`${selector} .report-section`)!
+    area.scrollTop = 200
+    requestAnimationFrame(() => {
+      const edge = area.getBoundingClientRect().top + area.clientTop
+      // the row that stuck: the highest heading still at or below the edge — the others scrolled away
+      const tops = [...document.querySelectorAll<HTMLElement>(`${selector} .record-head > span`)]
+        .map(span => span.getBoundingClientRect().top - edge)
+        .filter(top => top >= -1)
+      resolve(Math.min(...tops))
+    })
+  }), panel)
+  expect(gap).toBeLessThanOrEqual(1)
 })

@@ -193,6 +193,27 @@ describe('RecordList — the card beside a row', () => {
     })
     expect(wrapper.findAllComponents(HoverCard)).toHaveLength(1)
   })
+
+  /**
+   * A read-only row can hold more than its columns too — the booking periods' rows. It stays no
+   * control, and it can be focused, so its card is not the pointer's alone.
+   */
+  it('gives a read-only row its card without making it a control', () => {
+    const wrapper = mountList({
+      inert: true,
+      rowCard: (row: unknown) => ({ title: asRow(row).unit, details: [] }),
+    })
+    expect(wrapper.findAllComponents(HoverCard)).toHaveLength(3)
+    const rows = wrapper.findAll('.record-row')
+    expect(rows.every(row => row.element.tagName !== 'BUTTON')).toBe(true)
+    expect(rows.every(row => row.attributes('tabindex') === '0' && row.classes('readable'))).toBe(true)
+  })
+
+  it('leaves a read-only row without a card out of the keyboard order', () => {
+    const rows = mountList({ inert: true }).findAll('.record-row')
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.some(row => row.attributes('tabindex') !== undefined)).toBe(false)
+  })
 })
 
 describe('RecordList — the card beside a group heading', () => {

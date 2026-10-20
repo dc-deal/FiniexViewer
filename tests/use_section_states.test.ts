@@ -36,4 +36,15 @@ describe('useSectionStates', () => {
     useRunReportsStore().loadingTradeHistory = false
     expect(stateOf('trade-history').absent).toBe(true)
   })
+
+  /**
+   * A section that failed to load is one the run carries: counted as absent it was struck in the
+   * Panels menu, and the emptied bundle said the run did not carry it.
+   */
+  it('does not call a section absent where it failed to load', () => {
+    useRunsStore().runs = [{ run_id: 'r1', has_reports: true } as RunInfo]
+    useContextStore().selectRun('r1')
+    useRunReportsStore().errors = { tradeHistory: 'Could not load the trade history: boom' }
+    expect(stateOf('trade-history').absent).toBe(false)
+  })
 })

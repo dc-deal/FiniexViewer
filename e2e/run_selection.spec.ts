@@ -31,6 +31,9 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
   await expect(row).toBeVisible()
   await row.click()
 
+  // at the suite's 1280 px the bundle is a tab beside the list, and a pick never covers the list
+  // it was made in
+  await page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="run"]') }).click()
   await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_RUN)
 
   // the Scenarios panel starts COLLAPSED (`defaultOpen: false` in the registry), so its rows are
@@ -127,10 +130,11 @@ test('a narrowed run list survives a reload', async ({ page }) => {
 
   const before = await page.locator('.run-list .record-row:not(.record-unseen)').count()
   // a term that narrows without emptying: the picker searches the run id and the SET name, and
-  // the capture holds several `demo_btcusd_bot` runs. The search stands folded into its button.
+  // the capture holds several `tunnel_swing` runs that stand alone — the list's default leaves a
+  // deployment's sessions to their own panel. The search stands folded into its button.
   await page.locator('.facet-search-toggle').first().click()
-  await page.locator('input.facet-search').first().fill('demo_btcusd')
-  await expect.poll(async () => (await storedBar(page, 'run-picker'))?.search).toBe('demo_btcusd')
+  await page.locator('input.facet-search').first().fill('tunnel_swing')
+  await expect.poll(async () => (await storedBar(page, 'runs'))?.search).toBe('tunnel_swing')
   const narrowed = await page.locator('.run-list .record-row:not(.record-unseen)').count()
   expect(narrowed).toBeGreaterThan(0)
   expect(narrowed).toBeLessThan(before)
@@ -163,7 +167,7 @@ test('picking a value leaves every chip exactly where it was', async ({ page }) 
   await chips.first().click()
   await page.locator('.facet-option').first().click()
   // the pick has landed once the bar stored it — an untouched bar stores nothing
-  await expect.poll(async () => (await storedBar(page, 'run-picker'))?.selection).toBeTruthy()
+  await expect.poll(async () => (await storedBar(page, 'runs'))?.selection).toBeTruthy()
 
   expect(await edges()).toEqual(before)
 })
@@ -180,7 +184,7 @@ test('picking a value leaves every chip exactly where it was', async ({ page }) 
  * So the column is asserted first: it fails for the old storage every time.
  */
 test('each browser tab keeps its own run and column across a reload, a new one starts from the last saved', async ({ page, context }) => {
-  const tradesOf = (tab: typeof page) => tab.locator('.panel-trigger', { hasText: 'Trade History' })
+  const tradesOf = (tab: typeof page) => tab.locator('.panel-trigger', { hasText: 'Trade history' })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
   await expect(tradesOf(page)).toHaveAttribute('aria-expanded', 'false')
@@ -200,6 +204,8 @@ test('each browser tab keeps its own run and column across a reload, a new one s
   const otherId = await other.locator('.run-id').getAttribute('title')
   expect(otherId).not.toBe(FIXTURE_RUN)
   await other.click()
+  // at 1280 px the pick leaves the bundle behind its list; the reader brings it forward
+  await second.locator('.dv-tab', { has: second.locator('.panel-tab[data-kind="run"]') }).click()
   await expect(second.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(otherId!)
 
   // the first tab, reloaded, still has its own column and its own run; the second its own run

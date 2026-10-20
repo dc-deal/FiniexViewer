@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import AppIcon from '@/components/base/AppIcon.vue'
+import { RUN_BUNDLE } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { onPanelShownAgain } from '@/composables/use_panel_visibility'
@@ -21,10 +23,10 @@ onPanelShownAgain(() => { void runsStore.loadRuns(true) })
 <template>
   <div class="runs-view">
     <!-- the INDEX failing is this panel's to say; the summary failing is the run report's -->
-    <p v-if="indexError" class="error-msg">{{ indexError }}</p>
+    <p v-if="indexError" class="error-msg"><AppIcon name="status-error" class="error-mark" />{{ indexError }}</p>
     <!-- a pick is a selection: the run's report comes to the front where it is open, and a report
          the reader closed stays closed — every other panel shows the run all the same -->
-    <RunPicker v-else @chosen="dock.reveal('run', 'selection')" />
+    <RunPicker v-else @chosen="dock.reveal(RUN_BUNDLE, 'selection', 'runs')" />
   </div>
 </template>
 
@@ -44,10 +46,18 @@ onPanelShownAgain(() => { void runsStore.loadRuns(true) })
   container-type: size;
 }
 
+/* the error role and its mark beside it — a colour never travels alone */
 .error-msg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
   margin: 0;
   color: var(--color-error);
   font-family: monospace;
   font-size: var(--font-size-sm);
+}
+
+.error-mark {
+  flex-shrink: 0;
 }
 </style>

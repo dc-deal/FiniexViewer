@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
+import { provideFillsPanel } from '@/composables/use_fills_panel'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestOpenInContext } from './open_in_context_harness'
 import type { TestOpenInContext } from './open_in_context_harness'
@@ -70,36 +71,48 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
     const wrapper = mountNarrowed({ ...MIXED, reconciles: false }, ['unit_a'])
     const scope = wrapper.find('.verdict-text .scope')
     expect(scope.text()).toBe('whole run')
-    expect(scope.attributes('title')).toContain('the periods below are those of the chosen scenario')
+    expect(scope.attributes('title')).toContain('the periods below are those of the scenario in focus')
   })
 
   it('says nothing about scope where nothing is narrowed', () => {
     const wrapper = mountNarrowed(MIXED, [])
     expect(wrapper.find('.verdict-text .scope').exists()).toBe(false)
-    expect(wrapper.find('.footnote .scope').exists()).toBe(false)
   })
 
   /**
-   * The deepest drawdown is taken across EVERY period and the final equity is the account's, so
-   * neither can be split per scenario. Left unlabelled under a narrowed chart they read as the
-   * chosen scenario's.
+   * No run-wide figure under the table (2026-10-19): the final equity over all accounts stands in
+   * the executive summary with the account's deepest drawdown, and a unit's deepest period
+   * drawdown on its total's card. The line was never read, and it pushed the table up.
    */
-  it('marks the footnote figures as the run\'s', () => {
-    const wrapper = mountNarrowed(MIXED, ['unit_a'])
-    expect(wrapper.find('.footnote .scope').text()).toBe('whole run')
+  it('prints no run-wide figure under the table', () => {
+    const text = mountPanel(report({})).text()
+    expect(text).not.toContain('Deepest period drawdown')
+    expect(text).not.toContain('Final equity, all accounts')
   })
 
-  /**
-   * A run that booked no period at all states no figure in its currency, and the backend serves
-   * `total_final_equity` as null there. `Intl.NumberFormat` formats null as `0.00` without
-   * complaining, so the footnote printed a closing equity nobody reported. Measured 2026-10-01 on
-   * `20260924_165923_4d6c2f5f` — one run of 45, which is exactly how long such a figure survives.
-   */
-  it('leaves out a closing equity the run never reported, rather than printing it as zero', () => {
-    const wrapper = mountPanel(report({ total_final_equity: null }))
-    const footnote = wrapper.find('.footnote').text()
-    expect(footnote).toContain('Deepest period drawdown')
-    expect(footnote).not.toContain('Final equity')
+  /** A panel of its own gives the table the height the rest leaves; in the bundle's column it keeps its cap. */
+  it('lets the period table fill a panel of its own, and only there', () => {
+    const Alone = defineComponent({
+      setup() {
+        provideFillsPanel()
+        return () => h(BookingPeriodsPanel, { model: BASE })
+      },
+    })
+    const alone = mount(Alone)
+    expect(alone.find('.booking-periods').classes()).toContain('filling')
+    expect(alone.findComponent(BookingPeriodTable).props('fill')).toBe(true)
+    const stacked = mountPanel(BASE)
+    expect(stacked.find('.booking-periods').classes()).not.toContain('filling')
+    expect(stacked.findComponent(BookingPeriodTable).props('fill')).toBe(false)
+  })
+
+  /** A total stands under its unit's periods, so a unit the narrowing left out has none. */
+  it('draws the total of the scenario in focus only', () => {
+    const several = report({ unit_totals: BASE.unit_totals.map(total => ({ ...total, period_count: 2 })) })
+    const wrapper = mountNarrowed(several, [BASE.periods[0]!.unit_name])
+    const totals = wrapper.findAll('.unit-total')
+    expect(totals).toHaveLength(1)
+    expect(totals[0]!.text()).toContain(BASE.periods[0]!.unit_name)
   })
 
   it('draws the lanes of every chosen scenario, not just the first', () => {
@@ -111,7 +124,7 @@ describe('BookingPeriodsPanel — narrowed to one scenario', () => {
   // A scenario the run declared but that booked nothing — a statement about it, not a bad match.
   it('says the chosen scenario booked nothing, rather than the run', () => {
     const wrapper = mountNarrowed(MIXED, ['unit_c'])
-    expect(wrapper.find('.hint').text()).toContain('The chosen scenario booked no periods')
+    expect(wrapper.find('.hint').text()).toContain('The scenario in focus booked no periods')
   })
 })
 
@@ -182,14 +195,15 @@ describe('BookingPeriodsPanel — the reconciliation', () => {
 
   it('names the other account currencies without repeating the one on show', () => {
     const wrapper = mountPanel(report({ currency: 'JPY', currencies: ['JPY', 'USD'] }))
-    const footnote = wrapper.find('.footnote').text()
-    expect(footnote).toContain('USD')
-    expect(footnote).not.toContain('JPY, ')
+    const note = wrapper.find('.currencies-note').text()
+    expect(note).toContain('USD')
+    expect(note).not.toContain('JPY')
   })
 
+  /** The rows are one currency's: only where the run booked another is there anything to say. */
   it('stays silent about other currencies when there are none', () => {
-    const wrapper = mountPanel(report({ currencies: [] }))
-    expect(wrapper.find('.footnote').text()).not.toContain('Other account currencies')
+    expect(mountPanel(report({ currencies: [] })).find('.currencies-note').exists()).toBe(false)
+    expect(mountPanel(report({ currency: 'JPY', currencies: ['JPY'] })).find('.currencies-note').exists()).toBe(false)
   })
 })
 
@@ -199,6 +213,19 @@ describe('BookingPeriodTable', () => {
       props: { periods, keyFields: ['unit_name', 'period_no'], showRun },
     })
   }
+
+  /** The panel keeps whether the list is open: the table takes it, and reports the reader's toggle. */
+  it('opens as its panel says, and reports a toggle', async () => {
+    const wrapper = mount(BookingPeriodTable, {
+      props: { periods: [period()], keyFields: ['unit_name', 'period_no'], open: true },
+    })
+    const details = wrapper.find('details').element as HTMLDetailsElement
+    expect(details.open).toBe(true)
+    details.open = false
+    // jsdom fires `toggle` as a task of its own, not within the tick that changed it
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(wrapper.emitted('update:open')?.at(-1)).toEqual([false])
+  })
 
   /** Where the rows span several runs, a row's run is the way into it — given a host to go to. */
   it('opens the run a period belongs to', async () => {
@@ -215,6 +242,66 @@ describe('BookingPeriodTable', () => {
     })
     await mount(Host).find('.jump-link').trigger('click')
     expect(way.opened).toEqual([{ what: 'run', id: 'run_b' }])
+  })
+
+  /**
+   * The ledger's sum line: each unit's served total after its last period, in the same columns
+   * (#46). Max DD there is the deepest SINGLE period, which is what the column shows; the account's
+   * own decline across the boundaries is in the total's card.
+   */
+  describe('the total line of a unit', () => {
+    const [first, second] = [BASE.periods[0] as BookingPeriodRow, BASE.periods[1] as BookingPeriodRow]
+    const totals = BASE.unit_totals
+      .filter(total => [first.unit_name, second.unit_name].includes(total.unit_name))
+      // several periods each: a unit of one would repeat its row, and draws no total
+      .map(total => total.unit_name === first.unit_name
+        ? { ...total, period_count: 3, deepest_period_drawdown: 34.1, account_max_drawdown: 66.5 }
+        : { ...total, period_count: 2 })
+
+    function mountWithTotals() {
+      return mount(BookingPeriodTable, {
+        props: { periods: [first, second], keyFields: ['unit_name', 'period_no'], unitTotals: totals },
+      })
+    }
+
+    it('closes each unit with its total, after its last period', () => {
+      const rows = mountWithTotals().findAll('.periods-list .record-row:not(.record-unseen)')
+      expect(rows.map(row => row.classes('unit-total'))).toEqual([false, true, false, true])
+      expect(rows[1]!.text()).toContain(`Σ ${first.unit_name}`)
+    })
+
+    it('shows the deepest single period in its Max DD, and leaves the account decline to its card', () => {
+      const total = mountWithTotals().find('.unit-total')
+      expect(total.text()).toContain('34.10')
+      expect(total.text()).not.toContain('66.50')
+    })
+
+    /** Read-only rows, and still reachable: the card holds what a narrow panel's columns gave up. */
+    it('carries a card on every row, reachable by the keyboard and no control', () => {
+      const rows = mountWithTotals().findAll('.periods-list .record-row:not(.record-unseen)')
+      expect(rows.length).toBeGreaterThan(0)
+      for (const row of rows) {
+        expect(row.classes('readable')).toBe(true)
+        expect(row.attributes('tabindex')).toBe('0')
+        expect(row.element.tagName).not.toBe('BUTTON')
+      }
+    })
+
+    it('draws no total where none is served, as on the deployment view', () => {
+      expect(mountTable([first, second]).find('.unit-total').exists()).toBe(false)
+    })
+
+    /** One period's total is that period again, figure for figure — nothing a reader is missing. */
+    it('draws no total for a unit of one period', () => {
+      const single = mount(BookingPeriodTable, {
+        props: {
+          periods: [first],
+          keyFields: ['unit_name', 'period_no'],
+          unitTotals: [{ ...totals[0]!, period_count: 1 }],
+        },
+      })
+      expect(single.find('.unit-total').exists()).toBe(false)
+    })
   })
 
   it('names a period\'s run as plain text where nothing can open it', () => {
@@ -399,6 +486,9 @@ describe('BookingPeriodTimeline', () => {
   it('drops a period whose timestamps cannot be read rather than guessing one', () => {
     const wrapper = mountTimeline([period(), period({ opened_at: 'not a time' })])
     expect(wrapper.findAll('.span')).toHaveLength(1)
+    // nor does the dropped one speak beside the scale: the year there is the drawn periods'
+    expect(wrapper.find('.axis-spacer').text()).toBe('canonical clock · Oct 2025')
+    expect(wrapper.html()).not.toContain('NaN')
   })
 
   it('renders nothing at all when there is nothing to place', () => {
@@ -527,10 +617,12 @@ describe('BookingPeriodTimeline — what a lane is', () => {
         order: 'time',
       },
     })
-    // the ledger window is 2026-09-22; the periods are 2026-01-24/25 and the axis follows them
-    const note = wrapper.find('.axis').attributes('title') ?? ''
-    expect(note).toContain('2026-01-24')
-    expect(note).not.toContain('23:1')
+    // the ledger window is 2026-09-22; the periods are 2026-01-24/25 and the axis follows them —
+    // across midnight, so the day turns over on a mark rather than being named once for all
+    expect(wrapper.find('.axis-spacer').text()).toBe('canonical clock · Jan 2026')
+    const ticks = wrapper.findAll('.tick').map(node => node.text())
+    expect(ticks).toContain('25 Jan')
+    expect(ticks.join(' ')).not.toContain('23:1')
   })
 
   /**
@@ -740,5 +832,64 @@ describe('BookingPeriodTimeline — many short slices', () => {
     const wrapper = mountSlices()
     expect(wrapper.find('.gap-label.summary').exists()).toBe(false)
     expect(wrapper.findAll('.gap-label').length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * A year of booking periods is the ordinary case for a bot tested a year at a time (measured
+ * 2026-10-19: 203 and 162 daily periods in two lanes). Its axis marked nothing but its two ends, the
+ * end without a date, and the year stood nowhere.
+ */
+describe('BookingPeriodTimeline — a long scale', () => {
+  const HOUR = 3600_000
+
+  function mountTimeline(periods: BookingPeriodRow[]) {
+    return mount(BookingPeriodTimeline, { props: { periods, keyFields: ['unit_name', 'period_no'], order: 'time' } })
+  }
+
+  /** Twelve periods of a month each, one unit, 2021 from end to end. */
+  function year(): BookingPeriodRow[] {
+    return Array.from({ length: 12 }, (_, index) => period({
+      unit_name: 'alpha',
+      period_no: index + 1,
+      opened_at: new Date(Date.UTC(2021, index, 1, 0, 0, 6)).toISOString(),
+      closed_at: new Date(index < 11 ? Date.UTC(2021, index + 1, 1, 0, 0, 4) : Date.UTC(2021, 11, 31, 23, 59))
+        .toISOString(),
+    }))
+  }
+
+  it('marks a year by its quarters and says the year once, beside the scale', () => {
+    const wrapper = mountTimeline(year())
+    expect(wrapper.findAll('.tick').map(node => node.text())).toEqual(['Apr', 'Jul', 'Oct'])
+    expect(wrapper.find('.axis-spacer').text()).toBe('canonical clock · 2021')
+  })
+
+  /** Across New Year the years stand beside the scale, and the mark where the year turns over names it. */
+  it('names the years of a scale that crosses New Year', () => {
+    const wrapper = mountTimeline([
+      period({ unit_name: 'alpha', opened_at: '2021-11-01T00:00:06Z', closed_at: '2022-02-01T00:00:00Z' }),
+    ])
+    expect(wrapper.find('.axis-spacer').text()).toBe('canonical clock · 2021–2022')
+    expect(wrapper.findAll('.tick').map(node => node.text())).toEqual(['Dec', '2022', 'Feb'])
+  })
+
+  /** Down to its two ends, the axis ends where the periods stop — not a round moment, so it names its day. */
+  it('gives an end its day where the scale spans days', () => {
+    const many = Array.from({ length: 6 }, (_, index) => ({
+      ...period({ unit_name: `unit_${index}`, period_no: 1 }),
+      run_id: `r${index}`,
+      opened_at: new Date(index * 300 * HOUR).toISOString(),
+      closed_at: new Date(index * 300 * HOUR + HOUR).toISOString(),
+    }))
+    const ticks = mountTimeline(many).findAll('.tick').map(node => node.text())
+    expect(ticks.at(-1)).toBe('04 Mar 13:00Z')
+  })
+
+  /** Shorter than a day and still across midnight: no single day holds every mark. */
+  it('names one day for the scale only where every mark falls on it', () => {
+    const across = mountTimeline([period({ opened_at: '2021-03-01T23:00:00Z', closed_at: '2021-03-02T01:00:00Z' })])
+    expect(across.find('.axis').attributes('title')).not.toContain('All times on')
+    const inside = mountTimeline([period({ opened_at: '2021-03-01T09:00:00Z', closed_at: '2021-03-01T17:00:00Z' })])
+    expect(inside.find('.axis').attributes('title')).toContain('All times on 2021-03-01')
   })
 })

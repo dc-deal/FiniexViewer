@@ -2,7 +2,7 @@ import { provideOpenInContext } from '@/composables/use_open_in_context'
 
 /** Where the panels tried to send the reader, in the order they asked. */
 export interface TestOpenInContext {
-  opened: { what: 'run' | 'deployment', id: string }[]
+  opened: { what: 'run' | 'deployment' | 'sweep', id: string }[]
 }
 
 /**
@@ -20,6 +20,7 @@ export function provideTestOpenInContext(canOpen = true): TestOpenInContext {
     openDeployment: (deploymentId: string) => {
       state.opened.push({ what: 'deployment', id: deploymentId })
     },
+    openSweep: (sweepId: string) => { state.opened.push({ what: 'sweep', id: sweepId }) },
     canOpen,
   })
   return state

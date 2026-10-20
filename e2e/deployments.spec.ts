@@ -133,6 +133,42 @@ test('a chosen deployment survives a reload', async ({ page }) => {
   await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
 })
 
+/**
+ * A LOW view cannot hold the list and the history together (operator, 2026-10-20): a third of it
+ * for the list left a strip for the history. While the list stands open it takes the view alone,
+ * and a pick brings the history back. The view is forced low, as a panel sharing the screen is.
+ */
+test('in a low view the open list stands alone, and a pick brings the history back', async ({ page }) => {
+  await page.setViewportSize({ width: 1300, height: 1000 })
+  await openLedger(page)
+  await page.addStyleTag({ content: '.deployments-view { height: 400px !important; }' })
+  const body = page.locator('.deployments-body')
+  await expect(body).toBeHidden()
+
+  // the list takes the rest of the view, not a third of it
+  const list = (await page.locator('.deployment-list').boundingBox())!
+  const view = (await page.locator('.deployments-view').boundingBox())!
+  expect(list.y + list.height).toBeGreaterThan(view.y + view.height - 40)
+
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Change deployment' }).click()
+  await expect(body).toBeHidden()
+})
+
+test('a tall view keeps the open list and the history together', async ({ page }) => {
+  await page.setViewportSize({ width: 1300, height: 1000 })
+  await openLedger(page)
+  const view = (await page.locator('.deployments-view').boundingBox())!
+  // taller than the threshold, or this would measure the low case twice
+  expect(view.height).toBeGreaterThan(640)
+
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.getByRole('button', { name: 'Change deployment' }).click()
+  await expect(page.locator('.deployment-list')).toBeVisible()
+  await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
+})
+
 test('a stored deployment the ledger no longer lists says so', async ({ page }) => {
   await openWith(page, '/', { deployment: 'deploy_gone' })
   await showPanel(page, 'Deployments')
@@ -178,14 +214,20 @@ test('the timeline marks round moments rather than overlapping stamps', async ({
     expect(mark.length).toBeLessThan(12)
   }
 
-  // and they do not overlap, which is the defect the format replaced
-  const boxes = await page.locator('.timeline .tick').evaluateAll(
-    list => list.map(element => element.getBoundingClientRect())
-      .sort((a, b) => a.left - b.left)
-      .map(box => [box.left, box.right] as const)
-  )
-  for (let index = 1; index < boxes.length; index += 1) {
-    expect(boxes[index]![0], `mark ${index} overlaps the one before it`)
-      .toBeGreaterThanOrEqual(boxes[index - 1]![1] - 1)
-  }
+  // and they do not overlap, which is the defect the format replaced — on the same line: a label
+  // staggered onto the second line may stand under another. Once MEASURED: the first frame lays the
+  // marks out by percentages, the way jsdom does, and in a narrow panel those can touch until the
+  // axis has its width (read here at a column of 470 px, 2026-10-20).
+  await expect(async () => {
+    const boxes = await page.locator('.timeline .tick').evaluateAll(
+      list => list.map(element => element.getBoundingClientRect())
+        .sort((a, b) => a.top - b.top || a.left - b.left)
+        .map(box => [Math.round(box.top), box.left, box.right] as const)
+    )
+    for (let index = 1; index < boxes.length; index += 1) {
+      if (boxes[index]![0] !== boxes[index - 1]![0]) continue
+      expect(boxes[index]![1], `mark ${index} overlaps the one before it`)
+        .toBeGreaterThanOrEqual(boxes[index - 1]![2] - 1)
+    }
+  }).toPass({ timeout: 3000 })
 })

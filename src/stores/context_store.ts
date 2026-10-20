@@ -19,6 +19,7 @@ export function emptyLink(): LinkContext {
   return {
     run: { id: null, units: [], position: null },
     deployment: { id: null },
+    sweep: { id: null },
     market: { broker: null, symbol: null },
   }
 }
@@ -72,6 +73,11 @@ export const useContextStore = defineStore('context', () => {
     main.value.deployment = { id }
   }
 
+  /** Only writes the context — a reader choosing one goes through `useSweepsStore().selectSweep`. */
+  function selectSweep(id: string | null): void {
+    main.value.sweep = { id }
+  }
+
   /** A broker has its own symbols, so the symbol of the last one is cleared with it. */
   function setBroker(broker: string | null): void {
     main.value.market = { broker, symbol: null }
@@ -95,6 +101,7 @@ export const useContextStore = defineStore('context', () => {
     clearUnits,
     mark,
     selectDeployment,
+    selectSweep,
     setBroker,
     setSymbol,
     restore,

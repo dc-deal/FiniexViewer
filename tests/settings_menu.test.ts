@@ -5,6 +5,7 @@ import TopMenu from '@/components/TopMenu.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
+import { SCHEMA_VERSION } from '@/stores/layout_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { hintIds } from '@/hint_registry'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
@@ -80,7 +81,7 @@ async function pickFile(text: string, name = 'layout.json'): Promise<void> {
 }
 
 const A_LAYOUT = JSON.stringify({
-  version: 1,
+  version: SCHEMA_VERSION,
   active: 'report',
   layouts: { report: { columns: [{ width: 1, panels: [] }], hidden: [] } },
 })

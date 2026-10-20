@@ -32,7 +32,7 @@ test('a session opens the run it is', async ({ page }) => {
 
 test('a run opens the deployment it was a session of', async ({ page }) => {
   await openWith(page, '/', { run: FIRST_SESSION })
-  const header = page.locator('.panel-trigger', { hasText: 'Run Header' })
+  const header = page.locator('.panel-trigger', { hasText: 'Run header' })
   if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click()
   await page.locator('.jump-link', { hasText: FIXTURE_DEPLOYMENT }).click()
 

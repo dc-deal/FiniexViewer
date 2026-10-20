@@ -1,20 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { DockviewPanelApi } from 'dockview-vue'
+import {
+  DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger,
+} from 'reka-ui'
 import AppIcon from '@/components/base/AppIcon.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
-import { panelKind, sectionOfKind } from '@/panel_kinds'
+import { tabCard } from '@/components/dock/tab_card'
+import { useSectionStates } from '@/composables/use_section_states'
+import { RUN_BUNDLE, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
-import type { Figure } from '@/types/figure_types'
+import type { PanelKind } from '@/types/panel_types'
 import { t } from '@/translate'
 
 /**
  * A panel's tab: the FORM it takes, its title, and one status where the status says something. The
  * icon is a list or a chart rather than the content, so two lists read alike and the title tells
- * them apart. Its card says what the panel is for, and the status in words.
+ * them apart. Its card says what the panel is for, the bundle it belongs to, what it follows and
+ * chooses, and the status in words (`tab_card.ts`).
  *
  * Its ✕ HIDES the panel, alike for every panel — the Panels menu shows it again where it stood. A
- * section of the run report opened as a panel also carries ⇲, which puts it back into the column.
+ * section of the run bundle opened as a panel also carries ⇲, which puts it back into the bundle,
+ * and a kind that offers commands about itself carries ⋯ with them (`PanelKind.actions`).
  *
  * @param kindId The panel's kind.
  * @param api The panel's own handle in the dock, which also closes it.
@@ -39,15 +46,62 @@ const status = computed(() => kind?.status?.() ?? null)
 /** The panel stands with nothing of the chosen run to show — said by the title, never by hiding. */
 const muted = computed(() => kind?.muted?.() ?? false)
 
-const details = computed<Figure[]>(() => [
-  ...(kind ? [{ label: t('Shows'), value: kind.description }] : []),
-  ...(status.value ? [{ label: t('Status'), value: status.value.word, tone: status.value.role }] : []),
-])
+/** The run bundle's members standing in its column, whose links its card says as its own. */
+const states = kind?.id === RUN_BUNDLE ? useSectionStates() : null
+const members = computed<PanelKind[]>(() => (states?.value ?? [])
+  .filter(state => state.place === 'column' && !state.absent)
+  .flatMap(state => panelKind(reportKindId(state.section.id)) ?? []))
+
+/** Built where the tab is drawn, so the subtitle, the status and the members follow their stores. */
+const card = computed(() => tabCard(kind, props.api.title ?? props.kindId, members.value))
+
+/**
+ * The card for the KEYBOARD as well. Dockview keeps a tab's focus on its own element around this
+ * one, so the card's trigger never hears it; the tab's focus is listened to there instead — and only
+ * a keyboard focus opens it, since a click focuses the tab too and the pointer has its own way in.
+ */
+const root = ref<HTMLElement | null>(null)
+const pointed = ref(false)
+const focused = ref(false)
+let tabElement: HTMLElement | null = null
+
+function keyboardFocus(element: HTMLElement): boolean {
+  try {
+    return element.matches(':focus-visible')
+  } catch {
+    // an engine that does not know the selector: no keyboard card, and the pointer still has one
+    return false
+  }
+}
+
+function onFocusIn(event: FocusEvent): void {
+  focused.value = event.target === tabElement && keyboardFocus(tabElement!)
+}
+
+function onFocusOut(): void {
+  focused.value = false
+}
+
+onMounted(() => {
+  tabElement = root.value?.closest<HTMLElement>('.dv-tab') ?? null
+  tabElement?.addEventListener('focusin', onFocusIn)
+  tabElement?.addEventListener('focusout', onFocusOut)
+})
+
+onUnmounted(() => {
+  tabElement?.removeEventListener('focusin', onFocusIn)
+  tabElement?.removeEventListener('focusout', onFocusOut)
+})
 </script>
 
 <template>
-  <HoverCard :title="subtitle ? `${title} · ${subtitle}` : title" :details="details">
-    <div class="panel-tab" :data-kind="kindId">
+  <HoverCard
+    :title="card.title"
+    :details="card.details"
+    :open="pointed || focused"
+    @update:open="value => pointed = value"
+  >
+    <div ref="root" class="panel-tab" :data-kind="kindId">
       <AppIcon v-if="kind" :name="kind.icon" class="panel-tab-icon" />
       <span class="panel-tab-title" :class="{ muted }">{{ title }}</span>
       <span v-if="subtitle" class="panel-tab-subtitle">· {{ subtitle }}</span>
@@ -62,12 +116,35 @@ const details = computed<Figure[]>(() => [
       >
         <AppIcon :name="status.icon" />
       </span>
+      <DropdownMenuRoot v-if="kind?.actions?.length">
+        <DropdownMenuTrigger
+          class="panel-tab-button panel-tab-more"
+          :title="t('What this panel offers')"
+          :aria-label="t('Panel commands')"
+        >
+          <AppIcon name="action-more" />
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent class="menu-content" :side-offset="4" align="start">
+            <DropdownMenuItem
+              v-for="action in kind.actions"
+              :key="action.id"
+              class="menu-item"
+              :data-action="action.id"
+              @select="action.run()"
+            >
+              <span class="menu-check" aria-hidden="true" />
+              {{ action.title }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
       <button
         v-if="section"
         type="button"
         class="panel-tab-button panel-tab-back"
-        :title="t('Back into the run report')"
-        :aria-label="t('Back into the run report')"
+        :title="t('Back into the bundle')"
+        :aria-label="t('Back into the bundle')"
         @click.stop="dock.backIntoColumn(section)"
       >
         <AppIcon name="action-back-into-column" />
@@ -134,7 +211,8 @@ const details = computed<Figure[]>(() => [
 }
 
 /* the same two channels every control here has: the surface AND the border, then the press */
-.panel-tab-button:hover {
+.panel-tab-button:hover,
+.panel-tab-button[data-state='open'] {
   opacity: 1;
   background-color: var(--color-bg-hover);
   border-color: var(--color-border);

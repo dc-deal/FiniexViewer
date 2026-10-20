@@ -45,3 +45,61 @@ export interface MachineResources {
   /** One sentence per reason, written for a person and shown as it comes. Empty at `ok`. */
   pressure_reasons: string[]
 }
+
+/**
+ * One activity that runs on the machine — `GET /api/v1/activities` (contract 35), the backend's
+ * document `activities`. A row is the ACTIVITY, never its process: two activities can share one
+ * process — a sweep and the backtest of its current combination — and a process id is reused.
+ */
+export interface ActivityRow {
+  activity_id: string
+  /**
+   * Their vocabulary — `backtest`, `sweep`, `autotrader_session`, `import`, `discovery_cache_build`,
+   * `test_suite`, `api_server` — typed `string`: a kind this version does not know is shown as itself.
+   */
+  activity_kind: string
+  /** `running` on every row today; `queued`, `finished` and `failed` are declared for a queue to come. */
+  activity_state: string
+  /** What it is about, for a person: a scenario set, a profile, a sweep, an import's id. */
+  activity_label: string
+  run_id: string | null
+  sweep_id: string | null
+  /** The activity it runs inside — a sweep's backtest names its sweep. One no longer listed has ended. */
+  parent_activity_id: string | null
+  /** Information only: meaningful on that machine, while it runs. */
+  pid: number
+  command_line: string
+  started_at: string
+  uptime_s: number
+  /** The code it runs from: `.` for the code the server runs from, otherwise that code tree's name. */
+  working_tree: string
+  git_commit: string | null
+  /** Who started it, the way the run list states it; null where it was not recorded. */
+  origin_channel: string | null
+  origin_client: string | null
+  origin_principal: string | null
+  origin_host: string | null
+  console_session: string | null
+  /**
+   * The resident memory of its processes, an upper bound. `0` with `process_count: 0` where it runs
+   * inside its parent's process: its memory is the parent's. `null` where a process could not be
+   * read — never a zero in its place.
+   */
+  rss_bytes: number | null
+  process_count: number
+}
+
+/** What runs on the machine at one instant: `measured_at` first, everything else read right after. */
+export interface ActivityList {
+  key: string[]
+  measured_at: string
+  /** The block `/machine-resources` serves, read at the same instant as the rows. */
+  machine_memory: MachineMemory
+  pressure_level: string
+  pressure_reasons: string[]
+  /** The answering server's own row; null where it is not in the list, which may then be incomplete. */
+  server_activity_id: string | null
+  /** Activities that run but whose entry this server cannot read — written by another version of the code. */
+  unreadable_activity_ids: string[]
+  activities: ActivityRow[]
+}

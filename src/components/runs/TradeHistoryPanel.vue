@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
@@ -10,6 +10,7 @@ import {
 } from '@/components/runs/report_format'
 import { tradeDetails } from '@/components/runs/trade_card'
 import { useDisplaySettings } from '@/composables/use_display_settings'
+import { useViewRows } from '@/composables/use_panel_view'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import { rowKey } from '@/api/list_key'
@@ -66,9 +67,9 @@ const columns: ListColumn[] = [
   /*
    * LAST, where it was sixth, and the move is structural rather than cosmetic.
    *
-   * The group heading is three cells over eight tracks — the name over five, the net over one, the
-   * count and fees over the last two. That arithmetic is fixed at eight, and a rank that gives up
-   * a column leaves it spanning tracks the grid no longer has. Counted from the END it holds at
+   * The group heading was three cells over eight tracks — the name over five, the net over one, the
+   * count and fees over the last two. That arithmetic was fixed at eight, and a rank that gives up
+   * a column left it spanning tracks the grid no longer had. Counted from the END it holds at
    * every width: the name takes everything but the last track, the net takes the last one.
    *
    * Reading order gains by it besides. Opened · Held · worst · best · net is the life of the trade
@@ -246,7 +247,7 @@ function groupCard(group: ListGroup<TradeRow>): FigureCard | null {
     title: `${group.key} · ${total.currency}`,
     details: [
       { label: t('Gross'), value: money(total.gross_pnl), tone: signClass(total.gross_pnl) },
-      { label: t('Net'), value: money(total.net_pnl), tone: signClass(total.net_pnl) },
+      { label: t('Net P&L'), value: money(total.net_pnl), tone: signClass(total.net_pnl) },
       { label: t('Fees'), value: `${money(total.total_fees)} · ${t('swap')} ${total.total_swap.toFixed(2)}` },
       {
         label: t('Spread'),
@@ -273,25 +274,34 @@ const unitCount = computed(() => new Set(shown.value.map(trade => trade.scenario
  */
 const summarised = computed(() => unitCount.value >= display.value.scenarioThreshold)
 
-/** A unit the reader has opened or closed by hand, which outranks the threshold for that unit. */
-const overrides = ref(new Map<string, boolean>())
+/**
+ * The run the panel's rows are kept for. A different RUN is a different set of units, so a choice
+ * made about the old one means nothing there.
+ *
+ * Its OWN id, never `props.model`. The model is composed by the host — a fresh object literal on
+ * every evaluation of its `sources` — so choices bound to its identity were forgotten whenever
+ * anything upstream re-evaluated, and the group a reader had just opened closed under them. The
+ * unit suite could not see it: there the model is a stable object.
+ */
+const runOf = () => props.model.run_id
 
 /**
- * A different RUN is a different set of units, so a choice made about the old one means nothing.
- *
- * Watched by the run's OWN id, never by `props.model`. The model is composed by the host — a fresh
- * object literal on every evaluation of its `sources` — so watching its identity forgets the
- * reader's choices whenever anything upstream re-evaluates, and the group they just opened closes
- * under them. The unit suite could not see it: there the model is a stable object.
+ * The units the reader has opened or closed by hand, which outrank the threshold for that unit —
+ * kept as the panel's own view for the run on show, so a remount finds them as they were.
  */
-watch(() => props.model.run_id, () => overrides.value.clear())
+const opened = useViewRows('groups-opened', runOf)
+const closed = useViewRows('groups-closed', runOf)
 
 function isExpanded(name: string): boolean {
-  return overrides.value.get(name) ?? !summarised.value
+  if (opened.has(name)) return true
+  if (closed.has(name)) return false
+  return !summarised.value
 }
 
 function toggleGroup(name: string): void {
-  overrides.value.set(name, !isExpanded(name))
+  const open = !isExpanded(name)
+  opened.set(name, open)
+  closed.set(name, !open)
 }
 
 /**
@@ -304,23 +314,19 @@ interface FillRow {
 }
 
 /**
- * The fills a reader has opened, by the trade's own key. Collapsed by default: measured on a real
- * run, every trade has one entry fill and one exit fill, so showing them always would treble the
- * list for two lines that matter on the 61 trades of 85 whose entry is SHARED with another trade.
+ * The fills a reader has opened, by the trade's own key — kept with the units for the run on show.
+ * Collapsed by default: measured on a real run, every trade has one entry fill and one exit fill, so
+ * showing them always would treble the list for two lines that matter on the 61 trades of 85 whose
+ * entry is SHARED with another trade.
  */
-const openFills = ref(new Set<string>())
-
-watch(() => props.model.run_id, () => openFills.value.clear())
+const fills = useViewRows('fills-open', runOf)
 
 function toggleFills(trade: TradeRow): void {
-  const key = rowKey(trade, tradeKey.value)
-  const open = new Set(openFills.value)
-  if (!open.delete(key)) open.add(key)
-  openFills.value = open
+  fills.toggle(rowKey(trade, tradeKey.value))
 }
 
 function showsFills(trade: TradeRow): boolean {
-  return openFills.value.has(rowKey(trade, tradeKey.value))
+  return fills.has(rowKey(trade, tradeKey.value))
 }
 
 function fillsOf(trade: TradeRow): FillRow[] {
@@ -417,7 +423,7 @@ function card(trade: TradeRow): FigureCard {
          the run declared is in the roster whether it traded or not -->
     <div v-if="!selected.length" class="hint">
       {{ narrowed
-        ? t('The chosen scenario closed no positions')
+        ? t('The scenario in focus closed no positions')
         : t('This run closed no positions') }}
     </div>
     <RecordList
@@ -588,11 +594,6 @@ function card(trade: TradeRow): FigureCard {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* the mark covers every trade of that position */
-.trade-list :deep(.record-row.marked) {
-  background-color: var(--color-bg-raised);
 }
 
 .group-name {

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { t, plural } from '@/translate'
+import { listed, t, plural } from '@/translate'
 
 describe('t', () => {
   // the marking is the point, not a lookup — a changed return value would be a silent translation
   it('returns its input unchanged', () => {
-    expect(t('Booking Periods')).toBe('Booking Periods')
+    expect(t('Booking periods')).toBe('Booking periods')
   })
 })
 
@@ -25,5 +25,14 @@ describe('plural', () => {
    */
   it('groups a large count the way every other figure is grouped', () => {
     expect(plural(13584, t('tick'), t('ticks'))).toBe(`${(13584).toLocaleString()} ticks`)
+  })
+})
+
+describe('listed', () => {
+  it('lists words the way an English sentence does', () => {
+    expect(listed([])).toBe('')
+    expect(listed(['the run'])).toBe('the run')
+    expect(listed(['the run', 'the position'])).toBe('the run and the position')
+    expect(listed(['a', 'b', 'c'])).toBe('a, b and c')
   })
 })

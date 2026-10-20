@@ -51,7 +51,7 @@ describe('AppMenuBar', () => {
   /** The menu reads the way the first arrangement does; the run report's column has a submenu. */
   it('offers the panels worked in, in the suggested order, each with the form it takes', async () => {
     const items = await openMenu('Panels')
-    expect(items.map(item => item.dataset['kind'] ?? item.dataset['area'])).toEqual(['deployments', 'runs', 'chart'])
+    expect(items.map(item => item.dataset['kind'] ?? item.dataset['area'])).toEqual(['deployments', 'sweeps', 'runs', 'chart', 'layers', 'activities'])
     expect(kindEntry('chart').querySelector('[data-icon="form-chart"]')).not.toBeNull()
   })
 
@@ -81,7 +81,7 @@ describe('AppMenuBar', () => {
     await openRunsSubmenu()
     // the area holds the run list and the run report, each by the name it has there
     expect(kindEntry('runs').textContent).toContain('Run list')
-    expect(kindEntry('run').textContent).toContain('Run report')
+    expect(kindEntry('run').textContent).toContain('Run bundle')
     const sections = [...document.querySelectorAll<HTMLElement>('.menu-toggle[data-section]')].map(node => node.dataset['section'])
     expect(sections).toEqual(useLayoutStore().arrangedPanels.map(panel => panel.id))
     expect(sections.length).toBe(allPanels().length)
@@ -140,19 +140,14 @@ describe('AppMenuBar', () => {
     expect(document.querySelectorAll('.menu-toggle.absent')).toHaveLength(0)
   })
 
-  it('collapses the column and resets it from the same submenu', async () => {
-    const layout = useLayoutStore()
-    const collapse = vi.spyOn(layout, 'collapseAll')
-    const reset = vi.spyOn(layout, 'reset')
+  /** The bundle's own commands are on its tab, behind ⋯ (viewer#42): this menu shows and hides. */
+  it('offers nothing in the submenu but showing and hiding', async () => {
     await openRunsSubmenu()
-
-    document.querySelector<HTMLElement>('[data-action="collapse-all"]')!.click()
-    await flushPromises()
-    await openRunsSubmenu()
-    document.querySelector<HTMLElement>('[data-action="reset-column"]')!.click()
-    await flushPromises()
-    expect(collapse).toHaveBeenCalledOnce()
-    expect(reset).toHaveBeenCalledOnce()
+    // the submenu is the content that lists the sections; the menu above it holds its trigger
+    const submenu = sectionEntry('executive').closest('.menu-content')!
+    const entries = [...submenu.querySelectorAll('[role^="menuitem"]')]
+    expect(entries.length).toBeGreaterThan(0)
+    expect(entries.every(entry => entry.getAttribute('role') === 'menuitemcheckbox')).toBe(true)
   })
 
   /** Whose access the viewer works under is part of the frame, beside the application menu. */
@@ -163,5 +158,21 @@ describe('AppMenuBar', () => {
   /** One way back to the suggested order, and it lives in the settings — not a menu of one entry. */
   it('offers no Layout menu of its own', () => {
     expect(mounted!.findAll('.menu-bar-trigger').map(node => node.text())).toEqual(['Panels ▾'])
+  })
+
+  /**
+   * The scenario in focus belongs to the link, not to a panel, so the frame says it ONCE for every
+   * panel it narrows (viewer#42), with the way back to the whole run beside it.
+   */
+  it('says the scenario in focus once, with the way back to the whole run', async () => {
+    expect(mounted!.find('.narrowed-head').exists()).toBe(false)
+    useContextStore().selectRun('r1')
+    useContextStore().toggleUnit('EURUSD_a')
+    await flushPromises()
+    expect(mounted!.findAll('.narrowed-head')).toHaveLength(1)
+    expect(mounted!.find('.narrowed-head').text()).toContain('Only EURUSD_a')
+
+    await mounted!.find('.narrowed-head button').trigger('click')
+    expect(useRunsStore().selectedUnits).toEqual([])
   })
 })

@@ -129,6 +129,15 @@ describe('DeploymentPicker', () => {
     expect(rows(wrapper)).toHaveLength(0)
   })
 
+  /** A low view gives the list the whole panel while it stands open, so the view has to know. */
+  it('says whether its list stands open', async () => {
+    const wrapper = mountPicker([deployment()])
+    expect(wrapper.emitted('listShown')?.at(-1)).toEqual([true])
+    useContextStore().selectDeployment('deploy_20260927_132812')
+    await flushPromises()
+    expect(wrapper.emitted('listShown')?.at(-1)).toEqual([false])
+  })
+
   /** The history below is what the reader came for, so the list gets out of the way. */
   it('collapses to one line once a deployment is chosen, and reopens on request', async () => {
     const wrapper = mountPicker([deployment()])
@@ -136,14 +145,39 @@ describe('DeploymentPicker', () => {
     await flushPromises()
 
     expect(wrapper.find('.picker-chosen').exists()).toBe(true)
-    expect(wrapper.find('.picker-chosen').text()).toContain('demo_btcusd_bot')
-    // one line in a narrow panel, the whole of it on hover
-    const meta = wrapper.find('.picker-chosen .chosen-meta')
-    expect(meta.attributes('title')).toBe(meta.text())
+    expect(wrapper.find('.picker-chosen .chosen-meta').text()).toBe('demo_btcusd_bot')
     expect(rows(wrapper)).toHaveLength(0)
 
     await wrapper.find('.picker-chosen button').trigger('click')
     expect(rows(wrapper)).toHaveLength(1)
+  })
+
+  /**
+   * The chosen line names it and its bot and nothing the panel says below it; the rest of its row,
+   * the bot id among it, is the same card the list shows.
+   */
+  it('carries the card of the chosen row on the chosen line', () => {
+    useContextStore().selectDeployment('deploy_20260927_132812')
+    const wrapper = mountPicker([deployment()])
+    const card = wrapper.findComponent(HoverCard)
+    expect(card.props('title')).toBe('deploy_20260927_132812 · USD')
+    const details = card.props('details') as { label: string, value: string }[]
+    expect(details.find(row => row.label === 'Bot id')?.value).toBe('demo-btc')
+    // the sessions and the starts are the deployment's own lines below, not this one's
+    expect(wrapper.find('.picker-chosen').text()).not.toContain('session')
+  })
+
+  /** The collapse watched only a CHANGE, so picking the deployment already chosen left the list open. */
+  it('folds the list away when the deployment already chosen is picked again', async () => {
+    useContextStore().selectDeployment('deploy_20260927_132812')
+    const wrapper = mountPicker([deployment()])
+    vi.spyOn(useDeploymentsStore(), 'selectDeployment').mockResolvedValue()
+    await wrapper.find('.picker-chosen button').trigger('click')
+    expect(rows(wrapper)).toHaveLength(1)
+
+    await rows(wrapper)[0]!.trigger('click')
+    expect(rows(wrapper)).toHaveLength(0)
+    expect(wrapper.find('.picker-chosen').exists()).toBe(true)
   })
 
   describe('what the row leaves out, and where it went', () => {

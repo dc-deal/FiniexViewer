@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
+import { VIEW_ROW_CAPS } from '@/types/arrangement_types'
 
 const KEY = 'arrangement.v1'
 const RUN = '20261012_074826_88026ae2'
@@ -38,6 +39,19 @@ describe('useArrangementStore', () => {
     expect(context.main.market).toEqual({ broker: 'mt5', symbol: 'EURUSD' })
     expect(arrangement.chart.timeframe).toBe('H1')
     expect(arrangement.runChart).toEqual({ run: RUN, unit: 'EURGBP_partial_close', timeframe: 'M5' })
+  })
+
+  /** A link stored before sweeps had a key reads as none chosen: a field added needs no new version. */
+  it('restores the chosen sweep, and reads a link stored without one as none chosen', () => {
+    store({ version: 1, links: { A: { run: { id: RUN, units: [], position: null }, sweep: { id: 'sweep_20261012_210055' } } } })
+    useArrangementStore()
+    expect(useContextStore().main.sweep).toEqual({ id: 'sweep_20261012_210055' })
+
+    localStorage.clear()
+    setActivePinia(createPinia())
+    store({ version: 1, links: { A: { run: { id: RUN, units: [], position: null } } } })
+    useArrangementStore()
+    expect(useContextStore().main.sweep).toEqual({ id: null })
   })
 
   it('writes every change of the selection back', async () => {
@@ -90,16 +104,6 @@ describe('useArrangementStore', () => {
   })
 
   /** Where the chart selection was kept before — removed, and never read. */
-  it('removes the keys the chart selection used to live under', () => {
-    localStorage.setItem('sel.broker', 'mt5')
-    localStorage.setItem('sel.symbol', 'EURUSD')
-    localStorage.setItem('sel.timeframe', 'H1')
-    useArrangementStore()
-    expect(['sel.broker', 'sel.symbol', 'sel.timeframe'].map(key => localStorage.getItem(key)))
-      .toEqual([null, null, null])
-    expect(useContextStore().main.market.broker).toBeNull()
-  })
-
   /** Absent means the default applies; empty means the reader cleared it — the two must survive a reload apart. */
   it('keeps a cleared bar apart from an untouched one across a reload', async () => {
     const arrangement = useArrangementStore()
@@ -137,5 +141,124 @@ describe('useArrangementStore', () => {
     expect(places['nowhere']).toBeUndefined()
     expect(places['sideways']).toBeUndefined()
     expect(places['odd-size']).toEqual({ besides: ['runs'], direction: 'left' })
+  })
+
+  describe('each panel\'s own view', () => {
+    /**
+     * Added under version 1: an entry from before the field reads as no view kept, not as a broken
+     * one — the rest of it is restored beside the empty views, which a dropped entry would not be.
+     */
+    it('reads an entry written before panel views as none kept, and keeps the rest of it', () => {
+      store({ version: 1, links: {}, bars: {}, chart: { timeframe: 'H1' }, runChart: {} })
+      const arrangement = useArrangementStore()
+      expect(arrangement.panelViews).toEqual({})
+      expect(arrangement.chart.timeframe).toBe('H1')
+    })
+
+    it('keeps a panel\'s view across a reload, and drops what is not one', async () => {
+      const arrangement = useArrangementStore()
+      arrangement.setPanelView('report-booking-periods', { expanded: { 'periods-table': true } })
+      await nextTick()
+      const raw = stored()
+      raw['panelViews'] = {
+        ...(raw['panelViews'] as object),
+        deployments: { expanded: { 'periods-table': 'yes', 'no-such-fold': true } },
+        'run-chart': 'open',
+      }
+      store(raw)
+
+      setActivePinia(createPinia())
+      expect(useArrangementStore().panelViews).toEqual({
+        'report-booking-periods': { expanded: { 'periods-table': true } },
+      })
+    })
+
+    /** Only what differs from a default is kept, so a view set back to it leaves no entry behind. */
+    it('removes an entry left with nothing in it', async () => {
+      const arrangement = useArrangementStore()
+      arrangement.setPanelView('deployments', { expanded: { 'periods-table': true } })
+      arrangement.setPanelView('deployments', { expanded: {} })
+      await nextTick()
+      expect(arrangement.panelViews).toEqual({})
+      expect(stored()['panelViews']).toEqual({})
+    })
+
+    /** A `<details>` reports a toggle also when a kept value opens it: the same view writes nothing. */
+    it('writes nothing for the same view again', async () => {
+      const arrangement = useArrangementStore()
+      arrangement.setPanelView('deployments', { expanded: { 'periods-table': true } })
+      await nextTick()
+      const before = arrangement.panelViews
+      arrangement.setPanelView('deployments', { expanded: { 'periods-table': true } })
+      expect(arrangement.panelViews).toBe(before)
+    })
+
+    it('keeps only the views of the panels the caller still knows', () => {
+      const arrangement = useArrangementStore()
+      arrangement.setPanelView('deployments', { expanded: { 'periods-table': true } })
+      arrangement.setPanelView('retired-kind', { expanded: { 'periods-table': true } })
+      arrangement.keepPanelViews(panel => panel !== 'retired-kind')
+      expect(Object.keys(arrangement.panelViews)).toEqual(['deployments'])
+    })
+
+    /** Rows of ONE run: kept with the run they were opened for, each list deduplicated, newest last. */
+    it('keeps the rows a panel opened for one run, and drops what cannot be one', () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: {
+          'report-trade-history': {
+            rows: {
+              scope: RUN,
+              keys: { 'fills-open': ['t1', 't2', 't1'], 'groups-closed': ['unit_a', 7], 'no-such-list': ['x'] },
+            },
+          },
+          // rows with no run to bind them to are no rows
+          'report-orders': { rows: { keys: { 'groups-closed': ['unit_a'] } } },
+        },
+      })
+      expect(useArrangementStore().panelViews).toEqual({
+        'report-trade-history': { rows: { scope: RUN, keys: { 'fills-open': ['t2', 't1'], 'groups-closed': ['unit_a'] } } },
+      })
+    })
+
+    it('keeps no more of a list than its cap, the newest', () => {
+      const keys = Array.from({ length: VIEW_ROW_CAPS['fills-open'] + 30 }, (_, index) => `t${index}`)
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: { 'report-trade-history': { rows: { scope: RUN, keys: { 'fills-open': keys } } } },
+      })
+      const kept = useArrangementStore().panelViews['report-trade-history']?.rows?.keys['fills-open'] ?? []
+      expect(kept).toHaveLength(VIEW_ROW_CAPS['fills-open'])
+      expect(kept.at(-1)).toBe(keys.at(-1))
+    })
+
+    /** A chart's drawing layers, field by field: a layer or an option this build does not know is not copied. */
+    it('keeps how a chart\'s layers were arranged, and drops what no layer of this build is', async () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: {
+          'run-chart': {
+            layers: {
+              order: ['trades', 'no-such-layer', 'levels', 'trades'],
+              hidden: ['levels', 7],
+              // the whole is no opacity to keep, nor a share below the least one, nor a layer unknown
+              opacity: { trades: 40, levels: 100, 'entry-exit': 5, 'no-such-layer': 50 },
+              options: { 'every-position': true, 'trade-signs': 'no', 'no-such-option': true },
+            },
+          },
+          // nothing left of it is no entry
+          'chart': { layers: { hidden: ['no-such-layer'] } },
+        },
+      })
+      const arrangement = useArrangementStore()
+      expect(arrangement.panelViews).toEqual({
+        'run-chart': {
+          layers: { order: ['trades', 'levels'], hidden: ['levels'], opacity: { trades: 40 }, options: { 'every-position': true } },
+        },
+      })
+      arrangement.setPanelView('run-chart', { layers: { opacity: { levels: 50 } } })
+      await nextTick()
+      expect(stored()['panelViews']).toEqual({ 'run-chart': { layers: { opacity: { levels: 50 } } } })
+    })
   })
 })

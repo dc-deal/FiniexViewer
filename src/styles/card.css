@@ -40,9 +40,14 @@
   color: var(--color-text-secondary);
 }
 
+/* a figure hugs the right edge; a value long enough to wrap — a sentence, a list of words — reads
+   left-aligned over its lines, the way text does, where right-aligned it read as a ragged figure
+   (the tab card's *Shows*) */
 .hover-card .card-rows dd {
+  display: flex;
+  justify-content: flex-end;
   margin: 0;
-  text-align: right;
+  text-align: left;
   color: var(--color-text-primary);
   overflow-wrap: anywhere;
 }

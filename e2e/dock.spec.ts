@@ -31,8 +31,31 @@ test('the first arrangement holds the suggested order, with Runs in front', asyn
   await page.goto('/')
   await expect(page.locator('.run-list .record-row').first()).toBeVisible()
 
-  expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Run chart'])
+  expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run bundle', 'Run chart'])
   await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Runs')
+})
+
+/**
+ * From 1400 px the run report stands beside the lists as a split of its own (operator, 2026-10-20),
+ * so a pick in the run list shows the run without covering the list. The lists keep a floor: at
+ * 392 px the run list scrolled sideways.
+ */
+test('on a wide screen the run report stands beside the run list, and a pick there shows it', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 })
+  await page.goto('/')
+  const runList = page.locator('.run-list')
+  await expect(runList.locator('.record-row').first()).toBeVisible()
+  const report = page.locator('[data-panel-kind="run"]')
+  const listBox = (await page.locator('[data-panel-kind="runs"]').boundingBox())!
+  const reportBox = (await report.boundingBox())!
+  expect(reportBox.x).toBeGreaterThanOrEqual(listBox.x + listBox.width - 2)
+  expect(await runList.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true)
+
+  const row = page.locator('.run-list .record-row:not(.record-unseen) >> visible=true').first()
+  const id = await row.locator('.run-id').getAttribute('title')
+  await row.click()
+  await expect(report.locator('.chosen-id')).toHaveText(id!)
+  await expect(runList).toBeVisible()
 })
 
 /**
@@ -57,10 +80,10 @@ test('the arrangement survives a reload, and the suggested order comes back on r
 
   await showPanel(page, 'Deployments')
   await page.locator('.dv-tab', { hasText: 'Run chart' }).locator('.panel-tab-close').click()
-  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run'])
+  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run bundle'])
 
   await page.reload()
-  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run'])
+  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run bundle'])
   await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Deployments')
 
   await page.locator('.menu-trigger').click()
@@ -68,7 +91,7 @@ test('the arrangement survives a reload, and the suggested order comes back on r
   await page.locator('.tab-trigger', { hasText: 'Layout' }).click()
   await page.locator('[data-action="reset-dock"]').click()
   await page.keyboard.press('Escape')
-  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Run chart'])
+  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run bundle', 'Run chart'])
   await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Runs')
 })
 
@@ -80,7 +103,7 @@ test('the free chart opens from the Panels menu, and comes back there once close
   await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Free chart')
 
   await page.locator('.dv-tab', { hasText: 'Free chart' }).locator('.panel-tab-close').click()
-  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Run chart'])
+  await expect.poll(() => tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run bundle', 'Run chart'])
 
   await openFreeChart(page)
   await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Free chart')
@@ -95,7 +118,7 @@ test('About opens as a dialog from the application menu, not as a tab', async ({
   await page.locator('.menu-item[data-action="about"]').click()
 
   await expect(page.locator('.about-dialog')).toBeVisible()
-  expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run', 'Run chart'])
+  expect(await tabTitles(page)).toEqual(['Deployments', 'Runs', 'Run bundle', 'Run chart'])
 })
 
 /** The quick bar speaks for the panel in FRONT: the chart's selection while it is, nothing otherwise. */
@@ -117,7 +140,7 @@ test('the quick bar holds the chart selection while the chart is in front', asyn
  * The backend's grade of the open run, where it is not a success, marks the tab of the run report — read from
  * the capture rather than transcribed, so a re-capture that grades the run anew cannot strand it.
  */
-test('the tab of the run report carries the grade of the open run where it did not succeed', async ({ page }) => {
+test('the tab of the run bundle carries the grade of the open run where it did not succeed', async ({ page }) => {
   const runs = (fixture('runs_list.json') as { runs: { run_id: string, run_outcome: string | null }[] }).runs
   const outcome = runs.find(row => row.run_id === FIXTURE_RUN)?.run_outcome ?? null
   test.skip(!outcome || outcome === 'success', 'the captured run succeeded, so its tab says nothing')
@@ -197,7 +220,7 @@ test('a panel dropped at the edge of the dock spans the whole edge', async ({ pa
  * every section out as a panel of its own, the run report was an empty frame, and a pick in the run
  * list brought it back each time. The run is chosen all the same — every panel shows it.
  */
-test('a pick in the run list leaves a closed run report closed, and chooses the run', async ({ page }) => {
+test('a pick in the run list leaves a closed run bundle closed, and chooses the run', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('[data-panel-kind="run"] .panel-column')).toBeVisible()

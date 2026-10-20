@@ -1,8 +1,9 @@
 import {
   amount, magnitude, modelledSpreadFigures, numberOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
-import type { TradeRow } from '@/types/api/report_types'
+import type { OpenPosition, TradeRow } from '@/types/api/report_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
+import type { Opening } from '@/types/run_chart_types'
 import { t } from '@/translate'
 
 /**
@@ -24,7 +25,7 @@ function entry(trade: TradeRow): Figure {
 }
 
 function net(trade: TradeRow): Figure {
-  return { label: t('Net'), value: amount(trade.net_pnl, trade.currency), tone: signClass(trade.net_pnl) }
+  return { label: t('Net P&L'), value: amount(trade.net_pnl, trade.currency), tone: signClass(trade.net_pnl) }
 }
 
 /** '' means the close was not attributed — shown only where it says something. */
@@ -32,11 +33,11 @@ function closedBy(trade: TradeRow): Figure[] {
   return trade.close_reason ? [{ label: t('Closed by'), value: trade.close_reason }] : []
 }
 
-/** A stop or a target only where one was set. */
-function stops(trade: TradeRow): Figure[] {
+/** A stop or a target only where one was set — on a trade row, or on a position still open. */
+function stops(row: Pick<TradeRow, 'stop_loss' | 'take_profit'>): Figure[] {
   const rows: Figure[] = []
-  if (trade.stop_loss !== null) rows.push({ label: t('Stop loss'), value: String(trade.stop_loss) })
-  if (trade.take_profit !== null) rows.push({ label: t('Take profit'), value: String(trade.take_profit) })
+  if (row.stop_loss !== null) rows.push({ label: t('Stop loss'), value: String(row.stop_loss) })
+  if (row.take_profit !== null) rows.push({ label: t('Take profit'), value: String(row.take_profit) })
   return rows
 }
 
@@ -100,15 +101,41 @@ export function tradeDetails(trade: TradeRow): Figure[] {
 }
 
 /**
- * Where a position opened, for the mark on its entry candle. The position, not the trade: a
- * position closed in parts has one entry and a trade per part, so this card names the lots it
- * opened with and says nothing about how any part ended.
+ * What a position still open at the end stood at — its entry in `open_positions`: what was left of
+ * it and its value at the last price, which is a mark rather than a result.
  */
-export function entryCard(trade: TradeRow): FigureCard {
-  return {
-    title: `${trade.position_id} · ${trade.direction} ${trade.entry_lots}`,
-    details: [opened(trade), entry(trade), ...stops(trade)],
-  }
+function stillOpen(entry: OpenPosition, currency: string): Figure[] {
+  return [
+    { label: t('Still open'), value: String(entry.lots) },
+    { label: t('Last price'), value: String(entry.last_price) },
+    entry.valued
+      ? {
+          label: t('Unrealized'),
+          value: amount(entry.unrealized_pnl, currency),
+          tone: signClass(entry.unrealized_pnl),
+          title: t('A mark at the last price, not a result'),
+        }
+      : { label: t('Unrealized'), value: t('n/a'), title: t('The position could not be marked') },
+  ]
+}
+
+/**
+ * Where a position opened, for the mark on its entry candle — read off the order history's executed
+ * opening, the one row every position has, closed or not. The position, not a trade: a position
+ * closed in parts has one opening and a trade per part, so this card names the lots it opened with
+ * and says nothing about how any part ended. Where the run ended with the position still open, the
+ * portfolio's `open_positions` says what was left of it; a closed position's stops are on its trade
+ * rows, which carry the same levels on every part.
+ */
+export function openingCard(
+  row: Opening, open: OpenPosition | null, trade: TradeRow | null, currency: string,
+): FigureCard {
+  const details: Figure[] = [{ label: t('Opened'), value: `${utcInstant(row.event_time)} @ ${row.executed_price}` }]
+  if (row.order_type) details.push({ label: t('Type'), value: row.order_type })
+  if (open) details.push(...stillOpen(open, currency))
+  const levels = open ?? trade
+  if (levels) details.push(...stops(levels))
+  return { title: `${row.position_id} · ${row.direction} ${row.executed_lots}`, details }
 }
 
 /**

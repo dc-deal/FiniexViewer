@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import type { DockviewApi, GroupNavigationDirection, IDockviewPanel } from 'dockview-vue'
 import { reconcileLayout } from '@/components/dock/dock_layout'
-import { PANEL_KINDS, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { chartLayers } from '@/layer_registry'
+import { PANEL_KINDS, RUN_BUNDLE, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
 import { useLayoutStore } from '@/stores/layout_store'
@@ -18,20 +19,43 @@ const SAVE_DELAY_MS = 300
 const HOST_COMPONENT = 'host'
 
 /** The panel the run report's column stands in — the bundle, where a section goes back to. */
-const COLUMN_KIND = 'run'
+const COLUMN_KIND = RUN_BUNDLE
 
 /** The run list, beside which the bundle a pick opens stands. */
 const LIST_KIND = 'runs'
 
 /**
- * Where a kind opens the first time, while nothing it stood beside is known: the run chart as a
- * split to the right of the run report, so a trade in the list and its candle are one glance apart
- * (viewer#31, decided 2026-10-15). Every other kind joins the active panel's tabs.
+ * Where a kind opens the first time, while nothing it stood beside is known: the run report as a
+ * split to the right of the run list, so a pick shows the run without covering the list it was made
+ * in (operator, 2026-10-20), and the run chart to the right of the report, so a trade in the list
+ * and its candle are one glance apart (viewer#31, decided 2026-10-15). Every other kind joins the
+ * active panel's tabs.
  */
-const OPENS_RIGHT_OF: Record<string, string> = { 'run-chart': COLUMN_KIND }
+const OPENS_RIGHT_OF: Record<string, string> = { [COLUMN_KIND]: LIST_KIND, 'run-chart': COLUMN_KIND }
 
-/** The share of the dock's width a split of its own takes in the first arrangement — the report keeps the larger part. */
-const SPLIT_SHARE = 0.4
+/**
+ * The first arrangement's columns, each with a floor, the width beyond them shared 28 · 38 · 34
+ * (operator, 2026-10-20). The REPORT's floor comes first: its trade history and its orders keep the
+ * position column — the mark that opens a trade on the chart — only from 48rem of list, and at a
+ * report of 682 px both lost it. The lists' floor next: in a column of 392 px the run list needed
+ * 420 for its rows and scrolled sideways. The chart takes what is left, and only where that is
+ * room for candles; otherwise it is a tab behind the report.
+ */
+const LIST_FLOOR = 470
+const REPORT_FLOOR = 860
+const CHART_FLOOR = 450
+const LIST_SHARE = 0.28
+const CHART_SHARE = 0.34
+
+/** The dock width from which the report stands beside the lists, and from which the chart beside the report. */
+const TWO_COLUMNS = LIST_FLOOR + REPORT_FLOOR
+const THREE_COLUMNS = TWO_COLUMNS + CHART_FLOOR
+
+/** The panel that arranges the drawing layers of the chart last in front (viewer#41). */
+const LAYERS_KIND = 'layers'
+
+/** The width the Layers panel opens at — a list of a few rows, beside the chart that keeps the room. */
+const LAYERS_WIDTH = 240
 
 /** The four edges of the whole dock a dragged panel can be docked along. */
 export type DockEdge = 'left' | 'right' | 'top' | 'bottom'
@@ -57,13 +81,6 @@ export type RevealReason = 'command' | 'selection'
 
 /** What is being dragged in the dock: a panel by its tab, or a whole group by its header. */
 type DockDrag = { panel: string } | { group: string }
-
-/**
- * Below this dock width a split would leave the report too narrow for its lists — measured
- * 2026-10-15: at 620 px the run list overflowed its panel by 95 px — so the kind joins the
- * report's tabs instead, right after it.
- */
-const SPLIT_MIN_WIDTH = 1400
 
 /**
  * Where to look for the group a split stood beside, and on which side of it the split stood: a
@@ -108,6 +125,17 @@ export const useDockStore = defineStore('dock', () => {
    * reactive — and the column reads it: a section open as a panel of its own is left out there.
    */
   const openIds = ref<string[]>([])
+  /**
+   * The panels ON SHOW: each the front tab of a visible group, as dockview reports it to the panel's
+   * own host. Open is not on show — a panel behind another tab is open and unseen.
+   */
+  const shownIds = ref<string[]>([])
+  /**
+   * The chart last in front — a panel whose kind draws layers of its own — or null where none is
+   * open: what the Layers panel arranges. FOCUS, not a selection, so no link carries it; another
+   * panel coming to the front, the Layers panel itself among them, leaves it as it was.
+   */
+  const lastChart = ref<string | null>(null)
   let timer: ReturnType<typeof setTimeout> | null = null
   let subscriptions: { dispose(): void }[] = []
   /** The section panel opened last: where the next one goes, as a tab beside it. */
@@ -143,21 +171,50 @@ export const useDockStore = defineStore('dock', () => {
     openIds.value = api.value ? api.value.panels.map(panel => panel.id) : []
   }
 
+  /** An open chart that draws layers of its own, the first in the dock — or null. */
+  function anyChart(dock: DockviewApi): string | null {
+    return dock.panels.find(panel => chartLayers(panel.id).length)?.id ?? null
+  }
+
+  function noteActive(panel: IDockviewPanel | undefined): void {
+    if (panel && chartLayers(panel.id).length) lastChart.value = panel.id
+  }
+
+  /** A panel's host saying whether its panel is on show — dockview's own per-panel event, exact. */
+  function noteShown(kindId: string, shown: boolean): void {
+    const listed = shownIds.value.includes(kindId)
+    if (shown && !listed) shownIds.value = [...shownIds.value, kindId]
+    if (!shown && listed) shownIds.value = shownIds.value.filter(id => id !== kindId)
+  }
+
   /**
-   * Where a kind that opens beside another goes: a split to its right where the dock is wide enough
-   * to share, at its share of the width; a tab right after it otherwise.
+   * The width a kind's split takes where it first opens: the report everything right of the lists —
+   * the chart's part included, which the chart's split then takes from it — and the chart its part.
    */
-  function besideAnchor(dock: DockviewApi, anchor: string): { placement: Placement, size?: number } {
-    if (dock.width >= SPLIT_MIN_WIDTH) {
-      return { placement: { referencePanel: anchor, direction: 'right' }, size: Math.round(dock.width * SPLIT_SHARE) }
+  function splitWidth(width: number, kindId: string): number {
+    if (kindId !== COLUMN_KIND) return Math.round(CHART_FLOOR + CHART_SHARE * (width - THREE_COLUMNS))
+    const floor = width >= THREE_COLUMNS ? THREE_COLUMNS : TWO_COLUMNS
+    return Math.round(width - LIST_FLOOR - LIST_SHARE * (width - floor))
+  }
+
+  /**
+   * Where a kind that opens beside another goes: a split to its right where the dock holds every
+   * column's floor, at its share of the width; a tab right after it otherwise — below that a split
+   * would leave the report too narrow for its lists (measured 2026-10-15: at 620 px the run list
+   * overflowed its panel by 95 px).
+   */
+  function besideAnchor(dock: DockviewApi, kindId: string): { placement: Placement, size?: number } {
+    const anchor = OPENS_RIGHT_OF[kindId]!
+    if (dock.width >= (kindId === COLUMN_KIND ? TWO_COLUMNS : THREE_COLUMNS)) {
+      return { placement: { referencePanel: anchor, direction: 'right' }, size: splitWidth(dock.width, kindId) }
     }
     const panel = dock.getPanel(anchor)!
     return { placement: { referencePanel: anchor, direction: 'within', index: panel.group.panels.indexOf(panel) + 1 } }
   }
 
   /**
-   * The suggested order: the lists and the report as tabs of one group, on the tab where the work
-   * is — and a kind that opens beside another, the run chart, as a split to its right.
+   * The suggested order: the lists as tabs of one group, on the tab where the work is — and a kind
+   * that opens beside another, the report and the run chart, as a split to its right.
    */
   function arrangeDefault(dock: DockviewApi): void {
     dock.clear()
@@ -171,7 +228,7 @@ export const useDockStore = defineStore('dock', () => {
         add(dock, kind.id)
         continue
       }
-      const { placement, size } = besideAnchor(dock, anchor)
+      const { placement, size } = besideAnchor(dock, kind.id)
       add(dock, kind.id, placement, size)
     }
     dock.getPanel(firstActiveKind())?.api.setActive()
@@ -204,7 +261,7 @@ export const useDockStore = defineStore('dock', () => {
     const anchor = OPENS_RIGHT_OF[kindId]!
     if (dock.getPanel(kindId) || arrangement.places[kindId] || !dock.getPanel(anchor)) return
     const before = dock.activePanel
-    const { placement, size } = besideAnchor(dock, anchor)
+    const { placement, size } = besideAnchor(dock, kindId)
     add(dock, kindId, placement, size)
     // beside the report, not in front of the panel the reader had in front
     before?.api.setActive()
@@ -273,6 +330,7 @@ export const useDockStore = defineStore('dock', () => {
    */
   function onRemoved(panel: IDockviewPanel): void {
     syncOpen()
+    if (panel.id === lastChart.value) lastChart.value = api.value ? anyChart(api.value) : null
     if (restoring) return
     const section = sectionOfKind(panel.id)
     if (!section) return
@@ -281,6 +339,19 @@ export const useDockStore = defineStore('dock', () => {
       return
     }
     layoutStore.hide(section)
+  }
+
+  /**
+   * Gives every restored panel its kind's title. dockview stores the title with the layout and
+   * restores it as stored, so a panel renamed since kept its old one — not in the tab, which draws
+   * the kind's own, but in the tab's accessible name and in what the dock announces on opening and
+   * closing it: a run bundle went on being read out as "Run".
+   */
+  function retitle(dock: DockviewApi): void {
+    for (const panel of dock.panels) {
+      const title = panelKind(panel.id)?.title
+      if (title && panel.title !== title) panel.api.setTitle(title)
+    }
   }
 
   /**
@@ -294,19 +365,26 @@ export const useDockStore = defineStore('dock', () => {
     try {
       if (layout) {
         dock.fromJSON(layout)
+        retitle(dock)
         addMissingBundle(dock)
         addMissingRunChart(dock)
       } else arrangeDefault(dock)
     } catch {
       arrangeDefault(dock)
     }
+    // a place or a view kept for a kind this build no longer has goes with it; a hidden panel's stay
+    arrangement.keepPlaces(kind => panelKind(kind) !== null)
+    arrangement.keepPanelViews(kind => panelKind(kind) !== null)
     flush()
     syncOpen()
+    lastChart.value = anyChart(dock)
+    noteActive(dock.activePanel)
     subscriptions = [
       dock.onDidLayoutChange(scheduleSave),
       dock.onWillMutateLayout(recordPlaces),
       dock.onDidAddPanel(syncOpen),
       dock.onDidRemovePanel(onRemoved),
+      dock.onDidActivePanelChange(event => noteActive(event.panel)),
       dock.onWillDragPanel(event => { dragging.value = { panel: event.panel.id } }),
       dock.onWillDragGroup(event => { dragging.value = { group: event.group.id } }),
       dock.onDidDrop(endDrag),
@@ -345,6 +423,8 @@ export const useDockStore = defineStore('dock', () => {
     subscriptions = []
     api.value = null
     openIds.value = []
+    shownIds.value = []
+    lastChart.value = null
   }
 
   /** Adds a closed panel where it last stood, while a panel it stood beside is still open. */
@@ -360,14 +440,20 @@ export const useDockStore = defineStore('dock', () => {
 
   /**
    * Opens a closed kind: where it last stood while a panel it stood beside is still open; else where
-   * its kind first opens, and beside the active one.
+   * its kind first opens, and beside the active one. The Layers panel opens as a narrow split to the
+   * right of the chart it arranges, at any width of the dock — as a tab it would hide that chart.
    */
   function openClosed(dock: DockviewApi, kindId: string): void {
     if (placeAgain(dock, kindId)) return
+    const chart = lastChart.value
+    if (kindId === LAYERS_KIND && chart && dock.getPanel(chart)) {
+      add(dock, kindId, { referencePanel: chart, direction: 'right' }, LAYERS_WIDTH)
+      return
+    }
     const anchor = OPENS_RIGHT_OF[kindId]
     const active = dock.activePanel?.id
     if (anchor && dock.getPanel(anchor)) {
-      const { placement, size } = besideAnchor(dock, anchor)
+      const { placement, size } = besideAnchor(dock, kindId)
       add(dock, kindId, placement, size)
     } else add(dock, kindId, active ? { referencePanel: active, direction: 'within' } : undefined)
   }
@@ -376,9 +462,14 @@ export const useDockStore = defineStore('dock', () => {
    * Shows a kind's panel — THE way every jump, link and pick shows one, so its rule lives in one
    * place (VS Code's `openView` as the model, operator 2026-10-16). The panel comes to the front
    * wherever it stands, in its own group. A closed one opens for a `command` only, never for a
-   * `selection` (see `RevealReason`). Says whether the panel is on show now.
+   * `selection` (see `RevealReason`). Says whether the panel is open now.
+   *
+   * @param from The panel a `selection` was made in. A pick never covers it: where the target stands
+   *   as a tab in the same group, it stays behind — the pick still chose, and every panel following
+   *   it switched. Picking through a sweep's ranking with the run bundle as a tab beside it hid the
+   *   ranking at every click (operator, 2026-10-20). A `command` still comes to the front.
    */
-  function reveal(kindId: string, reason: RevealReason): boolean {
+  function reveal(kindId: string, reason: RevealReason, from?: string): boolean {
     const dock = api.value
     if (!dock) return false
     if (!dock.getPanel(kindId)) {
@@ -386,6 +477,8 @@ export const useDockStore = defineStore('dock', () => {
       openClosed(dock, kindId)
     }
     const panel = dock.getPanel(kindId)
+    const source = reason === 'selection' && from ? dock.getPanel(from) : undefined
+    if (panel && source && source.group === panel.group) return true
     panel?.api.setActive()
     return panel !== undefined
   }
@@ -467,14 +560,17 @@ export const useDockStore = defineStore('dock', () => {
     } finally {
       restoring = false
     }
+    // the rebuild removed every chart on the way; the one it put back is the chart to arrange
+    lastChart.value = anyChart(dock)
+    noteActive(dock.activePanel)
     arrangement.setPlaces({})
     flush()
     syncOpen()
   }
 
   return {
-    api, openIds, dragging,
+    api, openIds, shownIds, dragging, lastChart,
     attach, detach, reveal, close, openSection, backIntoColumn, showSection, hideSection, reset, flush,
-    dockToEdge, endDrag,
+    dockToEdge, endDrag, noteShown,
   }
 })

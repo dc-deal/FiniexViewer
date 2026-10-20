@@ -6,6 +6,8 @@ import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
 import { reportKindId } from '@/panel_kinds'
+import { useSectionStates } from '@/composables/use_section_states'
+import { useShowInList } from '@/composables/use_panel_jump'
 import { startedAt } from '@/components/runs/report_format'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
 import AppButton from '@/components/base/AppButton.vue'
@@ -25,13 +27,21 @@ import { t } from '@/translate'
 const runsStore = useRunsStore()
 const {
   selectedRun, selectedUnits, summaryUnreadable, summaryError,
-  unknownRunId, loadingRuns,
+  unknownRunId, awaitingRun, indexError, chosenRowInView,
 } = storeToRefs(runsStore)
 const { unreadable, errors: sectionErrors } = storeToRefs(useRunReportsStore())
 const sectionsStore = useRunSectionsStore()
 const { sources, pending, absences } = storeToRefs(sectionsStore)
 const dock = useDockStore()
-const { openIds } = storeToRefs(dock)
+const { openIds, shownIds } = storeToRefs(dock)
+
+/**
+ * The way back to the list, which shows the chosen run's row (#42, after VS Code's *Reveal in
+ * Explorer*). Not offered where the list is on show with that row in view: there it would do
+ * nothing a glance does not.
+ */
+const showInList = useShowInList()
+const listShowsRun = computed(() => shownIds.value.includes('runs') && chosenRowInView.value)
 
 /**
  * Whether a slot's line belongs above the column. Not where every section reading it is open as a
@@ -41,6 +51,18 @@ function saidHere(slot: string): boolean {
   const readers = sectionsStore.sectionsOfSlot(slot)
   return !readers.length || readers.some(id => !openIds.value.includes(reportKindId(id)))
 }
+
+/**
+ * The reader has taken every member out: each section stands as a panel of its own or is hidden, or
+ * is one the run does not carry. The bundle then says why, rather than standing as an empty frame
+ * (#42). A run that carries no section at all is not this — the lines above already say why it has
+ * none, and nothing was taken out.
+ */
+const sectionStates = useSectionStates()
+const emptied = computed(() => sectionStates.value.some(state => state.place !== 'column')
+  && !sectionStates.value.some(state => state.place === 'column' && !state.absent))
+/** Literally every section out or hidden; otherwise the run lacks the ones still in the column. */
+const everySectionOut = computed(() => sectionStates.value.every(state => state.place !== 'column'))
 
 /** The chosen run's pipeline, name and start — one line, cut short where the panel is narrow. */
 const chosenMeta = computed(() => {
@@ -61,15 +83,15 @@ const chosenMeta = computed(() => {
  * naming it once is the whole point.
  */
 const SECTION_TITLES: Record<string, string> = {
-  warningsErrors: 'Warnings & Errors',
+  warningsErrors: 'Warnings & errors',
   portfolio: 'Portfolio',
   broker: 'Broker',
-  aggregated: 'Run Totals',
-  pendingOrders: 'Pending Orders',
-  orderHistory: 'Order History',
-  bookingPeriods: 'Booking Periods',
+  aggregated: 'Run totals',
+  pendingOrders: 'Pending orders',
+  orderHistory: 'Order history',
+  bookingPeriods: 'Booking periods',
   config: 'Configuration',
-  tradeHistory: 'Trade History',
+  tradeHistory: 'Trade history',
   scenarios: 'Scenarios',
 }
 
@@ -95,7 +117,7 @@ const missingSections = computed(() => {
   // different causes collided on one empty key and Vue was free to reuse the wrong node
   const byCause = new Map<string, { cause: string, detail: string, sections: string[] }>()
   for (const [slot, absence] of Object.entries(absences.value).filter(([key]) => saidHere(key))) {
-    const title = slot === 'runSummary' ? t('Executive Summary') : t(SECTION_TITLES[slot] ?? slot)
+    const title = slot === 'runSummary' ? t('Executive summary') : t(SECTION_TITLES[slot] ?? slot)
     const seen = byCause.get(absence.cause)
     if (seen) seen.sections.push(title)
     else byCause.set(absence.cause, { cause: absence.cause, detail: absence.detail, sections: [title] })
@@ -114,12 +136,20 @@ const missingSections = computed(() => {
         <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
              three lines above the sections -->
         <span class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
-        <AppButton variant="quiet" @click="dock.reveal('runs', 'command')">{{ t('Change run') }}</AppButton>
+        <!-- hidden rather than removed where it is not needed: the line keeps its length, so the
+             run's meta does not cut differently while the reader scrolls the list beside it -->
+        <AppButton
+          variant="quiet"
+          class="show-in-list"
+          :class="{ needless: listShowsRun }"
+          :aria-hidden="listShowsRun"
+          @click="showInList"
+        >{{ t('Show in list') }}</AppButton>
       </div>
     </header>
 
     <div class="run-report-body">
-      <div v-if="loadingRuns" class="state-overlay">
+      <div v-if="awaitingRun" class="state-overlay">
         <AppSpinner />
       </div>
       <div v-else-if="unknownRunId" class="state-overlay">
@@ -127,14 +157,23 @@ const missingSections = computed(() => {
           {{ t('The run you had open is no longer in the index') }}: {{ unknownRunId }}
         </span>
       </div>
+      <!-- an index that could not be read says nothing about the run chosen: the failure is said,
+           never "no run is chosen" and never "no longer in the index" -->
+      <div v-else-if="!selectedRun && indexError" class="state-overlay">
+        <p class="notice failed">{{ indexError }}</p>
+      </div>
       <div v-else-if="!selectedRun" class="state-overlay state-none">
         <span class="hint">{{ t('No run is chosen — the Runs panel lists them') }}</span>
         <AppButton variant="quiet" @click="dock.reveal('runs', 'command')">{{ t('Show the run list') }}</AppButton>
       </div>
       <template v-else>
         <!-- a missing or unreadable section does not hide the ones that are there -->
+        <!-- `artifacts` read with `reporting` (their runs document): a session still running, or one
+             that died before its report phase, is not a run kept as logs only -->
         <p v-if="!selectedRun.has_reports" class="notice">
-          {{ t('This run exists as logs only — it carries no report artifacts') }}
+          {{ selectedRun.reporting === 'expected'
+            ? t('This run has no report — it is still running, or it died before its report phase')
+            : t('This run exists as logs only — it was never meant to write a report') }}
         </p>
         <!-- one line per REASON, never one per absent section -->
         <p v-for="missing in missingSections" :key="missing.cause" class="notice absent">
@@ -153,15 +192,22 @@ const missingSections = computed(() => {
         <p v-for="(message, section) in errorLines" :key="section" class="notice failed">
           {{ message }}
         </p>
-        <!-- how a section comes out of the column, and how it goes back; and how a panel docks
-             along a whole edge of the dock, which nothing on screen shows until a tab is dragged -->
-        <HintLine id="open-as-panel" />
-        <HintLine id="dock-edges" />
+        <!-- how a section comes out of the column, and how it goes back; what the bundle's tab
+             offers behind ⋯; and how a panel docks along a whole edge of the dock, which nothing
+             on screen shows until a tab is dragged — one box, dismissed at once -->
+        <!-- an empty bundle says the same as the first hint and more, so that one stands down -->
+        <HintLine :id="emptied ? ['bundle-commands', 'dock-edges'] : ['open-as-panel', 'bundle-commands', 'dock-edges']" />
+        <p v-if="emptied" class="notice empty-bundle">
+          {{ everySectionOut
+            ? t("Every section stands as a panel of its own or is hidden — “Back into the bundle” on a panel's tab brings it back here, the Panels menu shows a hidden one.")
+            : t("Every section this run carries stands as a panel of its own or is hidden — “Back into the bundle” on a panel's tab brings it back here, the Panels menu shows a hidden one.") }}
+        </p>
         <!-- the whole manipulated area is framed, so it can never be mistaken for the whole run.
              The frame is the second channel beside the colour: a reader who cannot separate the
-             hues still sees an edge that was not there before. What is narrowed is said in the
-             quick bar beside the tab, where saying it moves nothing. -->
-        <div class="panels" :class="{ narrowed: selectedUnits.length > 0 }">
+             hues still sees an edge that was not there before. What is narrowed is said once, in
+             the menu bar, where saying it moves nothing. A frame around nothing frames
+             no part, so an empty bundle draws none. -->
+        <div v-else class="panels" :class="{ narrowed: selectedUnits.length > 0 }">
           <PanelColumn :sources="sources" :pending="pending" />
         </div>
       </template>
@@ -170,6 +216,10 @@ const missingSections = computed(() => {
 </template>
 
 <style scoped>
+.show-in-list.needless {
+  visibility: hidden;
+}
+
 /* A SIZE container, so the lists inside measure their caps against this view and not against the
    browser window. The view is sized by what holds it and never by its content, which is what size
    containment requires. */
@@ -191,9 +241,19 @@ const missingSections = computed(() => {
 .run-report-body {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-md);
+  padding: 0 var(--space-md) var(--space-md);
   display: flex;
   flex-direction: column;
+}
+
+/* No room ABOVE the content inside a scroll area: a sticky list heading sticks to the area's padding
+   edge, and whatever scrolled past it showed through that room (operator, 2026-10-20 — the trade
+   history, the orders, the deployment's sessions). The room is a spacer that scrolls away with the
+   content instead. */
+.run-report-body::before {
+  content: '';
+  flex: none;
+  height: var(--space-md);
 }
 
 .picker-chosen {

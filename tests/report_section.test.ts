@@ -65,6 +65,35 @@ describe('ReportSection', () => {
     expect(mountSection('trade-history').find('.notice.absent').text()).toContain('No run is chosen')
   })
 
+  /**
+   * A run restored from storage has no index row until the index has arrived. The panel said "No
+   * run is chosen" through every first load; it is loading, and says nothing until it knows.
+   */
+  it('stands loading while the index is on its way, a run already chosen', () => {
+    useContextStore().selectRun('r1')
+    useRunsStore().loadingRuns = true
+    const wrapper = mountSection('trade-history')
+    expect(wrapper.find('.panel-loading').exists()).toBe(true)
+    expect(wrapper.find('.notice.absent').exists()).toBe(false)
+  })
+
+  it('names the run the index no longer holds, rather than saying none is chosen', () => {
+    useContextStore().selectRun('r9')
+    useRunsStore().unknownRunId = 'r9'
+    expect(mountSection('trade-history').find('.notice.absent').text())
+      .toBe('The run you had open is no longer in the index: r9')
+  })
+
+  /** An index that failed is a failure — said with the error mark, never as a plain absence. */
+  it('says an index that could not be read as a failure, in the error role', () => {
+    useContextStore().selectRun('r1')
+    useRunsStore().indexError = 'Could not load the run index: down'
+    const wrapper = mountSection('trade-history')
+    expect(wrapper.find('.notice.failed').text()).toBe('Could not load the run index: down')
+    expect(wrapper.find('.notice.failed [data-icon="status-error"]').exists()).toBe(true)
+    expect(wrapper.find('.notice.absent').exists()).toBe(false)
+  })
+
   /** Every failure among what it reads says so — the column leaves it to this panel. */
   it('says every failure among the slots it reads', () => {
     chooseRun()

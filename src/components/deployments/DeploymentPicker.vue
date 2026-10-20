@@ -6,6 +6,7 @@ import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import HoverCard from '@/components/base/HoverCard.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
@@ -185,19 +186,31 @@ const open = ref(selectedDeploymentId.value === null)
 
 watch(selectedDeploymentId, id => { open.value = id === null })
 
+/** Whether the list stands open: in a low panel the view then gives it the whole height. */
+const emit = defineEmits<{ listShown: [shown: boolean] }>()
+
+watch(open, shown => emit('listShown', shown), { immediate: true })
+
+/**
+ * A pick folds the list away. The watch above sees only a CHANGE, so picking the deployment already
+ * chosen — after *Change deployment* opened the list again — left the list standing open.
+ */
+function pick(row: DeploymentRow): void {
+  open.value = false
+  void store.selectDeployment(row.deployment_id)
+}
+
 /** The chosen deployment's own row, for the one line the collapsed form shows. */
 const chosen = computed(() =>
   deployments.value.find(row => row.deployment_id === selectedDeploymentId.value) ?? null
 )
 
-/** Its bot, its sessions and its last start — one line, cut short where the panel is narrow. */
-const chosenMeta = computed(() => {
-  const row = chosen.value
-  if (!row) return ''
-  return [row.bot, plural(row.sessions, t('session'), t('sessions')), startedAt(row.last_started) || t('no date')]
-    .filter(Boolean)
-    .join(' · ')
-})
+/**
+ * The chosen line names it and its bot, and nothing the panel says below it: the sessions and the
+ * starts stand in the deployment's own lines. The rest of its row — the bot id among it — is on
+ * the card, the same one the list shows (operator, 2026-10-20).
+ */
+const chosenCard = computed(() => chosen.value ? card(chosen.value) : null)
 </script>
 
 <template>
@@ -209,10 +222,15 @@ const chosenMeta = computed(() => {
     <!-- chosen: one line saying which, and the way back to the list -->
     <div v-else-if="!open" class="picker-chosen">
       <span class="chosen-label">{{ t('Deployment') }}</span>
-      <span class="chosen-id">{{ selectedDeploymentId }}</span>
-      <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
-           three lines above the history -->
-      <span v-if="chosen" class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
+      <HoverCard v-if="chosenCard" :title="chosenCard.title" :details="chosenCard.details">
+        <!-- reachable by the keyboard, so the card is not the pointer's alone -->
+        <span class="chosen-name" tabindex="0">
+          <span class="chosen-id">{{ selectedDeploymentId }}</span>
+          <!-- in a narrow panel it ends in an ellipsis instead of taking a second line -->
+          <span class="chosen-meta">{{ chosen?.bot }}</span>
+        </span>
+      </HoverCard>
+      <span v-else class="chosen-id">{{ selectedDeploymentId }}</span>
       <AppButton variant="quiet" @click="open = true">{{ t('Change deployment') }}</AppButton>
     </div>
 
@@ -242,7 +260,7 @@ const chosenMeta = computed(() => {
         :row-key="row => rowKey(row, deploymentsKey)"
         :is-picked="row => row.deployment_id === selectedDeploymentId"
         :row-card="card"
-        @pick="row => store.selectDeployment(row.deployment_id)"
+        @pick="pick"
       >
         <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
              this template owns the cells -->
@@ -310,6 +328,13 @@ const chosenMeta = computed(() => {
   color: var(--color-text-primary);
 }
 
+.chosen-name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
 .chosen-meta {
   min-width: 0;
   overflow: hidden;
@@ -337,6 +362,22 @@ const chosenMeta = computed(() => {
 .deployment-list {
   max-height: 33cqh;
   overflow-y: auto;
+}
+
+/* In a LOW view the open list stands alone and takes the rest of it: a third of a short panel
+   left a strip for each half (operator, 2026-10-20). The view hides the history meanwhile; the
+   threshold is the same as there. */
+@container (max-height: 40rem) {
+  .deployment-picker {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .deployment-list {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
 }
 
 .deployment-list :deep(.record-row) > span {

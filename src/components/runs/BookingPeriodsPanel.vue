@@ -3,9 +3,11 @@ import { computed, ref, watch } from 'vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import ScopeMark from '@/components/base/ScopeMark.vue'
-import { amount, magnitude } from '@/components/runs/report_format'
+import { amount } from '@/components/runs/report_format'
 import { orderPeriods } from '@/components/runs/period_order'
 import { useDisplaySettings } from '@/composables/use_display_settings'
+import { useFillsPanel } from '@/composables/use_fills_panel'
+import { useViewExpanded } from '@/composables/use_panel_view'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import type { LaneOrder } from '@/types/settings_types'
 import type { BookingPeriodsReport } from '@/types/api/report_types'
@@ -70,7 +72,13 @@ watch(() => display.value.laneOrder, order => { laneOrder.value = order })
  *
  * `unit_name` is the unit's identity here, the same value the roster calls `name`.
  */
+// whether the reader left the period list open — kept as this panel's own view, across runs and reloads
+const periodsOpen = useViewExpanded('periods-table')
+
 const narrowing = useScenarioSelection()
+
+/** A panel of its own gives the period table the height the rest leaves; the bundle's column does not. */
+const fillsPanel = useFillsPanel()
 const narrowed = computed(() => narrowing.units.value.length > 0)
 
 const selectedPeriods = computed(() => {
@@ -78,6 +86,10 @@ const selectedPeriods = computed(() => {
   if (!units.length) return props.model.periods
   return props.model.periods.filter(period => showsUnit(units, period.unit_name))
 })
+
+/** Each unit's served total, for the units on show — the table draws it after their periods. */
+const shownTotals = computed(() =>
+  props.model.unit_totals.filter(total => showsUnit(narrowing.units.value, total.unit_name)))
 
 const orderedPeriods = computed(() =>
   orderPeriods(selectedPeriods.value, laneOrder.value, row => row.unit_name)
@@ -95,7 +107,7 @@ const otherCurrencies = computed(() =>
 </script>
 
 <template>
-  <div class="booking-periods">
+  <div class="booking-periods" :class="{ filling: fillsPanel }">
     <!-- The check comes first: it decides whether the rows below may be read as complete. -->
     <!--
       A CHECK THAT PASSED SAYS NOTHING.
@@ -115,7 +127,7 @@ const otherCurrencies = computed(() =>
           <!-- a mark in the headline rather than a line of its own: a narrowing moves nothing -->
           <ScopeMark
             v-if="narrowed"
-            :title="t('This check is the whole run — the periods below are those of the chosen scenario')"
+            :title="t('This check is the whole run — the periods below are those of the scenario in focus')"
           />
           {{ verdict.text }}
         </p>
@@ -139,7 +151,7 @@ const otherCurrencies = computed(() =>
 
     <div v-if="!selectedPeriods.length" class="hint">
       {{ narrowed
-        ? t('The chosen scenario booked no periods')
+        ? t('The scenario in focus booked no periods')
         : t('This run booked no periods') }}
     </div>
     <template v-else>
@@ -148,23 +160,22 @@ const otherCurrencies = computed(() =>
         :periods="orderedPeriods"
         :key-fields="model.keys.periods"
       />
-      <BookingPeriodTable :periods="orderedPeriods" :key-fields="model.keys.periods" />
+      <BookingPeriodTable
+        v-model:open="periodsOpen"
+        class="period-table"
+        :periods="orderedPeriods"
+        :key-fields="model.keys.periods"
+        :unit-totals="shownTotals"
+        :fill="fillsPanel"
+      />
     </template>
 
-    <!-- both figures are the RUN's: the deepest drawdown is taken across every period, and the
-         closing equity is the SUM over the units — it was the last period row's own figure, one
-         account of several, printed as though it were the run's -->
-    <p class="footnote">
-      <ScopeMark v-if="narrowed" />
-      {{ t('Deepest period drawdown') }}: {{ magnitude(model.deepest_period_drawdown, model.currency) }}
-      <!-- left out rather than shown as the zero the formatter would make of a null: the run
-           states no figure in this currency, which is not a closing equity of nothing -->
-      <template v-if="model.total_final_equity !== null">
-        · {{ t('Final equity, all accounts') }}: {{ amount(model.total_final_equity, model.currency) }}
-      </template>
-      <template v-if="otherCurrencies.length">
-        &nbsp;|&nbsp; {{ t('Other account currencies') }}: {{ otherCurrencies.join(', ') }}
-      </template>
+    <!-- No run-wide figures under the table (operator, 2026-10-19: never needed). The final equity
+         over all accounts stands in the executive summary, with the account's deepest drawdown and
+         the scenario it fell in; a unit's deepest period drawdown stays on its total's card. What
+         is left is a caveat, and only where it applies: the rows above are one currency's. -->
+    <p v-if="otherCurrencies.length" class="currencies-note">
+      {{ t('Other account currencies') }}: {{ otherCurrencies.join(', ') }}
     </p>
   </div>
 </template>
@@ -202,7 +213,7 @@ const otherCurrencies = computed(() =>
 .verdict-text,
 .verdict-detail,
 .verdict-note,
-.footnote {
+.currencies-note {
   margin: 0;
   font-family: monospace;
   font-size: var(--font-size-sm);
@@ -214,12 +225,35 @@ const otherCurrencies = computed(() =>
 
 .verdict-detail,
 .verdict-note,
-.footnote {
+.currencies-note {
   color: var(--color-text-secondary);
 }
 
-.footnote {
+.currencies-note {
   margin-top: var(--space-sm);
+}
+
+/* As a panel of its own, the panel's whole height, so the period table takes what the check and
+   the timeline leave. Its cap was half the panel, whatever stood around it, and the rest stood
+   empty below it (seen on screen 2026-10-19) — the run list's defect of 2026-10-16 again.
+   Everything else keeps its own height; the table gives way and scrolls inside itself, keeping a
+   few rows in a short panel. In the bundle's column the sections stack, and the list keeps its cap. */
+.booking-periods.filling {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.booking-periods.filling > * {
+  flex-shrink: 0;
+}
+
+.booking-periods.filling > .period-table {
+  flex-shrink: 1;
+}
+
+.booking-periods.filling > .period-table[open] {
+  min-height: min(8rem, 33cqh);
 }
 
 .hint {

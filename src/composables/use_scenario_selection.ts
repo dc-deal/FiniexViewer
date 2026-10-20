@@ -7,8 +7,6 @@ export interface ScenarioSelection {
   units: Ref<string[]> | ComputedRef<string[]>
   /** Adds a scenario to the narrowing, or takes it out again. */
   toggle: (unit: string) => void
-  /** Back to the whole run. */
-  clear: () => void
 }
 
 const SCENARIO_SELECTION: InjectionKey<ScenarioSelection> = Symbol('scenario-selection')
@@ -32,7 +30,6 @@ export function provideScenarioSelection(selection: ScenarioSelection): void {
 const WHOLE_RUN: ScenarioSelection = {
   units: computed(() => []),
   toggle: () => {},
-  clear: () => {},
 }
 
 /**

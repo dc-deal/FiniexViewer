@@ -8,10 +8,12 @@ import RecordList from '@/components/base/RecordList.vue'
 import OrderStepList from '@/components/runs/OrderStepList.vue'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { useChartLink } from '@/composables/use_chart_link'
+import { useViewRows } from '@/composables/use_panel_view'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import type { PositionRef } from '@/types/context_types'
 import { useOrderSteps } from '@/composables/use_order_steps'
 import { utcInstant } from '@/components/runs/report_format'
+import { executedOpenings } from '@/components/runs/run_chart_marks'
 import type { ListColumn } from '@/types/list_types'
 import type {
   OrderEvent,
@@ -87,6 +89,14 @@ const traded = computed(() => new Set(
 ))
 
 /**
+ * The positions that opened, as `scenario~position` — every one has candles to show it on, closed
+ * or not: the run chart marks where it opened.
+ */
+const openedPositions = computed(() => new Set(
+  executedOpenings(props.model.history.orders).map(row => `${row.scenario_name}~${row.position_id}`)
+))
+
+/**
  * The position a row belongs to — read from `order_id`, which IS the position id (their glossary:
  * *"Not an order's own id: the id of the POSITION the order belongs to"*). `position_id` is null
  * until the fill, so it cannot carry the link on the row that OPENS a position.
@@ -105,9 +115,9 @@ function hasTrades(order: OrderHistoryRow): boolean {
   return traded.value.has(`${order.scenario_name}~${positionOf(order)}`)
 }
 
-/** A position with trades has candles to show them on: the run chart on its unit. */
+/** A position that opened has candles to show it on: the run chart on its unit. */
 function canChart(order: OrderHistoryRow): boolean {
-  return hasTrades(order) && chartLink.canShow(order.scenario_name)
+  return openedPositions.value.has(`${order.scenario_name}~${positionOf(order)}`) && chartLink.canShow(order.scenario_name)
 }
 
 function jumpToTrades(order: OrderHistoryRow): void {
@@ -363,22 +373,20 @@ function statusTone(order: OrderHistoryRow): string {
 
 const REFUSED = new Set(['rejected', 'denied', 'undelivered', 'unaccounted'])
 
-const collapsed = ref(new Set<string>())
+/** The scenarios the reader closed by hand — kept as the panel's own view for the run on show. */
+const closedGroups = useViewRows('groups-closed', () => props.model.history.run_id)
 
+// the positions opened are NOT kept: each one brought back would ask for its step stream again
 watch(() => props.model.history.run_id, () => {
-  collapsed.value = new Set()
   opened.value = new Set()
 })
 
 function isExpanded(scenario: string): boolean {
-  return !collapsed.value.has(scenario)
+  return !closedGroups.has(scenario)
 }
 
 function toggleGroup(scenario: string): void {
-  const next = new Set(collapsed.value)
-  if (next.has(scenario)) next.delete(scenario)
-  else next.add(scenario)
-  collapsed.value = next
+  closedGroups.toggle(scenario)
 }
 
 /**
@@ -463,7 +471,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
   <div class="orders-panel">
     <div v-if="!shown.length" class="hint">
       {{ narrowed
-        ? t('The chosen scenario placed no order')
+        ? t('The scenario in focus placed no order')
         : t('This run placed no order') }}
     </div>
     <template v-else>
@@ -649,11 +657,6 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
 
 .order-id {
   color: var(--color-text-primary);
-}
-
-/* the whole lifecycle of the position a reader jumped to, not one row of it */
-.order-list :deep(.record-row.marked) {
-  background-color: var(--color-bg-raised);
 }
 
 /* the position's shape is the second word after its id, never glued to it: the template keeps no

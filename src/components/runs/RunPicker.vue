@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch, watchPostEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRunsStore } from '@/stores/runs_store'
+import AppButton from '@/components/base/AppButton.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
+import { useOpenInContext } from '@/composables/use_open_in_context'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListColumn } from '@/types/list_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
@@ -30,7 +32,7 @@ import { plural, t } from '@/translate'
 const runsStore = useRunsStore()
 const { runs, selectedRun, selectedRunId, loadingRuns } = storeToRefs(runsStore)
 
-// the narrowing rides in the URL under `runf` / `runq` / `runsort`, so a filtered index is a link
+// the narrowing is stored with the arrangement (`bars['runs']`), so a reload keeps it
 /**
  * A run whose purpose nobody stated. **THEIR word since 2026-10-09**, decided on their side after
  * we asked: *"`unstated` → `unknown`. It is the word our documents already use for exactly this."*
@@ -40,6 +42,13 @@ const { runs, selectedRun, selectedRunId, loadingRuns } = storeToRefs(runsStore)
  * those rows no value would DROP them the moment it is used.
  */
 const UNKNOWN = 'unknown'
+
+/**
+ * A run with no parent, in their words: `parent_id` *"is null when the run stands alone"* (their
+ * run-kinds document). A parent id without a kind is a run indexed before the field existed, and it
+ * reads `unknown` rather than standing alone.
+ */
+const STANDS_ALONE = 'stands alone'
 
 /**
  * What the list opens with: everything except the fixtures.
@@ -55,10 +64,15 @@ const UNKNOWN = 'unknown'
  * The three values are named rather than derived, so a FOURTH purpose would be hidden here
  * silently. `api_contract.test.ts` asserts the served vocabulary against this list for that
  * reason: a new word turns the suite red instead of quietly shortening the list.
+ *
+ * **And only the runs that stand alone** (operator, 2026-10-20): a sweep's combinations are held by
+ * the Sweeps panel and a deployment's sessions by the Deployments panel, each a click from there to
+ * its run. Left out, never removed — measured that day, 7 of 82 such runs are in no list of their
+ * own (sessions that never closed, a combination with no report), and `Parent` brings them back.
  */
-const SHOWN_BY_DEFAULT = { purpose: ['regular', 'certificate', UNKNOWN] }
+const SHOWN_BY_DEFAULT = { purpose: ['regular', 'certificate', UNKNOWN], parent: [STANDS_ALONE, UNKNOWN] }
 
-const { selection, search, sort } = useFacetState('run-picker', 'newest', { defaultSelection: SHOWN_BY_DEFAULT })
+const { selection, search, sort } = useFacetState('runs', 'newest', { defaultSelection: SHOWN_BY_DEFAULT })
 
 /** A value the row does not state is not offered — an empty option reads as a category. */
 function stated(value: string | null): string[] {
@@ -71,7 +85,7 @@ const facets: FacetDefinition<RunInfo>[] = [
    * `run-kinds` carries a section called *"`group` is the pipeline, never the nesting"*. Ours was
    * `Run type`, which sat beside a `Purpose` facet meaning what the run is FOR — nobody can tell
    * "type" from "purpose" by the words alone. Renamed 2026-10-10; the facet's id stays `group`,
-   * so a shared link is unaffected.
+   * so a stored narrowing is unaffected.
    */
   { id: 'group', label: 'Pipeline', valuesOf: row => stated(row.group) },
   // no `Set` facet: the list GROUPS by set, so the facet would offer the same partition twice —
@@ -89,7 +103,8 @@ const facets: FacetDefinition<RunInfo>[] = [
    * We had been about to put the run header's `origin` block on the same screen, which would have
    * meant two unrelated `Origin` in one window. Nobody noticed until the counting.
    */
-  { id: 'parent', label: 'Parent', valuesOf: row => stated(row.parent_kind) },
+  // every row has a value here, so the default can keep the runs that stand alone
+  { id: 'parent', label: 'Parent', valuesOf: row => [row.parent_kind ?? (row.parent_id ? UNKNOWN : STANDS_ALONE)] },
   { id: 'version', label: 'Version', valuesOf: row => stated(row.app_version) },
   /**
    * What a run is FOR (contract 24), and the one facet that starts with a value picked. It never
@@ -216,7 +231,7 @@ const columns: ListColumn[] = [
   { label: t('Run id'), width: 'auto', rank: 5 },
   // How much MARKET the run read — what the scenario roster puts first for the same reason: it is
   // the figure that says how big a run was, and nothing else on the row carries it.
-  { label: t('Market time'), width: 'auto', figure: true, rank: 4 },
+  { label: t('Tick timespan'), width: 'auto', figure: true, rank: 4 },
   { label: t('Outcome'), width: 'auto', rank: 1 },
   { label: t('Net P&L'), width: 'auto', figure: true, rank: 1 },
   { label: t('Trades'), width: 'auto', figure: true, rank: 3 },
@@ -325,16 +340,88 @@ function showsFamilyHead(key: string): boolean {
  * Which families are open. They start CLOSED, because the fold is the point: a list that opens
  * with every family expanded has folded nothing and is the 85 rows it was.
  *
- * Session state rather than stored: it is not what the reader is looking at (that is the run, and
- * it rides in the url) and not an arrangement they made of the workspace.
+ * Session state rather than stored: it is not what the reader is looking at (that is the run, kept
+ * in the link) and not an arrangement they made of the workspace.
  */
 const opened = ref(new Set<string>())
 
+function openFamily(key: string): void {
+  if (!opened.value.has(key)) opened.value = new Set([...opened.value, key])
+}
+
+/**
+ * The chosen run stays reachable: its family opens WITH the choice, wherever the choice was made,
+ * and again when *Show in list* asks for its row. Opened once rather than held open — a family
+ * heading that could not close was a button that did nothing.
+ */
+watch(() => (selectedRun.value ? familyOf(selectedRun.value) : null), key => { if (key) openFamily(key) },
+  { immediate: true })
+watch(() => runsStore.chosenRowAsked, () => { if (selectedRun.value) openFamily(familyOf(selectedRun.value)) })
+
 function isFamilyOpen(key: string): boolean {
-  // the chosen run stays reachable: its family is open whether or not anyone opened it
-  if (selectedRun.value && familyOf(selectedRun.value) === key) return true
   return opened.value.has(key)
 }
+
+/**
+ * The chosen run is not among the rows the filter or the search leaves — said where the list is,
+ * with the way to see it, instead of a row that is simply not there to scroll to.
+ */
+const chosenHidden = computed(() => selectedRun.value !== null && runs.value.length > 0
+  && !shown.value.some(row => row.run_id === selectedRun.value!.run_id))
+
+function showEveryRun(): void {
+  selection.value = {}
+  search.value = ''
+}
+
+const { openSweep, openDeployment, canOpen } = useOpenInContext()
+
+/**
+ * Where `Parent` alone leaves the chosen run out, its own list holds it — a sweep's combination the
+ * Sweeps panel, a deployment's session the Deployments panel — and the notice leads there rather
+ * than to every run: the list it would fill is the one the default keeps short.
+ */
+const heldElsewhere = computed(() => {
+  const run = selectedRun.value
+  const parents = selection.value['parent'] ?? []
+  if (!run?.parent_id || !canOpen || !parents.length || parents.includes(run.parent_kind ?? '')) return null
+  const parent = run.parent_id
+  if (run.parent_kind === 'sweep') return { button: t('Show in Sweeps'), open: () => openSweep(parent) }
+  if (run.parent_kind === 'deployment') return { button: t('Show in Deployments'), open: () => openDeployment(parent) }
+  return null
+})
+
+const listRef = ref<{ $el: HTMLElement } | null>(null)
+
+/**
+ * Whether the chosen run's row stands inside the list's own view: the run bundle offers *Show in
+ * list* only where it does not. Measured by the browser — an IntersectionObserver rooted at the
+ * list — and aimed anew whenever the rows may have moved: another run, another filter, a family
+ * opened, the index arriving. A panel behind another tab keeps its rows laid out, so whether the
+ * list is on show at all is the dock's to say, not this.
+ */
+watchPostEffect(onCleanup => {
+  void [selectedRunId.value, shown.value, loadingRuns.value, opened.value]
+  const list = listRef.value?.$el
+  // no row drawn for the chosen run: it is not in view. Where there is one, the observer's first
+  // answer says so — written false first, the bundle's button showed for a frame on every re-aim
+  const row = list?.querySelector && typeof IntersectionObserver !== 'undefined'
+    ? list.querySelector('.record-row.picked:not(.record-unseen)')
+    : null
+  if (!list || !row) {
+    runsStore.chosenRowInView = false
+    return
+  }
+  // the heading stays at the top of the list, so a row under it is not in view
+  const head = list.querySelector('.record-head')?.getBoundingClientRect().height ?? 0
+  const observer = new IntersectionObserver(
+    entries => { runsStore.chosenRowInView = entries.some(entry => entry.isIntersecting) },
+    { root: list, rootMargin: `-${Math.round(head)}px 0px 0px 0px`, threshold: 0.6 },
+  )
+  observer.observe(row)
+  onCleanup(() => observer.disconnect())
+})
+onUnmounted(() => { runsStore.chosenRowInView = false })
 
 function toggleFamily(key: string): void {
   const next = new Set(opened.value)
@@ -461,7 +548,9 @@ function choose(runId: string): void {
 
       <RecordList
         v-else
+        ref="listRef"
         class="run-list"
+        tabindex="-1"
         :rows="shown"
         :columns="columns"
         :row-key="run => run.run_id"
@@ -549,10 +638,28 @@ function choose(runId: string): void {
               v-if="run.parent_kind && !showsFamilyHead(familyOf(run))"
               class="run-mark"
             >{{ run.parent_kind }}</span>
-            <span v-if="!run.has_reports" class="run-mark logs">{{ t('logs only') }}</span>
+            <!-- `artifacts` read with `reporting`, as their runs document asks: without the pair a
+                 run that never got to its report and one never meant to write any look alike -->
+            <span
+              v-if="!run.has_reports"
+              class="run-mark logs"
+              :title="run.reporting === 'expected' ? t('Still running, or it died before its report phase') : undefined"
+            >{{ run.reporting === 'expected' ? t('no report') : t('logs only') }}</span>
           </span>
         </template>
       </RecordList>
+      <!-- BELOW the rows: above them, its coming and going on a pick moved every row under the
+           pointer by a line. Here the list's last row gives way instead, and nothing moves -->
+      <p v-if="chosenHidden" class="picker-hint chosen-hidden">
+        <template v-if="heldElsewhere">
+          {{ t('The chosen run belongs to') }} {{ selectedRun?.parent_kind }} {{ selectedRun?.parent_id }}
+          <AppButton variant="quiet" @click="heldElsewhere.open">{{ heldElsewhere.button }}</AppButton>
+        </template>
+        <template v-else>
+          {{ t('The chosen run is not in this list — the filter or the search hides it') }}
+          <AppButton variant="quiet" @click="showEveryRun">{{ t('Show every run') }}</AppButton>
+        </template>
+      </p>
     </template>
   </div>
 </template>
@@ -589,6 +696,12 @@ function choose(runId: string): void {
    view, where the rest alone would leave less than one row; measured against the VIEW (`cqh`, the
    runs view is a size container), not the browser window. Everything else about its shape — the
    tracks, the sticky headings, the row's four states — belongs to `base/RecordList.vue`. */
+/* where *Show in list* leaves the keyboard: the list, with the row it led to centred in it */
+.run-list:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: -1px;
+}
+
 .run-list {
   flex: 1 1 0;
   min-height: 33cqh;
@@ -680,20 +793,25 @@ function choose(runId: string): void {
   white-space: nowrap;
 }
 
-/* a column of figures is read downwards, so it is right-aligned and its digits line up; several
-   account currencies stack within the cell rather than widening it */
-.run-pnl {
-  /* a zero has no polarity and therefore no sign colour — but it is still a figure the backend
-     stated, so it reads in plain ink rather than inheriting nothing */
-  color: var(--color-text-primary);
-}
-
 .run-pnl,
 /* read down the column against its neighbours, like every other figure here */
 .run-span {
   text-align: right;
   white-space: nowrap;
   color: var(--color-text-secondary);
+}
+
+/* a column of figures is read downwards, so it is right-aligned and its digits line up; several
+   account currencies stack within the cell rather than widening it. The stacking was declared for
+   the trade counts only, so two currencies read `3.74 EUR-22.95 USD` — one figure minus another */
+.run-pnl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  /* a zero has no polarity and therefore no sign colour — but it is still a figure the backend
+     stated, so it reads in plain ink rather than inheriting nothing. After the shared rule above,
+     which set the secondary ink for both and won over this one while it stood before it */
+  color: var(--color-text-primary);
 }
 
 .run-trades {

@@ -4,7 +4,6 @@ import { reportKindId } from '@/panel_kinds'
 import { allPanels } from '@/panel_registry'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
-import { useRunsStore } from '@/stores/runs_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
 import type { PanelDescriptor } from '@/types/panel_types'
 
@@ -17,7 +16,8 @@ export interface SectionState {
   /**
    * The chosen run carries no such section — a state of the RUN, not of the reader's arrangement.
    * One still on its way is not absent: it would flicker struck-through on every run change. With
-   * no run chosen nothing is absent, because there is no run to lack anything.
+   * no run chosen nothing is absent, because there is no run to lack anything. One that failed to
+   * load is not absent either: the run carries it (`run_sections_store.lacks`, the one rule).
    */
   absent: boolean
 }
@@ -32,21 +32,17 @@ export interface SectionState {
 export function useSectionStates(): ComputedRef<SectionState[]> {
   const { arrangedPanels } = storeToRefs(useLayoutStore())
   const { openIds } = storeToRefs(useDockStore())
-  const { selectedRun } = storeToRefs(useRunsStore())
-  const { sources, pending } = storeToRefs(useRunSectionsStore())
+  const sections = useRunSectionsStore()
 
   return computed(() => {
     const byId = new Map(allPanels().map(panel => [panel.id, panel]))
     return arrangedPanels.value.flatMap(state => {
       const section = byId.get(state.id)
       if (!section) return []
-      const model = sources.value[section.source]
       const place: SectionPlace = openIds.value.includes(reportKindId(section.id))
         ? 'panel'
         : state.hidden ? 'hidden' : 'column'
-      const absent = selectedRun.value !== null
-        && (model === null || model === undefined) && !pending.value[section.source]
-      return [{ section, place, absent }]
+      return [{ section, place, absent: sections.lacks(section.source) }]
     })
   })
 }

@@ -4,34 +4,86 @@ import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
+import { feeSplit, periodCard, unitTotalCard, type PeriodRow } from '@/components/runs/booking_period_card'
 import {
   amount, figure, numberOrNa, percentOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
-import type { BookingPeriodRow } from '@/types/api/report_types'
+import type { BookingPeriodUnitTotal } from '@/types/api/report_types'
+import type { FigureCard } from '@/types/figure_types'
 import type { ListBand, ListColumn } from '@/types/list_types'
 import { plural, t } from '@/translate'
 
 /**
- * A period row from either scope. The run-scoped route omits `run_id` because the whole response
- * is one run; the deployment-scoped route carries it, and there it is part of the row's identity.
+ * A line of the table: a period, or the total that closes its unit's periods. The served fields stay
+ * on the line itself (`row.final_equity`), as a cell reads them everywhere else, rather than one
+ * level down where the term register could not see which field a column shows.
  */
-type PeriodRow = BookingPeriodRow & { run_id?: string }
+type TableRow = (PeriodRow & { kind: 'period' }) | (BookingPeriodUnitTotal & { kind: 'total' })
 
 /**
  * The booking periods as rows. Shared by the run panel and the deployment view, so it takes the
  * periods and the key tuple the response declared rather than reaching for either itself.
  *
- * It carries EVERY field a period has — the same fifteen the hover card shows. The two serve
- * different questions: the card answers *what about this one*, the table answers *how do they
- * compare*, and comparison is why it stays a table. One column is one field, so the eye runs down
- * it; in a card-per-period layout the same field sits at a different height in every card.
+ * It carries EVERY field a period has — and every row carries the same card as its bar on the
+ * timeline above (`booking_period_card.ts`), which holds what a narrow panel's columns gave up. The
+ * two serve different questions: the card answers *what about this one*, the table answers *how do
+ * they compare*, and comparison is why it stays a table. One column is one field, so the eye runs
+ * down it; in a card-per-period layout the same field sits at a different height in every card.
  */
 const props = defineProps<{
   periods: PeriodRow[]
   keyFields: string[]
   /** Set where the rows span several runs — off inside one run, where the column is constant. */
   showRun?: boolean
+  /**
+   * The totals the run-scoped route serves per unit, each drawn as a line after its unit's last
+   * period, in the same columns. Absent on the deployment view, whose route serves none.
+   */
+  unitTotals?: BookingPeriodUnitTotal[]
+  /**
+   * Set where the table is the last thing in a panel of its own: the panel gives it the height that
+   * is left and the whole table scrolls in it, its headings sticky. Off beside other sections — the
+   * deployment view — where the list keeps its own cap of half the view and scrolls itself.
+   */
+  fill?: boolean
 }>()
+
+/** The table unfolded; closed by default. The panel around it decides whether the choice is kept. */
+const open = defineModel<boolean>('open', { default: false })
+
+function onToggle(event: Event): void {
+  // also fired when a kept value opens the table on mount: the value is the same then, and the
+  // store writes nothing for it
+  open.value = (event.target as HTMLDetailsElement).open
+}
+
+/**
+ * The periods in the order they were handed — grouped by unit, `orderPeriods` — with each unit's
+ * total after its LAST period. A total whose unit has no period on show is not drawn: the
+ * narrowing left that unit out, and its line would stand under nothing. Nor is the total of a unit
+ * of ONE period (`period_count`, served): it would repeat its row figure for figure, and its
+ * account's decline is that period's own.
+ */
+const rows = computed<TableRow[]>(() => {
+  const totals = new Map((props.unitTotals ?? [])
+    .filter(total => total.period_count > 1)
+    .map(total => [total.unit_name, total]))
+  const last = new Map(props.periods.map((period, index) => [period.unit_name, index]))
+  return props.periods.flatMap((period, index): TableRow[] => {
+    const total = totals.get(period.unit_name)
+    const line: TableRow = { ...period, kind: 'period' }
+    return total && last.get(period.unit_name) === index ? [line, { ...total, kind: 'total' }] : [line]
+  })
+})
+
+function keyOf(row: TableRow): string {
+  return row.kind === 'period' ? rowKey(row, props.keyFields) : `total:${row.unit_name}`
+}
+
+/** A period's card, or the total's — which adds what the account carried across the periods. */
+function cardOf(row: TableRow): FigureCard {
+  return row.kind === 'period' ? periodCard(row) : unitTotalCard(row)
+}
 
 const { openRun, canOpen } = useOpenInContext()
 
@@ -54,21 +106,21 @@ const sharedCurrency = computed(() => {
 })
 
 /** The amount as the header allows: bare where the code is stated above, complete where it is not. */
-function money(value: number, period: PeriodRow): string {
-  return sharedCurrency.value === null ? amount(value, period.currency) : figure(value)
+function money(value: number, currency: string): string {
+  return sharedCurrency.value === null ? amount(value, currency) : figure(value)
 }
 
 /** A drawdown is a MAGNITUDE — the stored sign is not reliable across the archive. */
-function drawdown(period: PeriodRow): string {
-  return money(Math.abs(period.max_drawdown), period)
+function drawdown(value: number, currency: string): string {
+  return money(Math.abs(value), currency)
 }
 
 /**
  * The equity band, as one column. Two columns for `min_equity` and `max_equity` would be two
  * headers for one fact, and the band is only ever read as a pair.
  */
-function band(period: PeriodRow): string {
-  return `${money(period.min_equity, period)} … ${money(period.max_equity, period)}`
+function band(min: number, max: number, currency: string): string {
+  return `${money(min, currency)} … ${money(max, currency)}`
 }
 
 /**
@@ -77,27 +129,19 @@ function band(period: PeriodRow): string {
  * `final_equity - net_pnl`: that is derived, and wrong besides, since `net_pnl` is realised while
  * equity also values what is still open.
  */
-function opening(period: PeriodRow): string {
-  return period.opening_equity === null ? t('n/a') : money(period.opening_equity, period)
+function opening(value: number | null, currency: string): string {
+  return value === null ? t('n/a') : money(value, currency)
 }
 
 /**
- * What the period PAID, one hover away rather than three more columns on a table that already
- * carries fourteen. Attributed as `net_pnl` is — the costs of the trades this period CLOSED, never
- * a swap still accruing on an open position.
- *
- * The SPREAD is named apart from the sum, because it is not in it: `total_fees` is commission plus
- * swap, measured over 1,044 periods. Reading the three as one total showed `0.00` beside a stated
- * spread of `2.96` on a period that really cost that much.
+ * What a line PAID, one hover away rather than three more columns on a table that already carries
+ * fourteen (`feeSplit`, shared with the card). Attributed as `net_pnl` is — the costs of the trades
+ * this period CLOSED, never a swap still accruing on an open position. The SPREAD is named apart
+ * from the sum, because it is not in it: reading the three as one total showed `0.00` beside a
+ * stated spread of `2.96` on a period that really cost that much.
  */
-function feeSplit(period: PeriodRow): string {
-  // the modelled spread only where one was charged — 0 on recorded quotes, null before contract 33
-  const modelled = period.modelled_spread_cost
-    ? ` · ${t('modelled spread')} ${money(period.modelled_spread_cost, period)}`
-    : ''
-  return `${t('commission')} ${money(period.commission_cost, period)}`
-    + ` · ${t('swap')} ${money(period.swap_cost, period)}`
-    + ` — ${t('spread')} ${money(period.spread_cost, period)}${modelled} ${t('besides, not part of this total')}`
+function costs(line: Parameters<typeof feeSplit>[0], currency: string): string {
+  return feeSplit(line, value => money(value, currency))
 }
 
 /** Columns under the identity group, which has no heading of its own. */
@@ -124,9 +168,13 @@ function feeSplit(period: PeriodRow): string {
  * data says why: over ten drawn periods, eight had no trades at all, so `Win rate` and `PF` read
  * `n/a` on eight of ten rows. `Opening` and `Equity band` describe the same movement that
  * `Final equity` closes, and that one is rank 1.
+ *
+ * The unit's floor is the one that gives: the four of rank 1 summed to 26rem with it at 8rem, and a
+ * run bundle 493 px wide holds 410 px of list — the table scrolled sideways by six (measured
+ * 2026-10-20). A long unit name is cut in the narrowest tier; its card says it whole.
  */
 const columns = computed<ListColumn[]>(() => [
-  { label: t('Unit'), width: 'minmax(8rem, 16fr)', rank: 1 },
+  { label: t('Unit'), width: 'minmax(7rem, 16fr)', rank: 1 },
   ...(props.showRun ? [{ label: t('Run'), width: 'minmax(0, 16fr)', rank: 4 } as ListColumn] : []),
   {
     /*
@@ -176,8 +224,9 @@ const bands = computed<ListBand[]>(() => [
 <template>
   <!-- Closed by default, and a native <details> rather than a custom toggle: the chart above is
        what a reader comes for, the rows are the backup. `details` brings the keyboard and
-       screen-reader semantics with it instead of us re-implementing them. -->
-  <details class="periods">
+       screen-reader semantics with it instead of us re-implementing them. Opened, it stays open
+       across a run change and a reload — the panel keeps the choice as its own view. -->
+  <details class="periods" :class="{ fill }" :open="open" @toggle="onToggle">
     <summary class="periods-summary">
       {{ plural(periods.length, t('booking period'), t('booking periods')) }}
       <!-- the currency, stated ONCE for the whole table instead of in every amount -->
@@ -185,43 +234,77 @@ const bands = computed<ListBand[]>(() => [
     </summary>
     <RecordList
       class="periods-list"
-      :rows="periods"
+      :rows="rows"
       :columns="columns"
       :bands="bands"
-      :row-key="period => rowKey(period, keyFields)"
+      :row-key="keyOf"
+      :row-class="row => row.kind === 'total' ? 'unit-total' : undefined"
+      :row-card="cardOf"
       inert
     >
-      <template #default="{ row: period }">
-        <span :data-rank="1" class="text-cell" :title="period.unit_name">
-          {{ period.unit_name }}
-        </span>
-        <span v-if="showRun" :data-rank="4" class="text-cell">
-          <JumpLink
-            v-if="period.run_id && canOpen"
-            :title="t('Open this run')"
-            @click="openRunOf(period)"
-          >{{ period.run_id }}</JumpLink>
-          <template v-else>{{ period.run_id }}</template>
-        </span>
-        <span :data-rank="4" class="figure-cell">{{ period.period_no }}</span>
-        <span :data-rank="1" :title="utcInstant(period.opened_at)">
-          {{ utcInstant(period.opened_at) }}
-        </span>
-        <span :data-rank="2" :title="utcInstant(period.closed_at)">
-          {{ utcInstant(period.closed_at) }}
-        </span>
-        <span :data-rank="4" class="text-cell">{{ period.reason }}</span>
-        <span :data-rank="2" class="figure-cell">{{ period.trade_count }}</span>
-        <span :data-rank="1" class="figure-cell" :class="signClass(period.net_pnl)">
-          {{ money(period.net_pnl, period) }}
-        </span>
-        <span :data-rank="5" class="figure-cell">{{ percentOrNa(period.win_rate, period.trade_count) }}</span>
-        <span :data-rank="5" class="figure-cell">{{ numberOrNa(period.profit_factor, period.trade_count) }}</span>
-        <span :data-rank="3" class="figure-cell" :title="feeSplit(period)">{{ money(period.total_fees, period) }}</span>
-        <span :data-rank="3" class="figure-cell">{{ drawdown(period) }}</span>
-        <span :data-rank="5" class="figure-cell">{{ opening(period) }}</span>
-        <span :data-rank="5" class="figure-cell band-cell" :title="band(period)">{{ band(period) }}</span>
-        <span :data-rank="1" class="figure-cell">{{ money(period.final_equity, period) }}</span>
+      <template #default="{ row }">
+        <template v-if="row.kind === 'period'">
+          <span :data-rank="1" class="text-cell">
+            {{ row.unit_name }}
+          </span>
+          <span v-if="showRun" :data-rank="4" class="text-cell">
+            <JumpLink
+              v-if="row.run_id && canOpen"
+              :title="t('Open this run')"
+              @click="openRunOf(row)"
+            >{{ row.run_id }}</JumpLink>
+            <template v-else>{{ row.run_id }}</template>
+          </span>
+          <span :data-rank="4" class="figure-cell">{{ row.period_no }}</span>
+          <span :data-rank="1">{{ utcInstant(row.opened_at) }}</span>
+          <span :data-rank="2">{{ utcInstant(row.closed_at) }}</span>
+          <span :data-rank="4" class="text-cell">{{ row.reason }}</span>
+          <span :data-rank="2" class="figure-cell">{{ row.trade_count }}</span>
+          <span :data-rank="1" class="figure-cell" :class="signClass(row.net_pnl)">
+            {{ money(row.net_pnl, row.currency) }}
+          </span>
+          <span :data-rank="5" class="figure-cell">{{ percentOrNa(row.win_rate, row.trade_count) }}</span>
+          <span :data-rank="5" class="figure-cell">{{ numberOrNa(row.profit_factor, row.trade_count) }}</span>
+          <span :data-rank="3" class="figure-cell" :title="costs(row, row.currency)">
+            {{ money(row.total_fees, row.currency) }}
+          </span>
+          <span :data-rank="3" class="figure-cell">{{ drawdown(row.max_drawdown, row.currency) }}</span>
+          <span :data-rank="5" class="figure-cell">{{ opening(row.opening_equity, row.currency) }}</span>
+          <span :data-rank="5" class="figure-cell band-cell">
+            {{ band(row.min_equity, row.max_equity, row.currency) }}
+          </span>
+          <span :data-rank="1" class="figure-cell">{{ money(row.final_equity, row.currency) }}</span>
+        </template>
+        <!-- the unit's total, in the same columns: Max DD is the deepest SINGLE period, which is what
+             the column shows (their booking-periods document); the account's own decline is in its
+             card, beside it -->
+        <template v-else>
+          <span :data-rank="1" class="text-cell total-label">
+            Σ {{ row.unit_name }}
+          </span>
+          <span v-if="showRun" :data-rank="4" class="text-cell" />
+          <span :data-rank="4" class="figure-cell" />
+          <span :data-rank="1">{{ utcInstant(row.opened_at) }}</span>
+          <span :data-rank="2">{{ utcInstant(row.closed_at) }}</span>
+          <span :data-rank="4" class="text-cell" />
+          <span :data-rank="2" class="figure-cell">{{ row.trade_count }}</span>
+          <span :data-rank="1" class="figure-cell" :class="signClass(row.net_pnl)">
+            {{ money(row.net_pnl, row.currency) }}
+          </span>
+          <span :data-rank="5" class="figure-cell">{{ percentOrNa(row.win_rate, row.trade_count) }}</span>
+          <span :data-rank="5" class="figure-cell">{{ numberOrNa(row.profit_factor, row.trade_count) }}</span>
+          <span :data-rank="3" class="figure-cell" :title="costs(row, row.currency)">
+            {{ money(row.total_fees, row.currency) }}
+          </span>
+          <span :data-rank="3" class="figure-cell">
+            {{ drawdown(row.deepest_period_drawdown, row.currency) }}
+          </span>
+          <span :data-rank="5" class="figure-cell">{{ opening(row.opening_equity, row.currency) }}</span>
+          <span :data-rank="5" class="figure-cell band-cell">
+            {{ band(row.min_equity, row.max_equity, row.currency) }}
+          </span>
+          <span :data-rank="1" class="figure-cell">{{ money(row.final_equity, row.currency) }}</span>
+        </template>
       </template>
     </RecordList>
   </details>
@@ -252,6 +335,17 @@ const bands = computed<ListBand[]>(() => [
   overflow-y: auto;
 }
 
+/* filling its panel: the whole table scrolls, and the list is no scroll box of its own — one would
+   hold the sticky headings inside a box that never moves while the rows scroll past them */
+.periods.fill {
+  overflow-y: auto;
+}
+
+.periods.fill .periods-list {
+  max-height: none;
+  overflow-y: visible;
+}
+
 .periods-list :deep(.record-row) > span {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -265,6 +359,12 @@ const bands = computed<ListBand[]>(() => [
 
 .text-cell {
   text-align: left;
+}
+
+/* the total closes its unit's periods the way a ledger's sum line does: a rule above, the word Σ */
+.periods-list :deep(.record-row.unit-total) {
+  border-top: 1px solid var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 .positive { color: var(--color-positive); }

@@ -3,6 +3,7 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import CandleChart from '@/components/CandleChart.vue'
 import type { ChartBar } from '@/types/api/bar_types'
+import type { ChartLayer, SegmentDrawing } from '@/types/chart_drawing_types'
 import type { ChartMark } from '@/types/run_chart_types'
 
 /**
@@ -13,27 +14,56 @@ import type { ChartMark } from '@/types/run_chart_types'
 const lw = vi.hoisted(() => {
   const fitContent = vi.fn()
   const setData = vi.fn<(data: unknown[]) => void>()
-  const setMarkers = vi.fn<(marks: Record<string, unknown>[]) => void>()
   const setVisibleLogicalRange = vi.fn<(range: { from: number, to: number }) => void>()
-  const series = { setData, setMarkers, applyOptions: vi.fn<(options: Record<string, unknown>) => void>() }
+  /** The bars in view and the plot's width, as the library reports them — set by a test to zoom. */
+  const zoom: { change: (() => void) | null, range: { from: number, to: number } | null, width: number } = {
+    change: null, range: { from: 0, to: 100 }, width: 600,
+  }
+  const series = {
+    setData,
+    applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
+    attachPrimitive: vi.fn<(primitive: unknown) => void>(),
+  }
+  /** The candlestick series' definition, as the library exports it — what `addSeries` is handed. */
+  const CandlestickSeries = { type: 'Candlestick' }
+  /**
+   * What the chart hands its drawing host, call by call. The host itself paints on a canvas and is
+   * tested on its own; here it is the chart's part that is under test — what it hands over, when.
+   */
+  const drawn: { layers: { id: string, drawings: { id: string }[] }[], bars: Map<number, unknown>, colours: { roles: Record<string, string>, surface: string } }[] = []
+  class DrawingHostProbe {
+    setDrawings(layers: never, bars: never, colours: never): void { drawn.push({ layers, bars, colours }) }
+  }
   /** What the library calls as the pointer moves — held so a test can move it. */
   const pointer: { move: ((param: Record<string, unknown>) => void) | null } = { move: null }
   const chart = {
     subscribeCrosshairMove: vi.fn((handler: (param: Record<string, unknown>) => void) => { pointer.move = handler }),
-    addCandlestickSeries: vi.fn<(options: Record<string, unknown>) => typeof series>(() => series),
+    addSeries: vi.fn<(definition: typeof CandlestickSeries, options: Record<string, unknown>) => typeof series>(() => series),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
-    timeScale: vi.fn(() => ({ fitContent, setVisibleLogicalRange })),
+    timeScale: vi.fn(() => ({
+      fitContent,
+      setVisibleLogicalRange,
+      subscribeVisibleLogicalRangeChange: (handler: () => void) => { zoom.change = handler },
+      getVisibleLogicalRange: () => zoom.range,
+      width: () => zoom.width,
+    })),
     resize: vi.fn<(width: number, height: number) => void>(),
     remove: vi.fn(),
   }
   const createChart = vi.fn<(container: HTMLElement, options: Record<string, unknown>) => typeof chart>(
     () => chart
   )
-  return { chart, series, pointer, setData, setMarkers, setVisibleLogicalRange, fitContent, createChart }
+  return {
+    chart, series, pointer, zoom, setData, setVisibleLogicalRange, fitContent, createChart, CandlestickSeries,
+    drawn, DrawingHostProbe,
+  }
 })
+
+vi.mock('@/components/chart_drawing_host', () => ({ ChartDrawingHost: lw.DrawingHostProbe }))
 
 vi.mock('lightweight-charts', () => ({
   createChart: lw.createChart,
+  CandlestickSeries: lw.CandlestickSeries,
   ColorType: { Solid: 'solid' },
 }))
 
@@ -63,15 +93,30 @@ const BARS: ChartBar[] = [
 
 let mounted: VueWrapper | null = null
 
-function mountChart(data: ChartBar[] = BARS, extra: { marks?: ChartMark[], focus?: number | null } = {}): VueWrapper {
-  mounted = mount(CandleChart, { props: { data, ...extra } })
+function mountChart(
+  data: ChartBar[] = BARS,
+  extra: { marks?: ChartMark[], focus?: number | null, priceFormat?: { precision: number, minMove: number } | null } = {},
+): VueWrapper {
+  const { marks, ...rest } = extra
+  mounted = mount(CandleChart, { props: { data, ...rest, ...(marks ? { layers: tradesLayer(marks) } : {}) } })
   return mounted
+}
+
+/** Marks as the run chart hands them: the trades' layer. */
+function tradesLayer(marks: ChartMark[]): ChartLayer[] {
+  return [{ id: 'trades', drawings: marks }]
+}
+
+/** The ids the chart last handed its drawing host, layer by layer. */
+function lastDrawn(): { layers: { id: string, drawings: { id: string }[] }[], colours: { roles: Record<string, string>, surface: string } } {
+  return lw.drawn.at(-1)!
 }
 
 function mark(fields: Partial<ChartMark>): ChartMark {
   return {
-    time: BARS[0]!.time, position: 'belowBar', shape: 'arrowUp', role: 'entry', text: '', focused: false,
-    id: 'entry|unit|pos_1', card: { title: 'pos_1 · long 0.1', details: [] },
+    kind: 'marker', time: BARS[0]!.time, at: BARS[0]!.time, position: 'belowBar', shape: 'arrowUp', role: 'entry', text: '',
+    focused: false, id: 'entry|unit|pos_1', card: { title: 'pos_1 · long 0.1', details: [] },
+    line: { label: 'pos_1', value: 'long 0.1' },
     ...fields,
   }
 }
@@ -212,15 +257,30 @@ describe('CandleChart', () => {
       }),
       mark({
         id: 'exit|unit|pos_1|7',
-        role: 'loss',
+        role: 'negative',
         card: { title: 'pos_1 · long 0.1', details: [{ label: 'Net', value: '-0.40 EUR', tone: 'negative' }] },
       }),
     ]
 
-    it('hands every mark its id, so the library can say which one is under the pointer', () => {
+    it('hands every drawing to its host with its id, so a hit can say which one is under the pointer', () => {
       size = { width: 800, height: 400 }
       mountChart(BARS, { marks: MARKS })
-      expect(lw.setMarkers.mock.lastCall![0].map(drawn => drawn['id'])).toEqual(['entry|unit|pos_1', 'exit|unit|pos_1|7'])
+      expect(lastDrawn().layers.map(layer => layer.id)).toEqual(['trades'])
+      expect(lastDrawn().layers[0]!.drawings.map(drawing => drawing.id)).toEqual(['entry|unit|pos_1', 'exit|unit|pos_1|7'])
+    })
+
+    /** A level and a line say what they are too: the register holds every layer, not the marks alone. */
+    it('shows the card of a level as it does a mark\'s', async () => {
+      size = { width: 800, height: 400 }
+      const level: SegmentDrawing = {
+        kind: 'segment', id: 'level|SL|unit|pos_1|7', from: BARS[0]!.time, to: BARS[1]!.time, price: 1.05,
+        label: 'SL', role: 'negative', focused: true, card: { title: 'Stop loss · pos_1', details: [] },
+      }
+      const wrapper = mount(CandleChart, { props: { data: BARS, layers: [{ id: 'levels', drawings: [level] }, ...tradesLayer(MARKS)] } })
+      mounted = wrapper
+      lw.pointer.move!({ hoveredInfo: { objectId: 'level|SL|unit|pos_1|7' }, point: { x: 100, y: 80 } })
+      await nextTick()
+      expect(wrapper.find('.chart-card').text()).toContain('Stop loss · pos_1')
     })
 
     it('shows the card of the mark under the pointer, and none off every mark', async () => {
@@ -228,13 +288,13 @@ describe('CandleChart', () => {
       const wrapper = mountChart(BARS, { marks: MARKS })
       expect(wrapper.find('.chart-card').exists()).toBe(false)
 
-      lw.pointer.move!({ hoveredObjectId: 'exit|unit|pos_1|7', point: { x: 100, y: 80 } })
+      lw.pointer.move!({ hoveredInfo: { objectId: 'exit|unit|pos_1|7' }, point: { x: 100, y: 80 } })
       await nextTick()
       expect(wrapper.find('.chart-card').text()).toContain('pos_1 · long 0.1')
       expect(wrapper.find('.chart-card').text()).toContain('-0.40 EUR')
 
       // a thing the register does not know, and no thing at all, both show nothing
-      lw.pointer.move!({ hoveredObjectId: 'line|elsewhere', point: { x: 100, y: 80 } })
+      lw.pointer.move!({ hoveredInfo: { objectId: 'line|elsewhere' }, point: { x: 100, y: 80 } })
       await nextTick()
       expect(wrapper.find('.chart-card').exists()).toBe(false)
       lw.pointer.move!({ point: { x: 300, y: 80 } })
@@ -245,19 +305,71 @@ describe('CandleChart', () => {
     it('drops a card whose mark is gone', async () => {
       size = { width: 800, height: 400 }
       const wrapper = mountChart(BARS, { marks: MARKS })
-      lw.pointer.move!({ hoveredObjectId: 'entry|unit|pos_1', point: { x: 100, y: 80 } })
+      lw.pointer.move!({ hoveredInfo: { objectId: 'entry|unit|pos_1' }, point: { x: 100, y: 80 } })
       await nextTick()
       expect(wrapper.find('.chart-card').exists()).toBe(true)
-      await wrapper.setProps({ marks: [] })
+      await wrapper.setProps({ layers: [] })
       expect(wrapper.find('.chart-card').exists()).toBe(false)
     })
   })
 
-  /** The marks are drawn on a canvas, where nothing can read them back — so the element counts them. */
-  it('says on its element how many marks it draws', () => {
+  /**
+   * The library rounds every price to two decimals unless told otherwise — EURUSD read `1.16` on every
+   * label. A format handed in is the series' from the start, follows a change, and a format taken away
+   * returns the library's own rather than keeping the previous instrument's decimals.
+   */
+  it('draws prices in the format it is handed, and follows a change', async () => {
     size = { width: 800, height: 400 }
-    const wrapper = mountChart(BARS, { marks: [mark({}), mark({ role: 'gain' })] })
+    const wrapper = mountChart(BARS, { priceFormat: { precision: 5, minMove: 0.00001 } })
+    expect(lw.chart.addSeries.mock.calls[0]![1]).toMatchObject({
+      priceFormat: { type: 'price', precision: 5, minMove: 0.00001 },
+    })
+
+    await wrapper.setProps({ priceFormat: { precision: 3, minMove: 0.001 } })
+    expect(lw.series.applyOptions).toHaveBeenLastCalledWith({ priceFormat: { type: 'price', precision: 3, minMove: 0.001 } })
+    await wrapper.setProps({ priceFormat: null })
+    expect(lw.series.applyOptions).toHaveBeenLastCalledWith({ priceFormat: { type: 'price', precision: 2, minMove: 0.01 } })
+  })
+
+  it('leaves the library its own format where it is handed none', () => {
+    size = { width: 800, height: 400 }
+    mountChart()
+    expect(lw.chart.addSeries.mock.calls[0]![1]).not.toHaveProperty('priceFormat')
+  })
+
+  /**
+   * Fitted at the library's own floor of 0.5 px a bar, 2,000 bars needed 1,000 px, and on a narrower
+   * chart the window's start was out of view at first look.
+   */
+  it('lets a long window fit a narrow chart, below the library\'s own least bar width', () => {
+    size = { width: 800, height: 400 }
+    mountChart()
+    const options = lw.createChart.mock.lastCall![1] as { timeScale: { minBarSpacing: number } }
+    // the route serves at most 10,000 bars at once: they fit 500 px
+    expect(10_000 * options.timeScale.minBarSpacing).toBeLessThanOrEqual(500)
+  })
+
+  /** The marks are drawn on a canvas, where nothing can read them back — so the element counts them. */
+  /** The chart draws for itself through ONE primitive of its candles, attached once, when it is built. */
+  it('attaches its drawing host to its candles once, when it is built', () => {
+    size = { width: 800, height: 400 }
+    mountChart()
+    expect(lw.series.attachPrimitive).toHaveBeenCalledTimes(1)
+    expect(lw.series.attachPrimitive.mock.calls[0]![0]).toBeInstanceOf(lw.DrawingHostProbe)
+  })
+
+  /** The marks stand away from their bars, so the host is handed every bar's range by its time. */
+  it('hands the host the range of every bar it draws', () => {
+    size = { width: 800, height: 400 }
+    mountChart(BARS, { marks: [mark({})] })
+    expect(lw.drawn.at(-1)!.bars.get(BARS[0]!.time)).toEqual({ high: BARS[0]!.high, low: BARS[0]!.low })
+  })
+
+  it('says on its element how many marks it draws, and what each layer holds', () => {
+    size = { width: 800, height: 400 }
+    const wrapper = mountChart(BARS, { marks: [mark({}), mark({ role: 'positive' })] })
     expect(wrapper.attributes('data-marks')).toBe('2')
+    expect(wrapper.attributes('data-drawings')).toBe('trades:2')
   })
 
   /**
@@ -307,7 +419,7 @@ describe('CandleChart', () => {
         rightPriceScale: { borderColor: '#000003' },
         timeScale: { borderColor: '#000003' },
       })
-      expect(lw.chart.addCandlestickSeries).toHaveBeenCalledWith({
+      expect(lw.chart.addSeries).toHaveBeenCalledWith(lw.CandlestickSeries, {
         borderVisible: false,
         upColor: '#000005',
         downColor: '#000006',
@@ -317,23 +429,52 @@ describe('CandleChart', () => {
     })
 
     /** A result is the polarity of a figure; an entry is a fact in plain ink; the shape says the rest. */
-    it('paints the marks of trades by their role, the one looked at larger', async () => {
+    it('paints every drawing by its role, from the tokens, and again when the theme changes', async () => {
       size = { width: 800, height: 400 }
       mountChart(BARS, { marks: [
         mark({ role: 'entry', focused: true }),
-        mark({ role: 'gain', shape: 'circle', position: 'aboveBar', text: '+' }),
-        mark({ role: 'loss', shape: 'circle', text: '−' }),
+        mark({ role: 'positive', shape: 'circle', position: 'aboveBar', text: '+' }),
+        mark({ role: 'negative', shape: 'circle', text: '−' }),
         mark({ role: 'flat', shape: 'circle', text: '0' }),
+        mark({ role: 'mixed', shape: 'circle', text: '±×3', count: 3 }),
       ] })
 
-      expect(lw.setMarkers.mock.lastCall![0].map(entry => [entry['color'], entry['size']])).toEqual([
-        ['#000007', 2], ['#000005', 1], ['#000006', 1], ['#000002', 1],
-      ])
-      expect(lw.setMarkers.mock.lastCall![0][1]).toMatchObject({ shape: 'circle', position: 'aboveBar', text: '+' })
+      // a gathered mark whose results point different ways claims neither: quiet, like a flat one
+      const roles = (): string[] => ['entry', 'positive', 'negative', 'flat', 'mixed'].map(role => lastDrawn().colours.roles[role]!)
+      expect(roles()).toEqual(['#000007', '#000005', '#000006', '#000002', '#000002'])
+      expect(lastDrawn().colours.surface).toBe('#000001')
 
       document.documentElement.dataset.theme = 'light'
       await flushPromises()
-      expect(lw.setMarkers.mock.lastCall![0].map(entry => entry['color'])).toEqual(['#ffff07', '#ffff05', '#ffff06', '#ffff02'])
+      expect(roles()).toEqual(['#ffff07', '#ffff05', '#ffff06', '#ffff02', '#ffff02'])
+    })
+
+    /** The width of a bar is what overlapping marks are gathered by, so the chart reports every zoom. */
+    it('reports the width a bar has on screen whenever the reader zooms', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart()
+      lw.zoom.range = { from: 10, to: 110 }
+      lw.zoom.width = 600
+      lw.zoom.change!()
+      expect(wrapper.emitted('spacing')!.at(-1)).toEqual([6])
+      const before = wrapper.emitted('spacing')!.length
+      lw.zoom.range = null
+      lw.zoom.change!()
+      expect(wrapper.emitted('spacing')!.length).toBe(before)
+    })
+
+    it('counts what the marks stand for, a gathered one for each of its members', () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(BARS, { marks: [mark({ id: 'gathered|a', count: 3, text: '×3' }), mark({ id: 'b' })] })
+      expect(wrapper.find('.candle-chart').attributes('data-marks')).toBe('2')
+      expect(wrapper.find('.candle-chart').attributes('data-events')).toBe('4')
+    })
+
+    /** Notices stand over the plot: a line above it would move the chart each time one appeared. */
+    it('places what it is handed inside its frame', () => {
+      size = { width: 800, height: 400 }
+      mounted = mount(CandleChart, { props: { data: BARS }, slots: { default: '<p class="probe">notice</p>' } })
+      expect(mounted.find('.candle-chart .probe').exists()).toBe(true)
     })
 
     it('repaints when the theme changes, without being built again', async () => {
@@ -368,7 +509,7 @@ describe('CandleChart', () => {
       expect(lw.chart.applyOptions.mock.lastCall![0]).toMatchObject({
         layout: { background: { color: '#ffff01' } },
       })
-      expect(lw.chart.addCandlestickSeries.mock.lastCall![0]).toMatchObject({ upColor: '#ffff05' })
+      expect(lw.chart.addSeries.mock.lastCall![1]).toMatchObject({ upColor: '#ffff05' })
     })
 
     /** A chart that is gone must not be painted: the library refuses a removed chart. */

@@ -23,12 +23,20 @@ A document NAME is recorded and a line number is not, deliberately: a renamed do
 and a shifted line fails silently.
 
 **The register is keyed on the label TEXT, not on label plus component — decided 2026-10-08 and
-left as it is.** Where the same word appears in two components for two fields, one entry survives
-and the walk order decides which; both carry a note saying so. Measured that day: 2 of 146 labels
+left as it is.** Where the same word appears in two components for two fields, one entry survived
+and the walk order decided which; both carried a note saying so. Measured that day: 2 of 146 labels
 collide (`Started` → `start_time` here and `started` there, and `Max DD`). A key of
 `Label@Component` would settle them and turn a linguistic key into a technical one — every recorded
 judgement would then hang on a file name and break on the next rename. Two documented collisions are
 the cheaper side of that trade.
+
+**Its entry holds EVERY field the label names, wherever it stands** (2026-10-19). Until then one
+reading survived and the walk order chose it, so only the first place a label appeared was ever
+compared. Measured that day: nineteen later readings named a field their entry did not — most of
+them one meaning on two objects (`Opened` is a trade's `entry_time` and a period's `opened_at`), and
+three genuinely two meanings, `Max drawdown` among them, on the account's decline in two panels
+while the entry recorded the deployment's. The key stays a word; a label that takes on a new field
+anywhere now reads as MOVED.
 
 **A `note` is a judgement and the tool never writes one.** JSON carries no comments, so the five
 words it may begin with are listed here instead, and a regeneration preserves whatever is there:
@@ -41,12 +49,13 @@ words it may begin with are listed here instead, and a regeneration preserves wh
 
 **It finds CHANGE, not wrongness.** That a column head reads badly is a judgement, made once and
 kept in `note`; a comparison can never find it, because nothing moves. What a comparison does find
-is the four things that move underneath a label:
+is the five things that move underneath a label:
 
   1. a label we render that the register does not know            (a new panel, unjudged)
   2. a label whose FIELD changed                                  (we re-pointed it)
   3. a field that vanished from the backend's documentation       (they renamed or removed it)
   4. a console label of theirs that changed                       (their word moved)
+  5. one field under two words                                    (a reader takes it for two)
 
 Three sources, and the first is the authority: the backend's console renderers carry its own word on
 a SCREEN, which is what a label has to agree with. Its consumer documentation says what a field
@@ -87,6 +96,19 @@ SKIP = ('value', 'label', 'currency', 'length', 'key', 'rows', 'open', 'map', 'f
         'join')
 # Above this a display string is a sentence rather than a label — see `labelled_readings`.
 LABEL_WORD_CAP = 5
+
+# One field under two words is right only where the field's NAME is all two values share: two
+# objects report it, or one value is framed by two situations. The label then says which.
+ONE_NAME_TWO_THINGS = {
+    'used_pct': 'the machine reports one for the processor and one for the memory',
+    'emergency_reason': 'one reason, framed by when it struck: at the first tick, or later',
+    'unit_count': "a currency's block counts its accounts, the run its scenarios — one account each",
+    'name': "a scenario's name, a run's set: the field every object has for what it is called",
+    'lots': "a trade row's lots are what that trade closed, a position still open what was left of it",
+    'measured_at': 'one instant framed by two situations: when a reading was taken, and how old the one on screen has grown',
+    'duration_s': "a trade's duration is how long it was held, a sweep's the spread of its runs' starts",
+    'error_count': "a run's errors, and a sweep's combinations that produced no usable data",
+}
 
 CONSOLE_LABEL = re.compile(r'["\']\s*([A-Z][A-Za-z0-9 /&%().\'-]{1,30}?):\s*(?:\{|\s*["\'])')
 
@@ -152,8 +174,14 @@ def declared_window(lines, index, after):
 
     It also corrected one primary field: `Started (UTC)` had been paired with `ticks_from`, which
     sits on the same line and is a different figure entirely.
+
+    An entry written on ONE line closes there, and the window with it. Read on, it took the next
+    statement's fields: `Final equity` collected `unit_count` from the `if` below it and `Swap` the
+    maker and taker fees of the entry after (measured 2026-10-19, once every reading was compared).
     """
     window = [lines[index][after:]]
+    if window[0].count('}') > window[0].count('{'):
+        return window[0]
     for line in lines[index + 1:index + 8]:
         if LABEL.search(line):
             break
@@ -179,22 +207,39 @@ def our_pairs():
     second, and the check stayed silent while `Executed 22/undefined` sat on screen for four days.
     A single string could not have carried it, and a "primary plus secondary" split would have
     invented a rank that `Max drawdown` and its percentage do not have.
+
+    And the list is the UNION over every place the label stands, in the order they are read — the
+    leading field is still the first place's. Beside it come the readings one by one, with where
+    each was found, for the check that runs the other way: one field under two words.
     """
     pairs = {}
+    readings = []
     unresolved = []
+
+    def read(label, fields, path, line):
+        known = pairs.setdefault(label, [])
+        known += [field for field in fields if field not in known]
+        readings.append((label, fields, path, line))
+
     for folder, _, names in os.walk(OURS):
-        for name in sorted(names):
+        # by name regardless of case: the walk order decides which component a shared label is
+        # recorded for, and a module's lower-case name sorted it behind every component — moving a
+        # builder out of `BookingPeriodTimeline.vue` into `booking_period_card.ts` re-pointed seven
+        # labels at another component's field, with nothing about their meaning changed
+        for name in sorted(names, key=str.lower):
             if not (name.endswith('.vue') or name.endswith('.ts')):
                 continue
             path = os.path.join(folder, name).replace(os.sep, '/')
             lines = read_lines(path)
             columns, cells, inline = [], [], []
             for index, line in enumerate(lines):
-                inline += labelled_readings(line, INLINE_LABEL, MUSTACHE)
+                inline += [(label, field, index + 1)
+                           for label, field in labelled_readings(line, INLINE_LABEL, MUSTACHE)]
                 # a template literal wraps across the concatenation, so the reading often sits on
-                # the next line; the window is two lines and `setdefault` absorbs the overlap
-                inline += labelled_readings(' '.join(lines[index:index + 2]),
-                                            TEMPLATE_LABEL, TEMPLATE_EXPR)
+                # the next line; the window is two lines and the union absorbs the overlap
+                inline += [(label, field, index + 1)
+                           for label, field in labelled_readings(' '.join(lines[index:index + 2]),
+                                                                 TEMPLATE_LABEL, TEMPLATE_EXPR)]
                 match = LABEL.search(line)
                 if match:
                     found = fields_in(declared_window(lines, index, match.end()))
@@ -204,25 +249,29 @@ def our_pairs():
                     # 2026-10-09: `Order id` and `Type` of the orders list, silently unresolved.
                     rank = RANK_ON_COLUMN.search(declared_window(lines, index, match.end()))
                     if found:
-                        pairs.setdefault(match.group(1), found)
+                        read(match.group(1), found, path, index + 1)
                     else:
-                        columns.append((match.group(1), rank.group(1) if rank else '-'))
-                if CELL.search(line):
-                    cells.append((CELL.search(line).group(1),
-                                  fields_in(' '.join(lines[index:index + 2]))))
+                        columns.append((match.group(1), rank.group(1) if rank else '-', index + 1))
+                cell = CELL.search(line)
+                if cell:
+                    # a cell that closes on its own line ends there: the next line is the next
+                    # cell, and `Opened` took `duration_s` from it until every reading was compared
+                    closes = '</' in line[cell.end():]
+                    cells.append((cell.group(1),
+                                  fields_in(line if closes else ' '.join(lines[index:index + 2]))))
             if columns and len(columns) == len(cells):
-                for (label, rank), (cell_rank, found) in zip(columns, cells):
+                for (label, rank, at), (cell_rank, found) in zip(columns, cells):
                     if rank == cell_rank and found:
-                        pairs.setdefault(label, found)
+                        read(label, found, path, at)
                     else:
                         unresolved.append((path, label))
             else:
-                unresolved += [(path, label) for label, _ in columns]
-            # last, so both declaration shapes outrank it: a rank-verified column pair is a
-            # stronger statement than two interpolations that happen to sit side by side
-            for label, field in inline:
-                pairs.setdefault(label, [field])
-    return pairs, unresolved
+                unresolved += [(path, label) for label, _, _ in columns]
+            # last, so both declaration shapes lead: a rank-verified column pair is a stronger
+            # statement than two interpolations that happen to sit side by side
+            for label, field, at in inline:
+                read(label, [field], path, at)
+    return pairs, unresolved, readings
 
 
 def their_docs():
@@ -268,6 +317,16 @@ def their_console():
     return labels
 
 
+def marker_only(note):
+    """A note that is nothing but the marker `--baseline` writes where a label could not be joined.
+
+    No person wrote it, so it overrules nothing: a label that joins now is recorded, and its readings
+    count for the check that runs the other way. Taken for a judgement, it hid eight labels that join
+    today, and two fields under two words with them (measured 2026-10-19).
+    """
+    return re.fullmatch(r'unresolved \S+\.(?:vue|ts)', note.strip()) is not None
+
+
 def recorded(entry):
     """The fields an entry names, as a LIST whichever form it is written in.
 
@@ -288,10 +347,23 @@ def load_register():
 
 
 def entry_line(label, entry):
-    """One entry per line, so a changed word is a one-line diff and the file is still JSON."""
-    body = ', '.join(f'{json.dumps(key)}: {json.dumps(entry.get(key))}'
-                     for key in ('field', 'doc', 'their', 'ours', 'note'))
+    """One entry per line, so a changed word is a one-line diff and the file is still JSON.
+
+    `same_as` is written only where it is set: it names the word a label is a FORM of — `period`
+    in a bar too narrow for `booking period` — and the other entries have none to say.
+    """
+    keys = ('field', 'doc', 'their', 'ours', 'note') + (('same_as',) if entry.get('same_as') else ())
+    body = ', '.join(f'{json.dumps(key)}: {json.dumps(entry.get(key))}' for key in keys)
     return f'  {json.dumps(label)}: {{{body}}}'
+
+
+def word_of(label, register):
+    """The word a label is a form of: its `same_as`, without the casing and colon of running text."""
+    seen = set()
+    while (register.get(label) or {}).get('same_as') and label not in seen:
+        seen.add(label)
+        label = register[label]['same_as']
+    return label.rstrip(':').strip().casefold()
 
 
 def baseline():
@@ -300,7 +372,7 @@ def baseline():
     It writes the FILE rather than stdout: a shell redirect on Windows encodes in the console's
     code page, and this file is UTF-8.
     """
-    pairs, unresolved = our_pairs()
+    pairs, unresolved, _ = our_pairs()
     docs = their_docs() or {}
     console = their_console() or set()
     kept = load_register() or {}
@@ -315,9 +387,9 @@ def baseline():
         # register must keep saying so — otherwise the next regeneration quietly reinstates a
         # mapping a person already refuted, and a register that asserts a false pair is worse than
         # one that admits a gap.
-        if note.startswith('unresolved'):
+        if note.startswith('unresolved') and not marker_only(note):
             entries[label] = {'field': None, 'doc': None, 'their': None,
-                              'ours': before.get('ours'), 'note': note}
+                              'ours': before.get('ours'), 'note': note, 'same_as': before.get('same_as')}
             continue
         # ONE field stays a bare string and several become a list. A union in a data file is worth
         # the small irregularity: writing every entry as a list would have moved all 146 lines of a
@@ -328,7 +400,8 @@ def baseline():
             'doc': docs.get(field[0]),
             'their': label if label in console else None,
             'ours': before.get('ours'),
-            'note': note,
+            'note': '' if marker_only(note) else note,
+            'same_as': before.get('same_as'),
         }
     # A judgement recorded against a label whose field could not be joined is still a judgement,
     # and dropping it on a regeneration would lose the one thing a comparison cannot re-derive.
@@ -339,11 +412,19 @@ def baseline():
         if label in entries:
             continue
         before = kept.get(label, {})
-        carried = (before.get('note') or '').split('unresolved ')[0].strip()
+        note = before.get('note') or ''
+        # A judgement already written stays word for word: an `unresolved` that explains itself, or
+        # a display term, which names no field by definition. Rebuilt around the marker, a note that
+        # BEGAN with `unresolved` kept the empty text before it and lost its reason (2026-10-19).
+        if note.startswith(('unresolved', 'display-term')) and not marker_only(note):
+            entries[label] = {'field': None, 'doc': None, 'their': None, 'ours': before.get('ours'),
+                              'note': note, 'same_as': before.get('same_as')}
+            continue
+        carried = note.split('unresolved ')[0].strip()
         marker = f'unresolved {path}'
         entries[label] = {
             'field': None, 'doc': None, 'their': None, 'ours': before.get('ours'),
-            'note': f'{carried}  {marker}'.strip(),
+            'note': f'{carried}  {marker}'.strip(), 'same_as': before.get('same_as'),
         }
 
     body = ',\n'.join(entry_line(label, entries[label]) for label in sorted(entries))
@@ -358,7 +439,7 @@ def check():
         print(f'no register at {REGISTER} — run --baseline and record the judgements first')
         return 1
 
-    pairs, _ = our_pairs()
+    pairs, _, readings = our_pairs()
     docs = their_docs()
     console = their_console()
     findings = []
@@ -368,9 +449,28 @@ def check():
         if known is None:
             findings.append(f'  NEW      "{label}" renders {", ".join(field)} '
                             'and the register does not know it')
-        elif recorded(known) and recorded(known) != field:
+        # as SETS: the union's order is the walk's, and only a field gained or lost is news
+        elif recorded(known) and set(recorded(known)) != set(field):
             findings.append(f'  MOVED    "{label}" now renders {", ".join(field)}, '
                             f'the register says {", ".join(recorded(known))}')
+        elif not recorded(known) and marker_only(known.get('note') or ''):
+            findings.append(f'  MOVED    "{label}" now renders {", ".join(field)}, '
+                            'the register has it unresolved')
+
+    # The other way round: one field under two words, which a reader takes for two things. Only a
+    # label beside ONE field names it plainly, and a label the register holds unresolved names
+    # nothing — a connector such as `of` between two figures. A word and its forms are one word.
+    words = {}
+    for label, fields, path, line in readings:
+        known = register.get(label)
+        judged = known and not recorded(known) and not marker_only(known.get('note') or '')
+        if len(fields) != 1 or fields[0] in ONE_NAME_TWO_THINGS or judged:
+            continue
+        words.setdefault(fields[0], {}).setdefault(word_of(label, register), f'{path}:{line}')
+    for field, seen in sorted(words.items()):
+        if len(seen) > 1:
+            places = ' and '.join(f'"{word}" ({at})' for word, at in sorted(seen.items()))
+            findings.append(f'  TWO      {field} renders under {places}')
 
     if docs is None:
         findings.append(f'  SKIPPED  {THEIR_DOCS} is absent — run sync_ide_docs.sh; '

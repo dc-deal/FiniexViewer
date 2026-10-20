@@ -3,6 +3,7 @@ import { computed, onErrorCaptured, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppIcon from '@/components/base/AppIcon.vue'
 import LoadingLine from '@/components/base/LoadingLine.vue'
+import { provideFillsPanel } from '@/composables/use_fills_panel'
 import { panelById } from '@/panel_registry'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
@@ -23,15 +24,19 @@ import { t } from '@/translate'
 const props = defineProps<{ sectionId: string }>()
 
 const descriptor = panelById(props.sectionId)
+// the section is the whole panel here, so a list in it may take the height the rest leaves
+provideFillsPanel()
 const sections = useRunSectionsStore()
 const { sources, pending } = storeToRefs(sections)
-const { selectedRun, selectedUnits } = storeToRefs(useRunsStore())
+const { selectedRunId, selectedRun, selectedUnits, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
 const model = computed(() => descriptor ? sources.value[descriptor.source] ?? null : null)
 
 /** Framed only where the narrowing FILTERS what is drawn — a list that still shows every row is whole. */
 const framed = computed(() => descriptor?.narrowing === 'filters' && selectedUnits.value.length > 0)
-const loading = computed(() => model.value === null && Boolean(descriptor && pending.value[descriptor.source]))
+// the index first: a restored run has no index row until the index has arrived
+const loading = computed(() => awaitingRun.value
+  || (model.value === null && Boolean(descriptor && pending.value[descriptor.source])))
 
 // every failure and every older-schema state among the slots this section reads, said above it —
 // the column says them above itself, and leaves out what an opened section says here
@@ -41,8 +46,14 @@ const unreadables = computed(() => descriptor ? sections.unreadablesOf(descripto
 /** Why the section has nothing to draw, where it has nothing — and nothing said above already. */
 const emptyReason = computed<string | null>(() => {
   if (!descriptor) return t('This panel could not be drawn')
-  if (!selectedRun.value) return t('No run is chosen — the Runs panel lists them')
-  if (model.value !== null || loading.value) return null
+  // a run id without its index row is not "no run": the index is loading, failed, or lost the run
+  // — the run report's own order, which said "No run is chosen" here through every first load
+  if (!selectedRunId.value) return t('No run is chosen — the Runs panel lists them')
+  if (loading.value) return null
+  if (unknownRunId.value) return `${t('The run you had open is no longer in the index')}: ${unknownRunId.value}`
+  // an index that failed is a failure, said in the error role below rather than as an absence
+  if (!selectedRun.value) return indexError.value ? null : t('No run is chosen — the Runs panel lists them')
+  if (model.value !== null) return null
   if (failures.value.length || unreadables.value.length) return null
   return sections.absenceOf(descriptor.source)?.detail || t('This run carries no such section')
 })
@@ -73,6 +84,10 @@ watch(model, () => {
     <p v-for="message in unreadables" :key="message" class="notice">{{ message }}</p>
     <LoadingLine v-if="loading" class="panel-loading" />
     <p v-else-if="emptyReason" class="notice absent">{{ emptyReason }}</p>
+    <p v-else-if="selectedRunId && !selectedRun && indexError" class="notice failed">
+      <AppIcon name="status-error" class="mark" />
+      <span>{{ indexError }}</span>
+    </p>
     <p v-else-if="failed" class="notice failed">
       <AppIcon name="status-error" class="mark" />
       <span>{{ t('This section could not be drawn. The rest of the report is unaffected.') }}</span>
@@ -93,9 +108,19 @@ watch(model, () => {
   box-sizing: border-box;
   overflow-y: auto;
   container-type: size;
-  padding: var(--space-md);
+  padding: 0 var(--space-md) var(--space-md);
   border: 1px dashed transparent;
   border-radius: 4px;
+}
+
+/* No room ABOVE the content inside a scroll area: a sticky list heading sticks to the area's padding
+   edge, and whatever scrolled past it showed through that room (operator, 2026-10-20 — the trade
+   history, the orders, the deployment's sessions). The room is a spacer that scrolls away with the
+   content instead. */
+.report-section::before {
+  content: '';
+  display: block;
+  height: var(--space-md);
 }
 
 .report-section.narrowed {

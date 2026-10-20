@@ -330,6 +330,30 @@ describe('TimelineChart', () => {
       await flushPromises()
       expect(wrapper.findAll('.tick')).toHaveLength(0)
     })
+
+    /**
+     * A bar's ring reaches 2 px past either side, so bars that start closer than that lie under the
+     * next one's ring, all but the last — measured 2026-10-19, a year of daily periods read as an
+     * empty lane. Here a hundred bars of 4 px each.
+     */
+    it('draws bars too close for their ring edge to edge, and says so beneath the lanes', async () => {
+      stubWidths(400)
+      const tight = lane('a', Array.from({ length: 100 }, (_, index): [number, number] => [index, index + 1]))
+      const wrapper = mountChart([tight, lane('b', [[0, 50], [50, 100]])], 0, 100, { denseNote: 'edge to edge' })
+      await flushPromises()
+      expect(wrapper.findAll('.lane').map(node => node.classes().includes('dense'))).toEqual([true, false])
+      expect(wrapper.find('.dense-note').text()).toBe('edge to edge')
+    })
+
+    it('keeps the ring where the bars stand apart, and says nothing', async () => {
+      stubWidths(400)
+      const wrapper = mountChart([lane('a', [[0, 20], [25, 45], [50, 70], [75, 95]])], 0, 100, {
+        denseNote: 'edge to edge',
+      })
+      await flushPromises()
+      expect(wrapper.find('.lane').classes()).not.toContain('dense')
+      expect(wrapper.find('.dense-note').exists()).toBe(false)
+    })
   })
 })
 
@@ -337,11 +361,11 @@ describe('TimelineChart — an axis of time', () => {
   const DAY = 86_400_000
   const FROM = Date.UTC(2025, 9, 13, 0, 0, 0)
 
-  function mountTime(to: number, ticks = 5) {
+  function mountTime(to: number, ticks = 5, from = FROM) {
     return mount(TimelineChart, {
       props: {
-        lanes: [{ id: 'a', label: 'a', spans: [{ id: 's', from: FROM, to, label: 'p', tone: 'flat', title: 'p' }] }],
-        from: FROM,
+        lanes: [{ id: 'a', label: 'a', spans: [{ id: 's', from, to, label: 'p', tone: 'flat', title: 'p' }] }],
+        from,
         to,
         ticks,
         naturalTime: true,
@@ -374,6 +398,22 @@ describe('TimelineChart — an axis of time', () => {
   it('keeps its own ends where no round moment falls inside', () => {
     const labels = mountTime(FROM + 30_000).findAll('.tick').map(node => node.text())
     expect(labels).toHaveLength(2)
+  })
+
+  /**
+   * Past a fortnight the step is the calendar's. Counted in days from the epoch, a year of booking
+   * periods found no 365-day mark inside it and kept nothing but its two ends (measured 2026-10-19).
+   */
+  it('marks a year by the starts of its quarters', () => {
+    const labels = mountTime(Date.UTC(2021, 11, 31, 23, 59), 4, Date.UTC(2021, 0, 1, 0, 0, 6))
+      .findAll('.tick').map(node => node.text())
+    expect(labels).toEqual(['2021-04-01T00:00Z', '2021-07-01T00:00Z', '2021-10-01T00:00Z'])
+  })
+
+  it('marks several years by their first days', () => {
+    const labels = mountTime(Date.UTC(2024, 1, 1), 4, Date.UTC(2020, 2, 15))
+      .findAll('.tick').map(node => node.text())
+    expect(labels).toEqual(['2021-01-01T00:00Z', '2022-01-01T00:00Z', '2023-01-01T00:00Z', '2024-01-01T00:00Z'])
   })
 
   /** Opt-in, because this chart's scale is a NUMBER and only its caller knows it is a millisecond. */

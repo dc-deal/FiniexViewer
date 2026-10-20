@@ -28,3 +28,12 @@ export function t(text: string): string {
 export function plural(count: number, one: string, many: string): string {
   return `${count.toLocaleString()} ${count === 1 ? one : many}`
 }
+
+/**
+ * Words joined the way an English sentence lists them: `a`, `a and b`, `a, b and c`. English only
+ * for the same reason as `plural`; `Intl.ListFormat` would do it, but the build targets ES2020.
+ */
+export function listed(words: string[]): string {
+  if (words.length < 2) return words.join('')
+  return `${words.slice(0, -1).join(', ')} ${t('and')} ${words[words.length - 1]}`
+}

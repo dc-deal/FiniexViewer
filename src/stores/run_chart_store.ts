@@ -1,7 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { findCoverage, getBars } from '@/api/api_client'
-import { autoTimeframe, chartUnits, defaultUnit, focusTime, tradeMarks } from '@/components/runs/run_chart'
+import {
+  autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
+} from '@/components/runs/run_chart'
+import { entryExitLines, positionLevels } from '@/components/runs/run_chart_levels'
+import {
+  barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
+} from '@/components/runs/run_chart_marks'
+import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
 import { useContextStore } from '@/stores/context_store'
@@ -9,11 +16,15 @@ import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
+import type { ChartDrawing, ChartLayer, ChartLayerId } from '@/types/chart_drawing_types'
 import type { PositionRef } from '@/types/context_types'
-import type { ChartMark, ChartUnit } from '@/types/run_chart_types'
+import type { ChartMark, ChartUnit, TimeframeOffer } from '@/types/run_chart_types'
 
 /** One market's coverage as asked — the answer, or that the archive holds nothing for it. */
 type CoverageEntry = CoverageResponse | 'none'
+
+/** The run chart's dock id — the drawing layers the reader arranged for it are kept under it. */
+const RUN_CHART = 'run-chart'
 
 function marketKey(unit: ChartUnit): string {
   return `${unit.broker}/${unit.symbol}`
@@ -21,7 +32,7 @@ function marketKey(unit: ChartUnit): string {
 
 /**
  * The run-bound chart (viewer#31, the item #21 left open): one unit of the chosen run on its
- * candles, its trades marked where they opened and closed.
+ * candles, its positions marked where they opened and its trades where they closed.
  *
  * The UNIT is the scenario in focus (operator, 2026-10-16): one focus for the lists and the chart,
  * so they show the same case. Choosing a unit in the chart's quick bar puts it in focus; the focus
@@ -47,20 +58,20 @@ export const useRunChartStore = defineStore('runChart', () => {
   const units = computed<ChartUnit[] | null>(() => {
     const run = runsStore.selectedRun
     if (!run) return null
-    // the trade counts decide the default unit, so it waits for them rather than changing after
-    if (reports.loadingTradeHistory) return null
+    // the counts of openings decide the default unit, so it waits for them rather than changing after
+    if (reports.loadingOrderHistory) return null
     return chartUnits({
       group: run.group,
       windows: run.data_windows,
       scenarios: reports.scenarios?.units ?? null,
       config: reports.config?.config ?? null,
-      trades: reports.tradeHistory?.trades ?? null,
+      orders: reports.orderHistory?.orders ?? null,
     })
   })
 
   /** Whether the run's sources are still arriving — said as loading, never as "names no market". */
   const waiting = computed(() => runsStore.selectedRun !== null && units.value === null
-    && (reports.loadingScenarios || reports.loadingConfig || reports.loadingTradeHistory))
+    && (reports.loadingScenarios || reports.loadingConfig || reports.loadingOrderHistory))
 
   /** The reader's choice, where it was made for the run on show. */
   const choice = computed(() =>
@@ -126,12 +137,105 @@ export const useRunChartStore = defineStore('runChart', () => {
     return marked && marked.scenario === unit.value?.name ? marked : null
   })
 
-  const marks = computed<ChartMark[]>(() =>
-    tradeMarks(
-      unitTrades.value, reports.tradeHistory?.keys.trades ?? [], bars.value.map(bar => bar.time), focus.value,
-    ))
+  const unitOpenings = computed(() =>
+    executedOpenings(reports.orderHistory?.orders ?? []).filter(row => row.scenario_name === unit.value?.name))
 
-  const focusAt = computed<number | null>(() => focusTime(unitTrades.value, focus.value))
+  /** The unit's row in the portfolio — what its positions still open at the end stood at. */
+  const unitPortfolio = computed(() => reports.portfolio?.units.find(row => row.name === unit.value?.name) ?? null)
+
+  const barTimes = computed(() => bars.value.map(bar => bar.time))
+
+  /**
+   * The last bar of a window the route CUT, or null. The bars after it were never drawn, and an
+   * event among them would stand on that last bar — weeks from where it happened (measured
+   * 2026-10-19: a unit cut at M1 piled fifteen marks onto its last candle). Past it nothing is
+   * placed for certain, so nothing is drawn there; the notice says the window was cut.
+   */
+  const cutAt = computed(() => truncated.value ? barTimes.value.at(-1) ?? null : null)
+
+  /** Every opening and exit of the unit on show, one mark each, in time order. */
+  const events = computed<ChartMark[]>(() => {
+    const all = [
+      ...openingMarks(
+        unitOpenings.value, unitPortfolio.value?.open_positions ?? [], unitTrades.value,
+        unitPortfolio.value?.currency ?? '', barTimes.value, focus.value,
+      ),
+      ...exitMarks(unitTrades.value, reports.tradeHistory?.keys.trades ?? [], barTimes.value, focus.value),
+    ].sort((a, b) => a.time - b.time)
+    const cut = cutAt.value
+    return cut !== null ? all.filter(mark => mark.at <= cut) : all
+  })
+
+  /** The width of a bar on screen, as the chart last reported it — null before it has drawn. */
+  const spacing = ref<number | null>(null)
+
+  /** How many bars a mark covers at that width — what the marks are gathered by. */
+  const perMark = computed(() => barsPerMark(spacing.value))
+
+  /**
+   * The marks as drawn: what overlaps at the zoom on screen gathered into one. Recomputed only when
+   * the number of bars a mark covers changes, not on every scroll.
+   */
+  const marks = computed<ChartMark[]>(() => gatherMarks(events.value, barTimes.value, perMark.value))
+
+  /** The trade rows of the position looked at, and its entry in `open_positions` where it ended open. */
+  const focusTrades = computed(() => {
+    const looked = focus.value
+    return looked ? unitTrades.value.filter(trade => trade.position_id === looked.position) : []
+  })
+  const focusOpen = computed(() => {
+    const looked = focus.value
+    return looked ? unitPortfolio.value?.open_positions.find(entry => entry.position_id === looked.position) ?? null : null
+  })
+
+  /** The chart's drawing layers as the reader arranged them in the Layers panel, back to front. */
+  const arranged = computed(() => arrangeLayers(RUN_CHART, arrangement.panelViews[RUN_CHART]?.layers))
+
+  /**
+   * What the chart draws, layer by layer, each in front of the one before, as the reader arranged
+   * them — by default the levels of the position looked at, the line from its entry to its exit, and
+   * the marks of every trade in front. A hidden layer is not handed over at all.
+   */
+  const layers = computed<ChartLayer[]>(() => {
+    const key = reports.tradeHistory?.keys.trades ?? []
+    const looked = focus.value?.position ?? null
+    const drawings: Record<ChartLayerId, (option: boolean | null) => ChartDrawing[]> = {
+      levels: every => every
+        ? positionLevels(
+          unitTrades.value, key, unitPortfolio.value?.open_positions ?? [], looked, barTimes.value, cutAt.value,
+        )
+        : positionLevels(
+          focusTrades.value, key, focusOpen.value ? [focusOpen.value] : [], looked, barTimes.value, cutAt.value,
+        ),
+      'entry-exit': () => entryExitLines(focusTrades.value, key, barTimes.value, cutAt.value),
+      // without their signs the marks keep their shapes, and a gathered mark's card still counts it
+      trades: signs => signs === false ? marks.value.map(mark => ({ ...mark, text: '' })) : marks.value,
+    }
+    return arranged.value
+      .filter(state => state.shown)
+      .map(state => ({
+        id: state.id,
+        drawings: drawings[state.id](state.option),
+        ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
+      }))
+  })
+
+  /** A finer timeframe that draws apart the marks some candles hold together — where one does. */
+  const offer = computed<TimeframeOffer | null>(() => {
+    if (!timeframe.value || !window.value) return null
+    const minutes = (Date.parse(window.value.to) - Date.parse(window.value.from)) / 60_000
+    return timeframeOffer(events.value, timeframe.value, coveredTimeframes.value, timeframeStore.minutesFor, minutes)
+  })
+
+  /** Where the chart centres after the offer was taken — until the reader looks elsewhere. */
+  const offerAt = ref<number | null>(null)
+
+  const focusAt = computed<number | null>(() =>
+    offerAt.value ?? focusTime(unitOpenings.value, unitTrades.value, focus.value))
+
+  /** The unit's prices at its instrument's tick size, from the run's broker report — null without one. */
+  const priceFormat = computed(() =>
+    unit.value ? chartPriceFormat(unitTickSize(reports.broker, unit.value)) : null)
 
   async function askCoverage(target: ChartUnit): Promise<void> {
     const key = marketKey(target)
@@ -188,6 +292,9 @@ export const useRunChartStore = defineStore('runChart', () => {
     () => { if (viewers.value) void loadBars() },
   )
 
+  // the place the offer centred on belongs to the unit and the position it was taken for
+  watch(() => [unit.value?.name, focus.value?.position] as const, () => { offerAt.value = null })
+
   // the focus cleared leaves the chart where it was: the unit it showed becomes its own choice.
   // Only within one run — a new run clears the focus too, and its chart starts afresh
   watch(() => [runsStore.selectedRunId, focused.value] as const, ([run, now], [runBefore, before]) => {
@@ -209,7 +316,21 @@ export const useRunChartStore = defineStore('runChart', () => {
   }
 
   function chooseTimeframe(next: string): void {
+    offerAt.value = null
     remember({ timeframe: next })
+  }
+
+  /** Takes the offer: the finer timeframe, centred on the first candle it draws apart. */
+  function acceptOffer(): void {
+    const taken = offer.value
+    if (!taken) return
+    remember({ timeframe: taken.timeframe })
+    offerAt.value = taken.at
+  }
+
+  /** The width of a bar on screen, as the chart reports it on every zoom. */
+  function setSpacing(next: number): void {
+    spacing.value = next
   }
 
   /**
@@ -238,7 +359,7 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
-    bars, truncated, loading, error, marks, focusAt,
-    chooseUnit, chooseTimeframe, showPosition, canShow, attach, detach,
+    bars, truncated, loading, error, events, marks, layers, offer, focusAt, priceFormat,
+    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach,
   }
 })

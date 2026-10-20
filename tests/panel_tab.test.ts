@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import type { DockviewPanelApi } from 'dockview-vue'
 import PanelTab from '@/components/dock/PanelTab.vue'
@@ -7,6 +8,7 @@ import HoverCard from '@/components/base/HoverCard.vue'
 import { reportKindId } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
 import { useContextStore } from '@/stores/context_store'
+import { useLayoutStore } from '@/stores/layout_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import type { RunInfo } from '@/types/api/report_types'
@@ -55,18 +57,73 @@ describe('PanelTab', () => {
     expect(close.attributes('title')).toBe('Hide — the Panels menu shows it again')
   })
 
-  /** A section opened as a panel goes back into the column by its own control, not by its close. */
-  it('puts a section back into the column, and offers that on a section tab only', async () => {
+  /** A section opened as a panel goes back into the bundle by its own control, not by its close. */
+  it('puts a section back into the bundle, and offers that on a section tab only', async () => {
     const dock = useDockStore()
     const back = vi.fn()
     dock.backIntoColumn = back
     const section = mount(PanelTab, { props: { kindId: reportKindId('orders'), api: fakeApi() as unknown as DockviewPanelApi } })
     await section.find('.panel-tab-back').trigger('click')
     expect(back).toHaveBeenCalledWith('orders')
-    expect(section.find('.panel-tab-back').attributes('aria-label')).toBe('Back into the run report')
+    expect(section.find('.panel-tab-back').attributes('aria-label')).toBe('Back into the bundle')
 
     const main = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })
     expect(main.find('.panel-tab-back').exists()).toBe(false)
+  })
+
+  /**
+   * What a panel offers about itself is on its own tab, behind ⋯ (viewer#42) — for the run bundle,
+   * folding its sections and resetting them. A kind with nothing to offer carries no ⋯.
+   */
+  it('offers the bundle\'s own commands behind ⋯, and no ⋯ where a kind has none', async () => {
+    const layout = useLayoutStore()
+    const collapse = vi.spyOn(layout, 'collapseAll')
+    const reset = vi.spyOn(layout, 'reset')
+    const bundle = mount(PanelTab, {
+      props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi },
+      attachTo: document.body,
+    })
+    const more = bundle.find('.panel-tab-more')
+    expect(more.attributes('aria-label')).toBe('Panel commands')
+
+    for (const [id, spy] of [['collapse-all', collapse], ['reset-bundle', reset]] as const) {
+      await more.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      document.querySelector<HTMLElement>(`.menu-item[data-action="${id}"]`)!.click()
+      await flushPromises()
+      expect(spy, id).toHaveBeenCalledOnce()
+    }
+    bundle.unmount()
+
+    for (const kindId of ['runs', 'chart', reportKindId('orders')]) {
+      const other = mount(PanelTab, { props: { kindId, api: fakeApi() as unknown as DockviewPanelApi } })
+      expect(other.find('.panel-tab-more').exists(), kindId).toBe(false)
+    }
+  })
+
+  /**
+   * The card is the one place that says a panel's links, so it opens for the keyboard too. Dockview
+   * keeps the tab's focus on its own element around this one, and a click focuses it as well — so
+   * only a KEYBOARD focus on that element opens it.
+   */
+  it('opens its card on a keyboard focus of the tab, and closes it when the focus leaves', async () => {
+    const Host = defineComponent({
+      render: () => h('div', { class: 'dv-tab', tabindex: 0 }, [
+        h(PanelTab, { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi }),
+      ]),
+    })
+    const host = mount(Host, { attachTo: document.body })
+    const tab = host.find('.dv-tab').element as HTMLElement
+    tab.matches = (selector: string) => selector === ':focus-visible'
+
+    tab.dispatchEvent(new FocusEvent('focusin'))
+    await flushPromises()
+    expect(document.querySelector('.hover-card')?.textContent).toContain('Runs')
+
+    tab.dispatchEvent(new FocusEvent('focusout'))
+    await flushPromises()
+    expect(document.querySelector('.hover-card')).toBeNull()
+    host.unmount()
   })
 
   /** Two windows comparing two runs tell them apart by the tab; the list's tab names no run. */
@@ -114,10 +171,24 @@ describe('PanelTab', () => {
     openRun('failed')
     const wrapper = mount(PanelTab, { props: { kindId: 'run', api: fakeApi() as unknown as DockviewPanelApi } })
     const card = wrapper.findComponent(HoverCard)
-    expect(card.props('title')).toBe('Run · r1')
+    expect(card.props('title')).toBe('Run bundle · r1')
     const details = card.props('details') as Figure[]
-    expect(details.map(row => row.label)).toEqual(['Shows', 'Status'])
-    expect(details[1]).toMatchObject({ value: 'failed', tone: 'error' })
+    // what is on it, never an exact set: a new line in the card is not a defect of this one
+    expect(details.find(row => row.label === 'Shows')?.value).toBeTruthy()
+    expect(details.find(row => row.label === 'Status')).toMatchObject({ value: 'failed', tone: 'error' })
+  })
+
+  /**
+   * A section's tab has no room for the run; its card names the whole id, so two windows comparing
+   * two runs are told apart there too (viewer#42).
+   */
+  it('names the whole run in the card of a section panel, not on its tab', () => {
+    openRun('success')
+    const wrapper = mount(PanelTab, {
+      props: { kindId: reportKindId('trade-history'), api: fakeApi() as unknown as DockviewPanelApi },
+    })
+    expect(wrapper.findComponent(HoverCard).props('title')).toBe('Trade history · r1')
+    expect(wrapper.find('.panel-tab-subtitle').exists()).toBe(false)
   })
 
   /** The panel stands with nothing of the chosen run to show — said by the title, never by hiding. */

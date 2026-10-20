@@ -45,7 +45,7 @@ test('a section that throws at first paint leaves every other panel standing', a
 
   // the whole point: the column is as long as it was, and the reader can still read the rest
   await expect(page.locator('.panel')).toHaveCount(healthy)
-  await expect(page.locator('.panel-trigger', { hasText: 'Trade History' })).toBeVisible()
+  await expect(page.locator('.panel-trigger', { hasText: 'Trade history' })).toBeVisible()
 })
 
 test('a folded section that throws on opening marks its own header and no other', async ({ page }) => {

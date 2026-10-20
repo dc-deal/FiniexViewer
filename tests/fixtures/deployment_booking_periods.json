@@ -27,6 +27,10 @@
       "min_equity": 9816.1684875,
       "max_equity": 10017.5684875,
       "max_drawdown": 201.40000000000146,
+      "account_max_drawdown": 201.40000000000146,
+      "account_max_dd_pct": 2.010467911961969,
+      "unrealized_pnl": -61.17135625000001,
+      "open_position_count": 1,
       "run_id": "20261012_205734_4c3b0045"
     },
     {
@@ -50,6 +54,10 @@
       "min_equity": 9861.203849999998,
       "max_equity": 10062.69369375,
       "max_drawdown": 197.05526250000185,
+      "account_max_drawdown": 201.40000000000146,
+      "account_max_dd_pct": 2.010467911961969,
+      "unrealized_pnl": 0.0,
+      "open_position_count": 0,
       "run_id": "20261012_205734_4c3b0045"
     },
     {
@@ -73,6 +81,10 @@
       "min_equity": 10000.0,
       "max_equity": 10000.0,
       "max_drawdown": 0.0,
+      "account_max_drawdown": 201.40000000000146,
+      "account_max_dd_pct": 2.010467911961969,
+      "unrealized_pnl": 0.0,
+      "open_position_count": 0,
       "run_id": "20261012_205805_f1ed971e"
     },
     {
@@ -96,6 +108,10 @@
       "min_equity": 9523.168474999999,
       "max_equity": 10045.60345,
       "max_drawdown": 522.4349750000019,
+      "account_max_drawdown": 539.5252187500009,
+      "account_max_dd_pct": 5.3616380978097675,
+      "unrealized_pnl": -433.339925,
+      "open_position_count": 1,
       "run_id": "20261012_205805_f1ed971e"
     },
     {
@@ -119,6 +135,10 @@
       "min_equity": 9745.410075,
       "max_equity": 10142.560075000001,
       "max_drawdown": 254.58992500000022,
+      "account_max_drawdown": 539.5252187500009,
+      "account_max_dd_pct": 5.3616380978097675,
+      "unrealized_pnl": 25.089762500000006,
+      "open_position_count": 1,
       "run_id": "20261012_205836_86534a35"
     },
     {
@@ -142,6 +162,10 @@
       "min_equity": 9753.736406250002,
       "max_equity": 10124.810075000001,
       "max_drawdown": 371.07366874999934,
+      "account_max_drawdown": 539.5252187500009,
+      "account_max_dd_pct": 5.3616380978097675,
+      "unrealized_pnl": -281.577275,
+      "open_position_count": 1,
       "run_id": "20261012_205836_86534a35"
     },
     {
@@ -165,6 +189,10 @@
       "min_equity": 10000.0,
       "max_equity": 10000.0,
       "max_drawdown": 0.0,
+      "account_max_drawdown": 539.5252187500009,
+      "account_max_dd_pct": 5.3616380978097675,
+      "unrealized_pnl": 0.0,
+      "open_position_count": 0,
       "run_id": "20261012_205906_2bde2805"
     },
     {
@@ -188,6 +216,10 @@
       "min_equity": 9817.122725000001,
       "max_equity": 10000.572725000002,
       "max_drawdown": 183.45000000000073,
+      "account_max_drawdown": 539.5252187500009,
+      "account_max_dd_pct": 5.3616380978097675,
+      "unrealized_pnl": -182.87727500000003,
+      "open_position_count": 1,
       "run_id": "20261012_205906_2bde2805"
     }
   ],

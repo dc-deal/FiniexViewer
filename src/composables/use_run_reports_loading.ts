@@ -28,8 +28,14 @@ export function useRunReportsLoading(): void {
      * run without reports still has, which is exactly what the Run Header panel is for.
      */
     reports.loadRunHeader(runId)
+    /**
+     * Not an artifact of the run but its SOURCE configuration — ungated, with its own two 404s. A run
+     * without reports answers it too: measured 2026-10-20, 200 on two sessions that reached no
+     * report, and a session still running is exactly where its profile is what a reader checks.
+     */
+    reports.loadConfig(runId)
 
-    // a logs-only run stops here, for the same reason the store skips the summary
+    // a run without reports stops here, for the same reason the store skips the summary
     if (!run.has_reports) return
 
     /**
@@ -49,7 +55,5 @@ export function useRunReportsLoading(): void {
     if (has('bookingPeriods')) reports.loadBookingPeriods(runId)
     if (has('tradeHistory')) reports.loadTradeHistory(runId)
     if (has('scenarios')) reports.loadScenarios(runId)
-    // not an artifact of the run but its SOURCE configuration — ungated, with its own two 404s
-    reports.loadConfig(runId)
   }, { immediate: true })
 }

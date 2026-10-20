@@ -245,8 +245,10 @@ export interface RunInfo {
   // What kind of family parent_id names, null whenever parent_id is. Read this rather than
   // deriving it from `group`: the two axes were one field once and could not express both.
   parent_kind: string | null
-  // Content hash of the configuration the run was produced from — two runs sharing it were
-  // produced by the same stand, which is what `changed` on a deployment is derived from.
+  // Content identity of the configuration file the run was GIVEN, as that file stood when the run
+  // started — two runs naming one id were given the same configuration. Not what it ran with (an
+  // AutoTrader session's is `rendered_config_id` on the header), and every combination of a sweep
+  // names the sweep's base set. A deployment's `changed` compares something else.
   config_id: string
   // Whether the run was expected to report at all; 'expected' on a normal run
   reporting: string
@@ -639,8 +641,6 @@ export interface PortfolioUnitRow {
   /**
    * Open at the close of the run. `final_equity_valued` says whether the valuation succeeded — an
    * equity figure that could not be marked is not the same as one that came out at zero.
-   * `open_positions` is on the wire as well and deliberately not mirrored yet: it needs a type of
-   * its own, and no panel reads it.
    */
   unrealized_pnl: number
   final_equity: number
@@ -665,6 +665,35 @@ export interface PortfolioUnitRow {
   maker_fee: number
   taker_fee: number
   fill_fees_by_source: FillFeesBySource
+  /**
+   * One entry per position still open when the run ended — the only route that says so: a run no
+   * longer flattens its positions at the end, so a position still open is reported as what it is
+   * (their portfolio document). Read by the run chart's opening card.
+   */
+  open_positions: OpenPosition[]
+}
+
+/**
+ * A position still open at the end of the run. `lots` is what was left of it after any partial
+ * close — served, never the opening less its closes — and `unrealized_pnl` its value at
+ * `last_price`: in their words *"a mark, not a result"*.
+ */
+export interface OpenPosition {
+  position_id: string
+  direction: string        // 'long' | 'short'
+  lots: number
+  entry_price: number
+  entry_time: string
+  last_price: number
+  unrealized_pnl: number
+  // false where the position could not be marked — not the same as a mark of zero
+  valued: boolean
+  // null where no level was set
+  stop_loss: number | null
+  take_profit: number | null
+  // where a level is held — `local` on every one measured, '' where none was set
+  protective_level_enforcement: string
+  take_profit_enforcement: string
 }
 
 /** The fills of one fee source, and what their fees came to in the row's account currency. */
@@ -794,6 +823,18 @@ export interface BookingPeriodRow {
    * lost by dropping a sign that means nothing here.
    */
   max_drawdown: number
+  /**
+   * What the period CARRIES beside what it did (contract 35): the account's decline since its equity
+   * curve began — a session continues the curve of the one before wherever its profile carries the
+   * risk history over — with its share, ALREADY a percentage; and what was still open at the seal.
+   * `max_drawdown` above is the period's own amount, and no per-period share of it is served.
+   * `null` on a run's own route where the run was recorded before contract 35; a deployment's route
+   * serves what its ledger recorded.
+   */
+  account_max_drawdown: number | null
+  account_max_dd_pct: number | null
+  unrealized_pnl: number | null
+  open_position_count: number | null
 }
 
 /**
@@ -1152,15 +1193,21 @@ export interface BrokerUnit {
   margin_call_level: number
   stopout_level: number
   hedging_allowed: boolean
-  // content hash of the broker configuration — two units sharing it were configured identically
+  // Digest of the symbol specifications and the fee structure ONLY — leverage, margin_mode,
+  // margin_call_level, stopout_level and hedging_allowed stand beside it and are compared directly.
+  // Since contract 36 a fetch time no longer moves it; where the symbols carry one (a dynamic broker
+  // such as `kraken_spot`), a row recorded before that differs from a later one over the same
+  // values, so such hashes compare only within one side of contract 36.
   config_hash: string
   /**
    * The frozen broker configuration itself, beside the hash that only digests it (contract 19).
-   * An AutoTrader session freezes at its start what it trades with — the venue's symbol
-   * specifications, the seed's fee structure, the detected fee tier — and this names that content.
+   * A run freezes at its start what it trades with — the venue's symbol specifications, the fee
+   * structure, the detected fee tier — and this names that content: an AutoTrader session since
+   * contract 19, a backtest since contract 36.
    *
-   * EMPTY on a simulation unit, which reads the archive's broker files when it runs, and on any
-   * session recorded before contract 19. It is not on the API as a document: this is the id only.
+   * EMPTY on a backtest recorded before contract 36, on a session recorded before contract 19, and
+   * wherever the copy could not be written. For comparing, not a handle: no route serves the frozen
+   * content.
    */
   broker_config_id: string
   // which scenarios of the run traded through this broker, by the unit name every other section
@@ -1660,11 +1707,11 @@ export interface ReconcileDivergence {
  * balances on a `reconcile` line that did not turn.
  *
  * **A `reconcile` line is written only where the picture CHANGES** — a divergence starting or
- * ending — so a session whose venue never disagrees writes none. That is every session in our
- * archive, and testingide said on 2026-10-08 that it cannot be arranged at a real venue on
- * request: *"stop waiting for an instance."* The shapes above are therefore typed from their
- * document (`order-events`, section *The venue parts, field by field*), which they wrote for
- * exactly this — *"type them from here rather than from an instance."*
+ * ending — so a session whose venue never disagrees writes none. The field study
+ * `20261012_072038_b60404ee` carries two (measured 2026-10-20): seq 50 `divergent`, an orphan order
+ * `pos_ethusd_15`, and seq 105 `clean` again. The shapes above are typed from their document
+ * (`order-events`, section *The venue parts, field by field*), which they wrote for exactly this —
+ * *"type them from here rather than from an instance."*
  */
 export interface BrokerTruthRow {
   scenario_name: string

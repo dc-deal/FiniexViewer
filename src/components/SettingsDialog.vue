@@ -165,13 +165,13 @@ async function onImportPicked(event: Event): Promise<void> {
           </AppButton>
         </div>
         <p class="setting-hint">
-          {{ t('Deployments, Runs and Chart as tabs in one group, Runs in front.') }}
+          {{ t('Deployments, Runs and the run bundle as tabs in one group, the run chart beside them in a wide window and among them in a narrow one — in front, the bundle where a run is chosen and the run list where none is.') }}
         </p>
 
         <div class="setting">
-          <span class="setting-label">{{ t('Report panels') }}</span>
+          <span class="setting-label">{{ t('Run bundle') }}</span>
           <p class="setting-hint">
-            {{ t('The arrangement of the report panels in Runs is stored on this machine. A file carries it to another.') }}
+            {{ t('How the run bundle holds its sections — their order, which are folded, pinned or hidden — is stored on this machine. A file carries it to another.') }}
           </p>
         </div>
         <div class="layout-actions">
