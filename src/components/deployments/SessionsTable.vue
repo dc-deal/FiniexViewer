@@ -40,12 +40,29 @@ const columns: ListColumn[] = [
 
 /** What changed at the boundary before a session, or null where nothing did. */
 function boundary(session: DeploymentSessionRow): string | null {
+  const clauses = [configurationClause(session), session.orders_to_changed ? ordersClause(session.orders_to) : '']
+    .filter(Boolean)
+  return clauses.length ? clauses.join(' · ') : null
+}
+
+function configurationClause(session: DeploymentSessionRow): string {
   if (session.strategy_changed && session.operation_changed) {
     return t('Strategy and operation changed from here')
   }
   if (session.strategy_changed) return t('Strategy changed from here')
   if (session.operation_changed) return t('Operation changed from here')
-  return null
+  return ''
+}
+
+/**
+ * Where the orders went from this session on — the session's own `orders_to`, the value it moved
+ * TO. `venue` is the only value that means money moved (their `run-kinds` document), so it is the
+ * one named by its meaning; any other is named as it came.
+ */
+function ordersClause(to: string | null): string {
+  if (to === 'venue') return t('Orders to real money from here')
+  if (to === 'simulated') return t('Orders simulated from here')
+  return `${t('Orders went elsewhere from here')}: ${to ?? ''}`
 }
 
 /**
@@ -115,10 +132,6 @@ function gap(session: DeploymentSessionRow): string {
 /* the run is the identity, and the only thing on the row that is read rather than compared */
 .session-run {
   text-align: left;
-}
-
-.sessions-list :deep(.record-lead) {
-  text-align: center;
 }
 
 .positive { color: var(--color-positive); }

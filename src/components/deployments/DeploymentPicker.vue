@@ -6,6 +6,7 @@ import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import HoverCard from '@/components/base/HoverCard.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
@@ -199,14 +200,12 @@ const chosen = computed(() =>
   deployments.value.find(row => row.deployment_id === selectedDeploymentId.value) ?? null
 )
 
-/** Its bot, its sessions and its last start — one line, cut short where the panel is narrow. */
-const chosenMeta = computed(() => {
-  const row = chosen.value
-  if (!row) return ''
-  return [row.bot, plural(row.sessions, t('session'), t('sessions')), startedAt(row.last_started) || t('no date')]
-    .filter(Boolean)
-    .join(' · ')
-})
+/**
+ * The chosen line names it and its bot, and nothing the panel says below it: the sessions and the
+ * starts stand in the deployment's own lines. The rest of its row — the bot id among it — is on
+ * the card, the same one the list shows (operator, 2026-10-20).
+ */
+const chosenCard = computed(() => chosen.value ? card(chosen.value) : null)
 </script>
 
 <template>
@@ -218,10 +217,15 @@ const chosenMeta = computed(() => {
     <!-- chosen: one line saying which, and the way back to the list -->
     <div v-else-if="!open" class="picker-chosen">
       <span class="chosen-label">{{ t('Deployment') }}</span>
-      <span class="chosen-id">{{ selectedDeploymentId }}</span>
-      <!-- the whole line on hover: in a narrow panel it ends in an ellipsis instead of taking
-           three lines above the history -->
-      <span v-if="chosen" class="chosen-meta" :title="chosenMeta">{{ chosenMeta }}</span>
+      <HoverCard v-if="chosenCard" :title="chosenCard.title" :details="chosenCard.details">
+        <!-- reachable by the keyboard, so the card is not the pointer's alone -->
+        <span class="chosen-name" tabindex="0">
+          <span class="chosen-id">{{ selectedDeploymentId }}</span>
+          <!-- in a narrow panel it ends in an ellipsis instead of taking a second line -->
+          <span class="chosen-meta">{{ chosen?.bot }}</span>
+        </span>
+      </HoverCard>
+      <span v-else class="chosen-id">{{ selectedDeploymentId }}</span>
       <AppButton variant="quiet" @click="open = true">{{ t('Change deployment') }}</AppButton>
     </div>
 
@@ -317,6 +321,13 @@ const chosenMeta = computed(() => {
 
 .chosen-id {
   color: var(--color-text-primary);
+}
+
+.chosen-name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  min-width: 0;
 }
 
 .chosen-meta {

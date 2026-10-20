@@ -93,16 +93,18 @@ const showDeployment = computed(() =>
       </div>
 
       <template v-else-if="showDeployment">
-        <!-- ABOVE the table, never beside it: by the time a reader reaches a change mark in the
-             third row they have already added up the column above it -->
-        <AdvisoryNotice v-if="detail?.advisory" :advisory="detail.advisory" />
+        <!-- the deployment's own line, above every currency: an unfinished run has no ledger row
+             and so no currency, and the advisory speaks of the whole history -->
         <p v-if="detail" class="counts">
-          {{ plural(detail.count, t('session'), t('sessions')) }} ·
+          <span>{{ plural(detail.count, t('session'), t('sessions')) }}</span>
           <!-- the WHY is on the title: the number is the fact, the explanation is a caveat -->
           <span
             :class="{ flagged: detail.unfinished > 0 }"
             :title="t('Runs that never reached their close, so the ledger holds no row for them')"
           >{{ detail.unfinished }} {{ t('unfinished') }}</span>
+          <!-- ABOVE the table, never beside it: by the time a reader reaches a change mark in the
+               third row they have already added up the column above it -->
+          <AdvisoryNotice v-if="detail.advisory" :advisory="detail.advisory" />
         </p>
 
         <section v-for="row in selectedRows" :key="row.currency" class="currency-block">
@@ -196,6 +198,10 @@ const showDeployment = computed(() =>
 }
 
 .counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs) var(--space-md);
   margin: 0;
   font-family: monospace;
   font-size: var(--font-size-sm);

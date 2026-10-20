@@ -73,9 +73,8 @@ one of the things such a module owns — languages with more than two forms need
 express.
 
 Not every count needs it. `3 of 40`, `1 rejected` and `2/5 executed` read correctly as they are.
-And a sentence whose VERB agrees as well as its noun is rewritten rather than patched: the
-deployment advisory says *"One session, so a single configuration stands behind these rows"* rather
-than joining an `s` onto a plural sentence, the same construction the scenario roster already used.
+And a sentence whose VERB agrees as well as its noun is rewritten rather than patched: the single
+case gets a sentence of its own rather than an `s` joined onto the plural one.
 
 No tool enforces the marker — it is carried by review.
 

@@ -1,73 +1,54 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { duration } from '@/components/runs/report_format'
 import type { DeploymentAdvisory } from '@/types/api/deployment_types'
 import { plural, t } from '@/translate'
 
 /**
- * Says whether the sessions below may be read as one series. The backend sends counts, not
- * wording — the sentence is built here, which keeps the display strings reachable and lets the
+ * Says that the sessions below may NOT be read as one series. The backend sends counts, not
+ * wording — the words are built here, which keeps the display strings reachable and lets the
  * phrasing change without touching the contract.
+ *
+ * Only ever a warning: a null advisory is the backend's answer that there is nothing to report
+ * (their `deployments` document: one strategy stand, one operational stand, one place the orders
+ * went), and the caller then shows none. So a non-null one ALWAYS has something to say — and where
+ * the stands held, it is the orders: a history that mixed real money and simulated orders is the
+ * one case the advisory fires on by itself. A calm "one configuration" sentence used to stand
+ * exactly there.
+ *
+ * One line, the sentence on hover (operator, 2026-10-20): the head of the panel competes for room
+ * with the history it introduces.
  */
 const props = defineProps<{
   advisory: DeploymentAdvisory
 }>()
 
-/** True where more than one configuration produced the rows — the reason the notice exists. */
-const moved = computed(() =>
-  props.advisory.strategy_stands > 1 || props.advisory.operation_stands > 1
-)
+/** Where the sessions' orders went differs between them: real money and a rehearsal in one history. */
+const mixed = computed(() => props.advisory.orders_to.length > 1)
 
-const idle = computed(() =>
-  props.advisory.longest_gap_hours === null ? null : duration(props.advisory.longest_gap_hours)
-)
+const stands = computed(() => [
+  plural(props.advisory.strategy_stands, t('strategy stand'), t('strategy stands')),
+  plural(props.advisory.operation_stands, t('operational stand'), t('operational stands')),
+])
 
-/**
- * Two sentences rather than one with a number in it — "1 sessions, all produced by one
- * configuration" is how the other reads, and here the VERB agrees as well as the noun, which no
- * joined word fixes. The moved branch above needs no such care: it is shown only where a stand
- * count exceeds one, so there are at least two sessions behind it.
- */
-const settled = computed(() =>
-  props.advisory.sessions === 1
-    ? t('One session, so a single configuration stands behind these rows')
-    : `${props.advisory.sessions} ${t('sessions, all produced by one configuration')}`
-)
+const sentence = computed(() => [
+  `${props.advisory.sessions} ${t('sessions span')} ${stands.value.join(` ${t('and')} `)}`,
+  mixed.value ? `, ${t('and their orders went to real money and to simulation')}` : '',
+  ` — ${t('these rows are not one series, and a total over them answers no question')}.`,
+].join(''))
 </script>
 
 <template>
-  <p class="notice" :class="{ moved }">
+  <span class="advisory" :title="sentence">
     <!-- the glyph, not the colour, is what carries "warning": a dark yellow and a dark red are
          inseparable under red-green colour blindness in the light theme -->
-    <span v-if="moved" class="mark">⚠</span>
-    <template v-if="moved">
-      {{ advisory.sessions }} {{ t('sessions span') }}
-      {{ plural(advisory.strategy_stands, t('strategy stand'), t('strategy stands')) }}
-      {{ t('and') }}
-      {{ plural(advisory.operation_stands, t('operational stand'), t('operational stands')) }} —
-      {{ t('these rows are not one series, and a total over them answers no question') }}.
-    </template>
-    <template v-else>
-      {{ settled }}.
-    </template>
-    <template v-if="idle"> {{ t('Longest idle stretch') }}: {{ idle }}.</template>
-  </p>
+    <span class="mark">⚠</span>
+    {{ stands.join(' · ') }}<template v-if="mixed"> · {{ t('real money and simulated orders') }}</template>
+    — {{ t('not one series') }}
+  </span>
 </template>
 
 <style scoped>
-.notice {
-  margin: 0;
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-text-secondary);
-  border-radius: 4px;
-  color: var(--color-text-secondary);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.notice.moved {
-  border-left-color: var(--color-warning);
+.advisory {
   color: var(--color-warning);
 }
 

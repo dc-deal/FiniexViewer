@@ -111,11 +111,30 @@ const utcClock = new Intl.DateTimeFormat('en-GB', {
  * damaged `start_time` is a case the column beside it already handles.
  */
 export function utcInstant(iso: string | null): string {
-  if (iso === null) return ''
-  if (Number.isNaN(new Date(iso).getTime())) return ''
+  const part = utcParts(iso)
+  if (!part) return ''
+  return `${part['year']}-${part['month']}-${part['day']} ${part['hour']}:${part['minute']}:${part['second']}Z`
+}
+
+/** The pieces of an instant on the UTC clock; null for none and for a stamp that is not a date. */
+function utcParts(iso: string | null): Record<string, string> | null {
+  if (iso === null) return null
+  if (Number.isNaN(new Date(iso).getTime())) return null
   const part: Record<string, string> = {}
   for (const piece of utcClock.formatToParts(new Date(iso))) part[piece.type] = piece.value
-  return `${part['year']}-${part['month']}-${part['day']} ${part['hour']}:${part['minute']}:${part['second']}Z`
+  return part
+}
+
+/**
+ * A stretch between two UTC instants, the date said once where both fall on the same day:
+ * `2026-10-12 20:57:34Z → 20:59:06Z`. A deployment's first and last session start.
+ */
+export function utcSpan(from: string | null, to: string | null): string {
+  const start = utcParts(from)
+  const end = utcParts(to)
+  const sameDay = start !== null && end !== null
+    && start['year'] === end['year'] && start['month'] === end['month'] && start['day'] === end['day']
+  return `${utcInstant(from)} → ${sameDay ? `${end['hour']}:${end['minute']}:${end['second']}Z` : utcInstant(to)}`
 }
 
 /**

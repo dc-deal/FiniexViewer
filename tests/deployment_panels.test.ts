@@ -93,6 +93,20 @@ describe('SessionsTable', () => {
     expect(wrapper.find('.record-lead').text()).toContain('Strategy and operation changed')
   })
 
+  /** Where the orders went moving is a boundary too: a rehearsal followed by real money, or back. */
+  it('names where the orders went from the session on, beside a configuration change', () => {
+    const wrapper = mountSessions([
+      session({ run_id: 'run_a' }),
+      session({ run_id: 'run_b', strategy_changed: true, orders_to: 'venue', orders_to_changed: true }),
+      session({ run_id: 'run_c', orders_to: 'simulated', orders_to_changed: true }),
+    ])
+    const leads = wrapper.findAll('.record-lead').map(lead => lead.text())
+    expect(leads).toEqual([
+      'Strategy changed from here · Orders to real money from here',
+      'Orders simulated from here',
+    ])
+  })
+
   it('draws no line where nothing moved', () => {
     expect(mountSessions([session(), session({ run_id: 'run_b' })]).find('.boundary').exists())
       .toBe(false)
@@ -158,29 +172,29 @@ describe('SessionsTable', () => {
 })
 
 describe('DeploymentHeader', () => {
-  it('shows the ledger figures for one account currency', () => {
+  it('shows the ledger figures for one account currency, the amounts carrying it', () => {
     const wrapper = mount(DeploymentHeader, { props: { row: BASE_ROW } })
-    expect(wrapper.text()).toContain(BASE_ROW.currency)
-    expect(wrapper.text()).toContain(BASE_ROW.sessions.toString())
+    expect(wrapper.text()).toContain(`${BASE_ROW.currency}`)
+    expect(wrapper.text()).toContain('max DD')
+    expect(wrapper.text()).toContain('→')
   })
 
-  // bot_id is the only identity that does not move: the name is a label an operator improves and
-  // a deliberate restart mints a fresh deployment_id.
-  it('names the identity that survives a rename', () => {
-    const wrapper = mount(DeploymentHeader, { props: { row: BASE_ROW } })
-    expect(wrapper.text()).toContain(`bot id: ${BASE_ROW.bot_id}`)
+  /**
+   * Each figure once (2026-10-20): the sessions are counted in the deployment line above, the bot
+   * id is on the chosen line's card, and a moved configuration is the advisory's to say.
+   */
+  it('leaves out what the panel says elsewhere', () => {
+    const wrapper = mount(DeploymentHeader, { props: { row: { ...BASE_ROW, changed: true } } })
+    expect(wrapper.text()).not.toContain('session')
+    expect(wrapper.text()).not.toContain('bot id')
+    expect(wrapper.text()).not.toContain('configuration')
   })
 
-  it('stays silent about it where the profile declares none', () => {
-    const wrapper = mount(DeploymentHeader, { props: { row: { ...BASE_ROW, bot_id: '' } } })
-    expect(wrapper.text()).not.toContain('bot id:')
-  })
-
-  it('warns where the sessions were not all produced by one configuration', () => {
-    const steady = mount(DeploymentHeader, { props: { row: { ...BASE_ROW, changed: false } } })
-    const moved = mount(DeploymentHeader, { props: { row: { ...BASE_ROW, changed: true } } })
-    expect(steady.find('.changed').exists()).toBe(false)
-    expect(moved.find('.changed').exists()).toBe(true)
+  it('says nothing about an idle stretch that does not exist', () => {
+    const wrapper = mount(DeploymentHeader, { props: { row: { ...BASE_ROW, longest_gap_hours: null } } })
+    expect(wrapper.text()).not.toContain('longest idle')
+    expect(mount(DeploymentHeader, { props: { row: { ...BASE_ROW, longest_gap_hours: 4.5 } } }).text())
+      .toContain('longest idle 4.5 h')
   })
 })
 
@@ -219,10 +233,12 @@ describe('AdvisoryNotice', () => {
     return mount(AdvisoryNotice, { props: { advisory: { ...ADVISORY, ...overrides } } })
   }
 
-  it('says plainly that the rows are not one series where stands moved', () => {
+  it('says in one line that the rows are not one series, and the sentence on hover', () => {
     const wrapper = mountAdvisory({ strategy_stands: 2, operation_stands: 2 })
+    expect(wrapper.text()).toContain('2 strategy stands · 2 operational stands')
     expect(wrapper.text()).toContain('not one series')
-    expect(wrapper.find('.notice').classes()).toContain('moved')
+    expect(wrapper.attributes('title')).toContain('4 sessions span 2 strategy stands and 2 operational stands')
+    expect(wrapper.attributes('title')).toContain('a total over them answers no question')
   })
 
   /**
@@ -234,24 +250,20 @@ describe('AdvisoryNotice', () => {
     expect(mountAdvisory({ strategy_stands: 2 }).find('.mark').text()).toBe('⚠')
   })
 
-  it('stays calm where one configuration produced everything', () => {
-    const wrapper = mountAdvisory({ strategy_stands: 1, operation_stands: 1 })
-    expect(wrapper.text()).not.toContain('not one series')
-    expect(wrapper.find('.notice').classes()).not.toContain('moved')
-    // and no warning glyph, because there is nothing to warn about
-    expect(wrapper.find('.mark').exists()).toBe(false)
+  /**
+   * The one case the advisory fires on by itself: the stands held, and the orders went to real
+   * money in some sessions and to simulation in others. A calm "one configuration" sentence used
+   * to stand exactly here, because the notice read the stands and never the orders.
+   */
+  it('names a history that mixed real money and simulated orders, where the stands held', () => {
+    const wrapper = mountAdvisory({ strategy_stands: 1, operation_stands: 1, orders_to: ['simulated', 'venue'] })
+    expect(wrapper.text()).toContain('real money and simulated orders')
+    expect(wrapper.text()).toContain('not one series')
+    expect(wrapper.find('.mark').exists()).toBe(true)
+    expect(wrapper.attributes('title')).toContain('their orders went to real money and to simulation')
   })
 
-  it('treats a moved operation alone as enough to warn', () => {
-    expect(mountAdvisory({ strategy_stands: 1, operation_stands: 2 }).find('.notice').classes())
-      .toContain('moved')
-  })
-
-  it('says nothing about an idle stretch that was never measured', () => {
-    expect(mountAdvisory({ longest_gap_hours: null }).text()).not.toContain('Longest idle')
-  })
-
-  it('names the longest idle stretch where there is one', () => {
-    expect(mountAdvisory({ longest_gap_hours: 4.5 }).text()).toContain('4.5 h')
+  it('says nothing of the orders where they all went to one place', () => {
+    expect(mountAdvisory({ orders_to: ['simulated'] }).text()).not.toContain('orders')
   })
 })

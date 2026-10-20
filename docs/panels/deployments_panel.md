@@ -55,13 +55,24 @@ misreports something:
 
 - `advisory` sits ABOVE the table. By the time a reader reaches a change mark in the third row they
   have already added up the column above it. It arrives as COUNTS (`strategy_stands`,
-  `operation_stands`), and the sentence is built in `AdvisoryNotice` — wording belongs to the
-  component, so it stays reachable for the display-string marker and can change without the
-  contract changing.
-- `strategy_changed` / `operation_changed` render as a line BETWEEN two rows. A badge at the end of
-  a row reads as a property of that session, which is the wrong reading — the flag marks a boundary.
+  `operation_stands`) and the distinct `orders_to`, and the words are built in `AdvisoryNotice` —
+  wording belongs to the component, so it stays reachable for the display-string marker and can
+  change without the contract changing. A null advisory is the backend's answer that there is
+  nothing to report, so a non-null one is ALWAYS a warning — and where the stands held, it is the
+  orders: real money and simulated orders in one history is the one case it fires on by itself.
+- `strategy_changed` / `operation_changed` / `orders_to_changed` render as a line BETWEEN two rows,
+  the words on a dashed rule half a row high. A badge at the end of a row reads as a property of
+  that session, which is the wrong reading — the flag marks a boundary.
 - `unfinished` is shown even when zero. Those runs are absent from `sessions` by construction (the
   ledger row is written last), and a bare session count is a number the reader has no reason to doubt.
+
+**The head says each figure once** (operator, 2026-10-20), in three lines: the chosen line names
+the deployment and its bot, with the rest of its row — the bot id among it — on the same card the
+list shows; the deployment's own line counts the sessions and the unfinished runs and carries the
+advisory, the full sentence on hover; and one line per account currency carries the ledger's
+figures and the span of the starts, the date said once where both fall on the same UTC day. The
+unfinished runs and the advisory stand above the currencies because they belong to none: an
+unfinished run has no ledger row and so no currency.
 
 **`index` on a session row is not rendered.** It rides on the row and is NOT in the declared key
 (`["run_id", "currency"]`), so presenting it as the session's number invents a counter the ledger

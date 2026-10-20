@@ -955,15 +955,27 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
 
 /* A boundary in the list, in the annotation role and DASHED — it marks that the thing changed
    here, which is exactly what that role is for, and the dash is the second channel so it does not
-   rest on hue alone. Above the row, because it is about the gap and not about the row. */
+   rest on hue alone. Above the row, because it is about the gap and not about the row.
+   The words stand ON the rule, half a row high: a boundary between two rows is not a row of its
+   own (operator, 2026-10-20). */
 .record-lead {
   grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
   margin: 0;
-  padding: var(--space-xs) var(--space-sm);
-  border-top: 1px dashed var(--color-annotation);
+  padding: 0 var(--space-sm);
   color: var(--color-annotation);
   font-family: monospace;
   font-size: var(--font-size-sm);
+  line-height: 1.1;
+}
+
+.record-lead::before,
+.record-lead::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed var(--color-annotation);
 }
 
 /* prose spanning every track: a sentence in a column would set the column's width */

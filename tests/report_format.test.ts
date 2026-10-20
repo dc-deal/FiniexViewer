@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   bytes, largerFirst, modelledSpreadFigures, polarity, shortHash, signClass, sortInstant, spreadFigure, utcInstant,
+  utcSpan,
 } from '@/components/runs/report_format'
 
 /**
@@ -27,6 +28,25 @@ describe('report_format', () => {
     it('gives nothing for a stamp that is not a date, rather than throwing', () => {
       expect(utcInstant('not-a-date')).toBe('')
       expect(utcInstant('')).toBe('')
+    })
+  })
+
+  describe('utcSpan', () => {
+    it('says the date once where both ends fall on the same UTC day', () => {
+      expect(utcSpan('2026-10-12T20:57:34+00:00', '2026-10-12T20:59:06+00:00'))
+        .toBe('2026-10-12 20:57:34Z → 20:59:06Z')
+    })
+
+    /** The same day on the reader's clock is not the same day on UTC: the date comes back. */
+    it('says both dates where the stretch crosses midnight UTC', () => {
+      expect(utcSpan('2026-10-12T23:59:00+00:00', '2026-10-13T00:01:00+00:00'))
+        .toBe('2026-10-12 23:59:00Z → 2026-10-13 00:01:00Z')
+      expect(utcSpan('2026-10-13T01:30:00+02:00', '2026-10-13T00:10:00+00:00'))
+        .toBe('2026-10-12 23:30:00Z → 2026-10-13 00:10:00Z')
+    })
+
+    it('leaves a hole for an end that is not a date, rather than borrowing the other one', () => {
+      expect(utcSpan('2026-10-12T20:57:34+00:00', null)).toBe('2026-10-12 20:57:34Z → ')
     })
   })
 
