@@ -108,9 +108,19 @@ watch(model, () => {
   box-sizing: border-box;
   overflow-y: auto;
   container-type: size;
-  padding: var(--space-md);
+  padding: 0 var(--space-md) var(--space-md);
   border: 1px dashed transparent;
   border-radius: 4px;
+}
+
+/* No room ABOVE the content inside a scroll area: a sticky list heading sticks to the area's padding
+   edge, and whatever scrolled past it showed through that room (operator, 2026-10-20 — the trade
+   history, the orders, the deployment's sessions). The room is a spacer that scrolls away with the
+   content instead. */
+.report-section::before {
+  content: '';
+  display: block;
+  height: var(--space-md);
 }
 
 .report-section.narrowed {

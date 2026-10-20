@@ -127,3 +127,33 @@ test('a narrow Deployments panel keeps its deployment line to one line', async (
   const id = (await line.locator('.chosen-id').boundingBox())!
   expect((await line.boundingBox())!.height).toBeLessThan(id.height * 1.5)
 })
+
+/**
+ * A list's heading sticks flush to the top of the area it scrolls in. With room above it inside the
+ * area, whatever scrolled past showed through that room — the trade history, the orders and a
+ * deployment's sessions, seen on screen 2026-10-20.
+ */
+test('a list heading sticks flush to the top of the area it scrolls in', async ({ page }) => {
+  // low enough that the trade history, open as a panel of its own, has to scroll
+  await page.setViewportSize({ width: 1300, height: 460 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const header = page.locator('.panel-column .panel-header', { hasText: 'Trade history' })
+  await header.hover()
+  await header.locator('[data-action="open-as-panel"]').click()
+  const panel = '[data-panel-kind="report-trade-history"]'
+  await expect(page.locator(`${panel} [data-panel="trade-history"]`)).toBeVisible()
+
+  const gap = await page.evaluate(selector => new Promise<number>(resolve => {
+    const area = document.querySelector<HTMLElement>(`${selector} .report-section`)!
+    area.scrollTop = 200
+    requestAnimationFrame(() => {
+      const edge = area.getBoundingClientRect().top + area.clientTop
+      // the row that stuck: the highest heading still at or below the edge — the others scrolled away
+      const tops = [...document.querySelectorAll<HTMLElement>(`${selector} .record-head > span`)]
+        .map(span => span.getBoundingClientRect().top - edge)
+        .filter(top => top >= -1)
+      resolve(Math.min(...tops))
+    })
+  }), panel)
+  expect(gap).toBeLessThanOrEqual(1)
+})

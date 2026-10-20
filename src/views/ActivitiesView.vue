@@ -269,10 +269,21 @@ const unreadable = computed(() => activities.value?.unreadable_activity_ids.leng
   flex-direction: column;
   gap: var(--space-xs);
   height: 100%;
-  padding: var(--space-sm);
+  padding: 0 var(--space-sm) var(--space-sm);
   overflow-y: auto;
   font-family: monospace;
   font-size: var(--font-size-sm);
+}
+
+/* No room ABOVE the content inside a scroll area: a sticky list heading sticks to the area's padding
+   edge, and whatever scrolled past it showed through that room (operator, 2026-10-20 — the trade
+   history, the orders, the deployment's sessions). The room is a spacer that scrolls away with the
+   content instead. */
+.activities-view::before {
+  /* with the gap after it, the room it had */
+  content: '';
+  flex: none;
+  height: calc(var(--space-sm) - var(--space-xs));
 }
 
 .state {

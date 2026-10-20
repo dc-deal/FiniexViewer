@@ -241,9 +241,19 @@ const missingSections = computed(() => {
 .run-report-body {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-md);
+  padding: 0 var(--space-md) var(--space-md);
   display: flex;
   flex-direction: column;
+}
+
+/* No room ABOVE the content inside a scroll area: a sticky list heading sticks to the area's padding
+   edge, and whatever scrolled past it showed through that room (operator, 2026-10-20 — the trade
+   history, the orders, the deployment's sessions). The room is a spacer that scrolls away with the
+   content instead. */
+.run-report-body::before {
+  content: '';
+  flex: none;
+  height: var(--space-md);
 }
 
 .picker-chosen {

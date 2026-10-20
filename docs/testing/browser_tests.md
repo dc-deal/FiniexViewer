@@ -166,7 +166,7 @@ session's summary answered with its own net P&L, so two runs cannot be mistaken 
 spec went red against the jump that only changed the context), the selection surviving a reload as a link, a stale link saying so, the
 open list standing alone in a low view while a tall one keeps it beside the history, the
 figure cells right-aligned under their headings, and the timeline marking round moments rather than
-the overlapping stamps an operator photographed. `panel_layout.spec.ts` also holds that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow Deployments panel keeps its deployment line to one line. It holds that **no panel scrolls sideways**, at a wide
+the overlapping stamps an operator photographed. `panel_layout.spec.ts` also holds that **a list's heading sticks flush to the top of the area it scrolls in**, nothing showing through above it — measured in the trade history open as a panel of its own; that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow Deployments panel keeps its deployment line to one line. It holds that **no panel scrolls sideways**, at a wide
 and at a narrow width: `.panel-content` carries `overflow-x: auto`, which is the right safety valve
 and a poor everyday state, because the moment it engages the panel's leftmost column slides out of
 view and nothing says so. Two defects of exactly that shape reached the screen in one week — a
