@@ -36,6 +36,29 @@ test('the first arrangement holds the suggested order, with Runs in front', asyn
 })
 
 /**
+ * From 1400 px the run report stands beside the lists as a split of its own (operator, 2026-10-20),
+ * so a pick in the run list shows the run without covering the list. The lists keep a floor: at
+ * 392 px the run list scrolled sideways.
+ */
+test('on a wide screen the run report stands beside the run list, and a pick there shows it', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 })
+  await page.goto('/')
+  const runList = page.locator('.run-list')
+  await expect(runList.locator('.record-row').first()).toBeVisible()
+  const report = page.locator('[data-panel-kind="run"]')
+  const listBox = (await page.locator('[data-panel-kind="runs"]').boundingBox())!
+  const reportBox = (await report.boundingBox())!
+  expect(reportBox.x).toBeGreaterThanOrEqual(listBox.x + listBox.width - 2)
+  expect(await runList.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true)
+
+  const row = page.locator('.run-list .record-row:not(.record-unseen) >> visible=true').first()
+  const id = await row.locator('.run-id').getAttribute('title')
+  await row.click()
+  await expect(report.locator('.chosen-id')).toHaveText(id!)
+  await expect(runList).toBeVisible()
+})
+
+/**
  * A tab behind another is not drawn until the reader picks it — the run list must not wait for the
  * chart's library. Counted in the document rather than inferred: the host is there from the start,
  * its content only once shown.

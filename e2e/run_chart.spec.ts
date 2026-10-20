@@ -24,7 +24,7 @@ async function openSection(page: Page, name: string): Promise<void> {
  * candles — and the position marked, so the list and the chart agree on what is looked at.
  */
 test('the chart mark on a trade opens the run chart beside the report, on the trade\'s unit', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await openSection(page, 'Trade history')
 
@@ -51,10 +51,12 @@ test('the chart mark on a trade opens the run chart beside the report, on the tr
 /**
  * Part of the first arrangement (operator, 2026-10-15): on a screen wide enough to share, the run
  * chart stands beside the report from the start, on the first unit with trades — and below that
- * width it is a tab after the report, so the report keeps the room its lists need.
+ * width it is a tab after the report, so the report keeps the room its lists need. Three columns —
+ * the lists, the report, the chart — from about 1780 px, which is why this spec runs at 1800
+ * (operator, 2026-10-20).
  */
 test('the first arrangement puts the run chart beside the report where the screen is wide enough', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await expect(page.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(FIXTURE_RUN)
 
@@ -83,7 +85,7 @@ test('below that width the run chart is a tab after the report', async ({ page }
  * the one the run chart draws, and a unit chosen in the chart narrows every list to it.
  */
 test('the scenario in focus is the one on the run chart, whichever side chose it', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await openSection(page, 'Scenarios')
   const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
@@ -114,7 +116,7 @@ test('the scenario in focus is the one on the run chart, whichever side chose it
  * closed none: its one mark is that opening.
  */
 test('the run chart marks the opening of a position that never closed', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
   await expect(unitSelect).toBeEnabled()
@@ -131,7 +133,7 @@ test('the run chart marks the opening of a position that never closed', async ({
  * eighteen hours — 1,075 bars of a minute; zoomed out, a mark covers hours of them.
  */
 test('marks that would cover each other are drawn as one, and split as the reader zooms in', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   const unitSelect = page.locator('[data-quick-bar="run-chart"] select').first()
   await expect(unitSelect).toBeEnabled()
@@ -155,7 +157,7 @@ test('marks that would cover each other are drawn as one, and split as the reade
 
 /** A line above the chart — the hint on its shapes — takes room from it, never its time axis. */
 test('the hint above the run chart leaves the whole chart inside its panel', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   const panel = page.locator('[data-panel-kind="run-chart"]')
   await expect(panel.getByText('a position opened')).toBeVisible()
@@ -173,7 +175,7 @@ test('the hint above the run chart leaves the whole chart inside its panel', asy
  */
 test('the run chart draws the levels of the position looked at', async ({ page }) => {
   await mockApi(page, { levels: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1', stopLoss: 0.875, takeProfit: 0.882 } })
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', {
     run: FIXTURE_RUN, units: ['EURGBP_refusals_01'], position: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1' },
   })

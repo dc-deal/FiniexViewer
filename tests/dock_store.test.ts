@@ -144,7 +144,7 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
 
   const api = {
     // wide enough to share by default, as on the screens the viewer is built for
-    width: options.width ?? 1600,
+    width: options.width ?? 1800,
     height: 900,
     get panels() { return panels() },
     get groups() { return row },
@@ -259,10 +259,21 @@ describe('useDockStore', () => {
     const dock = fakeDock()
     useDockStore().attach(dock.api)
 
-    // the lists and the report as tabs, the run chart beside them as a split of its own
-    expect(dock.rows()).toEqual([['deployments', 'runs', 'run'], ['run-chart']])
+    // the lists as tabs; the report beside them and the run chart beside it, each a split of its own
+    expect(dock.rows()).toEqual([['deployments', 'runs'], ['run'], ['run-chart']])
     expect(dock.active()).toBe('runs')
     expect(useArrangementStore().dock).not.toBeNull()
+  })
+
+  /**
+   * Where the dock holds the lists and the report but no room for candles beside them, the chart
+   * is a tab behind the report — the report keeps the width its lists need.
+   */
+  it('puts the run chart behind the report as a tab where the dock holds two columns', () => {
+    const dock = fakeDock({ width: 1600 })
+    useDockStore().attach(dock.api)
+    expect(dock.rows()).toEqual([['deployments', 'runs'], ['run', 'run-chart']])
+    expect(dock.width('run')).toBe(1054)
   })
 
   /** Below the width a split needs, the run chart joins the report's tabs, right after it. */
@@ -451,19 +462,19 @@ describe('useDockStore', () => {
     const runs = dock.api.getPanel('runs')!
     const run = dock.api.getPanel('run')!
 
-    // the default layout: the bundle a tab beside the list — the pick leaves it behind
-    expect(run.group).toBe(runs.group)
+    // the first arrangement: the bundle a split of its own beside the list — the pick brings it forward
+    expect(run.group).not.toBe(runs.group)
+    store.reveal('runs', 'command')
+    expect(store.reveal('run', 'selection', 'runs')).toBe(true)
+    expect(dock.active()).toBe('run')
+
+    // the bundle dragged in as a tab beside the list: the pick leaves it behind
+    run.api.moveTo({ group: runs.group })
     store.reveal('runs', 'command')
     expect(store.reveal('run', 'selection', 'runs')).toBe(true)
     expect(dock.active()).toBe('runs')
     // a command still comes to the front, whatever stands beside it
     store.reveal('run', 'command')
-    expect(dock.active()).toBe('run')
-
-    // the bundle dragged beside the chart, a group of its own: the pick brings it forward
-    run.api.moveTo({ group: dock.api.getPanel('run-chart')!.group })
-    store.reveal('runs', 'command')
-    expect(store.reveal('run', 'selection', 'runs')).toBe(true)
     expect(dock.active()).toBe('run')
   })
 
@@ -633,7 +644,7 @@ describe('useDockStore', () => {
     it('opens the first beside the run report, as a split to its right, and in front', () => {
       const { dock, store } = attached()
       store.openSection('trade-history')
-      expect(dock.rows()).toEqual([['deployments', 'runs', 'run'], ['report-trade-history'], ['run-chart']])
+      expect(dock.rows()).toEqual([['deployments', 'runs'], ['run'], ['report-trade-history'], ['run-chart']])
       expect(dock.active()).toBe('report-trade-history')
       expect(store.openIds).toContain('report-trade-history')
     })
@@ -695,7 +706,7 @@ describe('useDockStore', () => {
       dock.close('report-trade-history')
 
       store.showSection('trade-history')
-      expect(dock.rows()).toEqual([['deployments', 'runs', 'run'], ['report-trade-history'], ['run-chart']])
+      expect(dock.rows()).toEqual([['deployments', 'runs'], ['run'], ['report-trade-history'], ['run-chart']])
       expect(dock.width('report-trade-history')).toBe(520)
       expect(hidden('trade-history')).toBe(false)
       expect(dock.active()).toBe('report-trade-history')
@@ -709,7 +720,7 @@ describe('useDockStore', () => {
       dock.close('report-orders')
 
       store.showSection('orders')
-      expect(dock.rows()[1]).toEqual(['report-trade-history', 'report-orders', 'report-booking-periods'])
+      expect(dock.rows()[2]).toEqual(['report-trade-history', 'report-orders', 'report-booking-periods'])
     })
 
     /** Where nothing it stood beside is left, the column is its place — and its panel comes forward. */
@@ -750,12 +761,12 @@ describe('useDockStore', () => {
     /** A main panel the same: closed, it opens again beside what it stood beside. */
     it('brings a closed main panel back where it stood', () => {
       const { dock, store } = attached()
-      // the reader opened the free chart in a split of its own, right of the others
+      // the reader opened the free chart in a split of its own, right of the lists
       dock.api.addPanel({ id: 'chart', component: 'host', position: { referencePanel: 'runs', direction: 'right' } })
       dock.close('chart')
 
       store.reveal('chart', 'command')
-      expect(dock.rows()).toEqual([['deployments', 'runs', 'run'], ['chart'], ['run-chart']])
+      expect(dock.rows()).toEqual([['deployments', 'runs'], ['chart'], ['run'], ['run-chart']])
       expect(dock.active()).toBe('chart')
     })
 
@@ -816,7 +827,7 @@ describe('useDockStore', () => {
       const { dock, store } = attached()
       dock.dragPanel('runs')
       store.dockToEdge('left')
-      expect(dock.edgeGroups).toEqual([{ direction: 'left', initialWidth: 400 }])
+      expect(dock.edgeGroups).toEqual([{ direction: 'left', initialWidth: 450 }])
       expect(dock.rows()[0]).toEqual(['runs'])
       expect(store.dragging).toBeNull()
     })
@@ -833,7 +844,7 @@ describe('useDockStore', () => {
       const { dock, store } = attached()
       dock.dragGroupOf('runs')
       store.dockToEdge('right')
-      expect(dock.rows().at(-1)).toEqual(['deployments', 'runs', 'run'])
+      expect(dock.rows().at(-1)).toEqual(['deployments', 'runs'])
     })
 
     it('adds nothing where nothing is being dragged', () => {

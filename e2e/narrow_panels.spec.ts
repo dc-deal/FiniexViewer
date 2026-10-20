@@ -44,9 +44,10 @@ test('the narrowing in the menu bar shortens its name before anything beside it 
 /**
  * The run list's facet bar is ONE line wherever it fits: in a narrow panel it took three and four
  * lines before a single run showed. The facets that do not fit wait behind `+N`; at the narrowest the
- * right-hand group — clear, the count, the sort — takes a second line, and never more.
+ * right-hand group — clear, the count, the sort — takes a second line, and never more. Each width
+ * is the list's own: below the first arrangement's two columns the run list spans the window.
  */
-for (const [width, lines] of [[1400, 1], [700, 1], [420, 2]] as const) {
+for (const [width, lines] of [[1300, 1], [700, 1], [420, 2]] as const) {
   test(`the run list's facet bar takes at most ${lines} line${lines > 1 ? 's' : ''} at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 700 })
     await page.goto('/')

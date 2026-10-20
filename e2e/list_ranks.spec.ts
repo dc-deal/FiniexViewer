@@ -230,7 +230,9 @@ for (const width of WIDTHS) {
  * breakpoint that changes nothing, which is worse than no breakpoint because it is believed.
  */
 test('every ranked list gives columns up as it narrows', async ({ page }) => {
-  await page.setViewportSize({ width: 1900, height: 1200 })
+  // the widest every list can be: below the two columns of the first arrangement every panel is a
+  // tab of one group, at the full width of the dock — wider, the run list stands in a column of 470
+  await page.setViewportSize({ width: 1320, height: 1200 })
   await openEverything(page)
   const wide: Record<string, number> = {}
   for (const holder of HOLDERS) {

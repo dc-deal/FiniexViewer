@@ -25,14 +25,31 @@ const COLUMN_KIND = RUN_BUNDLE
 const LIST_KIND = 'runs'
 
 /**
- * Where a kind opens the first time, while nothing it stood beside is known: the run chart as a
- * split to the right of the run report, so a trade in the list and its candle are one glance apart
- * (viewer#31, decided 2026-10-15). Every other kind joins the active panel's tabs.
+ * Where a kind opens the first time, while nothing it stood beside is known: the run report as a
+ * split to the right of the run list, so a pick shows the run without covering the list it was made
+ * in (operator, 2026-10-20), and the run chart to the right of the report, so a trade in the list
+ * and its candle are one glance apart (viewer#31, decided 2026-10-15). Every other kind joins the
+ * active panel's tabs.
  */
-const OPENS_RIGHT_OF: Record<string, string> = { 'run-chart': COLUMN_KIND }
+const OPENS_RIGHT_OF: Record<string, string> = { [COLUMN_KIND]: LIST_KIND, 'run-chart': COLUMN_KIND }
 
-/** The share of the dock's width a split of its own takes in the first arrangement — the report keeps the larger part. */
-const SPLIT_SHARE = 0.4
+/**
+ * The first arrangement's columns, each with a floor, the width beyond them shared 28 · 38 · 34
+ * (operator, 2026-10-20). The REPORT's floor comes first: its trade history and its orders keep the
+ * position column — the mark that opens a trade on the chart — only from 48rem of list, and at a
+ * report of 682 px both lost it. The lists' floor next: in a column of 392 px the run list needed
+ * 420 for its rows and scrolled sideways. The chart takes what is left, and only where that is
+ * room for candles; otherwise it is a tab behind the report.
+ */
+const LIST_FLOOR = 470
+const REPORT_FLOOR = 860
+const CHART_FLOOR = 450
+const LIST_SHARE = 0.28
+const CHART_SHARE = 0.34
+
+/** The dock width from which the report stands beside the lists, and from which the chart beside the report. */
+const TWO_COLUMNS = LIST_FLOOR + REPORT_FLOOR
+const THREE_COLUMNS = TWO_COLUMNS + CHART_FLOOR
 
 /** The panel that arranges the drawing layers of the chart last in front (viewer#41). */
 const LAYERS_KIND = 'layers'
@@ -64,13 +81,6 @@ export type RevealReason = 'command' | 'selection'
 
 /** What is being dragged in the dock: a panel by its tab, or a whole group by its header. */
 type DockDrag = { panel: string } | { group: string }
-
-/**
- * Below this dock width a split would leave the report too narrow for its lists — measured
- * 2026-10-15: at 620 px the run list overflowed its panel by 95 px — so the kind joins the
- * report's tabs instead, right after it.
- */
-const SPLIT_MIN_WIDTH = 1400
 
 /**
  * Where to look for the group a split stood beside, and on which side of it the split stood: a
@@ -178,20 +188,33 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   /**
-   * Where a kind that opens beside another goes: a split to its right where the dock is wide enough
-   * to share, at its share of the width; a tab right after it otherwise.
+   * The width a kind's split takes where it first opens: the report everything right of the lists —
+   * the chart's part included, which the chart's split then takes from it — and the chart its part.
    */
-  function besideAnchor(dock: DockviewApi, anchor: string): { placement: Placement, size?: number } {
-    if (dock.width >= SPLIT_MIN_WIDTH) {
-      return { placement: { referencePanel: anchor, direction: 'right' }, size: Math.round(dock.width * SPLIT_SHARE) }
+  function splitWidth(width: number, kindId: string): number {
+    if (kindId !== COLUMN_KIND) return Math.round(CHART_FLOOR + CHART_SHARE * (width - THREE_COLUMNS))
+    const floor = width >= THREE_COLUMNS ? THREE_COLUMNS : TWO_COLUMNS
+    return Math.round(width - LIST_FLOOR - LIST_SHARE * (width - floor))
+  }
+
+  /**
+   * Where a kind that opens beside another goes: a split to its right where the dock holds every
+   * column's floor, at its share of the width; a tab right after it otherwise — below that a split
+   * would leave the report too narrow for its lists (measured 2026-10-15: at 620 px the run list
+   * overflowed its panel by 95 px).
+   */
+  function besideAnchor(dock: DockviewApi, kindId: string): { placement: Placement, size?: number } {
+    const anchor = OPENS_RIGHT_OF[kindId]!
+    if (dock.width >= (kindId === COLUMN_KIND ? TWO_COLUMNS : THREE_COLUMNS)) {
+      return { placement: { referencePanel: anchor, direction: 'right' }, size: splitWidth(dock.width, kindId) }
     }
     const panel = dock.getPanel(anchor)!
     return { placement: { referencePanel: anchor, direction: 'within', index: panel.group.panels.indexOf(panel) + 1 } }
   }
 
   /**
-   * The suggested order: the lists and the report as tabs of one group, on the tab where the work
-   * is — and a kind that opens beside another, the run chart, as a split to its right.
+   * The suggested order: the lists as tabs of one group, on the tab where the work is — and a kind
+   * that opens beside another, the report and the run chart, as a split to its right.
    */
   function arrangeDefault(dock: DockviewApi): void {
     dock.clear()
@@ -205,7 +228,7 @@ export const useDockStore = defineStore('dock', () => {
         add(dock, kind.id)
         continue
       }
-      const { placement, size } = besideAnchor(dock, anchor)
+      const { placement, size } = besideAnchor(dock, kind.id)
       add(dock, kind.id, placement, size)
     }
     dock.getPanel(firstActiveKind())?.api.setActive()
@@ -238,7 +261,7 @@ export const useDockStore = defineStore('dock', () => {
     const anchor = OPENS_RIGHT_OF[kindId]!
     if (dock.getPanel(kindId) || arrangement.places[kindId] || !dock.getPanel(anchor)) return
     const before = dock.activePanel
-    const { placement, size } = besideAnchor(dock, anchor)
+    const { placement, size } = besideAnchor(dock, kindId)
     add(dock, kindId, placement, size)
     // beside the report, not in front of the panel the reader had in front
     before?.api.setActive()
@@ -430,7 +453,7 @@ export const useDockStore = defineStore('dock', () => {
     const anchor = OPENS_RIGHT_OF[kindId]
     const active = dock.activePanel?.id
     if (anchor && dock.getPanel(anchor)) {
-      const { placement, size } = besideAnchor(dock, anchor)
+      const { placement, size } = besideAnchor(dock, kindId)
       add(dock, kindId, placement, size)
     } else add(dock, kindId, active ? { referencePanel: active, direction: 'within' } : undefined)
   }

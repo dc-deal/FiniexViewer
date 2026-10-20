@@ -33,13 +33,14 @@ by its tab, the way a reader does.
   from the last saved. The column is asserted first, because a storage shared between tabs fails it
   every time, where it lost the run only when the other tab's delayed save landed in between.
 - `dock.spec.ts` holds the docked panels, which jsdom cannot lay out at all: the first arrangement
-  in the suggested order, a tab behind another drawn only once it is shown, an arrangement that
+  in the suggested order, the run report beside the run list on a wide screen with the list keeping
+  its rows and a pick there showing the run, a tab behind another drawn only once it is shown, an arrangement that
   survives a reload, the way back to the suggested order, a closed panel brought back from the
   Panels menu, About opening as a dialog rather than as a tab, the quick bar holding the chart's
   selection only while the chart is in front, the run bundle's tab carrying the grade of a run that
   did not succeed, and a page that never scrolls — also once the window is made smaller, which is
   what left a panel behind a tab reaching past the bottom; and a panel dropped at the dock's
-  outermost edge spanning that whole edge — along the bottom, where the first arrangement's two
+  outermost edge spanning that whole edge — along the bottom, where the first arrangement's
   columns tell it apart from a drop on one group; and a pick in the run list that leaves a closed
   run report closed while the run is chosen all the same.
 - `run_selection.spec.ts` also holds the rule that a selection never moves the layout — choosing a

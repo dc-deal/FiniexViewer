@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('the Layers panel opens beside the chart from its quick bar, and a layer it hides stays hidden after a reload', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN, units: ['EURGBP_refusals_01'] })
   const chartPanel = page.locator('[data-panel-kind="run-chart"]')
   const chart = chartPanel.locator('.candle-chart')

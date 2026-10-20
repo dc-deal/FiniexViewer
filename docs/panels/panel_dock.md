@@ -62,12 +62,19 @@ it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the o
   title would repeat the area's name: *Run list*). What
   is read or set and then closed — About, the settings — is a dialog and has no kind. Each component
   is loaded on demand into its own chunk, as the routes before them were.
-- **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: Deployments, Runs and
-  the run bundle as tabs of one group, in front where the work is — the bundle where a run is
-  restored, the run list where none is yet (`firstActiveKind`) — and the run chart beside the report
-  (operator, 2026-10-15): a split to its right at 40 % of the width where the dock is at least
-  1400 px wide, a tab right after it below that, where a split would leave the report's lists too
-  narrow (measured: at 620 px the run list overflowed its panel by 95 px). The free chart is not in
+- **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: Deployments and Runs as
+  tabs of one group, the run bundle as a split to their right (operator, 2026-10-20: a pick then
+  shows the run without covering the list it was made in), and the run chart to the right of the
+  bundle (operator, 2026-10-15), in front where the work is — the bundle where a run is restored,
+  the run list where none is yet (`firstActiveKind`). Each column has a floor and the width beyond
+  them is shared 28 · 38 · 34 (operator, 2026-10-20): the REPORT 860 px first, because its trade
+  history and its orders keep the position column — the mark that opens a trade on the chart —
+  only from 48rem of list, and at 682 px both lost it; the lists 470, below which the run list
+  scrolls sideways (392 px of column, 420 needed); the chart 450. So the report stands beside the
+  lists from a dock of 1330 px, the chart beside the report from 1780 — measured at 1787: 472 · 863
+  · 452 — and below each the kind is a tab right after its anchor, where a split would leave the
+  report's lists too narrow (measured 2026-10-15: at 620 px the run list overflowed its panel by
+  95 px). The free chart is not in
   it and opens from the Panels menu. A stored layout that never held the run report gains it right
   after the run list where a run is chosen, in front where the list was, and one that never held
   the run chart gains it beside the report; never a panel the reader hid, which has a place to come
