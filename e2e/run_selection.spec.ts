@@ -31,6 +31,8 @@ test('a chosen run and scenario survive a reload', async ({ page }) => {
   await expect(row).toBeVisible()
   await row.click()
 
+  // the bundle stands as a tab beside the list, and a pick never covers the list it was made in
+  await page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="run"]') }).click()
   await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_RUN)
 
   // the Scenarios panel starts COLLAPSED (`defaultOpen: false` in the registry), so its rows are
@@ -200,6 +202,8 @@ test('each browser tab keeps its own run and column across a reload, a new one s
   const otherId = await other.locator('.run-id').getAttribute('title')
   expect(otherId).not.toBe(FIXTURE_RUN)
   await other.click()
+  // the pick leaves the bundle behind its list; the reader brings it forward
+  await second.locator('.dv-tab', { has: second.locator('.panel-tab[data-kind="run"]') }).click()
   await expect(second.locator('[data-panel-kind="run"] .chosen-id')).toHaveText(otherId!)
 
   // the first tab, reloaded, still has its own column and its own run; the second its own run
