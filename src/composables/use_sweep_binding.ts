@@ -14,10 +14,10 @@ export function useSweepBinding(): void {
   onMounted(async () => {
     await store.loadSweeps()
     const stored = context.main.sweep.id
-    if (stored) await store.loadSweep(stored)
+    if (stored) await store.selectSweep(stored)
   })
 
-  // a docked panel stays mounted, so the list is fetched again whenever the panel comes back:
-  // a sweep that finished while it stood behind another tab is on it then
-  onPanelShownAgain(() => { void store.loadSweeps(true) })
+  // a docked panel stays mounted, so the list and every ranking on it are fetched again whenever
+  // the panel comes back: a sweep that finished, or grew, while it stood behind another tab
+  onPanelShownAgain(() => { void store.refresh() })
 }

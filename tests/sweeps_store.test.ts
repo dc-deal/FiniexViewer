@@ -25,8 +25,8 @@ function resolveAll(): void {
 }
 
 /**
- * The parameter searches, built the way the deployments are: the list, the sweep the context
- * names, and its ranking as the route serves it.
+ * The parameter searches: the list, the sweep the link names, and each sweep's ranking loaded the
+ * first time it is opened — kept exactly as the route serves it.
  */
 describe('sweeps_store', () => {
   beforeEach(() => {
@@ -53,17 +53,17 @@ describe('sweeps_store', () => {
   })
 
   /** The ranking is the route's: kept as served, nothing re-sorted here. */
-  it('writes a chosen sweep into the link and loads its ranking as served', async () => {
+  it('writes an opened sweep into the link and keeps its ranking as served', async () => {
     resolveAll()
     const store = useSweepsStore()
     await store.loadSweeps()
     await store.selectSweep(ID)
     expect(useContextStore().main.sweep.id).toBe(ID)
-    expect(store.selectedSweep?.sweep_id).toBe(ID)
-    expect(store.detail?.combinations.map(row => row.run_id)).toEqual(DETAIL.combinations.map(row => row.run_id))
+    expect(store.rankings[ID]!.combinations.map(row => row.run_id)).toEqual(DETAIL.combinations.map(row => row.run_id))
+    expect(store.loadingRankings).toEqual([])
   })
 
-  it('does not load the chosen sweep again while it is on show', async () => {
+  it('asks for a ranking once, however often its sweep is opened', async () => {
     resolveAll()
     const store = useSweepsStore()
     await store.loadSweeps()
@@ -73,7 +73,7 @@ describe('sweeps_store', () => {
   })
 
   /** A sweep newer than the list on screen is asked for once more before it is called gone. */
-  it('says a sweep is gone only after the list was asked again', async () => {
+  it('says a linked sweep is gone only after the list was asked again', async () => {
     resolveAll()
     const store = useSweepsStore()
     await store.loadSweeps()
@@ -83,13 +83,23 @@ describe('sweeps_store', () => {
     expect(apiClient.getSweep).not.toHaveBeenCalled()
   })
 
-  it('calls a sweep the ledger answers 404 for unknown, rather than a failure', async () => {
+  it('marks a sweep the ledger answers 404 for as gone, rather than as a failure', async () => {
     resolveAll()
     vi.mocked(apiClient.getSweep).mockResolvedValue(null)
     const store = useSweepsStore()
     await store.loadSweeps()
     await store.selectSweep(ID)
-    expect(store.unknownSweepId).toBe(ID)
+    expect(store.goneSweeps).toEqual([ID])
+    expect(store.rankingFailures).toEqual({})
+  })
+
+  it('says what failed for the one sweep whose ranking could not be read', async () => {
+    resolveAll()
+    vi.mocked(apiClient.getSweep).mockRejectedValue(new Error('Network Error'))
+    const store = useSweepsStore()
+    await store.loadSweeps()
+    await store.selectSweep(ID)
+    expect(store.rankingFailures[ID]).toBe('Could not load the ranking: Network Error')
     expect(store.error).toBeNull()
   })
 
@@ -108,13 +118,14 @@ describe('sweeps_store', () => {
     expect(store.error).toBe('Could not load the sweeps: Network Error')
   })
 
-  it('clears the chosen sweep from the link and what was loaded for it', async () => {
+  /** The panel came back: the list, and every ranking it holds — a running sweep grew meanwhile. */
+  it('fetches the list and every ranking held again on a refresh', async () => {
     resolveAll()
     const store = useSweepsStore()
     await store.loadSweeps()
     await store.selectSweep(ID)
-    store.clearSelection()
-    expect(useContextStore().main.sweep.id).toBeNull()
-    expect(store.detail).toBeNull()
+    await store.refresh()
+    expect(apiClient.getSweeps).toHaveBeenCalledTimes(2)
+    expect(apiClient.getSweep).toHaveBeenCalledTimes(2)
   })
 })

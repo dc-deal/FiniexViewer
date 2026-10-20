@@ -58,8 +58,8 @@ by its tab, the way a reader does.
   group stands in front of it — a panel kept in the page stays mounted behind its tab, which only a
   real dock shows.
 - `sweeps.spec.ts` holds the parameter searches: the Sweeps panel opened from the Panels menu, a
-  sweep picked from its list, its combinations in the order the route ranked them with the first
-  marked ★, and a combination bringing its run to the front in the run bundle.
+  sweep opened in its one list, its combinations beneath it in the order the route ranked them with
+  the first marked ★, and a combination chosen as a run, its report coming forward in the run bundle.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel.
@@ -185,7 +185,7 @@ its marks stand on the candles, read on the page's own frames, and a zoom step u
 it has painted, the mean of ten — a figure that carries two round trips to the browser per step, so
 it is read against its own earlier column, never as the drawing's cost alone. And a sweep's ranking
 at the size a real search reaches (viewer#32): 500 combinations built from the capture, timed from
-the pick until the 500th row stands — what says whether the ranking needs a row cap.
+the sweep opened until the 500th row stands — what says whether the ranking needs a row cap.
 
 **`e2e/order_steps.spec.ts` says why a browser spec earns its place.** The
 nested step list is a grid INSIDE a row of another grid, which is the arrangement behind two of the

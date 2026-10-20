@@ -43,7 +43,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'sweeps',
-    text: t('Every parameter search on record. Pick one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first, and any tied with it. A click on a combination opens its run.'),
+    text: t('Every parameter search on record. Open one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first, and any tied with it. A click on a combination chooses its run, as the run list does.'),
   },
   {
     id: 'layers',
