@@ -117,7 +117,13 @@ function account(row: RunSummaryCurrency): Figure[] {
     })
   }
   figures.push(
-    { label: t('Initial capital'), value: amount(row.total_initial_balance, row.currency) },
+    {
+      label: t('Initial capital'),
+      value: amount(row.total_initial_balance, row.currency),
+      // their portfolio document: the CASH the accounts started with, so at spot it and the final
+      // equity do not subtract to a result
+      title: t('The cash in the account currency the accounts started with. At spot a starting holding of the base asset is not in it, so this and the final equity do not subtract to a result: the net P&L is the result.'),
+    },
     {
       label: t('Deepest drawdown'),
       value: `${magnitude(row.account_max_drawdown, row.currency)} (${percentFigure(row.account_max_dd_pct)})`,

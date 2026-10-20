@@ -276,6 +276,13 @@ describe('ExecutivePanel', () => {
       .toBe('80,000.00 USD')
   })
 
+  /** Their portfolio document: the CASH the accounts started with — at spot not the holding of the base asset. */
+  it('says on hover that the initial capital is the cash alone', () => {
+    const wrapper = mount(ExecutivePanel, { props: { model: summaryWith({ ...MEASURED, total_initial_balance: 80_000 }) } })
+    const capital = wrapper.findAll('.figure').find(pair => pair.find('dt').text() === 'Initial capital')!
+    expect(capital.attributes('title')).toContain('do not subtract to a result')
+  })
+
   /**
    * A run of several accounts says so at the head of the block, and names which one the drawdown
    * trio belongs to — both on their own lines, because a count and a scenario name are not figures

@@ -204,7 +204,8 @@ export function combinationCard(row: CombinationRow): FigureCard {
     { label: t('Win rate'), value: percentOrNa(combination.win_rate, combination.total_trades) },
     { label: t('Profit factor'), value: numberOrNa(combination.profit_factor, combination.total_trades) },
     {
-      label: t('Max drawdown'),
+      // the account's deepest decline, named as every other card names this pair of fields
+      label: t('Deepest drawdown'),
       value: combination.account_max_drawdown_pct === null
         ? magnitude(combination.account_max_drawdown, combination.currency)
         : `${magnitude(combination.account_max_drawdown, combination.currency)} (${percentFigure(combination.account_max_drawdown_pct)})`,

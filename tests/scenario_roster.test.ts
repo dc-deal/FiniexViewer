@@ -508,6 +508,20 @@ describe('ScenarioRosterPanel', () => {
       expect(pairs['Ticks modelled']?.title).toContain('f'.repeat(64))
     })
 
+    /**
+     * `drawdown_started_at` is on the wall clock — when measuring began, in a backtest when the scenario
+     * valued its first tick — never an instant of the data. Labelled as when a drawdown began, it read
+     * as a market moment.
+     */
+    it('says on which clock the drawdown curve began', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { drawdown_started_at: '2026-10-07T14:41:24+00:00' })])))
+      const details = wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]
+      const began = details.find(pair => pair.label === 'Drawdown curve began')!
+      expect(began.value).toBe('2026-10-07 14:41:24Z · wall clock')
+      expect(began.title).toContain('never an instant of the data')
+      expect(details.map(pair => pair.label)).not.toContain('Drawdown began')
+    })
+
     it('says nothing of modelled quotes where the unit read recorded ones', () => {
       const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner')])))
       const labels = (wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]).map(pair => pair.label)

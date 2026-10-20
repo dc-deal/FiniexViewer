@@ -123,4 +123,12 @@ describe('sweep_rows', () => {
     const [row] = combinations({})
     expect(combinationCard(row!).title).toBe(`1. ${parametersText(row!.combination)}`)
   })
+
+  /** The account's deepest decline carries one name on every card: the run report's, the roster's, a period's. */
+  it('names the drawdown of a combination as the other cards name it', () => {
+    const [row] = combinations({})
+    const labels = combinationCard(row!).details.map(pair => pair.label)
+    expect(labels).toContain('Deepest drawdown')
+    expect(labels).not.toContain('Max drawdown')
+  })
 })

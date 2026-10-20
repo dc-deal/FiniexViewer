@@ -313,10 +313,17 @@ function card(row: ScenarioRow): FigureCard | null {
   if (unit.maker_fee || unit.taker_fee) {
     details.push({ label: t('Maker / taker'), value: `${money(unit.maker_fee)} / ${money(unit.taker_fee)}` })
   }
-  // where a decline began, and whether it was inherited — a drawdown carried in from an earlier
-  // session is not one this scenario produced
+  // when the drawdown curve began, and whether it was inherited — a drawdown carried in from an
+  // earlier session is not one this scenario produced. The start is on the WALL CLOCK, the time at
+  // which measuring began (their portfolio document): in a backtest when the scenario valued its
+  // first tick, never an instant of the data. Labelled "Drawdown began" it read as when a decline
+  // set in (2026-10-20).
   if (unit.drawdown_started_at) {
-    details.push({ label: t('Drawdown began'), value: utcInstant(unit.drawdown_started_at) })
+    details.push({
+      label: t('Drawdown curve began'),
+      value: `${utcInstant(unit.drawdown_started_at)} · ${t('wall clock')}`,
+      title: t("When measuring began, on the machine's clock — in a backtest when the scenario valued its first tick, never an instant of the data."),
+    })
   }
   if (unit.drawdown_carried_from) {
     details.push({ label: t('Carried from'), value: unit.drawdown_carried_from })
