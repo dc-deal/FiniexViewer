@@ -60,6 +60,17 @@ describe('openInDock', () => {
     expect(opened).toEqual(['run command', 'run command'])
   })
 
+  /** A change mark asks for a session's configuration: the run is chosen, that section comes forward. */
+  it('opens a named section of the run as a panel of its own rather than the run report', async () => {
+    const sections: string[] = []
+    useDockStore().openSection = (sectionId: string) => { sections.push(sectionId) }
+    openInDock().openRun(FIRST!, 'config')
+    await flushPromises()
+    expect(useRunsStore().selectedRunId).toBe(FIRST)
+    expect(sections).toEqual(['config'])
+    expect(opened).toEqual([])
+  })
+
   it('starts the opened run with no narrowing of the run before it', async () => {
     const runs = useRunsStore()
     const open = openInDock()

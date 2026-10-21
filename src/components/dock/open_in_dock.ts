@@ -24,9 +24,12 @@ export function openInDock(): OpenInContext {
   const sweeps = useSweepsStore()
   const dock = useDockStore()
   return {
-    openRun: (runId: string) => {
+    openRun: (runId: string, sectionId?: string) => {
       void runs.selectRun(runId)
-      dock.reveal(RUN_BUNDLE, 'command')
+      // a named section comes forward as a panel of its own: in the column it may stand folded
+      // or far below the header, and the reader asked for that section rather than the report
+      if (sectionId) dock.openSection(sectionId)
+      else dock.reveal(RUN_BUNDLE, 'command')
     },
     openDeployment: (deploymentId: string) => {
       void deployments.selectDeployment(deploymentId)

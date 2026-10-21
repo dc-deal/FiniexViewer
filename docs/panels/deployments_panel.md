@@ -65,6 +65,14 @@ misreports something:
 - `strategy_changed` / `operation_changed` / `orders_to_changed` render as a line BETWEEN two rows,
   the words on a dashed rule half a row high. A badge at the end of a row reads as a property of
   that session, which is the wrong reading — the flag marks a boundary.
+  **A mark says WHERE and never WHAT** (their `deployments` and `config` documents). The words of a
+  configuration mark carry a card with its meaning in the backend's words — what the bot decided,
+  or what a session did without changing that — and say that WHICH parameters moved is not served
+  yet: testingide#527 (open on 2026-10-21) plans them as key, before and after, and they are never
+  computed here. Beside the words, *Configuration before ↗ after ↗* opens the configuration of the
+  session above the mark and of the one carrying it, as a panel of its own; the comparison is the
+  reader's. An operation mark also moves with the defaults merged in under the file and with a
+  start option, which no route serves, and its card says so.
 - `unfinished` is shown even when zero. Those runs are absent from `sessions` by construction (the
   ledger row is written last), and a bare session count is a number the reader has no reason to doubt.
 

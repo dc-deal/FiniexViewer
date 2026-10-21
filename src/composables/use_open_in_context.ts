@@ -10,8 +10,11 @@ import type { InjectionKey } from 'vue'
  * which is the contract the position link already keeps for the jump between two of its panels.
  */
 export interface OpenInContext {
-  /** Put the reader in front of this run. */
-  openRun: (runId: string) => void
+  /**
+   * Put the reader in front of this run — or, where a section is named, in front of that section
+   * of its report (`config`: what the run was commissioned with).
+   */
+  openRun: (runId: string, sectionId?: string) => void
   /** Put the reader in front of this deployment's history. */
   openDeployment: (deploymentId: string) => void
   /** Put the reader in front of this sweep's ranked combinations. */

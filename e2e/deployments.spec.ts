@@ -122,6 +122,26 @@ test('each run opened from the deployment shows its own executive summary', asyn
   await expect(executive).not.toContainText('111.11')
 })
 
+/**
+ * A change mark says WHERE; the configuration on either side of it is a click away, opened as a
+ * panel of its own. The links stand on the dashed line beside the words, and in a narrow panel
+ * the words give way first — a cut link would leave nothing to click.
+ */
+test('a change mark opens the configuration of a session beside it, its links whole', async ({ page }) => {
+  // about the list floor: the narrowest the Deployments panel stands
+  await page.setViewportSize({ width: 520, height: 1000 })
+  await openLedger(page)
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  const lead = page.locator('.sessions-list .record-lead', { hasText: 'Strategy changed' })
+  const links = lead.locator('.boundary-links')
+  await expect(links).toBeVisible()
+  const [line, box] = await Promise.all([lead.boundingBox(), links.boundingBox()])
+  expect(box!.x + box!.width).toBeLessThanOrEqual(line!.x + line!.width + 1)
+
+  await links.locator('button').first().click()
+  await expect(page.locator('.panel-host[data-panel-kind$="config"] [data-panel="config"]')).toBeVisible()
+})
+
 test('a chosen deployment survives a reload', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
