@@ -63,6 +63,10 @@ by its tab, the way a reader does.
 - `sweeps.spec.ts` holds the parameter searches: the Sweeps panel opened from the Panels menu, a
   sweep opened in its one list, its combinations beneath it in the order the route ranked them with
   the first marked ★, and a combination chosen as a run, its report coming forward in the run bundle.
+- `latest_state.spec.ts` holds the check-in on a session, from the two captured answers: a session
+  whose recording stopped standing first in its bundle with its frame open and its report said as
+  never written, an ended one folding its last frame behind its outcome, and a backtest drawing no
+  such section.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel.

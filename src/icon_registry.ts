@@ -5,6 +5,7 @@ import {
   IconAlertCircle,
   IconAlertTriangle,
   IconBook,
+  IconBroadcast,
   IconBuildingBank,
   IconCalendarWeek,
   IconChartBar,
@@ -61,4 +62,5 @@ export const ICONS = {
   'kind-feed-health': IconActivityHeartbeat,
   'kind-config': IconAdjustmentsHorizontal,
   'kind-run-header': IconTag,
+  'kind-latest-state': IconBroadcast,
 } as const satisfies Record<IconName, Component>

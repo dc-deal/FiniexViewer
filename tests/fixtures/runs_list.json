@@ -7,6 +7,159 @@
   ],
   "runs": [
     {
+      "run_id": "20261022_123736_7a3450e9",
+      "group": "autotrader",
+      "name": "kraken_spot_ethusd_day_boundary",
+      "artifacts": [],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "current",
+      "start_time": "2026-10-22T12:37:36.180770+00:00",
+      "parent_id": "deploy_20261022_123713_aa33e0b5",
+      "parent_kind": "deployment",
+      "config_id": "62b1c1853c755edcfee4bcdb18b823f92f52ab4121c0dcc6964a5634910a40bb",
+      "app_version": "1.4.0",
+      "git_commit": "454029dd",
+      "config_snapshot": "kraken_spot_ethusd_day_boundary.json",
+      "reporting": "expected",
+      "size_bytes": 0,
+      "ticks_from": "venue",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_ethusd_day_boundary",
+          "start_date": "2026-10-22T12:37:36.180770+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 38,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
+      "run_id": "20261022_123713_e059d354",
+      "group": "autotrader",
+      "name": "kraken_spot_ethusd_day_boundary",
+      "artifacts": [],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "stopped",
+      "start_time": "2026-10-22T12:37:13.510376+00:00",
+      "parent_id": "deploy_20261022_123713_aa33e0b5",
+      "parent_kind": "deployment",
+      "config_id": "62b1c1853c755edcfee4bcdb18b823f92f52ab4121c0dcc6964a5634910a40bb",
+      "app_version": "1.4.0",
+      "git_commit": "454029dd",
+      "config_snapshot": "kraken_spot_ethusd_day_boundary.json",
+      "reporting": "expected",
+      "size_bytes": 0,
+      "ticks_from": "venue",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_ethusd_day_boundary",
+          "start_date": "2026-10-22T12:37:13.510376+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 38,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
+      "run_id": "20261022_123550_0bfde90e",
+      "group": "autotrader",
+      "name": "state_frames_test",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-10-22T12:35:50.607941+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "04b025ee328e8a31a7f47654acc5f5979b02ea4b268d646c3e3a4b426f6baa29",
+      "app_version": "1.4.0",
+      "git_commit": "454029dd",
+      "config_snapshot": "state_frames_test.json",
+      "reporting": "expected",
+      "size_bytes": 536142,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "state_frames_test",
+          "start_date": "2026-01-25T02:19:46+00:00",
+          "end_date": "2026-01-25T08:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 38,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": true,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 20402.77,
+      "has_reports": true
+    },
+    {
       "run_id": "20261019_220052_ea4b2493",
       "group": "simulation",
       "name": "trend_channel_reference_sweep_base__sweep_20261019_214323_e47deb11_c004",
@@ -13000,5 +13153,5 @@
       "has_reports": true
     }
   ],
-  "count": 163
+  "count": 166
 }

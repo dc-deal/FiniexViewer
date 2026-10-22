@@ -8,7 +8,7 @@ import { useRunSectionsStore } from '@/stores/run_sections_store'
 import { reportKindId } from '@/panel_kinds'
 import { useSectionStates } from '@/composables/use_section_states'
 import { useShowInList } from '@/composables/use_panel_jump'
-import { startedAt } from '@/components/runs/report_format'
+import { noReportReason, startedAt } from '@/components/runs/report_format'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
@@ -170,11 +170,7 @@ const missingSections = computed(() => {
         <!-- a missing or unreadable section does not hide the ones that are there -->
         <!-- `artifacts` read with `reporting` (their runs document): a session still running, or one
              that died before its report phase, is not a run kept as logs only -->
-        <p v-if="!selectedRun.has_reports" class="notice">
-          {{ selectedRun.reporting === 'expected'
-            ? t('This run has no report — it is still running, or it died before its report phase')
-            : t('This run exists as logs only — it was never meant to write a report') }}
-        </p>
+        <p v-if="!selectedRun.has_reports" class="notice">{{ noReportReason(selectedRun) }}</p>
         <!-- one line per REASON, never one per absent section -->
         <p v-for="missing in missingSections" :key="missing.cause" class="notice absent">
           <span class="mark">ⓘ</span>

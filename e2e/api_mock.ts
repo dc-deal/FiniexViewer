@@ -42,6 +42,16 @@ const REPORTS: Record<string, string> = {
   'config': 'run_config_simulation.json',
 }
 
+/**
+ * The sessions the latest-state-frame captures came from, read off the captured index rather than
+ * transcribed: the first row in each of the two states a stored session keeps for good.
+ */
+export const STATE_FRAME_RUNS: Record<'ended' | 'stopped', string> = (() => {
+  const rows = (fixture('runs_list.json') as { runs: { run_id: string, recording: string | null }[] }).runs
+  const first = (state: string) => rows.find(row => row.recording === state)?.run_id ?? ''
+  return { ended: first('ended'), stopped: first('stopped') }
+})()
+
 /** The run every report capture was taken from — the only one the mock can answer for. */
 export const FIXTURE_RUN = (fixture('scenario_details.json') as { run_id: string }).run_id
 
@@ -190,6 +200,18 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       // as the route cuts them: the bars that OPEN in the range
       const rows = (fixture(name) as { t: number }[]).filter(bar => bar.t >= from && bar.t <= to)
       return route.fulfill({ json: rows, headers: { ...CONTRACT, 'X-Bar-Truncated': 'false' } })
+    }
+
+    /*
+     * The CHECK-IN on a session, captured in the two states a stored session keeps — each for the
+     * session it came from, and `state_frames_not_recorded` for every other run, as a backtest answers.
+     */
+    const latest = /^\/api\/v1\/reports\/runs\/([^/]+)\/state-frames\/latest$/.exec(path)
+    if (latest) {
+      const state = (Object.keys(STATE_FRAME_RUNS) as ('ended' | 'stopped')[])
+        .find(key => STATE_FRAME_RUNS[key] === latest[1])
+      if (!state) return route.fulfill(absent('state_frames_not_recorded', 'This run records no state frames.'))
+      return route.fulfill({ json: fixture(`state_frames_${state}.json`), headers: CONTRACT })
     }
 
     /*

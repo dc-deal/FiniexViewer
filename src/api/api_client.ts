@@ -9,6 +9,7 @@ import type { CallerIdentity } from '@/types/api/caller_types'
 import type { ActivityList, MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { StateFramesLatest } from '@/types/api/state_frame_types'
 import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
@@ -300,6 +301,26 @@ export async function getBroker(runId: string): Promise<BrokerReport | SectionAb
     const absence = absenceFrom(error)
     if (absence) return absence
     raiseIfUnreadable(error)
+    throw error
+  }
+}
+
+/**
+ * How a running session stands: the latest state frame of each unit, how old it is and whether the
+ * session still records (contract 38). Asked once a cadence, never faster — a frame is written once
+ * per `cadence_s`, so asking sooner returns the same one. Its 404s are absences like any section's:
+ * `state_frames_not_recorded` (a backtest, or a session from before they were recorded) and
+ * `state_frame_not_written_yet` (the stream is open, its first frame not written); its 409 a stream
+ * that cannot be read. The answer names no run, so there is nothing to hold it against.
+ */
+export async function getLatestStateFrames(runId: string): Promise<StateFramesLatest | SectionAbsence> {
+  try {
+    const response = await http.get<StateFramesLatest>(`/reports/runs/${runId}/state-frames/latest`)
+    return response.data
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error, 'The state frames could not be read')
     throw error
   }
 }

@@ -96,12 +96,23 @@ SWEEP = 'sweep_20261012_210055'
 # replace it; the check below the fetch says whether this one still qualifies.
 DIRTY_RUN = '20261012_205715_c3b41fff'
 
+# The latest state frame of a session, in the two states a stored run can hold for good. ENDED: the
+# fixture catalog's `state_frames_session`, produced for this repository on 2026-10-22 and
+# reproducible on their side - a mock session run to its regular end, its outcome written, one
+# position open in its last frame. STOPPED: a dry run on the live feed killed mid-run, whose last
+# frame is the one its strategy wrote when it sent an order - not reproducible, a live market cannot
+# be replayed, so it stays as it is. A running session cannot be pinned: it ends.
+STATE_ENDED_RUN = '20261022_123550_0bfde90e'
+STATE_STOPPED_RUN = '20261022_123713_e059d354'
+
 TARGETS = [
     ('runs_list.json', 'reports/runs'),
     # The record a run writes BEFORE anything else, of the simulation run, so it describes the
     # same run as the sections beside it - and, from a tree that was dirty, the sample case.
     ('run_header.json', f'reports/runs/{RUN}/header'),
     ('run_header_dirty.json', f'reports/runs/{DIRTY_RUN}/header'),
+    ('state_frames_ended.json', f'reports/runs/{STATE_ENDED_RUN}/state-frames/latest'),
+    ('state_frames_stopped.json', f'reports/runs/{STATE_STOPPED_RUN}/state-frames/latest'),
     ('run_summary.json', f'reports/runs/{RUN}/run-summary'),
     ('portfolio.json', f'reports/runs/{RUN}/portfolio'),
     ('run_booking_periods.json', f'reports/runs/{RUN}/booking-periods'),
@@ -306,6 +317,10 @@ if DIRTY_RUN not in known:
     sys.exit(f'pinned DIRTY_RUN {DIRTY_RUN} is ABSENT from the index. It supplies the header of a '
              'dirty tree only; any run whose header is dirty with a sample shorter than its count can '
              'replace it.')
+for pin, role in ((STATE_ENDED_RUN, 'an ended session'), (STATE_STOPPED_RUN, 'a session whose recording stopped')):
+    if pin not in known:
+        sys.exit(f'pinned {pin} is ABSENT from the index. It supplies the latest state frame of {role}; '
+                 'any session whose run list row reads the same `recording` can replace it.')
 if LIVE_RUN not in known:
     sys.exit(f'pinned LIVE_RUN {LIVE_RUN} is ABSENT from the index. It supplies the AutoTrader '
              'configuration fixture only; any autotrader run serving `config` can replace it.')
@@ -367,6 +382,20 @@ if 'run_header_dirty.json' in bodies and not (
     sys.exit(f'NOTHING WRITTEN - pinned DIRTY_RUN {DIRTY_RUN} no longer QUALIFIES: dirty '
              f'{dirty.get("dirty")}, uncommitted_count {dirty.get("uncommitted_count")}, '
              f'a sample of {len(dirty.get("changes") or [])}.')
+
+def state_units(name):
+    return (bodies.get(name) or {}).get('units') or []
+
+ended = state_units('state_frames_ended.json')
+if 'state_frames_ended.json' in bodies and not (
+        ended and all(unit.get('recording') == 'ended' and unit.get('outcome') for unit in ended)):
+    sys.exit(f'NOTHING WRITTEN - pinned {STATE_ENDED_RUN} no longer QUALIFIES: every unit must read '
+             f'recording ended with its outcome written.')
+stopped = state_units('state_frames_stopped.json')
+if 'state_frames_stopped.json' in bodies and not (
+        stopped and all(unit.get('recording') == 'stopped' for unit in stopped)):
+    sys.exit(f'NOTHING WRITTEN - pinned {STATE_STOPPED_RUN} no longer QUALIFIES: every unit must read '
+             f'recording stopped.')
 
 if failures:
     print('NOTHING WRITTEN - the capture is all or nothing, and these targets did not answer:')

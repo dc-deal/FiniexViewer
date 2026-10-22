@@ -1,0 +1,79 @@
+{
+  "key": [
+    "unit_name"
+  ],
+  "served_at": "2026-10-22T12:52:13.558559Z",
+  "units": [
+    {
+      "unit_name": "kraken_spot_ethusd_day_boundary",
+      "cadence_timeframe": "M1",
+      "cadence_s": 60.0,
+      "written_at": "2026-10-22T12:37:25.711505Z",
+      "age_s": 887.847054,
+      "recording": "stopped",
+      "truncated_tail": false,
+      "first_frame": {
+        "written_at": "2026-10-22T12:37:19.417194Z",
+        "process_memory": {
+          "rss_bytes": 226426880,
+          "private_bytes": 159031296
+        }
+      },
+      "outcome": null,
+      "frame": {
+        "record_kind": "frame",
+        "frame_time": "2026-10-22T12:37:25.686503Z",
+        "written_at": "2026-10-22T12:37:25.711505Z",
+        "written_for": "order",
+        "cadence_slot": null,
+        "ticks_processed": 1,
+        "symbol": "ETHUSD",
+        "account_currency": "USD",
+        "last_price": 2399.145,
+        "balance": 23.1705,
+        "balances": {
+          "ETH": 0.01655583,
+          "USD": 23.1705
+        },
+        "equity": 62.89033676535,
+        "unrealized_pnl": 0.0,
+        "open_positions": [],
+        "active_orders": [],
+        "safety_blocked": false,
+        "safety_drawdown_pct": 0.0,
+        "market_stale": false,
+        "feed_stale": null,
+        "reconcile_clean": null,
+        "worker_outputs": {
+          "rsi_fast": {
+            "rsi_value": 43.90605677480753,
+            "avg_gain": 0.7168137672639109,
+            "avg_loss": 0.915794168676274,
+            "bars_used": 71
+          },
+          "bollinger_main": {
+            "upper": 2454.5045581273685,
+            "middle": 2419.7210000000005,
+            "lower": 2384.9374418726325,
+            "position": 0.20429994647650881,
+            "std_dev": 17.391779063684083,
+            "bars_used": 20
+          }
+        },
+        "decision_action": "BUY",
+        "decision_outputs": {
+          "confidence": 0.45484006422818946,
+          "reason": "Bollinger=0.20 (aggressive)",
+          "price": 2399.15,
+          "timestamp": "2026-10-22T12:37:25.686503+00:00"
+        },
+        "closed_bars": {},
+        "order_id": "pos_ethusd_1",
+        "process_memory": {
+          "rss_bytes": 227213312,
+          "private_bytes": 159674368
+        }
+      }
+    }
+  ]
+}

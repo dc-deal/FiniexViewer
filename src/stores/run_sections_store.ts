@@ -22,6 +22,7 @@ const SLOTS_OF_SOURCE: Record<string, string[]> = {
   config: ['config'],
   scenarioRoster: ['scenarios', 'portfolio', 'warningsErrors'],
   tradeHistory: ['tradeHistory'],
+  latestState: ['stateFrames'],
 }
 
 /**
@@ -96,6 +97,7 @@ export const useRunSectionsStore = defineStore('run_sections', () => {
     config: reports.config,
     scenarioRoster: rosterModel.value,
     tradeHistory: reports.tradeHistory,
+    latestState: reports.stateFrames,
   }))
 
   /**
@@ -117,6 +119,7 @@ export const useRunSectionsStore = defineStore('run_sections', () => {
     config: reports.loadingConfig,
     scenarioRoster: reports.loadingScenarios,
     tradeHistory: reports.loadingTradeHistory,
+    latestState: reports.loadingStateFrames,
   }))
 
   /**

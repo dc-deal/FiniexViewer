@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import {
-  getAggregatedPortfolio, getBookingPeriods, getBroker, getOrderEvents, getOrderHistory,
+  getAggregatedPortfolio, getBookingPeriods, getBroker, getLatestStateFrames, getOrderEvents, getOrderHistory,
   getRunHeader,
   getPendingOrders,
   getPortfolio,
@@ -25,6 +25,7 @@ import type {
   WarningsErrorsReport,
 } from '@/types/api/report_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { StateFramesLatest } from '@/types/api/state_frame_types'
 import { t } from '@/translate'
 
 /**
@@ -44,6 +45,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const config = ref<RunConfigReport | null>(null)
   const tradeHistory = ref<TradeHistoryReport | null>(null)
   const scenarios = ref<ScenarioDetailsReport | null>(null)
+  /** How a running session stands — read again once a cadence while it is on show, see `refreshStateFrames`. */
+  const stateFrames = ref<StateFramesLatest | null>(null)
   /**
    * The STEPS of one order, keyed `scenario~position`, and per position rather than per run.
    *
@@ -66,6 +69,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const loadingConfig = ref(false)
   const loadingTradeHistory = ref(false)
   const loadingScenarios = ref(false)
+  const loadingStateFrames = ref(false)
   /**
    * Why a section is not here, keyed by the slot it would have filled.
    *
@@ -119,6 +123,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     config.value = null
     tradeHistory.value = null
     scenarios.value = null
+    stateFrames.value = null
     orderEvents.value = new Map()
     loadingOrderEvents.value = new Set()
     // the flags as well: a section the next run does not ask for would otherwise wait for an
@@ -134,6 +139,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingConfig.value = false
     loadingTradeHistory.value = false
     loadingScenarios.value = false
+    loadingStateFrames.value = false
     absences.value = {}
     errors.value = {}
     unreadable.value = {}
@@ -320,10 +326,52 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       () => getScenarioDetails(runId), t('Could not load the scenario roster'))
   }
 
+  /**
+   * The latest state frame of a session. **Gated on the stream, not on `artifacts`**: a session
+   * writes it from its first pass, long before any report — a session still running is exactly
+   * where it is the only thing there is.
+   */
+  function loadStateFrames(runId: string): Promise<void> {
+    return loadSection('stateFrames', stateFrames, loadingStateFrames,
+      () => getLatestStateFrames(runId), t('Could not load the latest state frame'))
+  }
+
+  /**
+   * The latest state frame AGAIN, asked once a cadence while it is on show. Unlike a first load it
+   * keeps the frame it holds until the next one arrives — a check-in that blanked itself every
+   * minute would read as a session that keeps vanishing — and what it says replaces what the slot
+   * said before: a frame clears an earlier absence, and a failure is said beside the frame held.
+   */
+  async function refreshStateFrames(runId: string): Promise<void> {
+    const ticket = generation
+    try {
+      const answer = await getLatestStateFrames(runId)
+      if (ticket !== generation) return
+      delete errors.value.stateFrames
+      delete unreadable.value.stateFrames
+      if (isAbsent(answer)) {
+        stateFrames.value = null
+        absences.value.stateFrames = answer
+      } else {
+        delete absences.value.stateFrames
+        stateFrames.value = answer
+      }
+    } catch (e) {
+      if (ticket !== generation) return
+      if (e instanceof ArtifactUnreadableError) {
+        unreadable.value.stateFrames = e.message
+      } else {
+        const detail = e instanceof Error ? e.message : String(e)
+        errors.value.stateFrames = `${t('Could not load the latest state frame')}: ${detail}`
+      }
+    }
+  }
+
   return {
     runHeader,
     warningsErrors,
     scenarios,
+    stateFrames,
     absences,
     portfolio,
     broker,
@@ -346,6 +394,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingConfig,
     loadingTradeHistory,
     loadingScenarios,
+    loadingStateFrames,
     errors,
     unreadable,
     clear,
@@ -363,5 +412,7 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadConfig,
     loadTradeHistory,
     loadScenarios,
+    loadStateFrames,
+    refreshStateFrames,
   }
 })

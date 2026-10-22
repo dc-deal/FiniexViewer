@@ -85,7 +85,7 @@ describe('AppMenuBar', () => {
     const sections = [...document.querySelectorAll<HTMLElement>('.menu-toggle[data-section]')].map(node => node.dataset['section'])
     expect(sections).toEqual(useLayoutStore().arrangedPanels.map(panel => panel.id))
     expect(sections.length).toBe(allPanels().length)
-    expect(sections.slice(0, 2)).toEqual(['broker', 'executive'])
+    expect(sections.indexOf('broker')).toBeLessThan(sections.indexOf('executive'))
   })
 
   it('says where each section is: in the column, open as a panel, or hidden', async () => {

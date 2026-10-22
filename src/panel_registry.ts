@@ -9,6 +9,7 @@ import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
 import ConfigPanel from '@/components/runs/ConfigPanel.vue'
 import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
+import LatestStatePanel from '@/components/runs/LatestStatePanel.vue'
 import type { PanelDescriptor } from '@/types/panel_types'
 
 /**
@@ -42,6 +43,23 @@ import type { PanelDescriptor } from '@/types/panel_types'
  * what the user arranged — so this order reaches an existing workspace only through Reset bundle.
  */
 const PANELS: PanelDescriptor[] = [
+  {
+    /*
+     * How a session stands while it runs (contract 38) — FIRST, because while it runs it is the only
+     * section there is: every other one is written when the session ends. Only a run whose
+     * `stream_files` names its state frames carries it, so a backtest never shows it. After the end
+     * it stays as the session's status and memory, its frame folded away behind them.
+     */
+    id: 'latest-state',
+    title: 'Latest state frame',
+    icon: 'kind-latest-state',
+    component: LatestStatePanel,
+    source: 'latestState',
+    defaultOpen: true,
+    narrowing: null,
+    follows: ['run'],
+    chooses: [],
+  },
   {
     id: 'executive',
     title: 'Executive summary',

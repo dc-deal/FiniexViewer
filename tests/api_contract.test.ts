@@ -24,6 +24,9 @@ import manifest from './fixtures/capture_manifest.json'
 import machineResources from './fixtures/machine_resources.json'
 import sweepsList from './fixtures/sweeps_list.json'
 import sweepDetail from './fixtures/sweep_detail.json'
+import stateFramesEnded from './fixtures/state_frames_ended.json'
+import stateFramesStopped from './fixtures/state_frames_stopped.json'
+import type { StateFramesLatest } from '@/types/api/state_frame_types'
 
 import type {
   AggregatedPortfolioReport,
@@ -98,11 +101,36 @@ const EXPECTED_KEYS = {
   // one row per run AND account currency: the ledger books a row per period, and the route folds
   // them back per currency — keyed on the run alone, a two-currency combination loses one
   sweepCombinations: ['run_id', 'currency'],
+  // one row per unit of the run; a session is one
+  stateFrameUnits: ['unit_name'],
 }
 
 describe('api contract', () => {
   it('fixtures were captured under the contract this code targets', () => {
     expect(manifest.contract).toBe(EXPECTED_CONTRACT)
+  })
+
+  /**
+   * The check-in on a session (contract 38), in the two states a stored session keeps for good:
+   * ended with its outcome written, and stopped without an end. The verdict on the run list row is
+   * the route's, read from the same stream, so the two agree, and it is there only where the row
+   * names the stream.
+   */
+  it('the latest state frame still satisfies its shape, and the run list agrees with it', () => {
+    const ended: StateFramesLatest = stateFramesEnded
+    const stopped: StateFramesLatest = stateFramesStopped
+    expect(ended.key).toEqual(EXPECTED_KEYS.stateFrameUnits)
+    expect(stopped.key).toEqual(EXPECTED_KEYS.stateFrameUnits)
+    expect(ended.units[0]?.recording).toBe('ended')
+    expect(ended.units[0]?.outcome).not.toBeNull()
+    expect(stopped.units[0]?.recording).toBe('stopped')
+
+    const rows = (runsList as RunListResponse).runs
+    for (const row of rows) {
+      if (!row.stream_files.includes('state_frames.jsonl')) expect(row.recording).toBeNull()
+    }
+    expect(rows.some(row => row.recording === 'ended')).toBe(true)
+    expect(rows.some(row => row.recording === 'stopped')).toBe(true)
   })
 
   // Each assignment is a STRUCTURAL check performed by the type-checker, not by the assertion

@@ -37,6 +37,7 @@ starts with the first group.
 |----------|-------------|
 | [Run List](runs/run_list.md) | Choosing a run: a facet bar over the flat run index, what a row says and from which field, ranked columns, and runs folded into families |
 | [Run Bundle](runs/run_bundle.md) | The column of a run's report sections: the registry and its order, models handed in, absent, loading and failed sections, and the stored layout |
+| [Latest State Frame](runs/latest_state_frame.md) | How a session stands while it runs: the recording verdict, two clocks kept apart, memory beside the first frame, checks that speak only when off, and the frame folded once the session ended |
 | [Scenario Roster and Focus](runs/scenario_roster_and_focus.md) | The only complete list of a run's scenarios, and the one scenario in focus: what narrows to it, what only marks it, and what stays run-wide |
 | [Trade History and Run Totals](runs/trade_history_and_run_totals.md) | The one panel where a single trade exists, with its fills, unit costs and visible row cap, and the run's totals minus what is already on screen |
 | [Orders and Order Steps](runs/orders_and_order_steps.md) | Why an order did not become what it was meant to be: the pending funnel, rows that are lifecycle records, and the steps opened under a position |

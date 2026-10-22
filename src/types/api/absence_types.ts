@@ -15,8 +15,8 @@ export interface SectionAbsence {
   absent: true
   /**
    * The machine code, for grouping: `run_not_found` · `reports_not_commissioned` ·
-   * `run_not_completed` · `artifact_not_produced`, and `config_snapshot_missing` on the config
-   * route. Typed as a plain string because the vocabulary is the backend's and a value we do not
+   * `run_not_completed` · `artifact_not_produced`, `config_snapshot_missing` on the config
+   * route, and `state_frames_not_recorded` · `state_frame_not_written_yet` on the latest state frame. Typed as a plain string because the vocabulary is the backend's and a value we do not
    * know yet should arrive as itself rather than fail to type.
    */
   cause: string

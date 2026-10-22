@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import AppIcon from '@/components/base/AppIcon.vue'
 import LoadingLine from '@/components/base/LoadingLine.vue'
 import { provideFillsPanel } from '@/composables/use_fills_panel'
+import { noReportReason } from '@/components/runs/report_format'
 import { panelById } from '@/panel_registry'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
@@ -55,6 +56,8 @@ const emptyReason = computed<string | null>(() => {
   if (!selectedRun.value) return indexError.value ? null : t('No run is chosen — the Runs panel lists them')
   if (model.value !== null) return null
   if (failures.value.length || unreadables.value.length) return null
+  // a run that wrote no report yet does not LACK the section: it has not got to it, or never will
+  if (!selectedRun.value.has_reports && descriptor.source !== 'latestState') return noReportReason(selectedRun.value)
   return sections.absenceOf(descriptor.source)?.detail || t('This run carries no such section')
 })
 
