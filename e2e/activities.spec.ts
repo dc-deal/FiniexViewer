@@ -21,11 +21,15 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('the menu bar\'s card says what runs, the server left out', async ({ page }) => {
+  // the capture holds whatever ran when it was taken, so the server alone is served here — a
+  // route registered later answers first
+  await page.route('**/api/v1/activities', route => route.fulfill({
+    json: { ...(fixture('activities.json') as object), activities: [server] },
+  }))
   await page.setViewportSize({ width: 1600, height: 900 })
   await page.goto('/')
   await page.locator('.machine-status').hover()
   const card = page.locator('.hover-card')
-  // the capture holds the server alone, so nothing else runs
   await expect(card).toContainText('only this server')
   await expect(card).toContainText('Panels ▸ Activities')
 })

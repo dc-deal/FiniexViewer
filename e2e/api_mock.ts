@@ -131,8 +131,8 @@ interface ApiMockOptions {
    */
   levels?: { scenario: string, position: string, stopLoss: number, takeProfit: number }
   /**
-   * Rows appended to the captured activities. The capture holds the server alone, so an activity
-   * that runs something is built from the server's row by the spec that needs one.
+   * Rows appended to the captured activities. The capture holds whatever ran when it was taken, so
+   * an activity a spec relies on is built from the server's row by the spec that needs one.
    */
   activities?: Record<string, unknown>[]
 }

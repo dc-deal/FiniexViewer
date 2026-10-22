@@ -57,7 +57,10 @@ BASE = 'http://localhost:5173/api/v1'
 # Re-pinned 2026-10-13 to the fixture catalog's `report_coverage` entry, produced again after a
 # warmup change on their side with no contract change — the id FiniexTestingIDE named in its
 # announcement. The catalog reproduces the case rather than replacing it.
-RUN = '20261012_205715_c3b41fff'
+#
+# Re-pinned 2026-10-22 to the same entry's production of 2026-10-18, the id FiniexTestingIDE named:
+# it lists seven warning rows where the earlier one listed five, an accepted move.
+RUN = '20261018_105012_fde28d5d'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -86,12 +89,19 @@ DEPLOY = 'deploy_20261012_205734'
 # right. The preflight below checks exactly that; any sweep it accepts can replace this one.
 SWEEP = 'sweep_20261012_210055'
 
+# The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
+# than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs
+# are produced from clean trees now, so it has a pin of its own: the earlier simulation pin, 65
+# uncommitted changes against a sample of 20. Any header that is dirty with a short sample can
+# replace it; the check below the fetch says whether this one still qualifies.
+DIRTY_RUN = '20261012_205715_c3b41fff'
+
 TARGETS = [
     ('runs_list.json', 'reports/runs'),
-    # The record a run writes BEFORE anything else. Captured from the simulation run
-    # because its tree was dirty at the time — 118 uncommitted changes against a served
-    # sample of 20 — which is the case the panel has to get right.
+    # The record a run writes BEFORE anything else, of the simulation run, so it describes the
+    # same run as the sections beside it - and, from a tree that was dirty, the sample case.
     ('run_header.json', f'reports/runs/{RUN}/header'),
+    ('run_header_dirty.json', f'reports/runs/{DIRTY_RUN}/header'),
     ('run_summary.json', f'reports/runs/{RUN}/run-summary'),
     ('portfolio.json', f'reports/runs/{RUN}/portfolio'),
     ('run_booking_periods.json', f'reports/runs/{RUN}/booking-periods'),
@@ -292,6 +302,10 @@ if RUN not in known:
     print(f'pinned RUN {RUN} is ABSENT from the index.')
     report_candidates(index)
     sys.exit(1)
+if DIRTY_RUN not in known:
+    sys.exit(f'pinned DIRTY_RUN {DIRTY_RUN} is ABSENT from the index. It supplies the header of a '
+             'dirty tree only; any run whose header is dirty with a sample shorter than its count can '
+             'replace it.')
 if LIVE_RUN not in known:
     sys.exit(f'pinned LIVE_RUN {LIVE_RUN} is ABSENT from the index. It supplies the AutoTrader '
              'configuration fixture only; any autotrader run serving `config` can replace it.')
@@ -346,6 +360,13 @@ for (broker, symbol), rows in sorted(markets.items()):
     name = f'bars_{broker}_{symbol}_{BAR_TIMEFRAME}.json'
     bodies[name] = [rows[t] for t in sorted(rows)]
     TARGETS.append((name, f'bars of the fixture run over its units, {BAR_TIMEFRAME}'))
+
+dirty = ((bodies.get('run_header_dirty.json') or {}).get('code_identity') or {}).get('framework') or {}
+if 'run_header_dirty.json' in bodies and not (
+        dirty.get('dirty') and (dirty.get('uncommitted_count') or 0) > len(dirty.get('changes') or [])):
+    sys.exit(f'NOTHING WRITTEN - pinned DIRTY_RUN {DIRTY_RUN} no longer QUALIFIES: dirty '
+             f'{dirty.get("dirty")}, uncommitted_count {dirty.get("uncommitted_count")}, '
+             f'a sample of {len(dirty.get("changes") or [])}.')
 
 if failures:
     print('NOTHING WRITTEN - the capture is all or nothing, and these targets did not answer:')

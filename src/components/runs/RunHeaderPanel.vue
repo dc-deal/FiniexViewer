@@ -164,6 +164,16 @@ function componentTitle(component: ComponentIdentity): string {
         <dt>{{ t('Uncommitted code allowed') }}</dt>
         <dd class="flagged">⚠ {{ t('yes') }}</dd>
       </template>
+
+      <!-- Only when TRUE, and as a plain fact rather than a warning: a session trading real money
+           that started without a carry-over to continue, because its start was declared the bot's
+           first. Every other run reads false, which states nothing. -->
+      <template v-if="served.origin.first_start">
+        <dt>{{ t('Declared first start') }}</dt>
+        <dd :title="t('The one way a session trading real money starts without a carry-over to continue')">
+          {{ t('yes') }}
+        </dd>
+      </template>
     </template>
   </dl>
 

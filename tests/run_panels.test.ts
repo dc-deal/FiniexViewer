@@ -641,6 +641,7 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     group: 'simulation',
     artifacts: ['run_summary.json', 'portfolio.json'],
     stream_files: [],
+    recording: null,
     // contracts 24 and 25: what the run is FOR, under which contract its reports
     // were written, and whether it is still its catalog entry's current one
     run_purpose: 'regular',
@@ -703,7 +704,7 @@ describe('RunHeaderPanel', () => {
       reporting: 'expected',
       origin: {
         channel: 'cli', client: 'console', principal: 'operator',
-        host: 'h_x29og8', allow_dirty: false,
+        host: 'h_x29og8', allow_dirty: false, first_start: false,
       },
       code_identity: null,
       ticks_from: 'archive',
@@ -859,11 +860,37 @@ describe('RunHeaderPanel', () => {
 
     const loud = mount(RunHeaderPanel, {
       props: { model: headerModel({}, header({
-        origin: { channel: 'cli', client: 'console', principal: 'operator', host: 'h', allow_dirty: true },
+        origin: {
+          channel: 'cli', client: 'console', principal: 'operator', host: 'h',
+          allow_dirty: true, first_start: false,
+        },
       })) },
     })
     expect(loud.text()).toContain('Uncommitted code allowed')
     expect(loud.find('.flagged').exists()).toBe(true)
+  })
+
+  /**
+   * `first_start` (contract 37) says a session trading real money started without a carry-over,
+   * because its start was declared the bot's first. A stated fact, not a warning, and false says
+   * nothing.
+   */
+  it('says a declared first start in the words of the backend, and nothing where there was none', () => {
+    const quiet = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header()) },
+    })
+    expect(quiet.text()).not.toContain('Declared first start')
+
+    const first = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        origin: {
+          channel: 'cli', client: 'console', principal: 'operator', host: 'h',
+          allow_dirty: false, first_start: true,
+        },
+      })) },
+    })
+    expect(first.text()).toContain('Declared first start')
+    expect(first.find('.flagged').exists()).toBe(false)
   })
 
   /**

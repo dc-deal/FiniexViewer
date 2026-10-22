@@ -39,7 +39,9 @@ word, and ours sat beside a `Purpose` facet it could not be told apart from.
 What the panel does NOT print: a clean tree states nothing beyond its commit, and `allow_dirty`
 appears only when it is true, in the warning role with its glyph and its word. It says real orders
 were explicitly allowed from code that was not committed, which is a thing to weigh before
-trusting the figures beside it.
+trusting the figures beside it. `first_start` (contract 37) appears only when it is true too, as
+*Declared first start*, a plain fact rather than a warning: a session trading real money that
+started without a carry-over to continue, because its start was declared the bot's first.
 
 ## Broker — the conditions a run traded under
 

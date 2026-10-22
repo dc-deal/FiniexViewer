@@ -78,6 +78,11 @@ export interface RunOrigin {
   principal: string
   host: string
   allow_dirty: boolean
+  /**
+   * Contract 37: a session trading real money was declared the bot's FIRST start — the one way it
+   * starts without a carry-over to continue. False on every other run and on one recorded before.
+   */
+  first_start: boolean
 }
 
 /**
@@ -163,11 +168,20 @@ export interface RunInfo {
   /**
    * The STREAMS a run produced, kept OUT of `artifacts` on purpose (contract 23) — their own
    * documentation is explicit about it: *"Ask for a stream whenever it is listed, whatever
-   * `artifacts` says."* Today one name appears, `order_events.jsonl`, and it is what makes
-   * `order-events` answerable; an artifact gate that only consults `artifacts` would never request
-   * it at all.
+   * `artifacts` says."* `order_events.jsonl` makes `order-events` answerable, and since contract 38
+   * an AutoTrader session also names `state_frames.jsonl` — so a gate asks for its OWN name, never
+   * for a non-empty list. An artifact gate that only consults `artifacts` would request neither.
    */
   stream_files: string[]
+  /**
+   * Whether a session still records its state frames (contract 38) — the verdict the
+   * latest-state-frame route gives for the same stream: `current`, `stopped` (its frames stopped
+   * without an end: it hangs or its process died) or `ended`. Null on every row whose
+   * `stream_files` does not name `state_frames.jsonl`, before the first frame, for a session
+   * replaying recorded data before its end, and where the stream cannot be read. It is what tells
+   * a running session from one that died before its report — elsewhere on the row they look alike.
+   */
+  recording: string | null
   /**
    * What the run is FOR, new in contract 24. `regular` — somebody's own run; `fixture` — a test's
    * run or one a consumer pins, whose numbers are BUILT rather than earned; `certificate` — a

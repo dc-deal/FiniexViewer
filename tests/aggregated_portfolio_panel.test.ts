@@ -135,7 +135,7 @@ describe('AggregatedPortfolioPanel', () => {
      */
     it('tells the highest peak from the deepest account own peak', () => {
       const peak = figurePairs(mountPanel()).find(pair => pair.label === 'Highest equity')
-      expect(peak?.value).toBe('10,003.11 EUR')
+      expect(peak?.value).toBe('10,003.10 EUR')
       expect(peak?.title).toContain('fell deepest')
       expect(figures(mountPanel())['Reached by']).toBe('EURGBP_refusals_02')
     })
@@ -173,7 +173,7 @@ describe('AggregatedPortfolioPanel', () => {
     it('says the worth of a spot account is estimated', () => {
       // section 1, because the captured run's FIRST currency is a forex account now
       const shown = figures(mountPanel(), 1)
-      expect(shown['Estimated now']).toBe('2,978.40 USD')
+      expect(shown['Estimated now']).toBe('2,978.04 USD')
       expect(shown['At the start']).toBe('3,003.88 USD')
       expect(shown['Base asset held']).toBe('yes')
     })
@@ -182,7 +182,7 @@ describe('AggregatedPortfolioPanel', () => {
       const shown = figures(mountPanel(withRow({ is_spot: false })))
       expect(shown['Estimated now']).toBeUndefined()
       // and what is not about the account model is unaffected
-      expect(shown['Highest equity']).toBe('10,003.11 EUR')
+      expect(shown['Highest equity']).toBe('10,003.10 EUR')
     })
   })
 

@@ -73,10 +73,11 @@ export function provideRunReportChannels(): void {
    * `artifacts`** — the stream is not a report artifact and appears in no run's artifact list, and
    * the backend names it on the index row instead. Measured 2026-10-08: 51 of 52 runs carry
    * `["order_events.jsonl"]` there and one carries `[]`. Without the gate the panel would offer a
-   * reader a disclosure that can only answer 404.
+   * reader a disclosure that can only answer 404. It asks for the stream's own NAME: since contract
+   * 38 a session also lists `state_frames.jsonl`, so a non-empty list no longer means order events.
    */
   provideOrderSteps({
-    available: () => (runsStore.selectedRun?.stream_files.length ?? 0) > 0,
+    available: () => runsStore.selectedRun?.stream_files.includes('order_events.jsonl') ?? false,
     heldFor: (ref: PositionRef) => reportsStore.stepsFor(ref.scenario, ref.position),
     loadingFor: (ref: PositionRef) => reportsStore.stepsLoading(ref.scenario, ref.position),
     askFor: (ref: PositionRef) => {

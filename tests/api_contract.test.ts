@@ -9,6 +9,7 @@ import runSummary from './fixtures/run_summary.json'
 import portfolio from './fixtures/portfolio.json'
 import broker from './fixtures/broker.json'
 import runHeader from './fixtures/run_header.json'
+import runHeaderDirty from './fixtures/run_header_dirty.json'
 import aggregated from './fixtures/aggregated_portfolio.json'
 import pending from './fixtures/pending_orders.json'
 import history from './fixtures/order_history.json'
@@ -57,7 +58,7 @@ import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 36
+const EXPECTED_CONTRACT = 38
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -236,9 +237,10 @@ describe('api contract', () => {
    * The record a run writes before it does anything else (contract 26). Two properties are asserted
    * here rather than in a component, because both are properties of the CONTRACT:
    *
-   * `changes` is a SAMPLE and `uncommitted_count` is the number — measured on this capture, 20
-   * entries against 118. A panel that rendered the list's length as the count would understate it
-   * by eighty-eight, and nothing on screen would say so.
+   * `changes` is a SAMPLE and `uncommitted_count` is the number — measured on the dirty capture, 20
+   * entries against 65. A panel that rendered the list's length as the count would understate it
+   * by forty-five, and nothing on screen would say so. That case has a header of its own, because
+   * the simulation run's tree was clean.
    *
    * And the header carries what the index row cannot: `code_identity`. If that ever arrives null
    * on a run that HAS reports, the panel's central block silently empties, so the fixture holds
@@ -252,7 +254,7 @@ describe('api contract', () => {
     expect(typed.origin).not.toBeNull()
     expect(typed.code_identity).not.toBeNull()
 
-    const framework = typed.code_identity!.framework
+    const framework = (runHeaderDirty as RunHeader).code_identity!.framework
     expect(framework.dirty).toBe(true)
     expect(framework.uncommitted_count).toBeGreaterThan(framework.changes.length)
     expect(typed.code_identity!.components.length).toBeGreaterThan(0)

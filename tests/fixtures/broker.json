@@ -1,5 +1,5 @@
 {
-  "run_id": "20261012_205715_c3b41fff",
+  "run_id": "20261018_105012_fde28d5d",
   "units": [
     {
       "broker_type": "mt5",
@@ -46,7 +46,7 @@
       "margin_call_level": 0.0,
       "stopout_level": 0.0,
       "hedging_allowed": false,
-      "config_hash": "96cf7b0a",
+      "config_hash": "2f130e2a",
       "broker_config_id": "",
       "scenarios": [
         "ETHUSD_spot_two_balances"

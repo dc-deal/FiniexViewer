@@ -14,7 +14,7 @@ import type { OrderEvent } from '@/types/api/report_types'
  */
 export interface OrderSteps {
   /**
-   * Does this run have a stream at all? The HOST answers it, from the run index's `stream_files` —
+   * Does this run have an order-event stream? The HOST answers it, from the run index's `stream_files` —
    * which is where the backend names it, because the file is not a report artifact and appears in
    * no run's `artifacts` list. Drawing the affordance without it would offer a reader a disclosure
    * that can only ever answer 404.

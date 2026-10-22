@@ -165,17 +165,53 @@ const facets: FacetDefinition<RunInfo>[] = [
    * Calling the first `success` was never an option: it would put a count of 21 under a chip whose
    * column says `success` on 37 rows. Contract 15 — a run the ledger holds nothing for states no
    * outcome, and an absence is not a category, so it is offered as nothing to pick.
+   *
+   * Contract 38 gave a session without its grade a verdict of its own: `recording`, so a reader can
+   * pick the sessions still running, and those whose recording stopped without an end.
    */
   {
     id: 'outcome',
     label: 'Outcome',
     valuesOf: row => {
-      if (!row.run_outcome) return []
+      if (!row.run_outcome) return row.recording ? [recordingOf(row.recording).word] : []
       if (row.run_outcome !== 'success') return [row.run_outcome]
       return [row.warning_count ? 'with warnings' : 'no warnings']
     },
   },
 ]
+
+interface RecordingMark {
+  glyph: string
+  word: string
+  title: string
+}
+
+/**
+ * The `recording` verdict as the Outcome cell says it, for a run the backend has not graded yet —
+ * the one field that tells a running session from one that died before its report. The words come
+ * from their state-frames document. A value they add later is shown as itself.
+ */
+const RECORDING: Record<string, RecordingMark> = {
+  current: {
+    glyph: '●',
+    word: t('recording'),
+    title: t('The session is recording its state frames: it is running'),
+  },
+  stopped: {
+    glyph: '⚠',
+    word: t('recording stopped'),
+    title: t('Its state frames stopped without an end: the session hangs or its process died — the Activities panel tells which'),
+  },
+  ended: {
+    glyph: '■',
+    word: t('ended'),
+    title: t('Its last state frame is the one written at its end; the outcome follows with its report, unless the process died in between'),
+  },
+}
+
+function recordingOf(verdict: string): RecordingMark {
+  return RECORDING[verdict] ?? { glyph: '', word: verdict, title: '' }
+}
 
 /**
  * What a run earned, ONE ENTRY PER ACCOUNT CURRENCY — never folded into a single figure.
@@ -604,9 +640,18 @@ function choose(runId: string): void {
           <span :data-rank="5" class="run-id" :title="run.run_id">{{ shortId(run.run_id) }}</span>
           <!-- What the run DID, from the index row itself — no request per run (contract 15). -->
           <span :data-rank="4" class="run-span">{{ marketSpan(run.tick_timespan_seconds) }}</span>
-          <span :data-rank="1" class="run-outcome" :class="run.run_outcome ?? ''">
+          <span
+            :data-rank="1"
+            class="run-outcome"
+            :class="run.run_outcome ?? (run.recording ? `recording-${run.recording}` : '')"
+            :title="!run.run_outcome && run.recording ? recordingOf(run.recording).title : undefined"
+          >
             <template v-if="run.run_outcome">
               {{ run.run_outcome === 'success' ? '✓' : '✖' }} {{ run.run_outcome }}
+            </template>
+            <!-- no grade yet: a session recording its state frames says how that stands -->
+            <template v-else-if="run.recording">
+              {{ recordingOf(run.recording).glyph }} {{ recordingOf(run.recording).word }}
             </template>
           </span>
           <!-- one line per account currency, and the two cells iterate the same list, so the
@@ -825,6 +870,9 @@ function choose(runId: string): void {
 .run-outcome.failed,
 .run-outcome.crashed { color: var(--color-error); }
 .run-outcome.finished_with_errors { color: var(--color-warning); }
+.run-outcome.recording-current { color: var(--color-positive); }
+.run-outcome.recording-stopped { color: var(--color-warning); }
+.run-outcome.recording-ended { color: var(--color-text-secondary); }
 
 /* two currencies are two figures, never one */
 .run-trades {
