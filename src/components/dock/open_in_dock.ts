@@ -1,5 +1,6 @@
 import type { OpenInContext } from '@/composables/use_open_in_context'
 import { RUN_BUNDLE } from '@/panel_kinds'
+import { useConfigCompareStore } from '@/stores/config_compare_store'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -23,13 +24,21 @@ export function openInDock(): OpenInContext {
   const deployments = useDeploymentsStore()
   const sweeps = useSweepsStore()
   const dock = useDockStore()
+  const compare = useConfigCompareStore()
+  function openRun(runId: string, sectionId?: string): void {
+    void runs.selectRun(runId)
+    // a named section comes forward as a panel of its own: in the column it may stand folded
+    // or far below the header, and the reader asked for that section rather than the report
+    if (sectionId) dock.openSection(sectionId)
+    else dock.reveal(RUN_BUNDLE, 'command')
+  }
   return {
-    openRun: (runId: string, sectionId?: string) => {
-      void runs.selectRun(runId)
-      // a named section comes forward as a panel of its own: in the column it may stand folded
-      // or far below the header, and the reader asked for that section rather than the report
-      if (sectionId) dock.openSection(sectionId)
-      else dock.reveal(RUN_BUNDLE, 'command')
+    openRun,
+    // the comparison is asked for FIRST: the run it names is then the one being chosen, and the
+    // root lets a comparison stand only while its run is the one on show
+    compareConfiguration: (runId: string, otherRunId: string, otherSide: 'before' | 'after') => {
+      void compare.compare(runId, otherRunId, otherSide)
+      openRun(runId, 'config')
     },
     openDeployment: (deploymentId: string) => {
       void deployments.selectDeployment(deploymentId)

@@ -68,11 +68,15 @@ misreports something:
   **A mark says WHERE and never WHAT** (their `deployments` and `config` documents). The words of a
   configuration mark carry a card with its meaning in the backend's words — what the bot decided,
   or what a session did without changing that — and say that WHICH parameters moved is not served
-  yet: testingide#527 (open on 2026-10-21) plans them as key, before and after, and they are never
-  computed here. Beside the words, *Configuration before ↗ after ↗* opens the configuration of the
-  session above the mark and of the one carrying it, as a panel of its own; the comparison is the
-  reader's. An operation mark also moves with the defaults merged in under the file and with a
-  start option, which no route serves, and its card says so.
+  yet: testingide#615 serves them as `config_changes` on the session row (setting, before, after),
+  read from the rendered profile. Beside the words, *Configuration before ↗ after ↗* opens the
+  configuration of the session above the mark and of the one carrying it, as a panel of its own,
+  each COMPARED with the other (operator, 2026-10-27, 219.a): the values that differ between the
+  two files are listed, oldest side first, and a moved decision-logic value is marked where it
+  stands. That comparison is what their `config` document instructs a consumer to do for a
+  strategy mark; `config_changes` replaces it once served. An operation mark also moves with the
+  defaults merged in under the file and with a start option, which neither file holds, and both
+  its card and the comparison say so.
 - `unfinished` is shown even when zero: the runs that never reached their close, a session running
   now among them. Since contract 40 a session books each trading day as it closes, so one that
   sealed a day also stands in `sessions`, its *Ran* a dash until its close is booked — the two

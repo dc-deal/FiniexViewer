@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { provideRunReportChannels } from '@/composables/use_run_report_channels'
+import { useConfigComparison } from '@/composables/use_config_comparison'
 import { useOrderSteps } from '@/composables/use_order_steps'
+import { useConfigCompareStore } from '@/stores/config_compare_store'
 import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
@@ -53,5 +55,34 @@ describe('provideRunReportChannels', () => {
 
     choose([])
     expect(stepsAvailable()).toBe(false)
+  })
+
+  /** A comparison belongs to the run it was asked for: choosing another run lets go of it. */
+  it('offers a configuration comparison for the run it was asked for, and drops it when another is chosen', async () => {
+    const compare = useConfigCompareStore()
+    compare.shown = RUN
+    compare.other = 'run_before'
+    compare.side = 'before'
+    useRunsStore().runs = [{ run_id: RUN, stream_files: [] } as unknown as RunInfo, { run_id: 'next', stream_files: [] } as unknown as RunInfo]
+    useContextStore().selectRun(RUN)
+    let compared: () => unknown = () => null
+    const Reader = defineComponent({
+      setup() {
+        compared = useConfigComparison().compared
+        return () => null
+      },
+    })
+    mount(defineComponent({
+      setup() {
+        provideRunReportChannels()
+        return () => h(Reader)
+      },
+    }))
+    expect(compared()).toMatchObject({ runId: 'run_before', side: 'before' })
+
+    useContextStore().selectRun('next')
+    await nextTick()
+    expect(compared()).toBeNull()
+    expect(compare.shown).toBeNull()
   })
 })

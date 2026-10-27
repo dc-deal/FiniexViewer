@@ -15,6 +15,11 @@ export interface OpenInContext {
    * of its report (`config`: what the run was commissioned with).
    */
   openRun: (runId: string, sectionId?: string) => void
+  /**
+   * Put the reader in front of this run's configuration, compared with the configuration of the
+   * session on the other side of a deployment's change mark — `before` or `after` this one.
+   */
+  compareConfiguration: (runId: string, otherRunId: string, otherSide: 'before' | 'after') => void
   /** Put the reader in front of this deployment's history. */
   openDeployment: (deploymentId: string) => void
   /** Put the reader in front of this sweep's ranked combinations. */
@@ -34,6 +39,7 @@ export function provideOpenInContext(open: OpenInContext): void {
 
 const NOWHERE: OpenInContext = {
   openRun: () => {},
+  compareConfiguration: () => {},
   openDeployment: () => {},
   openSweep: () => {},
   canOpen: false,

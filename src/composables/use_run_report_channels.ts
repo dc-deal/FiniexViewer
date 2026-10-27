@@ -1,7 +1,8 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { provideChartLink } from '@/composables/use_chart_link'
 import { provideCheckTitles } from '@/composables/use_check_titles'
+import { provideConfigComparison } from '@/composables/use_config_comparison'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { provideOrderSteps } from '@/composables/use_order_steps'
 import { usePanelJump } from '@/composables/use_panel_jump'
@@ -14,6 +15,7 @@ import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
+import { useConfigCompareStore } from '@/stores/config_compare_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { useValidationChecksStore } from '@/stores/validation_checks_store'
 import type { PositionRef } from '@/types/context_types'
@@ -40,6 +42,19 @@ export function provideRunReportChannels(): void {
   const validationChecks = useValidationChecksStore()
   void validationChecks.load()
   provideCheckTitles(check => validationChecks.checks.get(check) ?? null)
+
+  // A configuration compared with the one across a change mark — for the run it was asked for, and
+  // gone the moment another run is chosen
+  const compare = useConfigCompareStore()
+  watch(() => runsStore.selectedRunId, runId => {
+    if (compare.shown !== null && runId !== compare.shown) compare.stop()
+  })
+  provideConfigComparison({
+    compared: () => compare.shown !== null && compare.shown === runsStore.selectedRunId && compare.other && compare.side
+      ? { runId: compare.other, side: compare.side, body: compare.otherConfig, loading: compare.loading, missing: compare.missing }
+      : null,
+    stop: () => compare.stop(),
+  })
 
   // The narrowing is ambient for the same reason the display preferences are — see the composable.
   provideScenarioSelection({

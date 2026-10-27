@@ -94,6 +94,16 @@ backend's own app configuration and is not in this document at all. Computing an
 would be a second implementation of someone else's rule, drifting silently the moment they change
 it — the same failure as a hand-written mock of a response.
 
+**Compared across a deployment's change mark** (219.a): opened through *Configuration before ↗
+after ↗*, the panel lists every value that differs from the session on the other side of the mark,
+by its path and oldest side first, marks a moved decision-logic value where it stands with the other
+side's value beside it, and says that a default or a start option that changed is in neither file.
+The comparison is `configChanges` in `config_shape.ts` — equality of the two files' served values,
+nothing resolved — the one comparison of two answers this repository makes, because their `config`
+document instructs it for a strategy mark. It reaches the panel through a channel
+(`use_config_comparison`), so the panel reads no store, and *Stop comparing*, or choosing another
+run, ends it. testingide#615's `config_changes` replaces its source.
+
 **The workers are on the shared list**, which removed the last bespoke `<table>` from the app.
 Three columns, read-only, no ranks: measured over the stored configurations a worker is 8–14
 characters of type and 19–37 of parameters, so all three fit at any width this panel is given, and

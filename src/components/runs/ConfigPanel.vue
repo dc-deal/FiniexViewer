@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import AppButton from '@/components/base/AppButton.vue'
 import JsonTree from '@/components/base/JsonTree.vue'
 import PathLabel from '@/components/base/PathLabel.vue'
 import RecordList from '@/components/base/RecordList.vue'
-import { scenarioCount, scenarioOverrides, strategyOf, workersOf } from '@/components/runs/config_shape'
+import { configChanges, scenarioCount, scenarioOverrides, strategyOf, workersOf } from '@/components/runs/config_shape'
+import type { ConfigChange } from '@/components/runs/config_shape'
+import { useConfigComparison } from '@/composables/use_config_comparison'
 import type { ListColumn } from '@/types/list_types'
 import type { RunConfigReport } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
@@ -57,6 +60,36 @@ function inline(parameters: Record<string, unknown>): string {
 function scalar(value: unknown): string {
   return typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)
 }
+
+/*
+ * COMPARED with the session across a deployment's change mark, where the mark's link asked for it:
+ * every value that differs, oldest side first, and the decision-logic values marked where they
+ * stand. The comparison is of the two FILES, as their config document instructs; a default or a
+ * start option that changed is in neither, and the panel says so.
+ */
+const comparison = useConfigComparison()
+const compared = computed(() => comparison.compared())
+const changes = computed<ConfigChange[]>(() => {
+  const other = compared.value?.body
+  if (!other) return []
+  return compared.value!.side === 'before'
+    ? configChanges(other.config, props.model.config)
+    : configChanges(props.model.config, other.config)
+})
+const changeByPath = computed(() => new Map(changes.value.map(change => [change.path, change])))
+
+/** The value on the other side of the mark, where this decision-logic value differs from it. */
+function otherSide(key: string): string | null {
+  const change = changeByPath.value.get(`strategy_config.decision_logic_config.${key}`)
+    ?? changeByPath.value.get(`global.strategy_config.decision_logic_config.${key}`)
+  if (!change || !compared.value) return null
+  return shown(compared.value.side === 'before' ? change.before : change.after)
+}
+
+/** A compared value as the panel prints it; a side that does not hold the key says so. */
+function shown(value: unknown): string {
+  return value === undefined ? t('not set') : scalar(value)
+}
 </script>
 
 <template>
@@ -65,6 +98,30 @@ function scalar(value: unknown): string {
       {{ model.config_snapshot }}
       <span class="config-id" :title="model.config_id">{{ model.config_id.slice(0, 8) }}…</span>
     </p>
+
+    <!-- the change mark's question answered: framed as a manipulated region, the annotation role and
+         dashed — a boundary, the thing changed here — and gone with Stop comparing -->
+    <section v-if="compared" class="comparison">
+      <p class="comparison-head">
+        <span>{{ compared.side === 'before' ? t('Compared with the session before') : t('Compared with the session after') }}</span>
+        <span class="comparison-run" :title="compared.runId">{{ compared.runId }}</span>
+        <AppButton variant="quiet" class="comparison-stop" @click="comparison.stop()">{{ t('Stop comparing') }}</AppButton>
+      </p>
+      <p v-if="compared.loading" class="hint">{{ t('Reading the other configuration') }}</p>
+      <p v-else-if="compared.missing" class="hint">{{ compared.missing }}</p>
+      <template v-else-if="compared.body">
+        <ul v-if="changes.length" class="changes">
+          <li v-for="change in changes" :key="change.path" class="change">
+            <span class="change-path" :title="change.path">{{ change.path }}</span>
+            <span class="change-values">{{ shown(change.before) }} → {{ shown(change.after) }}</span>
+          </li>
+        </ul>
+        <p v-else class="hint">{{ t('The two files hold the same values') }}</p>
+      </template>
+      <p class="comparison-caveat">
+        {{ t('Compared in the files: a default or a start option that changed is in neither, so it is not shown here') }}
+      </p>
+    </section>
 
     <!-- Presence only. Which blocks a scenario carries is readable here; what an override RESOLVES
          to is the backend's cascade, and computing it would be a second implementation of a rule
@@ -105,9 +162,14 @@ function scalar(value: unknown): string {
           <span v-else>{{ t('not declared') }}</span>
         </p>
         <dl v-if="parameters.length" class="params">
-          <div v-for="[key, value] in parameters" :key="key" class="param">
+          <div v-for="[key, value] in parameters" :key="key" class="param" :class="{ changed: otherSide(key) !== null }">
             <dt>{{ key }}</dt>
-            <dd>{{ scalar(value) }}</dd>
+            <dd>
+              {{ scalar(value) }}
+              <span v-if="otherSide(key) !== null" class="param-other">
+                {{ compared!.side === 'before' ? t('before') : t('after') }} {{ otherSide(key) }}
+              </span>
+            </dd>
           </div>
         </dl>
       </section>
@@ -212,6 +274,84 @@ function scalar(value: unknown): string {
 
 .param dt { color: var(--color-text-secondary); }
 .param dd { margin: 0; color: var(--color-text-primary); }
+
+/* a value the change mark moved: the annotation role, dashed, with the other side's value beside it */
+.param.changed {
+  margin-left: calc(-1 * var(--space-xs));
+  padding-left: calc(var(--space-xs) - 1px);
+  border-left: 1px dashed var(--color-annotation);
+}
+
+.param-other {
+  margin-left: var(--space-xs);
+  color: var(--color-annotation);
+}
+
+.comparison {
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px dashed var(--color-annotation);
+  border-radius: 4px;
+  font-size: var(--font-size-sm);
+}
+
+.comparison-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-xs);
+  color: var(--color-annotation);
+}
+
+.comparison-run {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+  color: var(--color-text-secondary);
+}
+
+.comparison-stop {
+  margin-left: auto;
+}
+
+.changes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: monospace;
+}
+
+.change {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 var(--space-md);
+}
+
+/* the path keeps its room and a long value moves to a line of its own: measured 2026-10-27, a
+   start date beside the path left it three letters wide in a panel of 500 px */
+.change-path {
+  flex: 1 1 14rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.change-values {
+  margin-left: auto;
+  overflow-wrap: anywhere;
+  color: var(--color-text-primary);
+}
+
+.comparison-caveat {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-secondary);
+}
 
 .notice {
   margin: 0 0 var(--space-xs);

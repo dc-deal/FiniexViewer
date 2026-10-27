@@ -130,15 +130,18 @@ describe('SessionsTable', () => {
     expect(details[2]?.value).toContain('a default or a start option')
   })
 
-  /** The two halves of the comparison: the session before the mark and the one carrying it. */
-  it('opens the configuration of the session before the mark and of the one after it', async () => {
+  /**
+   * The two halves of the comparison: the session before the mark and the one carrying it, each
+   * opened COMPARED with the other — the values that differ are what a reader opens it for.
+   */
+  it('opens the configuration of the session before the mark and of the one after it, each compared with the other', async () => {
     const wrapper = mountSessions([session({ run_id: 'run_a' }), session({ run_id: 'run_b', strategy_changed: true })])
     const links = wrapper.findAll('.boundary-links .jump-link')
     await links[0]!.trigger('click')
     await links[1]!.trigger('click')
     expect(way.opened).toEqual([
-      { what: 'run', id: 'run_a', section: 'config' },
-      { what: 'run', id: 'run_b', section: 'config' },
+      { what: 'comparison', id: 'run_a', other: 'run_b', side: 'after' },
+      { what: 'comparison', id: 'run_b', other: 'run_a', side: 'before' },
     ])
   })
 

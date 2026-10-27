@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { openInDock } from '@/components/dock/open_in_dock'
+import { useConfigCompareStore } from '@/stores/config_compare_store'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -18,6 +19,7 @@ vi.mock('@/api/api_client', () => ({
   getRunSummary: vi.fn(),
   getDeployment: vi.fn(),
   getDeploymentBookingPeriods: vi.fn(),
+  getRunConfig: vi.fn(),
 }))
 
 /** Two runs of the captured index that both carry a summary — the body names the run it answers for. */
@@ -69,6 +71,23 @@ describe('openInDock', () => {
     expect(useRunsStore().selectedRunId).toBe(FIRST)
     expect(sections).toEqual(['config'])
     expect(opened).toEqual([])
+  })
+
+  /**
+   * A change mark's link opens one side's configuration COMPARED with the other: the comparison is
+   * asked for first, for the run then chosen, and the configuration comes forward.
+   */
+  it('opens a configuration compared with the session across the mark', async () => {
+    vi.mocked(apiClient.getRunConfig).mockResolvedValue({ run_id: SECOND!, config_snapshot: 'b.json', config_id: 'b', config: {} } as never)
+    const sections: string[] = []
+    useDockStore().openSection = (sectionId: string) => { sections.push(sectionId) }
+    openInDock().compareConfiguration(FIRST!, SECOND!, 'after')
+    await flushPromises()
+    expect(useRunsStore().selectedRunId).toBe(FIRST)
+    expect(sections).toEqual(['config'])
+    const compare = useConfigCompareStore()
+    expect([compare.shown, compare.other, compare.side]).toEqual([FIRST, SECOND, 'after'])
+    expect(apiClient.getRunConfig).toHaveBeenCalledWith(SECOND)
   })
 
   it('starts the opened run with no narrowing of the run before it', async () => {

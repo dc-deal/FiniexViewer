@@ -14,7 +14,10 @@ its own sections beside the previous run's executive summary — the sections fo
 summary loads with the choice. `openRun(id, section)` names a section of the run's report as well:
 the run is chosen the same way, and that section comes forward as a panel of its own
 (`dock.openSection`) — in the column it may stand folded or far below the header, and the reader
-asked for the section rather than the report. `canOpen` is false where
+asked for the section rather than the report. `compareConfiguration(id, other, side)` does the same
+for the `config` section and first asks for the configuration of `other`, the session on the given
+side of a deployment's change mark, to be shown beside it (`config_compare_store`); the root lets
+the comparison stand only while that run is the one chosen. `canOpen` is false where
 no host supplied the channel, and a panel then draws the name as plain text rather than a way in
 that leads nowhere. Its callers, most through `JumpLink`: a session's run, and on a change mark the
 configuration of the session before and after it (`SessionsTable`); a period's run on the deployment

@@ -26,7 +26,7 @@ const props = defineProps<{
   keyFields: string[]
 }>()
 
-const { openRun, canOpen } = useOpenInContext()
+const { openRun, compareConfiguration, canOpen } = useOpenInContext()
 
 /**
  * The session before each one, by row. A change mark compares a session with THAT one (their
@@ -43,9 +43,15 @@ function before(session: DeploymentSessionRow): string | null {
   return previousRun.value.get(rowKey(session, props.keyFields)) ?? null
 }
 
-/** A session's configuration — what it was commissioned with — as a panel of its own. */
-function openConfiguration(runId: string | null): void {
-  if (runId) openRun(runId, 'config')
+/**
+ * One side of a change mark's configuration as a panel of its own, COMPARED with the other side: the
+ * values that differ are what a reader opens it for. `side` is the side of the mark this one is on.
+ */
+function openConfiguration(session: DeploymentSessionRow, side: 'before' | 'after'): void {
+  const earlier = before(session)
+  if (!earlier) return
+  if (side === 'before') compareConfiguration(earlier, session.run_id, 'after')
+  else compareConfiguration(session.run_id, earlier, 'before')
 }
 
 /**
@@ -153,12 +159,12 @@ function gap(session: DeploymentSessionRow): string {
           <span aria-hidden="true">·</span>
           {{ t('Configuration') }}
           <JumpLink
-            :title="`${t('Open the configuration the session before ran with')}: ${before(session)}`"
-            @click="openConfiguration(before(session))"
+            :title="`${t('Open the configuration the session before ran with, compared with this one')}: ${before(session)}`"
+            @click="openConfiguration(session, 'before')"
           >{{ t('before') }}</JumpLink>
           <JumpLink
-            :title="`${t('Open the configuration this session ran with')}: ${session.run_id}`"
-            @click="openConfiguration(session.run_id)"
+            :title="`${t('Open the configuration this session ran with, compared with the one before')}: ${session.run_id}`"
+            @click="openConfiguration(session, 'after')"
           >{{ t('after') }}</JumpLink>
         </span>
       </template>
