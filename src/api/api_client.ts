@@ -39,6 +39,41 @@ const http = axios.create({
   baseURL: '/api/v1'
 })
 
+/**
+ * The contract the server stamped on its latest answer. Every response carries it in
+ * `X-Api-Contract`, a refusal included, so a server restarted under another contract shows on the
+ * next request rather than on a reload. Held here as well as handed on, so a listener registered
+ * after the first answer still learns it.
+ */
+let lastStamp: number | null = null
+let stampListener: (contract: number) => void = () => {}
+
+/** Hands every stamp to `listener`, starting with the one already seen. */
+export function onContractStamp(listener: (contract: number) => void): void {
+  stampListener = listener
+  if (lastStamp !== null) listener(lastStamp)
+}
+
+function noteStamp(headers: unknown): void {
+  const raw = (headers as Record<string, unknown> | undefined)?.['x-api-contract']
+  const stamp = typeof raw === 'string' ? Number.parseInt(raw, 10) : Number.NaN
+  // an answer without the header — none from this server, but a mock may send none
+  if (Number.isNaN(stamp)) return
+  lastStamp = stamp
+  stampListener(stamp)
+}
+
+http.interceptors.response.use(
+  response => {
+    noteStamp(response.headers)
+    return response
+  },
+  (error: unknown) => {
+    if (axios.isAxiosError(error)) noteStamp(error.response?.headers)
+    return Promise.reject(error)
+  },
+)
+
 export async function getTimeframes(): Promise<TimeframeList> {
   const response = await http.get<{ timeframes: TimeframeList }>('/timeframes')
   return response.data.timeframes

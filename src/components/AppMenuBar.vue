@@ -6,6 +6,7 @@ import {
   DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
 } from 'reka-ui'
 import AccountStatus from '@/components/AccountStatus.vue'
+import ContractStatus from '@/components/ContractStatus.vue'
 import MachineStatus from '@/components/MachineStatus.vue'
 import NarrowingStatement from '@/components/NarrowingStatement.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
@@ -169,6 +170,7 @@ function stayOpen(event: Event): void {
          beside it moves -->
     <NarrowingStatement class="menu-bar-narrowing" />
     <div class="menu-bar-spacer" />
+    <ContractStatus />
     <MachineStatus />
     <AccountStatus />
     <TopMenu />

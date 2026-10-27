@@ -117,9 +117,9 @@ function absent(cause: string, detail: string) {
  * The header the backend stamps every response with, read from the captures' own manifest.
  *
  * Written out here it was the kind of number that stays at 11 while the fixtures move to 21, and
- * that is what it did. Nothing reads the header today, so it cost nothing — but the file states
- * that none of its bodies is hand-written, and a hand-written version number is the same promise
- * broken in one line.
+ * that is what it did. The menu bar reads it since 2026-10-27 and marks a server stamped with
+ * another contract than the viewer mirrors — so a hand-written number here would also draw that
+ * mark in every spec.
  */
 const CONTRACT = {
   'X-Api-Contract': String((fixture('capture_manifest.json') as { contract: number }).contract),

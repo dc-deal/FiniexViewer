@@ -73,7 +73,9 @@ Re-capturing against a quiet deployment would otherwise leave every test green a
 — the same failure as a gate with no files in scope, one level up.
 
 Refresh them only deliberately, and read `GET /api/v1/contract` when you do — its `changes` list
-says what moved. Then raise `EXPECTED_CONTRACT` in `api_contract.test.ts` in the same change:
+says what moved. Then raise `EXPECTED_CONTRACT` in `src/api/expected_contract.ts` in the same
+change — the contract test asserts the fixtures against it, and the menu bar compares the server's
+stamp with it:
 
 ```bash
 python scripts/capture_fixtures.py --dry   # what would move, nothing written

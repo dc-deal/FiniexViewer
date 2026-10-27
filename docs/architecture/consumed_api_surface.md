@@ -113,6 +113,8 @@ is the wrong one. The viewer READS it at the render edge — a shared component 
 identity from the declared tuple, which is what lets one table serve two routes — and ASSERTS it in
 the suite. The contract number is asserted against captured fixtures, so re-capturing them against
 a newer backend fails locally instead of a field quietly turning `null` in production.
+The header is READ as well: the menu bar marks a server stamped with another contract than the one
+the viewer mirrors ([Menu Bar Status](../interface/menu_bar_status.md)).
 
 The report plane is model-fed on the backend: one canonical model per section, derived once and rendered identically to console, CSV and API. The API is the same object serialized, not a separate projection that can drift.
 

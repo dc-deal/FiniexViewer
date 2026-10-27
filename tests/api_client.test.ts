@@ -3,9 +3,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // vi.hoisted ensures mockGet is initialized before the hoisted vi.mock factory runs
 const mockGet = vi.hoisted(() => vi.fn())
 
+// the response interceptor the client registers once, at import — kept to feed it answers by hand
+type Handler = (value: unknown) => unknown
+const stampHandlers = vi.hoisted(() => ({ answer: null as Handler | null, refusal: null as Handler | null }))
+
 vi.mock('axios', () => ({
   default: {
-    create: vi.fn(() => ({ get: mockGet })),
+    create: vi.fn(() => ({
+      get: mockGet,
+      interceptors: {
+        response: {
+          use: (answer: Handler, refusal: Handler) => {
+            stampHandlers.answer = answer
+            stampHandlers.refusal = refusal
+          },
+        },
+      },
+    })),
     isAxiosError: (error: unknown): boolean =>
       typeof error === 'object' && error !== null && 'response' in error,
   },
@@ -36,6 +50,7 @@ import {
   getScenarioDetails,
   getSweep,
   getSweeps,
+  onContractStamp,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
@@ -62,6 +77,22 @@ import { isAbsent } from '@/types/api/absence_types'
 describe('api_client', () => {
   beforeEach(() => {
     mockGet.mockReset()
+  })
+
+  /**
+   * Every answer carries the contract the server serves, a refusal included. The client hands it
+   * on, the one seen before anybody listened as well, and passes over an answer without it.
+   */
+  it('hands on the contract every answer is stamped with', async () => {
+    stampHandlers.answer!({ headers: { 'x-api-contract': '41' } })
+    const seen: number[] = []
+    onContractStamp(contract => { seen.push(contract) })
+    expect(seen).toEqual([41])
+
+    stampHandlers.answer!({ headers: { 'x-api-contract': '42' } })
+    await expect(stampHandlers.refusal!({ response: { headers: { 'x-api-contract': '43' } } })).rejects.toBeTruthy()
+    stampHandlers.answer!({ headers: {} })
+    expect(seen).toEqual([41, 42, 43])
   })
 
   describe('getTimeframes', () => {

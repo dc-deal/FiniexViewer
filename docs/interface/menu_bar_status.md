@@ -1,6 +1,6 @@
 # Menu Bar Status
 
-The menu bar carries the readings that apply to every panel at once: who the server takes this viewer to be, how full the shared machine is, and which scenario is in focus. Read this document before you change `AccountStatus`, `MachineStatus`, `NarrowingStatement` or the stores behind them, or to know how current each reading is.
+The menu bar carries the readings that apply to every panel at once: who the server takes this viewer to be, how full the shared machine is, which scenario is in focus, and — only where it is not ours — which contract the server serves. Read this document before you change `AccountStatus`, `MachineStatus`, `NarrowingStatement`, `ContractStatus` or the stores behind them, or to know how current each reading is.
 
 ## Identity — `GET /api/v1/caller`, and the two rules that bound it
 
@@ -94,3 +94,26 @@ in its title where the bar is too narrow to show it, and says where the run lack
 line is a grid whose text track is `minmax(0, max-content)`, so its least width is its mark and its
 button alone, and it shrinks before the machine status beside it moves (`e2e/narrow_panels.spec.ts`,
 at 760 px). The *Panels* trigger never gives way: it shared the shortfall once and wrapped its ▾.
+
+## Which contract the server serves — `X-Api-Contract`, on every answer
+
+The viewer mirrors ONE contract, `EXPECTED_CONTRACT` in `src/api/expected_contract.ts`, and the
+server stamps the one it serves on every response, a refusal included. Two installations can
+differ: a server left on a release while the viewer moves on, or a backend restarted under a newer
+contract while a tab stays open. A field that moved between the two then reads wrong or not at all,
+and no panel can show it. So `ContractStatus` says it, before the machine:
+
+```
+⚠ API contract 43 · viewer 42        hover: which side has to move, both numbers, where the steps are
+```
+
+- **Where the two agree, nothing is drawn**, and nothing before the first answer either — the
+  account beside it already says when the server does not answer.
+- **No request of its own.** The client reads the header off every answer (`onContractStamp` in
+  `api_client`), so a restart under another contract shows on the next request rather than on a
+  reload; `server_contract_store` holds the latest stamp. `GET /api/v1/contract` adds only what
+  moved into the server's own version — the steps between two versions are in their contract log
+  (`/api/v1/docs/contract-log`), which the card names.
+- **Which way they differ says who moves**: a newer server waits for the viewer to follow, an older
+  one serves fields this viewer reads without them. The card says which, in a sentence.
+

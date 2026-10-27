@@ -27,6 +27,7 @@ import sweepDetail from './fixtures/sweep_detail.json'
 import stateFramesEnded from './fixtures/state_frames_ended.json'
 import stateFramesStopped from './fixtures/state_frames_stopped.json'
 import validationChecks from './fixtures/validation_checks.json'
+import { EXPECTED_CONTRACT } from '@/api/expected_contract'
 import type { ValidationCheckList } from '@/types/api/validation_check_types'
 import type { StateFramesLatest } from '@/types/api/state_frame_types'
 
@@ -53,17 +54,6 @@ import type {
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { MachineResources } from '@/types/api/machine_types'
 import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
-
-/**
- * The contract this code was written against. The backend stamps every response with
- * `X-Api-Contract`, and the fixtures below were captured under the number recorded in their
- * manifest. Re-capturing them against a newer backend therefore fails HERE rather than in
- * production, which is the whole point of the header: the assertion stays local and needs no
- * connection to the backend to run.
- *
- * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
- */
-const EXPECTED_CONTRACT = 42
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -109,6 +99,10 @@ const EXPECTED_KEYS = {
 }
 
 describe('api contract', () => {
+  /**
+   * Re-capturing the fixtures against a newer backend fails HERE rather than in production, which
+   * is the whole point of the header: the assertion stays local and needs no connection to run.
+   */
   it('fixtures were captured under the contract this code targets', () => {
     expect(manifest.contract).toBe(EXPECTED_CONTRACT)
   })
