@@ -37,7 +37,7 @@
     "@vue/eslint-config-typescript": "^14.0.0",
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.0.0",
-    "eslint-plugin-vue": "^9.0.0",
+    "eslint-plugin-vue": "^10.11.1",
     "jsdom": "^26.0.0",
     "knip": "^6.33.0",
     "typescript": "^5.7.2",
