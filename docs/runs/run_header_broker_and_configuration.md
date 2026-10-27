@@ -42,6 +42,10 @@ were explicitly allowed from code that was not committed, which is a thing to we
 trusting the figures beside it. `first_start` (contract 37) appears only when it is true too, as
 *Declared first start*, a plain fact rather than a warning: a session trading real money that
 started without a carry-over to continue, because its start was declared the bot's first.
+`accept_composite_change` (contract 41) appears only where a start was given one, as *Changed
+configuration accepted* with the key, in the warning role: the start continued what the venue held
+under another composite, so a trade across the change is the result of neither configuration. The
+session's `composite_change_accepted` warning says whether it let anything through.
 
 ## Broker — the conditions a run traded under
 

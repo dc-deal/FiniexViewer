@@ -5,6 +5,23 @@
   ],
   "deployments": [
     {
+      "deployment_id": "deploy_20261022_123713_aa33e0b5",
+      "sessions": 1,
+      "first_started": "2026-10-22T12:37:36.180770Z",
+      "last_started": "2026-10-22T12:37:36.180770Z",
+      "net_pnl": -0.10246623999999999,
+      "max_drawdown": 0.39653300169999994,
+      "max_drawdown_pct": 0.628756251312497,
+      "currency": "USD",
+      "bot": "kraken_spot_ethusd_day_boundary",
+      "bot_id": "ethday01",
+      "longest_gap_hours": null,
+      "changed": false,
+      "orders_to": [
+        "simulated"
+      ]
+    },
+    {
       "deployment_id": "deploy_20261012_205953",
       "sessions": 1,
       "first_started": "2026-10-12T20:59:53.158134Z",
@@ -226,5 +243,5 @@
       ]
     }
   ],
-  "count": 13
+  "count": 14
 }

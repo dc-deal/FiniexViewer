@@ -168,6 +168,14 @@ function componentTitle(component: ComponentIdentity): string {
       <!-- Only when TRUE, and as a plain fact rather than a warning: a session trading real money
            that started without a carry-over to continue, because its start was declared the bot's
            first. Every other run reads false, which states nothing. -->
+      <!-- Only where given, in the warning role: the start continued what the venue held under
+           another composite, so a trade across the change is the result of neither configuration.
+           The label is theirs; the session's warning says whether it let anything through. -->
+      <template v-if="served.origin.accept_composite_change">
+        <dt>{{ t('Changed configuration accepted') }}</dt>
+        <dd class="flagged">⚠ {{ served.origin.accept_composite_change }}</dd>
+      </template>
+
       <template v-if="served.origin.first_start">
         <dt>{{ t('Declared first start') }}</dt>
         <dd :title="t('The one way a session trading real money starts without a carry-over to continue')">

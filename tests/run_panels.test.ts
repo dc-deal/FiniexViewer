@@ -704,7 +704,7 @@ describe('RunHeaderPanel', () => {
       reporting: 'expected',
       origin: {
         channel: 'cli', client: 'console', principal: 'operator',
-        host: 'h_x29og8', allow_dirty: false, first_start: false,
+        host: 'h_x29og8', allow_dirty: false, first_start: false, accept_composite_change: null,
       },
       code_identity: null,
       ticks_from: 'archive',
@@ -862,7 +862,7 @@ describe('RunHeaderPanel', () => {
       props: { model: headerModel({}, header({
         origin: {
           channel: 'cli', client: 'console', principal: 'operator', host: 'h',
-          allow_dirty: true, first_start: false,
+          allow_dirty: true, first_start: false, accept_composite_change: null,
         },
       })) },
     })
@@ -885,12 +885,35 @@ describe('RunHeaderPanel', () => {
       props: { model: headerModel({}, header({
         origin: {
           channel: 'cli', client: 'console', principal: 'operator', host: 'h',
-          allow_dirty: false, first_start: true,
+          allow_dirty: false, first_start: true, accept_composite_change: null,
         },
       })) },
     })
     expect(first.text()).toContain('Declared first start')
     expect(first.find('.flagged').exists()).toBe(false)
+  })
+
+  /**
+   * Contract 41: a start allowed to continue what the venue held under another composite. A trade
+   * across the change is the result of neither configuration, so it is said as something to weigh,
+   * with the key the start was given.
+   */
+  it('flags an accepted change of configuration with its key, and says nothing where none was given', () => {
+    const quiet = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header()) },
+    })
+    expect(quiet.text()).not.toContain('Changed configuration accepted')
+
+    const accepted = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        origin: {
+          channel: 'cli', client: 'console', principal: 'operator', host: 'h',
+          allow_dirty: false, first_start: false, accept_composite_change: 'b1fc487a',
+        },
+      })) },
+    })
+    expect(accepted.text()).toContain('Changed configuration accepted')
+    expect(accepted.find('.flagged').text()).toContain('b1fc487a')
   })
 
   /**

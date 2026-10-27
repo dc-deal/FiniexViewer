@@ -1,5 +1,5 @@
 import {
-  amount, magnitude, numberOrNa, percentFigure, percentOrNa, signClass, utcInstant,
+  amount, drawdownFigure, magnitude, numberOrNa, orDash, percentFigure, percentOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { BookingPeriodRow, BookingPeriodUnitTotal } from '@/types/api/report_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
@@ -59,11 +59,19 @@ export function periodFigures(period: PeriodRow): Figure[] {
     { label: t('PF'), value: numberOrNa(period.profit_factor, period.trade_count) },
     { label: t('Fees'), value: money(period.total_fees), title: feeSplit(period, money) },
     // a magnitude: the stored sign is not reliable across the archive
-    { label: t('Max DD'), value: magnitude(period.max_drawdown, period.currency) },
+    { label: t('Max DD'), value: orDash(period.max_drawdown, value => magnitude(value, period.currency)) },
+    // 0 on a trading day the run heard nothing from, which booked its row all the same (contract 40)
+    { label: t('Ticks'), value: orDash(period.tick_count, count => count.toLocaleString('en-US')) },
     // stamped at the source since contract 17, null before — never `final_equity - net_pnl`
     { label: t('Opening'), value: period.opening_equity === null ? t('n/a') : money(period.opening_equity) },
-    { label: t('Equity band'), value: `${money(period.min_equity)} … ${money(period.max_equity)}` },
-    { label: t('Final equity'), value: money(period.final_equity) },
+    // null where the period could value the account at no point (contract 40)
+    {
+      label: t('Equity band'),
+      value: period.min_equity === null || period.max_equity === null
+        ? '—'
+        : `${money(period.min_equity)} … ${money(period.max_equity)}`,
+    },
+    { label: t('Final equity'), value: orDash(period.final_equity, money) },
     ...carriedFigures(period, money),
   ]
   if (period.run_id) rows.unshift({ label: t('Run'), value: period.run_id })
@@ -143,12 +151,12 @@ export function unitTotalCard(total: BookingPeriodUnitTotal): FigureCard {
       },
       {
         label: t('Deepest period drawdown'),
-        value: magnitude(total.deepest_period_drawdown, total.currency),
+        value: orDash(total.deepest_period_drawdown, value => magnitude(value, total.currency)),
         title: t('The deepest decline within a single period — what the Max DD column shows'),
       },
       {
         label: t('Deepest drawdown'),
-        value: `${magnitude(total.account_max_drawdown, total.currency)} (${percentFigure(total.account_max_dd_pct)})`,
+        value: drawdownFigure(total.account_max_drawdown, total.account_max_dd_pct, total.currency),
         title: t("The account's own decline, cumulative from the unit's start — from the deployment's start for a session of one. A fall across a period boundary is deeper than any one period's own"),
       },
     ],

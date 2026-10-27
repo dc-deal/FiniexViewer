@@ -5,7 +5,7 @@ import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
-import { amount, magnitude, duration, signClass, utcInstant } from '@/components/runs/report_format'
+import { amount, magnitude, duration, orDash, signClass, utcInstant } from '@/components/runs/report_format'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
 import type { ListColumn } from '@/types/list_types'
@@ -176,12 +176,13 @@ function gap(session: DeploymentSessionRow): string {
         <template v-else>{{ session.run_id }}</template>
       </span>
       <span :data-rank="2">{{ utcInstant(session.started) }}</span>
-      <span :data-rank="3" class="figure-cell">{{ duration(session.ran_hours) }}</span>
+      <!-- null until the row of its close exists: a session still running, or one that died (contract 40) -->
+      <span :data-rank="3" class="figure-cell">{{ orDash(session.ran_hours, duration) }}</span>
       <span :data-rank="3" class="figure-cell">{{ gap(session) }}</span>
       <span :data-rank="1" class="figure-cell" :class="signClass(session.net_pnl)">
         {{ amount(session.net_pnl, session.currency) }}
       </span>
-      <span :data-rank="2" class="figure-cell">{{ magnitude(session.max_drawdown, session.currency) }}</span>
+      <span :data-rank="2" class="figure-cell">{{ orDash(session.max_drawdown, value => magnitude(value, session.currency)) }}</span>
     </template>
   </RecordList>
 </template>

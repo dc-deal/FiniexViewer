@@ -43,9 +43,11 @@ Their document: *"A ranking is comparable only where the things ranked are."* Th
 where it is not — a ⚠ word on the sweep's heading, its sentence on hover; **where everything is alike,
 nothing is printed**:
 
-- combinations that differ in `logic_version`, `decision_version`, `git_commit` or `profile_hash`
-  (equality of served values, nothing more) — the ranking compares measures that may have changed
-  underneath;
+- combinations that differ in `logic_version`, `decision_version`, `git_commit`, `profile_hash` or,
+  since contract 40, `broker_config_id` (equality of served values, nothing more) — the ranking
+  compares measures that may have changed underneath;
+- combinations the ranking left out because they carry no value for its objective (`unranked`,
+  contract 40) — without the count a shorter ranking would read as the whole sweep;
 - combinations whose records were pruned (`records_pruned_at`) — their figures can no longer be
   checked;
 - error combinations, as above.
@@ -82,8 +84,11 @@ splits, and several sweeps can stand open at once, to be compared.
   The row of the run chosen is marked.
 - **Parameters** by the last part of their configuration key, the whole key on the title and in the
   card. The card carries every figure a combination is judged on and the fields that make it
-  comparable: the code, its logic version, the parameter and settings fingerprints, how many
-  candidates it was selected from.
+  comparable: the code, its logic version, the parameter and settings fingerprints, the rendered and
+  the broker configuration it ran with (contract 40, where the row records them), how many
+  candidates it was selected from. Its *Orders* are the counts that counted something, in the
+  executive panel's words; they fold from the booking periods since contract 42 and read a dash on
+  a row written before.
 - **The sweep looked at last is the link's `sweep` key**, stored with the arrangement: it stands open
   after a reload, and the run header's *Combination in sweep* (`openSweep`) opens it and brings it
   into view. A link stored before the key existed reads as none chosen.

@@ -31,6 +31,20 @@ describe('booking_period_card', () => {
       }
     })
 
+    /**
+     * Contract 40: a period that could value the account at no point has no band, no final equity
+     * and no drawdown — said as absent, never as zero. And every trading day has its row, so a day
+     * the run heard nothing from says so in its tick count.
+     */
+    it('says a band nobody could measure as a dash, and how many ticks the period applied', () => {
+      const unvalued = periodCard({ ...PERIOD, min_equity: null, max_equity: null, final_equity: null, max_drawdown: null })
+      expect(pair(unvalued.details, 'Equity band')?.value).toBe('—')
+      expect(pair(unvalued.details, 'Final equity')?.value).toBe('—')
+      expect(pair(unvalued.details, 'Max DD')?.value).toBe('—')
+      expect(pair(periodCard({ ...PERIOD, tick_count: 0 }).details, 'Ticks')?.value).toBe('0')
+      expect(pair(periodCard({ ...PERIOD, tick_count: null }).details, 'Ticks')?.value).toBe('—')
+    })
+
     /** Stamped at the source since contract 17 — never `final_equity - net_pnl`. */
     it('says an opening it never recorded as n/a', () => {
       expect(pair(periodCard({ ...PERIOD, opening_equity: null }).details, 'Opening')?.value).toBe('n/a')

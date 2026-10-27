@@ -250,6 +250,23 @@ export function magnitude(value: number, currency: string): string {
 }
 
 /**
+ * A figure that may not have been measured, or the dash that says so — their nulls document: show
+ * absence as absence, never a zero, which would assert a measurement nobody took. Since contract 40
+ * a drawdown and an equity band are null where nothing could value the account, and a session's
+ * `ran_hours` until its close is booked.
+ */
+export function orDash(value: number | null, format: (value: number) => string): string {
+  return value === null ? '—' : format(value)
+}
+
+/** A drawdown with its share where one is stated (`_pct` is already a percentage), or the dash. */
+export function drawdownFigure(value: number | null, share: number | null, currency: string): string {
+  if (value === null) return '—'
+  const shown = magnitude(value, currency)
+  return share === null ? shown : `${shown} (${percentFigure(share)})`
+}
+
+/**
  * The time of day of a reading, in the reader's own zone — `19:03:45`: for a figure measured just
  * now, whose date says nothing. A stamp that is not a date is shown as it came. One copy for the
  * menu bar's machine status and the Activities panel.

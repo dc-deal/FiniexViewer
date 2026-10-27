@@ -5,7 +5,7 @@ import ScopeMark from '@/components/base/ScopeMark.vue'
 import type { RunSummary, RunSummaryCurrency } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 import {
-  amount, magnitude, marketSpan, numberOrNa, percentFigure, percentOrNa, rValue,
+  amount, drawdownFigure, magnitude, marketSpan, numberOrNa, orDash, percentOrNa, rValue,
   signClass,
 } from '@/components/runs/report_format'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
@@ -126,10 +126,10 @@ function account(row: RunSummaryCurrency): Figure[] {
     },
     {
       label: t('Deepest drawdown'),
-      value: `${magnitude(row.account_max_drawdown, row.currency)} (${percentFigure(row.account_max_dd_pct)})`,
+      value: drawdownFigure(row.account_max_drawdown, row.account_max_dd_pct, row.currency),
       title: t('A magnitude: the sign is not reliable across the archive. The percentage is already multiplied.'),
     },
-    { label: t('Max equity'), value: amount(row.max_equity, row.currency) },
+    { label: t('Max equity'), value: orDash(row.max_equity, value => amount(value, row.currency)) },
     /*
      * ONE account's closing equity, or the total over several — never the same word for both.
      * A backtest of N scenarios is N independent accounts, one balance each, and no account ever

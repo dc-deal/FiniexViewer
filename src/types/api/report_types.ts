@@ -83,6 +83,13 @@ export interface RunOrigin {
    * starts without a carry-over to continue. False on every other run and on one recorded before.
    */
   first_start: boolean
+  /**
+   * Contract 41: the composite key a live start was given with `--accept-composite-change` — the
+   * composite it may continue what the venue still holds under, though another opened it. Recorded
+   * as typed; whether it let anything through is the session's `composite_change_accepted` warning.
+   * Null where the flag was not given, on a backtest, and before.
+   */
+  accept_composite_change: string | null
 }
 
 /**
@@ -343,12 +350,15 @@ export interface RunSummaryCurrency {
   /**
    * Was `max_drawdown` until contract 2. The deepest decline of the ACCOUNT, as a magnitude —
    * distinct from a booking period's own decline, which is why the name carries the scope.
+   *
+   * Typed nullable since contract 40, with the same field on a booking period; a run's own summary
+   * always carries numbers (their contract log), so a null here says what it says there.
    */
-  account_max_drawdown: number
+  account_max_drawdown: number | null
   // ALREADY a percentage: 3.47 means 3.47 %. `_pct` is a rule and holds everywhere; `_rate` and
   // `_ratio` are NOT one and are read per field. Never pass this to the ratio formatter.
-  account_max_dd_pct: number
-  max_equity: number
+  account_max_dd_pct: number | null
+  max_equity: number | null
   /**
    * Which account the drawdown trio above belongs to. The trio is the DEEPEST account's, taken
    * together from that one account, because a trough and a peak from two different accounts
@@ -827,16 +837,22 @@ export interface BookingPeriodRow {
    * artifact, so the absence is the data.
    */
   opening_equity: number | null
-  final_equity: number
-  min_equity: number
-  max_equity: number
+  /**
+   * The band, null since contract 40 on a period that could value the account at no point — a spot
+   * session whose first period was sealed before its first tick priced its holdings.
+   */
+  final_equity: number | null
+  min_equity: number | null
+  max_equity: number | null
+  /** How many ticks the period applied (contract 40): 0 on a trading day the run heard nothing from. Null before. */
+  tick_count: number | null
   /**
    * Sign is NOT reliable across the archive. The backend aligned this to a magnitude, but stored
    * artifacts written before that keep the negative form and nothing in the payload distinguishes
    * them. Rendered as a magnitude for that reason — a decline is a decline, so no information is
-   * lost by dropping a sign that means nothing here.
+   * lost by dropping a sign that means nothing here. Null where the band is (contract 40).
    */
-  max_drawdown: number
+  max_drawdown: number | null
   /**
    * What the period CARRIES beside what it did (contract 35): the account's decline since its equity
    * curve began — a session continues the curve of the one before wherever its profile carries the
@@ -886,10 +902,14 @@ export interface BookingPeriodUnitTotal {
   final_equity: number
   min_equity: number
   max_equity: number
-  /** The deepest decline WITHIN one period, against the account's own decline across them all. */
-  deepest_period_drawdown: number
-  account_max_drawdown: number
-  account_max_dd_pct: number
+  /**
+   * The deepest decline WITHIN one period, against the account's own decline across them all. Null
+   * since contract 40 where no period could value the account, and the account's two where none of
+   * the unit's periods measured one.
+   */
+  deepest_period_drawdown: number | null
+  account_max_drawdown: number | null
+  account_max_dd_pct: number | null
 }
 
 /**
@@ -926,7 +946,8 @@ export interface BookingPeriodsReport {
    * A missing check renders as loudly as a failed one; a tick would claim evidence that is absent.
    */
   reconciles: boolean | null
-  deepest_period_drawdown: number
+  // null where no period could value the account (contract 40)
+  deepest_period_drawdown: number | null
   /**
    * The sum over `unit_totals`, and named as a total for that reason. It was `final_equity` and
    * was the LAST period row's own figure — one of the run's eight accounts, printed as though it

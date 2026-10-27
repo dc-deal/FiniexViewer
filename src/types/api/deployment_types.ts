@@ -28,8 +28,9 @@ export interface DeploymentRow {
    * that was still inside it. Both arrive already reduced — nothing here is re-aggregated.
    */
   net_pnl: number
-  max_drawdown: number
-  max_drawdown_pct: number
+  // null where no drawdown was measured (contract 40)
+  max_drawdown: number | null
+  max_drawdown_pct: number | null
   // null where no idle stretch exists at all — a deployment of one session has nothing between
   // its sessions. An absence, and 0 would claim a measured stretch of no length.
   longest_gap_hours: number | null
@@ -64,11 +65,17 @@ export interface DeploymentSessionRow {
   // the hinge into every existing report route — a session is a run, addressed the normal way
   run_id: string
   started: string
-  ended: string
-  ran_hours: number
+  /**
+   * Null until the row of the session's close exists (contract 40): a session still running, or one
+   * that died before its end, stands here with the days it sealed. Whether it still runs is the run
+   * list's `recording`.
+   */
+  ended: string | null
+  ran_hours: number | null
   net_pnl: number
-  max_drawdown: number
-  max_drawdown_pct: number
+  // null where no drawdown was measured (contract 40)
+  max_drawdown: number | null
+  max_drawdown_pct: number | null
   currency: string
   bot: string
   bot_id: string

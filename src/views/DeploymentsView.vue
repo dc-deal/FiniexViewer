@@ -96,14 +96,14 @@ const showDeployment = computed(() =>
       </div>
 
       <template v-else-if="showDeployment">
-        <!-- the deployment's own line, above every currency: an unfinished run has no ledger row
-             and so no currency, and the advisory speaks of the whole history -->
+        <!-- the deployment's own line, above every currency: a run that died before its first sealed
+             day has no ledger row and so no currency, and the advisory speaks of the whole history -->
         <p v-if="detail" class="counts">
           <span>{{ plural(detail.count, t('session'), t('sessions')) }}</span>
           <!-- the WHY is on the title: the number is the fact, the explanation is a caveat -->
           <span
             :class="{ flagged: detail.unfinished > 0 }"
-            :title="t('Runs that never reached their close, so the ledger holds no row for them')"
+            :title="t('Runs that never reached their close, a session running now among them. One that sealed a day stands among the sessions too, so the two counts overlap and are never added')"
           >{{ detail.unfinished }} {{ t('unfinished') }}</span>
           <!-- ABOVE the table, never beside it: by the time a reader reaches a change mark in the
                third row they have already added up the column above it -->

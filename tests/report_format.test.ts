@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  bytes, largerFirst, modelledSpreadFigures, polarity, shortHash, signClass, sortInstant, spreadFigure, utcInstant,
-  utcSpan,
+  bytes, drawdownFigure, largerFirst, modelledSpreadFigures, orDash, polarity, shortHash, signClass, sortInstant,
+  spreadFigure, utcInstant, utcSpan,
 } from '@/components/runs/report_format'
 
 /**
@@ -133,6 +133,23 @@ describe('report_format', () => {
     /** A short id is already readable, so nothing is taken off it. */
     it('leaves a value that is short enough alone', () => {
       expect(shortHash('abc123')).toBe('abc123')
+    })
+  })
+
+  /**
+   * Since contract 40 a drawdown and an equity band are null where nothing could value the account.
+   * Absence is shown as absence — a zero would assert a measurement nobody took.
+   */
+  describe('a figure that may not have been measured', () => {
+    it('says a figure nobody measured as a dash, and formats one that was', () => {
+      expect(orDash(null, value => `${value} USD`)).toBe('—')
+      expect(orDash(0, value => `${value} USD`)).toBe('0 USD')
+    })
+
+    it('puts a drawdown beside its share where one is stated, and a dash where none was measured', () => {
+      expect(drawdownFigure(-12.5, 3.47, 'USD')).toBe('12.50 USD (3.47%)')
+      expect(drawdownFigure(12.5, null, 'USD')).toBe('12.50 USD')
+      expect(drawdownFigure(null, null, 'USD')).toBe('—')
     })
   })
 })

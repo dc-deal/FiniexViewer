@@ -12,7 +12,7 @@ import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
 import {
-  amount, duration, magnitude, percentFigure, signClass, sortInstant, startedAt, utcInstant,
+  amount, drawdownFigure, duration, magnitude, orDash, percentFigure, signClass, sortInstant, startedAt, utcInstant,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
@@ -156,7 +156,7 @@ function card(row: DeploymentRow): FigureCard {
     },
     {
       label: t('Max drawdown'),
-      value: `${magnitude(row.max_drawdown, row.currency)} (${percentFigure(row.max_drawdown_pct)})`,
+      value: drawdownFigure(row.max_drawdown, row.max_drawdown_pct, row.currency),
       title: t('The deepest of the sessions, never their sum: each carries the running decline against the peak the deployment had reached, so adding them counts one decline once per session it spanned.'),
     },
     { label: t('Longest idle'), value: gap(row) },
@@ -277,8 +277,8 @@ const chosenCard = computed(() => chosen.value ? card(chosen.value) : null)
           </span>
           <!-- the percentage one hover away rather than a tenth column: the magnitude is what
                compares two deployments, the ratio is what a single one is read against -->
-          <span :data-rank="2" class="figure-cell" :title="percentFigure(row.max_drawdown_pct)">
-            {{ magnitude(row.max_drawdown, row.currency) }}
+          <span :data-rank="2" class="figure-cell" :title="orDash(row.max_drawdown_pct, percentFigure)">
+            {{ orDash(row.max_drawdown, value => magnitude(value, row.currency)) }}
           </span>
           <span :data-rank="4" class="figure-cell">{{ gap(row) }}</span>
           <!-- one cell whether or not a mark is in it, so the gap column never moves -->

@@ -17,7 +17,8 @@
     "principal": "operator",
     "host": "h_x29og8",
     "allow_dirty": false,
-    "first_start": false
+    "first_start": false,
+    "accept_composite_change": null
   },
   "code_identity": {
     "framework": {

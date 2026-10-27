@@ -61,7 +61,7 @@ import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
  *
  * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
  */
-const EXPECTED_CONTRACT = 38
+const EXPECTED_CONTRACT = 42
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in

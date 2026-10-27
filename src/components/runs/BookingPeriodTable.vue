@@ -6,7 +6,7 @@ import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
 import { feeSplit, periodCard, unitTotalCard, type PeriodRow } from '@/components/runs/booking_period_card'
 import {
-  amount, figure, numberOrNa, percentOrNa, signClass, utcInstant,
+  amount, figure, numberOrNa, orDash, percentOrNa, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { BookingPeriodUnitTotal } from '@/types/api/report_types'
 import type { FigureCard } from '@/types/figure_types'
@@ -110,16 +110,20 @@ function money(value: number, currency: string): string {
   return sharedCurrency.value === null ? amount(value, currency) : figure(value)
 }
 
-/** A drawdown is a MAGNITUDE — the stored sign is not reliable across the archive. */
-function drawdown(value: number, currency: string): string {
-  return money(Math.abs(value), currency)
+/**
+ * A drawdown is a MAGNITUDE — the stored sign is not reliable across the archive. The dash where it
+ * was not measured: since contract 40 a period that could value the account at no point has none.
+ */
+function drawdown(value: number | null, currency: string): string {
+  return orDash(value, measured => money(Math.abs(measured), currency))
 }
 
 /**
  * The equity band, as one column. Two columns for `min_equity` and `max_equity` would be two
  * headers for one fact, and the band is only ever read as a pair.
  */
-function band(min: number, max: number, currency: string): string {
+function band(min: number | null, max: number | null, currency: string): string {
+  if (min === null || max === null) return '—'
   return `${money(min, currency)} … ${money(max, currency)}`
 }
 
@@ -273,7 +277,7 @@ const bands = computed<ListBand[]>(() => [
           <span :data-rank="5" class="figure-cell band-cell">
             {{ band(row.min_equity, row.max_equity, row.currency) }}
           </span>
-          <span :data-rank="1" class="figure-cell">{{ money(row.final_equity, row.currency) }}</span>
+          <span :data-rank="1" class="figure-cell">{{ orDash(row.final_equity, value => money(value, row.currency)) }}</span>
         </template>
         <!-- the unit's total, in the same columns: Max DD is the deepest SINGLE period, which is what
              the column shows (their booking-periods document); the account's own decline is in its
@@ -303,7 +307,7 @@ const bands = computed<ListBand[]>(() => [
           <span :data-rank="5" class="figure-cell band-cell">
             {{ band(row.min_equity, row.max_equity, row.currency) }}
           </span>
-          <span :data-rank="1" class="figure-cell">{{ money(row.final_equity, row.currency) }}</span>
+          <span :data-rank="1" class="figure-cell">{{ orDash(row.final_equity, value => money(value, row.currency)) }}</span>
         </template>
       </template>
     </RecordList>

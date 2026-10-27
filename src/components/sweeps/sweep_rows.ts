@@ -1,6 +1,6 @@
 import { rowKey } from '@/api/list_key'
 import {
-  amount, duration, figure, magnitude, numberOrNa, percentFigure, percentOrNa, rValue, shortHash, signClass, utcInstant,
+  amount, drawdownFigure, duration, figure, magnitude, numberOrNa, orDash, percentOrNa, rValue, shortHash, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { SweepCombination, SweepDetail, SweepRow } from '@/types/api/sweep_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
@@ -94,7 +94,7 @@ export function objectiveFigure(row: CombinationRow): string {
     case 'net_pnl': return amount(combination.net_pnl, combination.currency)
     case 'win_rate': return percentOrNa(combination.win_rate, combination.total_trades)
     case 'profit_factor': return numberOrNa(combination.profit_factor, combination.total_trades)
-    case 'account_max_drawdown': return magnitude(combination.account_max_drawdown, combination.currency)
+    case 'account_max_drawdown': return orDash(combination.account_max_drawdown, value => magnitude(value, combination.currency))
   }
   // their vocabulary may grow: the field the response names, read by that name
   const value = objectiveValue(combination, row.objective)
@@ -143,6 +143,9 @@ const COMPARABLE: [keyof SweepCombination, string][] = [
   ['decision_version', t('strategy version')],
   ['git_commit', t('code')],
   ['profile_hash', t('simulator settings')],
+  // the broker configuration frozen with each run (contract 40); a combination's own rendered set
+  // always differs, since its parameters do
+  ['broker_config_id', t('broker configuration')],
 ]
 
 /** Only where the ranking compares unlike things — where everything is alike, nothing is said. */
@@ -155,6 +158,13 @@ export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): 
     })
   }
   if (!detail) return notices
+  // without it a shorter ranking would read as the whole sweep (contract 40)
+  if (detail.unranked) {
+    notices.push({
+      word: `${detail.unranked} ${t('not ranked')}`,
+      sentence: `${plural(detail.unranked, t('combination'), t('combinations'))} ${t('carry no value for the objective and are left out of the ranking')}`,
+    })
+  }
   const differing = COMPARABLE
     .filter(([field]) => new Set(detail.combinations.map(row => row[field])).size > 1)
     .map(([, words]) => words)
@@ -186,6 +196,42 @@ export function sweepTitle(sweep: SweepRow): string {
   ].join('\n')
 }
 
+/**
+ * The order counts in their own words, those that counted something — the executive panel's funnel
+ * words. The dash on a row written before the counts folded.
+ */
+function ordersText(combination: SweepCombination): string {
+  const counts: [number | null, string][] = [
+    [combination.orders_submitted, t('submitted')],
+    [combination.orders_executed, t('executed')],
+    [combination.orders_rejected, t('rejected')],
+    [combination.orders_cancelled, t('cancelled')],
+    [combination.orders_expired, t('expired')],
+    [combination.orders_denied, t('denied')],
+    [combination.orders_adopted, t('adopted')],
+    [combination.orders_undelivered, t('undelivered')],
+    [combination.orders_unaccounted, t('unaccounted')],
+    [combination.sl_tp_triggered, t('closed by SL/TP')],
+  ]
+  if (combination.orders_submitted === null) return '—'
+  return counts.filter(([count]) => count).map(([count, word]) => `${count} ${word}`).join(' · ') || '0'
+}
+
+function configurationIds(combination: SweepCombination): Figure[] {
+  const ids: Figure[] = []
+  if (combination.rendered_config_id) {
+    ids.push({
+      label: t('Rendered configuration id'),
+      value: shortHash(combination.rendered_config_id),
+      title: combination.rendered_config_id,
+    })
+  }
+  if (combination.broker_config_id) {
+    ids.push({ label: t('Broker configuration id'), value: shortHash(combination.broker_config_id), title: combination.broker_config_id })
+  }
+  return ids
+}
+
 /** A combination's card: the figures it is judged on, and the fields that make it comparable. */
 export function combinationCard(row: CombinationRow): FigureCard {
   const combination = row.combination
@@ -206,11 +252,11 @@ export function combinationCard(row: CombinationRow): FigureCard {
     {
       // the account's deepest decline, named as every other card names this pair of fields
       label: t('Deepest drawdown'),
-      value: combination.account_max_drawdown_pct === null
-        ? magnitude(combination.account_max_drawdown, combination.currency)
-        : `${magnitude(combination.account_max_drawdown, combination.currency)} (${percentFigure(combination.account_max_drawdown_pct)})`,
+      value: drawdownFigure(combination.account_max_drawdown, combination.account_max_drawdown_pct, combination.currency),
     },
     { label: t('Fees'), value: amount(combination.total_fees, combination.currency) },
+    // they fold since contract 42, each period counting the orders it handled; null on an older row
+    { label: t('Orders'), value: ordersText(combination) },
     {
       label: t('Mean hold'),
       value: combination.avg_trade_duration_s === null ? t('n/a') : duration(combination.avg_trade_duration_s / 3600),
@@ -223,6 +269,8 @@ export function combinationCard(row: CombinationRow): FigureCard {
     },
     { label: t('Logic version'), value: combination.logic_version === null ? t('unknown') : String(combination.logic_version) },
     { label: t('Parameters hash'), value: shortHash(combination.param_hash), title: combination.param_hash },
+    // what the combination RAN with (contract 40), for comparing; empty on a row written before
+    ...configurationIds(combination),
     {
       label: t('Settings hash'),
       value: combination.profile_hash ? shortHash(combination.profile_hash) : t('not recorded'),

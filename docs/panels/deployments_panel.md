@@ -73,16 +73,19 @@ misreports something:
   session above the mark and of the one carrying it, as a panel of its own; the comparison is the
   reader's. An operation mark also moves with the defaults merged in under the file and with a
   start option, which no route serves, and its card says so.
-- `unfinished` is shown even when zero. Those runs are absent from `sessions` by construction (the
-  ledger row is written last), and a bare session count is a number the reader has no reason to doubt.
+- `unfinished` is shown even when zero: the runs that never reached their close, a session running
+  now among them. Since contract 40 a session books each trading day as it closes, so one that
+  sealed a day also stands in `sessions`, its *Ran* a dash until its close is booked — the two
+  counts overlap and are never added. A bare session count is a number the reader has no reason to
+  doubt.
 
 **The head says each figure once** (operator, 2026-10-20), in three lines: the chosen line names
 the deployment and its bot, with the rest of its row — the bot id among it — on the same card the
 list shows; the deployment's own line counts the sessions and the unfinished runs and carries the
 advisory, the full sentence on hover; and one line per account currency carries the ledger's
 figures and the span of the starts, the date said once where both fall on the same UTC day. The
-unfinished runs and the advisory stand above the currencies because they belong to none: an
-unfinished run has no ledger row and so no currency.
+unfinished runs and the advisory stand above the currencies because they belong to none: a run that
+died before its first sealed day has no ledger row and so no currency.
 
 **`index` on a session row is not rendered.** It rides on the row and is NOT in the declared key
 (`["run_id", "currency"]`), so presenting it as the session's number invents a counter the ledger

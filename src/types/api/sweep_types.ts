@@ -37,9 +37,10 @@ export interface SweepList {
  * account currency, folded from the run's booking-period ledger rows (`key`). Ranked by the
  * route, within each currency — the order is the answer, and nothing here re-sorts it.
  *
- * Three groups are null on a folded row BY DESIGN, each for its reason (their `sweeps` document):
- * a reading of one account (`final_equity`, `unrealized_pnl`, `open_position_count`), the order
- * counts (every `orders_*`, `sl_tp_triggered`), and the streaks. Render the absence as absence.
+ * Two groups are null on a folded row BY DESIGN, each for its reason (their `sweeps` document): a
+ * reading of one account (`final_equity`, `unrealized_pnl`, `open_position_count`), and the streaks.
+ * The order counts (every `orders_*`, `sl_tp_triggered`) fold since contract 42, each period counting
+ * the orders it handled; null on a row written before. Render the absence as absence.
  */
 export interface SweepCombination {
   run_id: string
@@ -88,7 +89,8 @@ export interface SweepCombination {
   gross_profit: number | null
   gross_loss: number | null
   total_fees: number
-  account_max_drawdown: number
+  // null where no drawdown was measured (contract 40)
+  account_max_drawdown: number | null
   account_max_drawdown_pct: number | null
   max_equity: number | null
   final_equity: number | null
@@ -148,6 +150,15 @@ export interface SweepCombination {
   unstamped_input_files: number | null
   // when a prune removed the run's records; empty while it did not — then the figures cannot be checked
   records_pruned_at: string
+  /**
+   * What the combination ran with (contract 40): the run-config store's ids of its rendered scenario
+   * set and of its broker configuration, comma-joined where it traded under several. Empty on a row
+   * written before. For comparing, not a handle: no route serves a rendered document yet.
+   */
+  rendered_config_id: string
+  broker_config_id: string
+  // the ticks its booking periods applied, summed; null on a row written before
+  period_tick_count: number | null
 
   // the ledger row's own period fields, carried on the folded row; their sweeps document names none
   period_no: number
@@ -175,5 +186,10 @@ export interface SweepDetail {
   objective: string
   maximize: boolean
   combinations: SweepCombination[]
+  /**
+   * Contract 40: the combinations the ranking LEFT OUT because they carry no value for its objective —
+   * a figure some runs did not measure. Without it a shorter list would read as the whole sweep.
+   */
+  unranked: number
   count: number
 }
