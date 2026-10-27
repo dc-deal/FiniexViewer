@@ -25,7 +25,7 @@ describe('layer_registry', () => {
   it('arranges a chart nobody touched in its own order, every layer shown at full strength, each option at its default', () => {
     expect(arrangeLayers('run-chart', undefined)).toEqual([
       { id: 'levels', shown: true, opacity: 100, option: false },
-      { id: 'entry-exit', shown: true, opacity: 100, option: null },
+      { id: 'entry-exit', shown: true, opacity: 100, option: false },
       { id: 'trades', shown: true, opacity: 100, option: true },
     ])
   })
@@ -37,7 +37,8 @@ describe('layer_registry', () => {
     })
     expect(arranged).toEqual([
       { id: 'trades', shown: true, opacity: 100, option: false },
-      { id: 'entry-exit', shown: false, opacity: 100, option: null },
+      // the line's option is its own: the levels' of the same word leaves it alone
+      { id: 'entry-exit', shown: false, opacity: 100, option: false },
       { id: 'levels', shown: true, opacity: 40, option: true },
     ])
   })

@@ -54,17 +54,23 @@ describe('LayersView', () => {
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ hidden: ['levels'] })
   })
 
-  /** The row opens what is set less often; a layer without an option offers its place only. */
+  /**
+   * The row opens what is set less often. The levels and the line each offer every position, and
+   * each keeps its own: switching one leaves the other as it was.
+   */
   it('opens a row for its option and its place, and switches the option there', async () => {
     const wrapper = mountOn('run-chart')
     expect(wrapper.find('.layer-options').exists()).toBe(false)
-    await row(wrapper, 'entry-exit').find('[data-action="open"]').trigger('click')
-    expect(row(wrapper, 'entry-exit').find('[data-action="option"]').exists()).toBe(false)
     await row(wrapper, 'levels').find('[data-action="open"]').trigger('click')
     expect(row(wrapper, 'levels').find('[data-action="open"]').attributes('aria-expanded')).toBe('true')
     await row(wrapper, 'levels').find('[data-action="option"]').trigger('click')
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ options: { 'every-position': true } })
     expect(row(wrapper, 'levels').find('.layer-summary').text()).toContain('every position')
+    expect(row(wrapper, 'entry-exit').find('.layer-summary').text()).not.toContain('every position')
+    await row(wrapper, 'entry-exit').find('[data-action="open"]').trigger('click')
+    await row(wrapper, 'entry-exit').find('[data-action="option"]').trigger('click')
+    expect(useArrangementStore().panelViews['run-chart']?.layers)
+      .toEqual({ options: { 'every-position': true, 'every-position-line': true } })
   })
 
   /** A lever that changes nothing on screen looked broken: the row says there is nothing to draw, and why. */

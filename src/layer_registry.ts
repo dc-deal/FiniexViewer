@@ -24,7 +24,15 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   'entry-exit': {
     title: t('Entry–exit line'),
     description: t('Where each trade of the position looked at entered, and where it left'),
-    emptyHint: t('Drawn for the position looked at — choose one in the trade history or the orders. A trade that entered and left in one candle draws no line.'),
+    emptyHint: t('Drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A trade that entered and left in one candle draws no line.'),
+    // its own id: kept by id, the levels' option of the same word would switch both
+    option: {
+      id: 'every-position-line',
+      label: t('every position'),
+      description: t('The lines of every position of the unit, not only of the one looked at'),
+      fallback: false,
+      changed: t('every position'),
+    },
   },
   trades: {
     title: t('Trades'),

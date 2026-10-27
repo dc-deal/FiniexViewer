@@ -66,9 +66,10 @@ they are tested without a canvas.
 
 ## The levels and the line of the position looked at — `run_chart_levels.ts`
 
-For that position alone, unless the Layers panel asks for every position's levels — drawn for every
-position they are a lot to read, and then only the position looked at puts its prices on the axis,
-or every position's would bury it in tags.
+For that position alone, unless the Layers panel asks for every position's levels or lines — each
+layer has its own switch, kept under its own id (`every-position`, `every-position-line`; operator,
+2026-10-27). Drawn for every position they are a lot to read, and then only the position looked at
+puts its prices on the axis, or every position's would bury it in tags.
 
 **The price scale holds the levels of the position looked at** (`autoscaleInfo`). A stop or a target
 usually stands beyond the candles on screen, and before this it was drawn off the scale where nobody
@@ -116,8 +117,8 @@ Run chart · ETHUSD_aug_sep
   and which chart draws which layers, back to front (`chartLayers`). The free chart draws none today.
 - **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
-  the row opens the rest — its option (the trades' signs; the levels of every position rather than
-  of the one looked at) and its place, one step at a time. The closed row says what differs — and,
+  the row opens the rest — its option (the trades' signs; the levels, or the lines, of every
+  position rather than of the one looked at) and its place, one step at a time. The closed row says what differs — and,
   for a shown layer with nothing to draw, *nothing to draw*: the levels and the line draw for the
   position looked at alone, so with none chosen their levers changed nothing on screen and looked
   broken (2026-10-19). Why stands below the list, each such layer named with its reason — a narrow

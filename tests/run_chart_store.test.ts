@@ -261,6 +261,24 @@ describe('useRunChartStore', () => {
     expect(layer('entry-exit').every(drawing => drawing.kind === 'line')).toBe(true)
   })
 
+  /** Switched to every position, the line is drawn for each trade of the unit, with none looked at. */
+  it('draws the line of every position of the unit where the Layers panel asks for it', async () => {
+    chooseFixtureRun()
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 })),
+      truncated: false,
+    })
+    useArrangementStore().setPanelView('run-chart', { layers: { options: { 'every-position-line': true } } })
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const lines = chart.layers.find(entry => entry.id === 'entry-exit')!.drawings
+    expect(lines.length).toBeGreaterThan(0)
+    expect(lines.every(drawing => drawing.kind === 'line')).toBe(true)
+    // the levels keep their own option: still none drawn while no position is looked at
+    expect(chart.layers.find(entry => entry.id === 'levels')!.drawings).toEqual([])
+  })
+
   /** The Layers panel's choices, kept with the run chart's own view, decide what is handed to the chart. */
   it('draws the layers as the reader arranged them in the Layers panel', async () => {
     chooseFixtureRun()

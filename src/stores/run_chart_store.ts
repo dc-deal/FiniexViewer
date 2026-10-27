@@ -209,7 +209,7 @@ export const useRunChartStore = defineStore('runChart', () => {
         : positionLevels(
           focusTrades.value, key, focusOpen.value ? [focusOpen.value] : [], looked, barTimes.value, cutAt.value,
         ),
-      'entry-exit': () => entryExitLines(focusTrades.value, key, barTimes.value, cutAt.value),
+      'entry-exit': every => entryExitLines(every ? unitTrades.value : focusTrades.value, key, barTimes.value, cutAt.value),
       // without their signs the marks keep their shapes, and a gathered mark's card still counts it
       trades: signs => signs === false ? marks.value.map(mark => ({ ...mark, text: '' })) : marks.value,
     }

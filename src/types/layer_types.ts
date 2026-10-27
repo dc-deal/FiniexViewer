@@ -4,7 +4,7 @@ import type { ChartLayerId } from '@/types/chart_drawing_types'
  * The one switch a drawing layer may offer beyond being shown — ours, so a closed set: a name read
  * back from storage is checked against it.
  */
-export const LAYER_OPTION_IDS = ['trade-signs', 'every-position'] as const
+export const LAYER_OPTION_IDS = ['trade-signs', 'every-position', 'every-position-line'] as const
 export type LayerOptionId = typeof LAYER_OPTION_IDS[number]
 
 /** The least opacity a layer is drawn at, in percent — below it a layer is hidden, which the eye does. */
