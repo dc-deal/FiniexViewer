@@ -71,7 +71,7 @@ misreports something:
   yet: testingide#615 serves them as `config_changes` on the session row (setting, before, after),
   read from the rendered profile. Beside the words, *Configuration before ↗ after ↗* opens the
   configuration of the session above the mark and of the one carrying it, as a panel of its own,
-  each COMPARED with the other (operator, 2026-10-27, 219.a): the values that differ between the
+  each COMPARED with the other (operator, 2026-10-27): the values that differ between the
   two files are listed, oldest side first, and a moved decision-logic value is marked where it
   stands. That comparison is what their `config` document instructs a consumer to do for a
   strategy mark; `config_changes` replaces it once served. An operation mark also moves with the
