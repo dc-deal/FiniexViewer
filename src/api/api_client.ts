@@ -9,7 +9,7 @@ import type { CallerIdentity } from '@/types/api/caller_types'
 import type { ActivityList, MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
-import type { StateFramesLatest } from '@/types/api/state_frame_types'
+import type { RecordedStreams, RecordedWindow, StateFramesLatest } from '@/types/api/state_frame_types'
 import type { ValidationCheckList } from '@/types/api/validation_check_types'
 import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
@@ -367,6 +367,45 @@ export async function getLatestStateFrames(runId: string): Promise<StateFramesLa
     const absence = absenceFrom(error)
     if (absence) return absence
     raiseIfUnreadable(error, 'The state frames could not be read')
+    throw error
+  }
+}
+
+/**
+ * A unit's timeline (contract 43): every stream it records over time, with its count and the time of
+ * its first and latest record — made to be asked every second or two while a session runs. Its 404s
+ * are absences: `streams_not_recorded` (a backtest, an older session, or one with it switched off),
+ * `unit_not_found`, `state_frame_not_written_yet`; its 409 a stream that cannot be read.
+ */
+export async function getRecordedStreams(runId: string, unit: string): Promise<RecordedStreams | SectionAbsence> {
+  try {
+    const response = await http.get<RecordedStreams>(
+      `/reports/runs/${runId}/units/${encodeURIComponent(unit)}/recorded-streams`)
+    return response.data
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error, 'The recorded streams could not be read')
+    throw error
+  }
+}
+
+/**
+ * A page of a unit's frames in [from, to), oldest first (contract 43). A bound left out runs to the
+ * stream's end; `limit` 1–2,000 is refused outside that range, never clamped. A page the route cut
+ * says so with `next_from`, where the next one starts. The same absences as the timeline.
+ */
+export async function getRecordedWindow(
+  runId: string, unit: string, ask: { from?: string, to?: string, limit?: number },
+): Promise<RecordedWindow | SectionAbsence> {
+  try {
+    const response = await http.get<RecordedWindow>(
+      `/reports/runs/${runId}/units/${encodeURIComponent(unit)}/recorded-streams/window`, { params: ask })
+    return response.data
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error, 'The recorded frames could not be read')
     throw error
   }
 }

@@ -32,6 +32,33 @@ test('an ended session folds its last frame behind its outcome', async ({ page }
   await expect(section.locator('details summary')).toContainText('the state its report sections describe')
 })
 
+/**
+ * Its frames over time, played: the player opens on the newest, steps back and to the first, and
+ * plays on to the end. A session whose frames over time are not recorded shows its latest alone.
+ */
+test('an ended session plays its frames over time', async ({ page }) => {
+  await openWith(page, '/', { run: STATE_FRAME_RUNS.ended })
+  const section = page.locator('[data-panel-kind="run"] [data-panel="latest-state"]')
+  await section.locator('details summary').click()
+  const where = section.locator('.player .where')
+  await expect(where).toContainText('frame 3 of 3')
+  await section.locator('[data-action="back"]').click()
+  await expect(where).toContainText('frame 2 of 3')
+  await section.locator('[data-action="first"]').click()
+  await expect(where).toContainText('frame 1 of 3')
+  await section.locator('[data-action="play"]').click()
+  await expect(where).toContainText('frame 3 of 3')
+  await expect(section.locator('[data-action="play"]')).toHaveText('▶')
+})
+
+test('a session whose frames over time are not recorded shows its latest alone', async ({ page }) => {
+  await openWith(page, '/', { run: STATE_FRAME_RUNS.stopped })
+  const stopped = page.locator('[data-panel-kind="run"] [data-panel="latest-state"]')
+  await expect(stopped.locator('.status')).toContainText('recording stopped')
+  await expect(stopped.locator('.player')).toHaveCount(0)
+  await expect(stopped).toContainText('Account')
+})
+
 test('a backtest has no such section', async ({ page }) => {
   await openWith(page, '/', { run: FIXTURE_RUN })
   const bundle = page.locator('[data-panel-kind="run"]')

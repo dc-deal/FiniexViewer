@@ -217,6 +217,41 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
     }
 
     /*
+     * A unit's frames OVER TIME, of the ended session: the three captured frames, and a timeline
+     * that counts those three — so the two answers agree on what exists, and a player opened on them
+     * can reach either end. Every other run records nothing over time, as a backtest answers.
+     */
+    const recorded = /^\/api\/v1\/reports\/runs\/([^/]+)\/units\/([^/]+)\/recorded-streams(\/window)?$/.exec(path)
+    if (recorded) {
+      if (recorded[1] !== STATE_FRAME_RUNS.ended) {
+        return route.fulfill(absent('streams_not_recorded', 'This run records no stream over time.'))
+      }
+      const page = fixture('recorded_window.json') as { state_frames: { frame_time: string }[] }
+      const frames = page.state_frames
+      if (!recorded[3]) {
+        const timeline = fixture('recorded_streams.json') as { streams: Record<string, unknown>[] }
+        const streams = timeline.streams.map(stream => ({
+          ...stream,
+          record_count: frames.length,
+          first_record_time: frames[0]!.frame_time,
+          last_record_time: frames.at(-1)!.frame_time,
+        }))
+        return route.fulfill({ json: { ...timeline, streams }, headers: CONTRACT })
+      }
+      const asked = new URL(route.request().url()).searchParams
+      const from = asked.get('from') ? Date.parse(asked.get('from')!) : -Infinity
+      const to = asked.get('to') ? Date.parse(asked.get('to')!) : Infinity
+      const inWindow = frames.filter(frame => Date.parse(frame.frame_time) >= from && Date.parse(frame.frame_time) < to)
+      return route.fulfill({
+        json: {
+          ...page, matched: inWindow.length, returned: inWindow.length, truncated: false, next_from: null,
+          state_frames: inWindow,
+        },
+        headers: CONTRACT,
+      })
+    }
+
+    /*
      * The STREAM, which is the one report route that is NARROWED — it is asked for one position,
      * not for the run. So the capture answers for that one position and an empty stream for any
      * other, which keeps the mock coherent rather than convenient: serving one position's steps

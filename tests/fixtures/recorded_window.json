@@ -1,0 +1,215 @@
+{
+  "run_id": "20261022_123550_0bfde90e",
+  "unit_name": "state_frames_test",
+  "served_at": "2026-10-27T19:56:58.054459Z",
+  "window": {
+    "from": "2026-01-25T02:19:57.550000Z",
+    "to": "2026-01-25T08:00:00.321000Z"
+  },
+  "matched": 344,
+  "returned": 3,
+  "limit": 3,
+  "truncated": true,
+  "next_from": "2026-01-25T02:22:03.974000Z",
+  "keys": {
+    "state_frames": [
+      "record_no"
+    ]
+  },
+  "state_frames": [
+    {
+      "record_kind": "frame",
+      "frame_time": "2026-01-25T02:19:57.550000Z",
+      "written_at": "2026-10-22T12:35:56.318847Z",
+      "written_for": "cadence",
+      "cadence_slot": "2026-01-25T02:19:00Z",
+      "ticks_processed": 1,
+      "symbol": "BTCUSD",
+      "account_currency": "USD",
+      "last_price": 89073.0,
+      "balance": 10000.0,
+      "balances": {
+        "USD": 10000.0,
+        "BTC": 0.0
+      },
+      "equity": 10000.0,
+      "unrealized_pnl": 0.0,
+      "open_positions": [],
+      "active_orders": [],
+      "safety_blocked": false,
+      "safety_drawdown_pct": 0.0,
+      "market_stale": false,
+      "feed_stale": null,
+      "reconcile_clean": null,
+      "worker_outputs": {
+        "rsi_fast": {
+          "rsi_value": 47.56763855699615,
+          "avg_gain": 12.001873966598563,
+          "avg_loss": 13.229300694758159,
+          "bars_used": 71
+        },
+        "bollinger_main": {
+          "upper": 89347.05264484973,
+          "middle": 89185.70000000001,
+          "lower": 89024.3473551503,
+          "position": 0.15076494375105584,
+          "std_dev": 80.67632242485978,
+          "bars_used": 20,
+          "position_raw": 0.15076494375105584,
+          "width_pct": 0.003618352378233598,
+          "slope": -0.006290569336156848
+        },
+        "obv_volume": {
+          "obv_value": -17.032439099999998,
+          "trend": "bearish",
+          "has_volume": true,
+          "total_volume": 62.23385797999999,
+          "bars_used": 21,
+          "market_type": "crypto"
+        }
+      },
+      "decision_action": "FLAT",
+      "decision_outputs": {
+        "confidence": 0.5,
+        "reason": "No consensus signal",
+        "price": 89073.0,
+        "timestamp": "2026-01-25T02:19:57.550000+00:00"
+      },
+      "closed_bars": {},
+      "order_id": null,
+      "process_memory": {
+        "rss_bytes": 615653376,
+        "private_bytes": 546705408
+      },
+      "record_no": 1
+    },
+    {
+      "record_kind": "frame",
+      "frame_time": "2026-01-25T02:20:03.436000Z",
+      "written_at": "2026-10-22T12:35:56.324512Z",
+      "written_for": "bar_close",
+      "cadence_slot": "2026-01-25T02:20:00Z",
+      "ticks_processed": 2,
+      "symbol": "BTCUSD",
+      "account_currency": "USD",
+      "last_price": 89073.0,
+      "balance": 10000.0,
+      "balances": {
+        "USD": 10000.0,
+        "BTC": 0.0
+      },
+      "equity": 10000.0,
+      "unrealized_pnl": 0.0,
+      "open_positions": [],
+      "active_orders": [],
+      "safety_blocked": false,
+      "safety_drawdown_pct": 0.0,
+      "market_stale": false,
+      "feed_stale": null,
+      "reconcile_clean": null,
+      "worker_outputs": {
+        "rsi_fast": {
+          "rsi_value": 47.593677937076414,
+          "avg_gain": 11.149591768988412,
+          "avg_loss": 12.277031791664506,
+          "bars_used": 71
+        },
+        "bollinger_main": {
+          "upper": 89347.05264484973,
+          "middle": 89185.70000000001,
+          "lower": 89024.3473551503,
+          "position": 0.15076494375105584,
+          "std_dev": 80.67632242485978,
+          "bars_used": 20,
+          "position_raw": 0.15076494375105584,
+          "width_pct": 0.003618352378233598,
+          "slope": -0.006290569336156848
+        },
+        "obv_volume": {
+          "obv_value": -17.36877556,
+          "trend": "bullish",
+          "has_volume": true,
+          "total_volume": 61.61926231999999,
+          "bars_used": 21,
+          "market_type": "crypto"
+        }
+      },
+      "decision_action": "FLAT",
+      "decision_outputs": {
+        "confidence": 0.5,
+        "reason": "No consensus signal",
+        "price": 89073.0,
+        "timestamp": "2026-01-25T02:20:03.436000+00:00"
+      },
+      "closed_bars": {
+        "M5": "2026-01-25T02:15:00Z"
+      },
+      "order_id": null,
+      "process_memory": null,
+      "record_no": 2
+    },
+    {
+      "record_kind": "frame",
+      "frame_time": "2026-01-25T02:21:02.991000Z",
+      "written_at": "2026-10-22T12:35:56.327579Z",
+      "written_for": "cadence",
+      "cadence_slot": "2026-01-25T02:21:00Z",
+      "ticks_processed": 12,
+      "symbol": "BTCUSD",
+      "account_currency": "USD",
+      "last_price": 89073.0,
+      "balance": 10000.0,
+      "balances": {
+        "USD": 10000.0,
+        "BTC": 0.0
+      },
+      "equity": 10000.0,
+      "unrealized_pnl": 0.0,
+      "open_positions": [],
+      "active_orders": [],
+      "safety_blocked": false,
+      "safety_drawdown_pct": 0.0,
+      "market_stale": false,
+      "feed_stale": null,
+      "reconcile_clean": null,
+      "worker_outputs": {
+        "rsi_fast": {
+          "rsi_value": 47.593677937076414,
+          "avg_gain": 11.149591768988412,
+          "avg_loss": 12.277031791664506,
+          "bars_used": 71
+        },
+        "bollinger_main": {
+          "upper": 89347.05264484973,
+          "middle": 89185.70000000001,
+          "lower": 89024.3473551503,
+          "position": 0.15076494375105584,
+          "std_dev": 80.67632242485978,
+          "bars_used": 20,
+          "position_raw": 0.15076494375105584,
+          "width_pct": 0.003618352378233598,
+          "slope": -0.006290569336156848
+        },
+        "obv_volume": {
+          "obv_value": -17.36877556,
+          "trend": "bullish",
+          "has_volume": true,
+          "total_volume": 61.62351759999999,
+          "bars_used": 21,
+          "market_type": "crypto"
+        }
+      },
+      "decision_action": "FLAT",
+      "decision_outputs": {
+        "confidence": 0.5,
+        "reason": "No consensus signal",
+        "price": 89073.0,
+        "timestamp": "2026-01-25T02:21:02.991000+00:00"
+      },
+      "closed_bars": {},
+      "order_id": null,
+      "process_memory": null,
+      "record_no": 3
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import { provideChartLink } from '@/composables/use_chart_link'
 import { provideCheckTitles } from '@/composables/use_check_titles'
 import { provideConfigComparison } from '@/composables/use_config_comparison'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
+import { provideFramePlayer } from '@/composables/use_frame_player'
 import { provideOrderSteps } from '@/composables/use_order_steps'
 import { usePanelJump } from '@/composables/use_panel_jump'
 import { providePositionLink } from '@/composables/use_position_link'
@@ -11,6 +12,7 @@ import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import { panelById } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
+import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
@@ -54,6 +56,40 @@ export function provideRunReportChannels(): void {
       ? { runId: compare.other, side: compare.side, body: compare.otherConfig, loading: compare.loading, missing: compare.missing }
       : null,
     stop: () => compare.stop(),
+  })
+
+  // A session's frames over time, a unit at a time — for the run on show, and forgotten, playing
+  // stopped, the moment another run is chosen
+  const frames = useFramePlayerStore()
+  watch(() => runsStore.selectedRunId, () => frames.reset())
+  provideFramePlayer({
+    view: (unit: string) => {
+      const player = frames.playerOf(unit)
+      if (!player || player.runId !== runsStore.selectedRunId) return null
+      return {
+        stream: player.stream,
+        absence: player.absence,
+        error: player.error,
+        loading: player.loading,
+        frame: frames.frameOf(player),
+        following: player.cursor === null,
+        playing: player.playing,
+        speed: player.speed,
+      }
+    },
+    open: (unit: string) => {
+      const runId = runsStore.selectedRunId
+      if (runId) void frames.open(runId, unit)
+    },
+    seek: (unit: string, at: number) => { void frames.seek(unit, at) },
+    step: (unit: string, by: 1 | -1) => { void frames.step(unit, by) },
+    first: (unit: string) => { void frames.first(unit) },
+    latest: (unit: string) => { void frames.latest(unit) },
+    toggle: (unit: string) => {
+      if (frames.playerOf(unit)?.playing) frames.stop(unit)
+      else frames.play(unit)
+    },
+    setSpeed: (unit: string, speed: number) => frames.setSpeed(unit, speed),
   })
 
   // The narrowing is ambient for the same reason the display preferences are — see the composable.

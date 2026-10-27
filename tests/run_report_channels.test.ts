@@ -4,9 +4,11 @@ import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { provideRunReportChannels } from '@/composables/use_run_report_channels'
 import { useConfigComparison } from '@/composables/use_config_comparison'
+import { useFramePlayer } from '@/composables/use_frame_player'
 import { useOrderSteps } from '@/composables/use_order_steps'
 import { useConfigCompareStore } from '@/stores/config_compare_store'
 import { useContextStore } from '@/stores/context_store'
+import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
 
@@ -55,6 +57,36 @@ describe('provideRunReportChannels', () => {
 
     choose([])
     expect(stepsAvailable()).toBe(false)
+  })
+
+  /** A unit's frames belong to the run they were read for: choosing another run forgets them. */
+  it('offers the player of a unit for the run on show, and forgets it when another is chosen', async () => {
+    useRunsStore().runs = [{ run_id: RUN, stream_files: [] } as unknown as RunInfo, { run_id: 'next', stream_files: [] } as unknown as RunInfo]
+    useContextStore().selectRun(RUN)
+    const players = useFramePlayerStore()
+    players.players.set('unit', {
+      runId: RUN, unit: 'unit', stream: null, recording: 'ended', absence: null, error: null, loading: false,
+      frames: [], cursor: null, playing: false, speed: 5,
+    })
+    let view: (unit: string) => unknown = () => null
+    const Reader = defineComponent({
+      setup() {
+        view = useFramePlayer().view
+        return () => null
+      },
+    })
+    mount(defineComponent({
+      setup() {
+        provideRunReportChannels()
+        return () => h(Reader)
+      },
+    }))
+    expect(view('unit')).toMatchObject({ following: true, playing: false })
+
+    useContextStore().selectRun('next')
+    await nextTick()
+    expect(view('unit')).toBeNull()
+    expect(players.playerOf('unit')).toBeNull()
   })
 
   /** A comparison belongs to the run it was asked for: choosing another run lets go of it. */

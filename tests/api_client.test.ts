@@ -51,6 +51,8 @@ import {
   getSweep,
   getSweeps,
   onContractStamp,
+  getRecordedStreams,
+  getRecordedWindow,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
@@ -177,6 +179,28 @@ describe('api_client', () => {
       const result = await getRuns()
       expect(result).toEqual(runs)
       expect(mockGet).toHaveBeenCalledWith('/reports/runs')
+    })
+  })
+
+  /** A unit's frames over time: the timeline and a window of it, the unit named in the path. */
+  describe('getRecordedStreams and getRecordedWindow', () => {
+    it('asks the timeline of the unit, and a window with only the bounds given', async () => {
+      mockGet.mockResolvedValue({ data: { streams: [] } })
+      await getRecordedStreams('run_a', 'unit 1')
+      expect(mockGet).toHaveBeenLastCalledWith('/reports/runs/run_a/units/unit%201/recorded-streams')
+      await getRecordedWindow('run_a', 'unit 1', { from: '2026-01-25T02:20:00Z', limit: 1 })
+      expect(mockGet).toHaveBeenLastCalledWith('/reports/runs/run_a/units/unit%201/recorded-streams/window',
+        { params: { from: '2026-01-25T02:20:00Z', limit: 1 } })
+    })
+
+    /** A backtest records nothing over time: its 404 is an absence in the backend's words, not a failure. */
+    it('carries the cause of a stream that is not recorded', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'streams_not_recorded',
+        detail: 'This run records no stream over time' } } })
+      expect(await getRecordedStreams('run_a', 'unit')).toEqual({
+        absent: true, cause: 'streams_not_recorded', detail: 'This run records no stream over time',
+      })
+      expect(await getRecordedWindow('run_a', 'unit', {})).toMatchObject({ absent: true, cause: 'streams_not_recorded' })
     })
   })
 

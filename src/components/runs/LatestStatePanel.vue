@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import FigureBlock from '@/components/base/FigureBlock.vue'
-import {
-  amount, bytes, duration, percentFigure, polarity, quantity, readingOf, utcInstant,
-} from '@/components/runs/report_format'
+import StateFramePlayer from '@/components/runs/StateFramePlayer.vue'
+import { bytes, duration, utcInstant } from '@/components/runs/report_format'
 import { t } from '@/translate'
 import type { Figure } from '@/types/figure_types'
-import type {
-  ProcessMemory, StateFrame, StateFrameUnit, StateFramesLatest,
-} from '@/types/api/state_frame_types'
+import type { ProcessMemory, StateFrameUnit, StateFramesLatest } from '@/types/api/state_frame_types'
 
 /**
  * How a session stands while it runs — the check-in on its latest state frame, since every report
@@ -22,6 +19,9 @@ import type {
  *
  * Once the session ended and its outcome is written, the frame is the state its report sections
  * describe, so it folds away behind its status and the memory, which no report states.
+ *
+ * **The frames over time** play below the status (`StateFramePlayer`, contract 43): a session
+ * records one a cadence, and every one of them can be stood on — the latest is where it opens.
  */
 defineProps<{
   model: StateFramesLatest
@@ -91,69 +91,6 @@ function closed(unit: StateFrameUnit): boolean {
   return unit.recording === 'ended' && unit.outcome !== null
 }
 
-/**
- * What is off, and what could have been checked and was not. A check that passed is not here.
- * `feed_stale` null is not among them: it is null where the session reads no signal at all.
- */
-function healthOf(frame: StateFrame): { words: string, warning: boolean }[] {
-  const lines: { words: string, warning: boolean }[] = []
-  if (frame.safety_blocked) lines.push({ words: t('The circuit breaker blocks new orders'), warning: true })
-  if (frame.safety_blocked === null) lines.push({ words: t('The circuit breaker was not checked'), warning: false })
-  if (frame.market_stale) lines.push({ words: t('The market data is stale'), warning: true })
-  if (frame.market_stale === null) lines.push({ words: t('The market data was not checked'), warning: false })
-  if (frame.feed_stale) lines.push({ words: t('A signal the session reads is stale'), warning: true })
-  if (frame.reconcile_clean === false) {
-    lines.push({ words: t('The latest reconciliation with the venue was not clean'), warning: true })
-  }
-  if (frame.reconcile_clean === null) {
-    lines.push({ words: t('No reconciliation with the venue checked yet'), warning: false })
-  }
-  return lines
-}
-
-function accountOf(frame: StateFrame): Figure[] {
-  const currency = frame.account_currency
-  const figures: Figure[] = [{
-    label: t('Equity'),
-    value: frame.equity === null ? t('not valued yet') : amount(frame.equity, currency),
-  }]
-  for (const [held, value] of Object.entries(frame.balances)) {
-    figures.push({
-      label: `${t('Balance')} ${held}`,
-      value: held === currency ? amount(value, held) : `${quantity(value)} ${held}`,
-    })
-  }
-  const unrealized = polarity(frame.unrealized_pnl)
-  figures.push({
-    label: t('Unrealized P&L'),
-    value: amount(frame.unrealized_pnl, currency),
-    tone: unrealized === 'flat' ? undefined : unrealized,
-  })
-  figures.push({
-    label: t('Last price'),
-    value: frame.last_price === null ? t('no price yet') : `${quantity(frame.last_price)} ${frame.symbol}`,
-    title: t('The mid the account is valued at'),
-  })
-  if (frame.safety_drawdown_pct !== null) {
-    figures.push({ label: t('Breaker drawdown'), value: percentFigure(frame.safety_drawdown_pct) })
-  }
-  figures.push({ label: t('Ticks processed'), value: frame.ticks_processed.toLocaleString('en-US') })
-  return figures
-}
-
-function decisionOf(frame: StateFrame): Figure[] {
-  const figures: Figure[] = [{ label: t('Action'), value: frame.decision_action ?? t('none') }]
-  for (const [key, value] of Object.entries(frame.decision_outputs)) {
-    figures.push({ label: key, value: readingOf(value) })
-  }
-  if (frame.order_id) figures.push({ label: t('Order id'), value: frame.order_id })
-  return figures
-}
-
-function outputsOf(outputs: Record<string, unknown>): Figure[] {
-  return Object.entries(outputs).map(([key, value]) => ({ label: key, value: readingOf(value) }))
-}
-
 function memoryLine(memory: ProcessMemory | null): string {
   if (!memory) return t('not recorded on this frame')
   return `${t('private')} ${bytes(memory.private_bytes)} · ${t('resident')} ${bytes(memory.rss_bytes)}`
@@ -205,55 +142,9 @@ function memoryOf(unit: StateFrameUnit): Figure[] {
       <!-- folded only once the session closed: a disclosure with nothing to fold would draw the
            browser's own "Details" heading over a frame that is the whole point of the section -->
       <component :is="closed(unit) ? 'details' : 'div'" class="frame">
-        <summary v-if="closed(unit)">{{ t('The last frame — the state its report sections describe') }}</summary>
+        <summary v-if="closed(unit)">{{ t('Its frames over time — the last is the state its report sections describe') }}</summary>
 
-        <p
-          v-for="line in healthOf(unit.frame)"
-          :key="line.words"
-          class="health"
-          :class="{ warning: line.warning }"
-        >
-          <span v-if="line.warning" class="glyph">⚠ </span>{{ line.words }}
-        </p>
-
-        <div class="blocks">
-          <FigureBlock :title="t('Account')" :figures="accountOf(unit.frame)" min-width="13rem" />
-          <FigureBlock :title="t('Decision')" :figures="decisionOf(unit.frame)" min-width="13rem" />
-          <FigureBlock
-            v-for="(outputs, worker) in unit.frame.worker_outputs"
-            :key="worker"
-            :title="`${t('Worker')} ${worker}`"
-            :figures="outputsOf(outputs)"
-            min-width="13rem"
-          />
-        </div>
-
-        <div class="holdings">
-          <p class="holding-line">
-            <span class="holding-label">{{ t('Open positions') }}</span> {{ unit.frame.open_positions.length ? '' : t('none') }}
-          </p>
-          <p
-            v-for="position in unit.frame.open_positions"
-            :key="position.position_id"
-            class="holding"
-            :title="`${position.position_id} · ${t('opened')} ${utcInstant(position.entry_time)}`"
-          >
-            {{ position.direction }} {{ quantity(position.lots) }} {{ unit.frame.symbol }}
-            @ {{ quantity(position.entry_price) }}
-            · {{ amount(position.unrealized_pnl, unit.frame.account_currency) }}
-            <template v-if="position.stop_loss !== null">· SL {{ quantity(position.stop_loss) }}</template>
-            <template v-if="position.take_profit !== null">· TP {{ quantity(position.take_profit) }}</template>
-          </p>
-          <p class="holding-line">
-            <span class="holding-label">{{ t('Resting orders') }}</span> {{ unit.frame.active_orders.length ? '' : t('none') }}
-          </p>
-          <p v-for="order in unit.frame.active_orders" :key="order.order_id" class="holding" :title="order.order_id">
-            {{ order.order_type }} {{ order.direction }} {{ quantity(order.lots) }} {{ unit.frame.symbol }}
-            @ {{ quantity(order.entry_price) }}
-            <!-- `entry_price` is the limit on a limit, the trigger on a stop; a stop-limit's fill limit beside it -->
-            <template v-if="order.limit_price">· {{ t('limit') }} {{ quantity(order.limit_price) }}</template>
-          </p>
-        </div>
+        <StateFramePlayer :unit="unit.unit_name" :latest="unit.frame" />
       </component>
     </section>
   </div>
@@ -277,10 +168,7 @@ function memoryOf(unit: StateFrameUnit): Figure[] {
 }
 
 .status,
-.as-of,
-.health,
-.holding-line,
-.holding {
+.as-of {
   margin: 0;
 }
 
@@ -294,10 +182,6 @@ function memoryOf(unit: StateFrameUnit): Figure[] {
   color: var(--color-text-secondary);
 }
 
-.holding-label {
-  color: var(--color-text-secondary);
-}
-
 .frame {
   display: flex;
   flex-direction: column;
@@ -308,36 +192,5 @@ function memoryOf(unit: StateFrameUnit): Figure[] {
 .frame > summary {
   cursor: pointer;
   color: var(--color-accent);
-}
-
-.health {
-  color: var(--color-text-secondary);
-}
-
-.health.warning {
-  color: var(--color-warning);
-}
-
-.blocks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-md);
-}
-
-.blocks > * {
-  flex: 1 1 18rem;
-  min-width: 0;
-}
-
-.holdings {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  margin-top: var(--space-sm);
-}
-
-.holding {
-  padding-left: 2ch;
-  font-variant-numeric: tabular-nums;
 }
 </style>

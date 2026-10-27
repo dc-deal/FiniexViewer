@@ -378,6 +378,29 @@ for (broker, symbol), rows in sorted(markets.items()):
     bodies[name] = [rows[t] for t in sorted(rows)]
     TARGETS.append((name, f'bars of the fixture run over its units, {BAR_TIMEFRAME}'))
 
+# A unit's recorded streams over time (contract 43), of the ended session: its timeline, and the
+# first page of a window three frames long - a page the route had to cut, so it carries `next_from`.
+# Three frames, not the whole stream: a frame is about 1.4 KB and the window serves up to 2,000.
+recorded_unit = ((bodies.get('state_frames_ended.json') or {}).get('units') or [{}])[0].get('unit_name')
+if recorded_unit:
+    base = f'reports/runs/{STATE_ENDED_RUN}/units/{urllib.parse.quote(recorded_unit)}/recorded-streams'
+    for name, path in (('recorded_streams.json', base), ('recorded_window.json', f'{base}/window?limit=3')):
+        try:
+            body, contract = fetch(path)
+        except Exception as error:                               # noqa: BLE001 - report, never mask
+            failures.append((name, path, error))
+            continue
+        bodies[name] = body
+        served.add(contract)
+        TARGETS.append((name, path))
+
+timeline = (bodies.get('recorded_streams.json') or {}).get('streams') or []
+page = bodies.get('recorded_window.json') or {}
+if 'recorded_window.json' in bodies and not (
+        timeline and timeline[0].get('record_count', 0) > 3 and page.get('truncated') and page.get('next_from')):
+    sys.exit(f'NOTHING WRITTEN - pinned {STATE_ENDED_RUN} no longer QUALIFIES for the recorded streams: '
+             f'more than three frames, and a page of three cut with its next_from.')
+
 dirty = ((bodies.get('run_header_dirty.json') or {}).get('code_identity') or {}).get('framework') or {}
 if 'run_header_dirty.json' in bodies and not (
         dirty.get('dirty') and (dirty.get('uncommitted_count') or 0) > len(dirty.get('changes') or [])):

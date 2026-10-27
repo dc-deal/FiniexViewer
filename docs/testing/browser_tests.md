@@ -65,8 +65,10 @@ by its tab, the way a reader does.
   the first marked ★, and a combination chosen as a run, its report coming forward in the run bundle.
 - `latest_state.spec.ts` holds the check-in on a session, from the two captured answers: a session
   whose recording stopped standing first in its bundle with its frame open and its report said as
-  never written, an ended one folding its last frame behind its outcome, and a backtest drawing no
-  such section.
+  never written, an ended one folding its last frame behind its outcome, its frames over time
+  played — opened on the newest, stepped back to the first and played on to the end — a session whose
+  frames over time are not recorded showing its latest alone, and a backtest drawing no such
+  section.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel.

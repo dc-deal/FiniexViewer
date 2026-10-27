@@ -101,3 +101,62 @@ export interface StateFramesLatest {
   served_at: string
   units: StateFrameUnit[]
 }
+
+/** A frame read from a unit's stream over time (contract 43): every state-frame field, and its place. */
+export interface RecordedStateFrame extends StateFrame {
+  /**
+   * Its position in the unit's stream, counted from 1 — the key of a frame, since two can share an
+   * instant. Unchanged when a trading day is sealed; the newest frame's equals the timeline's count.
+   */
+  record_no: number
+}
+
+/** One stream a unit records over time — today only its state frames. */
+export interface RecordedStream {
+  /** `state_frames` today; drawings and algo events join as rows of their own (testingide#379). */
+  stream_kind: string
+  stream_name: string
+  /** The field a record's time is read from — `frame_time`, the session's own clock. */
+  record_time_field: string
+  record_count: number
+  /** Null while the stream holds no frame. */
+  first_record_time: string | null
+  last_record_time: string | null
+  cadence_timeframe: string
+  cadence_s: number
+  truncated_tail: boolean
+}
+
+/** `GET …/units/{unit_name}/recorded-streams` — a unit's timeline, made to be asked every second or two. */
+export interface RecordedStreams {
+  run_id: string
+  unit_name: string
+  served_at: string
+  /** The same verdict as on `state-frames/latest`, from the same function. */
+  recording: string | null
+  /** `["stream_kind", "stream_name"]` */
+  key: string[]
+  streams: RecordedStream[]
+}
+
+/**
+ * `GET …/recorded-streams/window` — a unit's frames whose `frame_time` lies in [from, to), oldest
+ * first, at most `limit` of them. A page never ends inside a millisecond, so `returned` can exceed
+ * `limit` where a replay's clock stood still.
+ */
+export interface RecordedWindow {
+  run_id: string
+  unit_name: string
+  served_at: string
+  /** The bounds as asked; a bound left out is filled from the frames held, null where none is. */
+  window: { from: string | null, to: string | null }
+  matched: number
+  returned: number
+  limit: number
+  truncated: boolean
+  /** Set only where the page left frames out: the next page starts here, with the same `to`. */
+  next_from: string | null
+  /** `{ state_frames: ["record_no"] }` */
+  keys: Record<string, string[]>
+  state_frames: RecordedStateFrame[]
+}

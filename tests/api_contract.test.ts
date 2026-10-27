@@ -27,9 +27,11 @@ import sweepDetail from './fixtures/sweep_detail.json'
 import stateFramesEnded from './fixtures/state_frames_ended.json'
 import stateFramesStopped from './fixtures/state_frames_stopped.json'
 import validationChecks from './fixtures/validation_checks.json'
+import recordedStreams from './fixtures/recorded_streams.json'
+import recordedWindow from './fixtures/recorded_window.json'
 import { EXPECTED_CONTRACT } from '@/api/expected_contract'
 import type { ValidationCheckList } from '@/types/api/validation_check_types'
-import type { StateFramesLatest } from '@/types/api/state_frame_types'
+import type { RecordedStreams, RecordedWindow, StateFramesLatest } from '@/types/api/state_frame_types'
 
 import type {
   AggregatedPortfolioReport,
@@ -96,6 +98,10 @@ const EXPECTED_KEYS = {
   // one row per unit of the run; a session is one
   stateFrameUnits: ['unit_name'],
   validationChecks: ['check'],
+  // a unit's timeline: one row per stream it records over time
+  recordedStreams: ['stream_kind', 'stream_name'],
+  // a frame's place in its stream — two frames can share an instant
+  recordedFrames: ['record_no'],
 }
 
 describe('api contract', () => {
@@ -144,6 +150,25 @@ describe('api contract', () => {
     }
     expect(rows.some(row => row.recording === 'ended')).toBe(true)
     expect(rows.some(row => row.recording === 'stopped')).toBe(true)
+  })
+
+  /**
+   * A unit's frames over time (contract 43), of the ended session: the timeline counts what the
+   * window serves, the page keyed and numbered from 1 in the stream, cut where the route says it is,
+   * and its frames the same shape as the latest one — the type-checker holds that.
+   */
+  it('the recorded streams key their rows, and a cut page says where the next one starts', () => {
+    const timeline: RecordedStreams = recordedStreams
+    const page: RecordedWindow = recordedWindow
+    expect(timeline.key).toEqual(EXPECTED_KEYS.recordedStreams)
+    expect(page.keys['state_frames']).toEqual(EXPECTED_KEYS.recordedFrames)
+    expect(timeline.recording).toBe('ended')
+    const stream = timeline.streams.find(row => row.stream_kind === 'state_frames')!
+    expect(page.matched).toBe(stream.record_count)
+    expect(page.state_frames.map(frame => frame.record_no)).toEqual([1, 2, 3])
+    expect(page.state_frames[0]!.frame_time).toBe(stream.first_record_time)
+    expect(page.truncated).toBe(true)
+    expect(Date.parse(page.next_from!)).toBeGreaterThan(Date.parse(page.state_frames.at(-1)!.frame_time))
   })
 
   // Each assignment is a STRUCTURAL check performed by the type-checker, not by the assertion

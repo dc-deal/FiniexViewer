@@ -50,6 +50,8 @@ GET /api/v1/reports/runs/{run_id}/aggregated-portfolio  the fold, per account cu
 GET /api/v1/reports/runs/{run_id}/pending-orders      what became of a scenario's orders
 GET /api/v1/reports/runs/{run_id}/order-history       the orders themselves, as records — and where each position opened
 GET /api/v1/reports/runs/{run_id}/order-events        the STEPS between those records
+GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams         a unit's timeline (contract 43)
+GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams/window  its frames of [from, to), a page at a time
 GET /api/v1/reports/runs/{run_id}/...                 the further per-section reports, not yet consumed
 ```
 
