@@ -57,7 +57,9 @@ read once at the app root (`validation_checks_store`) and reaches the warnings s
 channel (`use_check_titles`), so the section reads no store: a warning shows its check's title
 first, the sentence the run wrote beneath it, and the description, the id and the domain on hover. A
 `minor` row names no check, nor does an artifact written before a warning carried its origin; its
-sentence then stands alone.
+sentence then stands alone. The same channel names the checks that refused a unit: the Executive
+Summary's *Produced nothing* gives each absent unit's check titles on hover (`units_absent[].checks`),
+and its cause where no check refused it.
 
 **Ledger plane** — a bot's life across its restarts, on its own grant surface `deployments`:
 

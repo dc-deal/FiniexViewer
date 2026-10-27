@@ -2,12 +2,13 @@
 import { computed } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
 import ScopeMark from '@/components/base/ScopeMark.vue'
-import type { RunSummary, RunSummaryCurrency } from '@/types/api/report_types'
+import type { RunSummary, RunSummaryCurrency, UnitAbsence } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
 import {
   amount, drawdownFigure, magnitude, marketSpan, numberOrNa, orDash, percentOrNa, rValue,
   signClass,
 } from '@/components/runs/report_format'
+import { useCheckTitles } from '@/composables/use_check_titles'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import { t } from '@/translate'
 
@@ -282,11 +283,26 @@ const scope = computed<Figure[]>(() => {
       label: t('Produced nothing'),
       value: `${summary.units_absent.length}`,
       tone: 'warning',
-      title: summary.units_absent.map(unit => `${unit.name}: ${unit.reason_code}`).join('\n'),
+      title: summary.units_absent.map(absence).join('\n'),
     })
   }
   return figures
 })
+
+const describeCheck = useCheckTitles()
+
+/**
+ * Why one unit produced nothing: the titles of the checks that refused it, from the backend's
+ * catalogue, or the cause where no check did (a crash, or nothing produced). An id the catalogue
+ * does not know stands alone — a defensive branch only, since their test holds the catalogue and
+ * the checks in both directions.
+ */
+function absence(unit: UnitAbsence): string {
+  const why = unit.checks.length
+    ? unit.checks.map(check => describeCheck(check)?.title ?? check).join(' · ')
+    : unit.reason_code
+  return `${unit.name}: ${why}`
+}
 </script>
 
 <template>

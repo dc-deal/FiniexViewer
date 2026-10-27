@@ -148,6 +148,33 @@ describe('ExecutivePanel', () => {
     expect(wrapper.text()).not.toContain('Produced nothing')
   })
 
+  /**
+   * A unit refused before it ran names the checks that refused it; the hover gives their titles
+   * from the catalogue, so a reader never meets a bare id. An id the catalogue does not know stands
+   * alone, and a unit no check refused keeps its cause.
+   */
+  it('says which checks refused a unit that produced nothing, in the titles of the catalogue', () => {
+    const Host = defineComponent({
+      setup() {
+        provideCheckTitles(check => check === 'data_availability'
+          ? { check, title: 'Data does not cover the window', description: 'The window starts before the first tick.' }
+          : null)
+        return () => h(ExecutivePanel, {
+          model: summaryWith(MEASURED, {
+            units_absent: [
+              { name: 'EURGBP_early', reason: 'failed validation', reason_code: 'ValidationError', checks: ['data_availability', 'unknown_check'] },
+              { name: 'EURGBP_crashed', reason: 'it crashed', reason_code: 'ZeroDivisionError', checks: [] },
+            ],
+          }),
+        })
+      },
+    })
+    const absent = mount(Host).findAll('.figure').find(pair => pair.find('dt').text() === 'Produced nothing')
+    expect(absent!.find('dd').text()).toBe('2')
+    expect(absent!.attributes('title')).toBe(
+      'EURGBP_early: Data does not cover the window · unknown_check\nEURGBP_crashed: ZeroDivisionError')
+  })
+
   it('renders measured values with their units', () => {
     const f = figures(MEASURED)
     expect(f['Net P&L']).toBe('-50.60 USD')
