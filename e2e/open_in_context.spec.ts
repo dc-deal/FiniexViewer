@@ -22,7 +22,7 @@ test.beforeEach(async ({ page }) => {
 
 test('a session opens the run it is', async ({ page }) => {
   await openWith(page, '/', { deployment: FIXTURE_DEPLOYMENT })
-  await showPanel(page, 'Deployments')
+  await showPanel(page, 'Deployment bundle')
   await page.locator('.sessions-list .jump-link', { hasText: FIRST_SESSION }).click()
 
   // the run report comes forward, the bundle a pick in the run list opens
@@ -36,6 +36,7 @@ test('a run opens the deployment it was a session of', async ({ page }) => {
   if ((await header.getAttribute('aria-expanded')) !== 'true') await header.click()
   await page.locator('.jump-link', { hasText: FIXTURE_DEPLOYMENT }).click()
 
-  await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Deployments')
-  await expect(page.locator('[data-panel-kind="deployments"] .picker-chosen')).toContainText(FIXTURE_DEPLOYMENT)
+  // its history is the deployment's bundle — the list beside it only marks the pick (viewer#43)
+  await expect(page.locator('.dv-tab.dv-active-tab')).toContainText('Deployment bundle')
+  await expect(page.locator('[data-panel-kind="deployment"] .chosen-id')).toContainText(FIXTURE_DEPLOYMENT)
 })

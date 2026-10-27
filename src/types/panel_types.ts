@@ -147,9 +147,10 @@ export interface LayoutState {
 
 /**
  * The panels whose column holds members, each of which opens as a panel of its own (viewer#31,
- * viewer#43): the run report. Ours, so a closed set — a bundle's id is its panel kind's id.
+ * viewer#43): the run report, and a deployment's sessions and booking periods. Ours, so a closed
+ * set — a bundle's id is its panel kind's id.
  */
-export const BUNDLE_IDS = ['run'] as const
+export const BUNDLE_IDS = ['run', 'deployment'] as const
 export type BundleId = typeof BUNDLE_IDS[number]
 
 /** The whole persisted arrangement of the bundles' columns — one layout per bundle. */

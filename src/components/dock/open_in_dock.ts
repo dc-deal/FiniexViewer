@@ -1,5 +1,5 @@
 import type { OpenInContext } from '@/composables/use_open_in_context'
-import { RUN_BUNDLE } from '@/panel_kinds'
+import { DEPLOYMENT_BUNDLE, RUN_BUNDLE } from '@/panel_kinds'
 import { useConfigCompareStore } from '@/stores/config_compare_store'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useDockStore } from '@/stores/dock_store'
@@ -42,7 +42,8 @@ export function openInDock(): OpenInContext {
     },
     openDeployment: (deploymentId: string) => {
       void deployments.selectDeployment(deploymentId)
-      dock.reveal('deployments', 'command')
+      // its history is the bundle's — the list beside it only marks the pick (viewer#43)
+      dock.reveal(DEPLOYMENT_BUNDLE, 'command')
     },
     openSweep: (sweepId: string) => {
       void sweeps.selectSweep(sweepId)

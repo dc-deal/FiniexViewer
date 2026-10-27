@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { PANEL_KINDS, RUN_BUNDLE, allPanelKinds, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { memberKindId, memberOfKind } from '@/bundle_members'
+import {
+  DEPLOYMENT_BUNDLE, PANEL_KINDS, RUN_BUNDLE, allPanelKinds, firstActiveKind, panelKind, reportKindId, sectionOfKind,
+} from '@/panel_kinds'
 import { allPanels } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
 
@@ -15,13 +18,16 @@ describe('panel_kinds', () => {
     expect(new Set(PANEL_KINDS.map(kind => kind.order)).size).toBe(PANEL_KINDS.length)
   })
 
-  /** From the general to the particular: deployments, the run list, the run a pick opens, its chart. */
-  /** The run chart beside the report from the start; the free chart is opened from the menu. */
-  it('opens the first arrangement as deployments, the run list, the run report, the run chart', () => {
+  /**
+   * From the general to the particular: the deployment list and its bundle, the run list, the run a
+   * pick opens, its chart. The run chart beside the report from the start; the free chart is opened
+   * from the menu.
+   */
+  it('opens the first arrangement as the deployments, the run list, the run report, the run chart', () => {
     const first = PANEL_KINDS.filter(kind => kind.opensByDefault)
       .sort((a, b) => a.order - b.order)
       .map(kind => kind.id)
-    expect(first).toEqual(['deployments', 'runs', 'run', 'run-chart'])
+    expect(first).toEqual(['deployments', 'deployment', 'runs', 'run', 'run-chart'])
     expect(panelKind('chart')!.opensByDefault).toBe(false)
   })
 
@@ -94,12 +100,13 @@ describe('panel_kinds', () => {
    * part of. A tab's card says them in words, so a wrong declaration is a wrong sentence on screen.
    */
   describe('the relations every kind declares', () => {
-    it('makes every section a member of the run bundle, and no other kind a member of anything', () => {
+    it('makes every member a member of its own bundle, and no other kind a member of anything', () => {
       for (const kind of allPanelKinds()) {
-        const member = sectionOfKind(kind.id) !== null
-        expect(kind.relations.memberOf, kind.id).toBe(member ? RUN_BUNDLE : null)
+        expect(kind.relations.memberOf, kind.id).toBe(memberOfKind(kind.id)?.bundle ?? null)
       }
       expect(panelKind(RUN_BUNDLE)).not.toBeNull()
+      expect(panelKind(DEPLOYMENT_BUNDLE)).not.toBeNull()
+      expect(sectionOfKind(memberKindId(DEPLOYMENT_BUNDLE, 'sessions'))).toBeNull()
     })
 
     it('lists a key once at most', () => {

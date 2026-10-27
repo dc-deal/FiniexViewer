@@ -1,6 +1,7 @@
 import { computed, type ComputedRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import { bundleMembers, memberKindId } from '@/bundle_members'
+import { useDeploymentSectionsStore } from '@/stores/deployment_sections_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
@@ -31,7 +32,8 @@ export interface SectionState {
 export function useSectionStates(bundle: BundleId = 'run'): ComputedRef<SectionState[]> {
   const layoutStore = useLayoutStore()
   const { openIds } = storeToRefs(useDockStore())
-  const sections = useRunSectionsStore()
+  // whether the chosen run, or deployment, carries a member — each bundle's own rule
+  const sections = bundle === 'deployment' ? useDeploymentSectionsStore() : useRunSectionsStore()
 
   return computed(() => {
     const byId = new Map(bundleMembers(bundle).map(panel => [panel.id, panel]))

@@ -1,3 +1,4 @@
+import { deploymentSections } from '@/deployment_sections'
 import { allPanels } from '@/panel_registry'
 import { BUNDLE_IDS } from '@/types/panel_types'
 import type { BundleId, PanelDescriptor } from '@/types/panel_types'
@@ -7,14 +8,17 @@ import type { BundleId, PanelDescriptor } from '@/types/panel_types'
  * so the panel kinds and the layout store both read it and neither imports the other.
  *
  * A member's kind id is its bundle's prefix and its own id: `report-` for the run report — the
- * prefix it always had, so a stored arrangement keeps its sections open where they stood.
+ * prefix it always had, so a stored arrangement keeps its sections open where they stood — and
+ * `deployment-` for a deployment's.
  */
 const PREFIX: Record<BundleId, string> = {
   run: 'report-',
+  deployment: 'deployment-',
 }
 
 const MEMBERS: Record<BundleId, () => PanelDescriptor[]> = {
   run: allPanels,
+  deployment: deploymentSections,
 }
 
 /** A bundle's members, in their own order — what its column holds before a reader arranges it. */

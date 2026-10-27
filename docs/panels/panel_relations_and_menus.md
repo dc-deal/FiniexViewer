@@ -12,7 +12,8 @@ is the chooser and the follower of a key, never one panel over another.
 
 ```
 kind              member of   follows                  chooses
-Deployments       —           deployment ¹             deployment · run
+Deployments       —           —                        deployment
+Deployment bundle —           deployment + its members ² its members ²
 Sweeps            —           sweep ¹                  sweep · run
 Runs              —           —                        run
 Run bundle        —           run  + its members ²     its members ²
@@ -26,6 +27,8 @@ Orders            Run bundle  run · scenario           position
 Booking periods   Run bundle  run · scenario           —
 Warnings & errors Run bundle  run · scenario           —
 every other       Run bundle  run                      —
+Sessions          Deployment bundle  deployment        run
+Booking periods   Deployment bundle  deployment        run
 ```
 
 ¹ Said on the card only where ANOTHER kind can choose the key: a key nobody else chooses is the
@@ -104,11 +107,17 @@ A tick is a panel on show, a click hides it or shows it again, and the menu stay
 can be switched in one visit. The run bundle's sections stand in the submenu *Runs*, in
 the column's order, each with where it is (`use_section_states.ts`): in the column, open as a panel
 (⇱), hidden, or struck where the chosen run has none — listed rather than left out, because an
-inventory that silently shortens is not one.
+inventory that silently shortens is not one. The deployment bundle's members stand the same way in
+the submenu *Deployments* (viewer#43): every bundle's members in its area, through one register
+(`bundle_members.ts`).
 
 ```
 Panels ▾
-├ ✓ Deployments
+├   Deployments ▸ ┬ ✓ Deployment list
+│                 ├ ✓ Deployment bundle
+│                 ├ ─────────
+│                 ├ ✓ Sessions                  in the bundle
+│                 └ ✓ Booking periods       ⇱   open as a panel
 ├   Sweeps
 ├   Runs ▸ ┬ ✓ Run list
 │          ├ ✓ Run bundle

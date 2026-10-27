@@ -58,21 +58,21 @@ describe('AppMenuBar', () => {
   /** A tick is a panel on show; a click hides it, or shows it again where it stood. */
   it('ticks the open panels, hides an open one and brings a closed one back', async () => {
     const dock = useDockStore()
-    dock.openIds = ['deployments', 'runs']
+    dock.openIds = ['activities', 'runs']
     const opened: string[] = []
     const closed: string[] = []
     dock.reveal = (kind: string, reason: string) => { opened.push(`${kind} ${reason}`); return true }
     dock.close = (kind: string) => { closed.push(kind) }
 
     await openMenu('Panels')
-    expect(kindEntry('deployments').dataset['state']).toBe('checked')
+    expect(kindEntry('activities').dataset['state']).toBe('checked')
     expect(kindEntry('chart').dataset['state']).toBe('unchecked')
 
     kindEntry('chart').click()
-    kindEntry('deployments').click()
+    kindEntry('activities').click()
     await flushPromises()
     expect(opened).toEqual(['chart command'])
-    expect(closed).toEqual(['deployments'])
+    expect(closed).toEqual(['activities'])
   })
 
   /** In the reader's order — the column's — with where each one is, so a switched one does not move. */

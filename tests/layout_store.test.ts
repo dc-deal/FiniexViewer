@@ -43,7 +43,7 @@ describe('reconcile', () => {
   /** A layout per bundle: one stored without a bundle's column gets that column at its defaults. */
   it('gives every bundle its column, where none was stored for it', () => {
     const result = reconcile({ version: SCHEMA_VERSION, bundles: {} })
-    expect(Object.keys(result.bundles)).toEqual(['run'])
+    expect(Object.keys(result.bundles)).toEqual(['run', 'deployment'])
     expect(result.bundles.run!.columns[0]!.panels.map(panel => panel.id)).toEqual(allPanels().map(panel => panel.id))
   })
 })

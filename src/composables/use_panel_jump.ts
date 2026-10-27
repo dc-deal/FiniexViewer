@@ -2,6 +2,7 @@ import { nextTick } from 'vue'
 import { openInDock } from '@/components/dock/open_in_dock'
 import { RUN_BUNDLE, reportKindId } from '@/panel_kinds'
 import { useContextStore } from '@/stores/context_store'
+import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -149,7 +150,12 @@ export function useShowInList(): () => void {
   return () => {
     const run = runsStore.selectedRun
     if (run?.parent_id && run.parent_kind === 'sweep') return openInDock().openSweep(run.parent_id)
-    if (run?.parent_id && run.parent_kind === 'deployment') return openInDock().openDeployment(run.parent_id)
+    if (run?.parent_id && run.parent_kind === 'deployment') {
+      // the LIST that holds it: *Open deployment* leads to the deployment's bundle instead (viewer#43)
+      void useDeploymentsStore().selectDeployment(run.parent_id)
+      dock.reveal('deployments', 'command')
+      return
+    }
     runsStore.askForChosenRow()
     dock.reveal('runs', 'command')
     // a panel just brought out is laid out one frame late; scrolled before that, the row would be

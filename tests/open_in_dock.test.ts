@@ -100,12 +100,13 @@ describe('openInDock', () => {
     expect(runs.selectedUnits).toEqual([])
   })
 
-  it('loads the deployment it opens, and brings the Deployments panel forward', async () => {
+  /** Its history is the bundle's — the list beside it only marks the pick (viewer#43). */
+  it('loads the deployment it opens, and brings its bundle forward', async () => {
     const id = detailFixture.deployment_id
     openInDock().openDeployment(id)
     await flushPromises()
     expect(apiClient.getDeployment).toHaveBeenCalledWith(id)
     expect(useDeploymentsStore().detail?.deployment_id).toBe(id)
-    expect(opened).toEqual(['deployments command'])
+    expect(opened).toEqual(['deployment command'])
   })
 })

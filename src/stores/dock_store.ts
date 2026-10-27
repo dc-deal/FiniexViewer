@@ -4,7 +4,7 @@ import type { DockviewApi, GroupNavigationDirection, IDockviewPanel } from 'dock
 import { reconcileLayout } from '@/components/dock/dock_layout'
 import { chartLayers } from '@/layer_registry'
 import { memberKindId, memberOfKind } from '@/bundle_members'
-import { PANEL_KINDS, RUN_BUNDLE, firstActiveKind, panelKind } from '@/panel_kinds'
+import { DEPLOYMENT_BUNDLE, PANEL_KINDS, RUN_BUNDLE, firstActiveKind, panelKind } from '@/panel_kinds'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
 import { useLayoutStore } from '@/stores/layout_store'
@@ -34,6 +34,19 @@ const LIST_KIND = 'runs'
  * active panel's tabs.
  */
 const OPENS_RIGHT_OF: Record<string, string> = { [COLUMN_KIND]: LIST_KIND, 'run-chart': COLUMN_KIND }
+
+/**
+ * Where the deployment bundle opens while nothing it stood beside is known: as a tab behind the run
+ * bundle, in the report's group — beside the deployment list it would make the first arrangement
+ * four columns wide, and as a tab beside the list a pick there would leave it behind, since a pick
+ * never covers its list (decided 2026-10-27, viewer#43). Without the run bundle, behind the list.
+ */
+function deploymentBundlePlace(dock: DockviewApi): Placement | undefined {
+  const anchor = dock.getPanel(COLUMN_KIND) ?? dock.getPanel('deployments')
+  return anchor
+    ? { referencePanel: anchor.id, direction: 'within', index: anchor.group.panels.indexOf(anchor) + 1 }
+    : undefined
+}
 
 /**
  * The first arrangement's columns, each with a floor, the width beyond them shared 28 · 38 · 34
@@ -221,7 +234,7 @@ export const useDockStore = defineStore('dock', () => {
   function arrangeDefault(dock: DockviewApi): void {
     dock.clear()
     const kinds = PANEL_KINDS.filter(kind => kind.opensByDefault).sort((a, b) => a.order - b.order)
-    const tabs = kinds.filter(kind => !OPENS_RIGHT_OF[kind.id])
+    const tabs = kinds.filter(kind => !OPENS_RIGHT_OF[kind.id] && kind.id !== DEPLOYMENT_BUNDLE)
     tabs.forEach((kind, index) =>
       add(dock, kind.id, index ? { referencePanel: tabs[0]!.id, direction: 'within' } : undefined))
     for (const kind of kinds.filter(entry => OPENS_RIGHT_OF[entry.id])) {
@@ -233,6 +246,7 @@ export const useDockStore = defineStore('dock', () => {
       const { placement, size } = besideAnchor(dock, kind.id)
       add(dock, kind.id, placement, size)
     }
+    if (kinds.some(kind => kind.id === DEPLOYMENT_BUNDLE)) add(dock, DEPLOYMENT_BUNDLE, deploymentBundlePlace(dock))
     dock.getPanel(firstActiveKind())?.api.setActive()
   }
 
@@ -251,6 +265,20 @@ export const useDockStore = defineStore('dock', () => {
       : undefined)
     // a panel added comes to the front; it stays there only where the list it joins was in front
     if (before && before.id !== LIST_KIND) before.api.setActive()
+  }
+
+  /**
+   * A stored layout without the deployment bundle — written before it existed (viewer#43) — gains it
+   * behind the run bundle, and whether a deployment is chosen or not: gained only with one chosen, a
+   * pick in the list would show nothing until a reload, since a selection never opens a closed panel.
+   * Never one the reader HID, which has a place to come back to.
+   */
+  function addMissingDeploymentBundle(dock: DockviewApi): void {
+    if (dock.getPanel(DEPLOYMENT_BUNDLE) || arrangement.places[DEPLOYMENT_BUNDLE]) return
+    const before = dock.activePanel
+    add(dock, DEPLOYMENT_BUNDLE, deploymentBundlePlace(dock))
+    // a tab behind another, never in front of the panel the reader had in front
+    before?.api.setActive()
   }
 
   /**
@@ -370,6 +398,7 @@ export const useDockStore = defineStore('dock', () => {
         retitle(dock)
         addMissingBundle(dock)
         addMissingRunChart(dock)
+        addMissingDeploymentBundle(dock)
       } else arrangeDefault(dock)
     } catch {
       arrangeDefault(dock)
@@ -450,6 +479,10 @@ export const useDockStore = defineStore('dock', () => {
     const chart = lastChart.value
     if (kindId === LAYERS_KIND && chart && dock.getPanel(chart)) {
       add(dock, kindId, { referencePanel: chart, direction: 'right' }, LAYERS_WIDTH)
+      return
+    }
+    if (kindId === DEPLOYMENT_BUNDLE) {
+      add(dock, kindId, deploymentBundlePlace(dock))
       return
     }
     const anchor = OPENS_RIGHT_OF[kindId]

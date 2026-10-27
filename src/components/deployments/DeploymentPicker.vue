@@ -1,24 +1,22 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDeploymentsStore } from '@/stores/deployments_store'
-import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
-import HoverCard from '@/components/base/HoverCard.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
+import { deploymentCard, idleGap } from '@/components/deployments/deployment_card'
 import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
 import {
-  amount, drawdownFigure, duration, magnitude, orDash, percentFigure, signClass, sortInstant, startedAt, utcInstant,
+  amount, magnitude, orDash, percentFigure, signClass, sortInstant, startedAt,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
-import type { Figure, FigureCard } from '@/types/figure_types'
 import type { ListColumn } from '@/types/list_types'
 import type { DeploymentRow } from '@/types/api/deployment_types'
-import { plural, t } from '@/translate'
+import { t } from '@/translate'
 
 /**
  * Which deployment to look at — the same facet bar over a flat list that the run picker and the
@@ -131,107 +129,21 @@ const shown = computed(() => sortRows(
 ))
 
 /**
- * The longest idle stretch between two sessions. `null` where no such stretch EXISTS — a deployment
- * of one session has nothing between its sessions — which is an absence and not a zero.
+ * A pick chooses the deployment; the list stays whole and marks it, as the run list does, and the
+ * deployment's bundle shows it (viewer#43).
  */
-function gap(row: DeploymentRow): string {
-  return row.longest_gap_hours === null ? t('n/a') : duration(row.longest_gap_hours)
-}
+const emit = defineEmits<{ chosen: [] }>()
 
-/**
- * What the row has no width for. Nothing is derived: every line names a field of the ledger row
- * that is on screen anyway, and the two stamps appear here on the CANONICAL clock beside the
- * column's rendering in the reader's own zone.
- */
-function card(row: DeploymentRow): FigureCard {
-  const details: Figure[] = [
-    { label: t('First started'), value: utcInstant(row.first_started) },
-    { label: t('Last started'), value: utcInstant(row.last_started) },
-    { label: t('Sessions'), value: plural(row.sessions, t('session'), t('sessions')) },
-    {
-      label: t('Net P&L'),
-      value: amount(row.net_pnl, row.currency),
-      tone: signClass(row.net_pnl),
-      title: t('A sum over the sessions. The drawdown beside it is NOT — see its own caveat.'),
-    },
-    {
-      label: t('Max drawdown'),
-      value: drawdownFigure(row.max_drawdown, row.max_drawdown_pct, row.currency),
-      title: t('The deepest of the sessions, never their sum: each carries the running decline against the peak the deployment had reached, so adding them counts one decline once per session it spanned.'),
-    },
-    { label: t('Longest idle'), value: gap(row) },
-  ]
-  // the identity that does not move, and the only join that answers "is this the same bot as the
-  // row above". Empty on a profile that declares none, so it is stated or it is absent.
-  if (row.bot_id) details.push({ label: t('Bot id'), value: row.bot_id })
-  // and where everything is fine, nothing is printed: one stand throughout is the ordinary case
-  if (row.changed) {
-    details.push({
-      label: t('Configuration'),
-      value: t('moved between sessions'),
-      tone: 'warning',
-      title: t('The sessions were not all produced by one configuration. Where the boundary falls is in the sessions table.'),
-    })
-  }
-  return { title: `${row.deployment_id} · ${row.currency}`, details }
-}
-
-/**
- * The list is the way in, so it is open until there is something to look at — and it collapses once
- * a deployment is chosen, the same as the run picker, because the history below it is what the
- * reader came for. A deployment already chosen when the picker mounts collapses it from the start,
- * since the watch below sees only a change.
- */
-const open = ref(selectedDeploymentId.value === null)
-
-watch(selectedDeploymentId, id => { open.value = id === null })
-
-/** Whether the list stands open: in a low panel the view then gives it the whole height. */
-const emit = defineEmits<{ listShown: [shown: boolean] }>()
-
-watch(open, shown => emit('listShown', shown), { immediate: true })
-
-/**
- * A pick folds the list away. The watch above sees only a CHANGE, so picking the deployment already
- * chosen — after *Change deployment* opened the list again — left the list standing open.
- */
 function pick(row: DeploymentRow): void {
-  open.value = false
   void store.selectDeployment(row.deployment_id)
+  emit('chosen')
 }
-
-/** The chosen deployment's own row, for the one line the collapsed form shows. */
-const chosen = computed(() =>
-  deployments.value.find(row => row.deployment_id === selectedDeploymentId.value) ?? null
-)
-
-/**
- * The chosen line names it and its bot, and nothing the panel says below it: the sessions and the
- * starts stand in the deployment's own lines. The rest of its row — the bot id among it — is on
- * the card, the same one the list shows (operator, 2026-10-20).
- */
-const chosenCard = computed(() => chosen.value ? card(chosen.value) : null)
 </script>
 
 <template>
   <div class="deployment-picker">
     <div v-if="loadingList" class="picker-state">
       <AppSpinner />
-    </div>
-
-    <!-- chosen: one line saying which, and the way back to the list -->
-    <div v-else-if="!open" class="picker-chosen">
-      <span class="chosen-label">{{ t('Deployment') }}</span>
-      <HoverCard v-if="chosenCard" :title="chosenCard.title" :details="chosenCard.details">
-        <!-- reachable by the keyboard, so the card is not the pointer's alone -->
-        <span class="chosen-name" tabindex="0">
-          <span class="chosen-id">{{ selectedDeploymentId }}</span>
-          <!-- in a narrow panel it ends in an ellipsis instead of taking a second line -->
-          <span class="chosen-meta">{{ chosen?.bot }}</span>
-        </span>
-      </HoverCard>
-      <span v-else class="chosen-id">{{ selectedDeploymentId }}</span>
-      <AppButton variant="quiet" @click="open = true">{{ t('Change deployment') }}</AppButton>
     </div>
 
     <template v-else>
@@ -259,7 +171,7 @@ const chosenCard = computed(() => chosen.value ? card(chosen.value) : null)
         :columns="columns"
         :row-key="row => rowKey(row, deploymentsKey)"
         :is-picked="row => row.deployment_id === selectedDeploymentId"
-        :row-card="card"
+        :row-card="deploymentCard"
         @pick="pick"
       >
         <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
@@ -280,7 +192,7 @@ const chosenCard = computed(() => chosen.value ? card(chosen.value) : null)
           <span :data-rank="2" class="figure-cell" :title="orDash(row.max_drawdown_pct, percentFigure)">
             {{ orDash(row.max_drawdown, value => magnitude(value, row.currency)) }}
           </span>
-          <span :data-rank="4" class="figure-cell">{{ gap(row) }}</span>
+          <span :data-rank="4" class="figure-cell">{{ idleGap(row) }}</span>
           <!-- one cell whether or not a mark is in it, so the gap column never moves -->
           <span :data-rank="3" class="deployment-marks">
             <span v-if="row.changed" class="deployment-mark">{{ t('changed') }}</span>
@@ -304,51 +216,6 @@ const chosenCard = computed(() => chosen.value ? card(chosen.value) : null)
   padding: var(--space-sm);
 }
 
-.picker-chosen {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-sm);
-  min-width: 0;
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-}
-
-.chosen-label,
-.chosen-meta {
-  color: var(--color-text-secondary);
-}
-
-.chosen-label,
-.chosen-id {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.chosen-id {
-  color: var(--color-text-primary);
-}
-
-.chosen-name {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.chosen-meta {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-/* a control whose name breaks over two lines reads as two controls */
-.picker-chosen .app-button {
-  margin-left: auto;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
 .picker-hint {
   margin: 0;
   color: var(--color-text-secondary);
@@ -356,28 +223,18 @@ const chosenCard = computed(() => chosen.value ? card(chosen.value) : null)
   font-size: var(--font-size-sm);
 }
 
-/* never more than a third of the view: the history the list leads to has to fit beside it.
-   Everything else about its shape belongs to `base/RecordList.vue`. Measured against the view
-   (`cqh`), not the browser window. */
-.deployment-list {
-  max-height: 33cqh;
-  overflow-y: auto;
+/* the list is the panel now: it takes the height its panel has, the history standing in the
+   deployment bundle beside it (viewer#43). Everything else about its shape belongs to
+   `base/RecordList.vue`. */
+.deployment-picker {
+  flex: 1;
+  min-height: 0;
 }
 
-/* In a LOW view the open list stands alone and takes the rest of it: a third of a short panel
-   left a strip for each half (operator, 2026-10-20). The view hides the history meanwhile; the
-   threshold is the same as there. */
-@container (max-height: 40rem) {
-  .deployment-picker {
-    flex: 1;
-    min-height: 0;
-  }
-
-  .deployment-list {
-    flex: 1;
-    min-height: 0;
-    max-height: none;
-  }
+.deployment-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .deployment-list :deep(.record-row) > span {

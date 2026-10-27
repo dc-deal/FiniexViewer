@@ -168,13 +168,13 @@ two lists of four and said nothing about the other two. It now names the lists i
 if one is missing, because a silent skip reads as coverage. `deployments.spec.ts` holds the LEDGER view, which had no browser coverage at all until 2026-10-01
 — the mock served only the run plane, so the deployments page, its picker and its timeline had never
 been opened by a test although their three captures existed. It holds the picker listing the ledger
-and opening a history, each run opened from a deployment showing its own executive summary (every
+and a pick showing the deployment's bundle beside the list, which stays whole and marks it
+(viewer#43), each run opened from a deployment showing its own executive summary (every
 session's summary answered with its own net P&L, so two runs cannot be mistaken for each other — the
-spec went red against the jump that only changed the context), the selection surviving a reload as a link, a stale link saying so, the
-open list standing alone in a low view while a tall one keeps it beside the history, the
+spec went red against the jump that only changed the context), the selection surviving a reload as a link, a stale link saying so in the bundle, the
 figure cells right-aligned under their headings, the timeline marking round moments rather than
 the overlapping stamps an operator photographed, and a change mark opening the configuration of the
-session before it as a panel of its own, its links whole on the line at about the list floor. `panel_layout.spec.ts` also holds that **a list's heading sticks flush to the top of the area it scrolls in**, nothing showing through above it — measured in the trade history open as a panel of its own; that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow Deployments panel keeps its deployment line to one line. It holds that **no panel scrolls sideways**, at a wide
+session before it as a panel of its own, its links whole on the line at about the list floor. `panel_layout.spec.ts` also holds that **a list's heading sticks flush to the top of the area it scrolls in**, nothing showing through above it — measured in the trade history open as a panel of its own; that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow deployment bundle keeps its deployment line to one line. It holds that **no panel scrolls sideways**, at a wide
 and at a narrow width: `.panel-content` carries `overflow-x: auto`, which is the right safety valve
 and a poor everyday state, because the moment it engages the panel's leftmost column slides out of
 view and nothing says so. Two defects of exactly that shape reached the screen in one week — a

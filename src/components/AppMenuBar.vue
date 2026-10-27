@@ -39,7 +39,7 @@ const memberStates = Object.fromEntries(BUNDLE_IDS.map(bundle => [bundle, useSec
   Record<BundleId, ComputedRef<SectionState[]>>
 
 /** The areas whose submenu also lists a bundle's members — where their column stands. */
-const AREA_BUNDLES: Record<string, BundleId> = { runs: 'run' }
+const AREA_BUNDLES: Record<string, BundleId> = { runs: 'run', deployments: 'deployment' }
 
 /** The members an area's submenu lists — its bundle's, where it has one. */
 function membersOf(area: string): { bundle: BundleId, states: SectionState[] } | null {
@@ -91,9 +91,12 @@ function toggleSection(state: SectionState, bundle: BundleId): void {
   else dock.hideSection(state.section.id, bundle)
 }
 
-function sectionTitle(state: SectionState): string {
+function sectionTitle(state: SectionState, bundle: BundleId): string {
   if (state.place === 'panel') return `${t(state.section.title)} — ${t('open as a panel of its own')}`
-  if (state.absent) return `${t(state.section.title)} — ${t('this run carries no such section')}`
+  if (state.absent) {
+    const lacking = bundle === 'deployment' ? t('this deployment carries no such section') : t('this run carries no such section')
+    return `${t(state.section.title)} — ${lacking}`
+  }
   return t(state.section.title)
 }
 
@@ -143,7 +146,7 @@ function stayOpen(event: Event): void {
                       :class="{ absent: state.absent && state.place !== 'panel' }"
                       :data-section="state.section.id"
                       :data-place="state.place"
-                      :title="sectionTitle(state)"
+                      :title="sectionTitle(state, membersOf(entry.id)!.bundle)"
                       :model-value="sectionShown(state)"
                       :disabled="state.absent && state.place !== 'panel'"
                       @update:model-value="toggleSection(state, membersOf(entry.id)!.bundle)"

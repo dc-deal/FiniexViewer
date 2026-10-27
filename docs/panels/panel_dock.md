@@ -66,7 +66,8 @@ it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the o
   is loaded on demand into its own chunk, as the routes before them were.
 - **`src/stores/dock_store.ts`** — the dock's API and the first arrangement: Deployments and Runs as
   tabs of one group, the run bundle as a split to their right (operator, 2026-10-20: a pick then
-  shows the run without covering the list it was made in), and the run chart to the right of the
+  shows the run without covering the list it was made in) with the deployment bundle as a tab behind
+  it (viewer#43, 2026-10-27), and the run chart to the right of the
   bundle (operator, 2026-10-15), in front where the work is — the bundle where a run is restored,
   the run list where none is yet (`firstActiveKind`). Each column has a floor and the width beyond
   them is shared 28 · 38 · 34 (operator, 2026-10-20): the REPORT 860 px first, because its trade
