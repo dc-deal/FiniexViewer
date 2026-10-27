@@ -87,6 +87,11 @@ latest frame used, so a session reads one way whichever moment is on show.
   timeline in 0.38 s, the whole window in 0.27 s and 480 KB.
 - **It opens on the newest frame**, the one the section showed before. A unit whose frames over time
   are not recorded (`streams_not_recorded`) shows its latest frame alone, as before.
+- **A session that records is followed.** While a unit's timeline reads `current` and the section is
+  on show, the timeline is asked every two seconds — their document: *made to be asked every second
+  or two* — and the frames written since are read from the newest held, nothing twice. A player on
+  the newest frame stands on the new newest; one standing further back stays where it is. The
+  asking stops once the timeline no longer says `current`.
 - **The panel reads no store.** The root provides the player through a channel
   (`use_frame_player`), and forgets every unit, stopping what plays, when another run is chosen.
 

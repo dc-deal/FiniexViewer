@@ -2,6 +2,7 @@ import { computed, onScopeDispose, watch } from 'vue'
 import { hasArtifact } from '@/api/report_artifacts'
 import { RUN_BUNDLE, reportKindId } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
+import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import type { RunInfo } from '@/types/api/report_types'
@@ -11,6 +12,9 @@ const STATE_FRAMES = 'state_frames.jsonl'
 
 /** How often a check-in is asked before an answer names the cadence: a minute, the backend's default. */
 const DEFAULT_CADENCE_S = 60
+
+/** How often a recording session's timeline is asked — their document: "made to be asked every 1–2 s". */
+const FOLLOW_MS = 2000
 
 function recordsStateFrames(run: RunInfo): boolean {
   return run.stream_files.includes(STATE_FRAMES)
@@ -130,4 +134,35 @@ export function useRunReportsLoading(): void {
 
   watch([() => runs.selectedRun?.run_id ?? null, onShow], schedule, { immediate: true })
   onScopeDispose(cancel)
+
+  /*
+   * THE FRAMES OVER TIME of a session that still records (contract 43): the timeline of every unit
+   * whose player is open and reads `current`, asked every two seconds while the section is on show
+   * and the page in view, and the frames written since read in. A player on the newest frame
+   * follows them; the polling stops once the timeline no longer says `current`.
+   */
+  const players = useFramePlayerStore()
+  const recordingUnits = computed(() => [...players.players.values()]
+    .filter(player => player.runId === runs.selectedRun?.run_id && player.recording === 'current')
+    .map(player => player.unit))
+
+  let follower: ReturnType<typeof setTimeout> | null = null
+
+  function stopFollowing(): void {
+    if (follower) clearTimeout(follower)
+    follower = null
+  }
+
+  function follow(): void {
+    stopFollowing()
+    if (!onShow.value || !recordingUnits.value.length) return
+    follower = setTimeout(async () => {
+      follower = null
+      if (document.visibilityState === 'visible') await Promise.all(recordingUnits.value.map(unit => players.refresh(unit)))
+      follow()
+    }, FOLLOW_MS)
+  }
+
+  watch([onShow, () => recordingUnits.value.join('|')], follow, { immediate: true })
+  onScopeDispose(stopFollowing)
 }

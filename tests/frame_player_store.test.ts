@@ -152,6 +152,28 @@ describe('useFramePlayerStore', () => {
     expect(player.cursor).toBeNull()
   })
 
+  /**
+   * A session that records: the timeline asked again reads in the frames written since, from the
+   * newest held, nothing twice — and a player on the newest frame stands on the new newest.
+   */
+  it('reads in the frames written since, and follows them from the newest', async () => {
+    recording = 'current'
+    const { store, player } = await opened(30)
+    stream = streamOf(33)
+    await store.refresh(UNIT)
+    expect(player.stream?.record_count).toBe(33)
+    expect(player.frames.map(frame => frame.record_no).slice(-4)).toEqual([30, 31, 32, 33])
+    expect(new Set(player.frames.map(frame => frame.record_no)).size).toBe(player.frames.length)
+    expect(store.frameOf(player)?.record_no).toBe(33)
+
+    // the session ends: the timeline says so, and nothing more is read
+    recording = 'ended'
+    const asked = vi.mocked(apiClient.getRecordedWindow).mock.calls.length
+    await store.refresh(UNIT)
+    expect(player.recording).toBe('ended')
+    expect(vi.mocked(apiClient.getRecordedWindow).mock.calls.length).toBe(asked)
+  })
+
   /** Another run chosen: every unit forgotten, nothing left playing. */
   it('forgets every unit and stops what plays', async () => {
     vi.useFakeTimers()

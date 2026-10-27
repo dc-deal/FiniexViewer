@@ -128,6 +128,28 @@ export const useFramePlayerStore = defineStore('frame_player', () => {
     }
   }
 
+  /**
+   * Reads a unit's timeline again, and where it grew, the frames written since — their document:
+   * ask the window from the millisecond of the newest frame held, leave `to` out, and drop what is
+   * held by `record_no`. Only where the held stretch reaches the newest: a reader standing far back
+   * reads the new frames when they get there.
+   */
+  async function refresh(unit: string): Promise<void> {
+    const player = playerOf(unit)
+    if (!player || player.loading || !player.stream) return
+    const timeline = await getRecordedStreams(player.runId, unit)
+    if (isAbsent(timeline) || players.get(unit) !== player) return
+    player.recording = timeline.recording
+    const stream = timeline.streams.find(entry => entry.stream_kind === 'state_frames')
+    if (!stream) return
+    const before = player.stream.record_count
+    player.stream = stream
+    const newest = player.frames.at(-1)
+    if (stream.record_count <= before || !newest || newest.record_no < before) return
+    const frames = await readWindow(player, new Date(ms(newest.frame_time)).toISOString(), undefined)
+    if (frames) hold(player, frames, player.cursor)
+  }
+
   /** The frame on show: the one under the cursor, or the newest held where the player follows. */
   function frameOf(player: UnitPlayer): RecordedStateFrame | null {
     if (player.cursor === null) return player.frames.at(-1) ?? null
@@ -233,5 +255,5 @@ export const useFramePlayerStore = defineStore('frame_player', () => {
     }
   }
 
-  return { players, playerOf, frameOf, open, seek, step, first, latest, play, stop, setSpeed, reset }
+  return { players, playerOf, frameOf, open, refresh, seek, step, first, latest, play, stop, setSpeed, reset }
 })

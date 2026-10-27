@@ -5,6 +5,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useRunReportsLoading } from '@/composables/use_run_reports_loading'
 import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
+import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { RUN_BUNDLE } from '@/panel_kinds'
@@ -30,6 +31,8 @@ vi.mock('@/api/api_client', () => ({
   getRunConfig: vi.fn(async () => ABSENT),
   getOrderEvents: vi.fn(async () => ABSENT),
   getLatestStateFrames: vi.fn(async () => ABSENT),
+  getRecordedStreams: vi.fn(async () => ABSENT),
+  getRecordedWindow: vi.fn(async () => ABSENT),
   getRuns: vi.fn(async () => []),
   getRunSummary: vi.fn(async () => ABSENT),
 }))
@@ -178,6 +181,32 @@ describe('useRunReportsLoading', () => {
       await flushPromises()
       await vi.advanceTimersByTimeAsync(180_000)
       expect(apiClient.getLatestStateFrames).toHaveBeenCalledTimes(1)
+    })
+
+    /**
+     * A session's frames over time follow it while it records: the timeline of a unit whose player
+     * reads `current` is asked every two seconds while on show, and no longer once it does not.
+     */
+    it('asks the timeline of a recording unit every two seconds while on show, and stops once it ended', async () => {
+      useRunsStore().runs = [row('session', [], false, ['state_frames.jsonl'])]
+      useDockStore().noteShown(RUN_BUNDLE, true)
+      choose('session')
+      mountLoading()
+      await flushPromises()
+      const player = {
+        runId: 'session', unit: 'unit', stream: null, recording: 'current', absence: null, error: null, loading: false,
+        frames: [], cursor: null, playing: false, speed: 5,
+      }
+      useFramePlayerStore().players.set('unit', player)
+      const refresh = vi.spyOn(useFramePlayerStore(), 'refresh').mockResolvedValue()
+      await flushPromises()
+      await vi.advanceTimersByTimeAsync(4_000)
+      expect(refresh).toHaveBeenCalledTimes(2)
+
+      useFramePlayerStore().playerOf('unit')!.recording = 'ended'
+      await flushPromises()
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(refresh).toHaveBeenCalledTimes(2)
     })
   })
 })
