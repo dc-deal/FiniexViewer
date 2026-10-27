@@ -194,7 +194,9 @@ export const useRunChartStore = defineStore('runChart', () => {
   /**
    * What the chart draws, layer by layer, each in front of the one before, as the reader arranged
    * them — by default the levels of the position looked at, the line from its entry to its exit, and
-   * the marks of every trade in front. A hidden layer is not handed over at all.
+   * the marks of every trade in front. A hidden layer is handed over marked so: the chart paints
+   * nothing of it, and its marks keep their room, so the candles stay where they were (operator,
+   * on screen 2026-10-27: switching the trades off stretched the candles).
    */
   const layers = computed<ChartLayer[]>(() => {
     const key = reports.tradeHistory?.keys.trades ?? []
@@ -211,13 +213,12 @@ export const useRunChartStore = defineStore('runChart', () => {
       // without their signs the marks keep their shapes, and a gathered mark's card still counts it
       trades: signs => signs === false ? marks.value.map(mark => ({ ...mark, text: '' })) : marks.value,
     }
-    return arranged.value
-      .filter(state => state.shown)
-      .map(state => ({
-        id: state.id,
-        drawings: drawings[state.id](state.option),
-        ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
-      }))
+    return arranged.value.map(state => ({
+      id: state.id,
+      drawings: drawings[state.id](state.option),
+      ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
+      ...(state.shown ? {} : { hidden: true }),
+    }))
   })
 
   /** A finer timeframe that draws apart the marks some candles hold together — where one does. */

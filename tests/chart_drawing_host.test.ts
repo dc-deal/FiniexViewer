@@ -133,6 +133,26 @@ describe('ChartDrawingHost', () => {
     expect(host.autoscaleInfo()).toBeNull()
   })
 
+  /**
+   * A layer switched off is neither painted nor hit nor on the axis, and its marks keep their room:
+   * switching the trades off once stretched the candles to the room they had left. A hidden level
+   * stops widening the scale, since nobody is looking at it.
+   */
+  it('keeps the room of a hidden layer\'s marks, and paints, hits and labels nothing of it', () => {
+    const host = new ChartDrawingHost()
+    attachTo(host)
+    host.setDrawings(LAYERS, BARS, COLOURS)
+    const shown = host.autoscaleInfo()!.margins
+    host.setDrawings(LAYERS.map(layer => ({ ...layer, hidden: true })), BARS, COLOURS)
+    expect(host.autoscaleInfo()!.margins).toEqual(shown)
+    expect(host.autoscaleInfo()!.priceRange).toBeNull()
+    expect(host.priceAxisViews()).toHaveLength(0)
+    expect(host.hitTest(15, 250)).toBeNull()
+    const { context, calls } = recordingContext()
+    host.paneViews()[0]!.renderer()!.draw({ useMediaCoordinateSpace: (paint: (scope: { context: CanvasRenderingContext2D }) => void) => paint({ context }) } as never)
+    expect(calls.filter(call => call.startsWith('fill(') || call.startsWith('stroke('))).toEqual([])
+  })
+
   /** A level is a dashed rule with its word; a mark its shape and its sign beyond it, in one colour. */
   it('paints a level dashed with its word, and a mark with its sign in the colour of its role', () => {
     const placed = LAYERS.map(layer => placeLayer(layer, BARS, { x: time => time * 10, y: price => 500 - price, spacing: 80, width: 800 }))

@@ -99,7 +99,9 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
    * who wants the candles' full height hides the levels in the Layers panel.
    */
   autoscaleInfo(): AutoscaleInfo | null {
-    const prices = this._layers.flatMap(layer => layer.drawings)
+    // the room counts a hidden layer's marks too, so switching one rescales nothing; a level widens
+    // the scale only while its layer is shown, since a hidden one is not looked at
+    const prices = this._layers.filter(layer => !layer.hidden).flatMap(layer => layer.drawings)
       .flatMap(drawing => drawing.kind === 'segment' && drawing.focused ? [drawing.price] : [])
     if (!prices.length && !this._reach.above && !this._reach.below) return null
     return {
@@ -110,7 +112,7 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
 
   /** The drawing under the pointer, its id reported by the library as `hoveredInfo.objectId`. */
   hitTest(x: number, y: number): PrimitiveHoveredItem | null {
-    const hit = hitDrawing(this._placed, x, y)
+    const hit = hitDrawing(this._shown(), x, y)
     if (!hit) return null
     return {
       externalId: hit.id,
@@ -120,6 +122,11 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
       hitTestPriority: hit.point ? 2 : 1,
       itemType: hit.point ? 'marker' : 'primitive',
     }
+  }
+
+  /** The placed layers that are painted — a hidden one only keeps its room. */
+  private _shown(): PlacedLayer[] {
+    return this._placed.filter(layer => !layer.hidden)
   }
 
   private _scale(): ChartScale | null {
@@ -149,7 +156,7 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
     const colours = this._colours
     // only the levels of the position looked at: every position's would bury the axis in tags
     this._axisViews = series && colours
-      ? this._placed.flatMap(layer => layer.segments).filter(placed => placed.segment.focused).map(placed => {
+      ? this._shown().flatMap(layer => layer.segments).filter(placed => placed.segment.focused).map(placed => {
         const text = series.priceFormatter().format(placed.segment.price)
         return {
           coordinate: () => placed.y,
@@ -165,7 +172,7 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
     const colours = this._colours
     if (!colours) return
     target.useMediaCoordinateSpace(({ context }) => {
-      for (const layer of this._placed) paintLayer(context, layer, colours, this._font)
+      for (const layer of this._shown()) paintLayer(context, layer, colours, this._font)
     })
   }
 }

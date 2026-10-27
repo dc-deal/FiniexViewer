@@ -29,9 +29,18 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
   const layersBox = (await layers.boundingBox())!
   expect(layersBox.x).toBeGreaterThanOrEqual(chartBox.x + chartBox.width - 2)
 
-  // the trades switched off: the chart's host is not handed them at all
+  // the trades switched off: the chart draws none of them — and rescales nothing, so the price axis
+  // reads the same (operator, on screen 2026-10-27: without the marks the candles stretched)
+  const box = (await chart.boundingBox())!
+  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height - 40 }
+  const painted = (): Promise<void> => page.evaluate(() => new Promise<void>(done =>
+    requestAnimationFrame(() => requestAnimationFrame(() => done()))))
+  await painted()
+  const before = await page.screenshot({ clip: axis })
   await layers.locator('[data-layer="trades"] [data-action="show"]').click()
   await expect.poll(async () => await chart.getAttribute('data-drawings')).not.toMatch(/trades:/)
+  await painted()
+  expect((await page.screenshot({ clip: axis })).equals(before)).toBe(true)
 
   await page.reload()
   await expect(page.locator('[data-panel-kind="layers"] [data-layer="trades"]')).toHaveAttribute('data-shown', 'false')

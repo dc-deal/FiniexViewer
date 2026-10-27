@@ -66,7 +66,8 @@ const frameSize = ref({ width: 0, height: 0 })
  * the host's hit test answers with that id. The drawings an algo makes (testingide#379) will come
  * the same way, as one more layer.
  */
-const drawings = computed(() => (props.layers ?? []).flatMap(layer => layer.drawings))
+const shownLayers = computed(() => (props.layers ?? []).filter(layer => !layer.hidden))
+const drawings = computed(() => shownLayers.value.flatMap(layer => layer.drawings))
 const cards = computed(() => new Map<string, FigureCard>(drawings.value.map(drawing => [drawing.id, drawing.card])))
 
 /** The marks drawn, and how many events they stand for — a gathered mark for each of its members. */
@@ -74,7 +75,7 @@ const markCount = computed(() => drawings.value.filter(drawing => drawing.kind =
 const events = computed(() => drawings.value.reduce(
   (sum, drawing) => sum + (drawing.kind === 'marker' ? drawing.count ?? 1 : 0), 0))
 /** Each layer and how many drawings it holds — `levels:2 entry-exit:1 trades:12`. */
-const drawingCounts = computed(() => (props.layers ?? []).map(layer => `${layer.id}:${layer.drawings.length}`).join(' '))
+const drawingCounts = computed(() => shownLayers.value.map(layer => `${layer.id}:${layer.drawings.length}`).join(' '))
 
 /** The range of every bar drawn, by its time — what the marks stand away from. */
 const barRanges = computed(() => new Map<number, BarRange>(props.data.map(bar => [bar.time, { high: bar.high, low: bar.low }])))

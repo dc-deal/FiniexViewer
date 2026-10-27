@@ -77,6 +77,8 @@ export interface PlacedLayer {
   id: ChartLayerId
   /** The share of its strength it is painted at, 0–1. */
   opacity: number
+  /** Switched off: placed only for the room its marks keep, never painted or hit. */
+  hidden: boolean
   marks: PlacedMark[]
   segments: PlacedSegment[]
   lines: PlacedLine[]
@@ -91,7 +93,8 @@ export interface PlacedLayer {
  */
 export function placeLayer(layer: ChartLayer, bars: ReadonlyMap<number, BarRange>, scale: ChartScale): PlacedLayer {
   const placed: PlacedLayer = {
-    id: layer.id, opacity: layer.opacity ?? 1, marks: [], segments: [], lines: [], reach: { above: 0, below: 0 },
+    id: layer.id, opacity: layer.opacity ?? 1, hidden: layer.hidden ?? false,
+    marks: [], segments: [], lines: [], reach: { above: 0, below: 0 },
   }
   const taken = new Map<string, number>()
   for (const drawing of layer.drawings) {

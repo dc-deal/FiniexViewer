@@ -43,8 +43,16 @@ const chartName = computed(() => {
 const runChart = useRunChartStore()
 const empty = computed(() => {
   if (lastChart.value !== 'run-chart') return new Set<ChartLayerId>()
-  return new Set(runChart.layers.filter(layer => !layer.drawings.length).map(layer => layer.id))
+  return new Set(runChart.layers.filter(layer => !layer.hidden && !layer.drawings.length).map(layer => layer.id))
 })
+
+/**
+ * Why each shown layer draws nothing, in the order of the list — said below it, where the panel's
+ * empty space is: in the row the reason was cut to a letter in a narrow panel and lived only on
+ * hover (operator, on screen 2026-10-27: the line and the levels "did nothing"), and a line under a
+ * row would push the rows below it the moment a position is chosen.
+ */
+const emptyRows = computed(() => rows.value.filter(row => empty.value.has(row.id)))
 
 /** The closed row's word: what differs from the default, and that there is nothing to draw. */
 function summary(id: ChartLayerId, row: LayerState): string {
@@ -151,6 +159,12 @@ function toggle(id: ChartLayerId): void {
           </div>
         </li>
       </ul>
+      <dl v-if="emptyRows.length" class="empty-notes">
+        <template v-for="row in emptyRows" :key="row.id">
+          <dt :data-layer-empty="row.id">{{ layerDefinition(row.id).title }} — {{ t('nothing to draw') }}</dt>
+          <dd>{{ layerDefinition(row.id).emptyHint }}</dd>
+        </template>
+      </dl>
     </template>
   </div>
 </template>
@@ -251,6 +265,26 @@ function toggle(id: ChartLayerId): void {
    the row changes its size (operator, on screen, 2026-10-19) */
 .layer.off .layer-title {
   color: var(--color-text-secondary);
+}
+
+/* why a shown layer draws nothing: plain notice ink below the list, the layer named first */
+.empty-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--space-sm) 0 0;
+  padding: 0 var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.empty-notes dt {
+  margin-top: var(--space-xs);
+  color: var(--color-text-primary);
+}
+
+.empty-notes dd {
+  margin: 0;
 }
 
 /* the opened part is a boundary in the list, raised rather than coloured, as a group heading is */

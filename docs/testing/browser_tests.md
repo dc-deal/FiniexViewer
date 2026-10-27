@@ -100,9 +100,10 @@ by its tab, the way a reader does.
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
   in the chart narrows the lists to it.
 - `layers_panel.spec.ts` holds the Layers panel: opened from the run chart's quick bar BESIDE the
-  chart it arranges, the chart still on show; a layer switched off at its lever and no longer handed
-  to the chart's drawing host (`data-drawings`); and the same layer still off after a real reload,
-  in the panel and on the chart.
+  chart it arranges, the chart still on show; a layer switched off at its lever and no longer drawn
+  (`data-drawings`), the price axis the same pixel for pixel before and after — switching the trades
+  off once stretched the candles; and the same layer still off after a real reload, in the panel and
+  on the chart.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
   browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read
   from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its

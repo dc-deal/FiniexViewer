@@ -74,8 +74,13 @@ describe('LayersView', () => {
     const summary = row(wrapper, 'levels').find('.layer-summary')
     expect(summary.text()).toBe('nothing to draw')
     expect(summary.attributes('title')).toContain('position looked at')
+    // and below the list, in full, front first: a narrow panel cuts the row's word to a letter
+    expect(wrapper.findAll('[data-layer-empty]').map(term => term.attributes('data-layer-empty')))
+      .toEqual(['trades', 'entry-exit', 'levels'])
+    expect(wrapper.find('.empty-notes').text()).toContain('choose one in the trade history or the orders')
     await row(wrapper, 'levels').find('[data-action="show"]').trigger('click')
     expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
+    expect(wrapper.find('[data-layer-empty="levels"]').exists()).toBe(false)
   })
 
   /** One place at a time; the front layer goes no further forward, the back one no further back. */

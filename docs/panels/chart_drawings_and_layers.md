@@ -55,7 +55,9 @@ they are tested without a canvas.
 
 - **A mark stands beyond its bar** — above its high, below its low — and the next mark of the same
   bar and side beyond it, its text beyond its shape. The reach of the stack is what `autoscaleInfo`
-  asks the price scale to leave free, so the outermost mark is not cut off.
+  asks the price scale to leave free, so the outermost mark is not cut off — and it is asked for a
+  HIDDEN layer's marks too, so switching the trades off rescales nothing (operator, on screen
+  2026-10-27: without the marks the candles stretched into the room they had left).
 - **A segment runs from its first bar to its last**, or to the pane's edge where it is open.
 - **What falls off the scale is left out**, never drawn at a guessed place — the library places only
   times that stand on its scale.
@@ -116,14 +118,17 @@ Run chart · ETHUSD_aug_sep
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
   the row opens the rest — its option (the trades' signs; the levels of every position rather than
   of the one looked at) and its place, one step at a time. The closed row says what differs — and,
-  for a shown layer with nothing to draw, *nothing to draw*, with why on hover: the levels and the
-  line draw for the position looked at alone, so with none chosen their levers changed nothing on
-  screen and looked broken (2026-10-19).
+  for a shown layer with nothing to draw, *nothing to draw*: the levels and the line draw for the
+  position looked at alone, so with none chosen their levers changed nothing on screen and looked
+  broken (2026-10-19). Why stands below the list, each such layer named with its reason — a narrow
+  panel cut the row's word to a letter and kept the reason on hover, and the levers still looked
+  broken (2026-10-27); below the list its coming and going moves no row.
 - **Kept with the chart's own view**, `panelViews[<chart id>].layers`: only what differs from the
   chart's own arrangement, reconciled whenever it is read — a layer the chart no longer draws is
   left out, one it draws since stands where its own order puts it (`arrangeLayers`, `keptLayers`).
-- **The run chart's store applies it.** A hidden layer is not handed to the chart at all; a fainter
-  one carries its `opacity`, and the host paints that layer whole at it.
+- **The run chart's store applies it.** A hidden layer is handed over marked `hidden`: the host
+  neither paints nor hits it and puts nothing of it on the axis, and only the room its marks take is
+  kept. A fainter one carries its `opacity`, and the host paints that layer whole at it.
 
 ## How it is tested
 

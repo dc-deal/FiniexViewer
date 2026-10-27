@@ -283,8 +283,10 @@ describe('useRunChartStore', () => {
     const chart = useRunChartStore()
     chart.attach()
     await flushPromises()
-    // back to front as moved, the hidden one not handed over at all, the fainter one at its share
-    expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1])).toEqual([['trades', 1], ['levels', 0.4]])
+    // back to front as moved, the fainter one at its share, the hidden one handed over marked so —
+    // the chart paints nothing of it and keeps its marks' room
+    expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1, entry.hidden ?? false]))
+      .toEqual([['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true]])
     const [trading, levels] = chart.layers
     expect(trading!.drawings.length).toBeGreaterThan(0)
     expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.text === '')).toBe(true)

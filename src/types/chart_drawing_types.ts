@@ -57,4 +57,9 @@ export interface ChartLayer {
   drawings: ChartDrawing[]
   /** Drawn at this share of its strength (0–1), so the layers in front read first — set in the Layers panel. */
   opacity?: number
+  /**
+   * Switched off in the Layers panel: neither painted nor found under the pointer, but its marks
+   * keep their room above and below the candles — so switching a layer never rescales the chart.
+   */
+  hidden?: boolean
 }
