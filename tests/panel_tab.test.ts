@@ -64,7 +64,7 @@ describe('PanelTab', () => {
     dock.backIntoColumn = back
     const section = mount(PanelTab, { props: { kindId: reportKindId('orders'), api: fakeApi() as unknown as DockviewPanelApi } })
     await section.find('.panel-tab-back').trigger('click')
-    expect(back).toHaveBeenCalledWith('orders')
+    expect(back).toHaveBeenCalledWith('orders', 'run')
     expect(section.find('.panel-tab-back').attributes('aria-label')).toBe('Back into the bundle')
 
     const main = mount(PanelTab, { props: { kindId: 'runs', api: fakeApi() as unknown as DockviewPanelApi } })

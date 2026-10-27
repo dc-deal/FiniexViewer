@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type ComputedRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
   DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot,
@@ -14,7 +14,8 @@ import TopMenu from '@/components/TopMenu.vue'
 import { useSectionStates, type SectionState } from '@/composables/use_section_states'
 import { PANEL_KINDS } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
-import type { PanelKind } from '@/types/panel_types'
+import { BUNDLE_IDS } from '@/types/panel_types'
+import type { BundleId, PanelKind } from '@/types/panel_types'
 import { t } from '@/translate'
 
 /**
@@ -33,10 +34,18 @@ import { t } from '@/translate'
  */
 const dock = useDockStore()
 const { openIds } = storeToRefs(dock)
-const sectionStates = useSectionStates()
+/** Every bundle's members, where each stands — what its area's submenu lists after its kinds. */
+const memberStates = Object.fromEntries(BUNDLE_IDS.map(bundle => [bundle, useSectionStates(bundle)])) as
+  Record<BundleId, ComputedRef<SectionState[]>>
 
-/** The area whose submenu also lists the run report's sections — where their column stands. */
-const REPORT_AREA = 'runs'
+/** The areas whose submenu also lists a bundle's members — where their column stands. */
+const AREA_BUNDLES: Record<string, BundleId> = { runs: 'run' }
+
+/** The members an area's submenu lists — its bundle's, where it has one. */
+function membersOf(area: string): { bundle: BundleId, states: SectionState[] } | null {
+  const bundle = AREA_BUNDLES[area]
+  return bundle ? { bundle, states: memberStates[bundle].value } : null
+}
 
 /** A kind of its own at the menu's top, or an area: a submenu of the kinds that share it. */
 type MenuEntry =
@@ -77,9 +86,9 @@ function sectionShown(state: SectionState): boolean {
   return state.place === 'panel' || (state.place === 'column' && !state.absent)
 }
 
-function toggleSection(state: SectionState): void {
-  if (state.place === 'hidden') dock.showSection(state.section.id)
-  else dock.hideSection(state.section.id)
+function toggleSection(state: SectionState, bundle: BundleId): void {
+  if (state.place === 'hidden') dock.showSection(state.section.id, bundle)
+  else dock.hideSection(state.section.id, bundle)
 }
 
 function sectionTitle(state: SectionState): string {
@@ -125,10 +134,10 @@ function stayOpen(event: Event): void {
                     <AppIcon :name="kind.icon" />
                     <span class="menu-label">{{ kind.menuTitle ?? kind.title }}</span>
                   </DropdownMenuCheckboxItem>
-                  <template v-if="entry.id === REPORT_AREA">
+                  <template v-if="membersOf(entry.id)">
                     <DropdownMenuSeparator class="menu-separator" />
                     <DropdownMenuCheckboxItem
-                      v-for="state in sectionStates"
+                      v-for="state in membersOf(entry.id)!.states"
                       :key="state.section.id"
                       class="menu-item menu-toggle"
                       :class="{ absent: state.absent && state.place !== 'panel' }"
@@ -137,7 +146,7 @@ function stayOpen(event: Event): void {
                       :title="sectionTitle(state)"
                       :model-value="sectionShown(state)"
                       :disabled="state.absent && state.place !== 'panel'"
-                      @update:model-value="toggleSection(state)"
+                      @update:model-value="toggleSection(state, membersOf(entry.id)!.bundle)"
                       @select="stayOpen"
                     >
                       <span class="menu-check" aria-hidden="true">{{ sectionShown(state) ? '✓' : '' }}</span>

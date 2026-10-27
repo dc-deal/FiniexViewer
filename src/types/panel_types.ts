@@ -145,9 +145,15 @@ export interface LayoutState {
   columns: ColumnState[]
 }
 
-/** The whole persisted arrangement: named layouts plus which one is active. */
+/**
+ * The panels whose column holds members, each of which opens as a panel of its own (viewer#31,
+ * viewer#43): the run report. Ours, so a closed set — a bundle's id is its panel kind's id.
+ */
+export const BUNDLE_IDS = ['run'] as const
+export type BundleId = typeof BUNDLE_IDS[number]
+
+/** The whole persisted arrangement of the bundles' columns — one layout per bundle. */
 export interface WorkspaceState {
   version: number
-  active: string
-  layouts: Record<string, LayoutState>
+  bundles: Partial<Record<BundleId, LayoutState>>
 }

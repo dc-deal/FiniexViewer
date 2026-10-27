@@ -857,5 +857,5 @@ describe('useDockStore', () => {
 
 /** Whether the column has the section switched off. */
 function hidden(sectionId: string): boolean | undefined {
-  return useLayoutStore().arrangedPanels.find(panel => panel.id === sectionId)?.hidden
+  return useLayoutStore().arrangedOf().find(panel => panel.id === sectionId)?.hidden
 }

@@ -1,30 +1,33 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { allPanels } from '@/panel_registry'
+import { ref } from 'vue'
+import { bundleMembers } from '@/bundle_members'
 import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
-import type { PanelState, WorkspaceState } from '@/types/panel_types'
+import { BUNDLE_IDS } from '@/types/panel_types'
+import type { BundleId, LayoutState, PanelState, WorkspaceState } from '@/types/panel_types'
 
 const STORAGE_KEY = 'layout.v1'
-export const SCHEMA_VERSION = 2
-const DEFAULT_LAYOUT = 'report'
+/** 3 since 2026-10-27: a layout per bundle (viewer#43). An entry of 2 is dropped, never migrated. */
+export const SCHEMA_VERSION = 3
 
 function defaultPanelState(id: string, open: boolean): PanelState {
   return { id, open, pinned: false, locked: false, hidden: false }
 }
 
-/** The layout every reset returns to, built from what the registry currently declares. */
+/** A bundle's column as every reset returns it, built from what its register currently declares. */
+function defaultLayout(bundle: BundleId): LayoutState {
+  return {
+    columns: [{
+      width: 1,
+      panels: bundleMembers(bundle).map(panel => defaultPanelState(panel.id, panel.defaultOpen)),
+    }],
+  }
+}
+
+/** The layout every reset returns to: each bundle's own. */
 function buildDefaultWorkspace(): WorkspaceState {
   return {
     version: SCHEMA_VERSION,
-    active: DEFAULT_LAYOUT,
-    layouts: {
-      [DEFAULT_LAYOUT]: {
-        columns: [{
-          width: 1,
-          panels: allPanels().map(panel => defaultPanelState(panel.id, panel.defaultOpen)),
-        }],
-      },
-    },
+    bundles: Object.fromEntries(BUNDLE_IDS.map(bundle => [bundle, defaultLayout(bundle)])),
   }
 }
 
@@ -37,31 +40,26 @@ function buildDefaultWorkspace(): WorkspaceState {
  * reconciliation can tell it apart from one that is new since the layout was stored.
  */
 export function reconcile(stored: WorkspaceState): WorkspaceState {
-  const known = new Set(allPanels().map(panel => panel.id))
-  const layouts: WorkspaceState['layouts'] = {}
+  const bundles: WorkspaceState['bundles'] = {}
 
-  for (const [name, layout] of Object.entries(stored.layouts ?? {})) {
-    const columns = (layout.columns ?? []).map(column => ({
+  for (const bundle of BUNDLE_IDS) {
+    const members = bundleMembers(bundle)
+    const known = new Set(members.map(panel => panel.id))
+    const columns = (stored.bundles?.[bundle]?.columns ?? []).map(column => ({
       width: column.width,
       panels: (column.panels ?? []).filter(panel => known.has(panel.id)),
     }))
     if (!columns.length) columns.push({ width: 1, panels: [] })
 
     const placed = new Set(columns.flatMap(column => column.panels.map(panel => panel.id)))
-    for (const panel of allPanels()) {
+    for (const panel of members) {
       if (placed.has(panel.id)) continue
       columns[columns.length - 1]!.panels.push(defaultPanelState(panel.id, panel.defaultOpen))
     }
-    layouts[name] = { columns }
+    bundles[bundle] = { columns }
   }
 
-  if (!Object.keys(layouts).length) return buildDefaultWorkspace()
-
-  return {
-    version: SCHEMA_VERSION,
-    active: layouts[stored.active] ? stored.active : Object.keys(layouts)[0]!,
-    layouts,
-  }
+  return { version: SCHEMA_VERSION, bundles }
 }
 
 /**
@@ -104,45 +102,51 @@ export const useLayoutStore = defineStore('layout', () => {
   const stored = readStored()
   const workspace = ref<WorkspaceState>(stored ? reconcile(stored) : buildDefaultWorkspace())
 
-  const activeLayout = computed(() => workspace.value.layouts[workspace.value.active]!)
+  /** A bundle's column — reconciled on load and on import, so every bundle there is has one. */
+  function layoutOf(bundle: BundleId): LayoutState {
+    return workspace.value.bundles[bundle]!
+  }
 
   /**
-   * THE arrangement — every panel, switched off ones included, in the order the reader made.
+   * THE arrangement of a bundle — every member, switched off ones included, in the order the
+   * reader made.
    *
    * Pinned panels form the first group and the rest follow, each keeping its own order. The column
    * draws a line between the groups; the Panels menu lists them in the same order.
    */
-  const arrangedPanels = computed(() => {
-    const panels = activeLayout.value.columns.flatMap(column => column.panels)
+  function arrangedOf(bundle: BundleId = 'run'): PanelState[] {
+    const panels = layoutOf(bundle).columns.flatMap(column => column.panels)
     return [...panels.filter(p => p.pinned), ...panels.filter(p => !p.pinned)]
-  })
+  }
 
   /** The same arrangement minus what is switched off — which is all the COLUMN draws. */
-  const visiblePanels = computed(() => arrangedPanels.value.filter(panel => !panel.hidden))
+  function visibleOf(bundle: BundleId = 'run'): PanelState[] {
+    return arrangedOf(bundle).filter(panel => !panel.hidden)
+  }
 
   /** This tab's own, and the start of the next new one — like the arrangement beside it. */
   function persist(): void {
     writeTabAndShared(STORAGE_KEY, JSON.stringify(workspace.value))
   }
 
-  function find(id: string): PanelState | undefined {
-    for (const column of activeLayout.value.columns) {
+  function find(id: string, bundle: BundleId): PanelState | undefined {
+    for (const column of layoutOf(bundle).columns) {
       const panel = column.panels.find(entry => entry.id === id)
       if (panel) return panel
     }
     return undefined
   }
 
-  function setOpen(id: string, open: boolean): void {
-    const panel = find(id)
+  function setOpen(id: string, open: boolean, bundle: BundleId = 'run'): void {
+    const panel = find(id, bundle)
     if (!panel) return
     panel.open = open
     persist()
   }
 
   /** Pin anchors a panel to the top and opens it once — afterwards open/closed stays free. */
-  function togglePin(id: string): void {
-    const panel = find(id)
+  function togglePin(id: string, bundle: BundleId = 'run'): void {
+    const panel = find(id, bundle)
     if (!panel) return
     panel.pinned = !panel.pinned
     if (panel.pinned) panel.open = true
@@ -150,24 +154,24 @@ export const useLayoutStore = defineStore('layout', () => {
   }
 
   /** Lock exempts a panel from "collapse all". */
-  function toggleLock(id: string): void {
-    const panel = find(id)
+  function toggleLock(id: string, bundle: BundleId = 'run'): void {
+    const panel = find(id, bundle)
     if (!panel) return
     panel.locked = !panel.locked
     persist()
   }
 
   /** Switched off, and nothing moves: the panel keeps its place, its pin and its lock. */
-  function hide(id: string): void {
-    const panel = find(id)
+  function hide(id: string, bundle: BundleId = 'run'): void {
+    const panel = find(id, bundle)
     if (!panel) return
     panel.hidden = true
     persist()
   }
 
   /** Switched on, and OPENED — a reader who brings a section back wants to see it. */
-  function show(id: string): void {
-    const panel = find(id)
+  function show(id: string, bundle: BundleId = 'run'): void {
+    const panel = find(id, bundle)
     if (!panel) return
     panel.hidden = false
     panel.open = true
@@ -183,8 +187,8 @@ export const useLayoutStore = defineStore('layout', () => {
    * drag in the column would drop every hidden panel out of the list — the ids simply would not be
    * in the list it was given.
    */
-  function reorder(ids: string[]): void {
-    const column = activeLayout.value.columns[0]!
+  function reorder(ids: string[], bundle: BundleId = 'run'): void {
+    const column = layoutOf(bundle).columns[0]!
     const byId = new Map(column.panels.map(panel => [panel.id, panel]))
     const queue = ids.filter(id => byId.has(id))
     const moving = new Set(queue)
@@ -194,8 +198,8 @@ export const useLayoutStore = defineStore('layout', () => {
     persist()
   }
 
-  function collapseAll(): void {
-    for (const column of activeLayout.value.columns) {
+  function collapseAll(bundle: BundleId = 'run'): void {
+    for (const column of layoutOf(bundle).columns) {
       for (const panel of column.panels) {
         if (!panel.locked) panel.open = false
       }
@@ -203,8 +207,10 @@ export const useLayoutStore = defineStore('layout', () => {
     persist()
   }
 
-  function reset(): void {
-    workspace.value = buildDefaultWorkspace()
+  /** One bundle's column back to its register's order — or every bundle's, where none is named. */
+  function reset(bundle?: BundleId): void {
+    if (bundle) workspace.value.bundles[bundle] = defaultLayout(bundle)
+    else workspace.value = buildDefaultWorkspace()
     persist()
   }
 
@@ -216,7 +222,7 @@ export const useLayoutStore = defineStore('layout', () => {
   function importLayout(text: string): boolean {
     try {
       const parsed = JSON.parse(text) as WorkspaceState
-      if (!parsed || typeof parsed !== 'object' || !parsed.layouts) return false
+      if (!parsed || typeof parsed !== 'object' || !parsed.bundles) return false
       // another version is refused, as a stored one is removed: its fields may mean something else
       if (parsed.version !== SCHEMA_VERSION) return false
       workspace.value = reconcile(parsed)
@@ -229,9 +235,8 @@ export const useLayoutStore = defineStore('layout', () => {
 
   return {
     workspace,
-    activeLayout,
-    arrangedPanels,
-    visiblePanels,
+    arrangedOf,
+    visibleOf,
     setOpen,
     togglePin,
     toggleLock,

@@ -1,4 +1,5 @@
 import { defineAsyncComponent, defineComponent, h } from 'vue'
+import { memberKindId, memberOfKind } from '@/bundle_members'
 import { allPanels } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
 import { useLayoutStore } from '@/stores/layout_store'
@@ -94,8 +95,8 @@ export const PANEL_KINDS: PanelKind[] = [
     // what the bundle offers about its own column, on its tab's ⋯ rather than in the Panels menu,
     // which only shows and hides (#42)
     actions: [
-      { id: 'collapse-all', title: t('Collapse all'), run: () => useLayoutStore().collapseAll() },
-      { id: 'reset-bundle', title: t('Reset bundle'), run: () => useLayoutStore().reset() },
+      { id: 'collapse-all', title: t('Collapse all'), run: () => useLayoutStore().collapseAll(RUN_BUNDLE) },
+      { id: 'reset-bundle', title: t('Reset bundle'), run: () => useLayoutStore().reset(RUN_BUNDLE) },
     ],
     // its own line follows the run; what its members follow and choose its card adds while they
     // stand in its column — a member open as a panel of its own takes its links with it
@@ -178,16 +179,15 @@ export function firstActiveKind(): string {
 /** The sections whose panel is a LIST; every other section reads as a sheet of figures. */
 const LIST_SECTIONS = new Set(['scenario-roster', 'trade-history', 'orders', 'booking-periods'])
 
-const REPORT_PREFIX = 'report-'
-
-/** A section's panel kind — one id scheme, so the column, the Panels menu and the dock agree on it. */
+/** A run report section's panel kind — the run bundle's member scheme, from `bundle_members`. */
 export function reportKindId(sectionId: string): string {
-  return `${REPORT_PREFIX}${sectionId}`
+  return memberKindId(RUN_BUNDLE, sectionId)
 }
 
 /** The section a kind shows, or null for a kind that is not a section of the run report. */
 export function sectionOfKind(kindId: string): string | null {
-  return kindId.startsWith(REPORT_PREFIX) ? kindId.slice(REPORT_PREFIX.length) : null
+  const member = memberOfKind(kindId)
+  return member?.bundle === RUN_BUNDLE ? member.member : null
 }
 
 function reportKind(section: PanelDescriptor, index: number): PanelKind {

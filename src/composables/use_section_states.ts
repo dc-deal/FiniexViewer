@@ -1,11 +1,10 @@
 import { computed, type ComputedRef } from 'vue'
 import { storeToRefs } from 'pinia'
-import { reportKindId } from '@/panel_kinds'
-import { allPanels } from '@/panel_registry'
+import { bundleMembers, memberKindId } from '@/bundle_members'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
-import type { PanelDescriptor } from '@/types/panel_types'
+import type { BundleId, PanelDescriptor } from '@/types/panel_types'
 
 /** Where a section of the run report stands: in the column, open as a panel, or hidden. */
 export type SectionPlace = 'column' | 'panel' | 'hidden'
@@ -29,17 +28,17 @@ export interface SectionState {
  * A hidden section keeps its place in that order: `hidden` is a flag, not a removal, so an entry
  * that is switched off does not move away from the pointer that switched it.
  */
-export function useSectionStates(): ComputedRef<SectionState[]> {
-  const { arrangedPanels } = storeToRefs(useLayoutStore())
+export function useSectionStates(bundle: BundleId = 'run'): ComputedRef<SectionState[]> {
+  const layoutStore = useLayoutStore()
   const { openIds } = storeToRefs(useDockStore())
   const sections = useRunSectionsStore()
 
   return computed(() => {
-    const byId = new Map(allPanels().map(panel => [panel.id, panel]))
-    return arrangedPanels.value.flatMap(state => {
+    const byId = new Map(bundleMembers(bundle).map(panel => [panel.id, panel]))
+    return layoutStore.arrangedOf(bundle).flatMap(state => {
       const section = byId.get(state.id)
       if (!section) return []
-      const place: SectionPlace = openIds.value.includes(reportKindId(section.id))
+      const place: SectionPlace = openIds.value.includes(memberKindId(bundle, section.id))
         ? 'panel'
         : state.hidden ? 'hidden' : 'column'
       return [{ section, place, absent: sections.lacks(section.source) }]

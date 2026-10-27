@@ -83,7 +83,7 @@ describe('AppMenuBar', () => {
     expect(kindEntry('runs').textContent).toContain('Run list')
     expect(kindEntry('run').textContent).toContain('Run bundle')
     const sections = [...document.querySelectorAll<HTMLElement>('.menu-toggle[data-section]')].map(node => node.dataset['section'])
-    expect(sections).toEqual(useLayoutStore().arrangedPanels.map(panel => panel.id))
+    expect(sections).toEqual(useLayoutStore().arrangedOf().map(panel => panel.id))
     expect(sections.length).toBe(allPanels().length)
     expect(sections.indexOf('broker')).toBeLessThan(sections.indexOf('executive'))
   })

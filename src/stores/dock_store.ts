@@ -3,11 +3,13 @@ import { ref, shallowRef } from 'vue'
 import type { DockviewApi, GroupNavigationDirection, IDockviewPanel } from 'dockview-vue'
 import { reconcileLayout } from '@/components/dock/dock_layout'
 import { chartLayers } from '@/layer_registry'
-import { PANEL_KINDS, RUN_BUNDLE, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { memberKindId, memberOfKind } from '@/bundle_members'
+import { PANEL_KINDS, RUN_BUNDLE, firstActiveKind, panelKind } from '@/panel_kinds'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import type { DockPlace } from '@/types/arrangement_types'
+import type { BundleId } from '@/types/panel_types'
 
 /** How long the layout must hold still before it is written — a drag changes it every frame. */
 const SAVE_DELAY_MS = 300
@@ -138,8 +140,8 @@ export const useDockStore = defineStore('dock', () => {
   const lastChart = ref<string | null>(null)
   let timer: ReturnType<typeof setTimeout> | null = null
   let subscriptions: { dispose(): void }[] = []
-  /** The section panel opened last: where the next one goes, as a tab beside it. */
-  let lastSection: string | null = null
+  /** The member panel of each bundle opened last: where its next one goes, as a tab beside it. */
+  const lastSection = new Map<BundleId, string>()
   /**
    * Set while the dock is laid out anew — back to the suggested order. Every panel removed on the
    * way is a rebuild, never the reader closing something, so nothing is hidden and no place moves.
@@ -332,13 +334,13 @@ export const useDockStore = defineStore('dock', () => {
     syncOpen()
     if (panel.id === lastChart.value) lastChart.value = api.value ? anyChart(api.value) : null
     if (restoring) return
-    const section = sectionOfKind(panel.id)
-    if (!section) return
+    const member = memberOfKind(panel.id)
+    if (!member) return
     if (intoColumn.delete(panel.id)) {
       forgetPlace(panel.id)
       return
     }
-    layoutStore.hide(section)
+    layoutStore.hide(member.member, member.bundle)
   }
 
   /**
@@ -489,30 +491,31 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   /**
-   * Opens a section of the run report as a panel of its own, or brings it to the front where it is
-   * open already — a section is in one place at a time. The first stands beside the run report, as
-   * a split to its right; each further one joins the last as a tab, so the screen is not cut
-   * thinner with every section.
+   * Opens a member of a bundle — a section of the run report, unless another bundle is named — as a
+   * panel of its own, or brings it to the front where it is open already: a member is in one place
+   * at a time. The first stands beside its bundle, as a split to its right; each further one joins
+   * the last of that bundle's as a tab, so the screen is not cut thinner with every member.
    */
-  function openSection(sectionId: string): void {
+  function openSection(sectionId: string, bundle: BundleId = RUN_BUNDLE): void {
     const dock = api.value
     if (!dock) return
-    const kindId = reportKindId(sectionId)
+    const kindId = memberKindId(bundle, sectionId)
     if (!dock.getPanel(kindId)) {
-      const beside = lastSection && dock.getPanel(lastSection)
-        ? lastSection
-        : dock.panels.map(panel => panel.id).find(id => sectionOfKind(id) !== null)
+      const last = lastSection.get(bundle)
+      const beside = last && dock.getPanel(last)
+        ? last
+        : dock.panels.map(panel => panel.id).find(id => memberOfKind(id)?.bundle === bundle)
       if (beside) add(dock, kindId, { referencePanel: beside, direction: 'within' })
-      else if (dock.getPanel(COLUMN_KIND)) add(dock, kindId, { referencePanel: COLUMN_KIND, direction: 'right' })
+      else if (dock.getPanel(bundle)) add(dock, kindId, { referencePanel: bundle, direction: 'right' })
       else add(dock, kindId)
     }
-    lastSection = kindId
+    lastSection.set(bundle, kindId)
     dock.getPanel(kindId)?.api.setActive()
   }
 
-  /** Puts a section opened as a panel back into the run report's column — the ⇲ on its tab. */
-  function backIntoColumn(sectionId: string): void {
-    const kindId = reportKindId(sectionId)
+  /** Puts a member opened as a panel back into its bundle's column — the ⇲ on its tab. */
+  function backIntoColumn(sectionId: string, bundle: BundleId = RUN_BUNDLE): void {
+    const kindId = memberKindId(bundle, sectionId)
     const panel = api.value?.getPanel(kindId)
     if (!panel) return
     intoColumn.add(kindId)
@@ -525,29 +528,29 @@ export const useDockStore = defineStore('dock', () => {
    * Shows a hidden section where it last stood: as a panel beside the panels it stood beside, while
    * one of them is still open, and otherwise in the column, whose panel comes to the front.
    */
-  function showSection(sectionId: string): void {
+  function showSection(sectionId: string, bundle: BundleId = RUN_BUNDLE): void {
     const dock = api.value
     if (!dock) return
-    const kindId = reportKindId(sectionId)
-    layoutStore.show(sectionId)
+    const kindId = memberKindId(bundle, sectionId)
+    layoutStore.show(sectionId, bundle)
     if (dock.getPanel(kindId) || placeAgain(dock, kindId)) {
-      lastSection = kindId
+      lastSection.set(bundle, kindId)
       dock.getPanel(kindId)?.api.setActive()
       return
     }
     forgetPlace(kindId)
-    reveal(COLUMN_KIND, 'command')
+    reveal(bundle, 'command')
   }
 
-  /** Hides a section wherever it stands — its panel's close, or switched off in the column. */
-  function hideSection(sectionId: string): void {
-    const kindId = reportKindId(sectionId)
+  /** Hides a member wherever it stands — its panel's close, or switched off in the column. */
+  function hideSection(sectionId: string, bundle: BundleId = RUN_BUNDLE): void {
+    const kindId = memberKindId(bundle, sectionId)
     if (api.value?.getPanel(kindId)) {
       close(kindId)
       return
     }
     forgetPlace(kindId)
-    layoutStore.hide(sectionId)
+    layoutStore.hide(sectionId, bundle)
   }
 
   /** Back to the suggested order — every panel the first arrangement holds, and no other. */

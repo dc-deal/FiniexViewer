@@ -47,7 +47,7 @@ describe('usePanelJump', () => {
     layout.hide('trade-history')
     usePanelJump()('trade-history', MARK)
     expect(useContextStore().main.run.position).toEqual(MARK)
-    const state = layout.arrangedPanels.find(panel => panel.id === 'trade-history')!
+    const state = layout.arrangedOf().find(panel => panel.id === 'trade-history')!
     expect(state.hidden).toBe(false)
     expect(state.open).toBe(true)
   })
