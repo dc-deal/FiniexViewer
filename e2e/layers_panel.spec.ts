@@ -21,7 +21,7 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
 
   await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
   const layers = page.locator('[data-panel-kind="layers"]')
-  await expect(layers.locator('[data-layer]')).toHaveCount(3)
+  await expect(layers.locator('[data-layer]')).toHaveCount(4)
 
   // beside, not over: the chart it arranges stays on show, the panel to its right
   await expect(chart).toBeVisible()
@@ -41,9 +41,15 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
   await expect.poll(async () => await chart.getAttribute('data-drawings')).not.toMatch(/trades:/)
   await painted()
   expect((await page.screenshot({ clip: axis })).equals(before)).toBe(true)
+  // the volume stands on a scale of its own: switching it off moves no candle either
+  await layers.locator('[data-layer="volume"] [data-action="show"]').click()
+  await expect(layers.locator('[data-layer="volume"]')).toHaveAttribute('data-shown', 'false')
+  await painted()
+  expect((await page.screenshot({ clip: axis })).equals(before)).toBe(true)
 
   await page.reload()
   await expect(page.locator('[data-panel-kind="layers"] [data-layer="trades"]')).toHaveAttribute('data-shown', 'false')
+  await expect(page.locator('[data-panel-kind="layers"] [data-layer="volume"]')).toHaveAttribute('data-shown', 'false')
   await expect.poll(async () => await page.locator('[data-panel-kind="run-chart"] .candle-chart').getAttribute('data-drawings'))
     .toMatch(/levels:\d+ entry-exit:\d+$/)
 })

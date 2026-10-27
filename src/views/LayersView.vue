@@ -54,6 +54,16 @@ const empty = computed(() => {
  */
 const emptyRows = computed(() => rows.value.filter(row => empty.value.has(row.id)))
 
+/**
+ * The layers that take a place among the others, front first — and the fixed ones, drawn by the
+ * chart library behind the candles: shown, hidden and fainter like the rest, never moved.
+ */
+const movable = computed(() => rows.value.filter(row => !layerDefinition(row.id).fixed))
+const fixedRows = computed(() => rows.value.filter(row => layerDefinition(row.id).fixed))
+
+/** What the volume counts, said in its row: the traded volume, or the ticks where no trade prints. */
+const volumeWord = computed(() => runChart.volumeBasis === 'traded' ? t('traded volume') : t('ticks per bar'))
+
 /** The closed row's word: what differs from the default, and that there is nothing to draw. */
 function summary(id: ChartLayerId, row: LayerState): string {
   return [layerSummary(row), ...(empty.value.has(id) ? [t('nothing to draw')] : [])].filter(Boolean).join(' · ')
@@ -77,7 +87,7 @@ function toggle(id: ChartLayerId): void {
       <p class="chart-name" :data-chart="lastChart">{{ chartName }}</p>
       <ul class="layer-list">
         <li
-          v-for="(row, index) in rows"
+          v-for="(row, index) in movable"
           :key="row.id"
           class="layer"
           :class="{ off: !row.shown }"
@@ -141,7 +151,7 @@ function toggle(id: ChartLayerId): void {
               <AppButton
                 size="compact"
                 variant="quiet"
-                :disabled="index === rows.length - 1"
+                :disabled="index === movable.length - 1"
                 :title="t('One place to the back')"
                 data-action="back"
                 @click="move(row.id, -1)"
@@ -155,7 +165,41 @@ function toggle(id: ChartLayerId): void {
           <div class="layer-row">
             <span class="fixed-mark" aria-hidden="true">▣</span>
             <span class="layer-title">{{ t('Candles') }}</span>
-            <span class="layer-summary">{{ t('at the back') }}</span>
+            <span class="layer-summary">{{ t('behind the drawings') }}</span>
+          </div>
+        </li>
+        <li
+          v-for="row in fixedRows"
+          :key="row.id"
+          class="layer fixed"
+          :class="{ off: !row.shown }"
+          :data-layer="row.id"
+          :data-shown="row.shown"
+          :data-opacity="row.opacity"
+        >
+          <div class="layer-row">
+            <AppSwitch
+              :model-value="row.shown"
+              :aria-label="t('Shown')"
+              :title="row.shown ? t('Hide this layer') : t('Show this layer')"
+              data-action="show"
+              @update:model-value="on => show(row.id, on)"
+            />
+            <span class="layer-head static" :title="layerDefinition(row.id).description">
+              <span class="layer-marker" aria-hidden="true" />
+              <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
+              <span class="layer-summary">{{ volumeWord }} · {{ t('behind the candles') }}</span>
+            </span>
+            <AppSlider
+              :model-value="row.opacity"
+              :min="LAYER_OPACITY_MIN"
+              :max="100"
+              :step="10"
+              :label="t('Opacity')"
+              :title="t('How strongly the layer is drawn — a click opens the lever')"
+              data-action="opacity"
+              @update:model-value="value => setOpacity(row.id, value)"
+            />
           </div>
         </li>
       </ul>
@@ -225,6 +269,13 @@ function toggle(id: ChartLayerId): void {
 
 .layer-head:hover {
   background-color: var(--color-bg-hover);
+}
+
+/* a fixed layer's head opens nothing: no surface under the pointer, no pointer */
+.layer-head.static,
+.layer-head.static:hover {
+  background: none;
+  cursor: default;
 }
 
 .layer-head:active {

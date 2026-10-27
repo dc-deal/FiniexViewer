@@ -15,7 +15,7 @@ describe('useChartLayers', () => {
 
   it('reads a chart\'s layers front first', () => {
     const { rows } = useChartLayers(() => 'run-chart')
-    expect(rows.value.map(row => row.id)).toEqual(['trades', 'entry-exit', 'levels'])
+    expect(rows.value.map(row => row.id)).toEqual(['trades', 'entry-exit', 'levels', 'volume'])
   })
 
   it('keeps a hidden layer, a fainter one and a switched option with the chart\'s own view', () => {
@@ -41,14 +41,15 @@ describe('useChartLayers', () => {
     expect(useArrangementStore().panelViews).toEqual({})
   })
 
-  /** One place at a time, and no further than either end. */
+  /** One place at a time, no further than either end, and never past the volume, which keeps its place at the back. */
   it('moves a layer one place toward the front or the back, and no further than either end', () => {
     const { rows, move } = useChartLayers(() => 'run-chart')
     move('levels', 1)
-    expect(rows.value.map(row => row.id)).toEqual(['trades', 'levels', 'entry-exit'])
+    expect(rows.value.map(row => row.id)).toEqual(['trades', 'levels', 'entry-exit', 'volume'])
     move('trades', 1)
     move('entry-exit', -1)
-    expect(rows.value.map(row => row.id)).toEqual(['trades', 'levels', 'entry-exit'])
+    move('volume', 1)
+    expect(rows.value.map(row => row.id)).toEqual(['trades', 'levels', 'entry-exit', 'volume'])
   })
 
   /** Back to the chart's own arrangement, nothing is kept — no entry stands for a chart nobody arranged. */

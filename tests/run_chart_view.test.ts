@@ -32,11 +32,11 @@ const COVERAGE: CoverageResponse = {
 }
 
 /** One bar a minute over the fixture run's units, so every trade of theirs has a candle. */
-function barsOver(fromIso: string, toIso: string): { t: number, o: number, h: number, l: number, c: number, v: number }[] {
+function barsOver(fromIso: string, toIso: string): { t: number, o: number, h: number, l: number, c: number, v: number, tc: number }[] {
   const from = Math.floor(Date.parse(fromIso) / 60_000) * 60
   const to = Date.parse(toIso) / 1000
   const bars = []
-  for (let t = from; t <= to; t += 60) bars.push({ t, o: 1, h: 1, l: 1, c: 1, v: 1 })
+  for (let t = from; t <= to; t += 60) bars.push({ t, o: 1, h: 1, l: 1, c: 1, v: 1, tc: 1 })
   return bars
 }
 
@@ -62,7 +62,7 @@ describe('RunChartView', () => {
     setActivePinia(createPinia())
     vi.mocked(apiClient.findCoverage).mockReset().mockResolvedValue(COVERAGE)
     vi.mocked(apiClient.getBars).mockReset().mockImplementation(async (_broker, _symbol, _timeframe, from, to) =>
-      ({ bars: barsOver(from, to), truncated: false }))
+      ({ bars: barsOver(from, to), truncated: false, priceBasis: '' }))
     vi.mocked(apiClient.getTimeframes).mockReset().mockResolvedValue([
       { name: 'M1', minutes: 1 }, { name: 'M5', minutes: 5 }, { name: 'H1', minutes: 60 },
     ])
@@ -96,7 +96,7 @@ describe('RunChartView', () => {
   })
 
   it('says so where the route answered with less than the window holds', async () => {
-    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: barsOver('2025-10-31T05:00:00Z', '2025-10-31T05:10:00Z'), truncated: true })
+    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: barsOver('2025-10-31T05:00:00Z', '2025-10-31T05:10:00Z'), truncated: true, priceBasis: '' })
     chooseFixtureRun()
     const wrapper = await mountView()
     // inside the chart's frame, over the plot — never a line that moves the chart down
@@ -114,7 +114,7 @@ describe('RunChartView', () => {
   })
 
   it('names the window without bars rather than drawing an empty chart', async () => {
-    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: [], truncated: false })
+    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: [], truncated: false, priceBasis: '' })
     chooseFixtureRun()
     const wrapper = await mountView()
     expect(wrapper.find('.candle-chart').exists()).toBe(false)
@@ -162,7 +162,7 @@ describe('RunChartQuickBar', () => {
     localStorage.clear()
     setActivePinia(createPinia())
     vi.mocked(apiClient.findCoverage).mockReset().mockResolvedValue(COVERAGE)
-    vi.mocked(apiClient.getBars).mockReset().mockResolvedValue({ bars: [], truncated: false })
+    vi.mocked(apiClient.getBars).mockReset().mockResolvedValue({ bars: [], truncated: false, priceBasis: '' })
     vi.mocked(apiClient.getTimeframes).mockReset().mockResolvedValue([
       { name: 'M1', minutes: 1 }, { name: 'M5', minutes: 5 }, { name: 'H1', minutes: 60 },
     ])

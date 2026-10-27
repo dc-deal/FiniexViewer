@@ -30,6 +30,11 @@ export interface LayerDefinition {
   /** Why it may have nothing to draw — said where it has nothing, so a lever that changes nothing is explained. */
   emptyHint: string
   option?: LayerOption
+  /**
+   * Drawn by the chart library behind the candles rather than by the chart's own host: it takes no
+   * place among the others, is never moved, and stands at the back.
+   */
+  fixed?: boolean
 }
 
 /** One layer of a chart as the reader arranged it. */

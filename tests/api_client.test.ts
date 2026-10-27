@@ -149,10 +149,17 @@ describe('api_client', () => {
     })
 
     it('returns the bar array from response', async () => {
-      const bars = [{ t: 1704067200, o: 42000, h: 43000, l: 41000, c: 42500, v: 100 }]
+      const bars = [{ t: 1704067200, o: 42000, h: 43000, l: 41000, c: 42500, v: 100, tc: 1 }]
       mockGet.mockResolvedValue({ data: bars, headers: { 'x-bar-truncated': 'false' } })
       const result = await getBars('kraken_spot', 'BTCUSD', 'H1', '2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z')
-      expect(result).toEqual({ bars, truncated: false })
+      expect(result).toEqual({ bars, truncated: false, priceBasis: '' })
+    })
+
+    /** The file's price basis travels on a header, and the volume layer reads which count to draw from it. */
+    it('carries on the price basis the route states on a header', async () => {
+      mockGet.mockResolvedValue({ data: [], headers: { 'x-bar-price-basis': 'quote_driven' } })
+      const result = await getBars('mt5', 'EURUSD', 'M5', '2026-01-07T00:00:00Z', '2026-01-09T00:00:00Z')
+      expect(result.priceBasis).toBe('quote_driven')
     })
 
     /** The cap never cuts quietly: the route says so on a header, and the answer carries it on. */

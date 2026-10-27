@@ -79,3 +79,18 @@ export interface TimeframeOffer {
   apart: number
   at: number
 }
+
+/**
+ * What the volume layer counts: the traded volume where the venue prints trades, its ticks per bar
+ * where it does not. Ours, chosen from the bars' `X-Bar-Price-Basis`.
+ */
+export type VolumeBasis = 'traded' | 'ticks'
+
+/** The volume layer as the chart draws it — one value a bar, coloured by the candle's direction. */
+export interface ChartVolume {
+  basis: VolumeBasis
+  shown: boolean
+  /** The share of its strength it is drawn at, 0–1 — set in the Layers panel. */
+  opacity: number
+  bars: { time: number, value: number, rising: boolean }[]
+}

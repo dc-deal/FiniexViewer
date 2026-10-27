@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { findCoverage, getBars } from '@/api/api_client'
 import {
   autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
@@ -15,10 +15,10 @@ import { useContextStore } from '@/stores/context_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
-import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
-import type { ChartDrawing, ChartLayer, ChartLayerId } from '@/types/chart_drawing_types'
+import type { ApiBar, ChartBar, CoverageResponse } from '@/types/api/bar_types'
+import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
 import type { PositionRef } from '@/types/context_types'
-import type { ChartMark, ChartUnit, TimeframeOffer } from '@/types/run_chart_types'
+import type { ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
 
 /** One market's coverage as asked — the answer, or that the archive holds nothing for it. */
 type CoverageEntry = CoverageResponse | 'none'
@@ -122,6 +122,10 @@ export const useRunChartStore = defineStore('runChart', () => {
   })
 
   const bars = ref<ChartBar[]>([])
+  /** The bars as served, for what the candles do not carry: the two counts the volume is drawn from. */
+  const served = shallowRef<ApiBar[]>([])
+  /** The file's price basis, as the route stated it with the bars — '' where it did not. */
+  const priceBasis = ref('')
   const truncated = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -201,7 +205,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   const layers = computed<ChartLayer[]>(() => {
     const key = reports.tradeHistory?.keys.trades ?? []
     const looked = focus.value?.position ?? null
-    const drawings: Record<ChartLayerId, (option: boolean | null) => ChartDrawing[]> = {
+    const drawings: Record<DrawingLayerId, (option: boolean | null) => ChartDrawing[]> = {
       levels: every => every
         ? positionLevels(
           unitTrades.value, key, unitPortfolio.value?.open_positions ?? [], looked, barTimes.value, cutAt.value,
@@ -213,12 +217,33 @@ export const useRunChartStore = defineStore('runChart', () => {
       // without their signs the marks keep their shapes, and a gathered mark's card still counts it
       trades: signs => signs === false ? marks.value.map(mark => ({ ...mark, text: '' })) : marks.value,
     }
-    return arranged.value.map(state => ({
+    return arranged.value.flatMap(state => state.id === 'volume' ? [] : [{
       id: state.id,
       drawings: drawings[state.id](state.option),
       ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
       ...(state.shown ? {} : { hidden: true }),
-    }))
+    }])
+  })
+
+  /**
+   * What the volume layer counts. Their `market-data` document: `v` is the traded volume, `0.0` on
+   * every bar of a feed that carries none, and then `tc` is the measure of how busy the market was;
+   * `order_driven` names a venue that prints trades. So the traded volume where the bars say so, the
+   * ticks otherwise — our reading of those two sentences, put to them for confirmation.
+   */
+  const volumeBasis = computed<VolumeBasis>(() => priceBasis.value === 'order_driven' ? 'traded' : 'ticks')
+
+  /** The volume layer: one value a bar, behind the candles, shown and as strong as arranged. */
+  const volume = computed<ChartVolume | null>(() => {
+    const state = arranged.value.find(entry => entry.id === 'volume')
+    if (!state) return null
+    const traded = volumeBasis.value === 'traded'
+    return {
+      basis: volumeBasis.value,
+      shown: state.shown,
+      opacity: state.opacity / 100,
+      bars: served.value.map(bar => ({ time: bar.t, value: traded ? bar.v : bar.tc, rising: bar.c >= bar.o })),
+    }
   })
 
   /** A finer timeframe that draws apart the marks some candles hold together — where one does. */
@@ -256,6 +281,8 @@ export const useRunChartStore = defineStore('runChart', () => {
     const tf = timeframe.value
     const run = ++generation
     bars.value = []
+    served.value = []
+    priceBasis.value = ''
     truncated.value = false
     error.value = null
     if (!target || !span || !tf || Date.parse(span.to) <= Date.parse(span.from)) {
@@ -273,6 +300,8 @@ export const useRunChartStore = defineStore('runChart', () => {
       const answer = await getBars(target.broker!, target.symbol!, tf, from, span.to)
       if (run !== generation) return
       bars.value = toChartBars(answer.bars)
+      served.value = answer.bars
+      priceBasis.value = answer.priceBasis
       truncated.value = answer.truncated
     } catch (failure) {
       if (run !== generation) return
@@ -360,7 +389,7 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
-    bars, truncated, loading, error, events, marks, layers, offer, focusAt, priceFormat,
+    bars, truncated, loading, error, events, marks, layers, volume, volumeBasis, offer, focusAt, priceFormat,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach,
   }
 })

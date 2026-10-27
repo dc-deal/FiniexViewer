@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
-import { arrangeLayers, keptLayers } from '@/layer_registry'
+import { arrangeLayers, keptLayers, layerDefinition } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import { LAYER_OPACITY_MIN } from '@/types/layer_types'
@@ -13,7 +13,7 @@ interface ChartLayers {
   /** In percent, held to `LAYER_OPACITY_MIN`–100. */
   setOpacity: (id: ChartLayerId, opacity: number) => void
   setOption: (id: ChartLayerId, on: boolean) => void
-  /** One place toward the front (`1`) or the back (`-1`); nothing past either end. */
+  /** One place toward the front (`1`) or the back (`-1`); nothing past either end, nor past a fixed layer. */
   move: (id: ChartLayerId, step: 1 | -1) => void
 }
 
@@ -48,6 +48,8 @@ export function useChartLayers(chartId: () => string | null): ChartLayers {
     const from = order.findIndex(state => state.id === id)
     const to = from + step
     if (from < 0 || to < 0 || to >= order.length) return
+    // a fixed layer keeps its place, and no other passes it
+    if (layerDefinition(id).fixed || layerDefinition(order[to]!.id).fixed) return
     const [moved] = order.splice(from, 1)
     order.splice(to, 0, moved!)
     write(order)

@@ -37,11 +37,27 @@ describe('LayersView', () => {
     mounted = null
   })
 
-  it('lists the chart\'s layers front first, the candles behind them all, under the chart\'s name', () => {
+  it('lists the chart\'s layers front first, the candles behind the drawings and the volume behind them, under the chart\'s name', () => {
     const wrapper = mountOn('run-chart')
-    expect(order(wrapper)).toEqual(['trades', 'entry-exit', 'levels'])
+    expect(order(wrapper)).toEqual(['trades', 'entry-exit', 'levels', 'volume'])
     expect(wrapper.find('.fixed').text()).toContain('Candles')
     expect(wrapper.find('.chart-name').text()).toBe('Run chart')
+  })
+
+  /**
+   * The volume is drawn by the chart library behind the candles: it is shown, hidden and made fainter
+   * like the others, opens nothing, is never moved, and says what it counts.
+   */
+  it('offers the volume its lever and its opacity, and no place to move it to', async () => {
+    const wrapper = mountOn('run-chart')
+    const volume = row(wrapper, 'volume')
+    expect(volume.classes()).toContain('fixed')
+    expect(volume.find('[data-action="open"]').exists()).toBe(false)
+    expect(volume.find('[data-action="opacity"]').exists()).toBe(true)
+    // no bars loaded: no price basis stated, so it counts ticks
+    expect(volume.find('.layer-summary').text()).toBe('ticks per bar · behind the candles')
+    await volume.find('[data-action="show"]').trigger('click')
+    expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ hidden: ['volume'] })
   })
 
   /** Grey is enough: the lever's position says it, and nothing in the row changes its size. */
@@ -97,7 +113,7 @@ describe('LayersView', () => {
     expect(row(wrapper, 'trades').find('[data-action="front"]').attributes('disabled')).toBeDefined()
     expect(row(wrapper, 'levels').find('[data-action="back"]').attributes('disabled')).toBeDefined()
     await row(wrapper, 'levels').find('[data-action="front"]').trigger('click')
-    expect(order(wrapper)).toEqual(['trades', 'levels', 'entry-exit'])
+    expect(order(wrapper)).toEqual(['trades', 'levels', 'entry-exit', 'volume'])
   })
 
   it('puts the handle of each layer\'s opacity in its row', () => {

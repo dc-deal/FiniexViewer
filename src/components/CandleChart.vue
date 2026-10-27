@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue'
-import { CandlestickSeries, ColorType, createChart } from 'lightweight-charts'
+import { CandlestickSeries, ColorType, HistogramSeries, createChart } from 'lightweight-charts'
 import type {
   CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, MouseEventParams, UTCTimestamp,
 } from 'lightweight-charts'
@@ -10,6 +10,7 @@ import type { BarRange } from '@/components/chart_geometry'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { ChartLayer } from '@/types/chart_drawing_types'
 import type { FigureCard } from '@/types/figure_types'
+import type { ChartVolume } from '@/types/run_chart_types'
 
 const props = defineProps<{
   data: ChartBar[]
@@ -26,6 +27,11 @@ const props = defineProps<{
    * applies, which is two decimals for every instrument.
    */
   priceFormat?: { precision: number, minMove: number } | null
+  /**
+   * The volume, drawn by the library as a series of its own behind the candles. Left out, the chart
+   * draws none and builds no series for it — the free chart; null, nothing yet.
+   */
+  volume?: ChartVolume | null
 }>()
 
 const emit = defineEmits<{
@@ -48,9 +54,19 @@ const FOCUS_SPAN = 150
  */
 const MIN_BAR_SPACING = 0.05
 
+/**
+ * The volume's own price scale, which nothing shows: it is drawn in the lowest fifth of the pane, as
+ * established charts draw it, and leaves the candles' scale alone — so switching it on or off moves
+ * no candle.
+ */
+const VOLUME_SCALE = 'volume'
+/** How strongly a volume bar is drawn at full opacity — behind the candles, it must not compete. */
+const VOLUME_ALPHA = 0.45
+
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
 let series: ISeriesApi<'Candlestick'> | null = null
+let volumeSeries: ISeriesApi<'Histogram'> | null = null
 /** What the chart draws for itself — one series primitive for every layer. */
 let host: ChartDrawingHost | null = null
 let resizeObserver: ResizeObserver | null = null
@@ -219,6 +235,13 @@ function initChart(size: { width: number, height: number }): void {
   chart.timeScale().subscribeVisibleLogicalRangeChange(reportSpacing)
   frameSize.value = size
 
+  // built before the candles, so it is drawn behind them
+  if (props.volume !== undefined) {
+    volumeSeries = chart.addSeries(HistogramSeries, {
+      priceScaleId: VOLUME_SCALE, priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false,
+    })
+    chart.priceScale(VOLUME_SCALE).applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })
+  }
   series = chart.addSeries(CandlestickSeries, { borderVisible: false, ...candleColours(colours), ...seriesFormat() })
   host = new ChartDrawingHost()
   series.attachPrimitive(host)
@@ -247,6 +270,33 @@ function repaint(): void {
   chart.applyOptions(chartColours(colours))
   series.applyOptions(candleColours(colours))
   showDrawings()
+  showVolume()
+}
+
+/** A token's hex colour at a share of its strength — the library takes a colour, not a CSS mix. */
+function withAlpha(colour: string, alpha: number): string {
+  const hex = /^#([0-9a-f]{6})$/i.exec(colour)
+  if (!hex) return colour
+  const value = Number.parseInt(hex[1]!, 16)
+  return `rgba(${value >> 16}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`
+}
+
+/** The volume bars, in the colour of their candle's direction, faint — or none, where hidden. */
+function showVolume(): void {
+  if (!volumeSeries) return
+  const volume = props.volume
+  volumeSeries.applyOptions({ visible: volume?.shown ?? false })
+  if (!volume) {
+    volumeSeries.setData([])
+    return
+  }
+  const colours = readColours()
+  const alpha = VOLUME_ALPHA * volume.opacity
+  const rise = withAlpha(colours.rise, alpha)
+  const fall = withAlpha(colours.fall, alpha)
+  volumeSeries.setData(volume.bars.map(bar => ({
+    time: bar.time as UTCTimestamp, value: bar.value, color: bar.rising ? rise : fall,
+  })))
 }
 
 function showData(data: ChartBar[]): void {
@@ -263,6 +313,7 @@ function onResize(): void {
   if (!chart) {
     initChart(size)
     if (props.data.length) showData(props.data)
+    showVolume()
     return
   }
   chart.resize(size.width, size.height)
@@ -291,6 +342,7 @@ watch(() => props.layers, () => {
   showDrawings()
 })
 watch(() => props.focus, () => frame())
+watch(() => props.volume, () => showVolume())
 // a format taken away goes back to the library's own (lightweight-charts 5.2.1: two decimals, a
 // least move of 0.01) — applying nothing would keep the previous instrument's decimals
 watch(() => props.priceFormat, () => series?.applyOptions(

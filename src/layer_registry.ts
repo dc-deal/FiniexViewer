@@ -34,6 +34,12 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
       changed: t('every position'),
     },
   },
+  volume: {
+    title: t('Volume'),
+    description: t('What traded in each bar — or how many ticks it held, where the venue prints no trades — in the lowest fifth of the chart, behind the candles'),
+    emptyHint: t('The window drawn holds no bars.'),
+    fixed: true,
+  },
   trades: {
     title: t('Trades'),
     description: t('Where each position opened and each trade closed'),
@@ -53,7 +59,7 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
  * draws only its candles, and the Layers panel has nothing to arrange for it: the free chart today.
  */
 const CHART_LAYERS: Record<string, readonly ChartLayerId[]> = {
-  'run-chart': ['levels', 'entry-exit', 'trades'],
+  'run-chart': ['volume', 'levels', 'entry-exit', 'trades'],
 }
 
 export function layerDefinition(id: ChartLayerId): LayerDefinition {
@@ -76,6 +82,8 @@ export function arrangeLayers(chartId: string, stored: StoredLayers | undefined)
   own.forEach((id, index) => {
     if (!order.includes(id)) order.splice(Math.min(index, order.length), 0, id)
   })
+  // a fixed layer stands at the back whatever was kept
+  order.sort((a, b) => Number(LAYERS[b].fixed ?? false) - Number(LAYERS[a].fixed ?? false))
   return order.map(id => {
     const option = LAYERS[id].option
     return {

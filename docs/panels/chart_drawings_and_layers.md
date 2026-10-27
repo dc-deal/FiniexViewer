@@ -110,7 +110,8 @@ Run chart · ETHUSD_aug_sep
 (━●) ▾ Entry–exit line                ◐ 40%
          ↑ front  ↓ back
 (●━) ▸ Levels                         ◐        ← switched off: the row grey
-      ▣ Candles              at the back
+      ▣ Candles              behind the drawings
+(━●)   Volume   ticks per bar · behind the candles   ◐   ← fixed: opens nothing, never moved
 ```
 
 - **The register** is `src/layer_registry.ts`: each layer's title, what it draws and its one option,
@@ -131,6 +132,23 @@ Run chart · ETHUSD_aug_sep
   neither paints nor hits it and puts nothing of it on the axis, and only the room its marks take is
   kept. A fainter one carries its `opacity`, and the host paints that layer whole at it.
 
+## The volume — a layer the library draws (2026-10-27)
+
+To the reader the volume is a layer like the others — shown, hidden, fainter — but the chart library
+draws it, as a `HistogramSeries` of its own built BEFORE the candles, so it stands behind them. Its
+place is fixed (`fixed` in the register): it opens nothing, is never moved, and no other layer passes
+it. It sits in the lowest fifth of the pane on a price scale nothing shows — the way established
+charts draw it — and so leaves the candles' scale alone: switching it moves no candle.
+
+- **Which count**, from the bars' own answer (their `market-data` document): `v` is the traded
+  volume, `0.0` on every bar of a feed that carries none, and then `tc` is the measure of how busy the
+  market was. `X-Bar-Price-Basis: order_driven` names a venue that prints trades. So the traded
+  volume there, the ticks otherwise (`volumeBasis` in `run_chart_store`), and the row says which —
+  *traded volume* or *ticks per bar*. That reading of two sentences is put to FiniexTestingIDE.
+- **Each bar faint in its candle's direction** — the polarity roles at 45 % of the layer's opacity.
+- **The run chart only.** `CandleChart` builds the series only where it is handed a `volume`; the
+  free chart, which draws no layers, builds none.
+
 ## How it is tested
 
 - `layer_registry.test.ts`, `use_chart_layers.test.ts`, `layers_view.test.ts` — the register and the
@@ -139,6 +157,7 @@ Run chart · ETHUSD_aug_sep
 - `chart_drawing_host.test.ts` — the host against the few library calls it makes, and its painting
   against a canvas context that records what it was told to draw (jsdom has no canvas).
 - `run_chart_levels.test.ts` — the levels and the line from served fields.
-- `candle_chart.test.ts` — what the chart hands its host: the layers, every bar's range, the colours.
+- `candle_chart.test.ts` — what the chart hands its host: the layers, every bar's range, the colours;
+  and the volume's series, its scale and its colours, built only where a volume is handed.
 - `e2e/run_chart.spec.ts` — the levels painted on a real canvas, from a capture whose position the
   mock hands a stop and a target (no trade of the fixture run set one).

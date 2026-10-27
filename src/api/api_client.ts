@@ -118,7 +118,11 @@ export async function getBars(
     `/brokers/${broker}/symbols/${symbol}/bars`,
     { params: { timeframe, from, to } }
   )
-  return { bars: response.data, truncated: String(response.headers?.['x-bar-truncated']) === 'true' }
+  return {
+    bars: response.data,
+    truncated: String(response.headers?.['x-bar-truncated']) === 'true',
+    priceBasis: String(response.headers?.['x-bar-price-basis'] ?? ''),
+  }
 }
 
 /**
