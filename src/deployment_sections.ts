@@ -11,6 +11,7 @@ const SECTIONS: PanelDescriptor[] = [
   {
     id: 'sessions',
     title: 'Sessions',
+    panelTitle: 'Deployment sessions',
     icon: 'form-list',
     component: DeploymentSessionsPanel,
     source: 'sessions',
@@ -22,6 +23,7 @@ const SECTIONS: PanelDescriptor[] = [
   {
     id: 'periods',
     title: 'Booking periods',
+    panelTitle: 'Deployment booking periods',
     icon: 'kind-booking-periods',
     component: DeploymentPeriodsPanel,
     source: 'periods',

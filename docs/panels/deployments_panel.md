@@ -29,7 +29,9 @@ Panels ▸ Deployments ▸  Deployment list · Deployment bundle · ─ · Sessi
   line, the advisory above the table it qualifies, and each currency's header and sessions) and
   *Booking periods* (`DeploymentPeriodsPanel`). Their models come from `deployment_sections_store`,
   read off `deployments_store`; open as a panel of its own, a member is drawn by
-  `components/dock/DeploymentSection.vue` and ⇲ puts it back.
+  `components/dock/DeploymentSection.vue` and ⇲ puts it back. As a panel its tab reads *Deployment
+  sessions* or *Deployment booking periods* (`panelTitle`): beside the run report's *Booking periods*
+  two tabs read the same (operator, on screen 2026-10-27), and a test holds every kind's title apart.
 - **Where it stands.** The first arrangement holds it as a tab behind the run bundle, not beside the
   list: there it would make the arrangement four columns wide, and as a tab beside the list a pick
   would leave it behind, since a pick never covers its list. A stored arrangement without it gains it

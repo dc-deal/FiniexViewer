@@ -248,7 +248,8 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
 function deploymentKind(member: PanelDescriptor, index: number): PanelKind {
   return {
     id: memberKindId(DEPLOYMENT_BUNDLE, member.id),
-    title: t(member.title),
+    title: t(member.panelTitle ?? member.title),
+    menuTitle: t(member.title),
     description: t('This member as a panel of its own — “Back into the bundle” on its tab puts it back'),
     icon: member.icon,
     order: PANEL_KINDS.length + REPORT_KINDS.length + 1 + index,

@@ -100,6 +100,16 @@ describe('panel_kinds', () => {
    * part of. A tab's card says them in words, so a wrong declaration is a wrong sentence on screen.
    */
   describe('the relations every kind declares', () => {
+    /**
+     * A tab is told apart by its title: a deployment's booking periods and a run's stood side by side
+     * as two tabs reading the same (operator, on screen 2026-10-27).
+     */
+    it('gives no two kinds the same title', () => {
+      const titles = allPanelKinds().map(kind => kind.title)
+      expect(new Set(titles).size).toBe(titles.length)
+      expect(panelKind(memberKindId(DEPLOYMENT_BUNDLE, 'periods'))!.menuTitle).toBe('Booking periods')
+    })
+
     it('makes every member a member of its own bundle, and no other kind a member of anything', () => {
       for (const kind of allPanelKinds()) {
         expect(kind.relations.memberOf, kind.id).toBe(memberOfKind(kind.id)?.bundle ?? null)
