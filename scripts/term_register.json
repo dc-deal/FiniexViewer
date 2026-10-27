@@ -137,7 +137,7 @@
   "Price": {"field": "executed_price", "doc": "nulls", "their": null, "ours": null, "note": ""},
   "Process id": {"field": "pid", "doc": "activities", "their": null, "ours": null, "note": ""},
   "Processors": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/MachineStatus.vue"},
-  "Produced nothing": {"field": ["units_absent", "name", "reason_code"], "doc": "run-summary", "their": null, "ours": null, "note": ""},
+  "Produced nothing": {"field": "units_absent", "doc": "run-summary", "their": null, "ours": null, "note": "the hover gives each unit's name with the titles of its checks, or its reason_code where no check refused it"},
   "Profit factor": {"field": ["profit_factor", "total_trades"], "doc": "portfolio", "their": null, "ours": null, "note": ""},
   "R multiple": {"field": "r_multiple", "doc": "trade-history", "their": null, "ours": null, "note": ""},
   "R trades": {"field": ["r_trade_count", "r_win_count", "r_loss_count"], "doc": "trade-history", "their": null, "ours": null, "note": ""},
