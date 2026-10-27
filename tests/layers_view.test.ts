@@ -95,7 +95,8 @@ describe('LayersView', () => {
     const wrapper = mountOn('run-chart')
     const summary = row(wrapper, 'levels').find('.layer-summary')
     expect(summary.text()).toBe('nothing to draw')
-    expect(summary.attributes('title')).toContain('position looked at')
+    // why stands in the hint below, the one pattern an explanation takes — never in a browser tooltip
+    expect(summary.attributes('title')).toBeUndefined()
     // and below the list, in full, front first, as hints in one box: a narrow panel cuts the row's
     // word to a letter
     const below = () => wrapper.findAll('.hint-line').at(-1)!.text()

@@ -6,7 +6,6 @@ import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import { useChartLayers } from '@/composables/use_chart_layers'
-import { hintById } from '@/hint_registry'
 import { layerDefinition, layerSummary } from '@/layer_registry'
 import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
@@ -117,7 +116,7 @@ function toggle(id: ChartLayerId): void {
             >
               <span class="layer-marker" aria-hidden="true">{{ opened.has(row.id) ? '▾' : '▸' }}</span>
               <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
-              <span class="layer-summary" :title="empty.has(row.id) ? hintById(layerDefinition(row.id).emptyHintId)?.text : undefined">
+              <span class="layer-summary">
                 {{ summary(row.id, row) }}
               </span>
             </button>
