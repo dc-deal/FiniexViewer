@@ -7,4 +7,4 @@
  * fixtures, never alone, and only after reading `GET /api/v1/contract`, whose `changes` say what
  * moved.
  */
-export const EXPECTED_CONTRACT = 42
+export const EXPECTED_CONTRACT = 43
