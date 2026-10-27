@@ -12,7 +12,7 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   levels: {
     title: t('Levels'),
     description: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded'),
-    emptyHint: t('Drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw.'),
+    emptyHintId: 'layer-empty-levels',
     option: {
       id: 'every-position',
       label: t('every position'),
@@ -24,7 +24,7 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   'entry-exit': {
     title: t('Entry–exit line'),
     description: t('Where each trade of the position looked at entered, and where it left'),
-    emptyHint: t('Drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A trade that entered and left in one candle draws no line.'),
+    emptyHintId: 'layer-empty-entry-exit',
     // its own id: kept by id, the levels' option of the same word would switch both
     option: {
       id: 'every-position-line',
@@ -37,13 +37,13 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   volume: {
     title: t('Volume'),
     description: t('What traded in each bar — or how many ticks it held, where the venue prints no trades — in the lowest fifth of the chart, behind the candles'),
-    emptyHint: t('The window drawn holds no bars.'),
+    emptyHintId: 'layer-empty-volume',
     fixed: true,
   },
   trades: {
     title: t('Trades'),
     description: t('Where each position opened and each trade closed'),
-    emptyHint: t('The unit on show opened no position in the window drawn.'),
+    emptyHintId: 'layer-empty-trades',
     option: {
       id: 'trade-signs',
       label: t('signs'),

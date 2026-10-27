@@ -43,6 +43,12 @@ describe('AppButton', () => {
     expect(mount(AppButton).classes()).not.toContain('active')
   })
 
+  /** A symbol alone keeps its surface under the pointer and drops the underline a text action wears. */
+  it('marks a button that is a symbol alone', () => {
+    expect(mount(AppButton, { props: { variant: 'quiet', glyph: true } }).classes()).toContain('glyph')
+    expect(mount(AppButton, { props: { variant: 'quiet' } }).classes()).not.toContain('glyph')
+  })
+
   // The native attribute, so the browser blocks the click rather than a handler declining it.
   it('is genuinely disabled, not merely styled as it', async () => {
     const wrapper = mount(AppButton, { props: { disabled: true } })

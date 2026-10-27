@@ -47,7 +47,24 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layers',
-    text: t('Front layer first: the lever shows or hides a layer, ◐ sets how strongly it is drawn, and a click on the layer opens the rest — its option, its place in front of or behind the others. The candles stay behind them all.'),
+    text: t('Front layer first: the lever shows or hides a layer, ◐ sets how strongly it is drawn, and a click on the layer opens the rest — its option, its place in front of or behind the others. The candles stay behind them all, and the volume behind the candles.'),
+  },
+  // why a layer that is shown draws nothing — shown below the Layers list only while it does
+  {
+    id: 'layer-empty-levels',
+    text: t('The levels are drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw.'),
+  },
+  {
+    id: 'layer-empty-entry-exit',
+    text: t('The entry–exit line is drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A trade that entered and left in one candle draws no line.'),
+  },
+  {
+    id: 'layer-empty-trades',
+    text: t('The trades are marked where the unit on show opened a position in the window drawn — this one opened none.'),
+  },
+  {
+    id: 'layer-empty-volume',
+    text: t('The volume is drawn for the bars in the window — this window holds none.'),
   },
   {
     id: 'chart-marks',

@@ -122,9 +122,12 @@ Run chart · ETHUSD_aug_sep
   position rather than of the one looked at) and its place, one step at a time. The closed row says what differs — and,
   for a shown layer with nothing to draw, *nothing to draw*: the levels and the line draw for the
   position looked at alone, so with none chosen their levers changed nothing on screen and looked
-  broken (2026-10-19). Why stands below the list, each such layer named with its reason — a narrow
+  broken (2026-10-19). Why stands below the list as hints, one box for every such layer — a narrow
   panel cut the row's word to a letter and kept the reason on hover, and the levers still looked
-  broken (2026-10-27); below the list its coming and going moves no row.
+  broken (2026-10-27). Hints of the shared register (`layer-empty-*`, named on each layer as
+  `emptyHintId`), so a reader who knows them dismisses or bans them. Below the list their coming and
+  going moves no row, and the panel holds its scrollbar's track free (`scrollbar-gutter: stable`),
+  so one appearing moves none either.
 - **Kept with the chart's own view**, `panelViews[<chart id>].layers`: only what differs from the
   chart's own arrangement, reconciled whenever it is read — a layer the chart no longer draws is
   left out, one it draws since stands where its own order puts it (`arrangeLayers`, `keptLayers`).

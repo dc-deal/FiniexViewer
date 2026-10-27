@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { arrangeLayers, chartLayers, keptLayers, layerDefinition, layerSummary } from '@/layer_registry'
+import { hintById } from '@/hint_registry'
 import { CHART_LAYER_IDS } from '@/types/chart_drawing_types'
 
 /**
@@ -12,7 +13,8 @@ describe('layer_registry', () => {
       const layer = layerDefinition(id)
       expect(layer.title).not.toBe('')
       expect(layer.description).not.toBe('')
-      expect(layer.emptyHint).not.toBe('')
+      // why it may draw nothing is a hint of the shared register, dismissible like the others
+      expect(hintById(layer.emptyHintId)).not.toBeNull()
     }
   })
 

@@ -39,7 +39,7 @@ function moved(values: number[] | undefined): void {
 <template>
   <PopoverRoot>
     <PopoverTrigger as-child>
-      <AppButton class="slider-handle" size="compact" variant="quiet" :aria-label="`${label}: ${modelValue} %`" v-bind="$attrs">
+      <AppButton class="slider-handle" size="compact" variant="quiet" glyph :aria-label="`${label}: ${modelValue} %`" v-bind="$attrs">
         <span aria-hidden="true">◐</span>
         <span class="slider-handle-value">{{ modelValue < max ? `${modelValue}%` : '' }}</span>
       </AppButton>

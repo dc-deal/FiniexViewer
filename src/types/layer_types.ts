@@ -27,8 +27,11 @@ export interface LayerDefinition {
   title: string
   /** What it draws, in one line. */
   description: string
-  /** Why it may have nothing to draw — said where it has nothing, so a lever that changes nothing is explained. */
-  emptyHint: string
+  /**
+   * The hint (`hint_registry.ts`) saying why it may have nothing to draw — shown where it has
+   * nothing, so a lever that changes nothing is explained, and dismissible like every hint.
+   */
+  emptyHintId: string
   option?: LayerOption
   /**
    * Drawn by the chart library behind the candles rather than by the chart's own host: it takes no

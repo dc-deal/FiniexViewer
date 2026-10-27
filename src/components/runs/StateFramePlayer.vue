@@ -60,11 +60,12 @@ function onKey(event: KeyboardEvent): void {
 <template>
   <div v-if="span && view" class="player" :data-frame="number">
     <div class="transport">
-      <AppButton size="compact" variant="quiet" :disabled="atFirst" :title="t('The first frame')" data-action="first" @click="player.first(unit)">⏮</AppButton>
-      <AppButton size="compact" variant="quiet" :disabled="atFirst" :title="t('One frame back')" data-action="back" @click="player.step(unit, -1)">◀</AppButton>
+      <AppButton size="compact" variant="quiet" glyph :disabled="atFirst" :title="t('The first frame')" data-action="first" @click="player.first(unit)">⏮</AppButton>
+      <AppButton size="compact" variant="quiet" glyph :disabled="atFirst" :title="t('One frame back')" data-action="back" @click="player.step(unit, -1)">◀</AppButton>
       <AppButton
         size="compact"
         variant="quiet"
+        glyph
         :disabled="atNewest && !view.playing"
         :title="view.playing ? t('Stop') : t('Play from this frame')"
         data-action="play"
@@ -72,10 +73,11 @@ function onKey(event: KeyboardEvent): void {
       >
         {{ view.playing ? '❚❚' : '▶' }}
       </AppButton>
-      <AppButton size="compact" variant="quiet" :disabled="atNewest" :title="t('One frame on')" data-action="on" @click="player.step(unit, 1)">▶|</AppButton>
+      <AppButton size="compact" variant="quiet" glyph :disabled="atNewest" :title="t('One frame on')" data-action="on" @click="player.step(unit, 1)">▶|</AppButton>
       <AppButton
         size="compact"
         variant="quiet"
+        glyph
         :active="view.following"
         :title="t('The newest frame — and the ones that follow, while the session records')"
         data-action="newest"

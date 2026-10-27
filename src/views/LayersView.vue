@@ -6,6 +6,7 @@ import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import { useChartLayers } from '@/composables/use_chart_layers'
+import { hintById } from '@/hint_registry'
 import { layerDefinition, layerSummary } from '@/layer_registry'
 import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
@@ -43,14 +44,17 @@ const chartName = computed(() => {
 const runChart = useRunChartStore()
 const empty = computed(() => {
   if (lastChart.value !== 'run-chart') return new Set<ChartLayerId>()
-  return new Set(runChart.layers.filter(layer => !layer.hidden && !layer.drawings.length).map(layer => layer.id))
+  const ids = new Set<ChartLayerId>(runChart.layers.filter(layer => !layer.hidden && !layer.drawings.length).map(layer => layer.id))
+  if (runChart.volume?.shown && !runChart.volume.bars.length) ids.add('volume')
+  return ids
 })
 
 /**
- * Why each shown layer draws nothing, in the order of the list — said below it, where the panel's
- * empty space is: in the row the reason was cut to a letter in a narrow panel and lived only on
- * hover (operator, on screen 2026-10-27: the line and the levels "did nothing"), and a line under a
- * row would push the rows below it the moment a position is chosen.
+ * Why each shown layer draws nothing, in the order of the list — said below it as hints, one box
+ * for all of them, where the panel's empty space is: in the row the reason was cut to a letter in a
+ * narrow panel and lived only on hover (operator, on screen 2026-10-27: the line and the levels "did
+ * nothing"), and a line under a row would push the rows below it the moment a position is chosen.
+ * Hints, so a reader who knows it dismisses or bans them like any other (operator, 2026-10-27).
  */
 const emptyRows = computed(() => rows.value.filter(row => empty.value.has(row.id)))
 
@@ -113,7 +117,7 @@ function toggle(id: ChartLayerId): void {
             >
               <span class="layer-marker" aria-hidden="true">{{ opened.has(row.id) ? '▾' : '▸' }}</span>
               <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
-              <span class="layer-summary" :title="empty.has(row.id) ? layerDefinition(row.id).emptyHint : undefined">
+              <span class="layer-summary" :title="empty.has(row.id) ? hintById(layerDefinition(row.id).emptyHintId)?.text : undefined">
                 {{ summary(row.id, row) }}
               </span>
             </button>
@@ -203,12 +207,7 @@ function toggle(id: ChartLayerId): void {
           </div>
         </li>
       </ul>
-      <dl v-if="emptyRows.length" class="empty-notes">
-        <template v-for="row in emptyRows" :key="row.id">
-          <dt :data-layer-empty="row.id">{{ layerDefinition(row.id).title }} — {{ t('nothing to draw') }}</dt>
-          <dd>{{ layerDefinition(row.id).emptyHint }}</dd>
-        </template>
-      </dl>
+      <HintLine v-if="emptyRows.length" :id="emptyRows.map(row => layerDefinition(row.id).emptyHintId)" />
     </template>
   </div>
 </template>
@@ -221,6 +220,9 @@ function toggle(id: ChartLayerId): void {
   height: 100%;
   padding: var(--space-sm);
   overflow-y: auto;
+  /* the scrollbar's track is held free: one appearing, as a hint below the list grows, moves no row
+     (operator, on screen 2026-10-27) */
+  scrollbar-gutter: stable;
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
@@ -316,26 +318,6 @@ function toggle(id: ChartLayerId): void {
    the row changes its size (operator, on screen, 2026-10-19) */
 .layer.off .layer-title {
   color: var(--color-text-secondary);
-}
-
-/* why a shown layer draws nothing: plain notice ink below the list, the layer named first */
-.empty-notes {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: var(--space-sm) 0 0;
-  padding: 0 var(--space-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.empty-notes dt {
-  margin-top: var(--space-xs);
-  color: var(--color-text-primary);
-}
-
-.empty-notes dd {
-  margin: 0;
 }
 
 /* the opened part is a boundary in the list, raised rather than coloured, as a group heading is */
