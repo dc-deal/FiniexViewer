@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { UnitErrorRow, WarningsErrorsReport } from '@/types/api/report_types'
+import type { UnitErrorRow, WarningRow, WarningsErrorsReport } from '@/types/api/report_types'
 import { utcInstant } from '@/components/runs/report_format'
 import { rowKey } from '@/api/list_key'
+import { useCheckTitles } from '@/composables/use_check_titles'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { plural, t } from '@/translate'
 import AppIcon from '@/components/base/AppIcon.vue'
@@ -41,6 +42,19 @@ const majorWarnings = computed(() => warnings.value.filter(row => row.tier === '
 const minorWarnings = computed(() => warnings.value.filter(row => row.tier !== 'major'))
 
 const isClean = computed(() => !errors.value.length && !warnings.value.length)
+
+const describeCheck = useCheckTitles()
+
+/**
+ * The title of the check that decided a `major` warning, from the backend's catalogue — the rule
+ * that fired, above the sentence it wrote. None where the row names no check or the catalogue does
+ * not know it: the sentence then stands alone, as before.
+ */
+function checkOf(row: WarningRow): { title: string, hover: string } | null {
+  const known = row.check ? describeCheck(row.check) : null
+  if (!known) return null
+  return { title: known.title, hover: `${known.description}\n${t('Check')}: ${row.check} · ${t('Domain')}: ${row.domain}` }
+}
 
 /** '' on artifacts written before the grading existed — an absence, never rendered as a state. */
 const outcomeRecorded = computed(() => props.model.outcome.run_outcome !== '')
@@ -165,7 +179,11 @@ function hasDetail(row: UnitErrorRow): boolean {
       <h3 class="block-title warn-title">{{ t('Major warnings') }} ({{ majorWarnings.length }})</h3>
       <div v-for="(row, i) in majorWarnings" :key="'m' + i" class="entry">
         <span class="entry-scope">{{ row.scope }}</span>
-        <span class="entry-message inline">{{ row.message }}</span>
+        <template v-if="checkOf(row)">
+          <span class="entry-check" :title="checkOf(row)!.hover">{{ checkOf(row)!.title }}</span>
+          <span class="entry-message">{{ row.message }}</span>
+        </template>
+        <span v-else class="entry-message inline">{{ row.message }}</span>
       </div>
     </section>
 
@@ -309,6 +327,15 @@ function hasDetail(row: UnitErrorRow): boolean {
 
 .entry-message.inline {
   display: inline;
+}
+
+/* the rule that fired, read first; the sentence it wrote beneath it */
+.entry-check {
+  font-weight: 600;
+}
+
+.entry-check + .entry-message {
+  display: block;
 }
 
 .entry-detail,

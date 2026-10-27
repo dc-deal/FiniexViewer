@@ -499,6 +499,13 @@ export interface WarningRow {
   tier: string          // 'major' (tier 1, validator) | 'minor' (tier 2, log pot)
   scope: string         // 'run' (run-wide) | the name of a unit
   message: string
+  /**
+   * The check that decided a `major` warning — its stable id, which `GET /api/v1/validation-checks`
+   * gives a title and a sentence for — and the area it belongs to. Empty on a `minor` row, where no
+   * assertion decided a log line, and on an artifact written before a warning carried its origin.
+   */
+  check: string
+  domain: string
 }
 
 /**

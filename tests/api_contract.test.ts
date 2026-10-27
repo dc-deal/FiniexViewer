@@ -26,6 +26,8 @@ import sweepsList from './fixtures/sweeps_list.json'
 import sweepDetail from './fixtures/sweep_detail.json'
 import stateFramesEnded from './fixtures/state_frames_ended.json'
 import stateFramesStopped from './fixtures/state_frames_stopped.json'
+import validationChecks from './fixtures/validation_checks.json'
+import type { ValidationCheckList } from '@/types/api/validation_check_types'
 import type { StateFramesLatest } from '@/types/api/state_frame_types'
 
 import type {
@@ -103,6 +105,7 @@ const EXPECTED_KEYS = {
   sweepCombinations: ['run_id', 'currency'],
   // one row per unit of the run; a session is one
   stateFrameUnits: ['unit_name'],
+  validationChecks: ['check'],
 }
 
 describe('api contract', () => {
@@ -116,6 +119,22 @@ describe('api contract', () => {
    * the route's, read from the same stream, so the two agree, and it is there only where the row
    * names the stream.
    */
+  /**
+   * A `major` warning names the check that decided it, and the catalogue says what every check id
+   * means. Every check the captured warnings name is in the captured catalogue, so a reader never
+   * meets a bare id; a `minor` row names none, since no assertion decided a log line.
+   */
+  it('the warnings name their checks, and the catalogue knows every one of them', () => {
+    const catalogue: ValidationCheckList = validationChecks
+    expect(catalogue.key).toEqual(EXPECTED_KEYS.validationChecks)
+    const known = new Set(catalogue.checks.map(entry => entry.check))
+    const rows = (warningsErrors as WarningsErrorsReport).warnings
+    const major = rows.filter(row => row.tier === 'major')
+    expect(major.length).toBeGreaterThan(0)
+    for (const row of major) expect(known.has(row.check), row.check).toBe(true)
+    for (const row of rows.filter(entry => entry.tier === 'minor')) expect(row.check).toBe('')
+  })
+
   it('the latest state frame still satisfies its shape, and the run list agrees with it', () => {
     const ended: StateFramesLatest = stateFramesEnded
     const stopped: StateFramesLatest = stateFramesStopped

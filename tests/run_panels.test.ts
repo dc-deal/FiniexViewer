@@ -8,6 +8,7 @@ import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
+import { provideCheckTitles } from '@/composables/use_check_titles'
 import type {
   RunInfo,
   RunHeader,
@@ -391,9 +392,9 @@ describe('WarningsErrorsPanel — narrowed to a scenario', () => {
   const MIXED = report({
     errors: [unitError('unit_a'), unitError('unit_b')],
     warnings: [
-      { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' },
-      { tier: 'major', scope: 'unit_a', message: 'warmup thin on unit_a' },
-      { tier: 'major', scope: 'unit_b', message: 'warmup thin on unit_b' },
+      { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' },
+      { tier: 'major', scope: 'unit_a', message: 'warmup thin on unit_a', check: '', domain: '' },
+      { tier: 'major', scope: 'unit_b', message: 'warmup thin on unit_b', check: '', domain: '' },
     ],
   })
 
@@ -440,6 +441,41 @@ describe('WarningsErrorsPanel — narrowed to a scenario', () => {
 })
 
 describe('WarningsErrorsPanel', () => {
+  /**
+   * A `major` warning names the check that decided it, and the backend's catalogue says what it
+   * means: its title is read first, the sentence the run wrote beneath it, and the description, the
+   * check and its domain on hover. Where the row names no check, or the catalogue does not know it,
+   * the sentence stands alone as before.
+   */
+  it('heads a warning with the title of the check that decided it', () => {
+    const model = report({
+      warnings: [
+        { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' },
+        { tier: 'major', scope: 'run', message: 'an older warning', check: '', domain: '' },
+      ],
+    })
+    const Host = defineComponent({
+      setup() {
+        provideCheckTitles(check => check === 'stress_test'
+          ? { check, title: 'Stress test active', description: 'Stress injection is switched on.' }
+          : null)
+        return () => h(WarningsErrorsPanel, { model })
+      },
+    })
+    const wrapper = mount(Host)
+    const titles = wrapper.findAll('.entry-check')
+    expect(titles.map(node => node.text())).toEqual(['Stress test active'])
+    expect(titles[0]!.attributes('title')).toContain('Stress injection is switched on.')
+    expect(titles[0]!.attributes('title')).toContain('stress_test')
+    expect(wrapper.text()).toContain('STRESS TEST ACTIVE')
+    expect(wrapper.text()).toContain('an older warning')
+
+    // no catalogue at all: the sentences stand alone
+    const alone = mount(WarningsErrorsPanel, { props: { model } })
+    expect(alone.findAll('.entry-check')).toHaveLength(0)
+    expect(alone.text()).toContain('STRESS TEST ACTIVE')
+  })
+
   /**
    * A healthy run keeps its GRADE and loses everything else. `run_outcome` is the backend's own
    * verdict and cannot be read off the screen — a run graded `finished_with_errors` can show only
@@ -610,9 +646,9 @@ describe('WarningsErrorsPanel', () => {
   it('lists tier-1 warnings but only summarises the log pot', () => {
     const model = report({
       warnings: [
-        { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' },
-        { tier: 'minor', scope: 'unit_a', message: 'something in the log' },
-        { tier: 'minor', scope: 'unit_a', message: 'another log line' },
+        { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' },
+        { tier: 'minor', scope: 'unit_a', message: 'something in the log', check: '', domain: '' },
+        { tier: 'minor', scope: 'unit_a', message: 'another log line', check: '', domain: '' },
       ],
     })
     const wrapper = mount(WarningsErrorsPanel, { props: { model } })

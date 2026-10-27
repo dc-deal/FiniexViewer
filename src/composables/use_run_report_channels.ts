@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { provideChartLink } from '@/composables/use_chart_link'
+import { provideCheckTitles } from '@/composables/use_check_titles'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { provideOrderSteps } from '@/composables/use_order_steps'
 import { usePanelJump } from '@/composables/use_panel_jump'
@@ -14,6 +15,7 @@ import { useRunsStore } from '@/stores/runs_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunSectionsStore } from '@/stores/run_sections_store'
 import { useSettingsStore } from '@/stores/settings_store'
+import { useValidationChecksStore } from '@/stores/validation_checks_store'
 import type { PositionRef } from '@/types/context_types'
 
 /**
@@ -33,6 +35,11 @@ export function provideRunReportChannels(): void {
   // store itself would stop being renderable from a different source, which the panel contract
   // forbids.
   provideDisplaySettings(storeToRefs(useSettingsStore()).display)
+
+  // What a warning's check id means, read once: a reader should never meet a bare id
+  const validationChecks = useValidationChecksStore()
+  void validationChecks.load()
+  provideCheckTitles(check => validationChecks.checks.get(check) ?? null)
 
   // The narrowing is ambient for the same reason the display preferences are — see the composable.
   provideScenarioSelection({

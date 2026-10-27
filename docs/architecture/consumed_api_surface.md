@@ -38,6 +38,7 @@ GET /api/v1/reports/runs                              run index — the only rou
 GET /api/v1/reports/runs/{run_id}/run-summary         cross-section KPIs, summed over all units
 GET /api/v1/reports/runs/{run_id}/scenario-details    the ROSTER — every scenario, produced or not
 GET /api/v1/reports/runs/{run_id}/warnings-errors     tiered warnings, per-unit errors, run outcome
+GET /api/v1/validation-checks                         what every check id a warning names means — read once
 GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down per unit, and the positions still open
 GET /api/v1/reports/runs/{run_id}/booking-periods     the bookkeeping stretches, plus a completeness check
 GET /api/v1/reports/runs/{run_id}/config              what the run was commissioned with
@@ -49,6 +50,14 @@ GET /api/v1/reports/runs/{run_id}/order-history       the orders themselves, as 
 GET /api/v1/reports/runs/{run_id}/order-events        the STEPS between those records
 GET /api/v1/reports/runs/{run_id}/...                 the further per-section reports, not yet consumed
 ```
+
+**A `major` warning names the check that decided it** (`check`, `domain`), and
+`/validation-checks` says what every check id means — its title and a sentence. The catalogue is
+read once at the app root (`validation_checks_store`) and reaches the warnings section through a
+channel (`use_check_titles`), so the section reads no store: a warning shows its check's title
+first, the sentence the run wrote beneath it, and the description, the id and the domain on hover. A
+`minor` row names no check, nor does an artifact written before a warning carried its origin; its
+sentence then stands alone.
 
 **Ledger plane** — a bot's life across its restarts, on its own grant surface `deployments`:
 

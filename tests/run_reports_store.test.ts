@@ -40,7 +40,7 @@ vi.mock('@/api/api_client', () => ({
 
 const REPORT: WarningsErrorsReport = {
   run_id: '20260615_130000',
-  warnings: [{ tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' }],
+  warnings: [{ tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' }],
   errors: [],
   keys: { errors: ['name'], warnings: [] },
   outcome: {

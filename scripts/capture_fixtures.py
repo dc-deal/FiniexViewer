@@ -152,6 +152,8 @@ TARGETS = [
     # grows, so `end` moves with every capture and nothing asserts it.
     # the server's timeframes with their lengths — what the run chart orders and picks them by
     ('timeframes.json', 'timeframes'),
+    # what every check id a warning names means, its title and its sentence
+    ('validation_checks.json', 'validation-checks'),
     ('coverage_mt5_EURGBP.json', 'brokers/mt5/symbols/EURGBP/coverage'),
     ('coverage_kraken_spot_ETHUSD.json', 'brokers/kraken_spot/symbols/ETHUSD/coverage'),
 ]

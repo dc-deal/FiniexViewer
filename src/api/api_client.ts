@@ -10,6 +10,7 @@ import type { ActivityList, MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { StateFramesLatest } from '@/types/api/state_frame_types'
+import type { ValidationCheckList } from '@/types/api/validation_check_types'
 import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
@@ -303,6 +304,12 @@ export async function getBroker(runId: string): Promise<BrokerReport | SectionAb
     raiseIfUnreadable(error)
     throw error
   }
+}
+
+/** Every validation check the backend can report, with what it means — the catalogue a warning names. */
+export async function getValidationChecks(): Promise<ValidationCheckList> {
+  const response = await http.get<ValidationCheckList>('/validation-checks')
+  return response.data
 }
 
 /**

@@ -1,0 +1,342 @@
+{
+  "key": [
+    "check"
+  ],
+  "checks": [
+    {
+      "check": "scenario_name_missing",
+      "title": "Scenario without a name",
+      "description": "A scenario in the set has no name."
+    },
+    {
+      "check": "scenario_name_duplicate",
+      "title": "Duplicate scenario name",
+      "description": "Two or more scenarios in the set share a name; every copy is refused."
+    },
+    {
+      "check": "scenario_boundary",
+      "title": "No end to the scenario",
+      "description": "The scenario sets neither an end date nor a tick limit, so nothing says where it stops."
+    },
+    {
+      "check": "date_logic",
+      "title": "Invalid date range",
+      "description": "The scenario's end date is not after its start date."
+    },
+    {
+      "check": "balances_missing",
+      "title": "No balances configured",
+      "description": "The scenario configures no starting balances."
+    },
+    {
+      "check": "balance_currency_mismatch",
+      "title": "No balance in the symbol's currencies",
+      "description": "None of the configured balances is in the base or the quote currency of the symbol."
+    },
+    {
+      "check": "account_currency_invalid",
+      "title": "Account currency not in the symbol",
+      "description": "The configured account currency is neither the base nor the quote currency of the symbol; settling in a third currency is not supported."
+    },
+    {
+      "check": "account_currency_normalized",
+      "title": "Account currency set to the quote",
+      "description": "At spot the account currency was changed to the quote currency, because spot settles in the quote currency and a base-currency profit would mix units."
+    },
+    {
+      "check": "parameter_validation",
+      "title": "Invalid parameter",
+      "description": "A decision logic or worker parameter is unknown, missing, or outside its declared range."
+    },
+    {
+      "check": "requirements_aggregation",
+      "title": "Data requirements could not be computed",
+      "description": "Working out which bars and how much warmup the workers need failed with an error."
+    },
+    {
+      "check": "worker_compat",
+      "title": "Worker does not fit the market",
+      "description": "A worker needs an activity measure (such as traded volume) that the broker's market does not provide."
+    },
+    {
+      "check": "worker_signal_subscription",
+      "title": "Subscribed worker output does not exist",
+      "description": "The decision logic subscribes to a worker output that the worker does not produce."
+    },
+    {
+      "check": "algo_state_snapshot",
+      "title": "Algorithm state cannot be saved",
+      "description": "The decision logic keeps state across sessions, but its state cannot be written as JSON."
+    },
+    {
+      "check": "algo_clock",
+      "title": "Algorithm reads the system clock",
+      "description": "The decision logic or a worker reads the system clock instead of the run's own clock, which makes a backtest impossible to reproduce."
+    },
+    {
+      "check": "market_fit",
+      "title": "Algorithm not recommended for this market",
+      "description": "The decision logic names the markets or instruments it is meant for, and this one is not among them."
+    },
+    {
+      "check": "broker_config_unavailable",
+      "title": "Broker configuration unavailable",
+      "description": "The broker's configuration could not be fetched or loaded."
+    },
+    {
+      "check": "symbol_unknown",
+      "title": "Symbol not in the broker configuration",
+      "description": "The broker configuration does not list the symbol."
+    },
+    {
+      "check": "swap_mode_unsupported",
+      "title": "Swap mode not modelled",
+      "description": "The symbol charges overnight swap in a way the simulation does not model."
+    },
+    {
+      "check": "broker_spec_stale",
+      "title": "Symbol specification fetched long ago",
+      "description": "The backtest read a symbol's minimums and steps from a cache entry older than its refresh interval; the venue may have changed them since."
+    },
+    {
+      "check": "coverage_report_missing",
+      "title": "No data coverage report",
+      "description": "No coverage report exists for the broker and symbol, so the scenario's window cannot be checked against the data."
+    },
+    {
+      "check": "data_availability",
+      "title": "Data does not cover the window",
+      "description": "The scenario's window starts before the first tick or ends after the last one."
+    },
+    {
+      "check": "start_date_in_gap",
+      "title": "Start inside a data gap",
+      "description": "The scenario starts inside a gap in the tick data."
+    },
+    {
+      "check": "tick_stretch_gap",
+      "title": "Gap in the tick data",
+      "description": "The tick data has a gap inside the scenario's window that is longer than allowed."
+    },
+    {
+      "check": "warmup_quality",
+      "title": "Not enough warmup bars",
+      "description": "A timeframe has fewer bars complete at the scenario's first tick than its indicators need to settle, because the archive holds no more; the scenario runs and says so."
+    },
+    {
+      "check": "warmup_history_empty",
+      "title": "No warmup bars",
+      "description": "A timeframe the workers read has not a single bar complete at the scenario's first tick, so its indicators would start from nothing; the scenario is refused."
+    },
+    {
+      "check": "warmup_capacity",
+      "title": "Warmup larger than the bar history",
+      "description": "A worker requires more bars than the renderer keeps per timeframe (bar_max_history), so its history would be cut short at the start; the scenario is refused."
+    },
+    {
+      "check": "tick_data_missing",
+      "title": "No tick data loaded",
+      "description": "No tick data could be loaded for the scenario."
+    },
+    {
+      "check": "data_origin",
+      "title": "Data origin not admitted",
+      "description": "The scenario read data files whose origin is not on the admitted list."
+    },
+    {
+      "check": "signal_data_load",
+      "title": "Signal data unavailable",
+      "description": "The signal data the scenario binds could not be loaded."
+    },
+    {
+      "check": "modelled_spread_unavailable",
+      "title": "Spread of the ticks without a quote unavailable",
+      "description": "The scenario reads ticks that recorded no quote and models their spread, but the day estimates it is priced from could not be built; the scenario is refused rather than run without a spread."
+    },
+    {
+      "check": "signal_availability",
+      "title": "Signal data thin in the window",
+      "description": "The scenario's signal source has little or patchy data in its window; the scenario still runs."
+    },
+    {
+      "check": "signal_stretch_gap",
+      "title": "Gap in the signal data",
+      "description": "The signal data has a gap inside the scenario's window."
+    },
+    {
+      "check": "stale_data_stress_source",
+      "title": "Stress test names a source the scenario lacks",
+      "description": "A planned data outage names a data source the scenario does not read."
+    },
+    {
+      "check": "scenario_execution",
+      "title": "Refused before it ran",
+      "description": "The scenario was refused right before it would have started, for the reason stated."
+    },
+    {
+      "check": "debug_mode",
+      "title": "Debug mode",
+      "description": "The run executed serially under a debugger, so its timings are not representative."
+    },
+    {
+      "check": "stress_test",
+      "title": "Stress test active",
+      "description": "At least one unit ran with a stress test that injects errors and rejections on purpose."
+    },
+    {
+      "check": "uncommitted_code",
+      "title": "Real orders from uncommitted code",
+      "description": "A session trading real orders was started with --allow-dirty from code that is not exactly one commit."
+    },
+    {
+      "check": "composite_change_accepted",
+      "title": "Open positions continued under a changed configuration",
+      "description": "A start declared --accept-composite-change and continued what the venue still held under another composite than the one that opened it."
+    },
+    {
+      "check": "carried_configuration_not_compared",
+      "title": "Configuration not compared with the carry-over",
+      "description": "The session took over what the venue still held without being able to compare its configuration with the one that opened it."
+    },
+    {
+      "check": "carried_readings_not_continued",
+      "title": "Drawdown and risk baseline started fresh",
+      "description": "The session did not continue the drawdown curve and the risk baseline its carry-over held: a rehearsal wrote them and the session placed real orders, or the other way round, or the carry-over does not say which."
+    },
+    {
+      "check": "unversioned_code",
+      "title": "Code not under version control",
+      "description": "A component was loaded from a directory that git does not track or cannot read, so the run cannot name the code it ran."
+    },
+    {
+      "check": "data_version_unknown",
+      "title": "Data format version unknown",
+      "description": "Some data files the run read carry no format version in the tick index."
+    },
+    {
+      "check": "data_origin_unstamped",
+      "title": "Data origin not stamped",
+      "description": "Some data files the run read carry no origin stamped by their producer, so they are usable but cannot enter a parity comparison."
+    },
+    {
+      "check": "data_origin_external",
+      "title": "External data read",
+      "description": "Some data files the run read, or the bars a warmup history started from, are a venue's published history rather than our own collection; such ticks are never admissible for a parity comparison."
+    },
+    {
+      "check": "data_no_quote",
+      "title": "Ticks without a quote",
+      "description": "Some tick files the run read carry no quote (bid equals ask as recorded), so no spread was measured on them; what a backtest charged there instead is the modelled spread."
+    },
+    {
+      "check": "data_modelled_spread",
+      "title": "Modelled spread on ticks without a quote",
+      "description": "A backtest gave its ticks without a quote the quote the spread estimated for the previous day implies, so its fills, marks and stops crossed a modelled spread there; the count says how many such ticks were given one and at what median, factor and estimator version."
+    },
+    {
+      "check": "data_no_arrival_time",
+      "title": "Ticks without an arrival time",
+      "description": "Some tick files the run read record no receive time, so tick timing falls back to the event time."
+    },
+    {
+      "check": "data_arrival_time_reconstructed",
+      "title": "Arrival time reconstructed",
+      "description": "Some tick files the run read carry an arrival time that was reconstructed after the fact rather than recorded on arrival."
+    },
+    {
+      "check": "data_missing_trades",
+      "title": "Trades missing from the data",
+      "description": "Some tick files the run read miss more of the venue's trades than reconnect noise explains."
+    },
+    {
+      "check": "data_synthetic",
+      "title": "Synthetic signal data",
+      "description": "Some signal data the run read is generated rather than a market record."
+    },
+    {
+      "check": "multi_currency",
+      "title": "Several account currencies",
+      "description": "The run mixes account currencies; profit and loss is shown per currency and never added across them."
+    },
+    {
+      "check": "order_event_stream_incomplete",
+      "title": "Order-event stream lacks submissions",
+      "description": "The order-event stream holds fewer submissions than the executor counted — a record was lost, most likely to a failed write — so the counters derived from it are too low."
+    },
+    {
+      "check": "time_divergence",
+      "title": "Scenarios far apart in time",
+      "description": "The scenarios of one currency span many days, so their combined profit and loss is a statistic, not a portfolio."
+    },
+    {
+      "check": "budget",
+      "title": "Processing slower than the ticks arrive",
+      "description": "In some scenarios a tick takes longer to process, on average, than the shortest gaps between ticks; a tick processing budget would simulate the ticks a live run would skip."
+    },
+    {
+      "check": "budget_granularity",
+      "title": "Budget below data resolution",
+      "description": "The tick processing budget is below one millisecond, which the data cannot resolve, so it has no effect."
+    },
+    {
+      "check": "budget_too_high",
+      "title": "Budget skips ticks needlessly",
+      "description": "The tick processing budget is more than twice the usual processing time, so ticks are skipped that a live run would have processed."
+    },
+    {
+      "check": "clipping",
+      "title": "Ticks arrived while the last was processing",
+      "description": "More ticks than the configured share arrived while the previous one was still being processed, so those decisions ran on data that was already old."
+    },
+    {
+      "check": "coordination_overhead",
+      "title": "High coordination overhead",
+      "description": "Coordinating the workers and the decision logic costs more than half of their own computation in some scenarios."
+    },
+    {
+      "check": "bottleneck",
+      "title": "Infrastructure dominates the cost",
+      "description": "An operation outside the trading logic is the largest cost in many scenarios."
+    },
+    {
+      "check": "parallel_penalty",
+      "title": "Parallel workers cost time",
+      "description": "Running the workers in parallel was slower than running them one after another."
+    },
+    {
+      "check": "robustness_param_drift",
+      "title": "Parameters differ across windows",
+      "description": "The strategy parameters are not the same in every window, so comparing in-sample with out-of-sample is not a fair test."
+    },
+    {
+      "check": "robustness_low_windows",
+      "title": "Too few windows",
+      "description": "The robustness figures rest on fewer windows than the configured minimum."
+    },
+    {
+      "check": "robustness_low_trust",
+      "title": "Block splitting distorts the windows",
+      "description": "Splitting the data into blocks distorted the windows beyond the trust limit, so no verdict is given."
+    },
+    {
+      "check": "robustness_insufficient_buckets",
+      "title": "Too few in- or out-of-sample windows",
+      "description": "The in-sample or the out-of-sample group has fewer windows than the minimum, so no verdict is given."
+    },
+    {
+      "check": "robustness_overfit",
+      "title": "Overfit",
+      "description": "Out-of-sample results fall sharply below in-sample results: the strategy is likely fitted to the in-sample windows."
+    },
+    {
+      "check": "certificate_expired",
+      "title": "Release certificate expired",
+      "description": "The newest certificate of a release gate is past its validity date, so the gate has to be run again before a release."
+    },
+    {
+      "check": "fee_structure_frozen_long",
+      "title": "Fee structure frozen long ago",
+      "description": "A broker's declared fee rates were frozen more than ninety days ago; the venue may charge this account differently by now."
+    }
+  ]
+}

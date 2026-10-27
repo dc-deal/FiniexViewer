@@ -98,6 +98,8 @@ const SHELL: Record<string, unknown> = {
   '/api/v1/brokers': { brokers: [] },
   // captured: the run chart orders the timeframes and picks one by their lengths
   '/api/v1/timeframes': fixture('timeframes.json'),
+  // what every check id a warning names means — read once by the warnings section
+  '/api/v1/validation-checks': fixture('validation_checks.json'),
   '/api/v1/caller': {
     enforced: false, client: null, account: null, account_kind: null, display_name: null, grants: null, note: null,
   },
