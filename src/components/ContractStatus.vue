@@ -13,7 +13,14 @@ import { t } from '@/translate'
  * viewer mirrors. Where the two agree nothing is drawn; before any answer nothing is either, and
  * the account beside it already says when the server does not answer.
  */
-const { served, differs } = storeToRefs(useServerContractStore())
+const { served } = storeToRefs(useServerContractStore())
+
+/**
+ * Compared here, beside the number it shows, rather than in the store: a store keeps what it
+ * computed across a hot reload of the module that holds the mirrored contract, and showed the old
+ * verdict beside the new number (on screen 2026-10-27: "API contract 43 · viewer 43").
+ */
+const differs = computed(() => served.value !== null && served.value !== EXPECTED_CONTRACT)
 
 /**
  * Which way they differ says who has to move: a newer server waits for the viewer to follow, an

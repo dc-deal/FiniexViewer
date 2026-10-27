@@ -15,21 +15,18 @@ describe('useServerContractStore', () => {
     setActivePinia(createPinia())
   })
 
-  it('knows nothing before an answer, and says nothing where the server serves our contract', () => {
-    const store = useServerContractStore()
-    expect([store.served, store.differs]).toEqual([null, false])
-    stamp.listener(EXPECTED_CONTRACT)
-    expect([store.served, store.differs]).toEqual([EXPECTED_CONTRACT, false])
+  it('knows nothing before an answer', () => {
+    expect(useServerContractStore().served).toBeNull()
   })
 
   /** A server restarted under another contract shows on its next answer, either way. */
   it('follows the stamp of the latest answer, whichever way it moves', () => {
     const store = useServerContractStore()
     stamp.listener(EXPECTED_CONTRACT + 1)
-    expect([store.served, store.differs]).toEqual([EXPECTED_CONTRACT + 1, true])
+    expect(store.served).toBe(EXPECTED_CONTRACT + 1)
     stamp.listener(EXPECTED_CONTRACT - 2)
-    expect(store.differs).toBe(true)
+    expect(store.served).toBe(EXPECTED_CONTRACT - 2)
     stamp.listener(EXPECTED_CONTRACT)
-    expect(store.differs).toBe(false)
+    expect(store.served).toBe(EXPECTED_CONTRACT)
   })
 })

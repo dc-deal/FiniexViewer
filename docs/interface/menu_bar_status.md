@@ -111,9 +111,11 @@ and no panel can show it. So `ContractStatus` says it, before the machine:
   account beside it already says when the server does not answer.
 - **No request of its own.** The client reads the header off every answer (`onContractStamp` in
   `api_client`), so a restart under another contract shows on the next request rather than on a
-  reload; `server_contract_store` holds the latest stamp. `GET /api/v1/contract` adds only what
-  moved into the server's own version — the steps between two versions are in their contract log
-  (`/api/v1/docs/contract-log`), which the card names.
+  reload; `server_contract_store` holds the latest stamp, and `ContractStatus` compares it beside
+  the number it shows — a store kept its verdict across a hot reload and once read *43 · viewer
+  43*. `GET /api/v1/contract` adds only what moved into the server's own version — the steps
+  between two versions are in their contract log (`/api/v1/docs/contract-log`), which the card
+  names.
 - **Which way they differ says who moves**: a newer server waits for the viewer to follow, an older
   one serves fields this viewer reads without them. The card says which, in a sentence.
 

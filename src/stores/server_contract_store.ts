@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { onContractStamp } from '@/api/api_client'
-import { EXPECTED_CONTRACT } from '@/api/expected_contract'
 
 /**
  * Which contract the server serves, from the stamp on its latest answer — no request of its own.
@@ -16,8 +15,5 @@ export const useServerContractStore = defineStore('server_contract', () => {
 
   onContractStamp(contract => { served.value = contract })
 
-  /** The server stamps another contract than the one this viewer mirrors. */
-  const differs = computed(() => served.value !== null && served.value !== EXPECTED_CONTRACT)
-
-  return { served, differs }
+  return { served }
 })
