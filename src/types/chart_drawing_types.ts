@@ -14,14 +14,14 @@ import type { ChartMark } from '@/types/run_chart_types'
  * Ours, so a closed set — a name read back from storage is checked against it; `layer_registry.ts`
  * describes each and says which chart draws which.
  */
-export const CHART_LAYER_IDS = ['levels', 'entry-exit', 'trades', 'volume'] as const
+export const CHART_LAYER_IDS = ['levels', 'entry-exit', 'trades', 'volume', 'candles'] as const
 export type ChartLayerId = typeof CHART_LAYER_IDS[number]
 
 /**
- * The layers the chart's own drawing host paints. The volume is a layer to the reader — shown,
- * hidden, fainter — but the chart library draws it, as a series of its own behind the candles.
+ * The layers the chart's own drawing host paints. The candles and the volume are layers to the
+ * reader — shown, hidden, fainter — but the chart library draws them, as series of their own.
  */
-export type DrawingLayerId = Exclude<ChartLayerId, 'volume'>
+export type DrawingLayerId = Exclude<ChartLayerId, 'volume' | 'candles'>
 
 /** What a drawing's colour says — a role, never a colour; the shape and the word say it first. */
 export type DrawingRole = Polarity | 'mixed' | 'entry'

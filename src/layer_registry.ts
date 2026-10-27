@@ -37,8 +37,20 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   volume: {
     title: t('Volume'),
     description: t('What traded in each bar — or how many ticks it held, where the venue prints no trades — in the lowest fifth of the chart, behind the candles'),
-    emptyHintId: 'layer-empty-volume',
     fixed: true,
+    place: t('behind the candles'),
+  },
+  candles: {
+    title: t('Candles'),
+    description: t('The price of each bar, behind the drawings — as candles, OHLC bars, a line or an area of the close'),
+    fixed: true,
+    place: t('behind the drawings'),
+    forms: [
+      { id: 'candles', label: t('candles') },
+      { id: 'bars', label: t('OHLC bars') },
+      { id: 'line', label: t('line') },
+      { id: 'area', label: t('area') },
+    ],
   },
   trades: {
     title: t('Trades'),
@@ -59,7 +71,7 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
  * draws only its candles, and the Layers panel has nothing to arrange for it: the free chart today.
  */
 const CHART_LAYERS: Record<string, readonly ChartLayerId[]> = {
-  'run-chart': ['volume', 'levels', 'entry-exit', 'trades'],
+  'run-chart': ['volume', 'candles', 'levels', 'entry-exit', 'trades'],
 }
 
 export function layerDefinition(id: ChartLayerId): LayerDefinition {
@@ -82,15 +94,17 @@ export function arrangeLayers(chartId: string, stored: StoredLayers | undefined)
   own.forEach((id, index) => {
     if (!order.includes(id)) order.splice(Math.min(index, order.length), 0, id)
   })
-  // a fixed layer stands at the back whatever was kept
-  order.sort((a, b) => Number(LAYERS[b].fixed ?? false) - Number(LAYERS[a].fixed ?? false))
-  return order.map(id => {
-    const option = LAYERS[id].option
+  // the fixed layers stand at the back in their own order, whatever was kept
+  const fixed = own.filter(id => LAYERS[id].fixed)
+  const placed = [...fixed, ...order.filter(id => !LAYERS[id].fixed)]
+  return placed.map(id => {
+    const { option, forms } = LAYERS[id]
     return {
       id,
       shown: !stored?.hidden?.includes(id),
       opacity: stored?.opacity?.[id] ?? 100,
       option: option ? stored?.options?.[option.id] ?? option.fallback : null,
+      form: forms ? forms.find(entry => entry.id === stored?.forms?.[id])?.id ?? forms[0]!.id : null,
     }
   })
 }
@@ -122,5 +136,11 @@ export function keptLayers(chartId: string, states: LayerState[]): StoredLayers 
     if (option && state.option !== null && state.option !== option.fallback) options[option.id] = state.option
   }
   if (Object.keys(options).length) kept.options = options
+  const forms: StoredLayers['forms'] = {}
+  for (const state of states) {
+    const own = LAYERS[state.id].forms?.[0]?.id
+    if (own && state.form && state.form !== own) forms[state.id] = state.form
+  }
+  if (Object.keys(forms).length) kept.forms = forms
   return Object.keys(kept).length ? kept : undefined
 }

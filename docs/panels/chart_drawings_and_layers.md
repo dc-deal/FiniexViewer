@@ -110,8 +110,8 @@ Run chart · ETHUSD_aug_sep
 (━●) ▾ Entry–exit line                ◐ 40%
          ↑ front  ↓ back
 (●━) ▸ Levels                         ◐        ← switched off: the row grey
-      ▣ Candles              behind the drawings
-(━●)   Volume   ticks per bar · behind the candles   ◐   ← fixed: opens nothing, never moved
+(━●) ▸ Candles   candles · behind the drawings      ◐   ← fixed: never moved; opened, its forms
+(━●) ▸ Volume    ticks per bar · behind the candles  ◐
 ```
 
 - **The register** is `src/layer_registry.ts`: each layer's title, what it draws and its one option,
@@ -151,6 +151,27 @@ charts draw it — and so leaves the candles' scale alone: switching it moves no
 - **Each bar faint in its candle's direction** — the polarity roles at 45 % of the layer's opacity.
 - **The run chart only.** `CandleChart` builds the series only where it is handed a `volume`; the
   free chart, which draws no layers, builds none.
+
+## The candles — a layer too (2026-10-27)
+
+The candles stood as a fixed row nobody could switch; since the operator's word of 2026-10-27 they
+are a layer like the volume: fixed in place (`fixed`, never moved, no layer passes them), shown,
+hidden and fainter, and drawn in the form picked in their opened row — **candles · OHLC bars ·
+line · area** (`forms` in the register, kept under `forms` only where it is not the first).
+
+- **Each form is the library's own series over the served bars** (`CandleChart.buildPriceSeries`).
+  A change of form builds the series anew and moves the drawing host to it; a line and an area take
+  the close alone. Nothing is computed from the bars, so a Heikin-Ashi candle — a sum over them —
+  is not offered.
+- **Hidden is transparent, never removed.** The drawing host is attached to the price series and the
+  price scale rests on it, so the series stays, every colour at no strength and the last price off
+  the axis; the marks, the levels and the scale stay where they were.
+- **The strength is the colours' alpha**, the polarity roles for candles and bars, plain ink for a
+  line and an area. At full strength the token goes as it is.
+- **Every row opens**, the fixed ones too: what a layer draws stands in its opened row, not on a
+  browser tooltip, and the controls are explained by the panel's hint — the one pattern an
+  explanation takes (operator, 2026-10-27). With no bars at all no layer is said to draw nothing:
+  the chart says so for every layer at once.
 
 ## How it is tested
 

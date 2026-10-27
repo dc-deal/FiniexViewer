@@ -12,6 +12,8 @@ import type {
 import { CHART_LAYER_IDS } from '@/types/chart_drawing_types'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import { LAYER_OPACITY_MIN, LAYER_OPTION_IDS } from '@/types/layer_types'
+import { PRICE_FORMS } from '@/types/run_chart_types'
+import type { PriceForm } from '@/types/run_chart_types'
 import type { LayerOptionId } from '@/types/layer_types'
 
 const STORAGE_KEY = 'arrangement.v1'
@@ -137,6 +139,13 @@ function readLayers(value: unknown): StoredLayers | undefined {
     if (typeof on === 'boolean') switched[option] = on
   }
   if (Object.keys(switched).length) layers.options = switched
+  const forms = record(stored['forms'])
+  const drawn: StoredLayers['forms'] = {}
+  for (const id of CHART_LAYER_IDS) {
+    const form = forms[id]
+    if (typeof form === 'string' && (PRICE_FORMS as readonly string[]).includes(form)) drawn[id] = form as PriceForm
+  }
+  if (Object.keys(drawn).length) layers.forms = drawn
   return Object.keys(layers).length ? layers : undefined
 }
 

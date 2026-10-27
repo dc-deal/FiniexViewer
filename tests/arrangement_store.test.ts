@@ -244,6 +244,8 @@ describe('useArrangementStore', () => {
               // the whole is no opacity to keep, nor a share below the least one, nor a layer unknown
               opacity: { trades: 40, levels: 100, 'entry-exit': 5, 'no-such-layer': 50 },
               options: { 'every-position': true, 'trade-signs': 'no', 'no-such-option': true },
+              // a form of the set is kept, one outside it is not
+              forms: { candles: 'area', volume: 'heikin-ashi' },
             },
           },
           // nothing left of it is no entry
@@ -253,7 +255,10 @@ describe('useArrangementStore', () => {
       const arrangement = useArrangementStore()
       expect(arrangement.panelViews).toEqual({
         'run-chart': {
-          layers: { order: ['trades', 'levels'], hidden: ['levels'], opacity: { trades: 40 }, options: { 'every-position': true } },
+          layers: {
+            order: ['trades', 'levels'], hidden: ['levels'], opacity: { trades: 40 }, options: { 'every-position': true },
+            forms: { candles: 'area' },
+          },
         },
       })
       arrangement.setPanelView('run-chart', { layers: { opacity: { levels: 50 } } })

@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import LayersView from '@/views/LayersView.vue'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
+import { useRunChartStore } from '@/stores/run_chart_store'
 
 /**
  * The Layers panel over the chart last in front: its drawing layers front first, one row each —
@@ -39,25 +40,45 @@ describe('LayersView', () => {
 
   it('lists the chart\'s layers front first, the candles behind the drawings and the volume behind them, under the chart\'s name', () => {
     const wrapper = mountOn('run-chart')
-    expect(order(wrapper)).toEqual(['trades', 'entry-exit', 'levels', 'volume'])
+    expect(order(wrapper)).toEqual(['trades', 'entry-exit', 'levels', 'candles', 'volume'])
     expect(wrapper.find('.fixed').text()).toContain('Candles')
     expect(wrapper.find('.chart-name').text()).toBe('Run chart')
   })
 
   /**
    * The volume is drawn by the chart library behind the candles: it is shown, hidden and made fainter
-   * like the others, opens nothing, is never moved, and says what it counts.
+   * like the others, opens to what it draws, is never moved, and says what it counts.
    */
   it('offers the volume its lever and its opacity, and no place to move it to', async () => {
     const wrapper = mountOn('run-chart')
     const volume = row(wrapper, 'volume')
     expect(volume.classes()).toContain('fixed')
-    expect(volume.find('[data-action="open"]').exists()).toBe(false)
     expect(volume.find('[data-action="opacity"]').exists()).toBe(true)
     // no bars loaded: no price basis stated, so it counts ticks
     expect(volume.find('.layer-summary').text()).toBe('ticks per bar · behind the candles')
-    await volume.find('[data-action="show"]').trigger('click')
+    await volume.find('[data-action="open"]').trigger('click')
+    expect(row(wrapper, 'volume').find('.layer-description').text()).toContain('What traded in each bar')
+    expect(row(wrapper, 'volume').find('[data-action="front"]').exists()).toBe(false)
+    expect(row(wrapper, 'volume').find('[data-action="forms"]').exists()).toBe(false)
+    await row(wrapper, 'volume').find('[data-action="show"]').trigger('click')
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ hidden: ['volume'] })
+  })
+
+  /**
+   * The candles are a layer too (operator, 2026-10-27): shown, hidden and fainter, never moved, and
+   * drawn in the form the reader picks in their opened row.
+   */
+  it('offers the candles their forms, one chosen, and keeps the one picked', async () => {
+    const wrapper = mountOn('run-chart')
+    expect(row(wrapper, 'candles').find('.layer-summary').text()).toBe('candles · behind the drawings')
+    await row(wrapper, 'candles').find('[data-action="open"]').trigger('click')
+    const forms = row(wrapper, 'candles').findAll('[data-action="forms"] button')
+    expect(forms.map(button => button.attributes('data-form'))).toEqual(['candles', 'bars', 'line', 'area'])
+    expect(row(wrapper, 'candles').find('[data-form="candles"]').attributes('aria-pressed')).toBe('true')
+    await row(wrapper, 'candles').find('[data-form="line"]').trigger('click')
+    expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ forms: { candles: 'line' } })
+    expect(row(wrapper, 'candles').find('.layer-summary').text()).toBe('line · behind the drawings')
+    expect(row(wrapper, 'candles').find('[data-action="front"]').exists()).toBe(false)
   })
 
   /** Grey is enough: the lever's position says it, and nothing in the row changes its size. */
@@ -91,7 +112,8 @@ describe('LayersView', () => {
 
   /** A lever that changes nothing on screen looked broken: the row says there is nothing to draw, and why. */
   it('says a shown layer has nothing to draw, and why, and says nothing of a hidden one', async () => {
-    // no run chosen: the run chart has nothing to draw on any layer
+    // a window of bars, and no trade, no position looked at: the drawing layers have nothing to draw
+    useRunChartStore().bars = [{ time: 1_761_886_800, open: 1, high: 1, low: 1, close: 1 }]
     const wrapper = mountOn('run-chart')
     const summary = row(wrapper, 'levels').find('.layer-summary')
     expect(summary.text()).toBe('nothing to draw')
@@ -107,6 +129,13 @@ describe('LayersView', () => {
     expect(below()).not.toContain('The levels are drawn')
   })
 
+  /** With no bars the chart says so itself: no layer is said to draw nothing, and no hint stands below. */
+  it('says nothing of a layer drawing nothing while the chart has no bars at all', () => {
+    const wrapper = mountOn('run-chart')
+    expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
+    expect(wrapper.findAll('.hint-line')).toHaveLength(1)
+  })
+
   /** One place at a time; the front layer goes no further forward, the back one no further back. */
   it('moves a layer one place, and offers no step past either end', async () => {
     const wrapper = mountOn('run-chart')
@@ -115,7 +144,7 @@ describe('LayersView', () => {
     expect(row(wrapper, 'trades').find('[data-action="front"]').attributes('disabled')).toBeDefined()
     expect(row(wrapper, 'levels').find('[data-action="back"]').attributes('disabled')).toBeDefined()
     await row(wrapper, 'levels').find('[data-action="front"]').trigger('click')
-    expect(order(wrapper)).toEqual(['trades', 'levels', 'entry-exit', 'volume'])
+    expect(order(wrapper)).toEqual(['trades', 'levels', 'entry-exit', 'candles', 'volume'])
   })
 
   it('puts the handle of each layer\'s opacity in its row', () => {

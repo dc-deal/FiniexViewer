@@ -18,7 +18,7 @@ import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ApiBar, ChartBar, CoverageResponse } from '@/types/api/bar_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
 import type { PositionRef } from '@/types/context_types'
-import type { ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
+import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
 
 /** One market's coverage as asked — the answer, or that the archive holds nothing for it. */
 type CoverageEntry = CoverageResponse | 'none'
@@ -217,7 +217,7 @@ export const useRunChartStore = defineStore('runChart', () => {
       // without their signs the marks keep their shapes, and a gathered mark's card still counts it
       trades: signs => signs === false ? marks.value.map(mark => ({ ...mark, text: '' })) : marks.value,
     }
-    return arranged.value.flatMap(state => state.id === 'volume' ? [] : [{
+    return arranged.value.flatMap(state => state.id === 'volume' || state.id === 'candles' ? [] : [{
       id: state.id,
       drawings: drawings[state.id](state.option),
       ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
@@ -232,6 +232,13 @@ export const useRunChartStore = defineStore('runChart', () => {
    * ticks otherwise — our reading of those two sentences, put to them for confirmation.
    */
   const volumeBasis = computed<VolumeBasis>(() => priceBasis.value === 'order_driven' ? 'traded' : 'ticks')
+
+  /** The candles layer: the form the price is drawn in, shown and as strong as arranged. */
+  const candles = computed<ChartCandles | null>(() => {
+    const state = arranged.value.find(entry => entry.id === 'candles')
+    if (!state) return null
+    return { form: state.form ?? 'candles', shown: state.shown, opacity: state.opacity / 100 }
+  })
 
   /** The volume layer: one value a bar, behind the candles, shown and as strong as arranged. */
   const volume = computed<ChartVolume | null>(() => {
@@ -389,7 +396,7 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
-    bars, truncated, loading, error, events, marks, layers, volume, volumeBasis, offer, focusAt, priceFormat,
+    bars, truncated, loading, error, events, marks, layers, candles, volume, volumeBasis, offer, focusAt, priceFormat,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach,
   }
 })

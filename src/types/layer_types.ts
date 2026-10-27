@@ -1,4 +1,5 @@
 import type { ChartLayerId } from '@/types/chart_drawing_types'
+import type { PriceForm } from '@/types/run_chart_types'
 
 /**
  * The one switch a drawing layer may offer beyond being shown — ours, so a closed set: a name read
@@ -31,13 +32,17 @@ export interface LayerDefinition {
    * The hint (`hint_registry.ts`) saying why it may have nothing to draw — shown where it has
    * nothing, so a lever that changes nothing is explained, and dismissible like every hint.
    */
-  emptyHintId: string
+  emptyHintId?: string
   option?: LayerOption
   /**
    * Drawn by the chart library behind the candles rather than by the chart's own host: it takes no
    * place among the others, is never moved, and stands at the back.
    */
   fixed?: boolean
+  /** Where a fixed layer stands, said in its row: `behind the drawings`. */
+  place?: string
+  /** The forms it can be drawn in, the first its own — the candles' (candles, OHLC bars, line, area). */
+  forms?: { id: PriceForm, label: string }[]
 }
 
 /** One layer of a chart as the reader arranged it. */
@@ -48,4 +53,6 @@ export interface LayerState {
   opacity: number
   /** Its option's value, or null for a layer that offers none. */
   option: boolean | null
+  /** The form it is drawn in, or null for a layer that offers no choice of form. */
+  form: PriceForm | null
 }

@@ -21,7 +21,7 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
 
   await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
   const layers = page.locator('[data-panel-kind="layers"]')
-  await expect(layers.locator('[data-layer]')).toHaveCount(4)
+  await expect(layers.locator('[data-layer]')).toHaveCount(5)
 
   // beside, not over: the chart it arranges stays on show, the panel to its right
   await expect(chart).toBeVisible()

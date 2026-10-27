@@ -2,6 +2,7 @@ import type { ChartLayerId } from '@/types/chart_drawing_types'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext } from '@/types/context_types'
 import type { LayerOptionId } from '@/types/layer_types'
+import type { PriceForm } from '@/types/run_chart_types'
 
 /**
  * One facet bar's state, as it is stored.
@@ -83,6 +84,8 @@ export interface StoredLayers {
   /** In percent, only where below 100. */
   opacity?: Partial<Record<ChartLayerId, number>>
   options?: Partial<Record<LayerOptionId, boolean>>
+  /** The form a layer is drawn in, only where it is not its own first. */
+  forms?: Partial<Record<ChartLayerId, PriceForm>>
 }
 
 /** The rows a panel keeps, and the run they were kept for — under any other they count for nothing. */

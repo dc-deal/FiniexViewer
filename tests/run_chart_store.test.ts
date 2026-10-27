@@ -268,6 +268,15 @@ describe('useRunChartStore', () => {
    * The volume counts what the venue prints: the traded volume where the bars are order-driven, the
    * ticks otherwise — one value a bar, coloured by its candle, and handed apart from the drawings.
    */
+  /** The candles layer hands the chart its form, whether it is shown and how strongly — candles at full strength by default. */
+  it('hands the chart the candles in the form and the strength the Layers panel set', () => {
+    const chart = useRunChartStore()
+    expect(chart.candles).toEqual({ form: 'candles', shown: true, opacity: 1 })
+    useArrangementStore().setPanelView('run-chart', { layers: { forms: { candles: 'bars' }, opacity: { candles: 30 }, hidden: ['candles'] } })
+    expect(chart.candles).toEqual({ form: 'bars', shown: false, opacity: 0.3 })
+    expect(chart.layers.map(entry => entry.id)).not.toContain('candles')
+  })
+
   it('draws the traded volume where the venue prints trades, and the ticks where it does not', async () => {
     chooseFixtureRun()
     const served = [

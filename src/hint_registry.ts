@@ -63,10 +63,6 @@ const HINTS: HintDefinition[] = [
     text: t('The trades are marked where the unit on show opened a position in the window drawn — this one opened none.'),
   },
   {
-    id: 'layer-empty-volume',
-    text: t('The volume is drawn for the bars in the window — this window holds none.'),
-  },
-  {
     id: 'chart-marks',
     text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue'
-import { CandlestickSeries, ColorType, HistogramSeries, createChart } from 'lightweight-charts'
+import {
+  AreaSeries, BarSeries, CandlestickSeries, ColorType, HistogramSeries, LineSeries, createChart,
+} from 'lightweight-charts'
 import type {
-  CandlestickSeriesPartialOptions, ChartOptions, DeepPartial, IChartApi, ISeriesApi, MouseEventParams, UTCTimestamp,
+  ChartOptions, DeepPartial, IChartApi, ISeriesApi, MouseEventParams, SeriesType, UTCTimestamp,
 } from 'lightweight-charts'
 import ChartCard from '@/components/base/ChartCard.vue'
 import { ChartDrawingHost, type DrawingColours } from '@/components/chart_drawing_host'
@@ -10,7 +12,7 @@ import type { BarRange } from '@/components/chart_geometry'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { ChartLayer } from '@/types/chart_drawing_types'
 import type { FigureCard } from '@/types/figure_types'
-import type { ChartVolume } from '@/types/run_chart_types'
+import type { ChartCandles, ChartVolume, PriceForm } from '@/types/run_chart_types'
 
 const props = defineProps<{
   data: ChartBar[]
@@ -32,6 +34,11 @@ const props = defineProps<{
    * draws none and builds no series for it — the free chart; null, nothing yet.
    */
   volume?: ChartVolume | null
+  /**
+   * The candles layer: the form the price is drawn in, whether it is shown, how strongly. Left out,
+   * candles at full strength — the free chart.
+   */
+  candles?: ChartCandles | null
 }>()
 
 const emit = defineEmits<{
@@ -65,7 +72,9 @@ const VOLUME_ALPHA = 0.45
 
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
-let series: ISeriesApi<'Candlestick'> | null = null
+let series: ISeriesApi<SeriesType> | null = null
+/** The form the price series was built in — a change of form builds it anew. */
+let builtForm: PriceForm | null = null
 let volumeSeries: ISeriesApi<'Histogram'> | null = null
 /** What the chart draws for itself — one series primitive for every layer. */
 let host: ChartDrawingHost | null = null
@@ -199,13 +208,24 @@ function chartColours(colours: ChartColours): DeepPartial<ChartOptions> {
   }
 }
 
-function candleColours(colours: ChartColours): CandlestickSeriesPartialOptions {
-  return {
-    upColor: colours.rise,
-    downColor: colours.fall,
-    wickUpColor: colours.rise,
-    wickDownColor: colours.fall,
+/**
+ * The price series' colours for its form, at the strength the candles layer is drawn at — a bar's
+ * direction is the polarity of a figure, and a line or an area of the close is plain ink. Hidden, every
+ * colour is transparent and the last price says nothing on the axis.
+ */
+function priceColours(colours: ChartColours): Record<string, unknown> {
+  const layer = candlesLayer()
+  const alpha = layer.shown ? layer.opacity : 0
+  const rise = withAlpha(colours.rise, alpha)
+  const fall = withAlpha(colours.fall, alpha)
+  const ink = withAlpha(colours.mark, alpha)
+  const marks = { lastValueVisible: layer.shown, priceLineVisible: layer.shown }
+  if (layer.form === 'line') return { color: ink, lineWidth: 1, ...marks }
+  if (layer.form === 'area') {
+    return { lineColor: ink, topColor: withAlpha(colours.mark, alpha * 0.25), bottomColor: withAlpha(colours.mark, 0), lineWidth: 1, ...marks }
   }
+  if (layer.form === 'bars') return { upColor: rise, downColor: fall, ...marks }
+  return { upColor: rise, downColor: fall, wickUpColor: rise, wickDownColor: fall, ...marks }
 }
 
 /**
@@ -242,9 +262,43 @@ function initChart(size: { width: number, height: number }): void {
     })
     chart.priceScale(VOLUME_SCALE).applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })
   }
-  series = chart.addSeries(CandlestickSeries, { borderVisible: false, ...candleColours(colours), ...seriesFormat() })
   host = new ChartDrawingHost()
+  buildPriceSeries()
+}
+
+/** The candles as handed, or candles at full strength where none were — the free chart. */
+function candlesLayer(): ChartCandles {
+  return props.candles ?? { form: 'candles', shown: true, opacity: 1 }
+}
+
+/**
+ * The price series in the form the candles layer asks for, the drawing host attached to it. Built
+ * again on a change of form: the library has one series type per form, and the host goes with the
+ * series it is attached to. Hidden, it stays and is drawn fully transparent, so the drawings and the
+ * price scale that rests on it stay where they were.
+ */
+function buildPriceSeries(): void {
+  if (!chart || !host) return
+  if (series) {
+    series.detachPrimitive(host)
+    chart.removeSeries(series)
+  }
+  const form = candlesLayer().form
+  const options = { ...priceColours(readColours()), ...seriesFormat() }
+  series = form === 'bars' ? chart.addSeries(BarSeries, options)
+    : form === 'line' ? chart.addSeries(LineSeries, options)
+      : form === 'area' ? chart.addSeries(AreaSeries, options)
+        : chart.addSeries(CandlestickSeries, { borderVisible: false, ...options })
+  builtForm = form
   series.attachPrimitive(host)
+}
+
+/** The bars as the series of the form drawn takes them: OHLC, or the close alone for a line or an area. */
+function priceData(data: ChartBar[]): unknown[] {
+  const form = candlesLayer().form
+  return form === 'line' || form === 'area'
+    ? data.map(bar => ({ time: bar.time as UTCTimestamp, value: bar.close }))
+    : data.map(bar => ({ ...bar, time: bar.time as UTCTimestamp }))
 }
 
 /** The width of a bar on screen: the plot's width over the bars in view, however far zoomed. */
@@ -256,7 +310,7 @@ function reportSpacing(): void {
 }
 
 /** The series' price format where one was handed in — nothing, and the library keeps its own. */
-function seriesFormat(): CandlestickSeriesPartialOptions {
+function seriesFormat(): { priceFormat?: { type: 'price', precision: number, minMove: number } } {
   return props.priceFormat ? { priceFormat: { type: 'price', ...props.priceFormat } } : {}
 }
 
@@ -268,7 +322,7 @@ function repaint(): void {
   if (!chart || !series) return
   const colours = readColours()
   chart.applyOptions(chartColours(colours))
-  series.applyOptions(candleColours(colours))
+  series.applyOptions(priceColours(colours))
   showDrawings()
   showVolume()
 }
@@ -276,7 +330,8 @@ function repaint(): void {
 /** A token's hex colour at a share of its strength — the library takes a colour, not a CSS mix. */
 function withAlpha(colour: string, alpha: number): string {
   const hex = /^#([0-9a-f]{6})$/i.exec(colour)
-  if (!hex) return colour
+  // at full strength the token as it is
+  if (!hex || alpha >= 1) return colour
   const value = Number.parseInt(hex[1]!, 16)
   return `rgba(${value >> 16}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`
 }
@@ -301,9 +356,21 @@ function showVolume(): void {
 
 function showData(data: ChartBar[]): void {
   if (!series) return
-  series.setData(data.map(b => ({ ...b, time: b.time as UTCTimestamp })))
+  series.setData(priceData(data) as never)
   showDrawings()
   frame()
+}
+
+/** The candles layer changed: another form builds the series anew, the same one is repainted. */
+function showCandles(): void {
+  if (!series) return
+  if (candlesLayer().form !== builtForm) {
+    buildPriceSeries()
+    series.setData(priceData(props.data) as never)
+    showDrawings()
+    return
+  }
+  series.applyOptions(priceColours(readColours()))
 }
 
 /** Build at the first real size, follow every later one, and ignore a collapse to nothing. */
@@ -343,6 +410,7 @@ watch(() => props.layers, () => {
 })
 watch(() => props.focus, () => frame())
 watch(() => props.volume, () => showVolume())
+watch(() => props.candles, () => showCandles())
 // a format taken away goes back to the library's own (lightweight-charts 5.2.1: two decimals, a
 // least move of 0.01) — applying nothing would keep the previous instrument's decimals
 watch(() => props.priceFormat, () => series?.applyOptions(

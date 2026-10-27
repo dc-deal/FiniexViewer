@@ -94,3 +94,19 @@ export interface ChartVolume {
   opacity: number
   bars: { time: number, value: number, rising: boolean }[]
 }
+
+/**
+ * The forms the price takes on the chart — ours, so a closed set. Each is the library's own series
+ * over the served bars; nothing is computed from them (a Heikin-Ashi candle would be, and is not
+ * offered).
+ */
+export const PRICE_FORMS = ['candles', 'bars', 'line', 'area'] as const
+export type PriceForm = typeof PRICE_FORMS[number]
+
+/** The candles layer as the chart draws it: its form, whether it is shown, how strongly. */
+export interface ChartCandles {
+  form: PriceForm
+  shown: boolean
+  /** The share of its strength it is drawn at, 0–1 — set in the Layers panel. */
+  opacity: number
+}
