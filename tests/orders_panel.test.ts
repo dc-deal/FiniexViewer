@@ -54,6 +54,11 @@ function order(overrides: Partial<OrderHistoryRow> = {}): OrderHistoryRow {
     end_reason: null,
     rejection_reason: null,
     rejection_message: null,
+    order_event_seq: null,
+    slippage_measured_against: null,
+    slippage_reference_price: null,
+    slippage: null,
+    slippage_pct: null,
     ...overrides,
   }
 }

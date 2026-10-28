@@ -1109,9 +1109,15 @@ export interface TradeRow {
    * The mirror said `number` until this measurement and the panel called `.toFixed()` on it, which
    * threw while rendering an expanded scenario group and took the whole panel with it. The contract
    * test could not catch it: it proves the mirror against ONE capture, and that run had no null.
+   *
+   * Since contract 44 a stop-loss or take-profit exit is measured against the LEVEL that fired, no
+   * longer against the submission mid: a backtest reads 0 there, a session the real distance.
    */
   exit_slippage: number | null
   exit_slippage_pct: number | null
+  // which reference the exit was measured against (contract 44) — `submission_mid` · `limit_price` ·
+  // `trigger_price` · `protective_level`; null on an older record
+  exit_slippage_measured_against: string | null
 }
 
 /** Run-wide trade statistics for one account currency. */
@@ -1256,6 +1262,12 @@ export interface BrokerUnit {
   // keys on
   scenarios: string[]
   symbols: BrokerSymbol[]
+  // where the venue reports a fill's fee, as its adapter declares (contract 44): `status_answer` ·
+  // `executions` · `not_reported`. Null on an older record
+  fee_report: string | null
+  // whether the run's fills carry the venue's own fee — false in a backtest and in a dry run. Null
+  // on an older record
+  venue_fee_expected: boolean | null
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/broker */
@@ -1591,6 +1603,19 @@ export interface OrderHistoryRow {
   // `broker_unreachable` and `unresolved_write`.
   rejection_reason: string | null
   rejection_message: string | null
+  // the order event this row was booked with — its `seq` in order-events (contract 44); null on a
+  // pending row and on an older record
+  order_event_seq: number | null
+  /**
+   * A fill's slippage (contract 44), in price units, POSITIVE IS A COST, with the reference it was
+   * measured against — `submission_mid` · `limit_price` · `trigger_price` · `protective_level`. The
+   * price and the two figures are null where the reference was not captured. Never averaged across
+   * references: a limit fill can only meet or beat its limit.
+   */
+  slippage_measured_against: string | null
+  slippage_reference_price: number | null
+  slippage: number | null
+  slippage_pct: number | null
 }
 
 /**

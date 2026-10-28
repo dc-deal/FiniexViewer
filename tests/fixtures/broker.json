@@ -33,7 +33,9 @@
           "swap_long": -8.62,
           "swap_short": 1.83
         }
-      ]
+      ],
+      "fee_report": null,
+      "venue_fee_expected": null
     },
     {
       "broker_type": "kraken_spot",
@@ -64,7 +66,9 @@
           "swap_long": 0.0,
           "swap_short": 0.0
         }
-      ]
+      ],
+      "fee_report": null,
+      "venue_fee_expected": null
     }
   ],
   "key": [
