@@ -72,7 +72,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'trade-slippage',
-    text: t('Rest the pointer on a trade for its card. Its slippage is how far the fills landed from a price set before them, a positive figure a cost: the mid when the order was sent — so a market fill holds half the spread — or, marked vs SL/TP level, the level that closed it, where a backtest reads 0 because it fills there.'),
+    text: t("A trade's card gives its slippage: how far the fills landed from the mid when the order was sent — half the spread for a market fill — or, marked vs SL/TP level, from the level that closed it, where a backtest reads 0."),
   },
   {
     id: 'position-link',

@@ -656,6 +656,18 @@ describe('TradeHistoryPanel', () => {
       expect(fills.findAll('button')).toHaveLength(0)
     })
 
+    /** A narrow width cuts a fill's id, price and fee; its card carries them whole, never a tooltip. */
+    it('gives each fill a card with its id, its price and its fee', async () => {
+      const wrapper = mountPanel(report({ trades: [trade({ entry_executions: [fill({ price: 0.86123, fee: 0.25 })] })] }))
+      await tradeRows(wrapper)[0]!.trigger('click')
+      const card = wrapper.find('.fill-list').findAllComponents(HoverCard)[0]!
+      expect(String(card.props('title'))).toContain('SYNTH-pos_eurgbp_1-000001')
+      const rows = Object.fromEntries((card.props('details') as Figure[]).map(row => [row.label, row.value]))
+      expect(rows['Price']).toBe('0.86123')
+      expect(rows['Fee']).toContain('0.25')
+      expect(wrapper.find('.fill-list').find('[title]').exists()).toBe(false)
+    })
+
     /**
      * The share is shown ONLY where the backend says the fill belongs to several trades — its
      * `shared_by`, served since contract 17. Gating on a volume comparison instead would be us
@@ -772,16 +784,18 @@ describe('TradeHistoryPanel', () => {
       expect(wrapper.find('.in-parts').exists()).toBe(false)
     })
 
-    /** The three served figures, in the backend's own wording, one hover away. */
-    it('carries what this trade took of the whole, on the hover', () => {
+    /** The three served figures, in the backend's own wording, one hover away — in the row's card. */
+    it('carries what this trade took of the whole, in its card', () => {
       const wrapper = mountPanel(report({ trades: [shared(3, { lots: 0.02 })] }))
-      const title = wrapper.find('.trade-position').attributes('title') ?? ''
-      expect(title).toContain('closed in parts')
-      expect(title).toContain('0.02')
-      expect(title).toContain('0.1')
-      expect(title).toContain('over 3 records')
+      const parts = cardRows(wrapper)['Closed in parts'] ?? ''
+      expect(parts).toContain('0.02')
+      expect(parts).toContain('0.1')
+      expect(parts).toContain('over 3 records')
       // and WHICH record ended the chain, which `shared_by` could never say
-      expect(title).toContain('it stayed open after this')
+      expect(parts).toContain('it stayed open after this')
+      // a browser tooltip no longer carries it
+      expect(wrapper.find('.trade-position').attributes('title')).toBeUndefined()
+      expect(cardRows(mountPanel(report({ trades: [shared(1)] })))).not.toHaveProperty('Closed in parts')
     })
 
     /** Two partial closes of one position differ in their exit, not in their size — they look alike
