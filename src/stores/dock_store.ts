@@ -91,8 +91,11 @@ const EDGE_SHARE = 0.25
  * A `selection` is the reader choosing something the panel shows: a pick in a list. A selection
  * never reopens a panel the reader closed — a pick in the run list did, and moved the layout on a
  * click that was about something else.
+ * A `link` is a command made in a panel and aimed at a bundle: where members of that bundle stand
+ * open as panels of their own, it goes to them instead (operator, 2026-10-28) — see `revealMembers`.
+ * Aimed at any other kind, it is a command.
  */
-export type RevealReason = 'command' | 'selection'
+export type RevealReason = 'command' | 'link' | 'selection'
 
 /** What is being dragged in the dock: a panel by its tab, or a whole group by its header. */
 type DockDrag = { panel: string } | { group: string }
@@ -507,6 +510,7 @@ export const useDockStore = defineStore('dock', () => {
   function reveal(kindId: string, reason: RevealReason, from?: string): boolean {
     const dock = api.value
     if (!dock) return false
+    if (reason === 'link' && revealMembers(dock, kindId)) return true
     if (!dock.getPanel(kindId)) {
       if (reason === 'selection') return false
       openClosed(dock, kindId)
@@ -516,6 +520,28 @@ export const useDockStore = defineStore('dock', () => {
     if (panel && source && source.group === panel.group) return true
     panel?.api.setActive()
     return panel !== undefined
+  }
+
+  /**
+   * A link aimed at a bundle whose members stand open as panels of their own: they show what was
+   * chosen, and each comes to the front in its group — where a member is in front already, that one
+   * stays, and the group the click was made in is never covered. The bundle stays as it is, closed or
+   * behind: who took its members out chose to read them apart (operator, 2026-10-28). Says whether a
+   * member was open; with none, the link opens the bundle, or the click would show nothing.
+   */
+  function revealMembers(dock: DockviewApi, bundle: string): boolean {
+    const members = dock.panels.filter(panel => memberOfKind(panel.id)?.bundle === bundle)
+    if (!members.length) return false
+    // dockview makes a group active as its content takes the focus, so the click's panel is in front
+    const source = dock.activePanel
+    for (const group of new Set(members.map(panel => panel.group))) {
+      const inFront = group.activePanel
+      if (group === source?.group || (inFront && members.includes(inFront))) continue
+      members.find(panel => panel.group === group)?.api.setActive()
+    }
+    // a member brought forward takes the active group with it; the reader stays where they clicked
+    source?.api.setActive()
+    return true
   }
 
   /** Closes a panel, which hides it — the Panels menu shows it again where it stood. */
@@ -558,8 +584,20 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   /**
+   * Is a bundle read apart — closed, while members of it stand open as panels of their own? A
+   * member to be shown then joins them as a panel rather than reopening the bundle (operator,
+   * 2026-10-28).
+   */
+  function standsApart(bundle: BundleId): boolean {
+    const dock = api.value
+    return dock !== null && !dock.getPanel(bundle)
+      && dock.panels.some(panel => memberOfKind(panel.id)?.bundle === bundle)
+  }
+
+  /**
    * Shows a hidden section where it last stood: as a panel beside the panels it stood beside, while
-   * one of them is still open, and otherwise in the column, whose panel comes to the front.
+   * one of them is still open, and otherwise in the column, whose panel comes to the front — or, where
+   * the bundle is read apart, as a panel beside its other members.
    */
   function showSection(sectionId: string, bundle: BundleId = RUN_BUNDLE): void {
     const dock = api.value
@@ -572,7 +610,8 @@ export const useDockStore = defineStore('dock', () => {
       return
     }
     forgetPlace(kindId)
-    reveal(bundle, 'command')
+    if (standsApart(bundle)) openSection(sectionId, bundle)
+    else reveal(bundle, 'command')
   }
 
   /** Hides a member wherever it stands — its panel's close, or switched off in the column. */
@@ -606,7 +645,7 @@ export const useDockStore = defineStore('dock', () => {
 
   return {
     api, openIds, shownIds, dragging, lastChart,
-    attach, detach, reveal, close, openSection, backIntoColumn, showSection, hideSection, reset, flush,
+    attach, detach, reveal, close, openSection, backIntoColumn, standsApart, showSection, hideSection, reset, flush,
     dockToEdge, endDrag, noteShown,
   }
 })

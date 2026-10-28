@@ -122,6 +122,14 @@ export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
       void scrollToMark(sectionId, ownPanel)
       return
     }
+    // the bundle closed, its members read apart: the target joins them as a panel of its own rather
+    // than reopening the bundle (operator, 2026-10-28)
+    if (dock.standsApart(RUN_BUNDLE)) {
+      layoutStore.show(sectionId)
+      dock.openSection(sectionId)
+      void scrollToMark(sectionId, ownPanel)
+      return
+    }
     // in the column: the run report comes to the front — the jump may start in another panel — and
     // a hidden section is not in the column at all, and a folded one draws nothing, so the jump
     // has to make the target reachable before it can scroll to it

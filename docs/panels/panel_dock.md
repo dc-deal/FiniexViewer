@@ -115,6 +115,16 @@ it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the o
   the pick still chose, and every panel following the link switched. Picking through a sweep's
   ranking with the run bundle as a tab beside it hid the ranking at every click. In another group
   the target still comes forward, and a `command` always does.
+- **A link goes to a bundle's members where they stand apart** (operator, 2026-10-28). A run id in
+  a session, a booking period or an activity, and the deployment in a run's header, are a `link`:
+  where members of the bundle stand open as panels of their own, the bundle stays as it is — closed,
+  or behind its tab — and those members show what was chosen, each brought to the front of its
+  group unless a member is there already or the click was made in that group. Who took members out
+  chose to read them apart, and reopening the bundle they had closed moved the layout on a click
+  about something else. With no member out the link opens the bundle as before, or the click would
+  show nothing. A section to be shown while the bundle is closed and others stand apart — a jump
+  from the orders to the trades, or the Panels menu showing a hidden one — joins them as a panel
+  (`standsApart`). The Panels menu's own entry for the bundle always opens it.
 - **A panel docks along a whole edge of the dock** (`DockEdges.vue`, operator 2026-10-16). Dragged
   to the outermost edge, a tab becomes a column over the dock's full height or a row over its full
   width, a quarter of it to start with; a drop on a group only splits that group. dockview has edge

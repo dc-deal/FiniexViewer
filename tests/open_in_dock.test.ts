@@ -59,7 +59,7 @@ describe('openInDock', () => {
     open.openRun(SECOND!)
     await flushPromises()
     expect(useRunsStore().summary?.run_id).toBe(SECOND)
-    expect(opened).toEqual(['run command', 'run command'])
+    expect(opened).toEqual(['run link', 'run link'])
   })
 
   /** A change mark asks for a session's configuration: the run is chosen, that section comes forward. */
@@ -107,6 +107,6 @@ describe('openInDock', () => {
     await flushPromises()
     expect(apiClient.getDeployment).toHaveBeenCalledWith(id)
     expect(useDeploymentsStore().detail?.deployment_id).toBe(id)
-    expect(opened).toEqual(['deployment command'])
+    expect(opened).toEqual(['deployment link'])
   })
 })

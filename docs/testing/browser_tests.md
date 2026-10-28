@@ -71,7 +71,8 @@ by its tab, the way a reader does.
   section.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
-  and a jump from the orders landing in the trade history opened as a panel.
+  and a jump from the orders landing in the trade history opened as a panel — or, with the run
+  bundle closed and the orders standing apart, opening the trade history beside them.
 - `narrow_panels.spec.ts` holds what narrow room does to what stands beside it: the narrowing in the
   menu bar shortening its name before anything beside it moves, its button still whole and inside
   the bar, the Panels trigger on one line — at 760 px, where the bar fits its mark and button and
@@ -124,7 +125,8 @@ by its tab, the way a reader does.
   the link is drawn twice and the mark lands in one scenario rather than in every row carrying that
   id.
 - `open_in_context.spec.ts` holds the way from one VIEW into another — a deployment's session into
-  its run, a run into the deployment it was a session of — because a unit test records where a panel
+  its run, a run into the deployment it was a session of, and a session's run shown in the sections
+  standing apart while the run bundle stays closed — because a unit test records where a panel
   asked to go, and only a browser shows the shell going there.
 - `panel_boundary.spec.ts` holds the one claim the unit suite cannot reach, because it is about the
   WORKSPACE and not about a panel: a section that cannot be drawn takes ONLY itself off the screen.

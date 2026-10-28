@@ -10,6 +10,8 @@ import { useLayoutStore } from '@/stores/layout_store'
 interface FakeGroup {
   id: string
   panels: FakePanel[]
+  /** the tab in front of this group; the active group's is the dock's active panel */
+  readonly activePanel: FakePanel | undefined
   api: { width: number, height: number, moveTo: (options: { group: FakeGroup }) => void }
 }
 
@@ -64,12 +66,16 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
   const edgeGroups: FakeEdgeGroup[] = []
   // dockview announces the panel in front whenever another one comes there
   const fronted: ((event: { panel: FakePanel | undefined }) => void)[] = []
+  // every group keeps a tab in front, by group id
+  const frontOf = new Map<string, string>()
 
   const panels = () => row.flatMap(group => group.panels)
   const find = (id: string) => panels().find(panel => panel.id === id)
   const mutate = () => willMutate.forEach(listener => listener())
 
   function front(id: string | null): void {
+    const panel = find(id ?? '')
+    if (panel) frontOf.set(panel.group.id, panel.id)
     if (id === active) return
     active = id
     fronted.forEach(listener => listener({ panel: find(id ?? '') }))
@@ -79,6 +85,7 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     const group: FakeGroup = {
       id: `g${groupCount++}`,
       panels: [],
+      get activePanel() { return group.panels.find(panel => panel.id === frontOf.get(group.id)) ?? group.panels[0] },
       api: {
         width: 400,
         height: 600,
@@ -225,6 +232,8 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     groups: () => panels().map(p => p.group.id),
     /** The groups left to right, each as the ids of its tabs. */
     rows: () => row.map(group => group.panels.map(p => p.id)),
+    /** The tab in front of each group, left to right. */
+    fronts: () => row.map(group => group.activePanel?.id),
     width: (id: string) => find(id)?.group.api.width,
     /** The reader drags a seam: the panel's group takes this width. */
     resize: (id: string, width: number) => {
@@ -705,6 +714,106 @@ describe('useDockStore', () => {
   })
 
   /**
+   * A link aimed at a bundle goes to its members where they stand as panels of their own (operator,
+   * 2026-10-28): the reader who took them out chose to read them apart, and reopening the bundle they
+   * closed moved the layout on a click about something else. With none out it opens the bundle,
+   * or the click would show nothing.
+   */
+  describe('a link to a bundle whose members stand as panels', () => {
+    function attached() {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      return { dock, store }
+    }
+
+    function moveInto(dock: ReturnType<typeof fakeDock>, id: string, besideId: string): void {
+      dock.api.getPanel(id)!.api.moveTo({ group: dock.api.getPanel(besideId)!.group })
+    }
+
+    it('leaves the closed bundle closed, its members showing the choice, the reader where they clicked', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      dock.close('run')
+      store.reveal('deployment', 'command')
+
+      expect(store.reveal('run', 'link')).toBe(true)
+      expect(dock.ids()).not.toContain('run')
+      expect(dock.active()).toBe('deployment')
+    })
+
+    it('brings a member forward where another panel covers it, and leaves one already in front', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      store.openSection('orders')
+      dock.close('run')
+      // the run chart dragged in as a tab beside the two members, and in front of them
+      moveInto(dock, 'run-chart', 'report-orders')
+      store.reveal('deployment', 'command')
+
+      store.reveal('run', 'link')
+      expect(dock.fronts()).toContain('report-trade-history')
+      expect(dock.fronts()).not.toContain('run-chart')
+      expect(dock.active()).toBe('deployment')
+
+      // a member in front already is the one that stays
+      store.reveal('report-orders', 'command')
+      store.reveal('deployment', 'command')
+      store.reveal('run', 'link')
+      expect(dock.fronts()).toContain('report-orders')
+    })
+
+    it('never covers the group the link was clicked in', () => {
+      const { dock, store } = attached()
+      store.openSection('orders')
+      dock.close('run')
+      moveInto(dock, 'report-orders', 'deployment')
+      store.reveal('deployment', 'command')
+
+      store.reveal('run', 'link')
+      expect(dock.active()).toBe('deployment')
+      expect(dock.fronts()).not.toContain('report-orders')
+    })
+
+    /** The bundle open, but behind another tab: with members out it stays there (operator, 2026-10-28). */
+    it('leaves an open bundle behind its tab while members stand out', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      store.reveal('deployment', 'command')
+      expect(dock.fronts()).not.toContain('run')
+
+      store.reveal('run', 'link')
+      expect(dock.fronts()).not.toContain('run')
+      expect(dock.active()).toBe('deployment')
+    })
+
+    it('opens the bundle where none of its members stands out', () => {
+      const { dock, store } = attached()
+      dock.close('run')
+
+      expect(store.reveal('run', 'link')).toBe(true)
+      expect(dock.ids()).toContain('run')
+      expect(dock.active()).toBe('run')
+      // a command from the Panels menu opens it whatever stands out
+      store.openSection('orders')
+      dock.close('run')
+      store.reveal('run', 'command')
+      expect(dock.ids()).toContain('run')
+    })
+
+    it('does the same for the deployment bundle', () => {
+      const { dock, store } = attached()
+      store.openSection('sessions', 'deployment')
+      dock.close('deployment')
+      store.reveal('runs', 'command')
+
+      store.reveal('deployment', 'link')
+      expect(dock.ids()).not.toContain('deployment')
+      expect(dock.active()).toBe('runs')
+    })
+  })
+
+  /**
    * Closing a panel HIDES it, alike for every panel (viewer#31, 2026-10-14): the Panels menu shows
    * it again where it stood, beside the panels it stood beside while one of them is still open.
    */
@@ -762,6 +871,23 @@ describe('useDockStore', () => {
       expect(dock.ids()).toEqual(['run'])
       expect(hidden('trade-history')).toBe(false)
       expect(useArrangementStore().places['report-trade-history']).toBeUndefined()
+    })
+
+    /** The bundle closed and other members read apart: it joins them, the bundle stays closed (2026-10-28). */
+    it('shows a section beside the other members where the bundle is closed and they stand apart', () => {
+      const { dock, store } = attached()
+      store.hideSection('trade-history')
+      store.openSection('orders')
+      dock.close('run')
+      expect(store.standsApart('run')).toBe(true)
+
+      store.showSection('trade-history')
+      expect(dock.ids()).not.toContain('run')
+      expect(dock.rows().find(row => row.includes('report-orders'))).toContain('report-trade-history')
+      expect(hidden('trade-history')).toBe(false)
+      // the bundle open again, nothing stands apart
+      store.reveal('run', 'command')
+      expect(store.standsApart('run')).toBe(false)
     })
 
     it('sends a section back into the column by its own control — shown, its place forgotten', () => {

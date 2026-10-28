@@ -11,7 +11,8 @@ import { useSweepsStore } from '@/stores/sweeps_store'
  * becomes the main link's and loads, exactly as a pick in its own list does — and the panel showing
  * it comes to the front: the run's report, the deployment's history, the sweep's ranking, opened
  * where it last stood where the reader had closed it, because a link the reader clicked asks for
- * that panel (a `command`). No
+ * that panel. A bundle whose members stand open as panels of their own is the exception: the link
+ * goes to those members, and the bundle stays as it is (a `link`, see `RevealReason`). No
  * panel knows the dock; each asks this channel.
  *
  * Through the stores' own `select…` and never the context's bare setter. A docked view stays
@@ -30,7 +31,7 @@ export function openInDock(): OpenInContext {
     // a named section comes forward as a panel of its own: in the column it may stand folded
     // or far below the header, and the reader asked for that section rather than the report
     if (sectionId) dock.openSection(sectionId)
-    else dock.reveal(RUN_BUNDLE, 'command')
+    else dock.reveal(RUN_BUNDLE, 'link')
   }
   return {
     openRun,
@@ -43,7 +44,7 @@ export function openInDock(): OpenInContext {
     openDeployment: (deploymentId: string) => {
       void deployments.selectDeployment(deploymentId)
       // its history is the bundle's — the list beside it only marks the pick (viewer#43)
-      dock.reveal(DEPLOYMENT_BUNDLE, 'command')
+      dock.reveal(DEPLOYMENT_BUNDLE, 'link')
     },
     openSweep: (sweepId: string) => {
       void sweeps.selectSweep(sweepId)
