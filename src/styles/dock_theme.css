@@ -55,4 +55,32 @@
 .dockview-theme-dark .dv-right-actions-container,
 .dockview-theme-light .dv-right-actions-container {
   flex-shrink: 1000000;
+  /* and below its content's width: at `auto` its floor was the bar's full width, so the TAB took the
+     whole shortfall and left for dockview's overflow menu, while the bar ran past the group's edge
+     (measured 2026-10-28: the run chart at 457 px, its tab 0 px wide, the bar 628) */
+  min-width: 0;
+}
+
+/*
+ * A group's header is a size container: its width is the group's, never its content's, so what
+ * stands in it — a tab's subtitle, the run chart's quick bar — can shorten itself where the header
+ * is short (`@container dock-header`).
+ */
+.dockview-theme-dark .dv-tabs-and-actions-container,
+.dockview-theme-light .dv-tabs-and-actions-container {
+  container: dock-header / inline-size;
+}
+
+/*
+ * A group CLIPS what overflows it and is never scrolled. dockview gives it `overflow: hidden`, which
+ * still lets the browser scroll it to bring a focused control into view: with the Layers panel opened
+ * beside the run chart, the chart's group narrowed under its quick bar, the focused ≡ Layers button
+ * stood past its edge, and the group scrolled 171 px — its content area, and with it the chart kept
+ * in the page, stood left of the group and over the report (measured 2026-10-28). `clip` makes it no
+ * scroll container at all. `!important` because dockview writes its `hidden` on the element itself,
+ * and an inline style outranks every rule without it.
+ */
+.dockview-theme-dark .dv-groupview,
+.dockview-theme-light .dv-groupview {
+  overflow: clip !important;
 }

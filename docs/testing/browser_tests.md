@@ -103,7 +103,8 @@ by its tab, the way a reader does.
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
   in the chart narrows the lists to it.
 - `layers_panel.spec.ts` holds the Layers panel: opened from the run chart's quick bar BESIDE the
-  chart it arranges, the chart still on show; a layer switched off at its lever and no longer drawn
+  chart it arranges, the chart still on show and, ten frames later, still inside its own group, its
+  group scrolled by nothing — it once stood 171 px left of it, over the report; a layer switched off at its lever and no longer drawn
   (`data-drawings`), the price axis the same pixel for pixel before and after — switching the trades
   off once stretched the candles — and again after the volume is switched off, which stands on a
   scale of its own; and both still off after a real reload, in the panel and on the chart.

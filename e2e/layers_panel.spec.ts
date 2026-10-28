@@ -29,6 +29,19 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
   const layersBox = (await layers.boundingBox())!
   expect(layersBox.x).toBeGreaterThanOrEqual(chartBox.x + chartBox.width - 2)
 
+  // and inside its own group, once the layout has settled: narrowed under its quick bar, the group
+  // scrolled to bring the focused ≡ Layers button into view, and the chart stood 171 px left of it,
+  // over the report (2026-10-28). Read after ten frames, so a shift that comes late is not missed.
+  await page.evaluate(() => new Promise<void>(done => {
+    let frames = 0
+    const tick = (): void => { if (++frames > 10) done(); else requestAnimationFrame(tick) }
+    requestAnimationFrame(tick)
+  }))
+  const group = page.locator('.dv-groupview', { has: page.locator('.panel-tab[data-kind="run-chart"]') })
+  const settled = (await chartPanel.boundingBox())!
+  expect(Math.abs(settled.x - (await group.boundingBox())!.x)).toBeLessThanOrEqual(1)
+  expect(await group.evaluate(element => element.scrollLeft)).toBe(0)
+
   // the trades switched off: the chart draws none of them — and rescales nothing, so the price axis
   // reads the same (operator, on screen 2026-10-27: without the marks the candles stretched)
   const box = (await chart.boundingBox())!

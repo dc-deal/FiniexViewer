@@ -163,3 +163,16 @@ an overwhelming shrink share against the tabs (`flex-shrink: 1000000`), down to 
 bar's content declares: the bar shortens first, and a tab goes into the overflow menu only after it.
 A share of 100 to 1 still cost the tabs 2 px, and one pixel short is enough for dockview to move a
 tab into that menu (measured at 560 px).
+
+**And it fits a short header rather than running past it** (2026-10-28). The container may shrink
+below its content (`min-width: 0`), the bar's selects give way to a floor of 3rem, and in a header
+under 32rem — the run chart's at its first width beside an 1800 px window is 457 px — the button
+shows `≡` alone and a tab's subtitle shortens to 10ch. The header is a size container
+(`dock-header`) for exactly that. Until then the bar's floor was its full width: the tab took the
+whole shortfall and left for the overflow menu, and `≡ Layers` stood past the group's edge.
+
+**A group clips and is never scrolled.** dockview writes `overflow: hidden` on a group, which still
+let the browser scroll it to bring a focused control into view: the focused `≡ Layers` button past
+the edge scrolled the run chart's group by 171 px once the Layers panel opened, and the chart kept in
+the page stood over the report. `overflow: clip` makes the group no scroll container at all; the
+Layers browser spec holds the chart inside its group.

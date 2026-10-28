@@ -193,6 +193,14 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
+/* shorter in a short header, which it shares with a panel's quick bar — the run chart's names its
+   unit there in full (2026-10-28) */
+@container dock-header (max-width: 32rem) {
+  .panel-tab-subtitle {
+    max-width: 10ch;
+  }
+}
+
 .panel-tab-status.warning {
   color: var(--color-warning);
 }
