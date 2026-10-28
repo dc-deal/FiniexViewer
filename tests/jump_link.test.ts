@@ -12,11 +12,11 @@ describe('JumpLink', () => {
     expect(wrapper.classes()).toContain('link')
   })
 
-  /** The arrow says the jump leaves the panel. A screen reader hears the name, not an arrow's name. */
-  it('names its target and keeps the arrow from the screen reader', () => {
+  /** The link's ink says it is clicked; an arrow on some links read as a second kind (2026-10-28). */
+  it('names its target and wears nothing beside it', () => {
     const wrapper = mount(JumpLink, { slots: { default: 'pos_eurgbp_1' } })
     expect(wrapper.find('.jump-name').text()).toBe('pos_eurgbp_1')
-    expect(wrapper.find('.jump-arrow').attributes('aria-hidden')).toBe('true')
+    expect(wrapper.text()).toBe('pos_eurgbp_1')
   })
 
   /** What the click does is the caller's to say, and so is the class a test or a layout finds it by. */

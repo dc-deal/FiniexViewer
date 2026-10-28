@@ -89,7 +89,7 @@ misreports something:
   configuration mark carry a card with its meaning in the backend's words — what the bot decided,
   or what a session did without changing that — and say that WHICH parameters moved is not served
   yet: testingide#615 serves them as `config_changes` on the session row (setting, before, after),
-  read from the rendered profile. Beside the words, *Configuration before ↗ after ↗* opens the
+  read from the rendered profile. Beside the words, *Configuration before · after* opens the
   configuration of the session above the mark and of the one carrying it, as a panel of its own,
   each COMPARED with the other (operator, 2026-10-27): the values that differ between the
   two files are listed, oldest side first, and a moved decision-logic value is marked where it
@@ -102,6 +102,8 @@ misreports something:
   sealed a day also stands in `sessions`, its *Ran* a dash until its close is booked — the two
   counts overlap and are never added. A bare session count is a number the reader has no reason to
   doubt.
+- What the run ids, *before · after* and the unfinished count mean is said by the
+  `deployment-sessions` hint above the sessions, never on a browser tooltip (operator, 2026-10-28).
 
 **The head says each figure once** (operator, 2026-10-20), in three lines: the chosen line names
 the deployment and its bot, with the rest of its row — the bot id among it — on the same card the

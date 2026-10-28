@@ -2,6 +2,7 @@
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
 import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { DeploymentSessionsModel } from '@/types/deployment_bundle_types'
 import { plural, t } from '@/translate'
@@ -24,15 +25,14 @@ function sessionsOf(currency: string): DeploymentSessionRow[] {
 
 <template>
   <div class="deployment-sessions">
+    <!-- what a run id, before and after, and the unfinished count mean: the one explanation pattern -->
+    <HintLine id="deployment-sessions" />
     <!-- the deployment's own line, above every currency: a run that died before its first sealed
          day has no ledger row and so no currency, and the advisory speaks of the whole history -->
     <p class="counts">
       <span>{{ plural(model.detail.count, t('session'), t('sessions')) }}</span>
-      <!-- the WHY is on the title: the number is the fact, the explanation is a caveat -->
-      <span
-        :class="{ flagged: model.detail.unfinished > 0 }"
-        :title="t('Runs that never reached their close, a session running now among them. One that sealed a day stands among the sessions too, so the two counts overlap and are never added')"
-      >{{ model.detail.unfinished }} {{ t('unfinished') }}</span>
+      <!-- the WHY is in the hint above: the number is the fact, the explanation is a caveat -->
+      <span :class="{ flagged: model.detail.unfinished > 0 }">{{ model.detail.unfinished }} {{ t('unfinished') }}</span>
       <!-- ABOVE the table, never beside it: by the time a reader reaches a change mark in the
            third row they have already added up the column above it -->
       <AdvisoryNotice v-if="model.detail.advisory" :advisory="model.detail.advisory" />

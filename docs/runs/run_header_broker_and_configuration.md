@@ -94,8 +94,8 @@ backend's own app configuration and is not in this document at all. Computing an
 would be a second implementation of someone else's rule, drifting silently the moment they change
 it — the same failure as a hand-written mock of a response.
 
-**Compared across a deployment's change mark** (2026-10-27): opened through *Configuration before ↗
-after ↗*, the panel lists every value that differs from the session on the other side of the mark,
+**Compared across a deployment's change mark** (2026-10-27): opened through *Configuration before ·
+after*, the panel lists every value that differs from the session on the other side of the mark,
 by its path and oldest side first, marks a moved decision-logic value where it stands with the other
 side's value beside it, and says that a default or a start option that changed is in neither file.
 The comparison is `configChanges` in `config_shape.ts` — equality of the two files' served values,

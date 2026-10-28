@@ -158,14 +158,10 @@ function gap(session: DeploymentSessionRow): string {
         <span v-if="canOpen && before(session)" class="boundary-links">
           <span aria-hidden="true">·</span>
           {{ t('Configuration') }}
-          <JumpLink
-            :title="`${t('Open the configuration the session before ran with, compared with this one')}: ${before(session)}`"
-            @click="openConfiguration(session, 'before')"
-          >{{ t('before') }}</JumpLink>
-          <JumpLink
-            :title="`${t('Open the configuration this session ran with, compared with the one before')}: ${session.run_id}`"
-            @click="openConfiguration(session, 'after')"
-          >{{ t('after') }}</JumpLink>
+          <!-- what the two open is said by the panel's hint, never on a browser tooltip -->
+          <JumpLink @click="openConfiguration(session, 'before')">{{ t('before') }}</JumpLink>
+          <span aria-hidden="true">·</span>
+          <JumpLink @click="openConfiguration(session, 'after')">{{ t('after') }}</JumpLink>
         </span>
       </template>
       <span v-if="configurationClause(session) && session.orders_to_changed" aria-hidden="true">·</span>
@@ -174,11 +170,7 @@ function gap(session: DeploymentSessionRow): string {
 
     <template #default="{ row: session }">
       <span :data-rank="1" class="session-run">
-        <JumpLink
-          v-if="canOpen"
-          :title="t('Open this run')"
-          @click="openRun(session.run_id)"
-        >{{ session.run_id }}</JumpLink>
+        <JumpLink v-if="canOpen" @click="openRun(session.run_id)">{{ session.run_id }}</JumpLink>
         <template v-else>{{ session.run_id }}</template>
       </span>
       <span :data-rank="2">{{ utcInstant(session.started) }}</span>

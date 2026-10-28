@@ -28,7 +28,7 @@ Everything in `src/components/base/` unless the third column names another place
 | Building block | What it is for | Lives in | Described in |
 |---|---|---|---|
 | `AppButton` | every button, in three shapes (solid, quiet, link) and two sizes; a toggle shows its choice by the pressed look; `glyph` for a symbol alone, which drops the hover underline of a text action | base | [style guide](theme_buttons_and_icons.md) |
-| `JumpLink` | a jump to another place in the app: the link shape, with the arrow that says it leaves the panel | base | [Panel Jumps](../panels/panel_jumps.md) |
+| `JumpLink` | a jump to another place in the app: the link shape, its name shortened inside a table cell | base | [Panel Jumps](../panels/panel_jumps.md) |
 | `AppSwitch` | every on/off outside a menu — a lever, its word part of the click; never a checkbox | base | [style guide](theme_buttons_and_icons.md) |
 | `AppSlider` | a share along a scale, set by a vertical lever that opens from its handle | base | [style guide](theme_buttons_and_icons.md) |
 | `AppSelect` | one choice from a list; `compact` in a quick bar, where the value is what shows | base | [Panel Relations and Menus](../panels/panel_relations_and_menus.md) |

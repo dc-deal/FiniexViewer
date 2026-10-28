@@ -39,7 +39,11 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'activities',
-    text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. A label marked ↗ opens its run, or its sweep. Rest the pointer on a row for its command line, its code and who started it."),
+    text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. Its label opens its run, or its sweep. Rest the pointer on a row for its command line, its code and who started it."),
+  },
+  {
+    id: 'deployment-sessions',
+    text: t('A run id opens that run. Where a session changed its configuration, before and after open the configuration of the session above the mark and of the one carrying it, each compared with the other. Unfinished counts the runs that never reached their close, a session running now among them — one that sealed a day is among the sessions too, so the two counts overlap and are never added.'),
   },
   {
     id: 'sweeps',
