@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
-import { fixture, mockApi, revealFixtureRun, FIXTURE_RUN } from './api_mock'
-import { openWith, FIXTURES_SHOWN } from './arrangement_seed'
+import { fixture, mockApi, revealFixtureRun, FIXTURE_DEPLOYMENT, FIXTURE_RUN, STATE_FRAME_RUNS } from './api_mock'
+import { openWith, showPanel, FIXTURES_SHOWN } from './arrangement_seed'
 
 /**
  * How long the views take to become USABLE.
@@ -214,4 +214,81 @@ test('a sweep of 500 combinations is ranked on screen quickly', async ({ page })
     )
   })
   expect(ms).toBeLessThan(3000)
+})
+
+/** A deployment picked in its list until its bundle draws the sessions (viewer#43). */
+test('a deployment opens its bundle quickly', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/')
+  await showPanel(page, 'Deployments')
+  const row = page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT })
+  await row.waitFor()
+
+  const ms = await timed('deployment chosen to its bundle drawn', async () => {
+    await row.click()
+    await page.locator('[data-panel-kind="deployment"] .sessions-list .record-row').first().waitFor({ state: 'visible' })
+  })
+  expect(ms).toBeLessThan(3000)
+})
+
+/**
+ * A session's frames stepped through (viewer#51): 500 frames built from the captured ones, one a
+ * minute, the window served as the route serves it — from, to and a limit. One step is the click
+ * until the player names the next frame, on the page's own frames; the mean of twenty.
+ */
+test('a session steps through its frames quickly', async ({ page }) => {
+  const window = fixture('recorded_window.json') as { state_frames: { frame_time: string, record_no: number }[] }
+  const timeline = fixture('recorded_streams.json') as { streams: Record<string, unknown>[] }
+  const start = Date.parse(window.state_frames[0]!.frame_time)
+  const frames = Array.from({ length: 500 }, (_, index) => ({
+    ...window.state_frames[index % window.state_frames.length]!,
+    frame_time: new Date(start + index * 60_000).toISOString(),
+    record_no: index + 1,
+  }))
+  const unit = `**/api/v1/reports/runs/${STATE_FRAME_RUNS.ended}/units/*/recorded-streams`
+  await page.route(unit, route => route.fulfill({
+    json: {
+      ...timeline,
+      streams: timeline.streams.map(stream => ({
+        ...stream, record_count: 500, first_record_time: frames[0]!.frame_time, last_record_time: frames.at(-1)!.frame_time,
+      })),
+    },
+  }))
+  await page.route(`${unit}/window*`, route => {
+    const asked = new URL(route.request().url()).searchParams
+    const from = asked.get('from') ? Date.parse(asked.get('from')!) : -Infinity
+    const to = asked.get('to') ? Date.parse(asked.get('to')!) : Infinity
+    const inWindow = frames.filter(frame => Date.parse(frame.frame_time) >= from && Date.parse(frame.frame_time) < to)
+    const returned = inWindow.slice(0, Number(asked.get('limit') ?? 2000))
+    const cut = returned.length < inWindow.length
+    return route.fulfill({
+      json: {
+        ...window, matched: inWindow.length, returned: returned.length, truncated: cut,
+        next_from: cut ? inWindow[returned.length]!.frame_time : null, state_frames: returned,
+      },
+    })
+  })
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: STATE_FRAME_RUNS.ended })
+  const section = page.locator('[data-panel-kind="run"] [data-panel="latest-state"]')
+  await section.locator('details summary').click()
+  const where = section.locator('.player .where')
+  await expect(where).toContainText('frame 500 of 500')
+  await section.locator('[data-action="first"]').click()
+  await expect(where).toContainText('frame 1 of 500')
+
+  const steps = 20
+  const started = Date.now()
+  for (let step = 1; step <= steps; step++) {
+    await section.locator('[data-action="on"]').click()
+    await page.waitForFunction(
+      next => document.querySelector('[data-panel-kind="run"] [data-panel="latest-state"] .player .where')
+        ?.textContent?.includes(next),
+      `frame ${step + 1} of 500`,
+      { polling: 'raf' },
+    )
+  }
+  const perStep = Math.round((Date.now() - started) / steps)
+  timings.push({ label: 'frames — a step drawn (mean of 20)', ms: perStep })
+  expect(perStep).toBeLessThan(500)
 })

@@ -199,7 +199,10 @@ its marks stand on the candles, read on the page's own frames, and a zoom step u
 it has painted, the mean of ten — a figure that carries two round trips to the browser per step, so
 it is read against its own earlier column, never as the drawing's cost alone. And a sweep's ranking
 at the size a real search reaches (viewer#32): 500 combinations built from the capture, timed from
-the sweep opened until the 500th row stands — what says whether the ranking needs a row cap.
+the sweep opened until the 500th row stands — what says whether the ranking needs a row cap. A
+deployment picked in its list until its bundle draws the sessions (viewer#43), and a step of a
+session's frame player (viewer#51) over 500 frames built from the captured ones and served as the
+route serves them — from, to and a limit — the mean of twenty.
 
 **`e2e/order_steps.spec.ts` says why a browser spec earns its place.** The
 nested step list is a grid INSIDE a row of another grid, which is the arrangement behind two of the
