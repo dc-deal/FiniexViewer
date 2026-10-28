@@ -79,6 +79,9 @@ THEIR_CONSOLE = os.path.join('..', 'FiniexTestingIDE', 'python', 'framework', 'r
 HISTORY_ONLY = 'contract-log'
 
 LABEL = re.compile(r"label:\s*t\('([^']*)'\)")
+# A column with no heading — the run list's marks — still has a cell, and the count of columns and
+# cells is what every pairing of its file rests on; it is held as a place and never read.
+EMPTY_COLUMN = re.compile(r"label:\s*''")
 # the line that closes one entry of a figure array — see `declared_window`
 ENTRY_END = re.compile(r'\s*\}[,)]?\s*$')
 RANK_ON_COLUMN = re.compile(r'\brank:\s*(\d+)')
@@ -108,6 +111,10 @@ ONE_NAME_TWO_THINGS = {
     'measured_at': 'one instant framed by two situations: when a reading was taken, and how old the one on screen has grown',
     'duration_s': "a trade's duration is how long it was held, a sweep's the spread of its runs' starts",
     'error_count': "a run's errors, and a sweep's combinations that produced no usable data",
+    'origin_channel': "the activity list shows the channel alone, under the glossary's name for the whole "
+                      "block; the run card shows the block, each field by run-header's own label",
+    'rss_bytes': "the activity list's only memory figure; in the latest state it stands beside the "
+                 "private bytes and is told apart as the resident half",
 }
 
 CONSOLE_LABEL = re.compile(r'["\']\s*([A-Z][A-Za-z0-9 /&%().\'-]{1,30}?):\s*(?:\{|\s*["\'])')
@@ -250,23 +257,46 @@ def our_pairs():
                     rank = RANK_ON_COLUMN.search(declared_window(lines, index, match.end()))
                     if found:
                         read(match.group(1), found, path, index + 1)
+                    elif rank:
+                        columns.append((match.group(1), rank.group(1), index + 1))
                     else:
-                        columns.append((match.group(1), rank.group(1) if rank else '-', index + 1))
+                        # a card's label naming no served field is no column: counted as one, it
+                        # broke the count every column pairing of its file rests on (2026-10-28)
+                        unresolved.append((path, match.group(1)))
+                elif EMPTY_COLUMN.search(line):
+                    rank = RANK_ON_COLUMN.search(line)
+                    if rank:
+                        columns.append(('', rank.group(1), index + 1))
                 cell = CELL.search(line)
                 if cell:
                     # a cell that closes on its own line ends there: the next line is the next
                     # cell, and `Opened` took `duration_s` from it until every reading was compared
                     closes = '</' in line[cell.end():]
-                    cells.append((cell.group(1),
-                                  fields_in(line if closes else ' '.join(lines[index:index + 2]))))
+                    if closes:
+                        text = line
+                    elif '>' in line[cell.end():]:
+                        text = ' '.join(lines[index:index + 2])
+                    else:
+                        # the tag opens over several lines, its rank among its attributes: read to
+                        # the tag's end, and the line after it only where nothing follows the `>` —
+                        # `Outcome` named its field two lines below its rank, and the two-line
+                        # window read none; `Status` closes its tag on its content's line, and the
+                        # line after it is the next cell (2026-10-28)
+                        end = next((at for at in range(index + 1, min(index + 8, len(lines)))
+                                    if '>' in lines[at]), index)
+                        content = lines[end].split('>', 1)[1].strip() if '>' in lines[end] else ''
+                        text = ' '.join(lines[index:end + (1 if content else 2)])
+                    cells.append((cell.group(1), fields_in(text)))
             if columns and len(columns) == len(cells):
                 for (label, rank, at), (cell_rank, found) in zip(columns, cells):
+                    if not label:
+                        continue
                     if rank == cell_rank and found:
                         read(label, found, path, at)
                     else:
                         unresolved.append((path, label))
             else:
-                unresolved += [(path, label) for label, _, _ in columns]
+                unresolved += [(path, label) for label, _, _ in columns if label]
             # last, so both declaration shapes lead: a rank-verified column pair is a stronger
             # statement than two interpolations that happen to sit side by side
             for label, field, at in inline:
@@ -456,6 +486,14 @@ def check():
         elif not recorded(known) and marker_only(known.get('note') or ''):
             findings.append(f'  MOVED    "{label}" now renders {", ".join(field)}, '
                             'the register has it unresolved')
+
+    # A label that stops naming a field it named is news too, and the one way above that stays
+    # silent: a pairing that broke drops every label of its file from the comparison. Measured
+    # 2026-10-28: a card's labels among the sessions' columns had dropped `Ran` and three more.
+    for label, known in sorted(register.items()):
+        if recorded(known) and label not in pairs:
+            findings.append(f'  LOST     "{label}" names no field the check can read any more, '
+                            f'the register says {", ".join(recorded(known))}')
 
     # The other way round: one field under two words, which a reader takes for two things. Only a
     # label beside ONE field names it plainly, and a label the register holds unresolved names

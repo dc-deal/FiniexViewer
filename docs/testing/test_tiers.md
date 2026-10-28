@@ -102,13 +102,19 @@ automated; its instrument is a browser and a deliberate look. Two scripts suppor
   counts** (2026-10-19): an entry holds every field its label names, wherever it stands, where it
   once held the first place's alone — and `Max drawdown` stood on another field in two panels unseen.
   It prints nothing when everything agrees, and otherwise names a label the register does not know,
-  a label whose field moved, a field gone from the backend's consumer documentation, one of its
+  a label whose field moved, a label that names no field it can read any more, a field gone from the
+  backend's consumer documentation, one of its
   console labels that changed, or ONE field under two words — a word's forms counted as one: the
   casing of running text, a trailing colon, a short form the register links with `same_as`. **It finds change, not
   wrongness:** that a column head reads badly is a judgement, recorded once in the register's `note`
   column and preserved across a regeneration, because no comparison can surface something that never
   moves. Measured 2026-10-07: a renamed field reached the screen as `undefined` and a person found it
   days later — this is one line of output instead.
+  **A label that stops naming a field is reported too** (2026-10-28). The pairing of a list rests on
+  the count of headings and cells, and a card's label among the headings broke it for its whole
+  file, with nothing said: the run list, the sessions and the deployment list had lost their labels'
+  fields for weeks. A label without a rank is no heading now, a heading with no label (`label: ''`)
+  holds its column's place, and a cell whose tag opens over several lines is read to the tag's end.
 
 The protocol itself, its freshness check and its case catalogue are internal and live outside
 `docs/`, because they name run ids on this machine and change with the archive rather than with the
