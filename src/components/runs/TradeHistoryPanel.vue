@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useChartLink } from '@/composables/use_chart_link'
@@ -419,6 +420,10 @@ function card(trade: TradeRow): FigureCard {
       {{ t('trades — the remainder are not drawn, which is not the same as not there') }}
     </p>
 
+    <!-- what the card's slippage is measured against, and where the links go: the one explanation
+         pattern, never a browser tooltip -->
+    <HintLine v-if="selected.length" id="trade-slippage" />
+    <HintLine v-if="selected.length && link.canJumpTo('orders')" id="position-link" />
     <!-- an empty narrowed set is a statement about the SCENARIO, not a failed match: every unit
          the run declared is in the roster whether it traded or not -->
     <div v-if="!selected.length" class="hint">
@@ -478,7 +483,6 @@ function card(trade: TradeRow): FigureCard {
           <JumpLink
             v-if="link.canJumpTo('orders')"
             class="to-orders"
-            :title="t('Show the orders of this position')"
             @click.stop="jumpToOrders(trade)"
           >{{ trade.position_id }}</JumpLink>
           <template v-else>{{ trade.position_id }}</template>
@@ -492,7 +496,6 @@ function card(trade: TradeRow): FigureCard {
             variant="link"
             size="compact"
             class="to-chart"
-            :title="t('Show this trade on the run chart')"
             :aria-label="t('Show this trade on the run chart')"
             @click.stop="showOnChart(trade)"
           ><AppIcon name="form-chart" /></AppButton>

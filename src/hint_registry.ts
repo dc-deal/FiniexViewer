@@ -71,8 +71,12 @@ const HINTS: HintDefinition[] = [
     text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },
   {
+    id: 'trade-slippage',
+    text: t('Rest the pointer on a trade for its card. Its slippage is how far the fills landed from a price set before them, a positive figure a cost: the mid when the order was sent — so a market fill holds half the spread — or, marked vs SL/TP level, the level that closed it, where a backtest reads 0 because it fills there.'),
+  },
+  {
     id: 'position-link',
-    text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back; the chart mark beside it opens the run chart on that position. A partial close books several trades of one position, so all of them are marked.'),
+    text: t('A position id goes to the other list — from an order to the trades it produced, and back; the chart mark beside it opens the run chart on that position. A partial close books several trades of one position, so all of them are marked.'),
   },
 ]
 

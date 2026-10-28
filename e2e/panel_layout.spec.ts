@@ -149,7 +149,12 @@ test('a list heading sticks flush to the top of the area it scrolls in', async (
 
   const gap = await page.evaluate(selector => new Promise<number>(resolve => {
     const area = document.querySelector<HTMLElement>(`${selector} .report-section`)!
-    area.scrollTop = 200
+    // past the heading, wherever it starts: what stands above it — a notice, a hint — varies. Its
+    // first cell on show, since the heading row itself is `display: contents` and a column its rank
+    // hides at this width has no box either
+    const head = [...document.querySelectorAll<HTMLElement>(`${selector} .record-head > span`)]
+      .find(span => span.offsetHeight > 0)!
+    area.scrollTop = head.getBoundingClientRect().top - area.getBoundingClientRect().top + 80
     requestAnimationFrame(() => {
       const edge = area.getBoundingClientRect().top + area.clientTop
       // the row that stuck: the highest heading still at or below the edge — the others scrolled away

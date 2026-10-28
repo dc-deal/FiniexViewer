@@ -70,6 +70,15 @@ renamed from `drawdown()` once a second quantity needed it.
 distance in `price_unit` — and the card shows all three, because which one answers a question
 depends on the question.
 
+**The slippage says what its exit was measured against where that is not the mid** (contract 44,
+operator 2026-10-28). A trade's entry, and every exit but one, are measured against the mid when the
+order was sent; a stop-loss or take-profit exit against the level that closed it
+(`exit_slippage_measured_against: protective_level`), where a backtest reads 0 because it fills
+there. Without a word the two halves read as one comparison, so that exit carries `vs SL/TP level`
+and the others nothing. Live, the fill price is the venue's own answer, in a backtest the
+simulation's; the rule is the same for both, and setting the two side by side is not this panel's
+job. The `trade-slippage` hint says what the figure holds — for a market fill, half the spread.
+
 **The row cap is visible, and the narrowing runs BEFORE it.** A thirty-day session produces
 thousands of trades and drawing them all would stall the page, so the panel draws 500 and SAYS how
 many of how many it drew. A silent truncation reads as "that was all", which for a trade list is the

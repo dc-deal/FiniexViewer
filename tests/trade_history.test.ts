@@ -104,6 +104,12 @@ function mountCharted(history: TradeHistoryReport, drawable: string[]) {
 }
 
 describe('TradeHistoryPanel', () => {
+  // the panel's hints remember a dismissal in a store
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
   /** From a trade to its candles: the mark is drawn only where the run chart can draw the unit. */
   describe('the chart mark', () => {
     it('stands on every trade of a unit the run chart can draw, and on no other', () => {
@@ -587,6 +593,21 @@ describe('TradeHistoryPanel', () => {
       expect(cardRows(wrapper)['Slippage']).toContain('n/a')
       // the half that IS stated still reads as a figure
       expect(cardRows(wrapper)['Slippage']).toMatch(/in [-0-9.]/)
+    })
+
+    /**
+     * Since contract 44 a stop-loss or take-profit exit is measured against the level that closed
+     * it: the card says so there, and nowhere the exit is measured against the mid like the entry.
+     */
+    it('says the exit was measured against its level, and only there', () => {
+      const wrapper = mountPanel(report({
+        trades: [
+          trade({ position_id: 'p1', exit_slippage: 0.0012, exit_slippage_measured_against: 'protective_level' }),
+          trade({ position_id: 'p2', exit_slippage: 0.0003, exit_slippage_measured_against: 'submission_mid' }),
+        ],
+      }))
+      expect(cardRows(wrapper, 0)['Slippage']).toMatch(/out 0\.0012 vs SL\/TP level$/)
+      expect(cardRows(wrapper, 1)['Slippage']).not.toContain('SL/TP')
     })
 
     it('still renders the row itself', () => {
