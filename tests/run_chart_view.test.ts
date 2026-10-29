@@ -200,4 +200,20 @@ describe('RunChartQuickBar', () => {
     await timeframes!.setValue('M5')
     expect(chart.timeframe).toBe('M5')
   })
+
+  /** A select is as wide as its widest option: the word stood wider than any timeframe. */
+  it('offers the timeframe placeholder only while no timeframe is chosen', async () => {
+    const chart = useRunChartStore()
+    mounted = mount(RunChartQuickBar)
+    await flushPromises()
+    const placeholder = (): boolean => mounted!.findAll('select')[1]!.findAll('option')
+      .some(option => option.text() === 'Timeframe')
+    expect(chart.timeframe).toBeNull()
+    expect(placeholder()).toBe(true)
+    chooseFixtureRun()
+    chart.attach()
+    await flushPromises()
+    expect(chart.timeframe).not.toBeNull()
+    expect(placeholder()).toBe(false)
+  })
 })

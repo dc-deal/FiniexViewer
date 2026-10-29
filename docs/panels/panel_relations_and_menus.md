@@ -165,7 +165,10 @@ A share of 100 to 1 still cost the tabs 2 px, and one pixel short is enough for 
 tab into that menu (measured at 560 px).
 
 **And it fits a short header rather than running past it** (2026-10-28). The container may shrink
-below its content (`min-width: 0`), the bar's selects give way to a floor of 3rem, and in a header
+below its content (`min-width: 0`), the unit's select gives way to a floor of 3rem — cut with `…`,
+as the tab is — while the timeframe's never does: cut, `M1(` named no timeframe at all. A select is
+as wide as its widest option, so the timeframe offers its placeholder only while none is chosen;
+the word stood wider than any timeframe and pushed the button out (2026-10-29). In a header
 under 32rem — the run chart's at its first width beside an 1800 px window is 457 px — the button
 shows `≡` alone and a tab's subtitle shortens to 10ch. The header is a size container
 (`dock-header`) for exactly that. Until then the bar's floor was its full width: the tab took the

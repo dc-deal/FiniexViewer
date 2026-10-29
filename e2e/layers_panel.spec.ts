@@ -42,6 +42,12 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
   expect(Math.abs(settled.x - (await group.boundingBox())!.x)).toBeLessThanOrEqual(1)
   expect(await group.evaluate(element => element.scrollLeft)).toBe(0)
 
+  // in that short header the unit gives way with …, and the timeframe stays whole: both were cut
+  // mid-letter, `EURU` and `M1(` (operator, 2026-10-29)
+  const selects = page.locator('[data-quick-bar="run-chart"] select')
+  await expect(selects.first()).toHaveCSS('text-overflow', 'ellipsis')
+  await expect(selects.nth(1)).toHaveCSS('flex-shrink', '0')
+
   // the trades switched off: the chart draws none of them — and rescales nothing, so the price axis
   // reads the same (operator, on screen 2026-10-27: without the marks the candles stretched)
   const box = (await chart.boundingBox())!
