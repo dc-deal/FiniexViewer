@@ -112,11 +112,13 @@ export async function getBars(
   symbol: string,
   timeframe: string,
   from: string,
-  to: string
+  to: string,
+  /** The most rows to serve — the oldest of the range are kept. Left out, the route's maximum. */
+  limit?: number
 ): Promise<BarAnswer> {
   const response = await http.get<ApiBar[]>(
     `/brokers/${broker}/symbols/${symbol}/bars`,
-    { params: { timeframe, from, to } }
+    { params: limit === undefined ? { timeframe, from, to } : { timeframe, from, to, limit } }
   )
   return {
     bars: response.data,

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
-import { findCoverage, getBars } from '@/api/api_client'
+import { computed, ref, watch } from 'vue'
+import { findCoverage } from '@/api/api_client'
 import {
   autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
 } from '@/components/runs/run_chart'
@@ -8,6 +8,8 @@ import { entryExitLines, positionLevels } from '@/components/runs/run_chart_leve
 import {
   barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
 } from '@/components/runs/run_chart_marks'
+import { BARS_PER_BATCH, useBarLoader } from '@/composables/use_bar_loader'
+import type { BarEdge } from '@/composables/use_bar_loader'
 import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
@@ -15,7 +17,7 @@ import { useContextStore } from '@/stores/context_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
-import type { ApiBar, ChartBar, CoverageResponse } from '@/types/api/bar_types'
+import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
@@ -121,16 +123,15 @@ export const useRunChartStore = defineStore('runChart', () => {
     return autoTimeframe(coveredTimeframes.value, timeframeStore.minutesFor, minutes)
   })
 
-  const bars = ref<ChartBar[]>([])
+  /** The unit's bars, loaded as the view moves (viewer#9). */
+  const loader = useBarLoader()
   /** The bars as served, for what the candles do not carry: the two counts the volume is drawn from. */
-  const served = shallowRef<ApiBar[]>([])
+  const served = loader.served
+  const bars = computed<ChartBar[]>(() => toChartBars(served.value))
   /** The file's price basis, as the route stated it with the bars — '' where it did not. */
-  const priceBasis = ref('')
-  const truncated = ref(false)
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  /** Raised for every request; an answer for an earlier one writes nothing. */
-  let generation = 0
+  const priceBasis = loader.priceBasis
+  const loading = loader.loading
+  const error = loader.error
 
   const unitTrades = computed(() =>
     (reports.tradeHistory?.trades ?? []).filter(trade => trade.scenario_name === unit.value?.name))
@@ -150,12 +151,14 @@ export const useRunChartStore = defineStore('runChart', () => {
   const barTimes = computed(() => bars.value.map(bar => bar.time))
 
   /**
-   * The last bar of a window the route CUT, or null. The bars after it were never drawn, and an
-   * event among them would stand on that last bar — weeks from where it happened (measured
-   * 2026-10-19: a unit cut at M1 piled fifteen marks onto its last candle). Past it nothing is
-   * placed for certain, so nothing is drawn there; the notice says the window was cut.
+   * How far the bars are loaded, in UTC seconds, while the window holds more to the right — null
+   * once its end is loaded. An event past it would stand on the last bar loaded, weeks from where it
+   * happened (measured 2026-10-19: a unit cut at M1 piled fifteen marks onto its last candle), so it
+   * is drawn once its bar arrives. Before the first bar loaded, `barOf` places nothing already.
    */
-  const cutAt = computed(() => truncated.value ? barTimes.value.at(-1) ?? null : null)
+  const cutAt = computed(() => loader.more.value.right && loader.loadedTo.value !== null
+    ? loader.loadedTo.value / 1000
+    : null)
 
   /** Every opening and exit of the unit on show, one mark each, in time order. */
   const events = computed<ChartMark[]>(() => {
@@ -283,40 +286,42 @@ export const useRunChartStore = defineStore('runChart', () => {
     }
   }
 
+  /**
+   * Loads the unit's bars afresh: the window's from the position looked at on — half a batch before
+   * it — or from the window's start where none is (decided 2026-10-29, 251.a). The rest arrives as
+   * the reader moves toward it.
+   */
   async function loadBars(): Promise<void> {
     const target = unit.value
     const span = window.value
     const tf = timeframe.value
-    const run = ++generation
-    bars.value = []
-    served.value = []
-    priceBasis.value = ''
-    truncated.value = false
-    error.value = null
     if (!target || !span || !tf || Date.parse(span.to) <= Date.parse(span.from)) {
-      loading.value = false
+      loader.clear()
       return
     }
-    loading.value = true
+    // A minute where the length is not known: a piece of it holds at most one bar of any timeframe,
+    // so loading stays whole, only slower
+    const period = (timeframeStore.minutesFor(tf) ?? 1) * 60_000
     // The route answers the bars that OPEN in the range, and a bar is stamped with its open — so the
     // bar the first tick fell in opened BEFORE the window, and is asked for from one period earlier.
     // Measured 2026-10-15: `from=05:00:00.274` answered from the 05:01 bar, and the trade at
     // 05:00:40 had no candle. The length only widens the ask; marks stand on the bars served.
-    const period = (timeframeStore.minutesFor(tf) ?? 0) * 60_000
-    const from = new Date(Date.parse(span.from) - period).toISOString()
-    try {
-      const answer = await getBars(target.broker!, target.symbol!, tf, from, span.to)
-      if (run !== generation) return
-      bars.value = toChartBars(answer.bars)
-      served.value = answer.bars
-      priceBasis.value = answer.priceBasis
-      truncated.value = answer.truncated
-    } catch (failure) {
-      if (run !== generation) return
-      error.value = failure instanceof Error ? failure.message : String(failure)
-    } finally {
-      if (run === generation) loading.value = false
-    }
+    const from = Date.parse(span.from) - period
+    const at = focusAt.value
+    await loader.open({
+      broker: target.broker!,
+      symbol: target.symbol!,
+      timeframe: tf,
+      period,
+      from,
+      to: Date.parse(span.to),
+      start: at !== null ? at * 1000 - (BARS_PER_BATCH / 2) * period : from,
+    })
+  }
+
+  /** More bars at an edge the reader came near. */
+  function extendBars(edge: BarEdge): void {
+    void loader.extend(edge)
   }
 
   watch([viewers, unit], () => {
@@ -329,6 +334,15 @@ export const useRunChartStore = defineStore('runChart', () => {
     () => [viewers.value > 0, unit.value?.name, unit.value?.broker, unit.value?.symbol, window.value?.from, window.value?.to, timeframe.value],
     () => { if (viewers.value) void loadBars() },
   )
+
+  // a position looked at outside what is loaded: the bars are loaded afresh around it — inside, the
+  // chart only centres on it. Not while a first load is on its way, which reads the focus itself
+  watch(focusAt, at => {
+    const from = loader.loadedFrom.value
+    const to = loader.loadedTo.value
+    if (!viewers.value || at === null || loader.loading.value || from === null || to === null) return
+    if (at * 1000 < from || at * 1000 > to) void loadBars()
+  })
 
   // the place the offer centred on belongs to the unit and the position it was taken for
   watch(() => [unit.value?.name, focus.value?.position] as const, () => { offerAt.value = null })
@@ -397,7 +411,8 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
-    bars, truncated, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach,
+    bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
+    loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
+    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach, extendBars,
   }
 })

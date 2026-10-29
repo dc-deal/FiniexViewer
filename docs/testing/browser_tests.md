@@ -99,9 +99,12 @@ by its tab, the way a reader does.
   of a position the run ended with still open marked, though it has no trade; marks that would cover
   each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
   the chart leaving the whole chart inside its panel; the levels of the position looked at painted
-  on a real canvas, from a position the mock hands a stop and a target; and ONE
+  on a real canvas, from a position the mock hands a stop and a target; ONE
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
-  in the chart narrows the lists to it.
+  in the chart narrows the lists to it; and bars loaded as the view moves (viewer#9) — a unit's first
+  tick moved three weeks back over both stretches of the captured EURGBP bars, read in M1, has its
+  earlier stretch loaded across the gap, never asked past the window, while the first bar in view
+  stays the later stretch's: the view did not jump.
 - `layers_panel.spec.ts` holds the Layers panel: opened from the run chart's quick bar BESIDE the
   chart it arranges, the chart still on show and, ten frames later, still inside its own group, its
   group scrolled by nothing — it once stood 171 px left of it, over the report; a layer switched off at its lever and no longer drawn
@@ -205,7 +208,9 @@ at the size a real search reaches (viewer#32): 500 combinations built from the c
 the sweep opened until the 500th row stands — what says whether the ranking needs a row cap. A
 deployment picked in its list until its bundle draws the sessions (viewer#43), and a step of a
 session's frame player (viewer#51) over 500 frames built from the captured ones and served as the
-route serves them — from, to and a limit — the mean of twenty.
+route serves them — from, to and a limit — the mean of twenty. And bars loaded as the view moves
+(viewer#9): from M1 chosen on a unit widened over both captured EURGBP stretches until both are
+drawn — the first batch, the pieces across the three-week gap, the earlier bars merged in front.
 
 **`readme_pictures.spec.ts` takes the README's pictures**, so they stay current (operator,
 2026-10-29): at every release, and whenever a view they show changes visibly. Against the LIVE API

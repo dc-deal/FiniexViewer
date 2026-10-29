@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useSelectionStore } from '@/stores/selection_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
-import { getCoverage, getBars } from '@/api/api_client'
+import { getCoverage } from '@/api/api_client'
+import { useBarLoader } from '@/composables/use_bar_loader'
+import type { BarEdge } from '@/composables/use_bar_loader'
 import type { ApiBar, ChartBar } from '@/types/api/bar_types'
 import { t } from '@/translate'
 
 // Number of candles to show by default — applies to all timeframes uniformly.
-// Window = TARGET_BARS * minutes_per_bar * 60 seconds.
+// Window = TARGET_BARS * minutes_per_bar * 60 seconds. Earlier ones load as the reader pans left.
 const TARGET_BARS = 300
 
 /** The route's rows as the chart draws them — one shape for every chart that draws candles. */
@@ -22,9 +24,14 @@ function parseUtcDate(iso: string): Date {
 }
 
 export const useBarsStore = defineStore('bars', () => {
-  const chartData = ref<ChartBar[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+  /** The symbol's bars, loaded as the view moves (viewer#9): the last ones first, earlier ones on the way left. */
+  const loader = useBarLoader()
+  const chartData = computed<ChartBar[]>(() => toChartBars(loader.served.value))
+  /** The coverage on its way — before the bars are asked for. */
+  const asking = ref(false)
+  const coverageError = ref<string | null>(null)
+  const loading = computed(() => asking.value || loader.loading.value)
+  const error = computed(() => coverageError.value ?? loader.error.value)
   /**
    * The chosen timeframe is not in the symbol's coverage. SAID, not acted on: what to do about it
    * is a decision about the selection, which is the chart's to make (`use_chart_binding`) — a data
@@ -39,9 +46,9 @@ export const useBarsStore = defineStore('bars', () => {
     const { broker, symbol, timeframe } = selectionStore
     if (!broker || !symbol || !timeframe) return
 
-    loading.value = true
-    error.value = null
-    chartData.value = []
+    asking.value = true
+    coverageError.value = null
+    loader.clear()
     timeframeUncovered.value = false
 
     try {
@@ -54,17 +61,24 @@ export const useBarsStore = defineStore('bars', () => {
 
       const endDate = parseUtcDate(coverage.end)
       const minutes = timeframeStore.minutesFor(timeframe) ?? 60
-      const windowMs = TARGET_BARS * minutes * 60 * 1000
-      const fromDate = new Date(endDate.getTime() - windowMs)
-
-      // 300 bars, far below the route's cap: `truncated` cannot be set here
-      const { bars } = await getBars(broker, symbol, timeframe, fromDate.toISOString(), endDate.toISOString())
-      chartData.value = toChartBars(bars)
+      const period = minutes * 60 * 1000
+      asking.value = false
+      await loader.open({
+        broker, symbol, timeframe, period,
+        from: parseUtcDate(coverage.start).getTime(),
+        to: endDate.getTime(),
+        start: endDate.getTime() - TARGET_BARS * period,
+      })
     } catch (e) {
-      error.value = e instanceof Error ? e.message : t('Failed to load bars')
+      coverageError.value = e instanceof Error ? e.message : t('Failed to load bars')
     } finally {
-      loading.value = false
+      asking.value = false
     }
+  }
+
+  /** Earlier bars, as the reader pans toward them — the last ones are loaded from the start. */
+  function extend(edge: BarEdge): void {
+    void loader.extend(edge)
   }
 
   watch(
@@ -73,5 +87,7 @@ export const useBarsStore = defineStore('bars', () => {
     { immediate: true }
   )
 
-  return { chartData, loading, error, timeframeUncovered }
+  return {
+    chartData, loading, error, timeframeUncovered, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError, extend,
+  }
 })

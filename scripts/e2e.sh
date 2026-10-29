@@ -16,6 +16,9 @@
 #   bash scripts/e2e.sh e2e/order_steps.spec.ts --workers=1    anything playwright takes
 #   PICTURES=1 PICTURES_HIDE=<words> bash scripts/e2e.sh e2e/readme_pictures.spec.ts --workers=1
 #                                            the README's pictures, none showing a hidden word
+#   PERF=1 bash scripts/e2e.sh e2e/performance.spec.ts --workers=1 -g <word>
+#                                            one point of the speed spec, against the dev server
+#                                            (one word: the arguments reach the container unquoted)
 #
 set -uo pipefail
 
@@ -67,9 +70,9 @@ fi
 if [ "$#" -eq 0 ]; then
     docker exec finiex-viewer sh -lc 'cd /app && npm run test:e2e'
 else
-    # PICTURES lets the README's pictures in, which an ordinary run leaves out; PICTURES_HIDE names
-    # the words none of them may show
-    docker exec -e PICTURES="${PICTURES:-}" -e PICTURES_HIDE="${PICTURES_HIDE:-}" finiex-viewer \
+    # PICTURES lets the README's pictures in and PERF the speed spec, which an ordinary run leaves
+    # out; PICTURES_HIDE names the words none of the pictures may show
+    docker exec -e PICTURES="${PICTURES:-}" -e PICTURES_HIDE="${PICTURES_HIDE:-}" -e PERF="${PERF:-}" finiex-viewer \
         sh -lc "cd /app && npx playwright test $*"
 fi
 status=$?

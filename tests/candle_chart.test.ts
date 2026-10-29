@@ -616,4 +616,81 @@ describe('CandleChart', () => {
       expect(lw.series.applyOptions).not.toHaveBeenCalled()
     })
   })
+
+  /**
+   * Bars loaded as the view moves (viewer#9): the chart says when the view nears the first or the
+   * last bar it holds, keeps the view on the bars it showed as more arrive, and says in that corner
+   * that a batch is on its way or failed.
+   */
+  describe('bars loaded at an edge', () => {
+    /** A bar a minute; the one before it, fifty more. */
+    const SPAN: ChartBar[] = Array.from({ length: 200 }, (_, index) => ({
+      time: 1_760_000_000 + index * 60, open: 1, high: 1, low: 1, close: 1,
+    }))
+    const EARLIER: ChartBar[] = Array.from({ length: 50 }, (_, index) => ({
+      time: SPAN[0]!.time - (50 - index) * 60, open: 1, high: 1, low: 1, close: 1,
+    }))
+
+    beforeEach(() => {
+      lw.zoom.range = { from: 80, to: 120 }
+      lw.zoom.width = 600
+    })
+
+    afterEach(() => {
+      lw.zoom.range = { from: 0, to: 100 }
+    })
+
+    it('says so as the view comes near the first or the last bar it holds, and not in between', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(SPAN)
+      const edges = (): unknown[] => (wrapper.emitted('edge') ?? []).map(([side]) => side)
+      expect(edges()).toEqual([])
+      lw.zoom.range = { from: 10, to: 60 }
+      lw.zoom.change!()
+      expect(edges()).toEqual(['left'])
+      lw.zoom.range = { from: 150, to: 190 }
+      lw.zoom.change!()
+      expect(edges()).toEqual(['left', 'right'])
+      await nextTick()
+      // the first bar in view, on the element: what a browser test reads to tell the view did not jump
+      expect(wrapper.find('.candle-chart').attributes('data-visible-from')).toBe(String(SPAN[150]!.time))
+      expect(wrapper.find('.candle-chart').attributes('data-bars')).toBe('200')
+    })
+
+    /** Bars before the ones on show move the view by exactly as many: the reader sees the same bars. */
+    it('keeps the view on the bars it showed as earlier ones arrive, without framing anew', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(SPAN)
+      vi.clearAllMocks()
+      await wrapper.setProps({ data: [...EARLIER, ...SPAN] })
+      expect(lw.setData.mock.calls[0]![0]).toHaveLength(250)
+      expect(lw.setVisibleLogicalRange).toHaveBeenCalledWith({ from: 130, to: 170 })
+      expect(lw.fitContent).not.toHaveBeenCalled()
+      // later ones move nothing at all: the range is put back as it was
+      vi.clearAllMocks()
+      await wrapper.setProps({ data: [...EARLIER, ...SPAN, { ...SPAN.at(-1)!, time: SPAN.at(-1)!.time + 60 }] })
+      expect(lw.setVisibleLogicalRange).toHaveBeenCalledWith({ from: 80, to: 120 })
+      expect(lw.fitContent).not.toHaveBeenCalled()
+    })
+
+    it('frames a set that is another one, as at the first look', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(SPAN)
+      vi.clearAllMocks()
+      await wrapper.setProps({ data: BARS })
+      expect(lw.fitContent).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows a quiet sign in the corner of an edge a batch is on its way to, and says there that one failed', async () => {
+      const wrapper = mountChart(SPAN, {})
+      await wrapper.setProps({ loadingEdges: ['left'] })
+      expect(wrapper.find('.edge-state.left .app-spinner').exists()).toBe(true)
+      expect(wrapper.find('.edge-state.right').exists()).toBe(false)
+      await wrapper.setProps({ loadingEdges: [], edgeError: { edge: 'right', message: 'Network Error' } })
+      expect(wrapper.find('.edge-state.left').exists()).toBe(false)
+      const failed = wrapper.find('.edge-state.right')
+      expect(failed.text()).toBe('Later bars could not be loaded: Network Error')
+      expect(failed.find('[data-icon="status-error"]').exists()).toBe(true)
+    })
+  })
 })

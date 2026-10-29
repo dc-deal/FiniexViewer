@@ -13,12 +13,14 @@ GET /api/v1/caller                                    token, no grant — who th
 GET /api/v1/brokers                                   a `brokers` grant since contract 35, as the routes below
 GET /api/v1/brokers/{broker}/symbols                   each symbol with its `tick_size` (contract 35)
 GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage   404 where the archive holds nothing (`findCoverage`)
-GET /api/v1/brokers/{broker}/symbols/{symbol}/bars       the bars that OPEN in the range; `X-Bar-Truncated` and `X-Bar-Price-Basis` read
+GET /api/v1/brokers/{broker}/symbols/{symbol}/bars       the bars that OPEN in the range, `limit` asked; `X-Bar-Truncated` and `X-Bar-Price-Basis` read
 ```
 
-**The bars route answers the bars that OPEN in `[from, to]`**, each stamped with the open of its
-period (`X-Bar-Time-Basis: open`), and never cuts quietly: a range past its cap of 10,000 is
-answered with the cap's worth and `X-Bar-Truncated: true` (their `market-data` document).
+**The bars route answers the bars that OPEN in `[from, to]`**, both bounds included, each stamped
+with the open of its period (`X-Bar-Time-Basis: open`), and never cuts quietly: a range past `limit`
+— its maximum, 10,000, where none is asked — is answered with the OLDEST of its bars and
+`X-Bar-Truncated: true` (their `market-data` document; which end is kept measured 2026-10-29).
+The charts load their bars in batches by that rule ([Candle Charts](../panels/candle_charts.md)).
 `getBars` returns both, so a shortened answer is never drawn as a whole one — and the file's price
 basis, from which the run chart's volume layer takes which count it draws: a bar's `v` (traded
 volume) or `tc` (its ticks).

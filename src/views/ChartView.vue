@@ -9,7 +9,8 @@ import AppSpinner from '@/components/base/AppSpinner.vue'
 import { t } from '@/translate'
 
 const { isReady } = storeToRefs(useSelectionStore())
-const { chartData, loading, error } = storeToRefs(useBarsStore())
+const bars = useBarsStore()
+const { chartData, loading, error, loadingEdges, edgeError } = storeToRefs(bars)
 
 useChartBinding()
 </script>
@@ -26,7 +27,13 @@ useChartBinding()
     <div v-else-if="error" class="state-overlay">
       <span class="error-msg">{{ error }}</span>
     </div>
-    <CandleChart v-else-if="chartData.length" :data="chartData" />
+    <CandleChart
+      v-else-if="chartData.length"
+      :data="chartData"
+      :loading-edges="loadingEdges"
+      :edge-error="edgeError"
+      @edge="bars.extend"
+    />
     <div v-else class="state-overlay">
       <span class="hint">{{ t('No data available for this range') }}</span>
     </div>

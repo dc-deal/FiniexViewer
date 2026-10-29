@@ -6,13 +6,17 @@ import {
 import type {
   ChartOptions, DeepPartial, IChartApi, ISeriesApi, MouseEventParams, SeriesType, UTCTimestamp,
 } from 'lightweight-charts'
+import AppIcon from '@/components/base/AppIcon.vue'
+import AppSpinner from '@/components/base/AppSpinner.vue'
 import ChartCard from '@/components/base/ChartCard.vue'
 import { ChartDrawingHost, type DrawingColours } from '@/components/chart_drawing_host'
 import type { BarRange } from '@/components/chart_geometry'
+import type { BarEdge } from '@/composables/use_bar_loader'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { ChartLayer } from '@/types/chart_drawing_types'
 import type { FigureCard } from '@/types/figure_types'
 import type { ChartCandles, ChartVolume, PriceForm } from '@/types/run_chart_types'
+import { t } from '@/translate'
 
 const props = defineProps<{
   data: ChartBar[]
@@ -39,6 +43,10 @@ const props = defineProps<{
    * candles at full strength — the free chart.
    */
   candles?: ChartCandles | null
+  /** The edges a batch of bars is on its way to: a quiet sign in that corner, the chart stays drawn. */
+  loadingEdges?: BarEdge[]
+  /** A batch at an edge that failed: said in that corner — the bars loaded stay. */
+  edgeError?: { edge: BarEdge, message: string } | null
 }>()
 
 const emit = defineEmits<{
@@ -47,6 +55,12 @@ const emit = defineEmits<{
    * what a caller gathers marks by that would otherwise cover each other.
    */
   spacing: [width: number]
+  /**
+   * The view came within a few bars of the first or the last bar it holds — where a caller that
+   * loads as the view moves asks for more (viewer#9). Said on every move near it; asking twice is
+   * the caller's to prevent.
+   */
+  edge: [side: BarEdge]
 }>()
 
 /** How many bars are on show around a focus, where the whole window would make them too narrow to read. */
@@ -60,6 +74,9 @@ const FOCUS_SPAN = 150
  * January). Low enough for the route's 10,000 bars to fit 500 px.
  */
 const MIN_BAR_SPACING = 0.05
+
+/** How close to the first or the last bar held the view comes before it says so. */
+const EDGE_BARS = 20
 
 /**
  * The volume's own price scale, which nothing shows: it is drawn in the lowest fifth of the pane, as
@@ -84,6 +101,14 @@ let themeObserver: MutationObserver | null = null
 /** The size the chart was last drawn at — the frame a card has to stay inside. */
 const frameSize = ref({ width: 0, height: 0 })
 
+/** The bars the series was last handed — what a new set is compared with, to keep the view where it is. */
+let shown: ChartBar[] = []
+/**
+ * The open of the first bar in view, in UTC seconds — on the element, so a browser test can tell
+ * that bars loaded at an edge moved nothing the reader was looking at.
+ */
+const visibleFrom = ref<number | null>(null)
+
 /**
  * Every drawn thing that can say what it is, by the id the library reports under the pointer.
  *
@@ -104,6 +129,17 @@ const drawingCounts = computed(() => shownLayers.value.map(layer => `${layer.id}
 
 /** The range of every bar drawn, by its time — what the marks stand away from. */
 const barRanges = computed(() => new Map<number, BarRange>(props.data.map(bar => [bar.time, { high: bar.high, low: bar.low }])))
+
+const EDGE_FAILED: Record<BarEdge, string> = {
+  left: t('Earlier bars could not be loaded'),
+  right: t('Later bars could not be loaded'),
+}
+
+/** Each edge with a batch on its way or failed — its failure said, with the reason after it. */
+const edgeStates = computed(() => (['left', 'right'] as const).flatMap(edge => {
+  const failed = props.edgeError?.edge === edge ? `${EDGE_FAILED[edge]}: ${props.edgeError.message}` : null
+  return failed || props.loadingEdges?.includes(edge) ? [{ edge, error: failed }] : []
+}))
 
 /** The card under the pointer, and where the pointer is — null off every drawn thing. */
 const pointed = shallowRef<{ card: FigureCard, x: number, y: number } | null>(null)
@@ -252,7 +288,7 @@ function initChart(size: { width: number, height: number }): void {
   })
   chart.applyOptions(chartColours(colours))
   chart.subscribeCrosshairMove(onPointer)
-  chart.timeScale().subscribeVisibleLogicalRangeChange(reportSpacing)
+  chart.timeScale().subscribeVisibleLogicalRangeChange(onRange)
   frameSize.value = size
 
   // built before the candles, so it is drawn behind them
@@ -309,6 +345,32 @@ function reportSpacing(): void {
   if (bars > 0) emit('spacing', chart.timeScale().width() / bars)
 }
 
+/** The view near the first or the last bar it holds: said, so more can be asked for there. */
+function reportEdges(): void {
+  if (!chart || !shown.length) return
+  const range = chart.timeScale().getVisibleLogicalRange()
+  if (!range) return
+  visibleFrom.value = shown[Math.min(shown.length - 1, Math.max(0, Math.ceil(range.from)))]!.time
+  if (range.from < EDGE_BARS) emit('edge', 'left')
+  if (range.to > shown.length - 1 - EDGE_BARS) emit('edge', 'right')
+}
+
+function onRange(): void {
+  reportSpacing()
+  reportEdges()
+}
+
+/**
+ * Where the bars held so far stand in a new set, or null where the set is another one. A set that
+ * keeps them whole, with bars before or after, extends them: the index of the first of them in it.
+ */
+function extensionOf(before: ChartBar[], after: ChartBar[]): number | null {
+  if (!before.length) return null
+  const at = after.findIndex(bar => bar.time === before[0]!.time)
+  if (at < 0 || after[at + before.length - 1]?.time !== before.at(-1)!.time) return null
+  return at
+}
+
 /** The series' price format where one was handed in — nothing, and the library keeps its own. */
 function seriesFormat(): { priceFormat?: { type: 'price', precision: number, minMove: number } } {
   return props.priceFormat ? { priceFormat: { type: 'price', ...props.priceFormat } } : {}
@@ -355,10 +417,18 @@ function showVolume(): void {
 }
 
 function showData(data: ChartBar[]): void {
-  if (!series) return
+  if (!series || !chart) return
+  // bars loaded at an edge keep the view on the bars it showed: the range is put back, moved by the
+  // bars that came before them. Which side the library anchors to on a new set is its own matter,
+  // and nothing here relies on it
+  const shift = extensionOf(shown, data)
+  const range = shift !== null ? chart.timeScale().getVisibleLogicalRange() : null
   series.setData(priceData(data) as never)
+  shown = data
   showDrawings()
-  frame()
+  if (shift === null) frame()
+  else if (range) chart.timeScale().setVisibleLogicalRange({ from: range.from + shift, to: range.to + shift })
+  reportEdges()
 }
 
 /** The candles layer changed: another form builds the series anew, the same one is repainted. */
@@ -418,13 +488,29 @@ watch(() => props.priceFormat, () => series?.applyOptions(
 </script>
 
 <template>
-  <div class="candle-chart" :data-marks="markCount" :data-events="events" :data-drawings="drawingCounts">
+  <div
+    class="candle-chart"
+    :data-marks="markCount"
+    :data-events="events"
+    :data-drawings="drawingCounts"
+    :data-bars="data.length"
+    :data-visible-from="visibleFrom ?? undefined"
+  >
     <!-- what is drawn, counted on the element above: the canvas cannot be read back. `data-events`
-         counts what the marks stand for, a gathered one for each of its members -->
+         counts what the marks stand for, a gathered one for each of its members; `data-bars` the
+         bars handed, which grows as more are loaded at an edge -->
     <div ref="container" class="candle-canvas" />
     <!-- notices stand INSIDE the frame, over the plot: a line above it would move the chart each
          time one appeared, and a selection never moves the layout -->
     <slot />
+    <!-- a batch at an edge: a quiet sign in that corner while it is on its way, its failure said
+         there — never a block over the plot -->
+    <div v-for="side in edgeStates" :key="side.edge" class="edge-state" :class="side.edge" :data-edge="side.edge">
+      <span v-if="side.error" class="edge-error">
+        <AppIcon name="status-error" class="edge-error-mark" />{{ side.error }}
+      </span>
+      <AppSpinner v-else />
+    </div>
     <ChartCard
       v-if="pointed"
       :card="pointed.card"
@@ -451,5 +537,44 @@ watch(() => props.priceFormat, () => series?.applyOptions(
 .candle-canvas {
   width: 100%;
   height: 100%;
+}
+
+/* the corner of the edge a batch is on its way to: low, above the time axis — clear of the notices
+   at the top left and of the price scale at the right */
+.edge-state {
+  position: absolute;
+  bottom: 2rem;
+  z-index: var(--z-chart);
+  display: flex;
+  max-width: calc(100% - 6rem);
+  pointer-events: none;
+}
+
+.edge-state.left {
+  left: var(--space-xs);
+}
+
+.edge-state.right {
+  right: 4.5rem;
+}
+
+/* the request failed: the error role, with its mark and its words */
+.edge-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 2px var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-bg-overlay);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  pointer-events: auto;
+}
+
+.edge-error-mark {
+  flex-shrink: 0;
+  color: var(--color-error);
 }
 </style>

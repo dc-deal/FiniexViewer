@@ -186,6 +186,33 @@ test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) =>
 })
 
 /**
+ * Bars loaded as the view moves (viewer#9): a unit's window widened over both stretches of the
+ * captured EURGBP bars, three weeks apart, read in M1. Timed from the timeframe chosen until both
+ * stretches are drawn: the first batch, the pieces across the gap, and the earlier bars merged in
+ * front with the view kept where it was.
+ */
+test('earlier bars are merged across a gap quickly', async ({ page }) => {
+  await mockApi(page, { firstTick: { unit: 'EURGBP_refusals_01', at: '2025-10-10T06:00:00+00:00' } })
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', {
+    run: FIXTURE_RUN, units: ['EURGBP_refusals_01'], position: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1' },
+  })
+  const timeframe = page.locator('[data-quick-bar="run-chart"] select').nth(1)
+  await expect(timeframe).toBeEnabled()
+
+  const merged = await timed('run chart — a gap crossed, bars merged', async () => {
+    await timeframe.selectOption('M1')
+    await page.waitForFunction(
+      () => document.querySelector('[data-panel-kind="run-chart"] .candle-chart')?.getAttribute('data-bars') === '120',
+      undefined,
+      { polling: 'raf' },
+    )
+  })
+
+  expect(merged).toBeLessThan(3000)
+})
+
+/**
  * A sweep's ranking at the size a real search reaches (viewer#32): 500 combinations built from the
  * captured sweep. The ranking draws every row, and this says whether it needs a cap — timed from
  * the sweep opened until the last row stands, on the page's own frames.

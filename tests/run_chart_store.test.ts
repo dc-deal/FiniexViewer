@@ -107,7 +107,8 @@ describe('useRunChartStore', () => {
     expect(chart.timeframe).toBe('M1')
     // from one period before the first tick: the route answers the bars that OPEN in the range
     const before = new Date(Date.parse(row.first_tick_time) - 60_000).toISOString()
-    expect(apiClient.getBars).toHaveBeenLastCalledWith(row.data_broker_type, row.symbol, 'M1', before, row.last_tick_time)
+    const end = new Date(Date.parse(row.last_tick_time)).toISOString()
+    expect(apiClient.getBars).toHaveBeenLastCalledWith(row.data_broker_type, row.symbol, 'M1', before, end, 2000)
     expect(chart.bars.map(bar => bar.time)).toEqual([1761886800, 1761886860])
     expect(chart.loading).toBe(false)
   })
@@ -216,8 +217,8 @@ describe('useRunChartStore', () => {
     expect(chart.marks.map(mark => mark.time)).toEqual([...chart.marks.map(mark => mark.time)].sort())
   })
 
-  /** A window the route cut ends at its last bar: an event past it has no candle, not the last one. */
-  it('draws nothing past the last bar of a window the route cut', async () => {
+  /** While the window holds more to the right, an event past the bars loaded has no candle yet, not the last one. */
+  it('draws nothing past the bars loaded while the window holds more', async () => {
     chooseFixtureRun()
     vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true, priceBasis: '' })
     const chart = useRunChartStore()
@@ -433,13 +434,37 @@ describe('useRunChartStore', () => {
     expect(apiClient.getBars).not.toHaveBeenCalled()
   })
 
-  it('says when the route answered with less than the window holds', async () => {
-    vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true, priceBasis: '' })
+  /** The rest of the window arrives as the reader moves toward it, and what stood past the bars with it (viewer#9). */
+  it('loads the rest of the window at its right edge, and draws there what was past it', async () => {
+    vi.mocked(apiClient.getBars).mockResolvedValueOnce({ ...ANSWER, truncated: true, priceBasis: '' })
     chooseFixtureRun()
     const chart = useRunChartStore()
     chart.attach()
     await flushPromises()
-    expect(chart.truncated).toBe(true)
+    const last = ANSWER.bars.at(-1)!.t
+    expect(chart.events.every(mark => mark.at <= last)).toBe(true)
+    const later = Array.from({ length: 58 }, (_, index) => ({ ...ANSWER.bars[0]!, t: last + 60 * (index + 1) }))
+    vi.mocked(apiClient.getBars).mockResolvedValueOnce({ bars: later, truncated: false, priceBasis: '' })
+    chart.extendBars('right')
+    await flushPromises()
+    // a millisecond past the last bar loaded, a batch's worth at most
+    const [, , , from, , limit] = vi.mocked(apiClient.getBars).mock.lastCall!
+    expect(from).toBe(new Date(last * 1000 + 1).toISOString())
+    expect(limit).toBe(2000)
+    expect(chart.bars).toHaveLength(60)
+    expect(chart.events.some(mark => mark.at > last)).toBe(true)
+  })
+
+  /** Without a position looked at the first batch starts at the window (decided 2026-10-29, 251.a). */
+  it('asks for the first batch from the window on, a period before it', async () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const [, , timeframe, from, , limit] = vi.mocked(apiClient.getBars).mock.calls[0]!
+    expect(timeframe).toBe('M1')
+    expect(Date.parse(from)).toBe(Date.parse(chart.window!.from) - 60_000)
+    expect(limit).toBe(2000)
   })
 
   /** A quick change of unit must not leave the earlier unit's candles behind when they arrive late. */
@@ -456,7 +481,6 @@ describe('useRunChartStore', () => {
     late({ bars: [{ t: 1, o: 1, h: 1, l: 1, c: 1, v: 1, tc: 1 }], truncated: true, priceBasis: '' })
     await flushPromises()
     expect(chart.bars.map(bar => bar.time)).toEqual([1761886800, 1761886860])
-    expect(chart.truncated).toBe(false)
   })
 
   /** A session declares only where its window starts: it is drawn to the end of what is covered. */
@@ -476,7 +500,7 @@ describe('useRunChartStore', () => {
     expect(apiClient.findCoverage).toHaveBeenCalledWith('kraken_spot', 'BTCUSD')
     const call = vi.mocked(apiClient.getBars).mock.lastCall!
     // the session's window from its start, one period earlier, to the end of the coverage
-    expect(call[4]).toBe(COVERAGE.end)
+    expect(Date.parse(call[4])).toBe(Date.parse(COVERAGE.end))
     expect(Date.parse(call[3])).toBeLessThan(Date.parse('2026-10-01T00:00:00+00:00'))
   })
 

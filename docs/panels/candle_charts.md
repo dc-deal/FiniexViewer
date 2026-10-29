@@ -59,9 +59,25 @@ it says so and draws nothing.
   length only widens the ask; a mark stands on a bar SERVED, the last one that opened at or before
   the event, never on one computed from a period's length — a trading day or a week does not start
   on a multiple of its length, and lightweight-charts snaps a mark between bars onto the next one.
-  Where the route CUT the window, an event past the last bar's open gets no mark: it would stand on
-  that last bar, weeks from where it happened — measured 2026-10-19, a unit cut at M1 piled fifteen
-  marks onto its last candle.
+  While the window holds more to the right than is loaded, an event past how far the bars are loaded
+  gets no mark yet: it would stand on the last bar loaded, weeks from where it happened — measured
+  2026-10-19, a unit cut at M1 piled fifteen marks onto its last candle. It is drawn once its bar
+  arrives, and so are a level and a line; the levels of a position still open at the end wait for
+  the window's end.
+- **The bars arrive as the view moves** (viewer#9, `src/composables/use_bar_loader.ts`), one loader
+  per chart. The run chart asks for 2,000 bars from half a batch before the position looked at, or
+  from the window's start without one; at the automatic timeframe that is the whole window in one
+  ask, as before. A finer timeframe is no longer cut: when the view comes within 20 bars of the first
+  or the last bar loaded, `CandleChart` says so (`edge`) and the loader asks for more there — one
+  batch at a time per edge, never past the window. The route keeps the OLDEST bars of a range past
+  its limit (measured 2026-10-29), so to the right it is asked from the seam to the edge with
+  `limit=2000` — the next bars, whatever gap lies between — and to the left in pieces of N periods,
+  which hold at most N bars and are never cut. An empty piece is a gap, not an edge: the next is asked
+  at once, twice as long, up to the route's 10,000. Bars that arrive before the ones on show move
+  the view by as many, so the reader sees the same bars (`data-visible-from` on the element says
+  which, `data-bars` how many are held). A small spinner stands in that edge's corner while a batch is on its way, and a batch that
+  failed is said there, the bars loaded staying drawn. The free chart loads the same way: the last
+  300 periods first, earlier ones as the reader pans left, down to the start of the coverage.
 - **What it centres on is the link's marked position.** The chart mark on a row marks the position
   (`context.mark`), sets the chart's unit and opens the panel (`use_chart_link.ts`, provided at
   the root beside the other channels) — so the row in the list and the marks on the candles agree
@@ -93,13 +109,13 @@ it says so and draws nothing.
   alignment, so no bar is computed. Measured 2026-10-19: in 72 of 137 such candles the exits share
   one instant, and no timeframe parts those. Taken, the chart draws in it centred on the first such
   candle, until the reader chooses a timeframe or a position again.
-- **Notices stand inside the plot, in its top-left corner** (`ChartNotices.vue`) — the window the
-  route cut, and the offer. A line above the chart moved it each time one appeared, and a selection
+- **Notices stand inside the plot, in its top-left corner** (`ChartNotices.vue`) — the offer. A
+  line above the chart moved it each time one appeared, and a selection
   never moves the layout. A hint above it explains the shapes once, and the chart takes the room it
   leaves rather than overflowing the panel by it, which clipped its time axis.
 - **Every state says what it is**: no run, the run's units on their way, no unit that can be drawn,
-  a market the archive holds nothing for, a window without bars, and a notice where the route cut
-  the window — an empty chart says nothing about why it is empty.
+  a market the archive holds nothing for, a window without bars, and in an edge's corner a batch on
+  its way or one that failed — an empty chart says nothing about why it is empty.
 
 ## Chart Engine — Lightweight Charts (TradingView)
 

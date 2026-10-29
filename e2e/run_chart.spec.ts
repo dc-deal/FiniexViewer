@@ -183,3 +183,30 @@ test('the run chart draws the levels of the position looked at', async ({ page }
   await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/levels:2/)
   await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
 })
+
+/**
+ * Bars loaded as the view moves (viewer#9). A unit's window widened over both stretches of the
+ * captured EURGBP bars, three weeks apart, and read in M1 — far past a batch: the first batch is the
+ * later stretch around the position looked at, and its earlier bars arrive across the gap as the view
+ * nears them, while the bars on show stay where they were.
+ */
+test('earlier bars arrive across a gap as the view nears them, and the view does not jump', async ({ page }) => {
+  await mockApi(page, { firstTick: { unit: 'EURGBP_refusals_01', at: '2025-10-10T06:00:00+00:00' } })
+  const asked: string[] = []
+  page.on('request', request => { if (request.url().includes('/bars?')) asked.push(request.url()) })
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', {
+    run: FIXTURE_RUN, units: ['EURGBP_refusals_01'], position: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1' },
+  })
+  // three weeks draw at M30 by default, which the capture does not hold: M1 is chosen, as a reader would
+  await page.locator('[data-quick-bar="run-chart"] select').nth(1).selectOption('M1')
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  // both stretches drawn, the earlier one asked for in pieces across the gap — never past the window
+  await expect(chart).toHaveAttribute('data-bars', '120')
+  const earliest = Date.parse('2025-10-10T06:00:00Z')
+  expect(asked.every(url => Date.parse(new URL(url).searchParams.get('from')!) >= earliest - 60_000)).toBe(true)
+  await expect(chart.locator('.edge-state')).toHaveCount(0)
+  // the view on the later stretch, as before the earlier one arrived
+  await expect(chart).toHaveAttribute('data-visible-from', String(Date.parse('2025-10-31T05:00:00Z') / 1000))
+  await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
+})

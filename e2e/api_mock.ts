@@ -147,6 +147,12 @@ interface ApiMockOptions {
    * an activity a spec relies on is built from the server's row by the spec that needs one.
    */
   activities?: Record<string, unknown>[]
+  /**
+   * A unit's first tick earlier than captured — where the run chart's window begins. The captured
+   * units span an hour each, inside one batch of bars; a spec of bars loaded as the view moves widens
+   * one over both stretches of the captured EURGBP bars, three weeks apart.
+   */
+  firstTick?: { unit: string, at: string }
 }
 
 /** A number where a list belongs: `.filter` on it throws, which is how the original defect landed. */
@@ -290,6 +296,11 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       const body = fixture(file) as Record<string, unknown>
       if (options.corrupt && options.corrupt.section === section) {
         body[options.corrupt.field] = WRONG_SHAPE
+      }
+      const firstTick = options.firstTick
+      if (firstTick && section === 'scenario-details') {
+        body['units'] = (body['units'] as Record<string, unknown>[]).map(row =>
+          row['name'] === firstTick.unit ? { ...row, first_tick_time: firstTick.at } : row)
       }
       const levels = options.levels
       if (levels && section === 'trade-history') {

@@ -117,8 +117,9 @@ describe('LayersView', () => {
    * reader's next step where there is one (operator, 2026-10-28) — and the hint below says why.
    */
   it('says what a shown layer that draws nothing waits for, and says nothing of a hidden one', async () => {
-    // a window of bars, and no trade, no position looked at: the drawing layers have nothing to draw
-    useRunChartStore().bars = [{ time: 1_761_886_800, open: 1, high: 1, low: 1, close: 1 }]
+    // a window of bars, and no trade, no position looked at: the drawing layers have nothing to draw.
+    // The bars are the loader's and read-only on the store; the panel reads only that there are some
+    Object.defineProperty(useRunChartStore(), 'bars', { value: [{ time: 1_761_886_800, open: 1, high: 1, low: 1, close: 1 }] })
     const wrapper = mountOn('run-chart')
     const summary = row(wrapper, 'levels').find('.layer-summary')
     expect(summary.text()).toBe('pick a position')

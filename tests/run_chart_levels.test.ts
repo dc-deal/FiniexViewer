@@ -66,12 +66,18 @@ describe('run_chart_levels', () => {
       ])
     })
 
-    /** Past the last bar of a CUT window there is no candle: a level known only there is not drawn. */
-    it('draws nothing whose exit lies past the last bar of a cut window', () => {
+    /** Past how far the bars are loaded there is no candle yet: a level known only there is not drawn. */
+    it('draws nothing whose exit lies past how far the bars are loaded', () => {
       const across = trade({ stop_loss: 1.05, exit_time: '2025-10-31T05:40:00+00:00' })
       expect(positionLevels([across], KEY, [], 'pos_1', BARS, BARS[2]!)).toEqual([])
       const inside = trade({ stop_loss: 1.05, exit_time: '2025-10-31T05:01:30+00:00' })
       expect(positionLevels([inside], KEY, [], 'pos_1', BARS, BARS[2]!)[0]).toMatchObject({ from: BARS[1], to: BARS[1] })
+    })
+
+    /** Still open at the END of the record: while the window's end is not loaded, the last bar is not the end. */
+    it('draws the levels of a position still open only once the end of the window is loaded', () => {
+      expect(positionLevels([], KEY, [OPEN], 'pos_1', BARS, BARS[2]!)).toEqual([])
+      expect(positionLevels([], KEY, [OPEN], 'pos_1', BARS, null)).toHaveLength(1)
     })
   })
 

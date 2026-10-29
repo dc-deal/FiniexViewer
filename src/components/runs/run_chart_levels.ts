@@ -27,7 +27,7 @@ function seconds(iso: string): number {
 
 const WORD: Record<'SL' | 'TP', string> = { SL: t('Stop loss'), TP: t('Take profit') }
 
-/** The bar an instant falls in on a drawn window — none before it, none past the last bar of a CUT one. */
+/** The bar an instant falls in on the bars loaded — none before them, none past how far they are loaded. */
 function barIn(barTimes: number[], instant: number, cutAt: number | null): number | null {
   if (cutAt !== null && instant > cutAt) return null
   return barOf(barTimes, instant)
@@ -62,8 +62,8 @@ function level(
 /**
  * The stops and the targets of the trade rows given: one level per row that had one, at its exit's
  * bar, and for each position still open at the end, its levels at the last bar. `looked` is the
- * position looked at — only its levels put their price on the axis. `cutAt` is the last bar of a
- * window the route cut — nothing past it has a candle.
+ * position looked at — only its levels put their price on the axis. `cutAt` is how far the bars are
+ * loaded while the window holds more — nothing past it has a candle yet.
  */
 export function positionLevels(
   trades: TradeRow[], key: string[], open: OpenPosition[], looked: string | null, barTimes: number[],
@@ -85,9 +85,10 @@ export function positionLevels(
     }
   }
   const last = barTimes[barTimes.length - 1]
-  if (last === undefined) return segments
+  // still open at the END of the record: drawn once the window's end is loaded — before that, the
+  // last bar loaded is not the end
+  if (last === undefined || cutAt !== null) return segments
   for (const entry of open) {
-    // opened past the cut: not on the drawn window at all
     if (barIn(barTimes, seconds(entry.entry_time), cutAt) === null) continue
     const focused = entry.position_id === looked
     const id = `level|open|${entry.position_id}`
