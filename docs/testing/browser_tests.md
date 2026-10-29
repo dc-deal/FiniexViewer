@@ -207,6 +207,12 @@ deployment picked in its list until its bundle draws the sessions (viewer#43), a
 session's frame player (viewer#51) over 500 frames built from the captured ones and served as the
 route serves them — from, to and a limit — the mean of twenty.
 
+**`readme_pictures.spec.ts` takes the README's pictures**, so they stay current (operator,
+2026-10-29): at every release, and whenever a view they show changes visibly. Against the LIVE API
+and from runs the backend's fixture catalogue keeps, the dark theme at 1920 × 1000, every hint put
+away. Like the performance spec, an ordinary run leaves it out:
+`PICTURES=1 bash scripts/e2e.sh e2e/readme_pictures.spec.ts --workers=1`.
+
 **`e2e/order_steps.spec.ts` says why a browser spec earns its place.** The
 nested step list is a grid INSIDE a row of another grid, which is the arrangement behind two of the
 overflow defects this project has shipped, and no jsdom assertion can see it. The capture is

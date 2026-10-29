@@ -27,7 +27,11 @@ export default defineConfig({
    * Same shape as the backend's own benchmark suite: excluded from the daily run, executed
    * deliberately around a release.
    */
-  testIgnore: process.env['PERF'] ? [] : ['**/performance.spec.ts'],
+  testIgnore: [
+    ...(process.env['PERF'] ? [] : ['**/performance.spec.ts']),
+    // the README's pictures, taken against the live API on purpose — never in an ordinary run
+    ...(process.env['PICTURES'] ? [] : ['**/readme_pictures.spec.ts']),
+  ],
 
   /**
    * Zero, deliberately. A test that goes green on the third attempt is flaky and we would never
