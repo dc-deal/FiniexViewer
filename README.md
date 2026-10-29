@@ -19,16 +19,17 @@ kept across a reload.
 
 ### A run, its trades on their candles
 
-![A run as panels beside its run chart and its layers, one scenario in focus](docs/images/run_dock_dark.png)
+![The run list, a run's report sections as panels of their own, its trades beside the run chart and its layers](docs/images/workspace_dark.png)
 
-The run report is a bundle whose sections open as panels of their own. One scenario in focus narrows
-every list, and the run chart beside it draws that scenario's trades where they opened and closed,
-the stop loss, the take profit and the entry–exit line of the position looked at, and the volume
-behind the candles. The Layers panel shows, fades and orders what the chart draws — by dragging.
+The run report is a bundle whose sections open as panels of their own — here every one stands apart,
+arranged in three columns. One scenario in focus narrows every list, and the run chart draws that
+scenario's trades where they opened and closed, the stop loss, the take profit and the entry–exit
+line of the position looked at, and the volume behind the candles. The Layers panel shows, fades and
+orders what the chart draws — by dragging.
 
 ### A live bot across its restarts
 
-![A deployment as its bundle: its sessions with their configuration changes, and the booking periods across them](docs/images/deployment_dark.png)
+![A deployment's sessions, and where its strategy and its operation changed between them](docs/images/deployment_dark.png)
 
 A deployment opens as a bundle of its sessions and its booking periods. Sessions are separate runs,
 so the view says when they are not one series instead of adding them up; where a session changed its

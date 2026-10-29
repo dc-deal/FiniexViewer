@@ -209,9 +209,14 @@ route serves them — from, to and a limit — the mean of twenty.
 
 **`readme_pictures.spec.ts` takes the README's pictures**, so they stay current (operator,
 2026-10-29): at every release, and whenever a view they show changes visibly. Against the LIVE API
-and from runs the backend's fixture catalogue keeps, the dark theme at 1920 × 1000, every hint put
-away. Like the performance spec, an ordinary run leaves it out:
-`PICTURES=1 bash scripts/e2e.sh e2e/readme_pictures.spec.ts --workers=1`.
+and from runs the backend's fixture catalogue keeps, in ONE arrangement — `readme_arrangement.json`,
+three columns with every bundle closed and its members standing apart — laid out 1920 wide in its
+own proportions, the dark theme, every hint put away: the whole window once, then the dock group a
+highlight is about. Nothing private reaches a picture: the lists are narrowed to public runs, and
+`PICTURES_HIDE`, a comma list of words given at the call and never written into the repository,
+fails the run wherever one of them stands in the window's text. Like the performance spec, an
+ordinary run leaves it out:
+`PICTURES=1 PICTURES_HIDE=<words> bash scripts/e2e.sh e2e/readme_pictures.spec.ts --workers=1`.
 
 **`e2e/order_steps.spec.ts` says why a browser spec earns its place.** The
 nested step list is a grid INSIDE a row of another grid, which is the arrangement behind two of the

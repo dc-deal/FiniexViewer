@@ -1,0 +1,250 @@
+{
+  "version": 1,
+  "links": {
+    "A": {
+      "run": {"id": "20261007_150606_cfb42e00", "units": [], "position": null},
+      "deployment": {"id": "deploy_20261012_205734"},
+      "sweep": {"id": "sweep_20261012_210055"},
+      "market": {"broker": "kraken_spot", "symbol": "BTCUSD"}
+    }
+  },
+  "bars": {},
+  "chart": {"timeframe": "D1"},
+  "runChart": {"run": null, "unit": null, "timeframe": null},
+  "dock": {
+    "grid": {
+      "root": {
+        "type": "branch",
+        "data": [
+          {
+            "type": "branch",
+            "data": [
+              {
+                "type": "leaf",
+                "data": {"views": ["runs", "deployments", "sweeps"], "activeView": "runs", "id": "6"},
+                "size": 441
+              },
+              {
+                "type": "leaf",
+                "data": {
+                  "views": ["report-executive", "report-broker", "report-config"],
+                  "activeView": "report-executive",
+                  "id": "7"
+                },
+                "size": 436
+              }
+            ],
+            "size": 632
+          },
+          {
+            "type": "branch",
+            "data": [
+              {
+                "type": "leaf",
+                "data": {
+                  "views": ["report-trade-history", "report-orders"],
+                  "activeView": "report-trade-history",
+                  "id": "5"
+                },
+                "size": 452.370361328125
+              },
+              {
+                "type": "leaf",
+                "data": {
+                  "views": ["report-scenario-roster", "deployment-sessions"],
+                  "activeView": "report-scenario-roster",
+                  "id": "8"
+                },
+                "size": 424.629638671875
+              }
+            ],
+            "size": 405.333251953125
+          },
+          {
+            "type": "branch",
+            "data": [
+              {
+                "type": "branch",
+                "data": [
+                  {
+                    "type": "leaf",
+                    "data": {"views": ["run-chart"], "activeView": "run-chart", "id": "2"},
+                    "size": 189.666748046875
+                  },
+                  {
+                    "type": "leaf",
+                    "data": {"views": ["layers"], "activeView": "layers", "id": "1"},
+                    "size": 100
+                  }
+                ],
+                "size": 530.1481018066406
+              },
+              {
+                "type": "leaf",
+                "data": {
+                  "views": ["activities", "report-booking-periods", "deployment-periods"],
+                  "activeView": "report-booking-periods",
+                  "id": "4"
+                },
+                "size": 346.8518981933594
+              }
+            ],
+            "size": 289.666748046875
+          }
+        ],
+        "size": 877
+      },
+      "width": 1327,
+      "height": 877,
+      "orientation": "HORIZONTAL"
+    },
+    "panels": {
+      "runs": {
+        "id": "runs",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "runs"},
+        "title": "Runs",
+        "renderer": "always"
+      },
+      "deployments": {
+        "id": "deployments",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "deployments"},
+        "title": "Deployments",
+        "renderer": "always"
+      },
+      "sweeps": {
+        "id": "sweeps",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "sweeps"},
+        "title": "Sweeps",
+        "renderer": "always"
+      },
+      "report-executive": {
+        "id": "report-executive",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "report-executive"},
+        "title": "Executive summary",
+        "renderer": "always"
+      },
+      "report-broker": {
+        "id": "report-broker",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "report-broker"},
+        "title": "Broker",
+        "renderer": "always"
+      },
+      "report-config": {
+        "id": "report-config",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "report-config"},
+        "title": "Configuration",
+        "renderer": "always"
+      },
+      "report-trade-history": {
+        "id": "report-trade-history",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "report-trade-history"},
+        "title": "Trade history",
+        "renderer": "always"
+      },
+      "report-orders": {
+        "id": "report-orders",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "report-orders"},
+        "title": "Orders",
+        "renderer": "always"
+      },
+      "report-scenario-roster": {
+        "id": "report-scenario-roster",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "report-scenario-roster"},
+        "title": "Scenarios",
+        "renderer": "always"
+      },
+      "deployment-sessions": {
+        "id": "deployment-sessions",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "deployment-sessions"},
+        "title": "Deployment sessions",
+        "renderer": "always"
+      },
+      "run-chart": {
+        "id": "run-chart",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "run-chart"},
+        "title": "Run chart",
+        "renderer": "always"
+      },
+      "layers": {
+        "id": "layers",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "layers"},
+        "title": "Layers",
+        "renderer": "always"
+      },
+      "activities": {
+        "id": "activities",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "activities"},
+        "title": "Activities",
+        "renderer": "always"
+      },
+      "report-booking-periods": {
+        "id": "report-booking-periods",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "report-booking-periods"},
+        "title": "Booking periods",
+        "renderer": "always"
+      },
+      "deployment-periods": {
+        "id": "deployment-periods",
+        "contentComponent": "host",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {"kind": "deployment-periods"},
+        "title": "Deployment booking periods",
+        "renderer": "always"
+      }
+    },
+    "activeGroup": "8"
+  },
+  "places": {
+    "deployments": {"besides": ["runs", "run", "sweeps"], "direction": "within", "index": 1},
+    "runs": {"besides": ["deployments", "run", "sweeps"], "direction": "within", "index": 0},
+    "run": {"besides": ["runs", "deployments", "sweeps"], "direction": "within", "index": 2},
+    "run-chart": {"besides": ["report-trade-history", "report-orders"], "direction": "right", "size": 600.666748046875},
+    "report-trade-history": {"besides": ["report-orders"], "direction": "within", "index": 0},
+    "report-scenario-roster": {"besides": ["deployment-sessions"], "direction": "within", "index": 0},
+    "report-orders": {"besides": ["report-trade-history"], "direction": "within", "index": 1},
+    "chart": {"besides": ["report-executive"], "direction": "right", "size": 364.59991455078125},
+    "report-booking-periods": {"besides": ["activities", "deployment-periods"], "direction": "within", "index": 1},
+    "report-aggregated-portfolio": {"besides": ["report-scenario-roster"], "direction": "left", "size": 649.0370178222656},
+    "layers": {"besides": ["run-chart"], "direction": "right", "size": 241},
+    "activities": {"besides": ["report-booking-periods", "deployment-periods"], "direction": "within", "index": 0},
+    "sweeps": {"besides": ["runs", "deployments", "run"], "direction": "within", "index": 3},
+    "report-executive": {"besides": ["report-broker", "report-config"], "direction": "within", "index": 0},
+    "report-broker": {"besides": ["report-executive", "report-config"], "direction": "within", "index": 1},
+    "report-config": {"besides": ["report-executive", "report-broker"], "direction": "within", "index": 2},
+    "deployment": {"besides": ["runs", "deployments", "run", "sweeps"], "direction": "within", "index": 2},
+    "deployment-sessions": {"besides": ["report-scenario-roster"], "direction": "within", "index": 1},
+    "deployment-periods": {"besides": ["activities", "report-booking-periods"], "direction": "within", "index": 2}
+  },
+  "panelViews": {
+    "report-booking-periods": {"expanded": {"periods-table": true}},
+    "run-chart": {"layers": {"options": {"trade-signs": false}}}
+  }
+}
