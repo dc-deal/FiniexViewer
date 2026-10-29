@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import LayersView from '@/views/LayersView.vue'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
+import { useHintsStore } from '@/stores/hints_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 
 /**
@@ -151,6 +152,23 @@ describe('LayersView', () => {
     const wrapper = mountOn('run-chart')
     expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
     expect(wrapper.findAll('.hint-line')).toHaveLength(1)
+  })
+
+  /**
+   * A row opens only onto something (operator, on screen 2026-10-29): the volume has no option and no
+   * forms, so once its hint is put away it shows no marker and a click opens nothing. A layer with an
+   * option still opens onto it.
+   */
+  it('opens a row with nothing left to show onto nothing at all', async () => {
+    useHintsStore().ban('layer-volume')
+    useHintsStore().ban('layer-trades')
+    const wrapper = mountOn('run-chart')
+    expect(row(wrapper, 'volume').find('.layer-marker').text()).toBe('')
+    expect(row(wrapper, 'volume').find('[data-action="open"]').attributes('aria-expanded')).toBeUndefined()
+    await row(wrapper, 'volume').find('[data-action="open"]').trigger('click')
+    expect(row(wrapper, 'volume').find('.layer-options').exists()).toBe(false)
+    await row(wrapper, 'trades').find('[data-action="open"]').trigger('click')
+    expect(row(wrapper, 'trades').find('[data-action="option"]').exists()).toBe(true)
   })
 
   it('puts the handle of each layer\'s opacity in its row', () => {

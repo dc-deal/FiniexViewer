@@ -10,6 +10,7 @@ import { useChartLayers } from '@/composables/use_chart_layers'
 import { layerDefinition } from '@/layer_registry'
 import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
+import { useHintsStore } from '@/stores/hints_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import { LAYER_OPACITY_MIN } from '@/types/layer_types'
@@ -100,9 +101,22 @@ function summary(row: LayerState): string {
 /** The rows opened — this mount's own, the way a list's folds are until it keeps them. */
 const opened = ref(new Set<ChartLayerId>())
 
-function toggle(id: ChartLayerId): void {
+const hints = useHintsStore()
+
+/**
+ * Whether a row has anything to open onto: an option, the candles' forms, or its hint not yet put
+ * away. The volume has neither of the first two, and once its hint was dismissed it opened onto
+ * nothing (operator, on screen 2026-10-29) — then it shows no marker, and a click opens nothing.
+ */
+function openable(row: LayerState): boolean {
+  const definition = layerDefinition(row.id)
+  return Boolean(definition.option || definition.forms) || hints.isVisible(definition.hintId)
+}
+
+function toggle(row: LayerState): void {
+  if (!openable(row)) return
   const next = new Set(opened.value)
-  if (!next.delete(id)) next.add(id)
+  if (!next.delete(row.id)) next.add(row.id)
   opened.value = next
 }
 </script>
@@ -146,11 +160,12 @@ function toggle(id: ChartLayerId): void {
             <button
               type="button"
               class="layer-head"
-              :aria-expanded="opened.has(row.id)"
+              :class="{ inert: !openable(row) }"
+              :aria-expanded="openable(row) ? opened.has(row.id) : undefined"
               data-action="open"
-              @click="toggle(row.id)"
+              @click="toggle(row)"
             >
-              <span class="layer-marker" aria-hidden="true">{{ opened.has(row.id) ? '▾' : '▸' }}</span>
+              <span class="layer-marker" aria-hidden="true">{{ openable(row) ? opened.has(row.id) ? '▾' : '▸' : '' }}</span>
               <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
               <span class="layer-summary">{{ summary(row) }}</span>
             </button>
@@ -164,7 +179,7 @@ function toggle(id: ChartLayerId): void {
               @update:model-value="value => setOpacity(row.id, value)"
             />
           </div>
-          <div v-if="opened.has(row.id)" class="layer-options">
+          <div v-if="openable(row) && opened.has(row.id)" class="layer-options">
             <!-- what it draws and what its option does, in one hint: the options below stand plain,
                  the way an editor's do, and a reader who knows them dismisses it (operator, 2026-10-28) -->
             <HintLine :id="layerDefinition(row.id).hintId" />
@@ -281,8 +296,13 @@ function toggle(id: ChartLayerId): void {
   cursor: pointer;
 }
 
-.layer-head:active {
+.layer-head:active:not(.inert) {
   background-color: var(--color-bg-active);
+}
+
+/* a row with nothing to open onto offers no click: no marker, no pointer, no press */
+.layer-head.inert {
+  cursor: default;
 }
 
 .layer-head:focus-visible {

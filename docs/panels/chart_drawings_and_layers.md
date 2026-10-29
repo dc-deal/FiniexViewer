@@ -124,7 +124,9 @@ Run chart · ETHUSD_aug_sep
   editor's panels do: what the layer draws and what its option does is the layer's hint
   (`layer-trades`, `layer-levels` …, named on each layer as `hintId`), and a reader who knows it
   dismisses it. The option is its switch alone (the trades' signs; the levels, or the lines, of
-  every position rather than of the one looked at); the candles add their forms.
+  every position rather than of the one looked at); the candles add their forms. A row opens only
+  onto something: the volume has no option and no forms, so once its hint is put away it shows no
+  marker and a click opens nothing (operator, on screen 2026-10-29).
 - **The closed row's words say only what the screen cannot**: what an empty layer waits for —
   *pick a position* for the levels and the line, which draw for the position looked at alone, *none
   for this position* where one is looked at, *none in view* for the trades or where every position
