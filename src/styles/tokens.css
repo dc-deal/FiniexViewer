@@ -99,8 +99,6 @@
 
   /* rem, not em: an em size compounds inside an element already at it, and tab titles and the
      section toggles came out at 11.56 px under 13.6 px panel text (until 2026-10-14) */
-  /* xs: what explains a row in its opened part — read once, so it takes less room than the row */
-  --font-size-xs: 0.75rem;
   --font-size-sm: 0.85rem;
   --font-size-md: 1rem;
   --font-size-lg: 1.25rem;

@@ -41,18 +41,6 @@ describe('useChartLayers', () => {
     expect(useArrangementStore().panelViews).toEqual({})
   })
 
-  /** One place at a time, no further than either end, and never past the volume, which keeps its place at the back. */
-  it('moves a layer one place toward the front or the back, and no further than either end', () => {
-    const { rows, move } = useChartLayers(() => 'run-chart')
-    move('levels', 1)
-    expect(rows.value.map(row => row.id)).toEqual(['trades', 'levels', 'entry-exit', 'candles', 'volume'])
-    move('trades', 1)
-    move('entry-exit', -1)
-    move('volume', 1)
-    move('candles', 1)
-    expect(rows.value.map(row => row.id)).toEqual(['trades', 'levels', 'entry-exit', 'candles', 'volume'])
-  })
-
   /**
    * As a drag leaves them (operator, 2026-10-28): the movable layers in a new order, front first, the
    * fixed ones kept at the back — and a list that does not hold every movable layer once changes nothing.

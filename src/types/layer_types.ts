@@ -13,21 +13,20 @@ export const LAYER_OPACITY_MIN = 10
 
 export interface LayerOption {
   id: LayerOptionId
-  /** Its word beside the checkbox. */
+  /** Its word beside the switch. */
   label: string
-  /** What it changes, in one line. */
-  description: string
   /** Its value where the reader never set one. */
   fallback: boolean
-  /** What the closed row says while the option differs from its default: `no signs`. */
-  changed: string
 }
 
 /** What the register says about one drawing layer (`layer_registry.ts`). */
 export interface LayerDefinition {
   title: string
-  /** What it draws, in one line. */
-  description: string
+  /**
+   * The hint (`hint_registry.ts`) saying what it draws and what its option does — at the top of its
+   * opened row, so the options below it stand plain (operator, 2026-10-28).
+   */
+  hintId: string
   /**
    * The hint (`hint_registry.ts`) saying why it may have nothing to draw — shown where it has
    * nothing, so a lever that changes nothing is explained, and dismissible like every hint.
@@ -39,8 +38,6 @@ export interface LayerDefinition {
    * place among the others, is never moved, and stands at the back.
    */
   fixed?: boolean
-  /** Where a fixed layer stands, said in its row: `behind the drawings`. */
-  place?: string
   /** The forms it can be drawn in, the first its own — the candles' (candles, OHLC bars, line, area). */
   forms?: { id: PriceForm, label: string }[]
 }

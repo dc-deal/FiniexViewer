@@ -86,3 +86,27 @@ test('a layer is dragged in front of another by its grip, and never past the fix
   await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done()))))
   expect(await order()).toBe('levels,trades,entry-exit,candles,volume')
 })
+
+/**
+ * The trades' signs switched off keep their room: emptied, the text gave it up and the price axis
+ * moved at the switch (operator, on screen 2026-10-28). Read pixel for pixel, as the lever's is.
+ */
+test('switching the signs off moves nothing on the price axis', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['EURGBP_refusals_01'] })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/trades:[1-9]/)
+  await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
+  const layers = page.locator('[data-panel-kind="layers"]')
+  await layers.locator('[data-layer="trades"] [data-action="open"]').click()
+
+  const box = (await chart.boundingBox())!
+  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height - 40 }
+  const painted = (): Promise<void> => page.evaluate(() => new Promise<void>(done =>
+    requestAnimationFrame(() => requestAnimationFrame(() => done()))))
+  await painted()
+  const before = await page.screenshot({ clip: axis })
+  await layers.locator('[data-layer="trades"] [data-action="option"]').click()
+  await painted()
+  expect((await page.screenshot({ clip: axis })).equals(before)).toBe(true)
+})

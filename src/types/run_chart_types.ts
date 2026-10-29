@@ -54,6 +54,11 @@ export interface ChartMark {
   shape: 'arrowUp' | 'arrowDown' | 'circle'
   role: 'entry' | Polarity | 'mixed'
   text: string
+  /**
+   * The text keeps its room and is not painted — the trades' signs switched off. Emptied instead, it
+   * gave its room up, and the chart rescaled at the switch (operator, on screen 2026-10-28).
+   */
+  textHidden?: boolean
   /** A mark of the position the reader is looking at — drawn larger, and never gathered. */
   focused: boolean
   /** What the chart library reports while the pointer rests on the mark — the key of its card. */

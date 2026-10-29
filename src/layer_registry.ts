@@ -4,47 +4,33 @@ import type { LayerDefinition, LayerOptionId, LayerState } from '@/types/layer_t
 import { t } from '@/translate'
 
 /**
- * Every drawing layer a chart can draw, in ONE register (viewer#41): its title, what it draws, and
- * the one option it offers. A record over the ids, so a layer added to the type is a type error here
+ * Every drawing layer a chart can draw, in ONE register (viewer#41): its title, the hint saying
+ * what it draws, and the one option it offers. A record over the ids, so a layer added to the type is a type error here
  * until it is described.
  */
 const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   levels: {
     title: t('Levels'),
-    description: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded'),
+    hintId: 'layer-levels',
     emptyHintId: 'layer-empty-levels',
-    option: {
-      id: 'every-position',
-      label: t('every position'),
-      description: t('The levels of every position of the unit, not only of the one looked at'),
-      fallback: false,
-      changed: t('every position'),
-    },
+    option: { id: 'every-position', label: t('every position'), fallback: false },
   },
   'entry-exit': {
     title: t('Entry–exit line'),
-    description: t('Where each trade of the position looked at entered, and where it left'),
+    hintId: 'layer-entry-exit',
     emptyHintId: 'layer-empty-entry-exit',
     // its own id: kept by id, the levels' option of the same word would switch both
-    option: {
-      id: 'every-position-line',
-      label: t('every position'),
-      description: t('The lines of every position of the unit, not only of the one looked at'),
-      fallback: false,
-      changed: t('every position'),
-    },
+    option: { id: 'every-position-line', label: t('every position'), fallback: false },
   },
   volume: {
     title: t('Volume'),
-    description: t('What traded in each bar — or how many ticks it held, where the venue prints no trades — in the lowest fifth of the chart, behind the candles'),
+    hintId: 'layer-volume',
     fixed: true,
-    place: t('behind the candles'),
   },
   candles: {
     title: t('Candles'),
-    description: t('The price of each bar, behind the drawings — as candles, OHLC bars, a line or an area of the close'),
+    hintId: 'layer-candles',
     fixed: true,
-    place: t('behind the drawings'),
     forms: [
       { id: 'candles', label: t('candles') },
       { id: 'bars', label: t('OHLC bars') },
@@ -54,15 +40,9 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   },
   trades: {
     title: t('Trades'),
-    description: t('Where each position opened and each trade closed'),
+    hintId: 'layer-trades',
     emptyHintId: 'layer-empty-trades',
-    option: {
-      id: 'trade-signs',
-      label: t('signs'),
-      description: t('The sign of each exit and the count of each gathered mark, beside its shape'),
-      fallback: true,
-      changed: t('no signs'),
-    },
+    option: { id: 'trade-signs', label: t('signs'), fallback: true },
   },
 }
 
@@ -107,15 +87,6 @@ export function arrangeLayers(chartId: string, stored: StoredLayers | undefined)
       form: forms ? forms.find(entry => entry.id === stored?.forms?.[id])?.id ?? forms[0]!.id : null,
     }
   })
-}
-
-/**
- * What a closed row says of a layer: its option, where it differs from the default — `no signs`.
- * Its opacity is not repeated here: the handle of its lever, in the same row, shows it.
- */
-export function layerSummary(state: LayerState): string {
-  const option = LAYERS[state.id].option
-  return option && state.option !== null && state.option !== option.fallback ? option.changed : ''
 }
 
 /**

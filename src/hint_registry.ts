@@ -51,7 +51,29 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layers',
-    text: t('Front layer first: drag a layer by ⠿ to put it in front of or behind the others. The lever shows or hides it, ◐ sets how strongly it is drawn, and a click on it opens what it draws, its option and ↑ ↓ to move it. The candles stay behind them all, and the volume behind the candles.'),
+    text: t('Front layer first: drag a layer by ⠿ to put it in front of or behind the others. The lever shows or hides it, ◐ sets how strongly it is drawn, and a click on it opens its options. The candles stay behind them all, and the volume behind the candles.'),
+  },
+  // what a layer draws and what its option does — at the top of its opened row, so the options below
+  // stand plain (operator, 2026-10-28)
+  {
+    id: 'layer-trades',
+    text: t('Where each position opened and each trade closed. With signs, each exit carries its sign and each gathered mark its count, beside its shape.'),
+  },
+  {
+    id: 'layer-entry-exit',
+    text: t('Where each trade of the position looked at entered, and where it left. With every position, the lines of every position of the unit.'),
+  },
+  {
+    id: 'layer-levels',
+    text: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded. With every position, the levels of every position of the unit.'),
+  },
+  {
+    id: 'layer-candles',
+    text: t('The price of each bar, behind the drawings — as candles, OHLC bars, a line or an area of the close.'),
+  },
+  {
+    id: 'layer-volume',
+    text: t('What traded in each bar — or how many ticks it held, where the venue prints no trades — in the lowest fifth of the chart, behind the candles.'),
   },
   // why a layer that is shown draws nothing — shown below the Layers list only while it does
   {

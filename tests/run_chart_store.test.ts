@@ -350,7 +350,9 @@ describe('useRunChartStore', () => {
       .toEqual([['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true]])
     const [trading, levels] = chart.layers
     expect(trading!.drawings.length).toBeGreaterThan(0)
-    expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.text === '')).toBe(true)
+    // the signs switched off keep their room and paint no text, so the switch rescales nothing
+    expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.textHidden === true)).toBe(true)
+    expect(trading!.drawings.some(drawing => drawing.kind === 'marker' && drawing.text !== '')).toBe(true)
     // every position's levels with no position looked at: drawn, none of them putting its price on the axis
     expect(levels!.drawings.map(drawing => drawing.kind === 'segment' && [drawing.label, drawing.focused]))
       .toEqual([['SL', false], ['TP', false]])

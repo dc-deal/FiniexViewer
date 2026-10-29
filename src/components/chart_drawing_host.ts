@@ -215,7 +215,7 @@ export function paintLayer(
   for (const placed of layer.marks) {
     context.fillStyle = colours.roles[placed.mark.role]
     paintShape(context, placed.mark.shape, placed.x, placed.y, placed.size)
-    if (placed.textY !== null) context.fillText(placed.mark.text, placed.x, placed.textY)
+    if (placed.textY !== null && !placed.mark.textHidden) context.fillText(placed.mark.text, placed.x, placed.textY)
   }
   context.restore()
 }

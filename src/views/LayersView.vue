@@ -7,7 +7,7 @@ import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import { useChartLayers } from '@/composables/use_chart_layers'
-import { layerDefinition, layerSummary } from '@/layer_registry'
+import { layerDefinition } from '@/layer_registry'
 import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
@@ -20,12 +20,13 @@ import { t } from '@/translate'
  * The drawing layers of the chart last in front (viewer#41), the front one first — the order a list
  * of layers reads in — drawn as the app's lists are: one row each, no heading. In the row the lever
  * shows or hides the layer, ◐ opens the lever of its opacity, ⠿ drags it in front of or behind the
- * others, and the row itself opens the rest: what it draws, its option, and ↑ ↓ for the keyboard. The
- * candles and the volume stand behind them all and are never moved. It works on the chart last in front, not on a link: another panel coming to the
- * front, this one among them, leaves it on the same chart.
+ * others, and the row itself opens its options, plain beneath the hint that explains them. The
+ * candles and the volume stand behind them all and are never moved. It works on the chart last in
+ * front, not on a link: another panel coming to the front, this one among them, leaves it on the same
+ * chart.
  */
 const { lastChart } = storeToRefs(useDockStore())
-const { rows, show, setOpacity, setOption, setForm, move, reorder } = useChartLayers(() => lastChart.value)
+const { rows, show, setOpacity, setOption, setForm, reorder } = useChartLayers(() => lastChart.value)
 
 /** The chart arranged, as its tab names it: `Run chart · ETHUSD_aug_sep`. */
 const chartName = computed(() => {
@@ -59,15 +60,10 @@ const emptyHints = computed(() => rows.value.flatMap(row =>
   empty.value.has(row.id) ? layerDefinition(row.id).emptyHintId ?? [] : []))
 
 /**
- * The layers that take a place among the others, front first. The fixed ones — the candles and the
- * volume, drawn by the chart library — are shown, hidden and fainter like the rest, and never moved.
- */
-const movable = computed(() => rows.value.filter(row => !layerDefinition(row.id).fixed))
-
-/**
  * The list as a drag sees it: every row, and what it leaves behind written back as the movable
- * layers' order (operator, 2026-10-28 — dragging as well as ↑ ↓, through the package the run
- * bundle's column already sorts its sections with).
+ * layers' order — the one way to move a layer (operator, 2026-10-28), through the package the run
+ * bundle's column already sorts its sections with. The fixed ones, the candles and the volume, are
+ * shown, hidden and fainter like the rest, and never moved.
  */
 const ordered = computed({
   get: () => rows.value,
@@ -93,18 +89,12 @@ function emptyWord(row: LayerState): string {
 const volumeWord = computed(() => runChart.volumeBasis === 'traded' ? t('traded volume') : t('ticks per bar'))
 
 /**
- * The closed row's words: what differs from the default, what the volume counts, the form the price
- * is drawn in, where a fixed layer stands, and what an empty one waits for.
+ * The closed row's words, only what the screen cannot show: what an empty layer waits for, and what
+ * the volume counts. A switched option or the candles' form is seen elsewhere (operator, 2026-10-28).
  */
 function summary(row: LayerState): string {
-  const definition = layerDefinition(row.id)
-  return [
-    layerSummary(row),
-    row.id === 'volume' ? volumeWord.value : '',
-    definition.forms?.find(form => form.id === row.form)?.label ?? '',
-    definition.place ?? '',
-    empty.value.has(row.id) ? emptyWord(row) : '',
-  ].filter(Boolean).join(' · ')
+  if (empty.value.has(row.id)) return emptyWord(row)
+  return row.id === 'volume' ? volumeWord.value : ''
 }
 
 /** The rows opened — this mount's own, the way a list's folds are until it keeps them. */
@@ -175,17 +165,17 @@ function toggle(id: ChartLayerId): void {
             />
           </div>
           <div v-if="opened.has(row.id)" class="layer-options">
-            <p class="layer-description">{{ layerDefinition(row.id).description }}</p>
-            <template v-if="layerDefinition(row.id).option">
-              <AppSwitch
-                compact
-                :model-value="row.option === true"
-                :label="layerDefinition(row.id).option!.label"
-                data-action="option"
-                @update:model-value="on => setOption(row.id, on)"
-              />
-              <p class="layer-description">{{ layerDefinition(row.id).option!.description }}</p>
-            </template>
+            <!-- what it draws and what its option does, in one hint: the options below stand plain,
+                 the way an editor's do, and a reader who knows them dismisses it (operator, 2026-10-28) -->
+            <HintLine :id="layerDefinition(row.id).hintId" />
+            <AppSwitch
+              v-if="layerDefinition(row.id).option"
+              compact
+              :model-value="row.option === true"
+              :label="layerDefinition(row.id).option!.label"
+              data-action="option"
+              @update:model-value="on => setOption(row.id, on)"
+            />
             <!-- the forms: one chosen, shown the way a toggle group shows its choice -->
             <div v-if="layerDefinition(row.id).forms" class="option-line" data-action="forms">
               <AppButton
@@ -199,27 +189,6 @@ function toggle(id: ChartLayerId): void {
               >
                 {{ form.label }}
               </AppButton>
-            </div>
-            <!-- the keyboard's way to move it, beside the grip the pointer drags -->
-            <div v-if="!layerDefinition(row.id).fixed" class="option-line">
-              <AppButton
-                size="compact"
-                variant="quiet"
-                glyph
-                :aria-label="t('One place to the front')"
-                :disabled="movable.indexOf(row) === 0"
-                data-action="front"
-                @click="move(row.id, 1)"
-              >↑</AppButton>
-              <AppButton
-                size="compact"
-                variant="quiet"
-                glyph
-                :aria-label="t('One place to the back')"
-                :disabled="movable.indexOf(row) === movable.length - 1"
-                data-action="back"
-                @click="move(row.id, -1)"
-              >↓</AppButton>
             </div>
           </div>
         </li>
@@ -293,8 +262,15 @@ function toggle(id: ChartLayerId): void {
   flex: 1;
   min-width: 0;
   display: flex;
+  /* the words beside the title stand only where they fit whole: they wrap onto a second line the
+     moment they would not, and the head's height cuts that line away (operator, 2026-10-28) */
+  flex-wrap: wrap;
+  align-content: flex-start;
   align-items: center;
-  gap: var(--space-xs);
+  column-gap: var(--space-xs);
+  height: calc(1.5em + 4px);
+  overflow: hidden;
+  line-height: 1.5;
   /* as tall as a row of the app's lists: 25 px, where four pixels a side made it 28 */
   padding: 2px var(--space-xs) 2px 0;
   border: none;
@@ -303,13 +279,6 @@ function toggle(id: ChartLayerId): void {
   color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
-}
-
-/* read once when a row is opened, so it takes less room than the row itself */
-.layer-description {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
 }
 
 .layer-head:active {
@@ -327,21 +296,20 @@ function toggle(id: ChartLayerId): void {
   color: var(--color-text-secondary);
 }
 
+/* the title comes first, always beside its marker, and is cut with … only where the panel is
+   narrower than the title itself */
 .layer-title {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-width: calc(100% - 1em - var(--space-xs));
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* the title comes first: the summary gives way an overwhelming share faster, so a narrow panel
-   cuts it before the title — at 240 px a summary beside the candles had squeezed their title out */
 .layer-summary {
-  flex: 0 1000 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
+  margin-left: auto;
   color: var(--color-text-secondary);
   white-space: nowrap;
 }

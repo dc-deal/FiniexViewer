@@ -167,4 +167,25 @@ describe('ChartDrawingHost', () => {
     expect(calls).toContain('fillStyle=#0a0')
     expect(calls).toContain('fillStyle=#fff')
   })
+
+  /**
+   * The trades' signs switched off: no text is painted, and its room stays, so the switch rescales
+   * nothing — emptied, the text gave its room up and the chart moved (operator, on screen 2026-10-28).
+   */
+  it('keeps the room of a hidden text, and paints none of it', () => {
+    const host = new ChartDrawingHost()
+    attachTo(host)
+    host.setDrawings(LAYERS, BARS, COLOURS)
+    const signed = host.autoscaleInfo()!.margins
+    const quiet = LAYERS.map(layer => ({
+      ...layer,
+      drawings: layer.drawings.map(drawing => drawing.kind === 'marker' ? { ...drawing, textHidden: true } : drawing),
+    }))
+    host.setDrawings(quiet, BARS, COLOURS)
+    expect(host.autoscaleInfo()!.margins).toEqual(signed)
+    const placed = quiet.map(layer => placeLayer(layer, BARS, { x: time => time * 10, y: price => 500 - price, spacing: 80, width: 800 }))
+    const { context, calls } = recordingContext()
+    for (const layer of placed) paintLayer(context, layer, COLOURS, '10px Probe Sans')
+    expect(calls.some(call => call.startsWith('fillText(+,'))).toBe(false)
+  })
 })

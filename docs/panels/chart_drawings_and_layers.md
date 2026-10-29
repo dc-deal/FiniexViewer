@@ -106,39 +106,49 @@ layer* in their glossary.
 
 ```
 Run chart · ETHUSD_aug_sep
-⠿ (━●) ▸ Trades              no signs          ◐
+⠿ (━●) ▸ Trades                                ◐
 ⠿ (━●) ▾ Entry–exit line     pick a position   ◐ 40%
-           what it draws, in the small type
-           ↑ ↓                                     ← the keyboard's way to move it
+           💡 what it draws and what its option does      ← a hint, dismissible
+           (━●) every position                            ← the option, plain
 ⠿ (●━) ▸ Levels                                ◐   ← switched off: the row grey
-  (━●) ▸ Candles   candles · behind the drawings      ◐   ← fixed: no grip, never moved
-  (━●) ▸ Volume    ticks per bar · behind the candles  ◐
+  (━●) ▸ Candles                               ◐   ← fixed: no grip, never moved
+  (━●) ▸ Volume                  ticks per bar ◐
 ```
 
-- **The register** is `src/layer_registry.ts`: each layer's title, what it draws and its one option,
-  and which chart draws which layers, back to front (`chartLayers`). The free chart draws none today.
+- **The register** is `src/layer_registry.ts`: each layer's title, its hint and its one option, and
+  which chart draws which layers, back to front (`chartLayers`). The free chart draws none today.
 - **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
-  the row opens the rest — what it draws, its option (the trades' signs; the levels, or the lines,
-  of every position rather than of the one looked at) and ↑ ↓, its place one step at a time. The
-  closed row says what differs — and, for a shown layer with nothing to draw, what it waits for:
-  *pick a position* for the levels and the line, which draw for the position looked at alone,
-  *none for this position* where one is looked at, and *none in view* for the trades or where every
-  position is asked for. With none chosen their levers changed nothing on screen and looked broken
-  (2026-10-19); *nothing to draw* said so, and not what to do (2026-10-28).
+  the row opens its options.
+- **The opened row holds plain options beneath one hint** (operator, 2026-10-28), the way an
+  editor's panels do: what the layer draws and what its option does is the layer's hint
+  (`layer-trades`, `layer-levels` …, named on each layer as `hintId`), and a reader who knows it
+  dismisses it. The option is its switch alone (the trades' signs; the levels, or the lines, of
+  every position rather than of the one looked at); the candles add their forms.
+- **The closed row's words say only what the screen cannot**: what an empty layer waits for —
+  *pick a position* for the levels and the line, which draw for the position looked at alone, *none
+  for this position* where one is looked at, *none in view* for the trades or where every position
+  is asked for — and what the volume counts. A switched option, the candles' form or a fixed layer's
+  place is seen elsewhere, so it is not repeated (operator, 2026-10-28). The words stand only where
+  they fit whole: the title comes first, and the words wrap onto a line the head's height cuts away
+  the moment they would not fit. With no position chosen the levers of the line and the levels
+  changed nothing on screen and looked broken (2026-10-19); *nothing to draw* said so, and not what
+  to do.
+- **Why a shown layer draws nothing stands below the list** as hints, one box for every such layer
+  — a narrow panel cut the row's word to a letter and kept the reason on hover, and the levers still
+  looked broken (2026-10-27). Hints of the shared register (`layer-empty-*`, named on each layer as
+  `emptyHintId`). Below the list their coming and going moves no row, and the panel holds its
+  scrollbar's track free (`scrollbar-gutter: stable`), so one appearing moves none either.
 - **Compact as the app's lists** (operator, 2026-10-28): a row is as tall as a list row (25 px), the
-  surface under the pointer spans the whole row, the lever is the compact one (`AppSwitch`
-  `compact`) so it does not outweigh ◐ beside it, and what an opened row explains stands in the
-  smallest type (`--font-size-xs`).
-- **Dragged by its grip ⠿** (operator, 2026-10-28), through `vue-draggable-plus` — the package the
-  run bundle's column already sorts its sections with — and written back whole (`reorder`). The
-  candles and the volume have no grip, and a drag that would pass them is refused (`onMove`). ↑ ↓
-  in the opened row stay, because a drag is the pointer's alone. Why stands below the list as hints, one box for every such layer — a narrow
-  panel cut the row's word to a letter and kept the reason on hover, and the levers still looked
-  broken (2026-10-27). Hints of the shared register (`layer-empty-*`, named on each layer as
-  `emptyHintId`), so a reader who knows them dismisses or bans them. Below the list their coming and
-  going moves no row, and the panel holds its scrollbar's track free (`scrollbar-gutter: stable`),
-  so one appearing moves none either.
+  surface under the pointer spans the whole row, and the lever is the compact one (`AppSwitch`
+  `compact`), so it does not outweigh ◐ beside it.
+- **Moved by dragging its grip ⠿, and only so** (operator, 2026-10-28), through `vue-draggable-plus`
+  — the package the run bundle's column already sorts its sections with — and written back whole
+  (`reorder`). The candles and the volume have no grip, and a drag that would pass them is refused
+  (`onMove`). The arrows that moved a layer one step went with it: a reorder is the pointer's alone.
+- **The trades' signs switched off keep their room.** The marks are handed over `textHidden`: the
+  host places their text and paints none of it, so the switch rescales nothing — emptied, the text
+  gave its room up and the price axis moved at the switch (operator, on screen 2026-10-28).
 - **Kept with the chart's own view**, `panelViews[<chart id>].layers`: only what differs from the
   chart's own arrangement, reconciled whenever it is read — a layer the chart no longer draws is
   left out, one it draws since stands where its own order puts it (`arrangeLayers`, `keptLayers`).

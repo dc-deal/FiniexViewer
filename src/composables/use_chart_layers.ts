@@ -15,8 +15,6 @@ interface ChartLayers {
   setOpacity: (id: ChartLayerId, opacity: number) => void
   setOption: (id: ChartLayerId, on: boolean) => void
   setForm: (id: ChartLayerId, form: PriceForm) => void
-  /** One place toward the front (`1`) or the back (`-1`); nothing past either end, nor past a fixed layer. */
-  move: (id: ChartLayerId, step: 1 | -1) => void
   /** The movable layers in a new order, front first — as a drag leaves them. */
   reorder: (frontFirst: ChartLayerId[]) => void
 }
@@ -47,18 +45,6 @@ export function useChartLayers(chartId: () => string | null): ChartLayers {
     write(states.value.map(state => state.id === id ? edit(state) : state))
   }
 
-  function move(id: ChartLayerId, step: 1 | -1): void {
-    const order = [...states.value]
-    const from = order.findIndex(state => state.id === id)
-    const to = from + step
-    if (from < 0 || to < 0 || to >= order.length) return
-    // a fixed layer keeps its place, and no other passes it
-    if (layerDefinition(id).fixed || layerDefinition(order[to]!.id).fixed) return
-    const [moved] = order.splice(from, 1)
-    order.splice(to, 0, moved!)
-    write(order)
-  }
-
   /**
    * The movable layers in the order a drag left them, front first. The fixed ones keep their places
    * at the back; a list that does not hold every movable layer once changes nothing.
@@ -78,7 +64,6 @@ export function useChartLayers(chartId: () => string | null): ChartLayers {
     })),
     setOption: (id, on) => change(id, state => ({ ...state, option: on })),
     setForm: (id, form) => change(id, state => ({ ...state, form })),
-    move,
     reorder,
   }
 }

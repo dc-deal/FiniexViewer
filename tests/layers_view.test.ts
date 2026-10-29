@@ -55,10 +55,9 @@ describe('LayersView', () => {
     expect(volume.classes()).toContain('fixed')
     expect(volume.find('[data-action="opacity"]').exists()).toBe(true)
     // no bars loaded: no price basis stated, so it counts ticks
-    expect(volume.find('.layer-summary').text()).toBe('ticks per bar · behind the candles')
+    expect(volume.find('.layer-summary').text()).toBe('ticks per bar')
     await volume.find('[data-action="open"]').trigger('click')
-    expect(row(wrapper, 'volume').find('.layer-description').text()).toContain('What traded in each bar')
-    expect(row(wrapper, 'volume').find('[data-action="front"]').exists()).toBe(false)
+    expect(row(wrapper, 'volume').find('.hint-line').text()).toContain('What traded in each bar')
     expect(row(wrapper, 'volume').find('[data-action="forms"]').exists()).toBe(false)
     await row(wrapper, 'volume').find('[data-action="show"]').trigger('click')
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ hidden: ['volume'] })
@@ -70,15 +69,15 @@ describe('LayersView', () => {
    */
   it('offers the candles their forms, one chosen, and keeps the one picked', async () => {
     const wrapper = mountOn('run-chart')
-    expect(row(wrapper, 'candles').find('.layer-summary').text()).toBe('candles · behind the drawings')
+    // the form is seen on the chart, and the closed row does not repeat it (operator, 2026-10-28)
+    expect(row(wrapper, 'candles').find('.layer-summary').text()).toBe('')
     await row(wrapper, 'candles').find('[data-action="open"]').trigger('click')
     const forms = row(wrapper, 'candles').findAll('[data-action="forms"] button')
     expect(forms.map(button => button.attributes('data-form'))).toEqual(['candles', 'bars', 'line', 'area'])
     expect(row(wrapper, 'candles').find('[data-form="candles"]').attributes('aria-pressed')).toBe('true')
     await row(wrapper, 'candles').find('[data-form="line"]').trigger('click')
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ forms: { candles: 'line' } })
-    expect(row(wrapper, 'candles').find('.layer-summary').text()).toBe('line · behind the drawings')
-    expect(row(wrapper, 'candles').find('[data-action="front"]').exists()).toBe(false)
+    expect(row(wrapper, 'candles').find('.layer-summary').text()).toBe('')
   })
 
   /** Grey is enough: the lever's position says it, and nothing in the row changes its size. */
@@ -92,18 +91,20 @@ describe('LayersView', () => {
   })
 
   /**
-   * The row opens what is set less often. The levels and the line each offer every position, and
-   * each keeps its own: switching one leaves the other as it was.
+   * The row opens what is set less often, plain beneath the one hint that explains it (operator,
+   * 2026-10-28). The levels and the line each offer every position, and each keeps its own:
+   * switching one leaves the other as it was — and the closed row does not repeat the switch.
    */
-  it('opens a row for its option and its place, and switches the option there', async () => {
+  it('opens a row to its hint and its plain option, and switches the option there', async () => {
     const wrapper = mountOn('run-chart')
     expect(wrapper.find('.layer-options').exists()).toBe(false)
     await row(wrapper, 'levels').find('[data-action="open"]').trigger('click')
     expect(row(wrapper, 'levels').find('[data-action="open"]').attributes('aria-expanded')).toBe('true')
+    expect(row(wrapper, 'levels').find('.layer-options .hint-line').text()).toContain('The stop loss and take profit')
+    expect(row(wrapper, 'levels').find('[data-action="front"]').exists()).toBe(false)
     await row(wrapper, 'levels').find('[data-action="option"]').trigger('click')
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ options: { 'every-position': true } })
-    expect(row(wrapper, 'levels').find('.layer-summary').text()).toContain('every position')
-    expect(row(wrapper, 'entry-exit').find('.layer-summary').text()).not.toContain('every position')
+    expect(row(wrapper, 'levels').find('.layer-summary').text()).not.toContain('every position')
     await row(wrapper, 'entry-exit').find('[data-action="open"]').trigger('click')
     await row(wrapper, 'entry-exit').find('[data-action="option"]').trigger('click')
     expect(useArrangementStore().panelViews['run-chart']?.layers)
@@ -150,17 +151,6 @@ describe('LayersView', () => {
     const wrapper = mountOn('run-chart')
     expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
     expect(wrapper.findAll('.hint-line')).toHaveLength(1)
-  })
-
-  /** One place at a time; the front layer goes no further forward, the back one no further back. */
-  it('moves a layer one place, and offers no step past either end', async () => {
-    const wrapper = mountOn('run-chart')
-    await row(wrapper, 'trades').find('[data-action="open"]').trigger('click')
-    await row(wrapper, 'levels').find('[data-action="open"]').trigger('click')
-    expect(row(wrapper, 'trades').find('[data-action="front"]').attributes('disabled')).toBeDefined()
-    expect(row(wrapper, 'levels').find('[data-action="back"]').attributes('disabled')).toBeDefined()
-    await row(wrapper, 'levels').find('[data-action="front"]').trigger('click')
-    expect(order(wrapper)).toEqual(['trades', 'levels', 'entry-exit', 'candles', 'volume'])
   })
 
   it('puts the handle of each layer\'s opacity in its row', () => {
