@@ -21,7 +21,7 @@ import { t } from '@/translate'
 const chart = useRunChartStore()
 const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, truncated, loading, error, layers, offer, focusAt,
-  priceFormat,
+  priceFormat, volume, candles,
 } = storeToRefs(chart)
 const { selectedRunId, selectedRun, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
@@ -80,6 +80,8 @@ onUnmounted(() => chart.detach())
       v-else
       :data="bars"
       :layers="layers"
+      :volume="volume"
+      :candles="candles"
       :focus="focusAt"
       :price-format="priceFormat"
       @spacing="chart.setSpacing"

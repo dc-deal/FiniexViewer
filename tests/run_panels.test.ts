@@ -8,6 +8,7 @@ import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
+import { provideCheckTitles } from '@/composables/use_check_titles'
 import type {
   RunInfo,
   RunHeader,
@@ -145,6 +146,33 @@ describe('ExecutivePanel', () => {
     expect(wrapper.text()).toContain('Scenarios')
     expect(wrapper.text()).not.toContain('Declared')
     expect(wrapper.text()).not.toContain('Produced nothing')
+  })
+
+  /**
+   * A unit refused before it ran names the checks that refused it; the hover gives their titles
+   * from the catalogue, so a reader never meets a bare id. An id the catalogue does not know stands
+   * alone, and a unit no check refused keeps its cause.
+   */
+  it('says which checks refused a unit that produced nothing, in the titles of the catalogue', () => {
+    const Host = defineComponent({
+      setup() {
+        provideCheckTitles(check => check === 'data_availability'
+          ? { check, title: 'Data does not cover the window', description: 'The window starts before the first tick.' }
+          : null)
+        return () => h(ExecutivePanel, {
+          model: summaryWith(MEASURED, {
+            units_absent: [
+              { name: 'EURGBP_early', reason: 'failed validation', reason_code: 'ValidationError', checks: ['data_availability', 'unknown_check'] },
+              { name: 'EURGBP_crashed', reason: 'it crashed', reason_code: 'ZeroDivisionError', checks: [] },
+            ],
+          }),
+        })
+      },
+    })
+    const absent = mount(Host).findAll('.figure').find(pair => pair.find('dt').text() === 'Produced nothing')
+    expect(absent!.find('dd').text()).toBe('2')
+    expect(absent!.attributes('title')).toBe(
+      'EURGBP_early: Data does not cover the window · unknown_check\nEURGBP_crashed: ZeroDivisionError')
   })
 
   it('renders measured values with their units', () => {
@@ -391,9 +419,9 @@ describe('WarningsErrorsPanel — narrowed to a scenario', () => {
   const MIXED = report({
     errors: [unitError('unit_a'), unitError('unit_b')],
     warnings: [
-      { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' },
-      { tier: 'major', scope: 'unit_a', message: 'warmup thin on unit_a' },
-      { tier: 'major', scope: 'unit_b', message: 'warmup thin on unit_b' },
+      { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' },
+      { tier: 'major', scope: 'unit_a', message: 'warmup thin on unit_a', check: '', domain: '' },
+      { tier: 'major', scope: 'unit_b', message: 'warmup thin on unit_b', check: '', domain: '' },
     ],
   })
 
@@ -440,6 +468,41 @@ describe('WarningsErrorsPanel — narrowed to a scenario', () => {
 })
 
 describe('WarningsErrorsPanel', () => {
+  /**
+   * A `major` warning names the check that decided it, and the backend's catalogue says what it
+   * means: its title is read first, the sentence the run wrote beneath it, and the description, the
+   * check and its domain on hover. Where the row names no check, or the catalogue does not know it,
+   * the sentence stands alone as before.
+   */
+  it('heads a warning with the title of the check that decided it', () => {
+    const model = report({
+      warnings: [
+        { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' },
+        { tier: 'major', scope: 'run', message: 'an older warning', check: '', domain: '' },
+      ],
+    })
+    const Host = defineComponent({
+      setup() {
+        provideCheckTitles(check => check === 'stress_test'
+          ? { check, title: 'Stress test active', description: 'Stress injection is switched on.' }
+          : null)
+        return () => h(WarningsErrorsPanel, { model })
+      },
+    })
+    const wrapper = mount(Host)
+    const titles = wrapper.findAll('.entry-check')
+    expect(titles.map(node => node.text())).toEqual(['Stress test active'])
+    expect(titles[0]!.attributes('title')).toContain('Stress injection is switched on.')
+    expect(titles[0]!.attributes('title')).toContain('stress_test')
+    expect(wrapper.text()).toContain('STRESS TEST ACTIVE')
+    expect(wrapper.text()).toContain('an older warning')
+
+    // no catalogue at all: the sentences stand alone
+    const alone = mount(WarningsErrorsPanel, { props: { model } })
+    expect(alone.findAll('.entry-check')).toHaveLength(0)
+    expect(alone.text()).toContain('STRESS TEST ACTIVE')
+  })
+
   /**
    * A healthy run keeps its GRADE and loses everything else. `run_outcome` is the backend's own
    * verdict and cannot be read off the screen — a run graded `finished_with_errors` can show only
@@ -610,9 +673,9 @@ describe('WarningsErrorsPanel', () => {
   it('lists tier-1 warnings but only summarises the log pot', () => {
     const model = report({
       warnings: [
-        { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' },
-        { tier: 'minor', scope: 'unit_a', message: 'something in the log' },
-        { tier: 'minor', scope: 'unit_a', message: 'another log line' },
+        { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' },
+        { tier: 'minor', scope: 'unit_a', message: 'something in the log', check: '', domain: '' },
+        { tier: 'minor', scope: 'unit_a', message: 'another log line', check: '', domain: '' },
       ],
     })
     const wrapper = mount(WarningsErrorsPanel, { props: { model } })
@@ -641,6 +704,7 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     group: 'simulation',
     artifacts: ['run_summary.json', 'portfolio.json'],
     stream_files: [],
+    recording: null,
     // contracts 24 and 25: what the run is FOR, under which contract its reports
     // were written, and whether it is still its catalog entry's current one
     run_purpose: 'regular',
@@ -703,7 +767,7 @@ describe('RunHeaderPanel', () => {
       reporting: 'expected',
       origin: {
         channel: 'cli', client: 'console', principal: 'operator',
-        host: 'h_x29og8', allow_dirty: false,
+        host: 'h_x29og8', allow_dirty: false, first_start: false, accept_composite_change: null,
       },
       code_identity: null,
       ticks_from: 'archive',
@@ -859,11 +923,60 @@ describe('RunHeaderPanel', () => {
 
     const loud = mount(RunHeaderPanel, {
       props: { model: headerModel({}, header({
-        origin: { channel: 'cli', client: 'console', principal: 'operator', host: 'h', allow_dirty: true },
+        origin: {
+          channel: 'cli', client: 'console', principal: 'operator', host: 'h',
+          allow_dirty: true, first_start: false, accept_composite_change: null,
+        },
       })) },
     })
     expect(loud.text()).toContain('Uncommitted code allowed')
     expect(loud.find('.flagged').exists()).toBe(true)
+  })
+
+  /**
+   * `first_start` (contract 37) says a session trading real money started without a carry-over,
+   * because its start was declared the bot's first. A stated fact, not a warning, and false says
+   * nothing.
+   */
+  it('says a declared first start in the words of the backend, and nothing where there was none', () => {
+    const quiet = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header()) },
+    })
+    expect(quiet.text()).not.toContain('Declared first start')
+
+    const first = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        origin: {
+          channel: 'cli', client: 'console', principal: 'operator', host: 'h',
+          allow_dirty: false, first_start: true, accept_composite_change: null,
+        },
+      })) },
+    })
+    expect(first.text()).toContain('Declared first start')
+    expect(first.find('.flagged').exists()).toBe(false)
+  })
+
+  /**
+   * Contract 41: a start allowed to continue what the venue held under another composite. A trade
+   * across the change is the result of neither configuration, so it is said as something to weigh,
+   * with the key the start was given.
+   */
+  it('flags an accepted change of configuration with its key, and says nothing where none was given', () => {
+    const quiet = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header()) },
+    })
+    expect(quiet.text()).not.toContain('Changed configuration accepted')
+
+    const accepted = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        origin: {
+          channel: 'cli', client: 'console', principal: 'operator', host: 'h',
+          allow_dirty: false, first_start: false, accept_composite_change: 'b1fc487a',
+        },
+      })) },
+    })
+    expect(accepted.text()).toContain('Changed configuration accepted')
+    expect(accepted.find('.flagged').text()).toContain('b1fc487a')
   })
 
   /**

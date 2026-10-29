@@ -14,8 +14,14 @@ import type { ChartMark } from '@/types/run_chart_types'
  * Ours, so a closed set — a name read back from storage is checked against it; `layer_registry.ts`
  * describes each and says which chart draws which.
  */
-export const CHART_LAYER_IDS = ['levels', 'entry-exit', 'trades'] as const
+export const CHART_LAYER_IDS = ['levels', 'entry-exit', 'trades', 'volume', 'candles'] as const
 export type ChartLayerId = typeof CHART_LAYER_IDS[number]
+
+/**
+ * The layers the chart's own drawing host paints. The candles and the volume are layers to the
+ * reader — shown, hidden, fainter — but the chart library draws them, as series of their own.
+ */
+export type DrawingLayerId = Exclude<ChartLayerId, 'volume' | 'candles'>
 
 /** What a drawing's colour says — a role, never a colour; the shape and the word say it first. */
 export type DrawingRole = Polarity | 'mixed' | 'entry'
@@ -53,8 +59,13 @@ export type ChartDrawing = ChartMark | SegmentDrawing | LineDrawing
 
 /** One layer: its drawings, drawn in list order — a later layer stands in front of an earlier one. */
 export interface ChartLayer {
-  id: ChartLayerId
+  id: DrawingLayerId
   drawings: ChartDrawing[]
   /** Drawn at this share of its strength (0–1), so the layers in front read first — set in the Layers panel. */
   opacity?: number
+  /**
+   * Switched off in the Layers panel: neither painted nor found under the pointer, but its marks
+   * keep their room above and below the candles — so switching a layer never rescales the chart.
+   */
+  hidden?: boolean
 }

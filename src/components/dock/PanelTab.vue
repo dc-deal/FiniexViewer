@@ -7,9 +7,11 @@ import {
 import AppIcon from '@/components/base/AppIcon.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { tabCard } from '@/components/dock/tab_card'
+import { memberKindId, memberOfKind } from '@/bundle_members'
 import { useSectionStates } from '@/composables/use_section_states'
-import { RUN_BUNDLE, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
+import { BUNDLE_IDS } from '@/types/panel_types'
 import type { PanelKind } from '@/types/panel_types'
 import { t } from '@/translate'
 
@@ -31,8 +33,8 @@ const props = defineProps<{ kindId: string, api: DockviewPanelApi }>()
 const dock = useDockStore()
 const kind = panelKind(props.kindId)
 const title = kind?.title ?? props.api.title ?? props.kindId
-/** The section this tab's panel shows, where it is one of the run report's. */
-const section = sectionOfKind(props.kindId)
+/** The member this tab's panel shows, and of which bundle — where it is a member of one. */
+const member = memberOfKind(props.kindId)
 
 /**
  * What the tab adds to its title — the run a bundle shows, so two windows comparing two runs are
@@ -46,11 +48,12 @@ const status = computed(() => kind?.status?.() ?? null)
 /** The panel stands with nothing of the chosen run to show — said by the title, never by hiding. */
 const muted = computed(() => kind?.muted?.() ?? false)
 
-/** The run bundle's members standing in its column, whose links its card says as its own. */
-const states = kind?.id === RUN_BUNDLE ? useSectionStates() : null
+/** A bundle's members standing in its column, whose links its card says as its own. */
+const bundle = BUNDLE_IDS.find(id => id === kind?.id) ?? null
+const states = bundle ? useSectionStates(bundle) : null
 const members = computed<PanelKind[]>(() => (states?.value ?? [])
   .filter(state => state.place === 'column' && !state.absent)
-  .flatMap(state => panelKind(reportKindId(state.section.id)) ?? []))
+  .flatMap(state => panelKind(memberKindId(bundle!, state.section.id)) ?? []))
 
 /** Built where the tab is drawn, so the subtitle, the status and the members follow their stores. */
 const card = computed(() => tabCard(kind, props.api.title ?? props.kindId, members.value))
@@ -140,12 +143,12 @@ onUnmounted(() => {
         </DropdownMenuPortal>
       </DropdownMenuRoot>
       <button
-        v-if="section"
+        v-if="member"
         type="button"
         class="panel-tab-button panel-tab-back"
         :title="t('Back into the bundle')"
         :aria-label="t('Back into the bundle')"
-        @click.stop="dock.backIntoColumn(section)"
+        @click.stop="dock.backIntoColumn(member.member, member.bundle)"
       >
         <AppIcon name="action-back-into-column" />
       </button>
@@ -188,6 +191,14 @@ onUnmounted(() => {
   max-width: 19ch;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* shorter in a short header, which it shares with a panel's quick bar — the run chart's names its
+   unit there in full (2026-10-28) */
+@container dock-header (max-width: 32rem) {
+  .panel-tab-subtitle {
+    max-width: 10ch;
+  }
 }
 
 .panel-tab-status.warning {

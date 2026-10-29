@@ -2,6 +2,7 @@ import { nextTick } from 'vue'
 import { openInDock } from '@/components/dock/open_in_dock'
 import { RUN_BUNDLE, reportKindId } from '@/panel_kinds'
 import { useContextStore } from '@/stores/context_store'
+import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -121,6 +122,14 @@ export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
       void scrollToMark(sectionId, ownPanel)
       return
     }
+    // the bundle closed, its members read apart: the target joins them as a panel of its own rather
+    // than reopening the bundle (operator, 2026-10-28)
+    if (dock.standsApart(RUN_BUNDLE)) {
+      layoutStore.show(sectionId)
+      dock.openSection(sectionId)
+      void scrollToMark(sectionId, ownPanel)
+      return
+    }
     // in the column: the run report comes to the front — the jump may start in another panel — and
     // a hidden section is not in the column at all, and a folded one draws nothing, so the jump
     // has to make the target reachable before it can scroll to it
@@ -149,7 +158,12 @@ export function useShowInList(): () => void {
   return () => {
     const run = runsStore.selectedRun
     if (run?.parent_id && run.parent_kind === 'sweep') return openInDock().openSweep(run.parent_id)
-    if (run?.parent_id && run.parent_kind === 'deployment') return openInDock().openDeployment(run.parent_id)
+    if (run?.parent_id && run.parent_kind === 'deployment') {
+      // the LIST that holds it: *Open deployment* leads to the deployment's bundle instead (viewer#43)
+      void useDeploymentsStore().selectDeployment(run.parent_id)
+      dock.reveal('deployments', 'command')
+      return
+    }
     runsStore.askForChosenRow()
     dock.reveal('runs', 'command')
     // a panel just brought out is laid out one frame late; scrolled before that, the row would be

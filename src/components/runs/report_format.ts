@@ -1,3 +1,4 @@
+import type { RunInfo } from '@/types/api/report_types'
 import type { Figure, Polarity } from '@/types/figure_types'
 import { t } from '@/translate'
 
@@ -8,6 +9,14 @@ const decimal = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 })
 
+// A holding, a size or a price, to the eighth decimal and no further: a satoshi is the finest step
+// any venue here quotes, and a figure the session COMPUTED carries float noise below it
+// (`0.018555830000000002` ETH) that is no digit of the amount.
+const fine = new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 })
+
+// What a strategy's worker or decision states about itself, to four decimals: a reading, not money.
+const reading = new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 })
+
 /**
  * The bare figure, for a table that states its currency ONCE in the column header. Repeating the
  * code in every cell is what makes such a table too wide to read without scrolling — and it says
@@ -15,6 +24,36 @@ const decimal = new Intl.NumberFormat('en-US', {
  */
 export function figure(value: number): string {
   return decimal.format(value)
+}
+
+/**
+ * Why a run has no report, in one sentence for every place that says it — the run bundle above its
+ * column, and a section opened as a panel of its own. `reporting` tells a run never meant to write
+ * one from one that has not yet; a session recording its state frames says which of the two the
+ * second is (contract 38), where nothing else on the row can.
+ */
+export function noReportReason(run: RunInfo): string {
+  if (run.reporting !== 'expected') return t('This run exists as logs only — it was never meant to write a report')
+  if (run.recording === 'current') return t('This session is still running — its report is written when it ends')
+  if (run.recording === 'stopped') {
+    return t('This session stopped recording without an end — it hangs or its process died, and wrote no report')
+  }
+  return t('This run has no report — it is still running, or it died before its report phase')
+}
+
+/** A holding, a size or a price, with no decimal the venue could not have quoted. */
+export function quantity(value: number): string {
+  return fine.format(value)
+}
+
+/**
+ * A value a worker or a decision reports, under the strategy's own key: a number to four decimals,
+ * anything else as it came. The keys are the strategy's, so nothing here knows what a value means.
+ */
+export function readingOf(value: unknown): string {
+  if (typeof value === 'number') return reading.format(value)
+  if (value === null || value === undefined) return t('none')
+  return typeof value === 'object' ? JSON.stringify(value) : String(value)
 }
 
 /** Currency amount. The code is appended as text — quote currencies are not all ISO-4217. */
@@ -208,6 +247,23 @@ export function signClass(value: number): string {
  */
 export function magnitude(value: number, currency: string): string {
   return amount(Math.abs(value), currency)
+}
+
+/**
+ * A figure that may not have been measured, or the dash that says so — their nulls document: show
+ * absence as absence, never a zero, which would assert a measurement nobody took. Since contract 40
+ * a drawdown and an equity band are null where nothing could value the account, and a session's
+ * `ran_hours` until its close is booked.
+ */
+export function orDash(value: number | null, format: (value: number) => string): string {
+  return value === null ? '—' : format(value)
+}
+
+/** A drawdown with its share where one is stated (`_pct` is already a percentage), or the dash. */
+export function drawdownFigure(value: number | null, share: number | null, currency: string): string {
+  if (value === null) return '—'
+  const shown = magnitude(value, currency)
+  return share === null ? shown : `${shown} (${percentFigure(share)})`
 }
 
 /**

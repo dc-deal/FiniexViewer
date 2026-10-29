@@ -21,16 +21,24 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('the menu bar\'s card says what runs, the server left out', async ({ page }) => {
+  // the capture holds whatever ran when it was taken, so the server alone is served here — a
+  // route registered later answers first
+  await page.route('**/api/v1/activities', route => route.fulfill({
+    json: { ...(fixture('activities.json') as object), activities: [server] },
+  }))
   await page.setViewportSize({ width: 1600, height: 900 })
   await page.goto('/')
   await page.locator('.machine-status').hover()
   const card = page.locator('.hover-card')
-  // the capture holds the server alone, so nothing else runs
   await expect(card).toContainText('only this server')
   await expect(card).toContainText('Panels ▸ Activities')
 })
 
 test('the Activities panel lists what runs, and asks nothing while another tab stands in front of it', async ({ page }) => {
+  // the server alone, so it is the first row: the capture holds whatever ran when it was taken
+  await page.route('**/api/v1/activities', route => route.fulfill({
+    json: { ...(fixture('activities.json') as object), activities: [server] },
+  }))
   let asked = 0
   page.on('request', request => {
     if (new URL(request.url()).pathname === '/api/v1/activities') asked += 1
@@ -77,11 +85,18 @@ test('every activity row is one line tall, also in a German locale', async ({ co
   // the locale took: the month is German
   await expect(rows.first().locator('[data-rank="2"]')).toContainText('.')
   // the lines each cell's TEXT stands on, counted by their tops: a capture of one row cannot be
-  // compared with another row
+  // compared with another row. The text nodes alone — a range over the whole cell also returns the
+  // box of a link's button, which stands 2 px above its own text and read as a second line
   const wrapped = await rows.evaluateAll(list => list.flatMap(row => [...row.children].filter(cell => {
-    const range = document.createRange()
-    range.selectNodeContents(cell)
-    return new Set([...range.getClientRects()].map(box => Math.round(box.top))).size > 1
+    const tops = new Set<number>()
+    const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!node.textContent?.trim()) continue
+      const range = document.createRange()
+      range.selectNodeContents(node)
+      for (const box of range.getClientRects()) tops.add(Math.round(box.top))
+    }
+    return tops.size > 1
   }).map(cell => cell.textContent?.trim())))
   expect(wrapped).toEqual([])
   await german.close()

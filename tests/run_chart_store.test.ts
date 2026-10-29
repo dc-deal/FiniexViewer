@@ -43,10 +43,11 @@ const COVERAGE: CoverageResponse = {
 
 const ANSWER: BarAnswer = {
   bars: [
-    { t: 1761886800, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 },
-    { t: 1761886860, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 },
+    { t: 1761886800, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 },
+    { t: 1761886860, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 },
   ],
   truncated: false,
+  priceBasis: '',
 }
 
 /** The fixture run chosen, with the reports the app root would have loaded for it. */
@@ -218,7 +219,7 @@ describe('useRunChartStore', () => {
   /** A window the route cut ends at its last bar: an event past it has no candle, not the last one. */
   it('draws nothing past the last bar of a window the route cut', async () => {
     chooseFixtureRun()
-    vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true })
+    vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true, priceBasis: '' })
     const chart = useRunChartStore()
     chart.attach()
     await flushPromises()
@@ -237,8 +238,9 @@ describe('useRunChartStore', () => {
     chooseFixtureRun()
     // the unit's whole hour, a bar a minute
     vi.mocked(apiClient.getBars).mockResolvedValue({
-      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 })),
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 })),
       truncated: false,
+      priceBasis: '',
     })
     // no trade of the fixture set a level: one row is given a stop and a target, as a run with levels serves them
     const unitName = firstWithOpenings()
@@ -261,12 +263,71 @@ describe('useRunChartStore', () => {
     expect(layer('entry-exit').every(drawing => drawing.kind === 'line')).toBe(true)
   })
 
+  /** Switched to every position, the line is drawn for each trade of the unit, with none looked at. */
+  /**
+   * The volume counts what the venue prints: the traded volume where the bars are order-driven, the
+   * ticks otherwise — one value a bar, coloured by its candle, and handed apart from the drawings.
+   */
+  /** The candles layer hands the chart its form, whether it is shown and how strongly — candles at full strength by default. */
+  it('hands the chart the candles in the form and the strength the Layers panel set', () => {
+    const chart = useRunChartStore()
+    expect(chart.candles).toEqual({ form: 'candles', shown: true, opacity: 1 })
+    useArrangementStore().setPanelView('run-chart', { layers: { forms: { candles: 'bars' }, opacity: { candles: 30 }, hidden: ['candles'] } })
+    expect(chart.candles).toEqual({ form: 'bars', shown: false, opacity: 0.3 })
+    expect(chart.layers.map(entry => entry.id)).not.toContain('candles')
+  })
+
+  it('draws the traded volume where the venue prints trades, and the ticks where it does not', async () => {
+    chooseFixtureRun()
+    const served = [
+      { t: 1761886800, o: 1, h: 2, l: 0.5, c: 1.5, v: 3.5, tc: 12 },
+      { t: 1761886860, o: 1.5, h: 2, l: 1, c: 1.2, v: 0, tc: 4 },
+    ]
+    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: served, truncated: false, priceBasis: 'order_driven' })
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    expect(chart.volume).toMatchObject({ basis: 'traded', shown: true, opacity: 1 })
+    expect(chart.volume!.bars).toEqual([
+      { time: 1761886800, value: 3.5, rising: true },
+      { time: 1761886860, value: 0, rising: false },
+    ])
+    expect(chart.layers.map(entry => entry.id)).not.toContain('volume')
+
+    // a dealer-quoted venue prints no trade: its ticks are the measure, and the layer hidden as arranged
+    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: served, truncated: false, priceBasis: 'quote_driven' })
+    useArrangementStore().setPanelView('run-chart', { layers: { hidden: ['volume'], opacity: { volume: 50 } } })
+    chart.chooseTimeframe('M5')
+    await flushPromises()
+    expect(chart.volume).toMatchObject({ basis: 'ticks', shown: false, opacity: 0.5 })
+    expect(chart.volume!.bars.map(bar => bar.value)).toEqual([12, 4])
+  })
+
+  it('draws the line of every position of the unit where the Layers panel asks for it', async () => {
+    chooseFixtureRun()
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 })),
+      truncated: false,
+      priceBasis: '',
+    })
+    useArrangementStore().setPanelView('run-chart', { layers: { options: { 'every-position-line': true } } })
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const lines = chart.layers.find(entry => entry.id === 'entry-exit')!.drawings
+    expect(lines.length).toBeGreaterThan(0)
+    expect(lines.every(drawing => drawing.kind === 'line')).toBe(true)
+    // the levels keep their own option: still none drawn while no position is looked at
+    expect(chart.layers.find(entry => entry.id === 'levels')!.drawings).toEqual([])
+  })
+
   /** The Layers panel's choices, kept with the run chart's own view, decide what is handed to the chart. */
   it('draws the layers as the reader arranged them in the Layers panel', async () => {
     chooseFixtureRun()
     vi.mocked(apiClient.getBars).mockResolvedValue({
-      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 })),
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 })),
       truncated: false,
+      priceBasis: '',
     })
     const unitName = firstWithOpenings()
     const traded = trades.trades.find(row => row.scenario_name === unitName)!
@@ -283,11 +344,15 @@ describe('useRunChartStore', () => {
     const chart = useRunChartStore()
     chart.attach()
     await flushPromises()
-    // back to front as moved, the hidden one not handed over at all, the fainter one at its share
-    expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1])).toEqual([['trades', 1], ['levels', 0.4]])
+    // back to front as moved, the fainter one at its share, the hidden one handed over marked so —
+    // the chart paints nothing of it and keeps its marks' room
+    expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1, entry.hidden ?? false]))
+      .toEqual([['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true]])
     const [trading, levels] = chart.layers
     expect(trading!.drawings.length).toBeGreaterThan(0)
-    expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.text === '')).toBe(true)
+    // the signs switched off keep their room and paint no text, so the switch rescales nothing
+    expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.textHidden === true)).toBe(true)
+    expect(trading!.drawings.some(drawing => drawing.kind === 'marker' && drawing.text !== '')).toBe(true)
     // every position's levels with no position looked at: drawn, none of them putting its price on the axis
     expect(levels!.drawings.map(drawing => drawing.kind === 'segment' && [drawing.label, drawing.focused]))
       .toEqual([['SL', false], ['TP', false]])
@@ -298,8 +363,9 @@ describe('useRunChartStore', () => {
     chooseFixtureRun()
     // the unit's whole hour, a bar a minute, so its marks stand on bars of their own
     vi.mocked(apiClient.getBars).mockResolvedValue({
-      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 })),
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 })),
       truncated: false,
+      priceBasis: '',
     })
     const chart = useRunChartStore()
     chart.attach()
@@ -341,10 +407,11 @@ describe('useRunChartStore', () => {
     // the unit traded on 2025-10-10 from 06:00 UTC: bars of its own hour, not the shared answer's
     vi.mocked(apiClient.getBars).mockResolvedValue({
       bars: [
-        { t: 1760076000, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 },
-        { t: 1760076060, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1 },
+        { t: 1760076000, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 },
+        { t: 1760076060, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 },
       ],
       truncated: false,
+      priceBasis: '',
     })
     const chart = useRunChartStore()
     chart.chooseUnit('EURGBP_left_open')
@@ -367,7 +434,7 @@ describe('useRunChartStore', () => {
   })
 
   it('says when the route answered with less than the window holds', async () => {
-    vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true })
+    vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true, priceBasis: '' })
     chooseFixtureRun()
     const chart = useRunChartStore()
     chart.attach()
@@ -386,7 +453,7 @@ describe('useRunChartStore', () => {
     await flushPromises()
     chart.chooseUnit('EURGBP_refusals_02')
     await flushPromises()
-    late({ bars: [{ t: 1, o: 1, h: 1, l: 1, c: 1, v: 1 }], truncated: true })
+    late({ bars: [{ t: 1, o: 1, h: 1, l: 1, c: 1, v: 1, tc: 1 }], truncated: true, priceBasis: '' })
     await flushPromises()
     expect(chart.bars.map(bar => bar.time)).toEqual([1761886800, 1761886860])
     expect(chart.truncated).toBe(false)

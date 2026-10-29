@@ -37,7 +37,7 @@ describe('useChartBinding', () => {
       end: '2026-10-09T20:56:00+00:00',
       timeframes: ['H1'],
     })
-    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: [], truncated: false })
+    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: [], truncated: false, priceBasis: '' })
   })
 
   /** The selector then asks for a timeframe the symbol has, instead of drawing nothing. */

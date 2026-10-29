@@ -3,9 +3,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // vi.hoisted ensures mockGet is initialized before the hoisted vi.mock factory runs
 const mockGet = vi.hoisted(() => vi.fn())
 
+// the response interceptor the client registers once, at import — kept to feed it answers by hand
+type Handler = (value: unknown) => unknown
+const stampHandlers = vi.hoisted(() => ({ answer: null as Handler | null, refusal: null as Handler | null }))
+
 vi.mock('axios', () => ({
   default: {
-    create: vi.fn(() => ({ get: mockGet })),
+    create: vi.fn(() => ({
+      get: mockGet,
+      interceptors: {
+        response: {
+          use: (answer: Handler, refusal: Handler) => {
+            stampHandlers.answer = answer
+            stampHandlers.refusal = refusal
+          },
+        },
+      },
+    })),
     isAxiosError: (error: unknown): boolean =>
       typeof error === 'object' && error !== null && 'response' in error,
   },
@@ -36,6 +50,9 @@ import {
   getScenarioDetails,
   getSweep,
   getSweeps,
+  onContractStamp,
+  getRecordedStreams,
+  getRecordedWindow,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
@@ -62,6 +79,22 @@ import { isAbsent } from '@/types/api/absence_types'
 describe('api_client', () => {
   beforeEach(() => {
     mockGet.mockReset()
+  })
+
+  /**
+   * Every answer carries the contract the server serves, a refusal included. The client hands it
+   * on, the one seen before anybody listened as well, and passes over an answer without it.
+   */
+  it('hands on the contract every answer is stamped with', async () => {
+    stampHandlers.answer!({ headers: { 'x-api-contract': '41' } })
+    const seen: number[] = []
+    onContractStamp(contract => { seen.push(contract) })
+    expect(seen).toEqual([41])
+
+    stampHandlers.answer!({ headers: { 'x-api-contract': '42' } })
+    await expect(stampHandlers.refusal!({ response: { headers: { 'x-api-contract': '43' } } })).rejects.toBeTruthy()
+    stampHandlers.answer!({ headers: {} })
+    expect(seen).toEqual([41, 42, 43])
   })
 
   describe('getTimeframes', () => {
@@ -118,10 +151,17 @@ describe('api_client', () => {
     })
 
     it('returns the bar array from response', async () => {
-      const bars = [{ t: 1704067200, o: 42000, h: 43000, l: 41000, c: 42500, v: 100 }]
+      const bars = [{ t: 1704067200, o: 42000, h: 43000, l: 41000, c: 42500, v: 100, tc: 1 }]
       mockGet.mockResolvedValue({ data: bars, headers: { 'x-bar-truncated': 'false' } })
       const result = await getBars('kraken_spot', 'BTCUSD', 'H1', '2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z')
-      expect(result).toEqual({ bars, truncated: false })
+      expect(result).toEqual({ bars, truncated: false, priceBasis: '' })
+    })
+
+    /** The file's price basis travels on a header, and the volume layer reads which count to draw from it. */
+    it('carries on the price basis the route states on a header', async () => {
+      mockGet.mockResolvedValue({ data: [], headers: { 'x-bar-price-basis': 'quote_driven' } })
+      const result = await getBars('mt5', 'EURUSD', 'M5', '2026-01-07T00:00:00Z', '2026-01-09T00:00:00Z')
+      expect(result.priceBasis).toBe('quote_driven')
     })
 
     /** The cap never cuts quietly: the route says so on a header, and the answer carries it on. */
@@ -139,6 +179,28 @@ describe('api_client', () => {
       const result = await getRuns()
       expect(result).toEqual(runs)
       expect(mockGet).toHaveBeenCalledWith('/reports/runs')
+    })
+  })
+
+  /** A unit's frames over time: the timeline and a window of it, the unit named in the path. */
+  describe('getRecordedStreams and getRecordedWindow', () => {
+    it('asks the timeline of the unit, and a window with only the bounds given', async () => {
+      mockGet.mockResolvedValue({ data: { streams: [] } })
+      await getRecordedStreams('run_a', 'unit 1')
+      expect(mockGet).toHaveBeenLastCalledWith('/reports/runs/run_a/units/unit%201/recorded-streams')
+      await getRecordedWindow('run_a', 'unit 1', { from: '2026-01-25T02:20:00Z', limit: 1 })
+      expect(mockGet).toHaveBeenLastCalledWith('/reports/runs/run_a/units/unit%201/recorded-streams/window',
+        { params: { from: '2026-01-25T02:20:00Z', limit: 1 } })
+    })
+
+    /** A backtest records nothing over time: its 404 is an absence in the backend's words, not a failure. */
+    it('carries the cause of a stream that is not recorded', async () => {
+      mockGet.mockRejectedValue({ response: { status: 404, data: { error: 'streams_not_recorded',
+        detail: 'This run records no stream over time' } } })
+      expect(await getRecordedStreams('run_a', 'unit')).toEqual({
+        absent: true, cause: 'streams_not_recorded', detail: 'This run records no stream over time',
+      })
+      expect(await getRecordedWindow('run_a', 'unit', {})).toMatchObject({ absent: true, cause: 'streams_not_recorded' })
     })
   })
 

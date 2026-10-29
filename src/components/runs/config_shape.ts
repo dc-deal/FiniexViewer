@@ -134,3 +134,41 @@ export function scenarioCount(config: Record<string, unknown>): number {
   const scenarios = config['scenarios']
   return Array.isArray(scenarios) ? scenarios.length : 0
 }
+
+/** One value that differs between two configurations, by its path — absent on the side that lacks it. */
+export interface ConfigChange {
+  path: string
+  before: unknown
+  after: unknown
+}
+
+/** Every leaf of a document by its dotted path; a list is one leaf, compared as a whole. */
+function leaves(value: unknown, prefix: string, into: Map<string, unknown>): Map<string, unknown> {
+  const record = asRecord(value)
+  if (!record) {
+    if (prefix) into.set(prefix, value)
+    return into
+  }
+  for (const [key, inner] of Object.entries(record)) leaves(inner, prefix ? `${prefix}.${key}` : key, into)
+  return into
+}
+
+/**
+ * The values that differ between the configuration a session ran with and the one before it — the
+ * ONE comparison this repository makes between two answers, and by instruction rather than by
+ * choice: their `config` document, *Comparing two sessions of a deployment*, says to fetch both
+ * bodies and compare them, *"For `strategy_changed` that is the answer."* Equality of served values
+ * and nothing more; nothing is resolved, merged or ranked.
+ *
+ * What it cannot see is said where it is shown: a default merged in under the file or a start
+ * option changes the session without changing the file. testingide#615 serves `config_changes` on
+ * the session row, read from the rendered profile, which sees both — and replaces this.
+ */
+export function configChanges(before: Record<string, unknown>, after: Record<string, unknown>): ConfigChange[] {
+  const old = leaves(before, '', new Map())
+  const now = leaves(after, '', new Map())
+  const paths = [...new Set([...now.keys(), ...old.keys()])]
+  return paths
+    .filter(path => JSON.stringify(old.get(path)) !== JSON.stringify(now.get(path)))
+    .map(path => ({ path, before: old.get(path), after: now.get(path) }))
+}

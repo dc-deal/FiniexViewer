@@ -1,254 +1,58 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useDeploymentsStore } from '@/stores/deployments_store'
-import { useSettingsStore } from '@/stores/settings_store'
-import { useDeploymentBinding } from '@/composables/use_deployment_binding'
-import { useViewExpanded } from '@/composables/use_panel_view'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
-import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
-import SessionsTable from '@/components/deployments/SessionsTable.vue'
-import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
-import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
-import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
-import AppSpinner from '@/components/base/AppSpinner.vue'
-import { orderPeriods } from '@/components/runs/period_order'
-import type { LaneOrder } from '@/types/settings_types'
-import type { DeploymentSessionRow } from '@/types/api/deployment_types'
-import { plural, t } from '@/translate'
-
-const store = useDeploymentsStore()
-const {
-  deployments, selectedDeploymentId, selectedRows, detail, periods,
-  loadingList, loadingDetail, error, forbiddenSurface, unknownDeploymentId,
-} = storeToRefs(store)
-
-// loads the ledger listing and brings back the deployment the reader had open
-useDeploymentBinding()
-
-// whether the reader left the period list open — kept as this panel's own view, across deployments
-const periodsOpen = useViewExpanded('periods-table')
-
-// whether the picker's list stands open — a low view then gives it the whole height
-const listShown = ref(false)
+import { onPanelShownAgain } from '@/composables/use_panel_visibility'
+import { DEPLOYMENT_BUNDLE } from '@/panel_kinds'
+import { useDeploymentsStore } from '@/stores/deployments_store'
+import { useDockStore } from '@/stores/dock_store'
+import { t } from '@/translate'
 
 /**
- * One order for the chart and the table beneath it. Across a deployment a lane is the SESSION —
- * `unit_name` is the profile name and identical in every session.
- *
- * Ordering matters here for a second reason: the ledger returns periods oldest-first by opening
- * time, and every session's `anchor` period opens at the same instant, so that order puts all the
- * anchors in a block and leaves the two periods of one session far apart. The table then reads as
- * though each session booked once, which is the opposite of what the chart shows.
- *
- * The default is the stored preference; the toggle above the chart stays local to this view.
+ * Every deployment in the ledger, as a list that picks (viewer#43): a pick chooses the deployment,
+ * and its bundle — the sessions and the booking periods across its restarts — shows it, the way a
+ * pick in the run list shows the run bundle. The ledger is loaded at the app root, so the bundle
+ * has it while this list is closed.
  */
-const { settings } = storeToRefs(useSettingsStore())
-const laneOrder = ref<LaneOrder>(settings.value.laneOrder)
+const dock = useDockStore()
+const store = useDeploymentsStore()
+const { forbiddenSurface, error, deployments } = storeToRefs(store)
 
-watch(() => settings.value.laneOrder, order => { laneOrder.value = order })
-
-const orderedPeriods = computed(() =>
-  orderPeriods(periods.value?.periods ?? [], laneOrder.value, row => row.run_id)
-)
-
-/** Sessions of one account currency — the rows are keyed by (run_id, currency), so they split. */
-function sessionsOf(currency: string): DeploymentSessionRow[] {
-  return (detail.value?.sessions ?? []).filter(session => session.currency === currency)
-}
-
-const showDeployment = computed(() =>
-  !loadingList.value && !loadingDetail.value && !error.value && !forbiddenSurface.value
-  && !unknownDeploymentId.value && selectedRows.value.length > 0
-)
+// a docked panel stays mounted, so the ledger is fetched again whenever the panel comes back
+onPanelShownAgain(() => { void store.loadDeployments(true) })
 </script>
 
 <template>
-  <div class="deployments-view" :class="{ 'list-shown': listShown }">
-    <header class="deployments-header">
-      <DeploymentPicker @list-shown="shown => listShown = shown" />
-    </header>
-
-    <div class="deployments-body">
-      <div v-if="loadingList || loadingDetail" class="state-overlay">
-        <AppSpinner />
-      </div>
-      <!-- a surface the token does not carry is neither an absence nor an outage, and
-           "could not load" would send the reader looking in the wrong place -->
-      <div v-else-if="forbiddenSurface" class="state-overlay">
-        <span class="hint">
-          {{ t('This viewer has no access to deployment data') }} ({{ forbiddenSurface }})
-        </span>
-      </div>
-      <div v-else-if="error" class="state-overlay">
-        <span class="error-msg">{{ error }}</span>
-      </div>
-      <div v-else-if="!deployments.length" class="state-overlay">
-        <span class="hint">{{ t('The ledger reports no deployments') }}</span>
-      </div>
-      <div v-else-if="unknownDeploymentId" class="state-overlay">
-        <span class="hint">
-          {{ t('The deployment you had open is no longer in the ledger') }}: {{ unknownDeploymentId }}
-        </span>
-      </div>
-      <div v-else-if="!selectedDeploymentId" class="state-overlay">
-        <span class="hint">{{ t('Select a deployment to see its history') }}</span>
-      </div>
-
-      <template v-else-if="showDeployment">
-        <!-- the deployment's own line, above every currency: an unfinished run has no ledger row
-             and so no currency, and the advisory speaks of the whole history -->
-        <p v-if="detail" class="counts">
-          <span>{{ plural(detail.count, t('session'), t('sessions')) }}</span>
-          <!-- the WHY is on the title: the number is the fact, the explanation is a caveat -->
-          <span
-            :class="{ flagged: detail.unfinished > 0 }"
-            :title="t('Runs that never reached their close, so the ledger holds no row for them')"
-          >{{ detail.unfinished }} {{ t('unfinished') }}</span>
-          <!-- ABOVE the table, never beside it: by the time a reader reaches a change mark in the
-               third row they have already added up the column above it -->
-          <AdvisoryNotice v-if="detail.advisory" :advisory="detail.advisory" />
-        </p>
-
-        <section v-for="row in selectedRows" :key="row.currency" class="currency-block">
-          <DeploymentHeader :row="row" />
-          <SessionsTable
-            v-if="detail"
-            :sessions="sessionsOf(row.currency)"
-            :key-fields="detail.key"
-          />
-        </section>
-
-        <section v-if="periods && periods.periods.length" class="periods-block">
-          <h2 class="section-title">{{ t('Booking periods across the deployment') }}</h2>
-          <p v-if="periods.sessions_without_periods > 0" class="notice">
-            {{ periods.sessions_without_periods }}
-            {{ t('sessions predate the booking journal and contribute no periods') }}
-          </p>
-          <!-- passing the sessions is what switches the lane to the session and the axis to the
-               wall clock — see the note in BookingPeriodTimeline -->
-          <BookingPeriodTimeline
-            v-model:order="laneOrder"
-            :periods="orderedPeriods"
-            :key-fields="periods.key"
-            :sessions="detail?.sessions ?? []"
-          />
-          <BookingPeriodTable v-model:open="periodsOpen" :periods="orderedPeriods" :key-fields="periods.key" show-run />
-        </section>
-      </template>
-    </div>
+  <div class="deployments-view">
+    <!-- a surface the token does not carry is neither an absence nor an outage, and
+         "could not load" would send the reader looking in the wrong place -->
+    <p v-if="forbiddenSurface" class="hint">
+      {{ t('This viewer has no access to deployment data') }} ({{ forbiddenSurface }})
+    </p>
+    <p v-else-if="error && !deployments.length" class="error-msg">{{ error }}</p>
+    <DeploymentPicker v-else @chosen="dock.reveal(DEPLOYMENT_BUNDLE, 'selection', 'deployments')" />
   </div>
 </template>
 
 <style scoped>
-/* A SIZE container for the same reason as the runs view: the deployment list and the period table
-   cap themselves against THIS view, which a panel later shares with others, not against the
-   browser window. */
 .deployments-view {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  container-type: size;
-}
-
-.deployments-header {
   padding: var(--space-md);
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-.deployments-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 var(--space-md) var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-/* No room ABOVE the content inside a scroll area: a sticky list heading sticks to the area's padding
-   edge, and whatever scrolled past it showed through that room (operator, 2026-10-20 — the trade
-   history, the orders, the deployment's sessions). The room is a spacer that scrolls away with the
-   content instead. */
-.deployments-body::before {
-  /* no height of its own: the gap after it is the room */
-  content: '';
-  flex: none;
-}
-
-/* A LOW view cannot hold the list and the history together: a third of it for the list left a strip
-   for the history (operator, 2026-10-20). While the list stands open it takes the view alone, and a
-   pick folds it away and brings the history back. 40rem is where a tall panel still holds both. */
-@container (max-height: 40rem) {
-  .list-shown .deployments-header {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    border-bottom: none;
-  }
-
-  .list-shown .deployments-body {
-    display: none;
-  }
-}
-
-.state-overlay {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: monospace;
+  overflow: hidden;
 }
 
 .hint {
+  margin: 0;
   color: var(--color-text-secondary);
+  font-family: monospace;
   font-size: var(--font-size-sm);
 }
 
 .error-msg {
+  margin: 0;
   color: var(--color-error);
-  font-size: var(--font-size-sm);
-}
-
-.currency-block,
-.periods-block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.section-title {
-  margin: 0;
-  font-size: var(--font-size-md);
-  font-weight: normal;
-  color: var(--color-text-secondary);
-}
-
-.counts {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-xs) var(--space-md);
-  margin: 0;
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.counts .flagged {
-  color: var(--color-error);
-}
-
-.notice {
-  margin: 0;
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-text-secondary);
-  border-radius: 4px;
-  color: var(--color-text-secondary);
   font-family: monospace;
   font-size: var(--font-size-sm);
 }

@@ -6,7 +6,7 @@ import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import { amount, magnitude, numberOrNa, percentOrNa, signClass, sortInstant, startedAt } from '@/components/runs/report_format'
+import { amount, magnitude, numberOrNa, orDash, percentOrNa, signClass, sortInstant, startedAt } from '@/components/runs/report_format'
 import {
   combinationCard, objectiveFigure, parametersText, parametersTitle, rankedBy, sweepListRows, sweepNotices, sweepTitle,
 } from '@/components/sweeps/sweep_rows'
@@ -212,7 +212,7 @@ function choose(row: SweepListRow): void {
           <span :data-rank="2" class="figure-cell">{{ row.combination.r_trade_count }}</span>
           <span :data-rank="3" class="figure-cell">{{ percentOrNa(row.combination.win_rate, row.combination.total_trades) }}</span>
           <span :data-rank="3" class="figure-cell">{{ numberOrNa(row.combination.profit_factor, row.combination.total_trades) }}</span>
-          <span :data-rank="4" class="figure-cell">{{ magnitude(row.combination.account_max_drawdown, row.combination.currency) }}</span>
+          <span :data-rank="4" class="figure-cell">{{ orDash(row.combination.account_max_drawdown, value => magnitude(value, row.combination.currency)) }}</span>
           <span :data-rank="2" class="run-id" :title="row.combination.run_id">{{ row.combination.run_id }}</span>
         </template>
         <!-- where the ranking is not on screen, one line across every column says why -->

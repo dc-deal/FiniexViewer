@@ -1,5 +1,5 @@
 {
-  "run_id": "20261012_205715_c3b41fff",
+  "run_id": "20261018_105012_fde28d5d",
   "warnings": [
     {
       "tier": "major",
@@ -18,8 +18,22 @@
     {
       "tier": "major",
       "scope": "run",
-      "message": "2/2 Kraken tick file(s) read predate collector format 1.6.0 — their fills crossed NO spread\n  → `bid == ask` in those files: the collector recorded no quote, so a zero spread cost is the DATA saying nothing, not the venue being free\n  → fees are unaffected and were charged in full",
-      "check": "spreadless_tick_data",
+      "message": "NO QUOTE — 2 of 6 input file(s): bid = ask = traded price as recorded, so no spread was measured there\n  → 2 collected at format 1.2.0",
+      "check": "data_no_quote",
+      "domain": "data"
+    },
+    {
+      "tier": "major",
+      "scope": "run",
+      "message": "ARRIVAL TIME RECONSTRUCTED — 6 of 6 input file(s): collected_msc was reconstructed after the fact, not recorded on arrival\n  → 2 collected at format 1.0.3 · 2 collected at format 1.0.5 · 2 collected at format 1.2.0",
+      "check": "data_arrival_time_reconstructed",
+      "domain": "data"
+    },
+    {
+      "tier": "major",
+      "scope": "run",
+      "message": "MODELLED SPREAD — 20,000 of 20,000 tick(s) without a quote were given a modelled quote: median spread 1.79 bps, factor 1, estimator v1",
+      "check": "data_modelled_spread",
       "domain": "data"
     },
     {
@@ -65,7 +79,7 @@
     "operator_interrupted": false,
     "refused_at_first_tick": false,
     "error_count": 0,
-    "warning_count": 4,
+    "warning_count": 6,
     "log_warning_count": 39
   },
   "keys": {

@@ -116,16 +116,20 @@ test('⋯ on the bundle tab folds every section and resets the bundle', async ({
   await expect(unfolded.first()).toBeVisible()
 })
 
-/** The same line on the deployment side: it took three lines and broke `Change deployment` in two. */
-test('a narrow Deployments panel keeps its deployment line to one line', async ({ page }) => {
+/** The same line on the deployment side, at the head of its bundle: it once took three lines. */
+test('a narrow deployment bundle keeps its deployment line to one line', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 900 })
   await page.goto('/')
   await showPanel(page, 'Deployments')
   await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
-  const line = page.locator('.deployment-picker .picker-chosen')
+  await showPanel(page, 'Deployment bundle')
+  const line = page.locator('.deployment-bundle .chosen')
   await expect(line).toBeVisible()
-  const id = (await line.locator('.chosen-id').boundingBox())!
-  expect((await line.boundingBox())!.height).toBeLessThan(id.height * 1.5)
+  // the line has padding of its own, so it is measured by what stands in it: one line of text
+  const [label, id, bot] = await Promise.all(['.chosen-label', '.chosen-id', '.chosen-meta']
+    .map(selector => line.locator(selector).boundingBox()))
+  expect(Math.abs(label!.y - id!.y)).toBeLessThan(2)
+  expect(Math.abs(bot!.y - id!.y)).toBeLessThan(2)
 })
 
 /**
@@ -145,7 +149,12 @@ test('a list heading sticks flush to the top of the area it scrolls in', async (
 
   const gap = await page.evaluate(selector => new Promise<number>(resolve => {
     const area = document.querySelector<HTMLElement>(`${selector} .report-section`)!
-    area.scrollTop = 200
+    // past the heading, wherever it starts: what stands above it — a notice, a hint — varies. Its
+    // first cell on show, since the heading row itself is `display: contents` and a column its rank
+    // hides at this width has no box either
+    const head = [...document.querySelectorAll<HTMLElement>(`${selector} .record-head > span`)]
+      .find(span => span.offsetHeight > 0)!
+    area.scrollTop = head.getBoundingClientRect().top - area.getBoundingClientRect().top + 80
     requestAnimationFrame(() => {
       const edge = area.getBoundingClientRect().top + area.clientTop
       // the row that stuck: the highest heading still at or below the edge — the others scrolled away

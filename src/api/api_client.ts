@@ -9,6 +9,8 @@ import type { CallerIdentity } from '@/types/api/caller_types'
 import type { ActivityList, MachineResources } from '@/types/api/machine_types'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { RecordedStreams, RecordedWindow, StateFramesLatest } from '@/types/api/state_frame_types'
+import type { ValidationCheckList } from '@/types/api/validation_check_types'
 import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
 import type { TimeframeList } from '@/types/api/timeframe_types'
 import type {
@@ -36,6 +38,41 @@ import type {
 const http = axios.create({
   baseURL: '/api/v1'
 })
+
+/**
+ * The contract the server stamped on its latest answer. Every response carries it in
+ * `X-Api-Contract`, a refusal included, so a server restarted under another contract shows on the
+ * next request rather than on a reload. Held here as well as handed on, so a listener registered
+ * after the first answer still learns it.
+ */
+let lastStamp: number | null = null
+let stampListener: (contract: number) => void = () => {}
+
+/** Hands every stamp to `listener`, starting with the one already seen. */
+export function onContractStamp(listener: (contract: number) => void): void {
+  stampListener = listener
+  if (lastStamp !== null) listener(lastStamp)
+}
+
+function noteStamp(headers: unknown): void {
+  const raw = (headers as Record<string, unknown> | undefined)?.['x-api-contract']
+  const stamp = typeof raw === 'string' ? Number.parseInt(raw, 10) : Number.NaN
+  // an answer without the header — none from this server, but a mock may send none
+  if (Number.isNaN(stamp)) return
+  lastStamp = stamp
+  stampListener(stamp)
+}
+
+http.interceptors.response.use(
+  response => {
+    noteStamp(response.headers)
+    return response
+  },
+  (error: unknown) => {
+    if (axios.isAxiosError(error)) noteStamp(error.response?.headers)
+    return Promise.reject(error)
+  },
+)
 
 export async function getTimeframes(): Promise<TimeframeList> {
   const response = await http.get<{ timeframes: TimeframeList }>('/timeframes')
@@ -81,7 +118,11 @@ export async function getBars(
     `/brokers/${broker}/symbols/${symbol}/bars`,
     { params: { timeframe, from, to } }
   )
-  return { bars: response.data, truncated: String(response.headers?.['x-bar-truncated']) === 'true' }
+  return {
+    bars: response.data,
+    truncated: String(response.headers?.['x-bar-truncated']) === 'true',
+    priceBasis: String(response.headers?.['x-bar-price-basis'] ?? ''),
+  }
 }
 
 /**
@@ -300,6 +341,71 @@ export async function getBroker(runId: string): Promise<BrokerReport | SectionAb
     const absence = absenceFrom(error)
     if (absence) return absence
     raiseIfUnreadable(error)
+    throw error
+  }
+}
+
+/** Every validation check the backend can report, with what it means — the catalogue a warning names. */
+export async function getValidationChecks(): Promise<ValidationCheckList> {
+  const response = await http.get<ValidationCheckList>('/validation-checks')
+  return response.data
+}
+
+/**
+ * How a running session stands: the latest state frame of each unit, how old it is and whether the
+ * session still records (contract 38). Asked once a cadence, never faster — a frame is written once
+ * per `cadence_s`, so asking sooner returns the same one. Its 404s are absences like any section's:
+ * `state_frames_not_recorded` (a backtest, or a session from before they were recorded) and
+ * `state_frame_not_written_yet` (the stream is open, its first frame not written); its 409 a stream
+ * that cannot be read. The answer names no run, so there is nothing to hold it against.
+ */
+export async function getLatestStateFrames(runId: string): Promise<StateFramesLatest | SectionAbsence> {
+  try {
+    const response = await http.get<StateFramesLatest>(`/reports/runs/${runId}/state-frames/latest`)
+    return response.data
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error, 'The state frames could not be read')
+    throw error
+  }
+}
+
+/**
+ * A unit's timeline (contract 43): every stream it records over time, with its count and the time of
+ * its first and latest record — made to be asked every second or two while a session runs. Its 404s
+ * are absences: `streams_not_recorded` (a backtest, an older session, or one with it switched off),
+ * `unit_not_found`, `state_frame_not_written_yet`; its 409 a stream that cannot be read.
+ */
+export async function getRecordedStreams(runId: string, unit: string): Promise<RecordedStreams | SectionAbsence> {
+  try {
+    const response = await http.get<RecordedStreams>(
+      `/reports/runs/${runId}/units/${encodeURIComponent(unit)}/recorded-streams`)
+    return response.data
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error, 'The recorded streams could not be read')
+    throw error
+  }
+}
+
+/**
+ * A page of a unit's frames in [from, to), oldest first (contract 43). A bound left out runs to the
+ * stream's end; `limit` 1–2,000 is refused outside that range, never clamped. A page the route cut
+ * says so with `next_from`, where the next one starts. The same absences as the timeline.
+ */
+export async function getRecordedWindow(
+  runId: string, unit: string, ask: { from?: string, to?: string, limit?: number },
+): Promise<RecordedWindow | SectionAbsence> {
+  try {
+    const response = await http.get<RecordedWindow>(
+      `/reports/runs/${runId}/units/${encodeURIComponent(unit)}/recorded-streams/window`, { params: ask })
+    return response.data
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error, 'The recorded frames could not be read')
     throw error
   }
 }

@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import CandleChart from '@/components/CandleChart.vue'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { ChartLayer, SegmentDrawing } from '@/types/chart_drawing_types'
-import type { ChartMark } from '@/types/run_chart_types'
+import type { ChartCandles, ChartMark, ChartVolume } from '@/types/run_chart_types'
 
 /**
  * The chart library itself is replaced: what is under test is WHEN the component builds, fits and
@@ -23,9 +23,21 @@ const lw = vi.hoisted(() => {
     setData,
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
     attachPrimitive: vi.fn<(primitive: unknown) => void>(),
+    detachPrimitive: vi.fn<(primitive: unknown) => void>(),
   }
   /** The candlestick series' definition, as the library exports it — what `addSeries` is handed. */
   const CandlestickSeries = { type: 'Candlestick' }
+  /** The other forms the price takes — the candles layer's choice (operator, 2026-10-27). */
+  const BarSeries = { type: 'Bar' }
+  const LineSeries = { type: 'Line' }
+  const AreaSeries = { type: 'Area' }
+  /** The volume's series, a second one — built only where the chart is handed a volume. */
+  const HistogramSeries = { type: 'Histogram' }
+  const volumeSeries = {
+    setData: vi.fn<(data: { time: number, value: number, color: string }[]) => void>(),
+    applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
+  }
+  const priceScaleOptions = vi.fn<(options: Record<string, unknown>) => void>()
   /**
    * What the chart hands its drawing host, call by call. The host itself paints on a canvas and is
    * tested on its own; here it is the chart's part that is under test — what it hands over, when.
@@ -38,7 +50,10 @@ const lw = vi.hoisted(() => {
   const pointer: { move: ((param: Record<string, unknown>) => void) | null } = { move: null }
   const chart = {
     subscribeCrosshairMove: vi.fn((handler: (param: Record<string, unknown>) => void) => { pointer.move = handler }),
-    addSeries: vi.fn<(definition: typeof CandlestickSeries, options: Record<string, unknown>) => typeof series>(() => series),
+    addSeries: vi.fn<(definition: { type: string }, options: Record<string, unknown>) => unknown>(
+      definition => definition === HistogramSeries ? volumeSeries : series),
+    priceScale: vi.fn((id: string) => ({ id, applyOptions: priceScaleOptions })),
+    removeSeries: vi.fn<(series: unknown) => void>(),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
     timeScale: vi.fn(() => ({
       fitContent,
@@ -55,7 +70,7 @@ const lw = vi.hoisted(() => {
   )
   return {
     chart, series, pointer, zoom, setData, setVisibleLogicalRange, fitContent, createChart, CandlestickSeries,
-    drawn, DrawingHostProbe,
+    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, priceScaleOptions, drawn, DrawingHostProbe,
   }
 })
 
@@ -64,6 +79,10 @@ vi.mock('@/components/chart_drawing_host', () => ({ ChartDrawingHost: lw.Drawing
 vi.mock('lightweight-charts', () => ({
   createChart: lw.createChart,
   CandlestickSeries: lw.CandlestickSeries,
+  HistogramSeries: lw.HistogramSeries,
+  BarSeries: lw.BarSeries,
+  LineSeries: lw.LineSeries,
+  AreaSeries: lw.AreaSeries,
   ColorType: { Solid: 'solid' },
 }))
 
@@ -95,7 +114,11 @@ let mounted: VueWrapper | null = null
 
 function mountChart(
   data: ChartBar[] = BARS,
-  extra: { marks?: ChartMark[], focus?: number | null, priceFormat?: { precision: number, minMove: number } | null } = {},
+  extra: {
+    marks?: ChartMark[], focus?: number | null, priceFormat?: { precision: number, minMove: number } | null,
+    volume?: ChartVolume | null,
+    candles?: ChartCandles | null,
+  } = {},
 ): VueWrapper {
   const { marks, ...rest } = extra
   mounted = mount(CandleChart, { props: { data, ...rest, ...(marks ? { layers: tradesLayer(marks) } : {}) } })
@@ -408,6 +431,66 @@ describe('CandleChart', () => {
       document.documentElement.removeAttribute('data-theme')
     })
 
+    /**
+     * The volume, where one is handed: a series of its own built BEFORE the candles — so it stands
+     * behind them — on a scale nothing shows, in the lowest fifth; each bar faint in the colour of
+     * its candle's direction, and none shown where the layer is hidden.
+     */
+    it('draws the volume behind the candles on its own scale, faint in the colour of each candle', async () => {
+      size = { width: 800, height: 400 }
+      const volume: ChartVolume = {
+        basis: 'ticks', shown: true, opacity: 1,
+        bars: [{ time: BARS[0]!.time, value: 11, rising: true }, { time: BARS[1]!.time, value: 4, rising: false }],
+      }
+      mountChart(BARS, { volume })
+      expect(lw.chart.addSeries.mock.calls.map(call => call[0])).toEqual([lw.HistogramSeries, lw.CandlestickSeries])
+      expect(lw.chart.addSeries.mock.calls[0]![1]).toMatchObject({
+        priceScaleId: 'volume', lastValueVisible: false, priceLineVisible: false,
+      })
+      expect(lw.priceScaleOptions).toHaveBeenCalledWith({ scaleMargins: { top: 0.8, bottom: 0 } })
+      expect(lw.volumeSeries.applyOptions).toHaveBeenLastCalledWith({ visible: true })
+      expect(lw.volumeSeries.setData.mock.calls.at(-1)![0]).toEqual([
+        { time: BARS[0]!.time, value: 11, color: 'rgba(0, 0, 5, 0.45)' },
+        { time: BARS[1]!.time, value: 4, color: 'rgba(0, 0, 6, 0.45)' },
+      ])
+      await mounted!.setProps({ volume: { ...volume, shown: false } })
+      expect(lw.volumeSeries.applyOptions).toHaveBeenLastCalledWith({ visible: false })
+    })
+
+    /**
+     * The candles are a layer (operator, 2026-10-27): another form builds the price series anew —
+     * the drawing host goes with it — a line takes the close alone, and hidden the series stays,
+     * fully transparent, so the drawings and the price scale stay where they were.
+     */
+    it('draws the price in the form the candles layer asks for, faint or hidden in place', async () => {
+      size = { width: 800, height: 400 }
+      const candles: ChartCandles = { form: 'candles', shown: true, opacity: 1 }
+      mountChart(BARS, { candles })
+      expect(lw.chart.addSeries).toHaveBeenLastCalledWith(lw.CandlestickSeries, expect.objectContaining({ upColor: '#000005' }))
+
+      await mounted!.setProps({ candles: { ...candles, form: 'line' } })
+      expect(lw.chart.removeSeries).toHaveBeenCalledTimes(1)
+      expect(lw.series.detachPrimitive).toHaveBeenCalledTimes(1)
+      expect(lw.chart.addSeries).toHaveBeenLastCalledWith(lw.LineSeries, expect.objectContaining({ color: '#000007' }))
+      expect(lw.series.attachPrimitive).toHaveBeenCalledTimes(2)
+      expect(lw.setData.mock.calls.at(-1)![0]).toEqual(BARS.map(bar => ({ time: bar.time, value: bar.close })))
+
+      await mounted!.setProps({ candles: { ...candles, form: 'line', opacity: 0.5 } })
+      expect(lw.series.applyOptions).toHaveBeenLastCalledWith(expect.objectContaining({ color: 'rgba(0, 0, 7, 0.5)' }))
+      await mounted!.setProps({ candles: { ...candles, form: 'line', shown: false } })
+      expect(lw.series.applyOptions).toHaveBeenLastCalledWith(expect.objectContaining({
+        color: 'rgba(0, 0, 7, 0)', lastValueVisible: false, priceLineVisible: false,
+      }))
+      // hidden is transparent, never removed: the series it rests on stays
+      expect(lw.chart.removeSeries).toHaveBeenCalledTimes(1)
+    })
+
+    it('builds no volume series where none is handed — the free chart', () => {
+      size = { width: 800, height: 400 }
+      mountChart()
+      expect(lw.chart.addSeries.mock.calls.map(call => call[0])).toEqual([lw.CandlestickSeries])
+    })
+
     it('paints with the tokens of the theme the document shows', () => {
       size = { width: 800, height: 400 }
       mountChart()
@@ -425,6 +508,9 @@ describe('CandleChart', () => {
         downColor: '#000006',
         wickUpColor: '#000005',
         wickDownColor: '#000006',
+        // the candles shown: the last price is said on the axis
+        lastValueVisible: true,
+        priceLineVisible: true,
       })
     })
 
@@ -493,6 +579,8 @@ describe('CandleChart', () => {
         downColor: '#ffff06',
         wickUpColor: '#ffff05',
         wickDownColor: '#ffff06',
+        lastValueVisible: true,
+        priceLineVisible: true,
       })
       expect(lw.createChart).toHaveBeenCalledTimes(1)
     })

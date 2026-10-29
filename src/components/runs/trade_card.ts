@@ -42,6 +42,17 @@ function stops(row: Pick<TradeRow, 'stop_loss' | 'take_profit'>): Figure[] {
 }
 
 /**
+ * The reference of the exit's slippage, said only where it is not the mid the entry and every other
+ * exit are measured against (contract 44, `exit_slippage_measured_against`): a stop-loss or
+ * take-profit exit is measured against the level that closed it, where a backtest reads 0 because
+ * it fills there. Without the word the two halves of the card read as one comparison.
+ */
+function exitReference(trade: TradeRow): string {
+  if (trade.exit_slippage === null || trade.exit_slippage_measured_against !== 'protective_level') return ''
+  return ` ${t('vs SL/TP level')}`
+}
+
+/**
  * Everything the row has no width for. The excursions are given three ways by the backend — as a
  * price, as the unrealised P&L at that price, and as a distance — and all three are here, because
  * which one answers a question depends on the question.
@@ -78,7 +89,8 @@ export function tradeDetails(trade: TradeRow): Figure[] {
       // the exit half is absent on a quarter of the trades in this archive — stated as such rather
       // than as a zero, and never assumed to be a number
       value: `${t('in')} ${trade.entry_slippage.toFixed(4)} · `
-        + `${t('out')} ${trade.exit_slippage === null ? t('n/a') : trade.exit_slippage.toFixed(4)}`,
+        + `${t('out')} ${trade.exit_slippage === null ? t('n/a') : trade.exit_slippage.toFixed(4)}`
+        + exitReference(trade),
     },
     {
       label: t('Worst against'),

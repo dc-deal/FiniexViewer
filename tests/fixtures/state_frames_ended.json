@@ -1,0 +1,119 @@
+{
+  "key": [
+    "unit_name"
+  ],
+  "served_at": "2026-10-28T08:13:29.749019Z",
+  "units": [
+    {
+      "unit_name": "state_frames_test",
+      "cadence_timeframe": "M1",
+      "cadence_s": 60.0,
+      "written_at": "2026-10-22T12:35:57.805860Z",
+      "age_s": 502651.943159,
+      "recording": "ended",
+      "truncated_tail": false,
+      "first_frame": {
+        "written_at": "2026-10-22T12:35:56.318847Z",
+        "process_memory": {
+          "rss_bytes": 615653376,
+          "private_bytes": 546705408
+        }
+      },
+      "outcome": {
+        "run_outcome": "success",
+        "failed_count": 0,
+        "total_units": 1,
+        "failed_unit_names": [],
+        "first_failure_name": "",
+        "first_failure_error": "",
+        "emergency_reason": "",
+        "shutdown_mode": "normal",
+        "operator_interrupted": false,
+        "refused_at_first_tick": false,
+        "error_count": 0,
+        "warning_count": 0,
+        "log_warning_count": 0
+      },
+      "frame": {
+        "record_kind": "frame",
+        "frame_time": "2026-01-25T08:00:00.320000Z",
+        "written_at": "2026-10-22T12:35:57.805860Z",
+        "written_for": "shutdown",
+        "cadence_slot": null,
+        "ticks_processed": 5980,
+        "symbol": "BTCUSD",
+        "account_currency": "USD",
+        "last_price": 88513.1,
+        "balance": 1065.5819200000005,
+        "balances": {
+          "USD": 1065.5819200000005,
+          "BTC": 0.1
+        },
+        "equity": 9916.891920000002,
+        "unrealized_pnl": -83.10808000000002,
+        "open_positions": [
+          {
+            "position_id": "pos_btcusd_1",
+            "direction": "long",
+            "lots": 0.1,
+            "entry_price": 88635.1,
+            "entry_time": "2026-01-25T06:12:02.867000+00:00",
+            "last_price": 88513.1,
+            "unrealized_pnl": -83.10808000000002,
+            "valued": true,
+            "stop_loss": null,
+            "take_profit": null,
+            "protective_level_enforcement": "",
+            "take_profit_enforcement": ""
+          }
+        ],
+        "active_orders": [],
+        "safety_blocked": false,
+        "safety_drawdown_pct": 0.0,
+        "market_stale": false,
+        "feed_stale": null,
+        "reconcile_clean": null,
+        "worker_outputs": {
+          "rsi_fast": {
+            "rsi_value": 31.833653056029334,
+            "avg_gain": 9.058274223587274,
+            "avg_loss": 19.396751681369707,
+            "bars_used": 71
+          },
+          "bollinger_main": {
+            "upper": 89335.88121188791,
+            "middle": 88908.99500000001,
+            "lower": 88482.1087881121,
+            "position": 0.03629914837356951,
+            "std_dev": 213.4431059439504,
+            "bars_used": 20,
+            "position_raw": 0.03629914837356951,
+            "width_pct": 0.0096027676814456,
+            "slope": -0.044244811554020096
+          },
+          "obv_volume": {
+            "obv_value": -14.629527700000002,
+            "trend": "bearish",
+            "has_volume": true,
+            "total_volume": 21.356366749999996,
+            "bars_used": 21,
+            "market_type": "crypto"
+          }
+        },
+        "decision_action": "FLAT",
+        "decision_outputs": {
+          "confidence": 0.5,
+          "reason": "No consensus signal",
+          "price": 88513.1,
+          "timestamp": "2026-01-25T08:00:00.320000+00:00"
+        },
+        "closed_bars": {},
+        "order_id": null,
+        "process_memory": {
+          "rss_bytes": 615653376,
+          "private_bytes": 546701312
+        }
+      }
+    }
+  ]
+}

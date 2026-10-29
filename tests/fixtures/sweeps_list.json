@@ -4,6 +4,22 @@
   ],
   "sweeps": [
     {
+      "sweep_id": "sweep_20261019_214323_e47deb11",
+      "started": "2026-10-19T21:43:34.923710Z",
+      "duration_s": 828.916146,
+      "run_count": 4,
+      "ok_count": 4,
+      "error_count": 0,
+      "decision_logic_type": "CORE/trend_channel_reference",
+      "decision_version": "1.4.0",
+      "base_config": "trend_channel_reference_sweep_base",
+      "symbols": [
+        "EURUSD"
+      ],
+      "objective": "expectancy",
+      "maximize": true
+    },
+    {
       "sweep_id": "sweep_20261012_210055",
       "started": "2026-10-12T21:01:01.181495Z",
       "duration_s": 362.3057,
@@ -84,5 +100,5 @@
       "maximize": true
     }
   ],
-  "count": 5
+  "count": 6
 }

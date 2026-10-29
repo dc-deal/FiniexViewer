@@ -16,10 +16,12 @@ import eventsFixture from './fixtures/order_events.json'
 import runConfigFixture from './fixtures/run_config_live.json'
 import tradeHistoryFixture from './fixtures/trade_history.json'
 import runHeaderFixture from './fixtures/run_header.json'
+import stateFramesFixture from './fixtures/state_frames_stopped.json'
 import * as apiClient from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
 import type { SectionAbsence } from '@/types/api/absence_types'
+import type { StateFramesLatest } from '@/types/api/state_frame_types'
 
 vi.mock('@/api/api_client', () => ({
   getWarningsErrors: vi.fn(),
@@ -33,11 +35,12 @@ vi.mock('@/api/api_client', () => ({
   getRunConfig: vi.fn(),
   getTradeHistory: vi.fn(),
   getRunHeader: vi.fn(),
+  getLatestStateFrames: vi.fn(),
 }))
 
 const REPORT: WarningsErrorsReport = {
   run_id: '20260615_130000',
-  warnings: [{ tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' }],
+  warnings: [{ tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' }],
   errors: [],
   keys: { errors: ['name'], warnings: [] },
   outcome: {
@@ -726,5 +729,36 @@ describe('useRunReportsStore — an answer for a run no longer chosen', () => {
     ])
     expect(store.unreadable['warningsErrors']).toBe('Re-run to regenerate it.')
     expect(store.unreadable['bookingPeriods']).toContain('older schema')
+  })
+
+  /**
+   * The check-in is asked again once a cadence, and a check-in that blanked itself each time would
+   * read as a session that keeps vanishing: the frame held stays until the next one arrives, a
+   * failure is said beside it, and a frame clears what the slot said before.
+   */
+  it('keeps the frame it holds while it asks again, and says a failure beside it', async () => {
+    const frames = stateFramesFixture as unknown as StateFramesLatest
+    const store = useRunReportsStore()
+    vi.mocked(apiClient.getLatestStateFrames).mockResolvedValue(
+      { absent: true, cause: 'state_frame_not_written_yet', detail: 'No frame yet.' })
+    await store.loadStateFrames('run')
+    expect(store.absences['stateFrames']?.cause).toBe('state_frame_not_written_yet')
+
+    vi.mocked(apiClient.getLatestStateFrames).mockResolvedValue(frames)
+    await store.refreshStateFrames('run')
+    expect(store.stateFrames).toEqual(frames)
+    expect(store.absences['stateFrames']).toBeUndefined()
+
+    let answer: (value: StateFramesLatest) => void = () => {}
+    vi.mocked(apiClient.getLatestStateFrames).mockReturnValue(new Promise(resolve => { answer = resolve }))
+    const asking = store.refreshStateFrames('run')
+    expect(store.stateFrames).toEqual(frames)
+    answer(frames)
+    await asking
+
+    vi.mocked(apiClient.getLatestStateFrames).mockRejectedValue(new Error('Network Error'))
+    await store.refreshStateFrames('run')
+    expect(store.stateFrames).toEqual(frames)
+    expect(store.errors['stateFrames']).toContain('Network Error')
   })
 })

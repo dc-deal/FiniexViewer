@@ -126,3 +126,26 @@ test('a jump from the orders lands in the trade history opened as a panel', asyn
 
   await expect(page.locator(`${ownPanel('trade-history')} .trade-list .record-row.marked`).first()).toBeInViewport()
 })
+
+/** Closes the run bundle by the ✕ on its tab, the way a reader does. */
+async function closeRunBundle(page: Page): Promise<void> {
+  await page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="run"]') }).locator('.panel-tab-close').click()
+  await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(0)
+}
+
+/**
+ * The bundle closed, its sections read apart (operator, 2026-10-28): a jump to a section still in
+ * the column opens it as a panel beside them, and the bundle stays closed.
+ */
+test('a jump to a section of a closed bundle opens it beside the sections standing apart', async ({ page }) => {
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const orders = page.locator('.panel-column .panel-trigger', { hasText: 'Orders' })
+  if ((await orders.getAttribute('aria-expanded')) !== 'true') await orders.click()
+  await openAsPanel(page, 'Orders')
+  await closeRunBundle(page)
+
+  await page.locator(`${ownPanel('orders')} .order-list .to-trades`).first().click()
+
+  await expect(page.locator(`${ownPanel('trade-history')} .trade-list .record-row.marked`).first()).toBeInViewport()
+  await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(0)
+})

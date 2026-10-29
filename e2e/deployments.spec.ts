@@ -79,9 +79,10 @@ test('the picker lists the ledger and choosing one opens its history', async ({ 
 
   await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
 
-  // the list gets out of the way, and the history it led to is what fills the page
-  await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_DEPLOYMENT)
+  // the pick shows the deployment's bundle beside the list, which stays whole and marks it (viewer#43)
+  await expect(page.locator('.deployment-bundle .chosen-id')).toContainText(FIXTURE_DEPLOYMENT)
   await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
+  await expect(page.locator('.deployment-list .record-row.picked')).toContainText(FIXTURE_DEPLOYMENT)
 })
 
 /**
@@ -116,64 +117,50 @@ test('each run opened from the deployment shows its own executive summary', asyn
   await links.nth(0).click()
   await expect(executive).toContainText('111.11')
 
-  await showPanel(page, 'Deployments')
+  await showPanel(page, 'Deployment bundle')
   await links.nth(1).click()
   await expect(executive).toContainText('222.22')
   await expect(executive).not.toContainText('111.11')
+})
+
+/**
+ * A change mark says WHERE; the configuration on either side of it is a click away, opened as a
+ * panel of its own. The links stand on the dashed line beside the words, and in a narrow panel
+ * the words give way first — a cut link would leave nothing to click.
+ */
+test('a change mark opens the configuration of a session beside it, its links whole', async ({ page }) => {
+  // about the list floor: the narrowest the Deployments panel stands
+  await page.setViewportSize({ width: 520, height: 1000 })
+  await openLedger(page)
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  // one group at this width: a pick never covers its list, so the bundle is a tab to bring forward
+  await showPanel(page, 'Deployment bundle')
+  const lead = page.locator('.sessions-list .record-lead', { hasText: 'Strategy changed' })
+  const links = lead.locator('.boundary-links')
+  await expect(links).toBeVisible()
+  const [line, box] = await Promise.all([lead.boundingBox(), links.boundingBox()])
+  expect(box!.x + box!.width).toBeLessThanOrEqual(line!.x + line!.width + 1)
+
+  await links.locator('button').first().click()
+  await expect(page.locator('.panel-host[data-panel-kind$="config"] [data-panel="config"]')).toBeVisible()
 })
 
 test('a chosen deployment survives a reload', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
   await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
-  await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_DEPLOYMENT)
+  await expect(page.locator('.deployment-bundle .chosen-id')).toContainText(FIXTURE_DEPLOYMENT)
 
   await page.reload()
-  await expect(page.locator('.picker-chosen')).toContainText(FIXTURE_DEPLOYMENT)
-  await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
-})
-
-/**
- * A LOW view cannot hold the list and the history together (operator, 2026-10-20): a third of it
- * for the list left a strip for the history. While the list stands open it takes the view alone,
- * and a pick brings the history back. The view is forced low, as a panel sharing the screen is.
- */
-test('in a low view the open list stands alone, and a pick brings the history back', async ({ page }) => {
-  await page.setViewportSize({ width: 1300, height: 1000 })
-  await openLedger(page)
-  await page.addStyleTag({ content: '.deployments-view { height: 400px !important; }' })
-  const body = page.locator('.deployments-body')
-  await expect(body).toBeHidden()
-
-  // the list takes the rest of the view, not a third of it
-  const list = (await page.locator('.deployment-list').boundingBox())!
-  const view = (await page.locator('.deployments-view').boundingBox())!
-  expect(list.y + list.height).toBeGreaterThan(view.y + view.height - 40)
-
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
-  await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
-  await page.getByRole('button', { name: 'Change deployment' }).click()
-  await expect(body).toBeHidden()
-})
-
-test('a tall view keeps the open list and the history together', async ({ page }) => {
-  await page.setViewportSize({ width: 1300, height: 1000 })
-  await openLedger(page)
-  const view = (await page.locator('.deployments-view').boundingBox())!
-  // taller than the threshold, or this would measure the low case twice
-  expect(view.height).toBeGreaterThan(640)
-
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
-  await page.getByRole('button', { name: 'Change deployment' }).click()
-  await expect(page.locator('.deployment-list')).toBeVisible()
+  await expect(page.locator('.deployment-bundle .chosen-id')).toContainText(FIXTURE_DEPLOYMENT)
   await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
 })
 
 test('a stored deployment the ledger no longer lists says so', async ({ page }) => {
   await openWith(page, '/', { deployment: 'deploy_gone' })
-  await showPanel(page, 'Deployments')
-  await expect(page.locator('.state-overlay')).toContainText('no longer in the ledger')
-  await expect(page.locator('.state-overlay')).toContainText('deploy_gone')
+  await showPanel(page, 'Deployment bundle')
+  await expect(page.locator('.deployment-bundle')).toContainText('no longer in the ledger')
+  await expect(page.locator('.deployment-bundle')).toContainText('deploy_gone')
 })
 
 /**

@@ -19,6 +19,7 @@ function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
   return {
     artifacts: ['run_summary.json'],
     stream_files: [],
+    recording: null,
     // contracts 24 and 25: what the run is FOR, under which contract its reports
     // were written, and whether it is still its catalog entry's current one
     run_purpose: 'regular',

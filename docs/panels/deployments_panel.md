@@ -1,23 +1,45 @@
 # Deployments Panel
 
-A deployment is the identity a series of runs share, and the Deployments panel follows one bot across its restarts through the ledger rather than through a run's artifacts. Read this document before you change the panel, `src/components/deployments/` or `deployments_store`. Its heading calls it a view and not a panel workspace because it does not use the registry of report sections; the booking periods it draws are described in [Booking periods](../runs/booking_periods.md).
+A deployment is the identity a series of runs share, and the deployment side follows one bot across its restarts through the ledger rather than through a run's artifacts. Read this document before you change the deployment list, the deployment bundle, `src/components/deployments/` or `deployments_store`; the booking periods it draws are described in [Booking periods](../runs/booking_periods.md).
 
-## Deployments — a second view, deliberately not a panel workspace
+## A list that picks, and a bundle that shows (viewer#43)
 
 A backtest is read one run at a time; a bot that runs for thirty days is not. There the object of
 interest is the **deployment** — the identity a series of runs share — and the question is what
-happened across the restarts. That is a different shape from the run workspace, and it is built as
-a plain view rather than as panels:
+happened across the restarts. Since 2026-10-27 the deployment side is built the way the run side
+is: a list that picks, and a bundle whose members each open as a panel of its own.
 
-- **`src/views/DeploymentsView.vue`** with `src/components/deployments/` (`DeploymentPicker`,
-  `DeploymentHeader`, `SessionsTable`, `AdvisoryNotice`) and `src/stores/deployments_store.ts`.
-- The `deployments` panel; the chosen deployment is the main link's (`deployment.id`), restored by
-  `use_deployment_binding` once the ledger has loaded.
+```
+[☰ Deployments]        [▤ Run bundle] [▤ Deployment bundle · deploy_…205734]   ← a tab behind the run bundle
+ the ledger, one row                   Deployment deploy_…205734 demo_btcusd_bot   (its row on the card)
+ per deployment and                    ▾ Sessions          ⇱    the counts, the advisory, each currency
+ account currency                      ▾ Booking periods   ⇱    the timeline and the table
+Panels ▸ Deployments ▸  Deployment list · Deployment bundle · ─ · Sessions · Booking periods
+```
 
-**Why not panels.** The registry and the layout store are global: one `layout.v1`, and the Panels
-menu lists every entry of it under Runs. Deployment panels in that registry would put their entries
-among the run report's sections, where they can never render. Scoping the registry per view is foundation work that a
-list and a table do not need.
+- **The list** — `src/views/DeploymentsView.vue` with `DeploymentPicker`. A pick chooses the
+  deployment and shows its bundle as a selection (`reveal('deployment', 'selection', 'deployments')`)
+  — never reopening one the reader closed. The list stays whole and marks the pick, as the run list
+  does; it no longer folds.
+- **The bundle** — `src/views/DeploymentBundleView.vue`, kind `deployment`: the chosen deployment's
+  line (its id and bot, its ledger row on the card, `deployment_card.ts`) above a `PanelColumn` of
+  its members. Its tab says *not one series* where the advisory fires, and its ⋯ carries *Collapse
+  all* and *Reset bundle* like the run bundle's.
+- **The members** — `src/deployment_sections.ts`: *Sessions* (`DeploymentSessionsPanel`: the counts
+  line, the advisory above the table it qualifies, and each currency's header and sessions) and
+  *Booking periods* (`DeploymentPeriodsPanel`). Their models come from `deployment_sections_store`,
+  read off `deployments_store`; open as a panel of its own, a member is drawn by
+  `components/dock/DeploymentSection.vue` and ⇲ puts it back. As a panel its tab reads *Deployment
+  sessions* or *Deployment booking periods* (`panelTitle`): beside the run report's *Booking periods*
+  two tabs read the same (operator, on screen 2026-10-27), and a test holds every kind's title apart.
+- **Where it stands.** The first arrangement holds it as a tab behind the run bundle, not beside the
+  list: there it would make the arrangement four columns wide, and as a tab beside the list a pick
+  would leave it behind, since a pick never covers its list. A stored arrangement without it gains it
+  there, whether a deployment is chosen or not — never one the reader hid (decided 2026-10-27).
+- **Loading.** `use_deployment_binding` runs at the app root, so the bundle and its members have the
+  ledger while the list is closed; the list asks for the ledger again when it is shown again.
+- **The jumps.** *Open deployment* (a session row's link, an activity) shows the bundle; *Show in
+  list* from a deployment's run shows the list.
 
 **Choosing a deployment is a facet bar over a flat list**, the same `FacetBar` + `RecordList` the
 run picker and the scenario roster use — the select box it replaces showed `bot · deployment_id`,
@@ -26,10 +48,8 @@ first and last started, what it earned, how deep it fell, the longest idle stret
 configuration moved — were invisible until something had been chosen, which is the run cascade's
 defect one level shallower: a reader choosing a deployment is choosing between its HISTORIES.
 
-Nine columns ranked 9 → 7 → 5 → 3, a card for the rest, and the list collapses to one line once a
-deployment is chosen. Open again, it takes a third of the view beside the history — and in a view
-lower than 40rem it stands alone and takes the whole of it, because a third of a short panel left
-a strip for each half (operator, 2026-10-20); a pick folds it away and the history returns. `Bot` is rank 1 beside the id deliberately: the id is minted per deployment
+Nine columns ranked 9 → 7 → 5 → 3, a card for the rest; the list takes the height of its panel,
+the history standing in the bundle beside it. `Bot` is rank 1 beside the id deliberately: the id is minted per deployment
 and says nothing a reader recognises, while `bot` is what the profile is CALLED — and neither alone
 answers *is this the one I mean*, because the id is a stamp and an operator improves the name.
 
@@ -65,16 +85,33 @@ misreports something:
 - `strategy_changed` / `operation_changed` / `orders_to_changed` render as a line BETWEEN two rows,
   the words on a dashed rule half a row high. A badge at the end of a row reads as a property of
   that session, which is the wrong reading — the flag marks a boundary.
-- `unfinished` is shown even when zero. Those runs are absent from `sessions` by construction (the
-  ledger row is written last), and a bare session count is a number the reader has no reason to doubt.
+  **A mark says WHERE and never WHAT** (their `deployments` and `config` documents). The words of a
+  configuration mark carry a card with its meaning in the backend's words — what the bot decided,
+  or what a session did without changing that — and say that WHICH parameters moved is not served
+  yet: testingide#615 serves them as `config_changes` on the session row (setting, before, after),
+  read from the rendered profile. Beside the words, *Configuration before · after* opens the
+  configuration of the session above the mark and of the one carrying it, as a panel of its own,
+  each COMPARED with the other (operator, 2026-10-27): the values that differ between the
+  two files are listed, oldest side first, and a moved decision-logic value is marked where it
+  stands. That comparison is what their `config` document instructs a consumer to do for a
+  strategy mark; `config_changes` replaces it once served. An operation mark also moves with the
+  defaults merged in under the file and with a start option, which neither file holds, and both
+  its card and the comparison say so.
+- `unfinished` is shown even when zero: the runs that never reached their close, a session running
+  now among them. Since contract 40 a session books each trading day as it closes, so one that
+  sealed a day also stands in `sessions`, its *Ran* a dash until its close is booked — the two
+  counts overlap and are never added. A bare session count is a number the reader has no reason to
+  doubt.
+- What the run ids, *before · after* and the unfinished count mean is said by the
+  `deployment-sessions` hint above the sessions, never on a browser tooltip (operator, 2026-10-28).
 
 **The head says each figure once** (operator, 2026-10-20), in three lines: the chosen line names
 the deployment and its bot, with the rest of its row — the bot id among it — on the same card the
 list shows; the deployment's own line counts the sessions and the unfinished runs and carries the
 advisory, the full sentence on hover; and one line per account currency carries the ledger's
 figures and the span of the starts, the date said once where both fall on the same UTC day. The
-unfinished runs and the advisory stand above the currencies because they belong to none: an
-unfinished run has no ledger row and so no currency.
+unfinished runs and the advisory stand above the currencies because they belong to none: a run that
+died before its first sealed day has no ledger row and so no currency.
 
 **`index` on a session row is not rendered.** It rides on the row and is NOT in the declared key
 (`["run_id", "currency"]`), so presenting it as the session's number invents a counter the ledger

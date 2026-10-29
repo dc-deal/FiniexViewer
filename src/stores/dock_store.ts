@@ -3,11 +3,13 @@ import { ref, shallowRef } from 'vue'
 import type { DockviewApi, GroupNavigationDirection, IDockviewPanel } from 'dockview-vue'
 import { reconcileLayout } from '@/components/dock/dock_layout'
 import { chartLayers } from '@/layer_registry'
-import { PANEL_KINDS, RUN_BUNDLE, firstActiveKind, panelKind, reportKindId, sectionOfKind } from '@/panel_kinds'
+import { memberKindId, memberOfKind } from '@/bundle_members'
+import { DEPLOYMENT_BUNDLE, PANEL_KINDS, RUN_BUNDLE, firstActiveKind, panelKind } from '@/panel_kinds'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import type { DockPlace } from '@/types/arrangement_types'
+import type { BundleId } from '@/types/panel_types'
 
 /** How long the layout must hold still before it is written — a drag changes it every frame. */
 const SAVE_DELAY_MS = 300
@@ -32,6 +34,19 @@ const LIST_KIND = 'runs'
  * active panel's tabs.
  */
 const OPENS_RIGHT_OF: Record<string, string> = { [COLUMN_KIND]: LIST_KIND, 'run-chart': COLUMN_KIND }
+
+/**
+ * Where the deployment bundle opens while nothing it stood beside is known: as a tab behind the run
+ * bundle, in the report's group — beside the deployment list it would make the first arrangement
+ * four columns wide, and as a tab beside the list a pick there would leave it behind, since a pick
+ * never covers its list (decided 2026-10-27, viewer#43). Without the run bundle, behind the list.
+ */
+function deploymentBundlePlace(dock: DockviewApi): Placement | undefined {
+  const anchor = dock.getPanel(COLUMN_KIND) ?? dock.getPanel('deployments')
+  return anchor
+    ? { referencePanel: anchor.id, direction: 'within', index: anchor.group.panels.indexOf(anchor) + 1 }
+    : undefined
+}
 
 /**
  * The first arrangement's columns, each with a floor, the width beyond them shared 28 · 38 · 34
@@ -76,8 +91,11 @@ const EDGE_SHARE = 0.25
  * A `selection` is the reader choosing something the panel shows: a pick in a list. A selection
  * never reopens a panel the reader closed — a pick in the run list did, and moved the layout on a
  * click that was about something else.
+ * A `link` is a command made in a panel and aimed at a bundle: where members of that bundle stand
+ * open as panels of their own, it goes to them instead (operator, 2026-10-28) — see `revealMembers`.
+ * Aimed at any other kind, it is a command.
  */
-export type RevealReason = 'command' | 'selection'
+export type RevealReason = 'command' | 'link' | 'selection'
 
 /** What is being dragged in the dock: a panel by its tab, or a whole group by its header. */
 type DockDrag = { panel: string } | { group: string }
@@ -138,8 +156,8 @@ export const useDockStore = defineStore('dock', () => {
   const lastChart = ref<string | null>(null)
   let timer: ReturnType<typeof setTimeout> | null = null
   let subscriptions: { dispose(): void }[] = []
-  /** The section panel opened last: where the next one goes, as a tab beside it. */
-  let lastSection: string | null = null
+  /** The member panel of each bundle opened last: where its next one goes, as a tab beside it. */
+  const lastSection = new Map<BundleId, string>()
   /**
    * Set while the dock is laid out anew — back to the suggested order. Every panel removed on the
    * way is a rebuild, never the reader closing something, so nothing is hidden and no place moves.
@@ -219,7 +237,7 @@ export const useDockStore = defineStore('dock', () => {
   function arrangeDefault(dock: DockviewApi): void {
     dock.clear()
     const kinds = PANEL_KINDS.filter(kind => kind.opensByDefault).sort((a, b) => a.order - b.order)
-    const tabs = kinds.filter(kind => !OPENS_RIGHT_OF[kind.id])
+    const tabs = kinds.filter(kind => !OPENS_RIGHT_OF[kind.id] && kind.id !== DEPLOYMENT_BUNDLE)
     tabs.forEach((kind, index) =>
       add(dock, kind.id, index ? { referencePanel: tabs[0]!.id, direction: 'within' } : undefined))
     for (const kind of kinds.filter(entry => OPENS_RIGHT_OF[entry.id])) {
@@ -231,6 +249,7 @@ export const useDockStore = defineStore('dock', () => {
       const { placement, size } = besideAnchor(dock, kind.id)
       add(dock, kind.id, placement, size)
     }
+    if (kinds.some(kind => kind.id === DEPLOYMENT_BUNDLE)) add(dock, DEPLOYMENT_BUNDLE, deploymentBundlePlace(dock))
     dock.getPanel(firstActiveKind())?.api.setActive()
   }
 
@@ -249,6 +268,20 @@ export const useDockStore = defineStore('dock', () => {
       : undefined)
     // a panel added comes to the front; it stays there only where the list it joins was in front
     if (before && before.id !== LIST_KIND) before.api.setActive()
+  }
+
+  /**
+   * A stored layout without the deployment bundle — written before it existed (viewer#43) — gains it
+   * behind the run bundle, and whether a deployment is chosen or not: gained only with one chosen, a
+   * pick in the list would show nothing until a reload, since a selection never opens a closed panel.
+   * Never one the reader HID, which has a place to come back to.
+   */
+  function addMissingDeploymentBundle(dock: DockviewApi): void {
+    if (dock.getPanel(DEPLOYMENT_BUNDLE) || arrangement.places[DEPLOYMENT_BUNDLE]) return
+    const before = dock.activePanel
+    add(dock, DEPLOYMENT_BUNDLE, deploymentBundlePlace(dock))
+    // a tab behind another, never in front of the panel the reader had in front
+    before?.api.setActive()
   }
 
   /**
@@ -332,13 +365,13 @@ export const useDockStore = defineStore('dock', () => {
     syncOpen()
     if (panel.id === lastChart.value) lastChart.value = api.value ? anyChart(api.value) : null
     if (restoring) return
-    const section = sectionOfKind(panel.id)
-    if (!section) return
+    const member = memberOfKind(panel.id)
+    if (!member) return
     if (intoColumn.delete(panel.id)) {
       forgetPlace(panel.id)
       return
     }
-    layoutStore.hide(section)
+    layoutStore.hide(member.member, member.bundle)
   }
 
   /**
@@ -368,6 +401,7 @@ export const useDockStore = defineStore('dock', () => {
         retitle(dock)
         addMissingBundle(dock)
         addMissingRunChart(dock)
+        addMissingDeploymentBundle(dock)
       } else arrangeDefault(dock)
     } catch {
       arrangeDefault(dock)
@@ -450,6 +484,10 @@ export const useDockStore = defineStore('dock', () => {
       add(dock, kindId, { referencePanel: chart, direction: 'right' }, LAYERS_WIDTH)
       return
     }
+    if (kindId === DEPLOYMENT_BUNDLE) {
+      add(dock, kindId, deploymentBundlePlace(dock))
+      return
+    }
     const anchor = OPENS_RIGHT_OF[kindId]
     const active = dock.activePanel?.id
     if (anchor && dock.getPanel(anchor)) {
@@ -472,6 +510,7 @@ export const useDockStore = defineStore('dock', () => {
   function reveal(kindId: string, reason: RevealReason, from?: string): boolean {
     const dock = api.value
     if (!dock) return false
+    if (reason === 'link' && revealMembers(dock, kindId)) return true
     if (!dock.getPanel(kindId)) {
       if (reason === 'selection') return false
       openClosed(dock, kindId)
@@ -483,36 +522,59 @@ export const useDockStore = defineStore('dock', () => {
     return panel !== undefined
   }
 
+  /**
+   * A link aimed at a bundle whose members stand open as panels of their own: they show what was
+   * chosen, and each comes to the front in its group — where a member is in front already, that one
+   * stays, and the group the click was made in is never covered. The bundle stays as it is, closed or
+   * behind: who took its members out chose to read them apart (operator, 2026-10-28). Says whether a
+   * member was open; with none, the link opens the bundle, or the click would show nothing.
+   */
+  function revealMembers(dock: DockviewApi, bundle: string): boolean {
+    const members = dock.panels.filter(panel => memberOfKind(panel.id)?.bundle === bundle)
+    if (!members.length) return false
+    // dockview makes a group active as its content takes the focus, so the click's panel is in front
+    const source = dock.activePanel
+    for (const group of new Set(members.map(panel => panel.group))) {
+      const inFront = group.activePanel
+      if (group === source?.group || (inFront && members.includes(inFront))) continue
+      members.find(panel => panel.group === group)?.api.setActive()
+    }
+    // a member brought forward takes the active group with it; the reader stays where they clicked
+    source?.api.setActive()
+    return true
+  }
+
   /** Closes a panel, which hides it — the Panels menu shows it again where it stood. */
   function close(kindId: string): void {
     api.value?.getPanel(kindId)?.api.close()
   }
 
   /**
-   * Opens a section of the run report as a panel of its own, or brings it to the front where it is
-   * open already — a section is in one place at a time. The first stands beside the run report, as
-   * a split to its right; each further one joins the last as a tab, so the screen is not cut
-   * thinner with every section.
+   * Opens a member of a bundle — a section of the run report, unless another bundle is named — as a
+   * panel of its own, or brings it to the front where it is open already: a member is in one place
+   * at a time. The first stands beside its bundle, as a split to its right; each further one joins
+   * the last of that bundle's as a tab, so the screen is not cut thinner with every member.
    */
-  function openSection(sectionId: string): void {
+  function openSection(sectionId: string, bundle: BundleId = RUN_BUNDLE): void {
     const dock = api.value
     if (!dock) return
-    const kindId = reportKindId(sectionId)
+    const kindId = memberKindId(bundle, sectionId)
     if (!dock.getPanel(kindId)) {
-      const beside = lastSection && dock.getPanel(lastSection)
-        ? lastSection
-        : dock.panels.map(panel => panel.id).find(id => sectionOfKind(id) !== null)
+      const last = lastSection.get(bundle)
+      const beside = last && dock.getPanel(last)
+        ? last
+        : dock.panels.map(panel => panel.id).find(id => memberOfKind(id)?.bundle === bundle)
       if (beside) add(dock, kindId, { referencePanel: beside, direction: 'within' })
-      else if (dock.getPanel(COLUMN_KIND)) add(dock, kindId, { referencePanel: COLUMN_KIND, direction: 'right' })
+      else if (dock.getPanel(bundle)) add(dock, kindId, { referencePanel: bundle, direction: 'right' })
       else add(dock, kindId)
     }
-    lastSection = kindId
+    lastSection.set(bundle, kindId)
     dock.getPanel(kindId)?.api.setActive()
   }
 
-  /** Puts a section opened as a panel back into the run report's column — the ⇲ on its tab. */
-  function backIntoColumn(sectionId: string): void {
-    const kindId = reportKindId(sectionId)
+  /** Puts a member opened as a panel back into its bundle's column — the ⇲ on its tab. */
+  function backIntoColumn(sectionId: string, bundle: BundleId = RUN_BUNDLE): void {
+    const kindId = memberKindId(bundle, sectionId)
     const panel = api.value?.getPanel(kindId)
     if (!panel) return
     intoColumn.add(kindId)
@@ -522,32 +584,45 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   /**
-   * Shows a hidden section where it last stood: as a panel beside the panels it stood beside, while
-   * one of them is still open, and otherwise in the column, whose panel comes to the front.
+   * Is a bundle read apart — closed, while members of it stand open as panels of their own? A
+   * member to be shown then joins them as a panel rather than reopening the bundle (operator,
+   * 2026-10-28).
    */
-  function showSection(sectionId: string): void {
+  function standsApart(bundle: BundleId): boolean {
+    const dock = api.value
+    return dock !== null && !dock.getPanel(bundle)
+      && dock.panels.some(panel => memberOfKind(panel.id)?.bundle === bundle)
+  }
+
+  /**
+   * Shows a hidden section where it last stood: as a panel beside the panels it stood beside, while
+   * one of them is still open, and otherwise in the column, whose panel comes to the front — or, where
+   * the bundle is read apart, as a panel beside its other members.
+   */
+  function showSection(sectionId: string, bundle: BundleId = RUN_BUNDLE): void {
     const dock = api.value
     if (!dock) return
-    const kindId = reportKindId(sectionId)
-    layoutStore.show(sectionId)
+    const kindId = memberKindId(bundle, sectionId)
+    layoutStore.show(sectionId, bundle)
     if (dock.getPanel(kindId) || placeAgain(dock, kindId)) {
-      lastSection = kindId
+      lastSection.set(bundle, kindId)
       dock.getPanel(kindId)?.api.setActive()
       return
     }
     forgetPlace(kindId)
-    reveal(COLUMN_KIND, 'command')
+    if (standsApart(bundle)) openSection(sectionId, bundle)
+    else reveal(bundle, 'command')
   }
 
-  /** Hides a section wherever it stands — its panel's close, or switched off in the column. */
-  function hideSection(sectionId: string): void {
-    const kindId = reportKindId(sectionId)
+  /** Hides a member wherever it stands — its panel's close, or switched off in the column. */
+  function hideSection(sectionId: string, bundle: BundleId = RUN_BUNDLE): void {
+    const kindId = memberKindId(bundle, sectionId)
     if (api.value?.getPanel(kindId)) {
       close(kindId)
       return
     }
     forgetPlace(kindId)
-    layoutStore.hide(sectionId)
+    layoutStore.hide(sectionId, bundle)
   }
 
   /** Back to the suggested order — every panel the first arrangement holds, and no other. */
@@ -570,7 +645,7 @@ export const useDockStore = defineStore('dock', () => {
 
   return {
     api, openIds, shownIds, dragging, lastChart,
-    attach, detach, reveal, close, openSection, backIntoColumn, showSection, hideSection, reset, flush,
+    attach, detach, reveal, close, openSection, backIntoColumn, standsApart, showSection, hideSection, reset, flush,
     dockToEdge, endDrag, noteShown,
   }
 })

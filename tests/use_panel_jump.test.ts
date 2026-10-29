@@ -47,9 +47,35 @@ describe('usePanelJump', () => {
     layout.hide('trade-history')
     usePanelJump()('trade-history', MARK)
     expect(useContextStore().main.run.position).toEqual(MARK)
-    const state = layout.arrangedPanels.find(panel => panel.id === 'trade-history')!
+    const state = layout.arrangedOf().find(panel => panel.id === 'trade-history')!
     expect(state.hidden).toBe(false)
     expect(state.open).toBe(true)
+  })
+
+  /**
+   * The bundle closed and its members read apart (operator, 2026-10-28): the target joins them as a
+   * panel of its own, and the jump scrolls there — the closed bundle is not reopened.
+   */
+  it('opens the target as a panel of its own where the bundle is read apart', async () => {
+    const dock = useDockStore()
+    const opened: string[] = []
+    const revealed: string[] = []
+    dock.standsApart = () => true
+    dock.openSection = (sectionId: string) => { opened.push(sectionId) }
+    dock.reveal = (kindId: string) => { revealed.push(kindId); return true }
+    const panel = document.createElement('div')
+    panel.dataset['panelKind'] = 'report-trade-history'
+    panel.innerHTML = '<div data-panel="trade-history"></div>'
+    document.body.appendChild(panel)
+    useLayoutStore().hide('trade-history')
+
+    usePanelJump()('trade-history', MARK)
+    panel.firstElementChild!.appendChild(markedRow())
+    await flushPromises()
+    expect(opened).toEqual(['trade-history'])
+    expect(revealed).toEqual([])
+    expect(useLayoutStore().arrangedOf().find(state => state.id === 'trade-history')!.hidden).toBe(false)
+    expect(scrolled).toHaveBeenCalledTimes(1)
   })
 
   it('scrolls to the marked row once it is there', async () => {

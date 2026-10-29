@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useChartLink } from '@/composables/use_chart_link'
@@ -14,7 +15,7 @@ import { useViewRows } from '@/composables/use_panel_view'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import { rowKey } from '@/api/list_key'
-import type { FigureCard } from '@/types/figure_types'
+import type { Figure, FigureCard } from '@/types/figure_types'
 import type { ListColumn, ListGroup } from '@/types/list_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
@@ -376,7 +377,7 @@ function closedInParts(trade: TradeRow): number {
 }
 
 /**
- * The whole sentence, for the hover.
+ * What this trade took of the whole, for its card — the row says only `of 3`.
  *
  * `entry_lots` replaced a reach into `entry_executions[0].volume` (contract 23): the position's size
  * at ENTRY, stated on the row, so nothing has to be summed or indexed to say what was opened.
@@ -385,13 +386,15 @@ function closedInParts(trade: TradeRow): number {
  * third of the three questions put to testingide on 2026-10-05 and could not be answered from
  * `shared_by` at all.
  */
-function partsOf(trade: TradeRow): string {
+function partsOf(trade: TradeRow): Figure[] {
   const parts = closedInParts(trade)
-  if (parts <= 1) return ''
+  if (parts <= 1) return []
   const ending = trade.close_type === 'full' ? t('this record closed it') : t('it stayed open after this')
-  return `${t('This position was closed in parts')} — `
-    + `${trade.lots} ${t('of')} ${trade.entry_lots} ${t('here')}, `
-    + `${t('over')} ${plural(parts, t('record'), t('records'))}. ${ending}.`
+  return [{
+    label: t('Closed in parts'),
+    value: `${trade.lots} ${t('of')} ${trade.entry_lots} ${t('here')}, `
+      + `${t('over')} ${plural(parts, t('record'), t('records'))} — ${ending}`,
+  }]
 }
 
 /** Seconds as the operator reads a holding period. */
@@ -402,11 +405,25 @@ function held(seconds: number): string {
   return `${(seconds / 86400).toFixed(1)} d`
 }
 
-/** Every trade has a card — there is always more than eight columns can hold. */
+/**
+ * Every trade has a card — there is always more than eight columns can hold. Titled by its position,
+ * as the exit mark's card is: the unit is the group heading above, and a narrow column cuts the id.
+ */
 function card(trade: TradeRow): FigureCard {
   return {
-    title: `${trade.scenario_name} · ${trade.direction} ${trade.lots}`,
-    details: tradeDetails(trade),
+    title: `${trade.position_id} · ${trade.direction} ${trade.lots}`,
+    details: [...partsOf(trade), ...tradeDetails(trade)],
+  }
+}
+
+/** A fill's card: what its cells cut short at a narrow width — its id, its price and its fee. */
+function fillCard(fill: FillRow): FigureCard {
+  return {
+    title: `${fill.leg} · ${fill.execution.trade_id}`,
+    details: [
+      { label: t('Price'), value: String(fill.execution.price) },
+      { label: t('Fee'), value: `${fill.execution.fee} ${fill.execution.fee_currency}` },
+    ],
   }
 }
 </script>
@@ -419,6 +436,10 @@ function card(trade: TradeRow): FigureCard {
       {{ t('trades — the remainder are not drawn, which is not the same as not there') }}
     </p>
 
+    <!-- what the card's slippage is measured against, and where the links go: the one explanation
+         pattern, never a browser tooltip -->
+    <HintLine v-if="selected.length" id="trade-slippage" />
+    <HintLine v-if="selected.length && link.canJumpTo('orders')" id="position-link" />
     <!-- an empty narrowed set is a statement about the SCENARIO, not a failed match: every unit
          the run declared is in the roster whether it traded or not -->
     <div v-if="!selected.length" class="hint">
@@ -452,7 +473,7 @@ function card(trade: TradeRow): FigureCard {
              The old three-cell form was fixed at eight columns and a rank that gives one up would
              leave it spanning tracks the grid no longer has. The count and the costs ride inside the
              name — they are a note ABOUT the group, never values of a column. -->
-        <span class="group-name" :title="group.key">
+        <span class="group-name">
           <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
           {{ group.key }}
           <span class="group-meta">
@@ -470,7 +491,7 @@ function card(trade: TradeRow): FigureCard {
       <!-- the rank on every cell is the one its own column declares, and each of these lists
            asserts the two agree: the list owns the tracks, this template owns the cells -->
       <template #default="{ row: trade, marker }">
-        <span :data-rank="3" class="trade-position" :title="partsOf(trade) || trade.position_id">
+        <span :data-rank="3" class="trade-position">
           <!-- the fills opened with no glyph at all until 2026-10-08, so nothing said the row
                could be opened. The LIST decides the shape; this only places it. -->
           <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
@@ -478,7 +499,6 @@ function card(trade: TradeRow): FigureCard {
           <JumpLink
             v-if="link.canJumpTo('orders')"
             class="to-orders"
-            :title="t('Show the orders of this position')"
             @click.stop="jumpToOrders(trade)"
           >{{ trade.position_id }}</JumpLink>
           <template v-else>{{ trade.position_id }}</template>
@@ -492,12 +512,11 @@ function card(trade: TradeRow): FigureCard {
             variant="link"
             size="compact"
             class="to-chart"
-            :title="t('Show this trade on the run chart')"
             :aria-label="t('Show this trade on the run chart')"
             @click.stop="showOnChart(trade)"
           ><AppIcon name="form-chart" /></AppButton>
         </span>
-        <span :data-rank="1" :title="trade.symbol">{{ trade.symbol }}</span>
+        <span :data-rank="1">{{ trade.symbol }}</span>
         <span :data-rank="2">{{ trade.direction }}</span>
         <span :data-rank="3" class="figure-cell">{{ trade.lots }}</span>
         <span :data-rank="1">{{ utcInstant(trade.entry_time) }}</span>
@@ -520,20 +539,18 @@ function card(trade: TradeRow): FigureCard {
           :rows="fillsOf(trade)"
           :columns="fillColumns"
           :row-key="fill => `${fill.leg}-${fill.execution.trade_id}`"
+          :row-card="fillCard"
           hide-head
           inert
         >
           <template #default="{ row: fill }">
             <span class="fill-leg">└─ {{ fill.leg }}</span>
-            <span :title="fill.execution.trade_id">{{ fill.execution.trade_id }}</span>
+            <span>{{ fill.execution.trade_id }}</span>
             <span>{{ t('vol') }} {{ fill.execution.volume }}</span>
             <span class="fill-share">{{ shareOf(trade, fill) }}</span>
-            <span :title="String(fill.execution.price)">
-              {{ t('price') }} {{ fill.execution.price }}
-            </span>
-            <span :title="`${fill.execution.fee} ${fill.execution.fee_currency}`">
-              {{ t('fee') }} {{ fill.execution.fee }} {{ fill.execution.fee_currency }}
-            </span>
+            <!-- cut short at a narrow width; the fill's card carries the id, price and fee whole -->
+            <span>{{ t('price') }} {{ fill.execution.price }}</span>
+            <span>{{ t('fee') }} {{ fill.execution.fee }} {{ fill.execution.fee_currency }}</span>
             <span>{{ fill.execution.liquidity }}</span>
           </template>
         </RecordList>

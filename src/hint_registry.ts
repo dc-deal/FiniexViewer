@@ -39,7 +39,11 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'activities',
-    text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. A label marked ↗ opens its run, or its sweep. Rest the pointer on a row for its command line, its code and who started it."),
+    text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. Its label opens its run, or its sweep. Rest the pointer on a row for its command line, its code and who started it."),
+  },
+  {
+    id: 'deployment-sessions',
+    text: t('A run id opens that run. Where a session changed its configuration, before and after open the configuration of the session above the mark and of the one carrying it, each compared with the other. Unfinished counts the runs that never reached their close, a session running now among them — one that sealed a day is among the sessions too, so the two counts overlap and are never added.'),
   },
   {
     id: 'sweeps',
@@ -47,15 +51,54 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layers',
-    text: t('Front layer first: the lever shows or hides a layer, ◐ sets how strongly it is drawn, and a click on the layer opens the rest — its option, its place in front of or behind the others. The candles stay behind them all.'),
+    text: t('Front layer first: drag a layer by ⠿ to put it in front of or behind the others. The lever shows or hides it, ◐ sets how strongly it is drawn, and a click on it opens its options. The candles stay behind them all, and the volume behind the candles.'),
+  },
+  // what a layer draws and what its option does — at the top of its opened row, so the options below
+  // stand plain (operator, 2026-10-28)
+  {
+    id: 'layer-trades',
+    text: t('Where each position opened and each trade closed. With signs, each exit carries its sign and each gathered mark its count, beside its shape.'),
+  },
+  {
+    id: 'layer-entry-exit',
+    text: t('Where each trade of the position looked at entered, and where it left. With every position, the lines of every position of the unit.'),
+  },
+  {
+    id: 'layer-levels',
+    text: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded. With every position, the levels of every position of the unit.'),
+  },
+  {
+    id: 'layer-candles',
+    text: t('The price of each bar, behind the drawings — as candles, OHLC bars, a line or an area of the close.'),
+  },
+  {
+    id: 'layer-volume',
+    text: t('What traded in each bar — or how many ticks it held, where the venue prints no trades — in the lowest fifth of the chart, behind the candles.'),
+  },
+  // why a layer that is shown draws nothing — shown below the Layers list only while it does
+  {
+    id: 'layer-empty-levels',
+    text: t('The levels are drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw.'),
+  },
+  {
+    id: 'layer-empty-entry-exit',
+    text: t('The entry–exit line is drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A trade that entered and left in one candle draws no line.'),
+  },
+  {
+    id: 'layer-empty-trades',
+    text: t('The trades are marked where the unit on show opened a position in the window drawn — this one opened none.'),
   },
   {
     id: 'chart-marks',
     text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },
   {
+    id: 'trade-slippage',
+    text: t("A trade's card gives its slippage: how far the fills landed from the mid when the order was sent — half the spread for a market fill — or, marked vs SL/TP level, from the level that closed it, where a backtest reads 0."),
+  },
+  {
     id: 'position-link',
-    text: t('A position id with an arrow goes to the other list — from an order to the trades it produced, and back; the chart mark beside it opens the run chart on that position. A partial close books several trades of one position, so all of them are marked.'),
+    text: t('A position id goes to the other list — from an order to the trades it produced, and back; the chart mark beside it opens the run chart on that position. A partial close books several trades of one position, so all of them are marked.'),
   },
 ]
 

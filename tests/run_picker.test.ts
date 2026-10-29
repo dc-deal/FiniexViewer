@@ -59,6 +59,7 @@ const BASE: RunInfo = {
   size_bytes: 1,
   artifacts: [],
   stream_files: [],
+  recording: null,
   // contracts 24 and 25: what the run is FOR, under which contract its reports
   // were written, and whether it is still its catalog entry's current one
   run_purpose: 'regular',
@@ -781,6 +782,38 @@ describe('RunPicker', () => {
       // and `error`, which no stored run could ever produce
       expect(offered.some(text => text.trim() === 'warning')).toBe(false)
       expect(offered.some(text => text.trim() === 'error')).toBe(false)
+    })
+
+    /**
+     * Contract 38: a session the backend has not graded yet carries `recording`, the one field that
+     * tells a running session from one that died before its report. Shown in the Outcome cell with
+     * a glyph and a word, and offered by the facet; a grade, once there, is what the cell says.
+     */
+    it('says how a session without its grade records, and lets the facet pick it', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'live', run_outcome: null, recording: 'current' }),
+        run({ run_id: 'hung', run_outcome: null, recording: 'stopped' }),
+        run({ run_id: 'closing', run_outcome: null, recording: 'ended' }),
+        run({ run_id: 'graded', run_outcome: 'success', recording: 'ended' }),
+      ])
+      const outcomeOf = (id: string) => rowFor(wrapper, id).find('.run-outcome')
+
+      expect(outcomeOf('live').text()).toBe('● recording')
+      expect(outcomeOf('live').classes()).toContain('recording-current')
+      expect(outcomeOf('hung').text()).toBe('⚠ recording stopped')
+      expect(outcomeOf('hung').classes()).toContain('recording-stopped')
+      expect(outcomeOf('hung').attributes('title')).toContain('Activities')
+      expect(outcomeOf('closing').text()).toBe('■ ended')
+      expect(outcomeOf('graded').text()).toBe('✓ success')
+
+      await wrapper.findAll('.facet-trigger')
+        .find(node => node.text().includes('Outcome'))!
+        .trigger('click')
+      await flushPromises()
+      const offered = [...document.querySelectorAll<HTMLElement>('.facet-option')]
+        .map(node => node.textContent ?? '')
+      expect(offered.some(text => text.includes('recording stopped'))).toBe(true)
+      expect(offered.some(text => text.includes('ended'))).toBe(true)
     })
   })
   /**

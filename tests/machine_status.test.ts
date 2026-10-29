@@ -150,7 +150,11 @@ describe('MachineStatus', () => {
     })
 
     it('says only the server runs where nothing else does, and why the line is missing where it could not be read', () => {
-      useMachineStore().activities = ACTIVITIES
+      // the capture holds whatever ran at the moment it was taken, so the server alone is chosen
+      useMachineStore().activities = {
+        ...ACTIVITIES,
+        activities: ACTIVITIES.activities.filter(row => row.activity_kind === 'api_server'),
+      }
       expect(detail(mountWith(READING), 'Running')?.value).toBe('only this server')
       const machine = useMachineStore()
       machine.activities = null

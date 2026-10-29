@@ -133,6 +133,26 @@ describe('ChartDrawingHost', () => {
     expect(host.autoscaleInfo()).toBeNull()
   })
 
+  /**
+   * A layer switched off is neither painted nor hit nor on the axis, and its marks keep their room:
+   * switching the trades off once stretched the candles to the room they had left. A hidden level
+   * stops widening the scale, since nobody is looking at it.
+   */
+  it('keeps the room of a hidden layer\'s marks, and paints, hits and labels nothing of it', () => {
+    const host = new ChartDrawingHost()
+    attachTo(host)
+    host.setDrawings(LAYERS, BARS, COLOURS)
+    const shown = host.autoscaleInfo()!.margins
+    host.setDrawings(LAYERS.map(layer => ({ ...layer, hidden: true })), BARS, COLOURS)
+    expect(host.autoscaleInfo()!.margins).toEqual(shown)
+    expect(host.autoscaleInfo()!.priceRange).toBeNull()
+    expect(host.priceAxisViews()).toHaveLength(0)
+    expect(host.hitTest(15, 250)).toBeNull()
+    const { context, calls } = recordingContext()
+    host.paneViews()[0]!.renderer()!.draw({ useMediaCoordinateSpace: (paint: (scope: { context: CanvasRenderingContext2D }) => void) => paint({ context }) } as never)
+    expect(calls.filter(call => call.startsWith('fill(') || call.startsWith('stroke('))).toEqual([])
+  })
+
   /** A level is a dashed rule with its word; a mark its shape and its sign beyond it, in one colour. */
   it('paints a level dashed with its word, and a mark with its sign in the colour of its role', () => {
     const placed = LAYERS.map(layer => placeLayer(layer, BARS, { x: time => time * 10, y: price => 500 - price, spacing: 80, width: 800 }))
@@ -146,5 +166,26 @@ describe('ChartDrawingHost', () => {
     expect(calls.some(call => call.startsWith('fillText(+,'))).toBe(true)
     expect(calls).toContain('fillStyle=#0a0')
     expect(calls).toContain('fillStyle=#fff')
+  })
+
+  /**
+   * The trades' signs switched off: no text is painted, and its room stays, so the switch rescales
+   * nothing — emptied, the text gave its room up and the chart moved (operator, on screen 2026-10-28).
+   */
+  it('keeps the room of a hidden text, and paints none of it', () => {
+    const host = new ChartDrawingHost()
+    attachTo(host)
+    host.setDrawings(LAYERS, BARS, COLOURS)
+    const signed = host.autoscaleInfo()!.margins
+    const quiet = LAYERS.map(layer => ({
+      ...layer,
+      drawings: layer.drawings.map(drawing => drawing.kind === 'marker' ? { ...drawing, textHidden: true } : drawing),
+    }))
+    host.setDrawings(quiet, BARS, COLOURS)
+    expect(host.autoscaleInfo()!.margins).toEqual(signed)
+    const placed = quiet.map(layer => placeLayer(layer, BARS, { x: time => time * 10, y: price => 500 - price, spacing: 80, width: 800 }))
+    const { context, calls } = recordingContext()
+    for (const layer of placed) paintLayer(context, layer, COLOURS, '10px Probe Sans')
+    expect(calls.some(call => call.startsWith('fillText(+,'))).toBe(false)
   })
 })

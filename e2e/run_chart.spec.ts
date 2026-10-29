@@ -77,7 +77,7 @@ test('below that width the run chart is a tab after the report', async ({ page }
   const tabs = page.locator('.dv-tab .panel-tab')
   await expect(tabs.last()).toHaveAttribute('data-kind', 'run-chart')
   expect(await tabs.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-kind'))))
-    .toEqual(['deployments', 'runs', 'run', 'run-chart'])
+    .toEqual(['deployments', 'runs', 'run', 'deployment', 'run-chart'])
 })
 
 /**

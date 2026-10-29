@@ -4,39 +4,45 @@ import type { LayerDefinition, LayerOptionId, LayerState } from '@/types/layer_t
 import { t } from '@/translate'
 
 /**
- * Every drawing layer a chart can draw, in ONE register (viewer#41): its title, what it draws, and
- * the one option it offers. A record over the ids, so a layer added to the type is a type error here
+ * Every drawing layer a chart can draw, in ONE register (viewer#41): its title, the hint saying
+ * what it draws, and the one option it offers. A record over the ids, so a layer added to the type is a type error here
  * until it is described.
  */
 const LAYERS: Record<ChartLayerId, LayerDefinition> = {
   levels: {
     title: t('Levels'),
-    description: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded'),
-    emptyHint: t('Drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw.'),
-    option: {
-      id: 'every-position',
-      label: t('every position'),
-      description: t('The levels of every position of the unit, not only of the one looked at'),
-      fallback: false,
-      changed: t('every position'),
-    },
+    hintId: 'layer-levels',
+    emptyHintId: 'layer-empty-levels',
+    option: { id: 'every-position', label: t('every position'), fallback: false },
   },
   'entry-exit': {
     title: t('Entry–exit line'),
-    description: t('Where each trade of the position looked at entered, and where it left'),
-    emptyHint: t('Drawn for the position looked at — choose one in the trade history or the orders. A trade that entered and left in one candle draws no line.'),
+    hintId: 'layer-entry-exit',
+    emptyHintId: 'layer-empty-entry-exit',
+    // its own id: kept by id, the levels' option of the same word would switch both
+    option: { id: 'every-position-line', label: t('every position'), fallback: false },
+  },
+  volume: {
+    title: t('Volume'),
+    hintId: 'layer-volume',
+    fixed: true,
+  },
+  candles: {
+    title: t('Candles'),
+    hintId: 'layer-candles',
+    fixed: true,
+    forms: [
+      { id: 'candles', label: t('candles') },
+      { id: 'bars', label: t('OHLC bars') },
+      { id: 'line', label: t('line') },
+      { id: 'area', label: t('area') },
+    ],
   },
   trades: {
     title: t('Trades'),
-    description: t('Where each position opened and each trade closed'),
-    emptyHint: t('The unit on show opened no position in the window drawn.'),
-    option: {
-      id: 'trade-signs',
-      label: t('signs'),
-      description: t('The sign of each exit and the count of each gathered mark, beside its shape'),
-      fallback: true,
-      changed: t('no signs'),
-    },
+    hintId: 'layer-trades',
+    emptyHintId: 'layer-empty-trades',
+    option: { id: 'trade-signs', label: t('signs'), fallback: true },
   },
 }
 
@@ -45,7 +51,7 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
  * draws only its candles, and the Layers panel has nothing to arrange for it: the free chart today.
  */
 const CHART_LAYERS: Record<string, readonly ChartLayerId[]> = {
-  'run-chart': ['levels', 'entry-exit', 'trades'],
+  'run-chart': ['volume', 'candles', 'levels', 'entry-exit', 'trades'],
 }
 
 export function layerDefinition(id: ChartLayerId): LayerDefinition {
@@ -68,24 +74,19 @@ export function arrangeLayers(chartId: string, stored: StoredLayers | undefined)
   own.forEach((id, index) => {
     if (!order.includes(id)) order.splice(Math.min(index, order.length), 0, id)
   })
-  return order.map(id => {
-    const option = LAYERS[id].option
+  // the fixed layers stand at the back in their own order, whatever was kept
+  const fixed = own.filter(id => LAYERS[id].fixed)
+  const placed = [...fixed, ...order.filter(id => !LAYERS[id].fixed)]
+  return placed.map(id => {
+    const { option, forms } = LAYERS[id]
     return {
       id,
       shown: !stored?.hidden?.includes(id),
       opacity: stored?.opacity?.[id] ?? 100,
       option: option ? stored?.options?.[option.id] ?? option.fallback : null,
+      form: forms ? forms.find(entry => entry.id === stored?.forms?.[id])?.id ?? forms[0]!.id : null,
     }
   })
-}
-
-/**
- * What a closed row says of a layer: its option, where it differs from the default — `no signs`.
- * Its opacity is not repeated here: the handle of its lever, in the same row, shows it.
- */
-export function layerSummary(state: LayerState): string {
-  const option = LAYERS[state.id].option
-  return option && state.option !== null && state.option !== option.fallback ? option.changed : ''
 }
 
 /**
@@ -106,5 +107,11 @@ export function keptLayers(chartId: string, states: LayerState[]): StoredLayers 
     if (option && state.option !== null && state.option !== option.fallback) options[option.id] = state.option
   }
   if (Object.keys(options).length) kept.options = options
+  const forms: StoredLayers['forms'] = {}
+  for (const state of states) {
+    const own = LAYERS[state.id].forms?.[0]?.id
+    if (own && state.form && state.form !== own) forms[state.id] = state.form
+  }
+  if (Object.keys(forms).length) kept.forms = forms
   return Object.keys(kept).length ? kept : undefined
 }

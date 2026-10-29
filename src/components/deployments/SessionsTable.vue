@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import HoverCard from '@/components/base/HoverCard.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
-import { amount, magnitude, duration, signClass, utcInstant } from '@/components/runs/report_format'
+import { amount, magnitude, duration, orDash, signClass, utcInstant } from '@/components/runs/report_format'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
+import type { Figure } from '@/types/figure_types'
 import type { ListColumn } from '@/types/list_types'
 import { t } from '@/translate'
 
@@ -18,12 +21,38 @@ import { t } from '@/translate'
  * counter the ledger does not keep, and it repeats once a deployment books in two currencies.
  * The run is the identity; the order is the sequence.
  */
-defineProps<{
+const props = defineProps<{
   sessions: DeploymentSessionRow[]
   keyFields: string[]
 }>()
 
-const { openRun, canOpen } = useOpenInContext()
+const { openRun, compareConfiguration, canOpen } = useOpenInContext()
+
+/**
+ * The session before each one, by row. A change mark compares a session with THAT one (their
+ * `deployments` document), so its configuration is the other half of what the reader compares.
+ * The order is the ledger's and never re-sorted, so the row above is the predecessor.
+ */
+const previousRun = computed(() => new Map(props.sessions.map((session, i) => [
+  rowKey(session, props.keyFields),
+  props.sessions[i - 1]?.run_id ?? null,
+])))
+
+/** The run of the session before this one, or null on the first. */
+function before(session: DeploymentSessionRow): string | null {
+  return previousRun.value.get(rowKey(session, props.keyFields)) ?? null
+}
+
+/**
+ * One side of a change mark's configuration as a panel of its own, COMPARED with the other side: the
+ * values that differ are what a reader opens it for. `side` is the side of the mark this one is on.
+ */
+function openConfiguration(session: DeploymentSessionRow, side: 'before' | 'after'): void {
+  const earlier = before(session)
+  if (!earlier) return
+  if (side === 'before') compareConfiguration(earlier, session.run_id, 'after')
+  else compareConfiguration(session.run_id, earlier, 'before')
+}
 
 /**
  * Six columns on the shared list stem. Ranked, because a deployment panel is narrow more often
@@ -38,11 +67,9 @@ const columns: ListColumn[] = [
   { label: t('Max DD'), width: 'minmax(0, 16fr)', figure: true, rank: 2 },
 ]
 
-/** What changed at the boundary before a session, or null where nothing did. */
-function boundary(session: DeploymentSessionRow): string | null {
-  const clauses = [configurationClause(session), session.orders_to_changed ? ordersClause(session.orders_to) : '']
-    .filter(Boolean)
-  return clauses.length ? clauses.join(' · ') : null
+/** Whether anything changed at the boundary before a session. */
+function hasBoundary(session: DeploymentSessionRow): boolean {
+  return session.strategy_changed || session.operation_changed || session.orders_to_changed
 }
 
 function configurationClause(session: DeploymentSessionRow): string {
@@ -52,6 +79,35 @@ function configurationClause(session: DeploymentSessionRow): string {
   if (session.strategy_changed) return t('Strategy changed from here')
   if (session.operation_changed) return t('Operation changed from here')
   return ''
+}
+
+/**
+ * What a configuration mark means, in the backend's words (their `deployments` and `config`
+ * documents). It says WHERE and never WHAT: the parameters that moved, as key, before and after,
+ * are planned on their side (testingide#527) and computed here never — until they are served, the
+ * two configurations are a click away on the line, and the comparison is the reader's.
+ */
+function markCard(session: DeploymentSessionRow): Figure[] {
+  const rows: Figure[] = []
+  if (session.strategy_changed) {
+    rows.push({ label: t('Strategy'), value: t('What the bot decided: its parameters differ from the session before') })
+  }
+  if (session.operation_changed) {
+    rows.push({
+      label: t('Operation'),
+      value: t('What a session did without changing what it decided: a safety threshold, a guard, a timeout, the capital declaration'),
+    })
+  }
+  rows.push({ label: t('Which'), value: t('Not served yet: compare the configuration before with the one after') })
+  if (session.operation_changed) {
+    // the operation mark is computed from the profile as the session LOADED it, so it also moves
+    // with the defaults merged in under the file and with a start option — neither is served
+    rows.push({
+      label: t('Not in a file'),
+      value: t('Two identical configurations mean the change lies in a default or a start option, which no route serves'),
+    })
+  }
+  return rows
 }
 
 /**
@@ -85,30 +141,46 @@ function gap(session: DeploymentSessionRow): string {
     :rows="sessions"
     :columns="columns"
     :row-key="session => rowKey(session, keyFields)"
-    :has-lead="session => Boolean(boundary(session))"
+    :has-lead="hasBoundary"
     inert
   >
     <!-- the mark sits BETWEEN two sessions: everything above it was produced by a different
          configuration from everything below, which a badge on one row would misreport as a
          property of that row -->
-    <template #lead="{ row: session }">{{ boundary(session) }}</template>
+    <template #lead="{ row: session }">
+      <template v-if="configurationClause(session)">
+        <!-- reachable by the keyboard, so the card is not the pointer's alone -->
+        <HoverCard :details="markCard(session)">
+          <span class="boundary-words" tabindex="0">{{ configurationClause(session) }}</span>
+        </HoverCard>
+        <!-- the two halves of the comparison, ON the line rather than in the card: the card holds
+             no control, and a link the keyboard cannot reach is not one -->
+        <span v-if="canOpen && before(session)" class="boundary-links">
+          <span aria-hidden="true">·</span>
+          {{ t('Configuration') }}
+          <!-- what the two open is said by the panel's hint, never on a browser tooltip -->
+          <JumpLink @click="openConfiguration(session, 'before')">{{ t('before') }}</JumpLink>
+          <span aria-hidden="true">·</span>
+          <JumpLink @click="openConfiguration(session, 'after')">{{ t('after') }}</JumpLink>
+        </span>
+      </template>
+      <span v-if="configurationClause(session) && session.orders_to_changed" aria-hidden="true">·</span>
+      <span v-if="session.orders_to_changed" class="boundary-words">{{ ordersClause(session.orders_to) }}</span>
+    </template>
 
     <template #default="{ row: session }">
       <span :data-rank="1" class="session-run">
-        <JumpLink
-          v-if="canOpen"
-          :title="t('Open this run')"
-          @click="openRun(session.run_id)"
-        >{{ session.run_id }}</JumpLink>
+        <JumpLink v-if="canOpen" @click="openRun(session.run_id)">{{ session.run_id }}</JumpLink>
         <template v-else>{{ session.run_id }}</template>
       </span>
       <span :data-rank="2">{{ utcInstant(session.started) }}</span>
-      <span :data-rank="3" class="figure-cell">{{ duration(session.ran_hours) }}</span>
+      <!-- null until the row of its close exists: a session still running, or one that died (contract 40) -->
+      <span :data-rank="3" class="figure-cell">{{ orDash(session.ran_hours, duration) }}</span>
       <span :data-rank="3" class="figure-cell">{{ gap(session) }}</span>
       <span :data-rank="1" class="figure-cell" :class="signClass(session.net_pnl)">
         {{ amount(session.net_pnl, session.currency) }}
       </span>
-      <span :data-rank="2" class="figure-cell">{{ magnitude(session.max_drawdown, session.currency) }}</span>
+      <span :data-rank="2" class="figure-cell">{{ orDash(session.max_drawdown, value => magnitude(value, session.currency)) }}</span>
     </template>
   </RecordList>
 </template>
@@ -127,6 +199,22 @@ function gap(session: DeploymentSessionRow): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* On the boundary line the words give way before the links do: cut, they keep their card, and a
+   cut link would leave nothing to click. */
+.sessions-list :deep(.record-lead) > .boundary-words {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sessions-list :deep(.record-lead) > .boundary-links {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1ch;
 }
 
 /* the run is the identity, and the only thing on the row that is read rather than compared */

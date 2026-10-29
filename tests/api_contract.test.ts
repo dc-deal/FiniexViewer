@@ -9,6 +9,7 @@ import runSummary from './fixtures/run_summary.json'
 import portfolio from './fixtures/portfolio.json'
 import broker from './fixtures/broker.json'
 import runHeader from './fixtures/run_header.json'
+import runHeaderDirty from './fixtures/run_header_dirty.json'
 import aggregated from './fixtures/aggregated_portfolio.json'
 import pending from './fixtures/pending_orders.json'
 import history from './fixtures/order_history.json'
@@ -23,6 +24,14 @@ import manifest from './fixtures/capture_manifest.json'
 import machineResources from './fixtures/machine_resources.json'
 import sweepsList from './fixtures/sweeps_list.json'
 import sweepDetail from './fixtures/sweep_detail.json'
+import stateFramesEnded from './fixtures/state_frames_ended.json'
+import stateFramesStopped from './fixtures/state_frames_stopped.json'
+import validationChecks from './fixtures/validation_checks.json'
+import recordedStreams from './fixtures/recorded_streams.json'
+import recordedWindow from './fixtures/recorded_window.json'
+import { EXPECTED_CONTRACT } from '@/api/expected_contract'
+import type { ValidationCheckList } from '@/types/api/validation_check_types'
+import type { RecordedStreams, RecordedWindow, StateFramesLatest } from '@/types/api/state_frame_types'
 
 import type {
   AggregatedPortfolioReport,
@@ -47,17 +56,6 @@ import type {
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { MachineResources } from '@/types/api/machine_types'
 import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
-
-/**
- * The contract this code was written against. The backend stamps every response with
- * `X-Api-Contract`, and the fixtures below were captured under the number recorded in their
- * manifest. Re-capturing them against a newer backend therefore fails HERE rather than in
- * production, which is the whole point of the header: the assertion stays local and needs no
- * connection to the backend to run.
- *
- * Raise it only together with reading `GET /api/v1/contract`, whose `changes` list says what moved.
- */
-const EXPECTED_CONTRACT = 36
 
 /**
  * What each list declares about its own row identity. Keying on the obvious field is wrong in
@@ -97,11 +95,80 @@ const EXPECTED_KEYS = {
   // one row per run AND account currency: the ledger books a row per period, and the route folds
   // them back per currency — keyed on the run alone, a two-currency combination loses one
   sweepCombinations: ['run_id', 'currency'],
+  // one row per unit of the run; a session is one
+  stateFrameUnits: ['unit_name'],
+  validationChecks: ['check'],
+  // a unit's timeline: one row per stream it records over time
+  recordedStreams: ['stream_kind', 'stream_name'],
+  // a frame's place in its stream — two frames can share an instant
+  recordedFrames: ['record_no'],
 }
 
 describe('api contract', () => {
+  /**
+   * Re-capturing the fixtures against a newer backend fails HERE rather than in production, which
+   * is the whole point of the header: the assertion stays local and needs no connection to run.
+   */
   it('fixtures were captured under the contract this code targets', () => {
     expect(manifest.contract).toBe(EXPECTED_CONTRACT)
+  })
+
+  /**
+   * The check-in on a session (contract 38), in the two states a stored session keeps for good:
+   * ended with its outcome written, and stopped without an end. The verdict on the run list row is
+   * the route's, read from the same stream, so the two agree, and it is there only where the row
+   * names the stream.
+   */
+  /**
+   * A `major` warning names the check that decided it, and the catalogue says what every check id
+   * means. Every check the captured warnings name is in the captured catalogue, so a reader never
+   * meets a bare id; a `minor` row names none, since no assertion decided a log line.
+   */
+  it('the warnings name their checks, and the catalogue knows every one of them', () => {
+    const catalogue: ValidationCheckList = validationChecks
+    expect(catalogue.key).toEqual(EXPECTED_KEYS.validationChecks)
+    const known = new Set(catalogue.checks.map(entry => entry.check))
+    const rows = (warningsErrors as WarningsErrorsReport).warnings
+    const major = rows.filter(row => row.tier === 'major')
+    expect(major.length).toBeGreaterThan(0)
+    for (const row of major) expect(known.has(row.check), row.check).toBe(true)
+    for (const row of rows.filter(entry => entry.tier === 'minor')) expect(row.check).toBe('')
+  })
+
+  it('the latest state frame still satisfies its shape, and the run list agrees with it', () => {
+    const ended: StateFramesLatest = stateFramesEnded
+    const stopped: StateFramesLatest = stateFramesStopped
+    expect(ended.key).toEqual(EXPECTED_KEYS.stateFrameUnits)
+    expect(stopped.key).toEqual(EXPECTED_KEYS.stateFrameUnits)
+    expect(ended.units[0]?.recording).toBe('ended')
+    expect(ended.units[0]?.outcome).not.toBeNull()
+    expect(stopped.units[0]?.recording).toBe('stopped')
+
+    const rows = (runsList as RunListResponse).runs
+    for (const row of rows) {
+      if (!row.stream_files.includes('state_frames.jsonl')) expect(row.recording).toBeNull()
+    }
+    expect(rows.some(row => row.recording === 'ended')).toBe(true)
+    expect(rows.some(row => row.recording === 'stopped')).toBe(true)
+  })
+
+  /**
+   * A unit's frames over time (contract 43), of the ended session: the timeline counts what the
+   * window serves, the page keyed and numbered from 1 in the stream, cut where the route says it is,
+   * and its frames the same shape as the latest one — the type-checker holds that.
+   */
+  it('the recorded streams key their rows, and a cut page says where the next one starts', () => {
+    const timeline: RecordedStreams = recordedStreams
+    const page: RecordedWindow = recordedWindow
+    expect(timeline.key).toEqual(EXPECTED_KEYS.recordedStreams)
+    expect(page.keys['state_frames']).toEqual(EXPECTED_KEYS.recordedFrames)
+    expect(timeline.recording).toBe('ended')
+    const stream = timeline.streams.find(row => row.stream_kind === 'state_frames')!
+    expect(page.matched).toBe(stream.record_count)
+    expect(page.state_frames.map(frame => frame.record_no)).toEqual([1, 2, 3])
+    expect(page.state_frames[0]!.frame_time).toBe(stream.first_record_time)
+    expect(page.truncated).toBe(true)
+    expect(Date.parse(page.next_from!)).toBeGreaterThan(Date.parse(page.state_frames.at(-1)!.frame_time))
   })
 
   // Each assignment is a STRUCTURAL check performed by the type-checker, not by the assertion
@@ -236,9 +303,10 @@ describe('api contract', () => {
    * The record a run writes before it does anything else (contract 26). Two properties are asserted
    * here rather than in a component, because both are properties of the CONTRACT:
    *
-   * `changes` is a SAMPLE and `uncommitted_count` is the number — measured on this capture, 20
-   * entries against 118. A panel that rendered the list's length as the count would understate it
-   * by eighty-eight, and nothing on screen would say so.
+   * `changes` is a SAMPLE and `uncommitted_count` is the number — measured on the dirty capture, 20
+   * entries against 65. A panel that rendered the list's length as the count would understate it
+   * by forty-five, and nothing on screen would say so. That case has a header of its own, because
+   * the simulation run's tree was clean.
    *
    * And the header carries what the index row cannot: `code_identity`. If that ever arrives null
    * on a run that HAS reports, the panel's central block silently empties, so the fixture holds
@@ -252,7 +320,7 @@ describe('api contract', () => {
     expect(typed.origin).not.toBeNull()
     expect(typed.code_identity).not.toBeNull()
 
-    const framework = typed.code_identity!.framework
+    const framework = (runHeaderDirty as RunHeader).code_identity!.framework
     expect(framework.dirty).toBe(true)
     expect(framework.uncommitted_count).toBeGreaterThan(framework.changes.length)
     expect(typed.code_identity!.components.length).toBeGreaterThan(0)

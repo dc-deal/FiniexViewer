@@ -60,8 +60,9 @@ The app's own building blocks, the way the deployment and run lists are built: a
 `RecordList`, rows inert (nothing to pick), a card on each.
 
 - **The label leads to what the activity runs** (viewer#32): its run, else its sweep — a sweep's
-  combination names both, and its run is the nearer. A link (↗) like a session's run in the
-  Deployments, so a `command` that brings the run bundle or the Sweeps panel forward. A running
+  combination names both, and its run is the nearer. A link like a session's run in the
+  Deployments: it brings the run bundle forward — or its members, where they stand as panels of
+  their own — or the Sweeps panel. A running
   backtest opens too: it stands in the run index while it runs (measured 2026-10-19 on a sweep the
   operator started — its running combination listed, its outcome null).
 

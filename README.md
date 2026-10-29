@@ -1,38 +1,63 @@
 # FiniexViewer
 
-> **Version:** v0.4.0 Pre-Alpha Showcase
-> **Status:** v0.4.0 — docked panels. The run report as a bundle whose sections open as panels of
-> their own, a run chart with the trades on their candles, a deployment's session history, an
-> arrangement kept per browser tab, 1138 unit tests and a browser suite.
+> **Version:** v0.5.0 Pre-Alpha Showcase
+> **Status:** v0.5.0 — a deployment as a bundle the way a run is, a session's recorded frames played
+> over time, and the run chart's layers: volume, candles in four forms, the levels and entry–exit
+> lines of a position, arranged by dragging. 1510 unit tests and a browser suite.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
-It reads what a backtest or an AutoTrader session LEFT BEHIND and puts it on one screen: the orders
-a strategy submitted and what became of each one, the trades they produced, the periods the run was
-booked into, the warnings a validator raised, and the configuration it all ran under. Nothing is
-recomputed here — every figure is a field the API served, or it is asked for as one.
+It reads what a backtest or an AutoTrader session left behind and puts it on one screen: the orders
+a strategy submitted and what became of each one, the trades on their candles, the periods the run
+was booked into, the warnings a validator raised, and the configuration it all ran under. **Nothing
+is recomputed here** — every figure is a field the API served, or it is asked for as one.
 
-The candle chart it started as is still there. Deployments, runs and the chart are docked panels —
-tabs that split side by side — and every view comes back as the reader left it after a reload. A
-trade opens on its candles in one click: the run chart beside the report shows a unit of the run,
-its trades marked where they opened and closed.
+Everything is a docked panel: tabs that split side by side, arranged the way an editor's are and
+kept across a reload.
 
-![A run report beside its trade history and the run chart, one scenario in focus](docs/images/run_dock_dark.png)
+## Highlights
 
-**A run, as panels.** The run report is a bundle: its sections stand one below the other, and any of
-them opens as a panel of its own beside it. One scenario in focus narrows every panel that lists
-scenarios — the dashed frame says which — and the run chart shows that scenario's candles with its
-trades marked where they opened and closed; a card at the pointer says which trade a mark is.
+### A run, its trades on their candles
 
-![The run list, folded by family, beside the run chart](docs/images/runs_list_dark.png)
+![The run list, a run's report sections as panels of their own, its trades beside the run chart and its layers](docs/images/workspace_dark.png)
 
-**The run list.** The children of one sweep or one deployment stand under a single heading, a facet
-bar on one line narrows the list, and a pick shows the run in every panel at once.
+The run report is a bundle whose sections open as panels of their own — here every one stands apart,
+arranged in three columns. One scenario in focus narrows every list, and the run chart draws that
+scenario's trades where they opened and closed, the stop loss, the take profit and the entry–exit
+line of the position looked at, and the volume behind the candles. The Layers panel shows, fades and
+orders what the chart draws — by dragging.
 
-![A deployment, its sessions and the booking periods across them](docs/images/deployment_dark.png)
+### A live bot across its restarts
 
-**A live bot across its restarts.** Sessions are separate runs, so the view says when they are not
-one series rather than adding them up — and the periods of all of them share one clock.
+![A deployment's sessions, and where its strategy and its operation changed between them](docs/images/deployment_dark.png)
+
+A deployment opens as a bundle of its sessions and its booking periods. Sessions are separate runs,
+so the view says when they are not one series instead of adding them up; where a session changed its
+configuration, *before · after* opens both, compared.
+
+### A session over time
+
+![A recorded session's state frames, played back frame by frame](docs/images/session_frames_dark.png)
+
+A session that records its state frames plays them back: step through them, play them at a chosen
+speed, or follow a session that is still recording — its account, its decision and every worker's
+output, frame by frame.
+
+### A parameter search, ranked
+
+![A sweep's combinations in the order its objective ranked them](docs/images/sweep_ranked_dark.png)
+
+The Sweeps panel opens each parameter search in the order the backend ranked its combinations by the
+objective it declared, and one click makes a combination the run on show.
+
+### And more
+
+- **Find a run by what it did** — a facet bar on one line narrows the run list by pipeline, outcome,
+  set or time; a sweep's combinations and a deployment's sessions fold under one heading.
+- **What runs on the machine** — the Activities panel lists what FiniexTestingIDE is running, each
+  beneath the one it runs inside, with the memory it holds.
+- **A warning says where it came from** — headed by the title of the validation check that decided it.
+- **Every control explains itself** in a hint that can be dismissed, in a dark and a light theme.
 
 ---
 
@@ -113,7 +138,7 @@ If you use the FiniexTestingIDE devcontainer, the dual-container setup is docume
 | Docking | **dockview** — tabbed, docked panels; floating switched off |
 | Charts | **Lightweight Charts** (TradingView) |
 | HTTP client | **axios** |
-| Layout | **vue-draggable-plus** for the order of the sections in the run report |
+| Layout | **vue-draggable-plus** for the order of the run report's sections and of the chart's layers |
 | Headless components | **Reka UI** — collapsible, dropdown menus, dialog, popover, hover card, tooltip |
 | Icons | **Tabler Icons** — drawn by meaning through one registry |
 | Theme | CSS Custom Properties token system, dark/light mode |
@@ -137,7 +162,7 @@ Every document, one line on what each answers: [docs/documentation_index.md](doc
 │  - Docked panels        │                            │  - Parquet tick reader   │
 │  - Run report bundle    │                            │  - Bar index manager     │
 │  - Run chart, free chart│                            │  - Scenario engine       │
-│  - Deployment history   │                            │  - Run-results ledger    │
+│  - Deployment bundle    │                            │  - Run-results ledger    │
 │  - Restored arrangement │                            │                          │
 └─────────────────────────┘                            └──────────────────────────┘
 ```

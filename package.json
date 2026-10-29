@@ -1,6 +1,6 @@
 {
   "name": "finiex-viewer",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -33,16 +33,16 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.0.0",
     "@vitejs/plugin-vue": "^5.2.1",
-    "@vitest/coverage-v8": "^3.1.0",
+    "@vitest/coverage-v8": "^4.1.12",
     "@vue/eslint-config-typescript": "^14.0.0",
     "@vue/test-utils": "^2.4.6",
     "eslint": "^9.0.0",
-    "eslint-plugin-vue": "^9.0.0",
+    "eslint-plugin-vue": "^10.11.1",
     "jsdom": "^26.0.0",
     "knip": "^6.33.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.7",
-    "vitest": "^3.1.0",
+    "vitest": "^4.1.12",
     "vue-tsc": "^2.2.0"
   },
   "overrides": {

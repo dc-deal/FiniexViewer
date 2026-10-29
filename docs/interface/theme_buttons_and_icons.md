@@ -80,9 +80,9 @@ accent ink, no padding and the font of its line, so its text stands exactly wher
 in a table cell. It keeps the four states: hover lifts a surface *and* underlines, the press sinks
 it *and* moves it a pixel, and focus draws the ring — and also underlines and lifts the surface,
 because a cell that cuts its text off cuts a ring drawn outside the link too, and focus must show
-inside the link's own box where no clip reaches. `JumpLink` adds the arrow that says the jump
-leaves the panel — hidden from a screen reader, which hears the name — and shortens the name
-itself: a table cell cuts the text inside it with an ellipsis, but a button is one box to the
+inside the link's own box where no clip reaches. `JumpLink` wears no arrow: the accent ink already
+says it is clicked, and an arrow on some links only read as a second kind of link (operator,
+2026-10-28). It shortens the name itself: a table cell cuts the text inside it with an ellipsis, but a button is one box to the
 cell, which could only clip it whole. Where a place lets its values wrap instead (the run header's
 definition list), it lets the name wrap too. Until 2026-10-12 the same look stood in six
 components — four `RouterLink`s underlined on hover and nothing else, two jump buttons underlined
@@ -116,6 +116,8 @@ two models for one choice is the inconsistency this document exists to prevent.
 - **Its word is part of the click** (`label`), because a reader aims at the word as often as at the
   lever. Without one, the caller names it with `aria-label` — the Layers panel's rows, whose title
   opens the row instead.
+- **`compact`** is the lever of a dense row, 22 × 12 px against 26 × 14: in the Layers panel the full
+  one outweighed ◐ beside it (operator, 2026-10-28).
 
 ## Sliders — `AppSlider`, a share set by a lever that opens from its handle
 

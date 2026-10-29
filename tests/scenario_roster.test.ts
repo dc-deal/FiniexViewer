@@ -638,9 +638,9 @@ describe('ScenarioRosterPanel', () => {
         keys: { errors: ['name'], warnings: [] },
         errors: [],
         warnings: [
-          { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE' },
-          { tier: 'minor', scope: 'winner', message: 'thin warmup' },
-          { tier: 'minor', scope: 'winner', message: 'and again' },
+          { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' },
+          { tier: 'minor', scope: 'winner', message: 'thin warmup', check: '', domain: '' },
+          { tier: 'minor', scope: 'winner', message: 'and again', check: '', domain: '' },
         ],
         outcome: {
           run_outcome: 'success', failed_count: 0, total_units: 3, failed_unit_names: [],

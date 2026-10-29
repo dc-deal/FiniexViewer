@@ -34,6 +34,12 @@ export interface PanelRelations {
 export interface PanelDescriptor {
   id: string
   title: string
+  /**
+   * Its title as a panel of its own, where the column's would read the same as another bundle's
+   * member on a tab beside it — a deployment's *Booking periods* beside a run's (operator, on screen
+   * 2026-10-27). In its bundle and in its menu area the short title stands.
+   */
+  panelTitle?: string
   icon: IconName
   component: Component
   /** Key into the model record the host supplies — the panel never fetches its own data. */
@@ -145,9 +151,16 @@ export interface LayoutState {
   columns: ColumnState[]
 }
 
-/** The whole persisted arrangement: named layouts plus which one is active. */
+/**
+ * The panels whose column holds members, each of which opens as a panel of its own (viewer#31,
+ * viewer#43): the run report, and a deployment's sessions and booking periods. Ours, so a closed
+ * set — a bundle's id is its panel kind's id.
+ */
+export const BUNDLE_IDS = ['run', 'deployment'] as const
+export type BundleId = typeof BUNDLE_IDS[number]
+
+/** The whole persisted arrangement of the bundles' columns — one layout per bundle. */
 export interface WorkspaceState {
   version: number
-  active: string
-  layouts: Record<string, LayoutState>
+  bundles: Partial<Record<BundleId, LayoutState>>
 }

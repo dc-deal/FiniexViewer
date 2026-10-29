@@ -13,13 +13,15 @@ GET /api/v1/caller                                    token, no grant — who th
 GET /api/v1/brokers                                   a `brokers` grant since contract 35, as the routes below
 GET /api/v1/brokers/{broker}/symbols                   each symbol with its `tick_size` (contract 35)
 GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage   404 where the archive holds nothing (`findCoverage`)
-GET /api/v1/brokers/{broker}/symbols/{symbol}/bars       the bars that OPEN in the range; `X-Bar-Truncated` read
+GET /api/v1/brokers/{broker}/symbols/{symbol}/bars       the bars that OPEN in the range; `X-Bar-Truncated` and `X-Bar-Price-Basis` read
 ```
 
 **The bars route answers the bars that OPEN in `[from, to]`**, each stamped with the open of its
 period (`X-Bar-Time-Basis: open`), and never cuts quietly: a range past its cap of 10,000 is
 answered with the cap's worth and `X-Bar-Truncated: true` (their `market-data` document).
-`getBars` returns both, so a shortened answer is never drawn as a whole one.
+`getBars` returns both, so a shortened answer is never drawn as a whole one — and the file's price
+basis, from which the run chart's volume layer takes which count it draws: a bar's `v` (traded
+volume) or `tc` (its ticks).
 
 **Without a grant, a service only describes itself** (FiniexTestingIDE, for every service, 2026-10-19):
 what an installation holds or does sits behind a grant — since contract 35 the broker list on the
@@ -38,6 +40,7 @@ GET /api/v1/reports/runs                              run index — the only rou
 GET /api/v1/reports/runs/{run_id}/run-summary         cross-section KPIs, summed over all units
 GET /api/v1/reports/runs/{run_id}/scenario-details    the ROSTER — every scenario, produced or not
 GET /api/v1/reports/runs/{run_id}/warnings-errors     tiered warnings, per-unit errors, run outcome
+GET /api/v1/validation-checks                         what every check id a warning names means — read once
 GET /api/v1/reports/runs/{run_id}/portfolio           the same KPIs broken down per unit, and the positions still open
 GET /api/v1/reports/runs/{run_id}/booking-periods     the bookkeeping stretches, plus a completeness check
 GET /api/v1/reports/runs/{run_id}/config              what the run was commissioned with
@@ -47,8 +50,20 @@ GET /api/v1/reports/runs/{run_id}/aggregated-portfolio  the fold, per account cu
 GET /api/v1/reports/runs/{run_id}/pending-orders      what became of a scenario's orders
 GET /api/v1/reports/runs/{run_id}/order-history       the orders themselves, as records — and where each position opened
 GET /api/v1/reports/runs/{run_id}/order-events        the STEPS between those records
+GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams         a unit's timeline (contract 43)
+GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams/window  its frames of [from, to), a page at a time
 GET /api/v1/reports/runs/{run_id}/...                 the further per-section reports, not yet consumed
 ```
+
+**A `major` warning names the check that decided it** (`check`, `domain`), and
+`/validation-checks` says what every check id means — its title and a sentence. The catalogue is
+read once at the app root (`validation_checks_store`) and reaches the warnings section through a
+channel (`use_check_titles`), so the section reads no store: a warning shows its check's title
+first, the sentence the run wrote beneath it, and the description, the id and the domain on hover. A
+`minor` row names no check, nor does an artifact written before a warning carried its origin; its
+sentence then stands alone. The same channel names the checks that refused a unit: the Executive
+Summary's *Produced nothing* gives each absent unit's check titles on hover (`units_absent[].checks`),
+and its cause where no check refused it.
 
 **Ledger plane** — a bot's life across its restarts, on its own grant surface `deployments`:
 
@@ -102,6 +117,8 @@ is the wrong one. The viewer READS it at the render edge — a shared component 
 identity from the declared tuple, which is what lets one table serve two routes — and ASSERTS it in
 the suite. The contract number is asserted against captured fixtures, so re-capturing them against
 a newer backend fails locally instead of a field quietly turning `null` in production.
+The header is READ as well: the menu bar marks a server stamped with another contract than the one
+the viewer mirrors ([Menu Bar Status](../interface/menu_bar_status.md)).
 
 The report plane is model-fed on the backend: one canonical model per section, derived once and rendered identically to console, CSV and API. The API is the same object serialized, not a separate projection that can drift.
 
@@ -112,7 +129,7 @@ Six consequences the frontend is built around:
 - **Every report body names the run it was built from**, and `api_client` asserts it against what was requested (`RunIdMismatchError`). This is the only defence a client has against an ambiguous id: a duplicate passes every membership check, the route resolves it to whichever run it finds first, and nothing else in the payload would give that away. It has happened — three runs once shared one id here.
 - **A 409 is a third thing again: the artifact is there and cannot be parsed**, because it was written by an older schema and the run has to be repeated. Every report getter raises `ArtifactUnreadableError` through one helper, `raiseIfUnreadable`, carrying the backend's own detail text — the backend answers a 409 for ANY report artifact, and until 2026-10-14 only three routes mapped it while the rest showed `Request failed with status code 409` as a failure. The view shows it as a notice *beside* the panels rather than instead of them, one line per section, the run summary's included — which before took the whole run view down as if the server were out. One unreadable section must not hide the readable ones. Three distinct answers, three distinct states: 404 absent, 409 stale, anything else an outage.
 - **The index is the authority on which runs exist, and it is never bypassed.** A stored selection can name a run whose artifacts were removed since. `loadRun` refuses an id the index does not contain, so a stale one produces no request at all rather than one 404 per section — the same rule the layout store applies to stored panel ids. An empty index is its own state (`{"runs": [], "count": 0}` is a normal 200), and the view says so instead of offering empty pickers with no explanation.
-- **`has_reports` on the index row decides whether a run is worth asking about.** `false` means the run exists as logs only and every report route answers 404 — a normal state, because a test session writes logs and no artifacts. It is neither a failure nor a reason to hide the run. Read with `reporting`, as their runs document asks: `none` is a run never meant to write a report, marked `logs only`; `expected` is one that never got to its report — still running, or it died before its report phase — marked `no report`. Neither the store nor the view asks such a run for a report section; the header and the configuration, which are not artifacts, it is asked for. It IS selectable — it was a disabled option once, but the run view now says what such a run is and the store asks the backend for nothing, so a row that cannot be clicked would only look broken. Hiding it instead would raise the question where the run went; asking anyway would be the 404 storm the rule above exists to prevent.
+- **`has_reports` on the index row decides whether a run is worth asking about.** `false` means the run exists as logs only and every report route answers 404 — a normal state, because a test session writes logs and no artifacts. It is neither a failure nor a reason to hide the run. Read with `reporting`, as their runs document asks: `none` is a run never meant to write a report, marked `logs only`; `expected` is one that never got to its report — still running, or it died before its report phase — marked `no report`. Since contract 38 `GET /reports/runs/{id}/state-frames/latest` is consumed by the Latest state frame section, asked once a cadence while it is on show (see the latest state frame document), and such a row may carry `recording`, which tells the two apart for a session that records state frames (see the run list document). A stream is asked for by its own name in `stream_files` — `order_events.jsonl` for the order steps — because a session now lists `state_frames.jsonl` there as well. Neither the store nor the view asks such a run for a report section; the header and the configuration, which are not artifacts, it is asked for. It IS selectable — it was a disabled option once, but the run view now says what such a run is and the store asks the backend for nothing, so a row that cannot be clicked would only look broken. Hiding it instead would raise the question where the run went; asking anyway would be the 404 storm the rule above exists to prevent.
 
 **`run_id` is opaque, and stays that way.** It is minted as `<date>_<time>_<8 hex>` and the backend pins the character class to `[0-9a-f_]` with a test, so interpolating it into a URL path unencoded is safe by assertion rather than by hope. Nothing here parses it: no split, no date extracted for display, no sort. Ordering comes from the index, which is newest-first by contract.
 

@@ -82,8 +82,7 @@ async function pickFile(text: string, name = 'layout.json'): Promise<void> {
 
 const A_LAYOUT = JSON.stringify({
   version: SCHEMA_VERSION,
-  active: 'report',
-  layouts: { report: { columns: [{ width: 1, panels: [] }], hidden: [] } },
+  bundles: { run: { columns: [{ width: 1, panels: [] }] } },
 })
 
 describe('SettingsDialog', () => {

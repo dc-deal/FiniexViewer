@@ -3,7 +3,7 @@
 A panel names what to open and the host decides how, so no panel needs to know the dock. Read this document before you add a way from one panel into another; *Show in list* and the `reveal` behind every jump are described in [Panel Dock](panel_dock.md).
 
 **From a panel into another view — `use_open_in_context.ts`.** The sibling of the position link,
-one level up: a panel names WHAT to open (`openRun(id)`, `openDeployment(id)`) and the host decides
+one level up: a panel names WHAT to open (`openRun(id)`, `openDeployment(id)`, `openSweep(id)`) and the host decides
 HOW. The app root supplies `openInDock()` (`components/dock/open_in_dock.ts`): it CHOOSES the run or
 the deployment through the stores' own `selectRun` / `selectDeployment` — the context and the load,
 exactly as a pick in their list — and brings that panel to the front through the dock store
@@ -11,12 +11,20 @@ exactly as a pick in their list — and brings that panel to the front through t
 context's bare setter: a docked view stays mounted, so nothing reloads behind a context that merely
 changed. Measured 2026-10-14, when the jump did exactly that: a run opened from a deployment showed
 its own sections beside the previous run's executive summary — the sections follow the context, the
-summary loads with the choice. `canOpen` is false where
+summary loads with the choice. `openRun(id, section)` names a section of the run's report as well:
+the run is chosen the same way, and that section comes forward as a panel of its own
+(`dock.openSection`) — in the column it may stand folded or far below the header, and the reader
+asked for the section rather than the report. `compareConfiguration(id, other, side)` does the same
+for the `config` section and first asks for the configuration of `other`, the session on the given
+side of a deployment's change mark, to be shown beside it (`config_compare_store`); the root lets
+the comparison stand only while that run is the one chosen. `canOpen` is false where
 no host supplied the channel, and a panel then draws the name as plain text rather than a way in
-that leads nowhere. Four places use it, each through `JumpLink`: a session's run (`SessionsTable`),
-a period's run on the deployment side (`BookingPeriodTable`), a session lane's label
-(`BookingPeriodTimeline` hands `TimelineChart` an `open` per lane — what a lane MEANS stays the
-caller's) and a run's deployment (`RunHeaderPanel`). No panel holds a route or a `RouteLocationRaw`
+that leads nowhere. Its callers, most through `JumpLink`: a session's run, and on a change mark the
+configuration of the session before and after it (`SessionsTable`); a period's run on the deployment
+side (`BookingPeriodTable`); a session lane's label (`BookingPeriodTimeline` hands `TimelineChart` an
+`open` per lane — what a lane MEANS stays the caller's); a run's deployment and sweep
+(`RunHeaderPanel`); an activity's run or sweep (`ActivitiesView`); and the list that holds a chosen run
+the run list leaves out (`RunPicker`'s notice, and *Show in list* in `use_panel_jump.ts`). No panel holds a route or a `RouteLocationRaw`
 any more. Opening one of them in a new tab went with the `RouterLink`, which is accepted: the URL
 carries no selection, and a new tab starts from the arrangement saved last and keeps its own from
 then on (see [State and Storage](../architecture/state_and_storage.md)).

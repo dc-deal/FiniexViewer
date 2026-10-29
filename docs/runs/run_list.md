@@ -38,6 +38,15 @@ not once per request: about 95 ms for the whole list of 41 runs. The alternative
 `run-summary` per row — forty requests to fill a list of forty, the N+1 their own documentation
 warns about — which is why this was asked for instead of worked around.
 
+**A session the backend has not graded yet says how it records — contract 38, asked for by this
+repo.** Elsewhere on the row a running session and one that died before its report look alike. A
+row whose `stream_files` names `state_frames.jsonl` carries `recording`, the verdict of the
+state-frames route, and the `Outcome` cell shows it until a grade arrives: `● recording` while the
+session writes, `⚠ recording stopped` when its frames stopped without an end (it hangs or its
+process died — the Activities panel tells which), `■ ended` between its last frame and its report.
+The `Outcome` facet offers the same words. What runs on the machine is the Activities panel's
+answer; this one is per run.
+
 Three rules govern how it is rendered, and each has cost something to learn elsewhere:
 
 - **`null`, `[]` and a list are three statements, not two.** `null` is the ledger holding nothing

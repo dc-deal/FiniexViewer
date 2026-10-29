@@ -1,6 +1,6 @@
 {
-  "run_id": "20261012_205715_c3b41fff",
-  "start_time": "2026-10-12T20:57:15.088504Z",
+  "run_id": "20261018_105012_fde28d5d",
+  "start_time": "2026-10-18T10:50:12.672432Z",
   "run_type": "simulation",
   "run_name": "report_coverage_reference",
   "parent_id": null,
@@ -9,47 +9,28 @@
   "config_id": "76988fb0d45da74a48c37ae0ce3a72daa54f66aa6f2c75f6a9d22d9a4e2dc4fe",
   "rendered_config_id": "",
   "app_version": "1.4.0",
-  "git_commit": "0b113caa",
+  "git_commit": "021342c8",
   "reporting": "expected",
   "origin": {
     "channel": "cli",
     "client": "console",
     "principal": "operator",
     "host": "h_x29og8",
-    "allow_dirty": false
+    "allow_dirty": false,
+    "first_start": false,
+    "accept_composite_change": null
   },
   "code_identity": {
     "framework": {
       "root": ".",
       "in_repository": true,
-      "commit": "0b113caa",
+      "commit": "021342c8",
       "branch": "dev-v-1-4",
-      "dirty": true,
-      "uncommitted_count": 65,
-      "changes": [
-        " M .vscode/launch.json",
-        " M configs/app_config.json",
-        " M configs/autotrader_profiles/mock/deployment_continuity_test.json",
-        " M configs/autotrader_profiles/mock/diagnostics_probe_test.json",
-        " M configs/autotrader_profiles/mock/minimal_warmup_test.json",
-        " M docs/architecture/data_storage_layout.md",
-        " M docs/autotrader/autotrader_architecture.md",
-        " M docs/autotrader/autotrader_data_intake.md",
-        " M docs/consumer/run-summary.md",
-        " M docs/data_pipeline/batch_preparation_system.md",
-        " M docs/documentation_index.md",
-        " M docs/generator/generator_block_splitting_architecture.md",
-        " M docs/glossary.md",
-        " M docs/process_execution_guide.md",
-        " M docs/tests/autotrader/integration_tests.md",
-        " M docs/tests/framework/worker_tests.md",
-        " M docs/tests/simulation/baseline_tests.md",
-        " M docs/tests/test_taxonomy.md",
-        " M docs/user_guides/adapter/adapter_development_guide.md",
-        " M docs/user_guides/quickstart_guide.md"
-      ],
-      "diff_hash": "6dd114cd5fb3332fb759ab9ad254213e247d4e85bf4b3545bb8000d8f8ff0c85",
-      "patch_ref": "run_patches/e7195d1726aadc11777804a6eca4f50e60d930169301f168de250d8fcc010ef8.patch",
+      "dirty": false,
+      "uncommitted_count": 0,
+      "changes": [],
+      "diff_hash": null,
+      "patch_ref": null,
       "patch_excluded": [],
       "restorable": true
     },
@@ -137,5 +118,5 @@
     }
   ],
   "run_purpose": "fixture",
-  "report_contract": 28
+  "report_contract": 34
 }

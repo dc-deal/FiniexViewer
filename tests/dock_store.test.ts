@@ -10,6 +10,8 @@ import { useLayoutStore } from '@/stores/layout_store'
 interface FakeGroup {
   id: string
   panels: FakePanel[]
+  /** the tab in front of this group; the active group's is the dock's active panel */
+  readonly activePanel: FakePanel | undefined
   api: { width: number, height: number, moveTo: (options: { group: FakeGroup }) => void }
 }
 
@@ -64,12 +66,16 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
   const edgeGroups: FakeEdgeGroup[] = []
   // dockview announces the panel in front whenever another one comes there
   const fronted: ((event: { panel: FakePanel | undefined }) => void)[] = []
+  // every group keeps a tab in front, by group id
+  const frontOf = new Map<string, string>()
 
   const panels = () => row.flatMap(group => group.panels)
   const find = (id: string) => panels().find(panel => panel.id === id)
   const mutate = () => willMutate.forEach(listener => listener())
 
   function front(id: string | null): void {
+    const panel = find(id ?? '')
+    if (panel) frontOf.set(panel.group.id, panel.id)
     if (id === active) return
     active = id
     fronted.forEach(listener => listener({ panel: find(id ?? '') }))
@@ -79,6 +85,7 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     const group: FakeGroup = {
       id: `g${groupCount++}`,
       panels: [],
+      get activePanel() { return group.panels.find(panel => panel.id === frontOf.get(group.id)) ?? group.panels[0] },
       api: {
         width: 400,
         height: 600,
@@ -225,6 +232,8 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     groups: () => panels().map(p => p.group.id),
     /** The groups left to right, each as the ids of its tabs. */
     rows: () => row.map(group => group.panels.map(p => p.id)),
+    /** The tab in front of each group, left to right. */
+    fronts: () => row.map(group => group.activePanel?.id),
     width: (id: string) => find(id)?.group.api.width,
     /** The reader drags a seam: the panel's group takes this width. */
     resize: (id: string, width: number) => {
@@ -260,7 +269,7 @@ describe('useDockStore', () => {
     useDockStore().attach(dock.api)
 
     // the lists as tabs; the report beside them and the run chart beside it, each a split of its own
-    expect(dock.rows()).toEqual([['deployments', 'runs'], ['run'], ['run-chart']])
+    expect(dock.rows()).toEqual([['deployments', 'runs'], ['run', 'deployment'], ['run-chart']])
     expect(dock.active()).toBe('runs')
     expect(useArrangementStore().dock).not.toBeNull()
   })
@@ -272,7 +281,7 @@ describe('useDockStore', () => {
   it('puts the run chart behind the report as a tab where the dock holds two columns', () => {
     const dock = fakeDock({ width: 1600 })
     useDockStore().attach(dock.api)
-    expect(dock.rows()).toEqual([['deployments', 'runs'], ['run', 'run-chart']])
+    expect(dock.rows()).toEqual([['deployments', 'runs'], ['run', 'deployment', 'run-chart']])
     expect(dock.width('run')).toBe(1054)
   })
 
@@ -280,7 +289,7 @@ describe('useDockStore', () => {
   it('puts the run chart after the report as a tab where the dock is too narrow to share', () => {
     const dock = fakeDock({ width: 1000 })
     useDockStore().attach(dock.api)
-    expect(dock.rows()).toEqual([['deployments', 'runs', 'run', 'run-chart']])
+    expect(dock.rows()).toEqual([['deployments', 'runs', 'run', 'deployment', 'run-chart']])
     expect(dock.active()).toBe('runs')
   })
 
@@ -310,7 +319,7 @@ describe('useDockStore', () => {
       useContextStore().selectRun('r1')
       const dock = fakeDock()
       useDockStore().attach(dock.api)
-      expect(dock.rows()).toEqual([['deployments', 'runs', 'run', 'chart'], ['run-chart']])
+      expect(dock.rows()).toEqual([['deployments', 'runs', 'run', 'deployment', 'chart'], ['run-chart']])
       expect(dock.active()).toBe('run')
     })
 
@@ -347,7 +356,7 @@ describe('useDockStore', () => {
     const dock = fakeDock()
     useDockStore().attach(dock.api)
 
-    expect(dock.ids()).toEqual(['chart'])
+    expect(dock.ids()).toEqual(['chart', 'deployment'])
     expect(dock.restored).toHaveLength(1)
   })
 
@@ -424,7 +433,7 @@ describe('useDockStore', () => {
     const dock = fakeDock({ refuse: true })
     useDockStore().attach(dock.api)
 
-    expect(dock.ids()).toEqual(['deployments', 'runs', 'run', 'run-chart'])
+    expect(dock.ids()).toEqual(['deployments', 'runs', 'run', 'deployment', 'run-chart'])
   })
 
   /**
@@ -510,7 +519,7 @@ describe('useDockStore', () => {
     expect(dock.ids()).not.toContain('run-chart')
 
     store.reveal('run-chart', 'command')
-    expect(dock.rows()).toEqual([['deployments', 'runs', 'run'], ['run-chart']])
+    expect(dock.rows()).toEqual([['deployments', 'runs', 'run', 'deployment'], ['run-chart']])
     expect(dock.active()).toBe('run-chart')
   })
 
@@ -536,7 +545,7 @@ describe('useDockStore', () => {
       store.attach(dock.api)
       store.reveal('run-chart', 'command')
       store.reveal('layers', 'command')
-      expect(dock.rows()).toEqual([['deployments', 'runs', 'run', 'run-chart'], ['layers']])
+      expect(dock.rows()).toEqual([['deployments', 'runs', 'run', 'deployment', 'run-chart'], ['layers']])
       expect(dock.width('layers')).toBe(240)
       expect(dock.active()).toBe('layers')
       expect(store.lastChart).toBe('run-chart')
@@ -551,6 +560,34 @@ describe('useDockStore', () => {
     })
   })
 
+  /**
+   * A layout stored before the deployment bundle existed gains it behind the run bundle, whether a
+   * deployment is chosen or not — never one the reader hid, which comes back from the menu, behind
+   * the run bundle again (viewer#43).
+   */
+  it('gives a stored layout the deployment bundle behind the run bundle, and none the reader hid', () => {
+    const layout = {
+      grid: { root: { type: 'leaf', data: { id: 'g', views: ['deployments', 'runs', 'run'], activeView: 'runs' } } },
+      panels: Object.fromEntries(['deployments', 'runs', 'run'].map(id => [id, { id, params: { kind: id } }])),
+    }
+    useArrangementStore().setDock(layout)
+    const gains = fakeDock({ width: 1000 })
+    useDockStore().attach(gains.api)
+    expect(gains.ids().slice(0, 4)).toEqual(['deployments', 'runs', 'run', 'deployment'])
+    expect(gains.active()).toBe('runs')
+
+    setActivePinia(createPinia())
+    useArrangementStore().setDock(layout)
+    useArrangementStore().setPlaces({ deployment: { besides: ['run'], direction: 'within', index: 3 } })
+    const hid = fakeDock({ width: 1000 })
+    const store = useDockStore()
+    store.attach(hid.api)
+    expect(hid.ids()).not.toContain('deployment')
+    // the menu brings it back where it stood
+    store.reveal('deployment', 'command')
+    expect(hid.ids()).toContain('deployment')
+  })
+
   /** A new panel is appended with its default: a layout stored before the run chart opened by default. */
   it('gives a stored layout the run chart it never held, beside the report, and none the reader hid', () => {
     const layout = {
@@ -560,7 +597,7 @@ describe('useDockStore', () => {
     useArrangementStore().setDock(layout)
     const gains = fakeDock()
     useDockStore().attach(gains.api)
-    expect(gains.rows()).toEqual([['deployments', 'runs', 'run'], ['run-chart']])
+    expect(gains.rows()).toEqual([['deployments', 'runs', 'run', 'deployment'], ['run-chart']])
     // the panel in front stays in front
     expect(gains.active()).toBe('run')
 
@@ -579,9 +616,9 @@ describe('useDockStore', () => {
     dock.close('run-chart')
 
     store.reset()
-    expect(dock.ids()).toEqual(['deployments', 'runs', 'run', 'run-chart'])
+    expect(dock.ids()).toEqual(['deployments', 'runs', 'run', 'deployment', 'run-chart'])
     expect(dock.active()).toBe('runs')
-    expect(Object.keys((useArrangementStore().dock as { panels: object }).panels)).toEqual(['deployments', 'runs', 'run', 'run-chart'])
+    expect(Object.keys((useArrangementStore().dock as { panels: object }).panels)).toEqual(['deployments', 'runs', 'run', 'deployment', 'run-chart'])
   })
 
   /** A drag changes the layout every frame — it is written once it holds still, or when the page goes. */
@@ -636,15 +673,15 @@ describe('useDockStore', () => {
 
     it('keeps the open panels as dockview reports them', () => {
       const { dock, store } = attached()
-      expect(store.openIds).toEqual(['deployments', 'runs', 'run', 'run-chart'])
+      expect(store.openIds).toEqual(['deployments', 'runs', 'run', 'deployment', 'run-chart'])
       dock.close('run-chart')
-      expect(store.openIds).toEqual(['deployments', 'runs', 'run'])
+      expect(store.openIds).toEqual(['deployments', 'runs', 'run', 'deployment'])
     })
 
     it('opens the first beside the run report, as a split to its right, and in front', () => {
       const { dock, store } = attached()
       store.openSection('trade-history')
-      expect(dock.rows()).toEqual([['deployments', 'runs'], ['run'], ['report-trade-history'], ['run-chart']])
+      expect(dock.rows()).toEqual([['deployments', 'runs'], ['run', 'deployment'], ['report-trade-history'], ['run-chart']])
       expect(dock.active()).toBe('report-trade-history')
       expect(store.openIds).toContain('report-trade-history')
     })
@@ -670,9 +707,109 @@ describe('useDockStore', () => {
       const { store } = attached()
       store.openSection('trade-history')
       store.reset()
-      expect(store.openIds).toEqual(['deployments', 'runs', 'run', 'run-chart'])
+      expect(store.openIds).toEqual(['deployments', 'runs', 'run', 'deployment', 'run-chart'])
       // a rebuild is not the reader closing anything: the section is back, not hidden
       expect(hidden('trade-history')).toBe(false)
+    })
+  })
+
+  /**
+   * A link aimed at a bundle goes to its members where they stand as panels of their own (operator,
+   * 2026-10-28): the reader who took them out chose to read them apart, and reopening the bundle they
+   * closed moved the layout on a click about something else. With none out it opens the bundle,
+   * or the click would show nothing.
+   */
+  describe('a link to a bundle whose members stand as panels', () => {
+    function attached() {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      return { dock, store }
+    }
+
+    function moveInto(dock: ReturnType<typeof fakeDock>, id: string, besideId: string): void {
+      dock.api.getPanel(id)!.api.moveTo({ group: dock.api.getPanel(besideId)!.group })
+    }
+
+    it('leaves the closed bundle closed, its members showing the choice, the reader where they clicked', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      dock.close('run')
+      store.reveal('deployment', 'command')
+
+      expect(store.reveal('run', 'link')).toBe(true)
+      expect(dock.ids()).not.toContain('run')
+      expect(dock.active()).toBe('deployment')
+    })
+
+    it('brings a member forward where another panel covers it, and leaves one already in front', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      store.openSection('orders')
+      dock.close('run')
+      // the run chart dragged in as a tab beside the two members, and in front of them
+      moveInto(dock, 'run-chart', 'report-orders')
+      store.reveal('deployment', 'command')
+
+      store.reveal('run', 'link')
+      expect(dock.fronts()).toContain('report-trade-history')
+      expect(dock.fronts()).not.toContain('run-chart')
+      expect(dock.active()).toBe('deployment')
+
+      // a member in front already is the one that stays
+      store.reveal('report-orders', 'command')
+      store.reveal('deployment', 'command')
+      store.reveal('run', 'link')
+      expect(dock.fronts()).toContain('report-orders')
+    })
+
+    it('never covers the group the link was clicked in', () => {
+      const { dock, store } = attached()
+      store.openSection('orders')
+      dock.close('run')
+      moveInto(dock, 'report-orders', 'deployment')
+      store.reveal('deployment', 'command')
+
+      store.reveal('run', 'link')
+      expect(dock.active()).toBe('deployment')
+      expect(dock.fronts()).not.toContain('report-orders')
+    })
+
+    /** The bundle open, but behind another tab: with members out it stays there (operator, 2026-10-28). */
+    it('leaves an open bundle behind its tab while members stand out', () => {
+      const { dock, store } = attached()
+      store.openSection('trade-history')
+      store.reveal('deployment', 'command')
+      expect(dock.fronts()).not.toContain('run')
+
+      store.reveal('run', 'link')
+      expect(dock.fronts()).not.toContain('run')
+      expect(dock.active()).toBe('deployment')
+    })
+
+    it('opens the bundle where none of its members stands out', () => {
+      const { dock, store } = attached()
+      dock.close('run')
+
+      expect(store.reveal('run', 'link')).toBe(true)
+      expect(dock.ids()).toContain('run')
+      expect(dock.active()).toBe('run')
+      // a command from the Panels menu opens it whatever stands out
+      store.openSection('orders')
+      dock.close('run')
+      store.reveal('run', 'command')
+      expect(dock.ids()).toContain('run')
+    })
+
+    it('does the same for the deployment bundle', () => {
+      const { dock, store } = attached()
+      store.openSection('sessions', 'deployment')
+      dock.close('deployment')
+      store.reveal('runs', 'command')
+
+      store.reveal('deployment', 'link')
+      expect(dock.ids()).not.toContain('deployment')
+      expect(dock.active()).toBe('runs')
     })
   })
 
@@ -706,7 +843,7 @@ describe('useDockStore', () => {
       dock.close('report-trade-history')
 
       store.showSection('trade-history')
-      expect(dock.rows()).toEqual([['deployments', 'runs'], ['run'], ['report-trade-history'], ['run-chart']])
+      expect(dock.rows()).toEqual([['deployments', 'runs'], ['run', 'deployment'], ['report-trade-history'], ['run-chart']])
       expect(dock.width('report-trade-history')).toBe(520)
       expect(hidden('trade-history')).toBe(false)
       expect(dock.active()).toBe('report-trade-history')
@@ -728,12 +865,29 @@ describe('useDockStore', () => {
       const { dock, store } = attached()
       store.openSection('trade-history')
       dock.close('report-trade-history')
-      for (const id of ['deployments', 'runs', 'run', 'run-chart']) dock.close(id)
+      for (const id of ['deployments', 'runs', 'run', 'deployment', 'run-chart']) dock.close(id)
 
       store.showSection('trade-history')
       expect(dock.ids()).toEqual(['run'])
       expect(hidden('trade-history')).toBe(false)
       expect(useArrangementStore().places['report-trade-history']).toBeUndefined()
+    })
+
+    /** The bundle closed and other members read apart: it joins them, the bundle stays closed (2026-10-28). */
+    it('shows a section beside the other members where the bundle is closed and they stand apart', () => {
+      const { dock, store } = attached()
+      store.hideSection('trade-history')
+      store.openSection('orders')
+      dock.close('run')
+      expect(store.standsApart('run')).toBe(true)
+
+      store.showSection('trade-history')
+      expect(dock.ids()).not.toContain('run')
+      expect(dock.rows().find(row => row.includes('report-orders'))).toContain('report-trade-history')
+      expect(hidden('trade-history')).toBe(false)
+      // the bundle open again, nothing stands apart
+      store.reveal('run', 'command')
+      expect(store.standsApart('run')).toBe(false)
     })
 
     it('sends a section back into the column by its own control — shown, its place forgotten', () => {
@@ -766,7 +920,7 @@ describe('useDockStore', () => {
       dock.close('chart')
 
       store.reveal('chart', 'command')
-      expect(dock.rows()).toEqual([['deployments', 'runs'], ['chart'], ['run'], ['run-chart']])
+      expect(dock.rows()).toEqual([['deployments', 'runs'], ['chart'], ['run', 'deployment'], ['run-chart']])
       expect(dock.active()).toBe('chart')
     })
 
@@ -794,7 +948,7 @@ describe('useDockStore', () => {
       reloaded.attach(again.api)
       reloaded.showSection('trade-history')
       // the stand-in dock restores a stored layout into one group
-      expect(again.rows()).toEqual([['deployments', 'runs', 'run', 'run-chart'], ['report-trade-history']])
+      expect(again.rows()).toEqual([['deployments', 'runs', 'run', 'deployment', 'run-chart'], ['report-trade-history']])
     })
   })
 
@@ -857,5 +1011,5 @@ describe('useDockStore', () => {
 
 /** Whether the column has the section switched off. */
 function hidden(sectionId: string): boolean | undefined {
-  return useLayoutStore().arrangedPanels.find(panel => panel.id === sectionId)?.hidden
+  return useLayoutStore().arrangedOf().find(panel => panel.id === sectionId)?.hidden
 }

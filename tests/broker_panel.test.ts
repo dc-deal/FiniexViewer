@@ -38,6 +38,8 @@ const MARGIN: BrokerUnit = {
   hedging_allowed: true,
   config_hash: 'd42aab69',
   scenarios: ['GBPUSD_window_01', 'USDJPY_window_04'],
+  fee_report: null,
+  venue_fee_expected: null,
   symbols: [{
     symbol: 'GBPUSD',
     volume_min: 0.01,

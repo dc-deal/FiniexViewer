@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import ConfigPanel from '@/components/runs/ConfigPanel.vue'
 import {
-  scenarioCount, scenarioOverrides, strategyOf, workersOf,
+  configChanges, scenarioCount, scenarioOverrides, strategyOf, workersOf,
 } from '@/components/runs/config_shape'
+import { provideConfigComparison } from '@/composables/use_config_comparison'
+import type { ComparedConfig } from '@/composables/use_config_comparison'
 import type { RunConfigReport } from '@/types/api/report_types'
 
 import live from './fixtures/run_config_live.json'
@@ -140,10 +143,82 @@ describe('config_shape', () => {
   })
 })
 
+/**
+ * The one comparison this repository makes, by their config document's instruction: equality of
+ * the two files' served values, by path, and nothing resolved.
+ */
+describe('configChanges', () => {
+  it('lists every value that differs by its path, a key one side lacks included, and nothing that is equal', () => {
+    const before = { strategy_config: { decision_logic_config: { rsi_oversold: 40, lot_size: 0.1 }, workers: { a: { periods: { M5: 14 } } } }, safety: { max_dd: 25 } }
+    const after = { strategy_config: { decision_logic_config: { rsi_oversold: 35, lot_size: 0.1 }, workers: { a: { periods: { M5: 20 } } } }, extra: true }
+    expect(configChanges(before, after)).toEqual([
+      { path: 'strategy_config.decision_logic_config.rsi_oversold', before: 40, after: 35 },
+      { path: 'strategy_config.workers.a.periods.M5', before: 14, after: 20 },
+      { path: 'extra', before: undefined, after: true },
+      { path: 'safety.max_dd', before: 25, after: undefined },
+    ])
+    expect(configChanges(before, before)).toEqual([])
+  })
+
+  /** A list is one value, compared as a whole: an order changed is a change. */
+  it('compares a list as one value', () => {
+    expect(configChanges({ symbols: ['A', 'B'] }, { symbols: ['B', 'A'] })).toHaveLength(1)
+    expect(configChanges({ symbols: ['A', 'B'] }, { symbols: ['A', 'B'] })).toEqual([])
+  })
+})
+
 describe('ConfigPanel', () => {
   function mountPanel(model: RunConfigReport) {
     return mount(ConfigPanel, { props: { model } })
   }
+
+  /** The panel with a comparison its host supplies, as the change mark's link asks for one. */
+  function mountCompared(model: RunConfigReport, compared: ComparedConfig) {
+    const Host = defineComponent({
+      setup() {
+        provideConfigComparison({ compared: () => compared, stop: () => {} })
+        return () => h(ConfigPanel, { model })
+      },
+    })
+    return mount(Host)
+  }
+
+  /**
+   * Opened from a change mark, the panel says what differs from the session across it, oldest side
+   * first, marks a moved decision-logic value where it stands with the other side's value beside
+   * it, and says what a comparison of files cannot see.
+   */
+  it('lists what differs from the session across the mark, and marks a moved value where it stands', () => {
+    const after = structuredClone(LIVE)
+    const logic = (after.config['strategy_config'] as { decision_logic_config: Record<string, unknown> }).decision_logic_config
+    const [key] = Object.keys(logic)
+    const was = logic[key!]
+    logic[key!] = 'changed'
+    const wrapper = mountCompared(after, { runId: 'run_before', side: 'before', body: LIVE, loading: false, missing: null })
+    expect(wrapper.find('.comparison-head').text()).toContain('Compared with the session before')
+    const rows = wrapper.findAll('.change')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.find('.change-path').text()).toBe(`strategy_config.decision_logic_config.${key}`)
+    expect(rows[0]!.find('.change-values').text()).toBe(`${String(was)} → changed`)
+    const marked = wrapper.findAll('.param.changed')
+    expect(marked).toHaveLength(1)
+    expect(marked[0]!.text()).toContain(`before ${String(was)}`)
+    expect(wrapper.find('.comparison-caveat').text()).toContain('a default or a start option')
+  })
+
+  /** The other session's configuration may not be there; the panel says why and compares nothing. */
+  it('says why the other configuration is missing, and that two equal files hold the same values', () => {
+    const missing = mountCompared(LIVE, { runId: 'run_x', side: 'after', body: null, loading: false, missing: 'No configuration on record' })
+    expect(missing.find('.comparison').text()).toContain('No configuration on record')
+    expect(missing.findAll('.param.changed')).toHaveLength(0)
+
+    const same = mountCompared(LIVE, { runId: 'run_x', side: 'after', body: LIVE, loading: false, missing: null })
+    expect(same.find('.comparison').text()).toContain('The two files hold the same values')
+  })
+
+  it('draws no comparison where none was asked for', () => {
+    expect(mountPanel(LIVE).find('.comparison').exists()).toBe(false)
+  })
 
   it('names the source file and shortens the id, keeping the whole of it reachable', () => {
     const wrapper = mountPanel(LIVE)

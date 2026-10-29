@@ -11,8 +11,8 @@ import type { RunInfo } from '@/types/api/report_types'
 import runConfigFixture from './fixtures/run_config_live.json'
 
 /** The run the reader chose, as the index states it. */
-function chooseRun(): void {
-  useRunsStore().runs = [{ run_id: 'r1' } as RunInfo]
+function chooseRun(row: Partial<RunInfo> = {}): void {
+  useRunsStore().runs = [{ run_id: 'r1', has_reports: true, ...row } as RunInfo]
   useContextStore().selectRun('r1')
 }
 
@@ -59,6 +59,18 @@ describe('ReportSection', () => {
   it('says it neutrally where the run never wrote the section', () => {
     chooseRun()
     expect(mountSection('trade-history').find('.notice.absent').text()).toBe('This run carries no such section')
+  })
+
+  /**
+   * A run that wrote no report yet does not LACK the section: a session still running writes it
+   * when it ends. Said the way the bundle says it, and from the session's own recording verdict.
+   */
+  it('says a session still running writes its report when it ends, not that it has none', () => {
+    chooseRun({ has_reports: false, reporting: 'expected', recording: 'current' })
+    expect(mountSection('trade-history').find('.notice.absent').text())
+      .toBe('This session is still running — its report is written when it ends')
+    chooseRun({ has_reports: false, reporting: 'expected', recording: 'stopped' })
+    expect(mountSection('trade-history').find('.notice.absent').text()).toContain('stopped recording without an end')
   })
 
   it('says that no run is chosen, where none is', () => {

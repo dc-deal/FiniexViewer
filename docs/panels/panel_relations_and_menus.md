@@ -12,7 +12,8 @@ is the chooser and the follower of a key, never one panel over another.
 
 ```
 kind              member of   follows                  chooses
-Deployments       —           deployment ¹             deployment · run
+Deployments       —           —                        deployment
+Deployment bundle —           deployment + its members ² its members ²
 Sweeps            —           sweep ¹                  sweep · run
 Runs              —           —                        run
 Run bundle        —           run  + its members ²     its members ²
@@ -26,6 +27,8 @@ Orders            Run bundle  run · scenario           position
 Booking periods   Run bundle  run · scenario           —
 Warnings & errors Run bundle  run · scenario           —
 every other       Run bundle  run                      —
+Sessions          Deployment bundle  deployment        run
+Booking periods   Deployment bundle  deployment        run
 ```
 
 ¹ Said on the card only where ANOTHER kind can choose the key: a key nobody else chooses is the
@@ -104,11 +107,17 @@ A tick is a panel on show, a click hides it or shows it again, and the menu stay
 can be switched in one visit. The run bundle's sections stand in the submenu *Runs*, in
 the column's order, each with where it is (`use_section_states.ts`): in the column, open as a panel
 (⇱), hidden, or struck where the chosen run has none — listed rather than left out, because an
-inventory that silently shortens is not one.
+inventory that silently shortens is not one. The deployment bundle's members stand the same way in
+the submenu *Deployments* (viewer#43): every bundle's members in its area, through one register
+(`bundle_members.ts`).
 
 ```
 Panels ▾
-├ ✓ Deployments
+├   Deployments ▸ ┬ ✓ Deployment list
+│                 ├ ✓ Deployment bundle
+│                 ├ ─────────
+│                 ├ ✓ Sessions                  in the bundle
+│                 └ ✓ Booking periods       ⇱   open as a panel
 ├   Sweeps
 ├   Runs ▸ ┬ ✓ Run list
 │          ├ ✓ Run bundle
@@ -154,3 +163,16 @@ an overwhelming shrink share against the tabs (`flex-shrink: 1000000`), down to 
 bar's content declares: the bar shortens first, and a tab goes into the overflow menu only after it.
 A share of 100 to 1 still cost the tabs 2 px, and one pixel short is enough for dockview to move a
 tab into that menu (measured at 560 px).
+
+**And it fits a short header rather than running past it** (2026-10-28). The container may shrink
+below its content (`min-width: 0`), the bar's selects give way to a floor of 3rem, and in a header
+under 32rem — the run chart's at its first width beside an 1800 px window is 457 px — the button
+shows `≡` alone and a tab's subtitle shortens to 10ch. The header is a size container
+(`dock-header`) for exactly that. Until then the bar's floor was its full width: the tab took the
+whole shortfall and left for the overflow menu, and `≡ Layers` stood past the group's edge.
+
+**A group clips and is never scrolled.** dockview writes `overflow: hidden` on a group, which still
+let the browser scroll it to bring a focused control into view: the focused `≡ Layers` button past
+the edge scrolled the run chart's group by 171 px once the Layers panel opened, and the chart kept in
+the page stood over the report. `overflow: clip` makes the group no scroll container at all; the
+Layers browser spec holds the chart inside its group.

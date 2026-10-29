@@ -78,6 +78,18 @@ export interface RunOrigin {
   principal: string
   host: string
   allow_dirty: boolean
+  /**
+   * Contract 37: a session trading real money was declared the bot's FIRST start — the one way it
+   * starts without a carry-over to continue. False on every other run and on one recorded before.
+   */
+  first_start: boolean
+  /**
+   * Contract 41: the composite key a live start was given with `--accept-composite-change` — the
+   * composite it may continue what the venue still holds under, though another opened it. Recorded
+   * as typed; whether it let anything through is the session's `composite_change_accepted` warning.
+   * Null where the flag was not given, on a backtest, and before.
+   */
+  accept_composite_change: string | null
 }
 
 /**
@@ -163,11 +175,20 @@ export interface RunInfo {
   /**
    * The STREAMS a run produced, kept OUT of `artifacts` on purpose (contract 23) — their own
    * documentation is explicit about it: *"Ask for a stream whenever it is listed, whatever
-   * `artifacts` says."* Today one name appears, `order_events.jsonl`, and it is what makes
-   * `order-events` answerable; an artifact gate that only consults `artifacts` would never request
-   * it at all.
+   * `artifacts` says."* `order_events.jsonl` makes `order-events` answerable, and since contract 38
+   * an AutoTrader session also names `state_frames.jsonl` — so a gate asks for its OWN name, never
+   * for a non-empty list. An artifact gate that only consults `artifacts` would request neither.
    */
   stream_files: string[]
+  /**
+   * Whether a session still records its state frames (contract 38) — the verdict the
+   * latest-state-frame route gives for the same stream: `current`, `stopped` (its frames stopped
+   * without an end: it hangs or its process died) or `ended`. Null on every row whose
+   * `stream_files` does not name `state_frames.jsonl`, before the first frame, for a session
+   * replaying recorded data before its end, and where the stream cannot be read. It is what tells
+   * a running session from one that died before its report — elsewhere on the row they look alike.
+   */
+  recording: string | null
   /**
    * What the run is FOR, new in contract 24. `regular` — somebody's own run; `fixture` — a test's
    * run or one a consumer pins, whose numbers are BUILT rather than earned; `certificate` — a
@@ -329,12 +350,15 @@ export interface RunSummaryCurrency {
   /**
    * Was `max_drawdown` until contract 2. The deepest decline of the ACCOUNT, as a magnitude —
    * distinct from a booking period's own decline, which is why the name carries the scope.
+   *
+   * Typed nullable since contract 40, with the same field on a booking period; a run's own summary
+   * always carries numbers (their contract log), so a null here says what it says there.
    */
-  account_max_drawdown: number
+  account_max_drawdown: number | null
   // ALREADY a percentage: 3.47 means 3.47 %. `_pct` is a rule and holds everywhere; `_rate` and
   // `_ratio` are NOT one and are read per field. Never pass this to the ratio formatter.
-  account_max_dd_pct: number
-  max_equity: number
+  account_max_dd_pct: number | null
+  max_equity: number | null
   /**
    * Which account the drawdown trio above belongs to. The trio is the DEEPEST account's, taken
    * together from that one account, because a trough and a peak from two different accounts
@@ -475,6 +499,13 @@ export interface WarningRow {
   tier: string          // 'major' (tier 1, validator) | 'minor' (tier 2, log pot)
   scope: string         // 'run' (run-wide) | the name of a unit
   message: string
+  /**
+   * The check that decided a `major` warning — its stable id, which `GET /api/v1/validation-checks`
+   * gives a title and a sentence for — and the area it belongs to. Empty on a `minor` row, where no
+   * assertion decided a log line, and on an artifact written before a warning carried its origin.
+   */
+  check: string
+  domain: string
 }
 
 /**
@@ -813,16 +844,22 @@ export interface BookingPeriodRow {
    * artifact, so the absence is the data.
    */
   opening_equity: number | null
-  final_equity: number
-  min_equity: number
-  max_equity: number
+  /**
+   * The band, null since contract 40 on a period that could value the account at no point — a spot
+   * session whose first period was sealed before its first tick priced its holdings.
+   */
+  final_equity: number | null
+  min_equity: number | null
+  max_equity: number | null
+  /** How many ticks the period applied (contract 40): 0 on a trading day the run heard nothing from. Null before. */
+  tick_count: number | null
   /**
    * Sign is NOT reliable across the archive. The backend aligned this to a magnitude, but stored
    * artifacts written before that keep the negative form and nothing in the payload distinguishes
    * them. Rendered as a magnitude for that reason — a decline is a decline, so no information is
-   * lost by dropping a sign that means nothing here.
+   * lost by dropping a sign that means nothing here. Null where the band is (contract 40).
    */
-  max_drawdown: number
+  max_drawdown: number | null
   /**
    * What the period CARRIES beside what it did (contract 35): the account's decline since its equity
    * curve began — a session continues the curve of the one before wherever its profile carries the
@@ -872,10 +909,14 @@ export interface BookingPeriodUnitTotal {
   final_equity: number
   min_equity: number
   max_equity: number
-  /** The deepest decline WITHIN one period, against the account's own decline across them all. */
-  deepest_period_drawdown: number
-  account_max_drawdown: number
-  account_max_dd_pct: number
+  /**
+   * The deepest decline WITHIN one period, against the account's own decline across them all. Null
+   * since contract 40 where no period could value the account, and the account's two where none of
+   * the unit's periods measured one.
+   */
+  deepest_period_drawdown: number | null
+  account_max_drawdown: number | null
+  account_max_dd_pct: number | null
 }
 
 /**
@@ -912,7 +953,8 @@ export interface BookingPeriodsReport {
    * A missing check renders as loudly as a failed one; a tick would claim evidence that is absent.
    */
   reconciles: boolean | null
-  deepest_period_drawdown: number
+  // null where no period could value the account (contract 40)
+  deepest_period_drawdown: number | null
   /**
    * The sum over `unit_totals`, and named as a total for that reason. It was `final_equity` and
    * was the LAST period row's own figure — one of the run's eight accounts, printed as though it
@@ -1067,9 +1109,15 @@ export interface TradeRow {
    * The mirror said `number` until this measurement and the panel called `.toFixed()` on it, which
    * threw while rendering an expanded scenario group and took the whole panel with it. The contract
    * test could not catch it: it proves the mirror against ONE capture, and that run had no null.
+   *
+   * Since contract 44 a stop-loss or take-profit exit is measured against the LEVEL that fired, no
+   * longer against the submission mid: a backtest reads 0 there, a session the real distance.
    */
   exit_slippage: number | null
   exit_slippage_pct: number | null
+  // which reference the exit was measured against (contract 44) — `submission_mid` · `limit_price` ·
+  // `trigger_price` · `protective_level`; null on an older record
+  exit_slippage_measured_against: string | null
 }
 
 /** Run-wide trade statistics for one account currency. */
@@ -1214,6 +1262,12 @@ export interface BrokerUnit {
   // keys on
   scenarios: string[]
   symbols: BrokerSymbol[]
+  // where the venue reports a fill's fee, as its adapter declares (contract 44): `status_answer` ·
+  // `executions` · `not_reported`. Null on an older record
+  fee_report: string | null
+  // whether the run's fills carry the venue's own fee — false in a backtest and in a dry run. Null
+  // on an older record
+  venue_fee_expected: boolean | null
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/broker */
@@ -1549,6 +1603,19 @@ export interface OrderHistoryRow {
   // `broker_unreachable` and `unresolved_write`.
   rejection_reason: string | null
   rejection_message: string | null
+  // the order event this row was booked with — its `seq` in order-events (contract 44); null on a
+  // pending row and on an older record
+  order_event_seq: number | null
+  /**
+   * A fill's slippage (contract 44), in price units, POSITIVE IS A COST, with the reference it was
+   * measured against — `submission_mid` · `limit_price` · `trigger_price` · `protective_level`. The
+   * price and the two figures are null where the reference was not captured. Never averaged across
+   * references: a limit fill can only meet or beat its limit.
+   */
+  slippage_measured_against: string | null
+  slippage_reference_price: number | null
+  slippage: number | null
+  slippage_pct: number | null
 }
 
 /**

@@ -55,7 +55,9 @@ they are tested without a canvas.
 
 - **A mark stands beyond its bar** — above its high, below its low — and the next mark of the same
   bar and side beyond it, its text beyond its shape. The reach of the stack is what `autoscaleInfo`
-  asks the price scale to leave free, so the outermost mark is not cut off.
+  asks the price scale to leave free, so the outermost mark is not cut off — and it is asked for a
+  HIDDEN layer's marks too, so switching the trades off rescales nothing (operator, on screen
+  2026-10-27: without the marks the candles stretched into the room they had left).
 - **A segment runs from its first bar to its last**, or to the pane's edge where it is open.
 - **What falls off the scale is left out**, never drawn at a guessed place — the library places only
   times that stand on its scale.
@@ -64,9 +66,10 @@ they are tested without a canvas.
 
 ## The levels and the line of the position looked at — `run_chart_levels.ts`
 
-For that position alone, unless the Layers panel asks for every position's levels — drawn for every
-position they are a lot to read, and then only the position looked at puts its prices on the axis,
-or every position's would bury it in tags.
+For that position alone, unless the Layers panel asks for every position's levels or lines — each
+layer has its own switch, kept under its own id (`every-position`, `every-position-line`; operator,
+2026-10-27). Drawn for every position they are a lot to read, and then only the position looked at
+puts its prices on the axis, or every position's would bury it in tags.
 
 **The price scale holds the levels of the position looked at** (`autoscaleInfo`). A stop or a target
 usually stands beyond the candles on screen, and before this it was drawn off the scale where nobody
@@ -103,27 +106,95 @@ layer* in their glossary.
 
 ```
 Run chart · ETHUSD_aug_sep
-(━●) ▸ Trades              no signs   ◐
-(━●) ▾ Entry–exit line                ◐ 40%
-         ↑ front  ↓ back
-(●━) ▸ Levels                         ◐        ← switched off: the row grey
-      ▣ Candles              at the back
+⠿ (━●) ▸ Trades                                ◐
+⠿ (━●) ▾ Entry–exit line     pick a position   ◐ 40%
+           💡 what it draws and what its option does      ← a hint, dismissible
+           (━●) every position                            ← the option, plain
+⠿ (●━) ▸ Levels                                ◐   ← switched off: the row grey
+  (━●) ▸ Candles                               ◐   ← fixed: no grip, never moved
+  (━●) ▸ Volume                  ticks per bar ◐
 ```
 
-- **The register** is `src/layer_registry.ts`: each layer's title, what it draws and its one option,
-  and which chart draws which layers, back to front (`chartLayers`). The free chart draws none today.
+- **The register** is `src/layer_registry.ts`: each layer's title, its hint and its one option, and
+  which chart draws which layers, back to front (`chartLayers`). The free chart draws none today.
 - **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
-  the row opens the rest — its option (the trades' signs; the levels of every position rather than
-  of the one looked at) and its place, one step at a time. The closed row says what differs — and,
-  for a shown layer with nothing to draw, *nothing to draw*, with why on hover: the levels and the
-  line draw for the position looked at alone, so with none chosen their levers changed nothing on
-  screen and looked broken (2026-10-19).
+  the row opens its options.
+- **The opened row holds plain options beneath one hint** (operator, 2026-10-28), the way an
+  editor's panels do: what the layer draws and what its option does is the layer's hint
+  (`layer-trades`, `layer-levels` …, named on each layer as `hintId`), and a reader who knows it
+  dismisses it. The option is its switch alone (the trades' signs; the levels, or the lines, of
+  every position rather than of the one looked at); the candles add their forms. A row opens only
+  onto something: the volume has no option and no forms, so once its hint is put away it shows no
+  marker and a click opens nothing (operator, on screen 2026-10-29).
+- **The closed row's words say only what the screen cannot**: what an empty layer waits for —
+  *pick a position* for the levels and the line, which draw for the position looked at alone, *none
+  for this position* where one is looked at, *none in view* for the trades or where every position
+  is asked for — and what the volume counts. A switched option, the candles' form or a fixed layer's
+  place is seen elsewhere, so it is not repeated (operator, 2026-10-28). The words stand only where
+  they fit whole: the title comes first, and the words wrap onto a line the head's height cuts away
+  the moment they would not fit. With no position chosen the levers of the line and the levels
+  changed nothing on screen and looked broken (2026-10-19); *nothing to draw* said so, and not what
+  to do.
+- **Why a shown layer draws nothing stands below the list** as hints, one box for every such layer
+  — a narrow panel cut the row's word to a letter and kept the reason on hover, and the levers still
+  looked broken (2026-10-27). Hints of the shared register (`layer-empty-*`, named on each layer as
+  `emptyHintId`). Below the list their coming and going moves no row, and the panel holds its
+  scrollbar's track free (`scrollbar-gutter: stable`), so one appearing moves none either.
+- **Compact as the app's lists** (operator, 2026-10-28): a row is as tall as a list row (25 px), the
+  surface under the pointer spans the whole row, and the lever is the compact one (`AppSwitch`
+  `compact`), so it does not outweigh ◐ beside it.
+- **Moved by dragging its grip ⠿, and only so** (operator, 2026-10-28), through `vue-draggable-plus`
+  — the package the run bundle's column already sorts its sections with — and written back whole
+  (`reorder`). The candles and the volume have no grip, and a drag that would pass them is refused
+  (`onMove`). The arrows that moved a layer one step went with it: a reorder is the pointer's alone.
+- **The trades' signs switched off keep their room.** The marks are handed over `textHidden`: the
+  host places their text and paints none of it, so the switch rescales nothing — emptied, the text
+  gave its room up and the price axis moved at the switch (operator, on screen 2026-10-28).
 - **Kept with the chart's own view**, `panelViews[<chart id>].layers`: only what differs from the
   chart's own arrangement, reconciled whenever it is read — a layer the chart no longer draws is
   left out, one it draws since stands where its own order puts it (`arrangeLayers`, `keptLayers`).
-- **The run chart's store applies it.** A hidden layer is not handed to the chart at all; a fainter
-  one carries its `opacity`, and the host paints that layer whole at it.
+- **The run chart's store applies it.** A hidden layer is handed over marked `hidden`: the host
+  neither paints nor hits it and puts nothing of it on the axis, and only the room its marks take is
+  kept. A fainter one carries its `opacity`, and the host paints that layer whole at it.
+
+## The volume — a layer the library draws (2026-10-27)
+
+To the reader the volume is a layer like the others — shown, hidden, fainter — but the chart library
+draws it, as a `HistogramSeries` of its own built BEFORE the candles, so it stands behind them. Its
+place is fixed (`fixed` in the register): it opens nothing, is never moved, and no other layer passes
+it. It sits in the lowest fifth of the pane on a price scale nothing shows — the way established
+charts draw it — and so leaves the candles' scale alone: switching it moves no candle.
+
+- **Which count**, from the bars' own answer (their `market-data` document): `v` is the traded
+  volume, `0.0` on every bar of a feed that carries none, and then `tc` is the measure of how busy the
+  market was. `X-Bar-Price-Basis: order_driven` names a venue that prints trades. So the traded
+  volume there, the ticks otherwise (`volumeBasis` in `run_chart_store`), and the row says which —
+  *traded volume* or *ticks per bar*. That reading of two sentences is put to FiniexTestingIDE.
+- **Each bar faint in its candle's direction** — the polarity roles at 45 % of the layer's opacity.
+- **The run chart only.** `CandleChart` builds the series only where it is handed a `volume`; the
+  free chart, which draws no layers, builds none.
+
+## The candles — a layer too (2026-10-27)
+
+The candles stood as a fixed row nobody could switch; since the operator's word of 2026-10-27 they
+are a layer like the volume: fixed in place (`fixed`, never moved, no layer passes them), shown,
+hidden and fainter, and drawn in the form picked in their opened row — **candles · OHLC bars ·
+line · area** (`forms` in the register, kept under `forms` only where it is not the first).
+
+- **Each form is the library's own series over the served bars** (`CandleChart.buildPriceSeries`).
+  A change of form builds the series anew and moves the drawing host to it; a line and an area take
+  the close alone. Nothing is computed from the bars, so a Heikin-Ashi candle — a sum over them —
+  is not offered.
+- **Hidden is transparent, never removed.** The drawing host is attached to the price series and the
+  price scale rests on it, so the series stays, every colour at no strength and the last price off
+  the axis; the marks, the levels and the scale stay where they were.
+- **The strength is the colours' alpha**, the polarity roles for candles and bars, plain ink for a
+  line and an area. At full strength the token goes as it is.
+- **Every row opens**, the fixed ones too: what a layer draws stands in its opened row, not on a
+  browser tooltip, and the controls are explained by the panel's hint — the one pattern an
+  explanation takes (operator, 2026-10-27). With no bars at all no layer is said to draw nothing:
+  the chart says so for every layer at once.
 
 ## How it is tested
 
@@ -133,6 +204,7 @@ Run chart · ETHUSD_aug_sep
 - `chart_drawing_host.test.ts` — the host against the few library calls it makes, and its painting
   against a canvas context that records what it was told to draw (jsdom has no canvas).
 - `run_chart_levels.test.ts` — the levels and the line from served fields.
-- `candle_chart.test.ts` — what the chart hands its host: the layers, every bar's range, the colours.
+- `candle_chart.test.ts` — what the chart hands its host: the layers, every bar's range, the colours;
+  and the volume's series, its scale and its colours, built only where a volume is handed.
 - `e2e/run_chart.spec.ts` — the levels painted on a real canvas, from a capture whose position the
   mock hands a stop and a target (no trade of the fixture run set one).

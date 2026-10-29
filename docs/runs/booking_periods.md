@@ -20,7 +20,10 @@ what it CARRIES at its seal — their two kinds of figure: the account's decline
 (`account_max_drawdown` with its share, *Deepest drawdown*), which repeats down the column until a
 deeper fall moves it, and where something was still open, how many positions (*Still open*) and
 their unrealised result (*Unrealized*). Nothing open is nothing said, and a run recorded before
-contract 35 serves the four null on its own route, so its cards say none of it. Each unit of several periods closes with the TOTAL the run's route
+contract 35 serves the four null on its own route, so its cards say none of it. Since contract 40
+a period says how many ticks it applied (*Ticks*, 0 on a trading day the run heard nothing from,
+which still books its row), and a period that could value the account at no point reads a dash for
+its band, its final equity and its drawdown — absence, never a zero. Each unit of several periods closes with the TOTAL the run's route
 serves (`unit_totals`), a sum line in the same columns. Its *Max DD* is the deepest SINGLE period —
 which is what the column shows, by their document — and its card puts the account's own decline
 beside it, cumulative across the boundaries (`account_max_drawdown` and its share): a fall that runs

@@ -63,9 +63,16 @@ by its tab, the way a reader does.
 - `sweeps.spec.ts` holds the parameter searches: the Sweeps panel opened from the Panels menu, a
   sweep opened in its one list, its combinations beneath it in the order the route ranked them with
   the first marked ★, and a combination chosen as a run, its report coming forward in the run bundle.
+- `latest_state.spec.ts` holds the check-in on a session, from the two captured answers: a session
+  whose recording stopped standing first in its bundle with its frame open and its report said as
+  never written, an ended one folding its last frame behind its outcome, its frames over time
+  played — opened on the newest, stepped back to the first and played on to the end — a session whose
+  frames over time are not recorded showing its latest alone, and a backtest drawing no such
+  section.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
-  and a jump from the orders landing in the trade history opened as a panel.
+  and a jump from the orders landing in the trade history opened as a panel — or, with the run
+  bundle closed and the orders standing apart, opening the trade history beside them.
 - `narrow_panels.spec.ts` holds what narrow room does to what stands beside it: the narrowing in the
   menu bar shortening its name before anything beside it moves, its button still whole and inside
   the bar, the Panels trigger on one line — at 760 px, where the bar fits its mark and button and
@@ -96,9 +103,13 @@ by its tab, the way a reader does.
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
   in the chart narrows the lists to it.
 - `layers_panel.spec.ts` holds the Layers panel: opened from the run chart's quick bar BESIDE the
-  chart it arranges, the chart still on show; a layer switched off at its lever and no longer handed
-  to the chart's drawing host (`data-drawings`); and the same layer still off after a real reload,
-  in the panel and on the chart.
+  chart it arranges, the chart still on show and, ten frames later, still inside its own group, its
+  group scrolled by nothing — it once stood 171 px left of it, over the report; a layer switched off at its lever and no longer drawn
+  (`data-drawings`), the price axis the same pixel for pixel before and after — switching the trades
+  off once stretched the candles — and again after the volume is switched off, which stands on a
+  scale of its own; and both still off after a real reload, in the panel and on the chart. And a
+  layer dragged in front of another by its grip, a drag past the candles and the volume refused; and
+  the signs switched off leaving the price axis the same pixel for pixel.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
   browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read
   from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its
@@ -117,7 +128,8 @@ by its tab, the way a reader does.
   the link is drawn twice and the mark lands in one scenario rather than in every row carrying that
   id.
 - `open_in_context.spec.ts` holds the way from one VIEW into another — a deployment's session into
-  its run, a run into the deployment it was a session of — because a unit test records where a panel
+  its run, a run into the deployment it was a session of, and a session's run shown in the sections
+  standing apart while the run bundle stays closed — because a unit test records where a panel
   asked to go, and only a browser shows the shell going there.
 - `panel_boundary.spec.ts` holds the one claim the unit suite cannot reach, because it is about the
   WORKSPACE and not about a panel: a section that cannot be drawn takes ONLY itself off the screen.
@@ -161,12 +173,13 @@ two lists of four and said nothing about the other two. It now names the lists i
 if one is missing, because a silent skip reads as coverage. `deployments.spec.ts` holds the LEDGER view, which had no browser coverage at all until 2026-10-01
 — the mock served only the run plane, so the deployments page, its picker and its timeline had never
 been opened by a test although their three captures existed. It holds the picker listing the ledger
-and opening a history, each run opened from a deployment showing its own executive summary (every
+and a pick showing the deployment's bundle beside the list, which stays whole and marks it
+(viewer#43), each run opened from a deployment showing its own executive summary (every
 session's summary answered with its own net P&L, so two runs cannot be mistaken for each other — the
-spec went red against the jump that only changed the context), the selection surviving a reload as a link, a stale link saying so, the
-open list standing alone in a low view while a tall one keeps it beside the history, the
-figure cells right-aligned under their headings, and the timeline marking round moments rather than
-the overlapping stamps an operator photographed. `panel_layout.spec.ts` also holds that **a list's heading sticks flush to the top of the area it scrolls in**, nothing showing through above it — measured in the trade history open as a panel of its own; that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow Deployments panel keeps its deployment line to one line. It holds that **no panel scrolls sideways**, at a wide
+spec went red against the jump that only changed the context), the selection surviving a reload as a link, a stale link saying so in the bundle, the
+figure cells right-aligned under their headings, the timeline marking round moments rather than
+the overlapping stamps an operator photographed, and a change mark opening the configuration of the
+session before it as a panel of its own, its links whole on the line at about the list floor. `panel_layout.spec.ts` also holds that **a list's heading sticks flush to the top of the area it scrolls in**, nothing showing through above it — measured in the trade history open as a panel of its own; that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow deployment bundle keeps its deployment line to one line. It holds that **no panel scrolls sideways**, at a wide
 and at a narrow width: `.panel-content` carries `overflow-x: auto`, which is the right safety valve
 and a poor everyday state, because the moment it engages the panel's leftmost column slides out of
 view and nothing says so. Two defects of exactly that shape reached the screen in one week — a
@@ -189,7 +202,21 @@ its marks stand on the candles, read on the page's own frames, and a zoom step u
 it has painted, the mean of ten — a figure that carries two round trips to the browser per step, so
 it is read against its own earlier column, never as the drawing's cost alone. And a sweep's ranking
 at the size a real search reaches (viewer#32): 500 combinations built from the capture, timed from
-the sweep opened until the 500th row stands — what says whether the ranking needs a row cap.
+the sweep opened until the 500th row stands — what says whether the ranking needs a row cap. A
+deployment picked in its list until its bundle draws the sessions (viewer#43), and a step of a
+session's frame player (viewer#51) over 500 frames built from the captured ones and served as the
+route serves them — from, to and a limit — the mean of twenty.
+
+**`readme_pictures.spec.ts` takes the README's pictures**, so they stay current (operator,
+2026-10-29): at every release, and whenever a view they show changes visibly. Against the LIVE API
+and from runs the backend's fixture catalogue keeps, in ONE arrangement — `readme_arrangement.json`,
+three columns with every bundle closed and its members standing apart — laid out 1920 wide in its
+own proportions, the dark theme, every hint put away: the whole window once, then the dock group a
+highlight is about. Nothing private reaches a picture: the lists are narrowed to public runs, and
+`PICTURES_HIDE`, a comma list of words given at the call and never written into the repository,
+fails the run wherever one of them stands in the window's text. Like the performance spec, an
+ordinary run leaves it out:
+`PICTURES=1 PICTURES_HIDE=<words> bash scripts/e2e.sh e2e/readme_pictures.spec.ts --workers=1`.
 
 **`e2e/order_steps.spec.ts` says why a browser spec earns its place.** The
 nested step list is a grid INSIDE a row of another grid, which is the arrangement behind two of the

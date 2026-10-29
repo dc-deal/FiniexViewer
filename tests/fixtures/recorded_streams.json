@@ -1,0 +1,23 @@
+{
+  "run_id": "20261022_123550_0bfde90e",
+  "unit_name": "state_frames_test",
+  "served_at": "2026-10-28T08:14:41.163203Z",
+  "recording": "ended",
+  "key": [
+    "stream_kind",
+    "stream_name"
+  ],
+  "streams": [
+    {
+      "stream_kind": "state_frames",
+      "stream_name": "state_frames",
+      "record_time_field": "frame_time",
+      "record_count": 344,
+      "first_record_time": "2026-01-25T02:19:57.550000Z",
+      "last_record_time": "2026-01-25T08:00:00.320000Z",
+      "cadence_timeframe": "M1",
+      "cadence_s": 60.0,
+      "truncated_tail": false
+    }
+  ]
+}

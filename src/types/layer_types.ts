@@ -1,10 +1,11 @@
 import type { ChartLayerId } from '@/types/chart_drawing_types'
+import type { PriceForm } from '@/types/run_chart_types'
 
 /**
  * The one switch a drawing layer may offer beyond being shown — ours, so a closed set: a name read
  * back from storage is checked against it.
  */
-export const LAYER_OPTION_IDS = ['trade-signs', 'every-position'] as const
+export const LAYER_OPTION_IDS = ['trade-signs', 'every-position', 'every-position-line'] as const
 export type LayerOptionId = typeof LAYER_OPTION_IDS[number]
 
 /** The least opacity a layer is drawn at, in percent — below it a layer is hidden, which the eye does. */
@@ -12,24 +13,33 @@ export const LAYER_OPACITY_MIN = 10
 
 export interface LayerOption {
   id: LayerOptionId
-  /** Its word beside the checkbox. */
+  /** Its word beside the switch. */
   label: string
-  /** What it changes, in one line. */
-  description: string
   /** Its value where the reader never set one. */
   fallback: boolean
-  /** What the closed row says while the option differs from its default: `no signs`. */
-  changed: string
 }
 
 /** What the register says about one drawing layer (`layer_registry.ts`). */
 export interface LayerDefinition {
   title: string
-  /** What it draws, in one line. */
-  description: string
-  /** Why it may have nothing to draw — said where it has nothing, so a lever that changes nothing is explained. */
-  emptyHint: string
+  /**
+   * The hint (`hint_registry.ts`) saying what it draws and what its option does — at the top of its
+   * opened row, so the options below it stand plain (operator, 2026-10-28).
+   */
+  hintId: string
+  /**
+   * The hint (`hint_registry.ts`) saying why it may have nothing to draw — shown where it has
+   * nothing, so a lever that changes nothing is explained, and dismissible like every hint.
+   */
+  emptyHintId?: string
   option?: LayerOption
+  /**
+   * Drawn by the chart library behind the candles rather than by the chart's own host: it takes no
+   * place among the others, is never moved, and stands at the back.
+   */
+  fixed?: boolean
+  /** The forms it can be drawn in, the first its own — the candles' (candles, OHLC bars, line, area). */
+  forms?: { id: PriceForm, label: string }[]
 }
 
 /** One layer of a chart as the reader arranged it. */
@@ -40,4 +50,6 @@ export interface LayerState {
   opacity: number
   /** Its option's value, or null for a layer that offers none. */
   option: boolean | null
+  /** The form it is drawn in, or null for a layer that offers no choice of form. */
+  form: PriceForm | null
 }

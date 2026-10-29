@@ -7,6 +7,599 @@
   ],
   "runs": [
     {
+      "run_id": "20261027_145422_15a68d06",
+      "group": "simulation",
+      "name": "eth_allocator_backtest",
+      "artifacts": [],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-10-27T14:54:22.352297+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "a3f102b74cee059b3d46d84914d824b77fab13d48004953d00f18a4664d3f4d4",
+      "app_version": "1.4.0",
+      "git_commit": "108d0a66",
+      "config_snapshot": "eth_allocator_short.json",
+      "reporting": "none",
+      "size_bytes": 0,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "ETHUSD_short",
+          "start_date": "2026-08-05T00:00:00+00:00",
+          "end_date": "2026-08-09T00:30:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 42,
+      "origin_channel": "direct",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
+      "run_id": "20261027_145340_9ded583a",
+      "group": "simulation",
+      "name": "eth_allocator_backtest",
+      "artifacts": [],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-10-27T14:53:40.985490+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "a3f102b74cee059b3d46d84914d824b77fab13d48004953d00f18a4664d3f4d4",
+      "app_version": "1.4.0",
+      "git_commit": "108d0a66",
+      "config_snapshot": "eth_allocator_short.json",
+      "reporting": "none",
+      "size_bytes": 0,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "ETHUSD_short",
+          "start_date": "2026-08-05T00:00:00+00:00",
+          "end_date": "2026-08-09T00:30:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 42,
+      "origin_channel": "direct",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
+      "run_id": "20261022_123736_7a3450e9",
+      "group": "autotrader",
+      "name": "kraken_spot_ethusd_day_boundary",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-10-22T12:37:36.180770+00:00",
+      "parent_id": "deploy_20261022_123713_aa33e0b5",
+      "parent_kind": "deployment",
+      "config_id": "62b1c1853c755edcfee4bcdb18b823f92f52ab4121c0dcc6964a5634910a40bb",
+      "app_version": "1.4.0",
+      "git_commit": "454029dd",
+      "config_snapshot": "kraken_spot_ethusd_day_boundary.json",
+      "reporting": "expected",
+      "size_bytes": 493863,
+      "ticks_from": "venue",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_ethusd_day_boundary",
+          "start_date": "2026-10-22T12:37:36.180770+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 38,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -0.10246623999999999,
+          "total_trades": 2
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 1,
+      "tick_timespan_seconds": 6588.582879,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261022_123713_e059d354",
+      "group": "autotrader",
+      "name": "kraken_spot_ethusd_day_boundary",
+      "artifacts": [],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "stopped",
+      "start_time": "2026-10-22T12:37:13.510376+00:00",
+      "parent_id": "deploy_20261022_123713_aa33e0b5",
+      "parent_kind": "deployment",
+      "config_id": "62b1c1853c755edcfee4bcdb18b823f92f52ab4121c0dcc6964a5634910a40bb",
+      "app_version": "1.4.0",
+      "git_commit": "454029dd",
+      "config_snapshot": "kraken_spot_ethusd_day_boundary.json",
+      "reporting": "expected",
+      "size_bytes": 28196,
+      "ticks_from": "venue",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_ethusd_day_boundary",
+          "start_date": "2026-10-22T12:37:13.510376+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 38,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
+      "run_id": "20261022_123550_0bfde90e",
+      "group": "autotrader",
+      "name": "state_frames_test",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-10-22T12:35:50.607941+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "04b025ee328e8a31a7f47654acc5f5979b02ea4b268d646c3e3a4b426f6baa29",
+      "app_version": "1.4.0",
+      "git_commit": "454029dd",
+      "config_snapshot": "state_frames_test.json",
+      "reporting": "expected",
+      "size_bytes": 542183,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "state_frames_test",
+          "start_date": "2026-01-25T02:19:46+00:00",
+          "end_date": "2026-01-25T08:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 38,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 20402.77,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261019_220052_ea4b2493",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261019_214323_e47deb11_c004",
+      "artifacts": [],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-10-19T22:00:52.174798+00:00",
+      "parent_id": "sweep_20261019_214323_e47deb11",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.4.0",
+      "git_commit": "4821a8ea",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 26740,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 36,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
+      "run_id": "20261019_215723_0e68b0b4",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261019_214323_e47deb11_c003",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-10-19T21:57:23.839856+00:00",
+      "parent_id": "sweep_20261019_214323_e47deb11",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.4.0",
+      "git_commit": "4821a8ea",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 476752,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 36,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -156.3400000000011,
+          "total_trades": 37
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 4,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261019_215343_74dab939",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261019_214323_e47deb11_c002",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-10-19T21:53:43.275046+00:00",
+      "parent_id": "sweep_20261019_214323_e47deb11",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.4.0",
+      "git_commit": "4821a8ea",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 444343,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 36,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -114.54000000001484,
+          "total_trades": 34
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 4,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261019_214849_e0677120",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261019_214323_e47deb11_c001",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-10-19T21:48:49.931497+00:00",
+      "parent_id": "sweep_20261019_214323_e47deb11",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.4.0",
+      "git_commit": "4821a8ea",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 444328,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 36,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -114.54000000001484,
+          "total_trades": 34
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 4,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261019_214334_dd21ad03",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261019_214323_e47deb11_c000",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-10-19T21:43:34.923710+00:00",
+      "parent_id": "sweep_20261019_214323_e47deb11",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.4.0",
+      "git_commit": "4821a8ea",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 444264,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 36,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -110.14000000001488,
+          "total_trades": 34
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 4,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "has_reports": true
+    },
+    {
       "run_id": "20261019_175536_b1f679ab",
       "group": "autotrader",
       "name": "mock_session_test",
@@ -14,6 +607,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-19T17:55:36.584352+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -22,7 +616,7 @@
       "git_commit": "c26ecbb4",
       "config_snapshot": "mock_session_test.json",
       "reporting": "expected",
-      "size_bytes": 0,
+      "size_bytes": 33009,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -55,6 +649,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-19T17:20:07.190802+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -63,7 +658,7 @@
       "git_commit": "c26ecbb4",
       "config_snapshot": "mock_session_test.json",
       "reporting": "expected",
-      "size_bytes": 0,
+      "size_bytes": 33209,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -116,6 +711,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-18T10:50:12.672432+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -213,6 +809,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-17T13:30:28.876970+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -286,8 +883,32 @@
       "run_id": "20261015_081253_f7c1d6d2",
       "group": "simulation",
       "name": "ethusd_is_30d_2017",
-      "artifacts": [],
-      "stream_files": [],
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "robustness.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
       "start_time": "2026-10-15T08:12:53.145626+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -296,7 +917,7 @@
       "git_commit": "18f4a850",
       "config_snapshot": "ethusd_is_30d_2017.json",
       "reporting": "expected",
-      "size_bytes": 0,
+      "size_bytes": 1384480,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -374,7 +995,7 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
-      "has_reports": false
+      "has_reports": true
     },
     {
       "run_id": "20261015_080410_1d3acb68",
@@ -405,6 +1026,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-15T08:04:10.896621+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -475,6 +1097,7 @@
         "worker_decision.json"
       ],
       "stream_files": [],
+      "recording": null,
       "start_time": "2026-10-15T07:49:32.542231+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -529,13 +1152,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T20:32:48.985602+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -544,7 +1167,7 @@
       "git_commit": "e7186fe4",
       "config_snapshot": "security_cert_5_hard_restart.json",
       "reporting": "expected",
-      "size_bytes": 54464,
+      "size_bytes": 63229,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -595,13 +1218,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T20:32:23.074320+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -610,7 +1233,7 @@
       "git_commit": "e7186fe4",
       "config_snapshot": "security_cert_4_hard_kept.json",
       "reporting": "expected",
-      "size_bytes": 51324,
+      "size_bytes": 57669,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -661,13 +1284,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T20:31:55.830472+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -676,7 +1299,7 @@
       "git_commit": "e7186fe4",
       "config_snapshot": "security_cert_3_restart.json",
       "reporting": "expected",
-      "size_bytes": 44690,
+      "size_bytes": 50306,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -727,13 +1350,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T20:31:13.390390+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -742,7 +1365,7 @@
       "git_commit": "e7186fe4",
       "config_snapshot": "security_cert_2_soft.json",
       "reporting": "expected",
-      "size_bytes": 63440,
+      "size_bytes": 71471,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -793,13 +1416,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T20:29:29.825195+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -808,7 +1431,7 @@
       "git_commit": "e7186fe4",
       "config_snapshot": "security_cert_1_guards.json",
       "reporting": "expected",
-      "size_bytes": 107697,
+      "size_bytes": 118417,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -860,13 +1483,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T19:36:02.053520+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -875,7 +1498,7 @@
       "git_commit": "d7326215",
       "config_snapshot": "security_cert_5_hard_restart.json",
       "reporting": "expected",
-      "size_bytes": 56696,
+      "size_bytes": 65832,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -926,13 +1549,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T19:35:31.531656+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -941,7 +1564,7 @@
       "git_commit": "d7326215",
       "config_snapshot": "security_cert_4_hard_kept.json",
       "reporting": "expected",
-      "size_bytes": 53512,
+      "size_bytes": 60231,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -992,13 +1615,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T19:35:01.076055+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -1007,7 +1630,7 @@
       "git_commit": "d7326215",
       "config_snapshot": "security_cert_3_restart.json",
       "reporting": "expected",
-      "size_bytes": 47106,
+      "size_bytes": 53092,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -1058,13 +1681,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T19:34:13.500978+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -1073,7 +1696,7 @@
       "git_commit": "d7326215",
       "config_snapshot": "security_cert_2_soft.json",
       "reporting": "expected",
-      "size_bytes": 65656,
+      "size_bytes": 74059,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -1124,13 +1747,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-14T19:32:30.679498+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -1139,7 +1762,7 @@
       "git_commit": "d7326215",
       "config_snapshot": "security_cert_1_guards.json",
       "reporting": "expected",
-      "size_bytes": 108944,
+      "size_bytes": 119650,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -1198,6 +1821,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:07:03.487195+00:00",
       "parent_id": "sweep_20261012_210055",
       "parent_kind": "sweep",
@@ -1270,6 +1894,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:06:18.728778+00:00",
       "parent_id": "sweep_20261012_210055",
       "parent_kind": "sweep",
@@ -1342,6 +1967,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:05:33.138456+00:00",
       "parent_id": "sweep_20261012_210055",
       "parent_kind": "sweep",
@@ -1414,6 +2040,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:04:47.874463+00:00",
       "parent_id": "sweep_20261012_210055",
       "parent_kind": "sweep",
@@ -1486,6 +2113,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:04:03.043410+00:00",
       "parent_id": "sweep_20261012_210055",
       "parent_kind": "sweep",
@@ -1558,6 +2186,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:03:18.234663+00:00",
       "parent_id": "sweep_20261012_210055",
       "parent_kind": "sweep",
@@ -1630,6 +2259,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:02:32.651571+00:00",
       "parent_id": "sweep_20261012_210055",
       "parent_kind": "sweep",
@@ -1702,6 +2332,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:01:46.550673+00:00",
       "parent_id": "sweep_20261012_210055",
       "parent_kind": "sweep",
@@ -1774,6 +2405,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:01:01.181495+00:00",
       "parent_id": "sweep_20261012_210055",
       "parent_kind": "sweep",
@@ -1838,13 +2470,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:00:43.378005+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -1853,7 +2485,7 @@
       "git_commit": "0b113caa",
       "config_snapshot": "partial_close_lifecycle.json",
       "reporting": "expected",
-      "size_bytes": 74526,
+      "size_bytes": 83201,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1904,13 +2536,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T21:00:27.955896+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -1919,7 +2551,7 @@
       "git_commit": "0b113caa",
       "config_snapshot": "tp_triggered_test.json",
       "reporting": "expected",
-      "size_bytes": 44839,
+      "size_bytes": 52118,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -1970,13 +2602,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T20:59:53.158134+00:00",
       "parent_id": "deploy_20261012_205953",
       "parent_kind": "deployment",
@@ -1985,7 +2617,7 @@
       "git_commit": "0b113caa",
       "config_snapshot": "demo_btcusd_bot_s6.json",
       "reporting": "expected",
-      "size_bytes": 58592,
+      "size_bytes": 64925,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2024,6 +2656,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T20:59:38.244010+00:00",
       "parent_id": "deploy_20261012_205734",
       "parent_kind": "deployment",
@@ -2032,7 +2665,7 @@
       "git_commit": "0b113caa",
       "config_snapshot": "demo_btcusd_bot_s5.json",
       "reporting": "expected",
-      "size_bytes": 0,
+      "size_bytes": 35919,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2077,13 +2710,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T20:59:06.565872+00:00",
       "parent_id": "deploy_20261012_205734",
       "parent_kind": "deployment",
@@ -2092,7 +2725,7 @@
       "git_commit": "0b113caa",
       "config_snapshot": "demo_btcusd_bot_s4.json",
       "reporting": "expected",
-      "size_bytes": 58391,
+      "size_bytes": 64724,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2143,13 +2776,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T20:58:36.092865+00:00",
       "parent_id": "deploy_20261012_205734",
       "parent_kind": "deployment",
@@ -2158,7 +2791,7 @@
       "git_commit": "0b113caa",
       "config_snapshot": "demo_btcusd_bot_s3.json",
       "reporting": "expected",
-      "size_bytes": 70336,
+      "size_bytes": 78441,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2209,13 +2842,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T20:58:05.524704+00:00",
       "parent_id": "deploy_20261012_205734",
       "parent_kind": "deployment",
@@ -2224,7 +2857,7 @@
       "git_commit": "0b113caa",
       "config_snapshot": "demo_btcusd_bot_s2.json",
       "reporting": "expected",
-      "size_bytes": 70899,
+      "size_bytes": 79002,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2275,13 +2908,13 @@
         "trade_history.csv",
         "trade_history.json",
         "venue_account.json",
-        "warmup_history.json",
         "warnings_errors.json",
         "worker_decision.json"
       ],
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T20:57:34.995972+00:00",
       "parent_id": "deploy_20261012_205734",
       "parent_kind": "deployment",
@@ -2290,7 +2923,7 @@
       "git_commit": "0b113caa",
       "config_snapshot": "demo_btcusd_bot_s1.json",
       "reporting": "expected",
-      "size_bytes": 76382,
+      "size_bytes": 84461,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -2349,6 +2982,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T20:57:15.088504+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -2446,6 +3080,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T13:11:26.881552+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -2518,6 +3153,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T08:07:04.559287+00:00",
       "parent_id": "sweep_20261012_075654",
       "parent_kind": "sweep",
@@ -2590,6 +3226,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T08:05:37.376162+00:00",
       "parent_id": "sweep_20261012_075654",
       "parent_kind": "sweep",
@@ -2662,6 +3299,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T08:04:13.773517+00:00",
       "parent_id": "sweep_20261012_075654",
       "parent_kind": "sweep",
@@ -2734,6 +3372,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T08:02:59.450421+00:00",
       "parent_id": "sweep_20261012_075654",
       "parent_kind": "sweep",
@@ -2806,6 +3445,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T08:01:44.560367+00:00",
       "parent_id": "sweep_20261012_075654",
       "parent_kind": "sweep",
@@ -2878,6 +3518,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T08:00:36.285388+00:00",
       "parent_id": "sweep_20261012_075654",
       "parent_kind": "sweep",
@@ -2950,6 +3591,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:59:27.926735+00:00",
       "parent_id": "sweep_20261012_075654",
       "parent_kind": "sweep",
@@ -3022,6 +3664,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:58:14.904280+00:00",
       "parent_id": "sweep_20261012_075654",
       "parent_kind": "sweep",
@@ -3094,6 +3737,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:57:04.573198+00:00",
       "parent_id": "sweep_20261012_075654",
       "parent_kind": "sweep",
@@ -3164,6 +3808,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:55:28.815185+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -3172,7 +3817,7 @@
       "git_commit": "85b5b314",
       "config_snapshot": "partial_close_lifecycle.json",
       "reporting": "expected",
-      "size_bytes": 68408,
+      "size_bytes": 77084,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3229,6 +3874,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:54:48.981384+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -3237,7 +3883,7 @@
       "git_commit": "85b5b314",
       "config_snapshot": "tp_triggered_test.json",
       "reporting": "expected",
-      "size_bytes": 44458,
+      "size_bytes": 51738,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3294,6 +3940,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:53:42.411948+00:00",
       "parent_id": "deploy_20261012_075342",
       "parent_kind": "deployment",
@@ -3302,7 +3949,7 @@
       "git_commit": "85b5b314",
       "config_snapshot": "demo_btcusd_bot_s6.json",
       "reporting": "expected",
-      "size_bytes": 46242,
+      "size_bytes": 52575,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3341,6 +3988,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:53:06.832432+00:00",
       "parent_id": "deploy_20261012_074850",
       "parent_kind": "deployment",
@@ -3349,7 +3997,7 @@
       "git_commit": "85b5b314",
       "config_snapshot": "demo_btcusd_bot_s5.json",
       "reporting": "expected",
-      "size_bytes": 0,
+      "size_bytes": 22872,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3400,6 +4048,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:52:02.172885+00:00",
       "parent_id": "deploy_20261012_074850",
       "parent_kind": "deployment",
@@ -3408,7 +4057,7 @@
       "git_commit": "85b5b314",
       "config_snapshot": "demo_btcusd_bot_s4.json",
       "reporting": "expected",
-      "size_bytes": 45462,
+      "size_bytes": 51795,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3465,6 +4114,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:50:59.265127+00:00",
       "parent_id": "deploy_20261012_074850",
       "parent_kind": "deployment",
@@ -3473,7 +4123,7 @@
       "git_commit": "85b5b314",
       "config_snapshot": "demo_btcusd_bot_s3.json",
       "reporting": "expected",
-      "size_bytes": 58155,
+      "size_bytes": 66260,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3530,6 +4180,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:49:56.573324+00:00",
       "parent_id": "deploy_20261012_074850",
       "parent_kind": "deployment",
@@ -3538,7 +4189,7 @@
       "git_commit": "85b5b314",
       "config_snapshot": "demo_btcusd_bot_s2.json",
       "reporting": "expected",
-      "size_bytes": 56913,
+      "size_bytes": 65016,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3595,6 +4246,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:48:50.265811+00:00",
       "parent_id": "deploy_20261012_074850",
       "parent_kind": "deployment",
@@ -3603,7 +4255,7 @@
       "git_commit": "85b5b314",
       "config_snapshot": "demo_btcusd_bot_s1.json",
       "reporting": "expected",
-      "size_bytes": 62657,
+      "size_bytes": 70736,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -3662,6 +4314,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:48:26.472191+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -3757,6 +4410,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-12T07:20:38.203700+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -3765,7 +4419,7 @@
       "git_commit": "85b5b314",
       "config_snapshot": "kraken_spot_ethusd_field_study.json",
       "reporting": "expected",
-      "size_bytes": 300014,
+      "size_bytes": 311752,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -3824,6 +4478,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:20:46.175252+00:00",
       "parent_id": "sweep_20261011_171406",
       "parent_kind": "sweep",
@@ -3896,6 +4551,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:19:59.938403+00:00",
       "parent_id": "sweep_20261011_171406",
       "parent_kind": "sweep",
@@ -3968,6 +4624,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:19:05.476307+00:00",
       "parent_id": "sweep_20261011_171406",
       "parent_kind": "sweep",
@@ -4040,6 +4697,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:18:19.114040+00:00",
       "parent_id": "sweep_20261011_171406",
       "parent_kind": "sweep",
@@ -4112,6 +4770,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:17:29.381582+00:00",
       "parent_id": "sweep_20261011_171406",
       "parent_kind": "sweep",
@@ -4184,6 +4843,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:16:41.811896+00:00",
       "parent_id": "sweep_20261011_171406",
       "parent_kind": "sweep",
@@ -4256,6 +4916,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:15:52.877919+00:00",
       "parent_id": "sweep_20261011_171406",
       "parent_kind": "sweep",
@@ -4328,6 +4989,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:15:04.845768+00:00",
       "parent_id": "sweep_20261011_171406",
       "parent_kind": "sweep",
@@ -4400,6 +5062,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:14:13.316478+00:00",
       "parent_id": "sweep_20261011_171406",
       "parent_kind": "sweep",
@@ -4470,6 +5133,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:13:10.798449+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -4478,7 +5142,7 @@
       "git_commit": "d2a799a2",
       "config_snapshot": "partial_close_lifecycle.json",
       "reporting": "expected",
-      "size_bytes": 68262,
+      "size_bytes": 76938,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4535,6 +5199,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:12:40.301439+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -4543,7 +5208,7 @@
       "git_commit": "d2a799a2",
       "config_snapshot": "tp_triggered_test.json",
       "reporting": "expected",
-      "size_bytes": 44214,
+      "size_bytes": 51494,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4600,6 +5265,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:11:50.514015+00:00",
       "parent_id": "deploy_20261011_171150",
       "parent_kind": "deployment",
@@ -4608,7 +5274,7 @@
       "git_commit": "d2a799a2",
       "config_snapshot": "demo_btcusd_bot_s6.json",
       "reporting": "expected",
-      "size_bytes": 44219,
+      "size_bytes": 50552,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4647,6 +5313,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:11:21.907860+00:00",
       "parent_id": "deploy_20261011_170815",
       "parent_kind": "deployment",
@@ -4655,7 +5322,7 @@
       "git_commit": "d2a799a2",
       "config_snapshot": "demo_btcusd_bot_s5.json",
       "reporting": "expected",
-      "size_bytes": 0,
+      "size_bytes": 21646,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4706,6 +5373,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:10:36.055699+00:00",
       "parent_id": "deploy_20261011_170815",
       "parent_kind": "deployment",
@@ -4714,7 +5382,7 @@
       "git_commit": "d2a799a2",
       "config_snapshot": "demo_btcusd_bot_s4.json",
       "reporting": "expected",
-      "size_bytes": 44734,
+      "size_bytes": 51067,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4771,6 +5439,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:09:50.762988+00:00",
       "parent_id": "deploy_20261011_170815",
       "parent_kind": "deployment",
@@ -4779,7 +5448,7 @@
       "git_commit": "d2a799a2",
       "config_snapshot": "demo_btcusd_bot_s3.json",
       "reporting": "expected",
-      "size_bytes": 56134,
+      "size_bytes": 64239,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4836,6 +5505,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:09:02.446500+00:00",
       "parent_id": "deploy_20261011_170815",
       "parent_kind": "deployment",
@@ -4844,7 +5514,7 @@
       "git_commit": "d2a799a2",
       "config_snapshot": "demo_btcusd_bot_s2.json",
       "reporting": "expected",
-      "size_bytes": 55580,
+      "size_bytes": 63683,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4901,6 +5571,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:08:15.507810+00:00",
       "parent_id": "deploy_20261011_170815",
       "parent_kind": "deployment",
@@ -4909,7 +5580,7 @@
       "git_commit": "d2a799a2",
       "config_snapshot": "demo_btcusd_bot_s1.json",
       "reporting": "expected",
-      "size_bytes": 61436,
+      "size_bytes": 69515,
       "ticks_from": "archive",
       "orders_to": "simulated",
       "data_windows": [
@@ -4968,6 +5639,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-11T17:07:55.743716+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -5065,6 +5737,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:39:16.831406+00:00",
       "parent_id": "sweep_20261008_233229",
       "parent_kind": "sweep",
@@ -5137,6 +5810,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:38:28.428579+00:00",
       "parent_id": "sweep_20261008_233229",
       "parent_kind": "sweep",
@@ -5209,6 +5883,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:37:39.931234+00:00",
       "parent_id": "sweep_20261008_233229",
       "parent_kind": "sweep",
@@ -5281,6 +5956,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:36:51.047523+00:00",
       "parent_id": "sweep_20261008_233229",
       "parent_kind": "sweep",
@@ -5353,6 +6029,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:36:02.180706+00:00",
       "parent_id": "sweep_20261008_233229",
       "parent_kind": "sweep",
@@ -5425,6 +6102,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:35:12.018865+00:00",
       "parent_id": "sweep_20261008_233229",
       "parent_kind": "sweep",
@@ -5497,6 +6175,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:34:20.915862+00:00",
       "parent_id": "sweep_20261008_233229",
       "parent_kind": "sweep",
@@ -5569,6 +6248,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:33:30.444435+00:00",
       "parent_id": "sweep_20261008_233229",
       "parent_kind": "sweep",
@@ -5641,6 +6321,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:32:35.360170+00:00",
       "parent_id": "sweep_20261008_233229",
       "parent_kind": "sweep",
@@ -5711,6 +6392,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:31:35.371948+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -5776,6 +6458,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:31:02.169488+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -5841,6 +6524,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:30:12.989739+00:00",
       "parent_id": "deploy_20261008_233012",
       "parent_kind": "deployment",
@@ -5888,6 +6572,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:29:47.995834+00:00",
       "parent_id": "deploy_20261008_232700",
       "parent_kind": "deployment",
@@ -5947,6 +6632,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:29:05.990944+00:00",
       "parent_id": "deploy_20261008_232700",
       "parent_kind": "deployment",
@@ -6012,6 +6698,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:28:24.287672+00:00",
       "parent_id": "deploy_20261008_232700",
       "parent_kind": "deployment",
@@ -6077,6 +6764,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:27:42.542353+00:00",
       "parent_id": "deploy_20261008_232700",
       "parent_kind": "deployment",
@@ -6142,6 +6830,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T23:27:00.759194+00:00",
       "parent_id": "deploy_20261008_232700",
       "parent_kind": "deployment",
@@ -6207,6 +6896,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:35:26.380113+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -6272,6 +6962,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:34:08.192454+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -6337,6 +7028,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:33:31.623934+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -6404,6 +7096,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:32:22.922371+00:00",
       "parent_id": "sweep_20261008_223212",
       "parent_kind": "sweep",
@@ -6471,6 +7164,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:32:19.805485+00:00",
       "parent_id": "sweep_20261008_223212",
       "parent_kind": "sweep",
@@ -6538,6 +7232,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:32:16.567908+00:00",
       "parent_id": "sweep_20261008_223212",
       "parent_kind": "sweep",
@@ -6605,6 +7300,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:32:13.279571+00:00",
       "parent_id": "sweep_20261008_223212",
       "parent_kind": "sweep",
@@ -6670,6 +7366,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:31:32.461439+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -6735,6 +7432,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:30:37.841127+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -6800,6 +7498,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:29:53.865196+00:00",
       "parent_id": "deploy_20261008_222953",
       "parent_kind": "deployment",
@@ -6847,6 +7546,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:29:28.501283+00:00",
       "parent_id": "deploy_20261008_222638",
       "parent_kind": "deployment",
@@ -6906,6 +7606,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:28:46.770191+00:00",
       "parent_id": "deploy_20261008_222638",
       "parent_kind": "deployment",
@@ -6971,6 +7672,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:28:04.065748+00:00",
       "parent_id": "deploy_20261008_222638",
       "parent_kind": "deployment",
@@ -7036,6 +7738,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:27:21.833775+00:00",
       "parent_id": "deploy_20261008_222638",
       "parent_kind": "deployment",
@@ -7101,6 +7804,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:26:38.879412+00:00",
       "parent_id": "deploy_20261008_222638",
       "parent_kind": "deployment",
@@ -7168,6 +7872,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T22:26:20.156924+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -7263,6 +7968,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T11:06:23.257396+00:00",
       "parent_id": "deploy_20261008_110623",
       "parent_kind": "deployment",
@@ -7310,6 +8016,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T11:05:58.021844+00:00",
       "parent_id": "deploy_20261008_110304",
       "parent_kind": "deployment",
@@ -7369,6 +8076,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T11:05:13.488148+00:00",
       "parent_id": "deploy_20261008_110304",
       "parent_kind": "deployment",
@@ -7434,6 +8142,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T11:04:30.990904+00:00",
       "parent_id": "deploy_20261008_110304",
       "parent_kind": "deployment",
@@ -7499,6 +8208,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T11:03:48.737727+00:00",
       "parent_id": "deploy_20261008_110304",
       "parent_kind": "deployment",
@@ -7564,6 +8274,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T11:03:04.387032+00:00",
       "parent_id": "deploy_20261008_110304",
       "parent_kind": "deployment",
@@ -7631,6 +8342,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-08T10:36:27.446390+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -7726,6 +8438,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T23:43:45.658373+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -7793,6 +8506,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T22:16:27.636779+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -7878,6 +8592,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:29:59.968229+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -7943,6 +8658,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:15:13.780949+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8008,6 +8724,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:14:52.095159+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8073,6 +8790,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:14:30.272823+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8138,6 +8856,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:14:04.830188+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8203,6 +8922,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:13:37.433523+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8268,6 +8988,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:13:12.069863+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8333,6 +9054,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:12:42.037034+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8398,6 +9120,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:11:15.662807+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8463,6 +9186,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:10:26.441162+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8528,6 +9252,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:10:03.114667+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8593,6 +9318,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:09:39.625577+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8658,6 +9384,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:09:16.871096+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8723,6 +9450,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:08:53.119020+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8788,6 +9516,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:08:29.546500+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8853,6 +9582,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:08:17.417252+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8918,6 +9648,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:07:24.787831+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -8983,6 +9714,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:06:06.132074+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -9048,6 +9780,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:05:36.133138+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -9113,6 +9846,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:05:06.877042+00:00",
       "parent_id": "deploy_20261007_150506",
       "parent_kind": "deployment",
@@ -9178,6 +9912,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:04:29.742642+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -9243,6 +9978,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:04:07.809028+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -9308,6 +10044,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:03:45.503927+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -9373,6 +10110,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T15:03:20.763931+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -9440,6 +10178,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:59:35.429356+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -9632,6 +10371,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:51:11.839028+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -9825,6 +10565,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:45:42.919287+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -10067,6 +10808,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:44:15.142388+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -10169,6 +10911,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:43:51.297993+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -10241,6 +10984,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:42:28.369441+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -10878,6 +11622,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:41:24.524986+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -11410,6 +12155,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:41:07.988031+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -11482,6 +12228,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:40:52.317342+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -11559,6 +12306,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:39:46.507948+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -11646,6 +12394,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:39:22.429835+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -11723,6 +12472,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:38:53.710877+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -11800,6 +12550,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:38:17.666408+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -11877,6 +12628,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:37:59.746890+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -12005,6 +12757,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:37:46.086157+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -12118,6 +12871,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:37:32.747294+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -12231,6 +12985,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:37:19.320553+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -12344,6 +13099,7 @@
       "stream_files": [
         "order_events.jsonl"
       ],
+      "recording": null,
       "start_time": "2026-10-07T14:37:05.142939+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -12454,6 +13210,7 @@
         "worker_decision.json"
       ],
       "stream_files": [],
+      "recording": null,
       "start_time": "2026-10-07T14:36:52.072335+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -12499,5 +13256,5 @@
       "has_reports": true
     }
   ],
-  "count": 158
+  "count": 168
 }

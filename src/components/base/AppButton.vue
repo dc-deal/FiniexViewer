@@ -43,12 +43,19 @@ withDefaults(defineProps<{
    * reader should hear; the border is for the eye.
    */
   marked?: boolean
+  /**
+   * The button is a symbol alone — ◐, ▶, ⏭. A `quiet` button underlines its text under the pointer,
+   * which is the sign of a text action; under a lone symbol the line reads as a stray rule (operator,
+   * on screen 2026-10-27). Such a button keeps its surface and its border and drops the line.
+   */
+  glyph?: boolean
   disabled?: boolean
 }>(), {
   variant: 'solid',
   size: 'normal',
   active: false,
   marked: false,
+  glyph: false,
   disabled: false,
 })
 </script>
@@ -57,7 +64,7 @@ withDefaults(defineProps<{
   <button
     type="button"
     class="app-button"
-    :class="[variant, size, { active: active || marked }]"
+    :class="[variant, size, { active: active || marked, glyph }]"
     :disabled="disabled"
     :aria-pressed="active ? 'true' : undefined"
   >
@@ -117,6 +124,10 @@ withDefaults(defineProps<{
 .app-button.quiet:hover:not(:disabled),
 .app-button.link:hover:not(:disabled) {
   text-decoration: underline;
+}
+
+.app-button.quiet.glyph:hover:not(:disabled) {
+  text-decoration: none;
 }
 
 /* a table cell that cuts its text off also cuts a ring drawn outside the link, so the link shows

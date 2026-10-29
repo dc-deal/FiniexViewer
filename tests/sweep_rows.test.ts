@@ -119,6 +119,50 @@ describe('sweep_rows', () => {
     expect(off[1]!.sentence).toContain('logic version')
   })
 
+  /**
+   * Contract 40: the combinations the ranking left out because they carry no value for its objective.
+   * Without the count a shorter ranking would read as the whole sweep; a broker configuration that
+   * differs between combinations makes them unlike runs.
+   */
+  it('says how many combinations the ranking left out, and a broker configuration that differs', () => {
+    const notices = sweepNotices(SWEEP, {
+      ...DETAIL,
+      unranked: 2,
+      combinations: [
+        combination({ run_id: 'run_a', broker_config_id: 'aaa' }),
+        combination({ run_id: 'run_b', broker_config_id: 'bbb' }),
+      ],
+    })
+    expect(notices.map(notice => notice.word)).toEqual(['2 not ranked', 'unlike runs'])
+    expect(notices[0]!.sentence).toContain('left out of the ranking')
+    expect(notices[1]!.sentence).toContain('broker configuration')
+  })
+
+  /** The order counts fold since contract 42; a row written before says it has none. */
+  it('carries the order counts of a combination, and a dash on a row from before they folded', () => {
+    const [row] = combinations({
+      combinations: [combination({
+        orders_submitted: 12, orders_executed: 11, orders_rejected: 1, orders_cancelled: 0, sl_tp_triggered: 4,
+      })],
+    })
+    const orders = combinationCard(row!).details.find(pair => pair.label === 'Orders')
+    expect(orders?.value).toBe('12 submitted · 11 executed · 1 rejected · 4 closed by SL/TP')
+
+    const [old] = combinations({ combinations: [combination({ orders_submitted: null })] })
+    expect(combinationCard(old!).details.find(pair => pair.label === 'Orders')?.value).toBe('—')
+  })
+
+  /** What a combination ran with, for comparing (contract 40) — and nothing where a row predates it. */
+  it('names the configuration a combination ran with, where its row records one', () => {
+    const [row] = combinations({ combinations: [combination({ rendered_config_id: 'r'.repeat(64), broker_config_id: 'b'.repeat(64) })] })
+    const labels = combinationCard(row!).details.map(pair => pair.label)
+    expect(labels).toContain('Rendered configuration id')
+    expect(labels).toContain('Broker configuration id')
+
+    const [old] = combinations({ combinations: [combination({ rendered_config_id: '', broker_config_id: '' })] })
+    expect(combinationCard(old!).details.map(pair => pair.label)).not.toContain('Rendered configuration id')
+  })
+
   it('titles a combination\'s card with its place and its parameters', () => {
     const [row] = combinations({})
     expect(combinationCard(row!).title).toBe(`1. ${parametersText(row!.combination)}`)

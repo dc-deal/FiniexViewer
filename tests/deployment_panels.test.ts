@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
+import HoverCard from '@/components/base/HoverCard.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
@@ -9,6 +10,7 @@ import type {
   DeploymentRow,
   DeploymentSessionRow,
 } from '@/types/api/deployment_types'
+import type { Figure } from '@/types/figure_types'
 import { provideTestOpenInContext } from './open_in_context_harness'
 import type { TestOpenInContext } from './open_in_context_harness'
 
@@ -82,7 +84,7 @@ describe('SessionsTable', () => {
     const rows = wrapper.findAll('.record-row')
     expect(rows).toHaveLength(2)
     expect(rows[1]?.text()).toContain('run_b')
-    // a boundary is a statement about the GAP, so it is nothing to click and nothing to mark
+    // a boundary is a statement about the GAP, so it is no row: nothing to choose and nothing to mark
     expect(lead.element.tagName).toBe('P')
   })
 
@@ -100,11 +102,57 @@ describe('SessionsTable', () => {
       session({ run_id: 'run_b', strategy_changed: true, orders_to: 'venue', orders_to_changed: true }),
       session({ run_id: 'run_c', orders_to: 'simulated', orders_to_changed: true }),
     ])
-    const leads = wrapper.findAll('.record-lead').map(lead => lead.text())
+    const leads = wrapper.findAll('.record-lead')
+      .map(lead => lead.findAll('.boundary-words').map(words => words.text()))
     expect(leads).toEqual([
-      'Strategy changed from here · Orders to real money from here',
-      'Orders simulated from here',
+      ['Strategy changed from here', 'Orders to real money from here'],
+      ['Orders simulated from here'],
     ])
+  })
+
+  /**
+   * The mark says WHERE, and the card says what it means in the backend's words — which parameters
+   * moved is not served yet, so the card says that too instead of leaving the reader to wonder.
+   */
+  it('explains a strategy mark on a card, and says which parameters moved is not served yet', () => {
+    const wrapper = mountSessions([session({ run_id: 'run_a' }), session({ run_id: 'run_b', strategy_changed: true })])
+    const details = wrapper.find('.record-lead').findComponent(HoverCard).props('details') as Figure[]
+    expect(details.map(row => row.label)).toEqual(['Strategy', 'Which'])
+    expect(details[0]?.value).toContain('its parameters differ from the session before')
+    expect(details[1]?.value).toContain('Not served yet')
+  })
+
+  /** The operation mark also moves with what lies outside the file, which no route serves. */
+  it('says on an operation mark that a change outside the file is not served', () => {
+    const wrapper = mountSessions([session({ run_id: 'run_a' }), session({ run_id: 'run_b', operation_changed: true })])
+    const details = wrapper.find('.record-lead').findComponent(HoverCard).props('details') as Figure[]
+    expect(details.map(row => row.label)).toEqual(['Operation', 'Which', 'Not in a file'])
+    expect(details[2]?.value).toContain('a default or a start option')
+  })
+
+  /**
+   * The two halves of the comparison: the session before the mark and the one carrying it, each
+   * opened COMPARED with the other — the values that differ are what a reader opens it for.
+   */
+  it('opens the configuration of the session before the mark and of the one after it, each compared with the other', async () => {
+    const wrapper = mountSessions([session({ run_id: 'run_a' }), session({ run_id: 'run_b', strategy_changed: true })])
+    const links = wrapper.findAll('.boundary-links .jump-link')
+    await links[0]!.trigger('click')
+    await links[1]!.trigger('click')
+    expect(way.opened).toEqual([
+      { what: 'comparison', id: 'run_a', other: 'run_b', side: 'after' },
+      { what: 'comparison', id: 'run_b', other: 'run_a', side: 'before' },
+    ])
+  })
+
+  it('offers no configuration where only the orders moved, nor a link where nothing can open it', () => {
+    const ordersOnly = mountSessions([session({ run_id: 'run_a' }), session({ run_id: 'run_b', orders_to_changed: true })])
+    expect(ordersOnly.find('.record-lead').findComponent(HoverCard).exists()).toBe(false)
+    expect(ordersOnly.find('.boundary-links').exists()).toBe(false)
+
+    const nowhere = mountSessions([session({ run_id: 'run_a' }), session({ run_id: 'run_b', strategy_changed: true })], false)
+    expect(nowhere.find('.record-lead').findComponent(HoverCard).exists()).toBe(true)
+    expect(nowhere.find('.boundary-links').exists()).toBe(false)
   })
 
   it('draws no line where nothing moved', () => {

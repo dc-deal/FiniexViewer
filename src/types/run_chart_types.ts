@@ -54,6 +54,11 @@ export interface ChartMark {
   shape: 'arrowUp' | 'arrowDown' | 'circle'
   role: 'entry' | Polarity | 'mixed'
   text: string
+  /**
+   * The text keeps its room and is not painted — the trades' signs switched off. Emptied instead, it
+   * gave its room up, and the chart rescaled at the switch (operator, on screen 2026-10-28).
+   */
+  textHidden?: boolean
   /** A mark of the position the reader is looking at — drawn larger, and never gathered. */
   focused: boolean
   /** What the chart library reports while the pointer rests on the mark — the key of its card. */
@@ -78,4 +83,35 @@ export interface TimeframeOffer {
   /** How many of them the offered timeframe draws apart. */
   apart: number
   at: number
+}
+
+/**
+ * What the volume layer counts: the traded volume where the venue prints trades, its ticks per bar
+ * where it does not. Ours, chosen from the bars' `X-Bar-Price-Basis`.
+ */
+export type VolumeBasis = 'traded' | 'ticks'
+
+/** The volume layer as the chart draws it — one value a bar, coloured by the candle's direction. */
+export interface ChartVolume {
+  basis: VolumeBasis
+  shown: boolean
+  /** The share of its strength it is drawn at, 0–1 — set in the Layers panel. */
+  opacity: number
+  bars: { time: number, value: number, rising: boolean }[]
+}
+
+/**
+ * The forms the price takes on the chart — ours, so a closed set. Each is the library's own series
+ * over the served bars; nothing is computed from them (a Heikin-Ashi candle would be, and is not
+ * offered).
+ */
+export const PRICE_FORMS = ['candles', 'bars', 'line', 'area'] as const
+export type PriceForm = typeof PRICE_FORMS[number]
+
+/** The candles layer as the chart draws it: its form, whether it is shown, how strongly. */
+export interface ChartCandles {
+  form: PriceForm
+  shown: boolean
+  /** The share of its strength it is drawn at, 0–1 — set in the Layers panel. */
+  opacity: number
 }

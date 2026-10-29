@@ -104,6 +104,12 @@ function mountCharted(history: TradeHistoryReport, drawable: string[]) {
 }
 
 describe('TradeHistoryPanel', () => {
+  // the panel's hints remember a dismissal in a store
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
   /** From a trade to its candles: the mark is drawn only where the run chart can draw the unit. */
   describe('the chart mark', () => {
     it('stands on every trade of a unit the run chart can draw, and on no other', () => {
@@ -589,6 +595,21 @@ describe('TradeHistoryPanel', () => {
       expect(cardRows(wrapper)['Slippage']).toMatch(/in [-0-9.]/)
     })
 
+    /**
+     * Since contract 44 a stop-loss or take-profit exit is measured against the level that closed
+     * it: the card says so there, and nowhere the exit is measured against the mid like the entry.
+     */
+    it('says the exit was measured against its level, and only there', () => {
+      const wrapper = mountPanel(report({
+        trades: [
+          trade({ position_id: 'p1', exit_slippage: 0.0012, exit_slippage_measured_against: 'protective_level' }),
+          trade({ position_id: 'p2', exit_slippage: 0.0003, exit_slippage_measured_against: 'submission_mid' }),
+        ],
+      }))
+      expect(cardRows(wrapper, 0)['Slippage']).toMatch(/out 0\.0012 vs SL\/TP level$/)
+      expect(cardRows(wrapper, 1)['Slippage']).not.toContain('SL/TP')
+    })
+
     it('still renders the row itself', () => {
       const wrapper = mountPanel(report({
         trades: [trade({ exit_slippage: null, exit_slippage_pct: null })],
@@ -633,6 +654,18 @@ describe('TradeHistoryPanel', () => {
       const fills = wrapper.find('.fill-list')
       expect(fills.findAll('.record-head')).toHaveLength(0)
       expect(fills.findAll('button')).toHaveLength(0)
+    })
+
+    /** A narrow width cuts a fill's id, price and fee; its card carries them whole, never a tooltip. */
+    it('gives each fill a card with its id, its price and its fee', async () => {
+      const wrapper = mountPanel(report({ trades: [trade({ entry_executions: [fill({ price: 0.86123, fee: 0.25 })] })] }))
+      await tradeRows(wrapper)[0]!.trigger('click')
+      const card = wrapper.find('.fill-list').findAllComponents(HoverCard)[0]!
+      expect(String(card.props('title'))).toContain('SYNTH-pos_eurgbp_1-000001')
+      const rows = Object.fromEntries((card.props('details') as Figure[]).map(row => [row.label, row.value]))
+      expect(rows['Price']).toBe('0.86123')
+      expect(rows['Fee']).toContain('0.25')
+      expect(wrapper.find('.fill-list').find('[title]').exists()).toBe(false)
     })
 
     /**
@@ -751,16 +784,18 @@ describe('TradeHistoryPanel', () => {
       expect(wrapper.find('.in-parts').exists()).toBe(false)
     })
 
-    /** The three served figures, in the backend's own wording, one hover away. */
-    it('carries what this trade took of the whole, on the hover', () => {
+    /** The three served figures, in the backend's own wording, one hover away — in the row's card. */
+    it('carries what this trade took of the whole, in its card', () => {
       const wrapper = mountPanel(report({ trades: [shared(3, { lots: 0.02 })] }))
-      const title = wrapper.find('.trade-position').attributes('title') ?? ''
-      expect(title).toContain('closed in parts')
-      expect(title).toContain('0.02')
-      expect(title).toContain('0.1')
-      expect(title).toContain('over 3 records')
+      const parts = cardRows(wrapper)['Closed in parts'] ?? ''
+      expect(parts).toContain('0.02')
+      expect(parts).toContain('0.1')
+      expect(parts).toContain('over 3 records')
       // and WHICH record ended the chain, which `shared_by` could never say
-      expect(title).toContain('it stayed open after this')
+      expect(parts).toContain('it stayed open after this')
+      // a browser tooltip no longer carries it
+      expect(wrapper.find('.trade-position').attributes('title')).toBeUndefined()
+      expect(cardRows(mountPanel(report({ trades: [shared(1)] })))).not.toHaveProperty('Closed in parts')
     })
 
     /** Two partial closes of one position differ in their exit, not in their size — they look alike

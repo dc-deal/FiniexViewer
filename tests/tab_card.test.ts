@@ -61,8 +61,9 @@ describe('tabCard', () => {
     expect(row(cardOf('chart'), 'Follows')).toBeUndefined()
     expect(row(cardOf('chart'), 'Chooses')).toBe('the broker and symbol')
     expect(row(cardOf('deployments'), 'Follows')).toBeUndefined()
-    // in the link's order, the run before the deployment, whatever the kind declared first
-    expect(row(cardOf('deployments'), 'Chooses')).toBe('the run and the deployment')
+    expect(row(cardOf('deployments'), 'Chooses')).toBe('the deployment')
+    // in the link's order, the run before the sweep, whatever the kind declared first
+    expect(row(cardOf('sweeps'), 'Chooses')).toBe('the run and the sweep')
   })
 
   /** What a bundle follows and chooses is what its members do while they stand in it. */

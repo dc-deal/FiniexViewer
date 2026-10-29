@@ -42,6 +42,16 @@ const REPORTS: Record<string, string> = {
   'config': 'run_config_simulation.json',
 }
 
+/**
+ * The sessions the latest-state-frame captures came from, read off the captured index rather than
+ * transcribed: the first row in each of the two states a stored session keeps for good.
+ */
+export const STATE_FRAME_RUNS: Record<'ended' | 'stopped', string> = (() => {
+  const rows = (fixture('runs_list.json') as { runs: { run_id: string, recording: string | null }[] }).runs
+  const first = (state: string) => rows.find(row => row.recording === state)?.run_id ?? ''
+  return { ended: first('ended'), stopped: first('stopped') }
+})()
+
 /** The run every report capture was taken from — the only one the mock can answer for. */
 export const FIXTURE_RUN = (fixture('scenario_details.json') as { run_id: string }).run_id
 
@@ -88,6 +98,8 @@ const SHELL: Record<string, unknown> = {
   '/api/v1/brokers': { brokers: [] },
   // captured: the run chart orders the timeframes and picks one by their lengths
   '/api/v1/timeframes': fixture('timeframes.json'),
+  // what every check id a warning names means — read once by the warnings section
+  '/api/v1/validation-checks': fixture('validation_checks.json'),
   '/api/v1/caller': {
     enforced: false, client: null, account: null, account_kind: null, display_name: null, grants: null, note: null,
   },
@@ -105,9 +117,9 @@ function absent(cause: string, detail: string) {
  * The header the backend stamps every response with, read from the captures' own manifest.
  *
  * Written out here it was the kind of number that stays at 11 while the fixtures move to 21, and
- * that is what it did. Nothing reads the header today, so it cost nothing — but the file states
- * that none of its bodies is hand-written, and a hand-written version number is the same promise
- * broken in one line.
+ * that is what it did. The menu bar reads it since 2026-10-27 and marks a server stamped with
+ * another contract than the viewer mirrors — so a hand-written number here would also draw that
+ * mark in every spec.
  */
 const CONTRACT = {
   'X-Api-Contract': String((fixture('capture_manifest.json') as { contract: number }).contract),
@@ -131,8 +143,8 @@ interface ApiMockOptions {
    */
   levels?: { scenario: string, position: string, stopLoss: number, takeProfit: number }
   /**
-   * Rows appended to the captured activities. The capture holds the server alone, so an activity
-   * that runs something is built from the server's row by the spec that needs one.
+   * Rows appended to the captured activities. The capture holds whatever ran when it was taken, so
+   * an activity a spec relies on is built from the server's row by the spec that needs one.
    */
   activities?: Record<string, unknown>[]
 }
@@ -190,6 +202,53 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       // as the route cuts them: the bars that OPEN in the range
       const rows = (fixture(name) as { t: number }[]).filter(bar => bar.t >= from && bar.t <= to)
       return route.fulfill({ json: rows, headers: { ...CONTRACT, 'X-Bar-Truncated': 'false' } })
+    }
+
+    /*
+     * The CHECK-IN on a session, captured in the two states a stored session keeps — each for the
+     * session it came from, and `state_frames_not_recorded` for every other run, as a backtest answers.
+     */
+    const latest = /^\/api\/v1\/reports\/runs\/([^/]+)\/state-frames\/latest$/.exec(path)
+    if (latest) {
+      const state = (Object.keys(STATE_FRAME_RUNS) as ('ended' | 'stopped')[])
+        .find(key => STATE_FRAME_RUNS[key] === latest[1])
+      if (!state) return route.fulfill(absent('state_frames_not_recorded', 'This run records no state frames.'))
+      return route.fulfill({ json: fixture(`state_frames_${state}.json`), headers: CONTRACT })
+    }
+
+    /*
+     * A unit's frames OVER TIME, of the ended session: the three captured frames, and a timeline
+     * that counts those three — so the two answers agree on what exists, and a player opened on them
+     * can reach either end. Every other run records nothing over time, as a backtest answers.
+     */
+    const recorded = /^\/api\/v1\/reports\/runs\/([^/]+)\/units\/([^/]+)\/recorded-streams(\/window)?$/.exec(path)
+    if (recorded) {
+      if (recorded[1] !== STATE_FRAME_RUNS.ended) {
+        return route.fulfill(absent('streams_not_recorded', 'This run records no stream over time.'))
+      }
+      const page = fixture('recorded_window.json') as { state_frames: { frame_time: string }[] }
+      const frames = page.state_frames
+      if (!recorded[3]) {
+        const timeline = fixture('recorded_streams.json') as { streams: Record<string, unknown>[] }
+        const streams = timeline.streams.map(stream => ({
+          ...stream,
+          record_count: frames.length,
+          first_record_time: frames[0]!.frame_time,
+          last_record_time: frames.at(-1)!.frame_time,
+        }))
+        return route.fulfill({ json: { ...timeline, streams }, headers: CONTRACT })
+      }
+      const asked = new URL(route.request().url()).searchParams
+      const from = asked.get('from') ? Date.parse(asked.get('from')!) : -Infinity
+      const to = asked.get('to') ? Date.parse(asked.get('to')!) : Infinity
+      const inWindow = frames.filter(frame => Date.parse(frame.frame_time) >= from && Date.parse(frame.frame_time) < to)
+      return route.fulfill({
+        json: {
+          ...page, matched: inWindow.length, returned: inWindow.length, truncated: false, next_from: null,
+          state_frames: inWindow,
+        },
+        headers: CONTRACT,
+      })
     }
 
     /*

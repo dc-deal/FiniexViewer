@@ -4,23 +4,23 @@ import { storeToRefs } from 'pinia'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore, pinnedBoundary } from '@/stores/layout_store'
-import { reportKindId } from '@/panel_kinds'
-import { panelById } from '@/panel_registry'
+import { bundleMembers, memberKindId } from '@/bundle_members'
 import AccordionPanel from '@/components/panels/AccordionPanel.vue'
 import PanelViewScope from '@/components/panels/PanelViewScope.vue'
 import LoadingLine from '@/components/base/LoadingLine.vue'
-import type { PanelState } from '@/types/panel_types'
+import type { BundleId, PanelState } from '@/types/panel_types'
 import type { IconName } from '@/types/icon_types'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
+  /** The bundle whose members this column holds — the run report's, unless another is named. */
+  bundle?: BundleId
   /** Models keyed by the `source` a panel descriptor declares — panels never fetch their own. */
   sources: Record<string, unknown>
   /** Sections on their way for the run on screen, keyed the same way. */
   pending?: Record<string, boolean>
-}>()
+}>(), { bundle: 'run', pending: undefined })
 
 const layoutStore = useLayoutStore()
-const { visiblePanels } = storeToRefs(layoutStore)
 const dock = useDockStore()
 const { openIds } = storeToRefs(dock)
 
@@ -35,11 +35,11 @@ interface RenderedPanel {
 }
 
 const rendered = computed<RenderedPanel[]>(() =>
-  visiblePanels.value.flatMap(state => {
+  layoutStore.visibleOf(props.bundle).flatMap(state => {
     // a section open as a panel of its own is THERE, not here — one place at a time. Its place in
     // the arrangement stays, so closing that panel puts it back where it stood
-    if (openIds.value.includes(reportKindId(state.id))) return []
-    const descriptor = panelById(state.id)
+    if (openIds.value.includes(memberKindId(props.bundle, state.id))) return []
+    const descriptor = bundleMembers(props.bundle).find(member => member.id === state.id)
     if (!descriptor) return []
     // a section whose model this run does not carry is skipped, never shown empty — and one still
     // on its way is neither: it keeps its place, so a run change does not collapse the column
@@ -94,7 +94,7 @@ function heightOf(id: string): string | undefined {
 // across that boundary settles at it.
 const order = computed({
   get: () => rendered.value,
-  set: (items: RenderedPanel[]) => layoutStore.reorder(items.map(item => item.state.id)),
+  set: (items: RenderedPanel[]) => layoutStore.reorder(items.map(item => item.state.id), props.bundle),
 })
 </script>
 
@@ -111,11 +111,11 @@ const order = computed({
       :pinned="panel.state.pinned"
       :locked="panel.state.locked"
       :reset-on="panel.model"
-      @update:open="value => layoutStore.setOpen(panel.state.id, value)"
-      @toggle-pin="layoutStore.togglePin(panel.state.id)"
-      @toggle-lock="layoutStore.toggleLock(panel.state.id)"
-      @hide="dock.hideSection(panel.state.id)"
-      @open-as-panel="dock.openSection(panel.state.id)"
+      @update:open="value => layoutStore.setOpen(panel.state.id, value, bundle)"
+      @toggle-pin="layoutStore.togglePin(panel.state.id, bundle)"
+      @toggle-lock="layoutStore.toggleLock(panel.state.id, bundle)"
+      @hide="dock.hideSection(panel.state.id, bundle)"
+      @open-as-panel="dock.openSection(panel.state.id, bundle)"
     >
       <div :ref="observe" class="panel-body" :data-height-of="panel.state.id">
         <!-- on its way for the run on screen: the room it had, and a line saying it is coming -->
@@ -125,7 +125,7 @@ const order = computed({
           :style="{ minHeight: heightOf(panel.state.id) }"
         />
         <!-- under the dock id the section has as a panel of its own: one view in both places -->
-        <PanelViewScope v-else :panel="reportKindId(panel.state.id)">
+        <PanelViewScope v-else :panel="memberKindId(bundle, panel.state.id)">
           <component :is="panel.component" :model="panel.model" />
         </PanelViewScope>
       </div>

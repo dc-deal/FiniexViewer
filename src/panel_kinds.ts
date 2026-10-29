@@ -1,6 +1,8 @@
 import { defineAsyncComponent, defineComponent, h } from 'vue'
-import { allPanels } from '@/panel_registry'
+import { bundleMembers, memberKindId, memberOfKind } from '@/bundle_members'
 import { useContextStore } from '@/stores/context_store'
+import { useDeploymentSectionsStore } from '@/stores/deployment_sections_store'
+import { useDeploymentsStore } from '@/stores/deployments_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -22,6 +24,9 @@ function outcomeStatus(outcome: string | null): TabStatus | null {
 /** The run bundle's kind: the panel whose column holds the run report's sections as its members. */
 export const RUN_BUNDLE = 'run'
 
+/** The deployment bundle's kind: a deployment's sessions and booking periods as its members (viewer#43). */
+export const DEPLOYMENT_BUNDLE = 'deployment'
+
 /**
  * Every kind of docked panel, in the SUGGESTED ORDER: from the general to the particular — a
  * deployment holds runs, a run has its chart (operator, 2026-10-13). The first arrangement and a
@@ -35,15 +40,44 @@ export const RUN_BUNDLE = 'run'
  */
 export const PANEL_KINDS: PanelKind[] = [
   {
+    // the LIST: a pick here chooses the deployment and its bundle shows it (viewer#43)
     id: 'deployments',
     title: t('Deployments'),
-    description: t('The sessions of a deployment, across its restarts'),
+    menuTitle: t('Deployment list'),
+    description: t('Every deployment in the ledger — pick one to read its sessions across its restarts'),
     icon: 'form-list',
     order: 1,
     opensByDefault: true,
+    area: 'deployments',
     component: defineAsyncComponent(() => import('@/views/DeploymentsView.vue')),
-    // the deployment it follows is the one it chooses itself until a bundle shows it (#43)
-    relations: { memberOf: null, follows: ['deployment'], chooses: ['deployment', 'run'] },
+    // it marks the chosen deployment on a list that stays whole, as the run list marks its run
+    relations: { memberOf: null, follows: [], chooses: ['deployment'] },
+  },
+  {
+    /*
+     * The BUNDLE a pick in the deployment list shows (viewer#43): the chosen deployment's sessions
+     * and its booking periods across every session, one below the other as its members, either of
+     * which opens as a panel of its own — the way the run bundle holds a run's sections. It stands
+     * as a tab behind the run bundle, so the first arrangement stays three columns wide.
+     */
+    id: DEPLOYMENT_BUNDLE,
+    title: t('Deployment bundle'),
+    subtitle: () => useDeploymentsStore().selectedDeploymentId,
+    description: t("The chosen deployment's sessions and its booking periods, one below the other — either opens as a panel of its own"),
+    icon: 'form-sheet',
+    order: 2,
+    opensByDefault: true,
+    area: 'deployments',
+    component: defineAsyncComponent(() => import('@/views/DeploymentBundleView.vue')),
+    // the advisory's own words: the sessions are not one series, which weighs on every total
+    status: () => useDeploymentsStore().detail?.advisory
+      ? { icon: 'status-warning', word: t('not one series'), role: 'warning' }
+      : null,
+    actions: [
+      { id: 'collapse-all', title: t('Collapse all'), run: () => useLayoutStore().collapseAll(DEPLOYMENT_BUNDLE) },
+      { id: 'reset-bundle', title: t('Reset bundle'), run: () => useLayoutStore().reset(DEPLOYMENT_BUNDLE) },
+    ],
+    relations: { memberOf: null, follows: ['deployment'], chooses: [] },
   },
   {
     /*
@@ -55,7 +89,7 @@ export const PANEL_KINDS: PanelKind[] = [
     title: t('Sweeps'),
     description: t("Every parameter search on record, and the chosen one's combinations ranked by its own objective"),
     icon: 'form-list',
-    order: 2,
+    order: 3,
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/SweepsView.vue')),
     relations: { memberOf: null, follows: ['sweep'], chooses: ['sweep', 'run'] },
@@ -67,7 +101,7 @@ export const PANEL_KINDS: PanelKind[] = [
     menuTitle: t('Run list'),
     description: t('The runs the backend has stored — pick one to read its report'),
     icon: 'form-list',
-    order: 3,
+    order: 4,
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunsView.vue')),
@@ -86,7 +120,7 @@ export const PANEL_KINDS: PanelKind[] = [
     subtitle: () => useRunsStore().selectedRunId,
     description: t('The report of the chosen run, its sections one below the other — any of them opens as a panel of its own'),
     icon: 'form-sheet',
-    order: 4,
+    order: 5,
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunReportView.vue')),
@@ -94,8 +128,8 @@ export const PANEL_KINDS: PanelKind[] = [
     // what the bundle offers about its own column, on its tab's ⋯ rather than in the Panels menu,
     // which only shows and hides (#42)
     actions: [
-      { id: 'collapse-all', title: t('Collapse all'), run: () => useLayoutStore().collapseAll() },
-      { id: 'reset-bundle', title: t('Reset bundle'), run: () => useLayoutStore().reset() },
+      { id: 'collapse-all', title: t('Collapse all'), run: () => useLayoutStore().collapseAll(RUN_BUNDLE) },
+      { id: 'reset-bundle', title: t('Reset bundle'), run: () => useLayoutStore().reset(RUN_BUNDLE) },
     ],
     // its own line follows the run; what its members follow and choose its card adds while they
     // stand in its column — a member open as a panel of its own takes its links with it
@@ -113,7 +147,7 @@ export const PANEL_KINDS: PanelKind[] = [
     subtitle: () => useRunChartStore().unit?.name ?? null,
     description: t('One unit of the chosen run on its candles, its positions marked where they opened and its trades where they closed'),
     icon: 'form-chart',
-    order: 5,
+    order: 6,
     opensByDefault: true,
     area: 'runs',
     component: defineAsyncComponent(() => import('@/views/RunChartView.vue')),
@@ -128,7 +162,7 @@ export const PANEL_KINDS: PanelKind[] = [
     title: t('Free chart'),
     description: t('Candles of the market data, by broker, symbol and timeframe'),
     icon: 'form-chart',
-    order: 6,
+    order: 7,
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/ChartView.vue')),
     quickBar: defineAsyncComponent(() => import('@/components/ChartQuickBar.vue')),
@@ -144,7 +178,7 @@ export const PANEL_KINDS: PanelKind[] = [
     title: t('Layers'),
     description: t('What the chart last in front draws beside its candles, layer by layer — shown or hidden, quiet, in front of or behind the others'),
     icon: 'form-list',
-    order: 7,
+    order: 8,
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/LayersView.vue')),
     relations: { memberOf: null, follows: [], chooses: [], chartInFront: true },
@@ -159,7 +193,7 @@ export const PANEL_KINDS: PanelKind[] = [
     title: t('Activities'),
     description: t('What runs on the machine right now — every backtest, sweep, session, import, the test suite and the server, with the memory each holds'),
     icon: 'form-list',
-    order: 8,
+    order: 9,
     opensByDefault: false,
     component: defineAsyncComponent(() => import('@/views/ActivitiesView.vue')),
     // an activity's label opens its run, or its sweep
@@ -178,16 +212,15 @@ export function firstActiveKind(): string {
 /** The sections whose panel is a LIST; every other section reads as a sheet of figures. */
 const LIST_SECTIONS = new Set(['scenario-roster', 'trade-history', 'orders', 'booking-periods'])
 
-const REPORT_PREFIX = 'report-'
-
-/** A section's panel kind — one id scheme, so the column, the Panels menu and the dock agree on it. */
+/** A run report section's panel kind — the run bundle's member scheme, from `bundle_members`. */
 export function reportKindId(sectionId: string): string {
-  return `${REPORT_PREFIX}${sectionId}`
+  return memberKindId(RUN_BUNDLE, sectionId)
 }
 
 /** The section a kind shows, or null for a kind that is not a section of the run report. */
 export function sectionOfKind(kindId: string): string | null {
-  return kindId.startsWith(REPORT_PREFIX) ? kindId.slice(REPORT_PREFIX.length) : null
+  const member = memberOfKind(kindId)
+  return member?.bundle === RUN_BUNDLE ? member.member : null
 }
 
 function reportKind(section: PanelDescriptor, index: number): PanelKind {
@@ -211,6 +244,25 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
   }
 }
 
+/** A member of the deployment bundle as a panel kind — the same shape the run report's take. */
+function deploymentKind(member: PanelDescriptor, index: number): PanelKind {
+  return {
+    id: memberKindId(DEPLOYMENT_BUNDLE, member.id),
+    title: t(member.panelTitle ?? member.title),
+    menuTitle: t(member.title),
+    description: t('This member as a panel of its own — “Back into the bundle” on its tab puts it back'),
+    icon: member.icon,
+    order: PANEL_KINDS.length + REPORT_KINDS.length + 1 + index,
+    opensByDefault: false,
+    component: defineAsyncComponent(async () => {
+      const { default: DeploymentSection } = await import('@/components/dock/DeploymentSection.vue')
+      return defineComponent({ name: 'DeploymentSectionPanel', setup: () => () => h(DeploymentSection, { memberId: member.id }) })
+    }),
+    muted: () => useDeploymentSectionsStore().lacks(member.source),
+    relations: { memberOf: DEPLOYMENT_BUNDLE, follows: member.follows, chooses: member.chooses },
+  }
+}
+
 /**
  * The run report's sections, each of which opens as a panel of its own beside the column — the
  * run report stays one column, and a section the reader wants beside another is pulled out
@@ -218,14 +270,17 @@ function reportKind(section: PanelDescriptor, index: number): PanelKind {
  * the submenu of the panel their column stands in, with where each one is. A section is in one
  * place at a time.
  */
-const REPORT_KINDS: PanelKind[] = allPanels().map(reportKind)
+const REPORT_KINDS: PanelKind[] = bundleMembers(RUN_BUNDLE).map(reportKind)
+
+/** The deployment bundle's members as kinds — listed, like the sections, in their area's submenu. */
+const DEPLOYMENT_KINDS: PanelKind[] = bundleMembers(DEPLOYMENT_BUNDLE).map(deploymentKind)
 
 /** A kind by its id, or null for one this version does not know — a stored panel can outlive it. */
 export function panelKind(id: string): PanelKind | null {
-  return PANEL_KINDS.find(kind => kind.id === id) ?? REPORT_KINDS.find(kind => kind.id === id) ?? null
+  return allPanelKinds().find(kind => kind.id === id) ?? null
 }
 
-/** Every kind there is: the top level and one per section of the run report. */
+/** Every kind there is: the top level, one per section of the run report and per member of a deployment. */
 export function allPanelKinds(): PanelKind[] {
-  return [...PANEL_KINDS, ...REPORT_KINDS]
+  return [...PANEL_KINDS, ...REPORT_KINDS, ...DEPLOYMENT_KINDS]
 }

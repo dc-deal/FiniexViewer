@@ -27,3 +27,4 @@ export type IconName =
   | 'kind-feed-health'
   | 'kind-config'
   | 'kind-run-header'
+  | 'kind-latest-state'
