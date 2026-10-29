@@ -21,6 +21,12 @@ describe('AppSwitch', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
   })
 
+  /** A dense row's lever, beside a glyph control it would otherwise outweigh (2026-10-28). */
+  it('takes the compact size where asked, and the full one otherwise', () => {
+    expect(mount(AppSwitch, { props: { modelValue: false, compact: true } }).get('button').classes()).toContain('compact')
+    expect(mount(AppSwitch, { props: { modelValue: false } }).get('button').classes()).not.toContain('compact')
+  })
+
   it('asks for nothing while it cannot be used', async () => {
     const wrapper = mount(AppSwitch, { props: { modelValue: false, disabled: true } })
     await wrapper.get('button').trigger('click')

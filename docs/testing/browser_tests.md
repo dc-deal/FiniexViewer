@@ -107,7 +107,8 @@ by its tab, the way a reader does.
   group scrolled by nothing — it once stood 171 px left of it, over the report; a layer switched off at its lever and no longer drawn
   (`data-drawings`), the price axis the same pixel for pixel before and after — switching the trades
   off once stretched the candles — and again after the volume is switched off, which stands on a
-  scale of its own; and both still off after a real reload, in the panel and on the chart.
+  scale of its own; and both still off after a real reload, in the panel and on the chart. And a
+  layer dragged in front of another by its grip, a drag past the candles and the volume refused.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
   browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read
   from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its

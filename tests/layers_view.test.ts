@@ -110,13 +110,17 @@ describe('LayersView', () => {
       .toEqual({ options: { 'every-position': true, 'every-position-line': true } })
   })
 
-  /** A lever that changes nothing on screen looked broken: the row says there is nothing to draw, and why. */
-  it('says a shown layer has nothing to draw, and why, and says nothing of a hidden one', async () => {
+  /**
+   * A lever that changes nothing on screen looked broken: the row says what the layer waits for — the
+   * reader's next step where there is one (operator, 2026-10-28) — and the hint below says why.
+   */
+  it('says what a shown layer that draws nothing waits for, and says nothing of a hidden one', async () => {
     // a window of bars, and no trade, no position looked at: the drawing layers have nothing to draw
     useRunChartStore().bars = [{ time: 1_761_886_800, open: 1, high: 1, low: 1, close: 1 }]
     const wrapper = mountOn('run-chart')
     const summary = row(wrapper, 'levels').find('.layer-summary')
-    expect(summary.text()).toBe('nothing to draw')
+    expect(summary.text()).toBe('pick a position')
+    expect(row(wrapper, 'trades').find('.layer-summary').text()).toBe('none in view')
     // why stands in the hint below, the one pattern an explanation takes — never in a browser tooltip
     expect(summary.attributes('title')).toBeUndefined()
     // and below the list, in full, front first, as hints in one box: a narrow panel cuts the row's
@@ -127,6 +131,18 @@ describe('LayersView', () => {
     await row(wrapper, 'levels').find('[data-action="show"]').trigger('click')
     expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
     expect(below()).not.toContain('The levels are drawn')
+    // every position asked for, no position is waited for: there is simply none in view
+    await row(wrapper, 'entry-exit').find('[data-action="open"]').trigger('click')
+    await row(wrapper, 'entry-exit').find('[data-action="option"]').trigger('click')
+    expect(row(wrapper, 'entry-exit').find('.layer-summary').text()).toContain('none in view')
+  })
+
+  /** Dragged by its grip, never a fixed layer: the candles and the volume keep their places at the back. */
+  it('offers a grip on every movable layer and none on a fixed one', () => {
+    const wrapper = mountOn('run-chart')
+    expect(row(wrapper, 'trades').find('.layer-grip').text()).toBe('⠿')
+    expect(row(wrapper, 'candles').find('.layer-grip').text()).toBe('')
+    expect(row(wrapper, 'volume').find('.layer-grip').text()).toBe('')
   })
 
   /** With no bars the chart says so itself: no layer is said to draw nothing, and no hint stands below. */

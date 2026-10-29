@@ -10,12 +10,14 @@
  * press sinks it a pixel — and the lever keeps its size whatever it shows, so switching moves nothing.
  *
  * `label` is the word beside it, part of the click; without one, the caller names the switch with
- * `aria-label`, or a `<label>` around it does.
+ * `aria-label`, or a `<label>` around it does. `compact` is the lever of a dense row, where it stands
+ * beside a glyph control and would otherwise outweigh it.
  */
 defineProps<{
   modelValue: boolean
   label?: string
   disabled?: boolean
+  compact?: boolean
 }>()
 
 defineEmits<{
@@ -28,7 +30,7 @@ defineEmits<{
     type="button"
     role="switch"
     class="app-switch"
-    :class="{ on: modelValue }"
+    :class="{ on: modelValue, compact }"
     :aria-checked="modelValue"
     :disabled="disabled"
     @click="$emit('update:modelValue', !modelValue)"
@@ -83,6 +85,21 @@ defineEmits<{
 .app-switch.on .switch-knob {
   transform: translateX(12px);
   background-color: var(--color-bg-surface);
+}
+
+.app-switch.compact .switch-track {
+  width: 22px;
+  height: 12px;
+  border-radius: 6px;
+}
+
+.app-switch.compact .switch-knob {
+  width: 8px;
+  height: 8px;
+}
+
+.app-switch.compact.on .switch-knob {
+  transform: translateX(10px);
 }
 
 /* hover: the track takes a ring in the link colour — in both positions, so it reads on the blue too */

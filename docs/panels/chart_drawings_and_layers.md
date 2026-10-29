@@ -106,23 +106,34 @@ layer* in their glossary.
 
 ```
 Run chart · ETHUSD_aug_sep
-(━●) ▸ Trades              no signs   ◐
-(━●) ▾ Entry–exit line                ◐ 40%
-         ↑ front  ↓ back
-(●━) ▸ Levels                         ◐        ← switched off: the row grey
-(━●) ▸ Candles   candles · behind the drawings      ◐   ← fixed: never moved; opened, its forms
-(━●) ▸ Volume    ticks per bar · behind the candles  ◐
+⠿ (━●) ▸ Trades              no signs          ◐
+⠿ (━●) ▾ Entry–exit line     pick a position   ◐ 40%
+           what it draws, in the small type
+           ↑ ↓                                     ← the keyboard's way to move it
+⠿ (●━) ▸ Levels                                ◐   ← switched off: the row grey
+  (━●) ▸ Candles   candles · behind the drawings      ◐   ← fixed: no grip, never moved
+  (━●) ▸ Volume    ticks per bar · behind the candles  ◐
 ```
 
 - **The register** is `src/layer_registry.ts`: each layer's title, what it draws and its one option,
   and which chart draws which layers, back to front (`chartLayers`). The free chart draws none today.
 - **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
-  the row opens the rest — its option (the trades' signs; the levels, or the lines, of every
-  position rather than of the one looked at) and its place, one step at a time. The closed row says what differs — and,
-  for a shown layer with nothing to draw, *nothing to draw*: the levels and the line draw for the
-  position looked at alone, so with none chosen their levers changed nothing on screen and looked
-  broken (2026-10-19). Why stands below the list as hints, one box for every such layer — a narrow
+  the row opens the rest — what it draws, its option (the trades' signs; the levels, or the lines,
+  of every position rather than of the one looked at) and ↑ ↓, its place one step at a time. The
+  closed row says what differs — and, for a shown layer with nothing to draw, what it waits for:
+  *pick a position* for the levels and the line, which draw for the position looked at alone,
+  *none for this position* where one is looked at, and *none in view* for the trades or where every
+  position is asked for. With none chosen their levers changed nothing on screen and looked broken
+  (2026-10-19); *nothing to draw* said so, and not what to do (2026-10-28).
+- **Compact as the app's lists** (operator, 2026-10-28): a row is as tall as a list row (25 px), the
+  surface under the pointer spans the whole row, the lever is the compact one (`AppSwitch`
+  `compact`) so it does not outweigh ◐ beside it, and what an opened row explains stands in the
+  smallest type (`--font-size-xs`).
+- **Dragged by its grip ⠿** (operator, 2026-10-28), through `vue-draggable-plus` — the package the
+  run bundle's column already sorts its sections with — and written back whole (`reorder`). The
+  candles and the volume have no grip, and a drag that would pass them is refused (`onMove`). ↑ ↓
+  in the opened row stay, because a drag is the pointer's alone. Why stands below the list as hints, one box for every such layer — a narrow
   panel cut the row's word to a letter and kept the reason on hover, and the levers still looked
   broken (2026-10-27). Hints of the shared register (`layer-empty-*`, named on each layer as
   `emptyHintId`), so a reader who knows them dismisses or bans them. Below the list their coming and

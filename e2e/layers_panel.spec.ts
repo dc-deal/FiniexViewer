@@ -66,3 +66,23 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
   await expect.poll(async () => await page.locator('[data-panel-kind="run-chart"] .candle-chart').getAttribute('data-drawings'))
     .toMatch(/levels:\d+ entry-exit:\d+$/)
 })
+
+/** Dragged by its grip (operator, 2026-10-28), and never behind the candles and the volume. */
+test('a layer is dragged in front of another by its grip, and never past the fixed ones', async ({ page }) => {
+  await page.setViewportSize({ width: 2400, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['EURGBP_refusals_01'] })
+  await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
+  const layers = page.locator('[data-panel-kind="layers"]')
+  const order = (): Promise<string> => layers.locator('[data-layer]')
+    .evaluateAll(rows => rows.map(row => row.getAttribute('data-layer')).join(','))
+  await expect.poll(order).toBe('trades,entry-exit,levels,candles,volume')
+
+  await layers.locator('[data-layer="levels"] .layer-grip')
+    .dragTo(layers.locator('[data-layer="trades"] .layer-row'), { targetPosition: { x: 20, y: 2 } })
+  await expect.poll(order).toBe('levels,trades,entry-exit,candles,volume')
+
+  await layers.locator('[data-layer="trades"] .layer-grip')
+    .dragTo(layers.locator('[data-layer="volume"] .layer-row'), { targetPosition: { x: 20, y: 20 } })
+  await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done()))))
+  expect(await order()).toBe('levels,trades,entry-exit,candles,volume')
+})

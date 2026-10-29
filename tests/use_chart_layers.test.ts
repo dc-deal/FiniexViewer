@@ -53,6 +53,19 @@ describe('useChartLayers', () => {
     expect(rows.value.map(row => row.id)).toEqual(['trades', 'levels', 'entry-exit', 'candles', 'volume'])
   })
 
+  /**
+   * As a drag leaves them (operator, 2026-10-28): the movable layers in a new order, front first, the
+   * fixed ones kept at the back — and a list that does not hold every movable layer once changes nothing.
+   */
+  it('takes a new order of the movable layers whole, and keeps the fixed ones at the back', () => {
+    const { rows, reorder } = useChartLayers(() => 'run-chart')
+    reorder(['levels', 'trades', 'entry-exit'])
+    expect(rows.value.map(row => row.id)).toEqual(['levels', 'trades', 'entry-exit', 'candles', 'volume'])
+    reorder(['trades', 'levels'])
+    reorder(['trades', 'trades', 'levels'])
+    expect(rows.value.map(row => row.id)).toEqual(['levels', 'trades', 'entry-exit', 'candles', 'volume'])
+  })
+
   /** Back to the chart's own arrangement, nothing is kept — no entry stands for a chart nobody arranged. */
   it('keeps nothing once the layers are back as the chart has them', () => {
     const arrangement = useArrangementStore()

@@ -51,7 +51,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layers',
-    text: t('Front layer first: the lever shows or hides a layer, ◐ sets how strongly it is drawn, and a click on the layer opens the rest — its option, its place in front of or behind the others. The candles stay behind them all, and the volume behind the candles.'),
+    text: t('Front layer first: drag a layer by ⠿ to put it in front of or behind the others. The lever shows or hides it, ◐ sets how strongly it is drawn, and a click on it opens what it draws, its option and ↑ ↓ to move it. The candles stay behind them all, and the volume behind the candles.'),
   },
   // why a layer that is shown draws nothing — shown below the Layers list only while it does
   {

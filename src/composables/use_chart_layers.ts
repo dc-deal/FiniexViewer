@@ -17,6 +17,8 @@ interface ChartLayers {
   setForm: (id: ChartLayerId, form: PriceForm) => void
   /** One place toward the front (`1`) or the back (`-1`); nothing past either end, nor past a fixed layer. */
   move: (id: ChartLayerId, step: 1 | -1) => void
+  /** The movable layers in a new order, front first — as a drag leaves them. */
+  reorder: (frontFirst: ChartLayerId[]) => void
 }
 
 /**
@@ -57,6 +59,17 @@ export function useChartLayers(chartId: () => string | null): ChartLayers {
     write(order)
   }
 
+  /**
+   * The movable layers in the order a drag left them, front first. The fixed ones keep their places
+   * at the back; a list that does not hold every movable layer once changes nothing.
+   */
+  function reorder(frontFirst: ChartLayerId[]): void {
+    const movable = states.value.filter(state => !layerDefinition(state.id).fixed)
+    const placed = [...new Set(frontFirst)].reverse().flatMap(id => movable.filter(state => state.id === id))
+    if (placed.length !== movable.length) return
+    write([...states.value.filter(state => layerDefinition(state.id).fixed), ...placed])
+  }
+
   return {
     rows: computed(() => [...states.value].reverse()),
     show: (id, shown) => change(id, state => ({ ...state, shown })),
@@ -66,5 +79,6 @@ export function useChartLayers(chartId: () => string | null): ChartLayers {
     setOption: (id, on) => change(id, state => ({ ...state, option: on })),
     setForm: (id, form) => change(id, state => ({ ...state, form })),
     move,
+    reorder,
   }
 }
