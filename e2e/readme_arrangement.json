@@ -34,7 +34,7 @@
                 "size": 436
               }
             ],
-            "size": 632
+            "size": 484
           },
           {
             "type": "branch",
@@ -58,7 +58,7 @@
                 "size": 424.629638671875
               }
             ],
-            "size": 405.333251953125
+            "size": 408
           },
           {
             "type": "branch",
@@ -69,12 +69,12 @@
                   {
                     "type": "leaf",
                     "data": {"views": ["run-chart"], "activeView": "run-chart", "id": "2"},
-                    "size": 189.666748046875
+                    "size": 276
                   },
                   {
                     "type": "leaf",
                     "data": {"views": ["layers"], "activeView": "layers", "id": "1"},
-                    "size": 100
+                    "size": 159
                   }
                 ],
                 "size": 530.1481018066406
@@ -89,7 +89,7 @@
                 "size": 346.8518981933594
               }
             ],
-            "size": 289.666748046875
+            "size": 435
           }
         ],
         "size": 877

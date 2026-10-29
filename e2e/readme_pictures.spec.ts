@@ -62,13 +62,21 @@ function scaled(node: GridNode, factor: number): GridNode {
   return node.size === undefined ? { ...node, data } : { ...node, data, size: node.size * factor }
 }
 
+/** The grid with its columns at `widths`, in the arrangement's own units. */
+function withColumns(root: GridNode, widths: number[]): GridNode {
+  return { ...root, data: (root.data as GridNode[]).map((column, i) => ({ ...column, size: widths[i] })) }
+}
+
 /**
  * Opens the app on the stored arrangement with `link` as its selection, the dock 1920 wide and as
  * tall as the arrangement's proportions ask: every panel keeps its share, each with more room. The
  * first load measures the menu bar; the second lays the dock out at its final size from the start.
+ * `columns` gives the columns other widths, for a cut-out that reads better than the whole window
+ * lets it.
  */
-async function arranged(page: Page, link: object, bars: ReturnType<typeof narrowed>): Promise<void> {
-  const { width, height, root } = ARRANGEMENT.dock.grid
+async function arranged(page: Page, link: object, bars: ReturnType<typeof narrowed>, columns?: number[]): Promise<void> {
+  const { width, height } = ARRANGEMENT.dock.grid
+  const root = columns ? withColumns(ARRANGEMENT.dock.grid.root, columns) : ARRANGEMENT.dock.grid.root
   const factor = 1920 / width
   const grid = { ...ARRANGEMENT.dock.grid, root: scaled(root, factor), width: 1920, height: Math.round(height * factor) }
   const stored = {
@@ -140,7 +148,8 @@ test('a deployment across its sessions', async ({ page }) => {
 
 test('a parameter search, ranked', async ({ page }) => {
   await prepare(page)
-  await arranged(page, { run: { id: RUN, units: [], position: null }, sweep: { id: SWEEP } }, narrowed('tunnel_swing'))
+  // the left column at 914 px: at the whole window's 700 the win rate and the profit factor give way
+  await arranged(page, { run: { id: RUN, units: [], position: null }, sweep: { id: SWEEP } }, narrowed('tunnel_swing'), [632, 405, 290])
   await showPanel(page, 'Sweeps')
   await page.locator('[data-panel-kind="sweeps"] .sweep-list .run-id').first().waitFor({ timeout: 30_000 })
   await settled(page)
