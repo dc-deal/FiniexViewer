@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import type { ComponentIdentity, RepositoryIdentity, RunHeader, RunInfo } from '@/types/api/report_types'
@@ -140,6 +141,14 @@ function componentTitle(component: ComponentIdentity): string {
       <dd class="mono">{{ info.config_snapshot }}</dd>
     </template>
 
+    <!-- Only where the backtest declared any, in the warning role with its glyph: it was allowed order
+         features its venue's API does not hold. The label is theirs. Empty on every other run and
+         always on a session, null on a run recorded before contract 45: both state nothing. -->
+    <template v-if="served?.features_beyond_venue?.length">
+      <dt>{{ t('Beyond the venue') }}</dt>
+      <dd class="flagged">⚠ {{ served.features_beyond_venue.join(' · ') }}</dd>
+    </template>
+
     <!--
       WHO STARTED THE RUN. Every label here is theirs, taken from `run-header` as instructed, and
       the block appears only where the run recorded one — an older run predates it.
@@ -184,6 +193,7 @@ function componentTitle(component: ComponentIdentity): string {
       </template>
     </template>
   </dl>
+  <HintLine v-if="served?.features_beyond_venue?.length" id="beyond-the-venue" class="meta-hint" />
 
   <!--
     WHICH CODE RAN. The one thing the index row cannot carry, and the question a reader arrives
@@ -249,6 +259,11 @@ function componentTitle(component: ComponentIdentity): string {
 .meta dd :deep(.jump-name) {
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+/* a hint elsewhere stands above what it explains; this one stands below a list with no margin of its own */
+.meta-hint {
+  margin-top: var(--space-sm);
 }
 
 .mono {

@@ -143,6 +143,12 @@ interface ApiMockOptions {
    */
   levels?: { scenario: string, position: string, stopLoss: number, takeProfit: number }
   /**
+   * An own level on one position's trade rows: the one that fired, and which of the two it was. No
+   * stored run carries one yet (measured 2026-10-30), so a check of what the run chart draws for it
+   * hands one position the fields a run of such a strategy serves.
+   */
+  ownLevel?: { scenario: string, position: string, level: number, reason: string }
+  /**
    * Rows appended to the captured activities. The capture holds whatever ran when it was taken, so
    * an activity a spec relies on is built from the server's row by the spec that needs one.
    */
@@ -301,6 +307,13 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       if (firstTick && section === 'scenario-details') {
         body['units'] = (body['units'] as Record<string, unknown>[]).map(row =>
           row['name'] === firstTick.unit ? { ...row, first_tick_time: firstTick.at } : row)
+      }
+      const ownLevel = options.ownLevel
+      if (ownLevel && section === 'trade-history') {
+        body['trades'] = (body['trades'] as Record<string, unknown>[]).map(row =>
+          row['scenario_name'] === ownLevel.scenario && row['position_id'] === ownLevel.position
+            ? { ...row, stop_loss: null, take_profit: null, exit_level: ownLevel.level, close_reason: ownLevel.reason }
+            : row)
       }
       const levels = options.levels
       if (levels && section === 'trade-history') {

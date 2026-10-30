@@ -121,6 +121,15 @@ describe('run_chart_marks', () => {
       expect(labels).toEqual(expect.arrayContaining(['Opened', 'Stop loss', 'Take profit']))
     })
 
+    /** An own level says how a part ended, whichever part that was: it stands on that exit's card. */
+    it('leaves an own level off the card of the opening', () => {
+      const own = trade({ ...long, stop_loss: null, take_profit: null, exit_level: 0.86, close_reason: 'sl_triggered' })
+      const [mark] = openingMarks([longOpening], [], [own], 'EUR', BARS, null)
+      const labels = mark!.card.details.map(pair => pair.label)
+      expect(labels).not.toContain('Own level')
+      expect(labels).not.toContain('Stop loss')
+    })
+
     it('says a position that could not be marked has no value, rather than a value of zero', () => {
       const open: OpenPosition = {
         position_id: 'pos_1', direction: 'long', lots: 0.1, entry_price: 0.87, entry_time: longOpening.event_time,
@@ -162,6 +171,16 @@ describe('run_chart_marks', () => {
       expect(mark!.focused).toBe(true)
       expect(mark!.card.details.map(pair => pair.label)).toEqual(expect.arrayContaining(['Closed', 'Closed by', 'Net P&L']))
       expect(mark!.card.details.find(pair => pair.label === 'Net P&L')).toMatchObject({ tone: 'negative' })
+    })
+
+    /** A position closed in parts: the own level stands on the part it closed (contract 45), the partial's says none. */
+    it('names an own level on the card of the part it closed, and on no other', () => {
+      const levels = { stop_loss: null, take_profit: null }
+      const rung = trade({ ...long, ...levels, exit_time: '2025-10-31T05:01:30+00:00', exit_tick_index: long.exit_tick_index + 1, exit_level: null, close_reason: '' })
+      const fired = trade({ ...long, ...levels, exit_level: 0.86, close_reason: 'sl_triggered' })
+      const [first, last] = exitMarks([rung, fired], KEY, BARS, null)
+      expect(first!.card.details.map(pair => pair.label)).not.toContain('Own level')
+      expect(last!.card.details).toContainEqual({ label: 'Own level', value: 'stop loss 0.86' })
     })
   })
 

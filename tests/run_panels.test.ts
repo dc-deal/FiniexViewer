@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import { defineComponent, h } from 'vue'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestOpenInContext } from './open_in_context_harness'
@@ -743,6 +744,9 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
 }
 
 describe('RunHeaderPanel', () => {
+  // its hint reads its store
+  beforeEach(() => setActivePinia(createPinia()))
+
   /**
    * TWO models. The index ROW is never absent; the served HEADER may be, and the panel then draws
    * what the row knows and nothing more — which is the case a run recorded before contract 26.
@@ -932,6 +936,27 @@ describe('RunHeaderPanel', () => {
     })
     expect(loud.text()).toContain('Uncommitted code allowed')
     expect(loud.find('.flagged').exists()).toBe(true)
+  })
+
+  /**
+   * Contract 45: the order features a backtest was allowed beyond what its venue's API holds, in the
+   * warning role under their label, with a hint saying what it means for the results. Empty on every
+   * other run and null on an older one: both say nothing.
+   */
+  it('flags the order features a backtest was allowed beyond the venue, and says nothing where there are none', () => {
+    for (const features of [[], null]) {
+      const quiet = mount(RunHeaderPanel, {
+        props: { model: headerModel({}, header({ features_beyond_venue: features })) },
+      })
+      expect(quiet.text()).not.toContain('Beyond the venue')
+      expect(quiet.text()).not.toContain('do not predict')
+    }
+    const beyond = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({ features_beyond_venue: ['stop_loss', 'take_profit'] })) },
+    })
+    expect(beyond.text()).toContain('Beyond the venue')
+    expect(beyond.find('.flagged').text()).toBe('⚠ stop_loss · take_profit')
+    expect(beyond.text()).toContain('do not predict a session on that venue')
   })
 
   /**

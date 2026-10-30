@@ -77,6 +77,14 @@ renamed from `drawdown()` once a second quantity needed it.
 distance in `price_unit` — and the card shows all three, because which one answers a question
 depends on the question.
 
+**An own level has a row of its own in the card** (contract 45). A level the strategy keeps itself
+stands on no position, and the row names the one that fired in `exit_level`, its `close_reason` saying
+which: the card reads *Own level stop loss 1.17075*. It stands on the card of the part it closed
+and on that exit's mark on the chart, never on the opening's: it says how a part ended, and a position
+closed in parts has its rung first. A level the position carried reads as before, and one that did not
+fire stands on no trade row. The R multiple stays empty where the position carried no stop, by their
+glossary.
+
 **The slippage says what its exit was measured against where that is not the mid** (contract 44,
 operator 2026-10-28). A trade's entry, and every exit but one, are measured against the mid when the
 order was sent; a stop-loss or take-profit exit against the level that closed it

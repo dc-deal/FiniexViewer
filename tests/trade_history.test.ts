@@ -370,6 +370,35 @@ describe('TradeHistoryPanel', () => {
         .toHaveProperty('Closed by', 'stop_loss')
     })
 
+    /** No position carried an own level, so the row names it only where it fired (contract 45). */
+    it('shows an own level that fired under the level its close reason names, and nothing of one that did not', () => {
+      const rows = (fields: Partial<TradeRow>) => cardRows(mountPanel(report({
+        trades: [trade({ stop_loss: null, take_profit: null, ...fields })],
+      })))
+      const ownStop = rows({ exit_level: 149.5, close_reason: 'sl_triggered' })
+      expect(ownStop).toHaveProperty('Own level', 'stop loss 149.5')
+      expect(ownStop).not.toHaveProperty('Stop loss')
+      expect(rows({ exit_level: 151, close_reason: 'tp_triggered' })).toHaveProperty('Own level', 'take profit 151')
+      // a level the position carried states itself, and is not named twice
+      const carriedStop = rows({ stop_loss: 149.5, exit_level: 149.5, close_reason: 'sl_triggered' })
+      expect(carriedStop).toHaveProperty('Stop loss', '149.5')
+      expect(carriedStop).not.toHaveProperty('Own level')
+      const carriedTarget = rows({ take_profit: 151, exit_level: 151, close_reason: 'tp_triggered' })
+      expect(carriedTarget).toHaveProperty('Take profit', '151')
+      expect(carriedTarget).not.toHaveProperty('Own level')
+      // a stop on the position and a tighter one the strategy keeps itself: the row names where it fired
+      const both = rows({ stop_loss: 149, exit_level: 149.5, close_reason: 'sl_triggered' })
+      expect(both).toHaveProperty('Stop loss', '149')
+      expect(both).toHaveProperty('Own level', 'stop loss 149.5')
+      // a row recorded before contract 45 names no level, and a strategy's own close names none
+      for (const closed of [{ exit_level: null, close_reason: 'sl_triggered' }, { exit_level: null, close_reason: '' }]) {
+        const none = rows(closed)
+        expect(none).not.toHaveProperty('Stop loss')
+        expect(none).not.toHaveProperty('Own level')
+        expect(none).not.toHaveProperty('Take profit')
+      }
+    })
+
     it('omits a stop that was never set rather than showing it as none', () => {
       expect(cardRows(mountPanel(report({ trades: [trade({ stop_loss: null })] }))))
         .not.toHaveProperty('Stop loss')

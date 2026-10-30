@@ -48,6 +48,10 @@ nothing is printed**:
   compares measures that may have changed underneath;
 - combinations the ranking left out because they carry no value for its objective (`unranked`,
   contract 40) — without the count a shorter ranking would read as the whole sweep;
+- *nothing to rank by*, where no combination states a figure for the objective: `expectancy` reads 0
+  where no trade has an R, and a strategy that keeps its stop itself gives a trade none (contract 45).
+  Every row would tie on a figure it prints as n/a, so none wears the ★ and the word says the order says
+  nothing. A row that does state a figure keeps its star, a stated 0 included;
 - combinations whose records were pruned (`records_pruned_at`) — their figures can no longer be
   checked;
 - error combinations, as above.
@@ -88,7 +92,14 @@ splits, and several sweeps can stand open at once, to be compared.
   the broker configuration it ran with (contract 40, where the row records them), how many
   candidates it was selected from. Its *Orders* are the counts that counted something, in the
   executive panel's words; they fold from the booking periods since contract 42 and read a dash on
-  a row written before.
+  a row written before. A combination allowed order features its venue's API does not hold names them
+  as *Beyond the venue*, in the warning role (contract 45).
+- **The word *beyond the venue* stands on a sweep's line once its ranking is read**, beside the other
+  words that say a ranking needs weighing: such a combination does not predict a session on that venue
+  (FiniexTestingIDE, 2026-10-30). The field is the scenario set's, so the ranked rows of a sweep read
+  alike. The ranking has to be read first because the row of the sweep list does not carry the field
+  (measured 2026-10-30). The `sweeps` hint says what the word means, its sentence on hover which
+  features, and how many combinations.
 - **The sweep looked at last is the link's `sweep` key**, stored with the arrangement: it stands open
   after a reload, and the run header's *Combination in sweep* (`openSweep`) opens it and brings it
   into view. A link stored before the key existed reads as none chosen.

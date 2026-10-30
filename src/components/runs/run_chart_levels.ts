@@ -1,7 +1,7 @@
 import { rowKey } from '@/api/list_key'
 import { polarity, sortInstant, utcInstant } from '@/components/runs/report_format'
 import { barOf } from '@/components/runs/run_chart_marks'
-import { exitCard } from '@/components/runs/trade_card'
+import { exitCard, ownLevel, ownLevelFigure } from '@/components/runs/trade_card'
 import type { OpenPosition, TradeRow } from '@/types/api/report_types'
 import type { RecordedStateFrame } from '@/types/api/state_frame_types'
 import type { LineDrawing, SegmentDrawing, TimeDrawing } from '@/types/chart_drawing_types'
@@ -20,6 +20,11 @@ import { t } from '@/translate'
  * rows in the sweeps of a trailing logic moved theirs (FiniexTestingIDE, 2026-10-20). A position
  * still open at the end has the levels the portfolio's `open_positions` states at the end of the
  * record, drawn at the last bar. The levels at entry and every move are testingide#618's.
+ *
+ * An own level — one the strategy keeps itself — stands on neither of them. A trade row names only
+ * the one that fired, in `exit_level` (contract 45), drawn at the same bar in the same way. A close
+ * with no level firing shows none, and a position still open at the end only what its closed parts
+ * fired at.
  */
 
 function seconds(iso: string): number {
@@ -36,15 +41,15 @@ function barIn(barTimes: number[], instant: number, cutAt: number | null): numbe
 
 function level(
   id: string, label: 'SL' | 'TP', price: number, at: number, when: string, position: string, focused: boolean,
-): SegmentDrawing {
-  const details: Figure[] = [
+  details: Figure[] = [
     { label: WORD[label], value: String(price) },
     {
       label: t('In force at'),
       value: when,
       title: t('The level in force when the close was booked, after any move. Where it stood before is not recorded.'),
     },
-  ]
+  ],
+): SegmentDrawing {
   return {
     kind: 'segment',
     id,
@@ -83,6 +88,15 @@ export function positionLevels(
     }
     if (trade.take_profit !== null) {
       segments.push(level(`level|TP|${row}`, 'TP', trade.take_profit, at, when, trade.position_id, focused))
+    }
+    const own = ownLevel(trade)
+    if (own) {
+      // an id of its own: the position can carry a level of the same kind beside it. The time is the
+      // close's: it fills at the next price, and no field says when the level was reached
+      segments.push(level(`level|own|${own.label}|${row}`, own.label, own.price, at, when, trade.position_id, focused, [
+        ownLevelFigure(own),
+        { label: t('Closed'), value: when },
+      ]))
     }
   }
   const last = barTimes[barTimes.length - 1]

@@ -185,6 +185,22 @@ test('the run chart draws the levels of the position looked at', async ({ page }
 })
 
 /**
+ * An own level: the strategy kept it itself, so the row names it only in `exit_level` (contract 45).
+ * It reaches the chart like any level, counted on the chart's element since a canvas cannot be read
+ * back — no stored run carries one yet, so the mock hands one position the fields such a run serves.
+ */
+test('the run chart draws an own level that fired, from the row that names it', async ({ page }) => {
+  await mockApi(page, { ownLevel: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1', level: 0.875, reason: 'sl_triggered' } })
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', {
+    run: FIXTURE_RUN, units: ['EURGBP_refusals_01'], position: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1' },
+  })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/levels:1/)
+  await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
+})
+
+/**
  * Bars loaded as the view moves (viewer#9). A unit's window widened over both stretches of the
  * captured EURGBP bars, three weeks apart, and read in M1 — far past a batch: the first batch is the
  * later stretch around the position looked at, and its earlier bars arrive across the gap as the view

@@ -1079,7 +1079,8 @@ export interface TradeRow {
   mfe_distance: number
   // what mae_distance / mfe_distance are counted in: 'pip' | 'tick' | …
   price_unit: string
-  // null where no stop was set, so the trade has no R to be a multiple of
+  // null where the position carried no stop, an own stop included, so the trade has no R to be a
+  // multiple of. A stop moved to the entry price leaves it null too (their trade-history document)
   r_multiple: number | null
   scenario_name: string
   entry_tick_index: number

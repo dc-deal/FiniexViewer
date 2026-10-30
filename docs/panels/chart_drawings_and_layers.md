@@ -87,6 +87,14 @@ switches the levels off in the Layers panel.
   entry in the portfolio's `open_positions` states at the end of the record, drawn at the last bar.
   `SL` is drawn in the loss's role, `TP` in the profit's — the polarity of the outcome at that
   price — dashed, with the word at its start.
+- **An own level** — one the strategy keeps itself, in their glossary — stands on no position. A trade
+  row names only the one that fired, in `exit_level`, with `close_reason` (`sl_triggered` ·
+  `tp_triggered`) saying which of the two it was (contract 45). It is drawn like any level, and its
+  card says *own level* and when the trade *Closed*: the close fills at the next price, and no field
+  says when the level was reached. A close with no level firing shows none, a position still open at
+  the end only what its closed parts fired at, and a level the position carried is not drawn a second
+  time from `exit_level`. Read in one place, `trade_card.ts` `ownLevel`, for the chart and the cards
+  alike.
 - **The line** joins each trade row's entry price and time to its exit's, in the polarity of its
   result; none where both fall in one candle.
 - **Where a level stood before the exit is not served.** A backtest records no moved stop, and a

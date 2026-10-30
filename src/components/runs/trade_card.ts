@@ -33,6 +33,38 @@ function closedBy(trade: TradeRow): Figure[] {
   return trade.close_reason ? [{ label: t('Closed by'), value: trade.close_reason }] : []
 }
 
+/** The level an exit fired at, which of the two it was, and its price. */
+export interface OwnLevel {
+  label: 'SL' | 'TP'
+  price: number
+}
+
+/**
+ * The level a trade's exit fired at where the strategy kept it itself — an *own level* in their
+ * glossary. No position carried it, so `exit_level` is the only place a trade row names it, and
+ * `close_reason` says which of the two it was (contract 45). A level the position carried states
+ * itself on `stop_loss` / `take_profit`: an `exit_level` equal to it is that level, not a second one.
+ * One that did not fire stands on no trade row: a close with no level firing shows none.
+ */
+export function ownLevel(trade: Pick<TradeRow, 'stop_loss' | 'take_profit' | 'exit_level' | 'close_reason'>): OwnLevel | null {
+  if (trade.exit_level === null) return null
+  if (trade.close_reason === 'sl_triggered' && trade.stop_loss !== trade.exit_level) return { label: 'SL', price: trade.exit_level }
+  if (trade.close_reason === 'tp_triggered' && trade.take_profit !== trade.exit_level) return { label: 'TP', price: trade.exit_level }
+  return null
+}
+
+/** Its line on a card: their word, short enough to leave a narrow chart card room for its values. */
+export function ownLevelFigure(own: OwnLevel): Figure {
+  const word = own.label === 'SL' ? t('stop loss') : t('take profit')
+  return { label: t('Own level'), value: `${word} ${own.price}` }
+}
+
+/** The own level this part of a position closed at, where it did. */
+function firedLevel(trade: TradeRow): Figure[] {
+  const own = ownLevel(trade)
+  return own ? [ownLevelFigure(own)] : []
+}
+
 /** A stop or a target only where one was set — on a trade row, or on a position still open. */
 function stops(row: Pick<TradeRow, 'stop_loss' | 'take_profit'>): Figure[] {
   const rows: Figure[] = []
@@ -103,13 +135,15 @@ export function tradeDetails(trade: TradeRow): Figure[] {
       value: `${amount(trade.mfe_pnl, trade.currency)} @ ${trade.mfe_price} · `
         + `${trade.mfe_distance.toFixed(2)} ${trade.price_unit}`,
     },
-    // null where no stop was set: the trade has no R to be a multiple of, which is an absence
+    // null where the position carried no stop, an own stop included: the trade has no R to be a
+    // multiple of, which is an absence
     { label: t('R multiple'), value: numberOrNa(trade.r_multiple) },
     {
       label: t('Fills'),
       value: `${trade.entry_executions.length} / ${trade.exit_executions.length}`,
     },
     ...stops(trade),
+    ...firedLevel(trade),
   ]
 }
 
@@ -137,8 +171,9 @@ function stillOpen(entry: OpenPosition, currency: string): Figure[] {
  * opening, the one row every position has, closed or not. The position, not a trade: a position
  * closed in parts has one opening and a trade per part, so this card names the lots it opened with
  * and says nothing about how any part ended. Where the run ended with the position still open, the
- * portfolio's `open_positions` says what was left of it; a closed position's stops are on its trade
- * rows, which carry the same levels on every part.
+ * portfolio's `open_positions` says what was left of it; a closed position's stops are those on its
+ * first trade row, as they stood when that part closed. An own level says how a part ended, so it
+ * stands on that exit's card and not here.
  */
 export function openingCard(
   row: Opening, open: OpenPosition | null, trade: TradeRow | null, currency: string,
@@ -158,6 +193,6 @@ export function openingCard(
 export function exitCard(trade: TradeRow): FigureCard {
   return {
     title: `${trade.position_id} · ${trade.direction} ${trade.lots}`,
-    details: [opened(trade), closed(trade), ...closedBy(trade), net(trade)],
+    details: [opened(trade), closed(trade), ...closedBy(trade), ...firedLevel(trade), net(trade)],
   }
 }

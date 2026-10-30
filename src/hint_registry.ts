@@ -26,6 +26,10 @@ const HINTS: HintDefinition[] = [
     text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the bundle. On the tab of that panel, “Back into the bundle” puts it back and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
   },
   {
+    id: 'beyond-the-venue',
+    text: t("This backtest was allowed order features its venue's API does not hold, as its scenario set declared. Its results do not predict a session on that venue."),
+  },
+  {
     id: 'bundle-places',
     text: t('A bundle holds its sections one below the other, and any of them can stand apart as a panel of its own. Each row here says where it stands. A section in a closed bundle is on show nowhere: a click opens it.'),
   },
@@ -51,7 +55,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'sweeps',
-    text: t('Every parameter search on record. Open one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first, and any tied with it. A click on a combination chooses its run, as the run list does.'),
+    text: t("Every parameter search on record. Open one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first, and any tied with it. A click on a combination chooses its run, as the run list does. “beyond the venue” says a search was allowed order features its venue's API does not hold, so it does not predict a session there."),
   },
   {
     id: 'layers',
@@ -69,7 +73,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layer-levels',
-    text: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded. With every position, the levels of every position of the unit.'),
+    text: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded. A level the strategy keeps itself is known only where it fired. With every position, the levels of every position of the unit.'),
   },
   {
     id: 'layer-candles',
@@ -82,7 +86,7 @@ const HINTS: HintDefinition[] = [
   // why a layer that is shown draws nothing — shown below the Layers list only while it does
   {
     id: 'layer-empty-levels',
-    text: t('The levels are drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw.'),
+    text: t('The levels are drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw, and a level its strategy keeps itself is known only where it fired.'),
   },
   {
     id: 'layer-empty-entry-exit',
