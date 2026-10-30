@@ -631,6 +631,10 @@ describe('CandleChart', () => {
       time: SPAN[0]!.time - (50 - index) * 60, open: 1, high: 1, low: 1, close: 1,
     }))
 
+    /** The library has painted what it was handed: the frames the chart waits before reading its edges. */
+    const painted = (): Promise<void> => new Promise(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+
     beforeEach(() => {
       lw.zoom.range = { from: 80, to: 120 }
       lw.zoom.width = 600
@@ -644,6 +648,7 @@ describe('CandleChart', () => {
       size = { width: 800, height: 400 }
       const wrapper = mountChart(SPAN)
       const edges = (): unknown[] => (wrapper.emitted('edge') ?? []).map(([side]) => side)
+      await painted()
       expect(edges()).toEqual([])
       lw.zoom.range = { from: 10, to: 60 }
       lw.zoom.change!()
@@ -671,6 +676,43 @@ describe('CandleChart', () => {
       await wrapper.setProps({ data: [...EARLIER, ...SPAN, { ...SPAN.at(-1)!, time: SPAN.at(-1)!.time + 60 }] })
       expect(lw.setVisibleLogicalRange).toHaveBeenCalledWith({ from: 80, to: 120 })
       expect(lw.fitContent).not.toHaveBeenCalled()
+    })
+
+    /** The library reports the ranges it passes through while a set is handed: those are not the view. */
+    it('says nothing of a range the library passes through while it is handed a set', async () => {
+      size = { width: 800, height: 400 }
+      lw.setData.mockImplementationOnce(() => {
+        lw.zoom.range = { from: 0, to: 10 }
+        lw.zoom.change?.()
+        lw.zoom.range = { from: 80, to: 120 }
+      })
+      const wrapper = mountChart(SPAN)
+      await painted()
+      expect(wrapper.emitted('edge')).toBeUndefined()
+    })
+
+    /**
+     * Measured on a live run: a first batch framed in its middle reported the right end first, the
+     * range it was given applying only at the next paint. What counts is the range after that paint.
+     */
+    it('reads the edges once the library has painted what it was handed', async () => {
+      size = { width: 800, height: 400 }
+      lw.zoom.range = { from: 150, to: 190 }
+      const framed = mountChart(SPAN, { focus: SPAN[100]!.time })
+      lw.zoom.change!()
+      expect(framed.emitted('edge')).toBeUndefined()
+      lw.zoom.range = { from: 25, to: 175 }
+      lw.zoom.change!()
+      await painted()
+      expect(framed.emitted('edge')).toBeUndefined()
+      framed.unmount()
+
+      // a set that stands at an edge once painted says so, with no move of the reader's
+      lw.zoom.range = { from: 80, to: 120 }
+      const atEdge = mountChart(SPAN)
+      lw.zoom.range = { from: -1, to: 199 }
+      await painted()
+      expect((atEdge.emitted('edge') ?? []).map(([side]) => side)).toEqual(['left', 'right'])
     })
 
     it('frames a set that is another one, as at the first look', async () => {

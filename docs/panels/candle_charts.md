@@ -69,7 +69,9 @@ it says so and draws nothing.
   from the window's start without one; at the automatic timeframe that is the whole window in one
   ask, as before. A finer timeframe is no longer cut: when the view comes within 20 bars of the first
   or the last bar loaded, `CandleChart` says so (`edge`) and the loader asks for more there — one
-  batch at a time per edge, never past the window. The route keeps the OLDEST bars of a range past
+  batch at a time per edge, never past the window. The edges are read only after the library has
+  painted a set it was handed: on the way it reports the ranges it passes through — a first batch
+  framed in its middle reported its right end first (measured 2026-10-29) — and asked for more at once. The route keeps the OLDEST bars of a range past
   its limit (measured 2026-10-29), so to the right it is asked from the seam to the edge with
   `limit=2000` — the next bars, whatever gap lies between — and to the left in pieces of N periods,
   which hold at most N bars and are never cut. An empty piece is a gap, not an edge: the next is asked

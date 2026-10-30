@@ -104,6 +104,14 @@ const frameSize = ref({ width: 0, height: 0 })
 /** The bars the series was last handed — what a new set is compared with, to keep the view where it is. */
 let shown: ChartBar[] = []
 /**
+ * While a set is handed and framed: the library reports the ranges it passes through, later and in
+ * order, and those are not the view. Measured 2026-10-29 on a live run: a first batch framed at
+ * 922–1072 reported 1934–1999 first, and asked for more at once. A range it is given applies at its
+ * next paint, so the edges are read after that, once.
+ */
+let settling = false
+let settleFrame = 0
+/**
  * The open of the first bar in view, in UTC seconds — on the element, so a browser test can tell
  * that bars loaded at an edge moved nothing the reader was looking at.
  */
@@ -357,7 +365,19 @@ function reportEdges(): void {
 
 function onRange(): void {
   reportSpacing()
-  reportEdges()
+  if (!settling) reportEdges()
+}
+
+/** Holds the edges back until the library has painted what it was just handed, then reads them once. */
+function settle(): void {
+  settling = true
+  cancelAnimationFrame(settleFrame)
+  settleFrame = requestAnimationFrame(() => {
+    settleFrame = requestAnimationFrame(() => {
+      settling = false
+      reportEdges()
+    })
+  })
 }
 
 /**
@@ -411,6 +431,7 @@ function showVolume(): void {
   const alpha = VOLUME_ALPHA * volume.opacity
   const rise = withAlpha(colours.rise, alpha)
   const fall = withAlpha(colours.fall, alpha)
+  settle()
   volumeSeries.setData(volume.bars.map(bar => ({
     time: bar.time as UTCTimestamp, value: bar.value, color: bar.rising ? rise : fall,
   })))
@@ -423,12 +444,12 @@ function showData(data: ChartBar[]): void {
   // and nothing here relies on it
   const shift = extensionOf(shown, data)
   const range = shift !== null ? chart.timeScale().getVisibleLogicalRange() : null
+  settle()
   series.setData(priceData(data) as never)
   shown = data
   showDrawings()
   if (shift === null) frame()
   else if (range) chart.timeScale().setVisibleLogicalRange({ from: range.from + shift, to: range.to + shift })
-  reportEdges()
 }
 
 /** The candles layer changed: another form builds the series anew, the same one is repainted. */
@@ -436,6 +457,7 @@ function showCandles(): void {
   if (!series) return
   if (candlesLayer().form !== builtForm) {
     buildPriceSeries()
+    settle()
     series.setData(priceData(props.data) as never)
     showDrawings()
     return
@@ -466,6 +488,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  cancelAnimationFrame(settleFrame)
   resizeObserver?.disconnect()
   themeObserver?.disconnect()
   chart?.remove()
