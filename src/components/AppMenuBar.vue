@@ -39,8 +39,12 @@ const { openIds } = storeToRefs(dock)
 const memberStates = Object.fromEntries(BUNDLE_IDS.map(bundle => [bundle, useSectionStates(bundle)])) as
   Record<BundleId, ComputedRef<SectionState[]>>
 
-/** The areas whose submenu also lists a bundle's members — where their column stands. */
-const AREA_BUNDLES: Record<string, BundleId> = { runs: 'run', deployments: 'deployment' }
+/**
+ * The areas whose submenu also lists a bundle's members — read off the register, where a bundle's kind
+ * names its area, so a new bundle brings its members here with no list to remember.
+ */
+const AREA_BUNDLES = Object.fromEntries(PANEL_KINDS.flatMap(kind =>
+  kind.area && (BUNDLE_IDS as readonly string[]).includes(kind.id) ? [[kind.area, kind.id]] : [])) as Record<string, BundleId>
 
 /** The members an area's submenu lists — its bundle's, where it has one. */
 function membersOf(area: string): { bundle: BundleId, states: SectionState[] } | null {

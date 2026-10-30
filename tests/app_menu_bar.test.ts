@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import { bundleMembers } from '@/bundle_members'
 import AppMenuBar from '@/components/AppMenuBar.vue'
-import { reportKindId } from '@/panel_kinds'
+import { PANEL_KINDS, reportKindId } from '@/panel_kinds'
 import { allPanels } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
+import { BUNDLE_IDS } from '@/types/panel_types'
 
 let mounted: VueWrapper | null = null
 
@@ -86,6 +88,24 @@ describe('AppMenuBar', () => {
     expect(sections).toEqual(useLayoutStore().arrangedOf().map(panel => panel.id))
     expect(sections.length).toBe(allPanels().length)
     expect(sections.indexOf('broker')).toBeLessThan(sections.indexOf('executive'))
+  })
+
+  /** Bundles, panels and the menu read one register: every bundle's members stand in the area of its kind. */
+  it('lists the members of every bundle in the submenu of its kind\'s area', async () => {
+    for (const bundle of BUNDLE_IDS) {
+      const area = PANEL_KINDS.find(kind => kind.id === bundle)!.area!
+      await openMenu('Panels')
+      const trigger = document.querySelector<HTMLElement>(`.menu-sub-trigger[data-area="${area}"]`)!
+      trigger.focus()
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+      await flushPromises()
+      const listed = [...document.querySelectorAll<HTMLElement>('.menu-toggle[data-section]')].map(node => node.dataset['section'])
+      expect(listed.sort()).toEqual(bundleMembers(bundle).map(member => member.id).sort())
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      mounted?.unmount()
+      mounted = mount(AppMenuBar, { attachTo: document.body })
+      await flushPromises()
+    }
   })
 
   it('says where each section is: in the bundle, open as a panel, or hidden', async () => {
