@@ -143,4 +143,33 @@ describe('useBarsStore', () => {
     await flushPromises()
     expect(store.error).toBeNull()
   })
+
+  /** Earlier bars as the reader pans toward them (viewer#9), down to where the coverage starts. */
+  it('loads earlier bars to the start of the coverage, each bar once, and asks nothing past it', async () => {
+    const day = 86_400_000
+    const first = Date.UTC(2024, 0, 1)
+    const archive = Array.from({ length: 366 }, (_, index) =>
+      ({ t: (first + index * day) / 1000, o: 1, h: 1, l: 1, c: 1, v: 1, tc: 1 }))
+    vi.mocked(apiClient.getCoverage).mockResolvedValue(COVERAGE)
+    vi.mocked(apiClient.getBars).mockImplementation(async (_broker, _symbol, _timeframe, from, to) => ({
+      bars: archive.filter(bar => bar.t * 1000 >= Date.parse(from) && bar.t * 1000 <= Date.parse(to)),
+      truncated: false,
+      priceBasis: '',
+    }))
+    const store = useBarsStore()
+    selectAll('D1')
+    await flushPromises()
+    // the last TARGET_BARS periods, both ends included
+    expect(store.chartData).toHaveLength(TARGET_BARS + 1)
+
+    store.extend('left')
+    await flushPromises()
+    expect(store.chartData.map(bar => bar.time)).toEqual(archive.map(bar => bar.t))
+
+    const asked = vi.mocked(apiClient.getBars).mock.calls.length
+    store.extend('left')
+    store.extend('right')
+    await flushPromises()
+    expect(vi.mocked(apiClient.getBars).mock.calls).toHaveLength(asked)
+  })
 })

@@ -75,8 +75,9 @@ it says so and draws nothing.
   which hold at most N bars and are never cut. An empty piece is a gap, not an edge: the next is asked
   at once, twice as long, up to the route's 10,000. Bars that arrive before the ones on show move
   the view by as many, so the reader sees the same bars (`data-visible-from` on the element says
-  which, `data-bars` how many are held). A small spinner stands in that edge's corner while a batch is on its way, and a batch that
-  failed is said there, the bars loaded staying drawn. The free chart loads the same way: the last
+  which, `data-bars` how many are held). A small spinner stands halfway up that edge while a batch is on its way, and a batch that
+  failed is said there, the bars loaded staying drawn — clear of the library's logo at the bottom
+  left, its attribution, which a sign placed low covered. The free chart loads the same way: the last
   300 periods first, earlier ones as the reader pans left, down to the start of the coverage.
 - **What it centres on is the link's marked position.** The chart mark on a row marks the position
   (`context.mark`), sets the chart's unit and opens the panel (`use_chart_link.ts`, provided at
@@ -114,8 +115,8 @@ it says so and draws nothing.
   never moves the layout. A hint above it explains the shapes once, and the chart takes the room it
   leaves rather than overflowing the panel by it, which clipped its time axis.
 - **Every state says what it is**: no run, the run's units on their way, no unit that can be drawn,
-  a market the archive holds nothing for, a window without bars, and in an edge's corner a batch on
-  its way or one that failed — an empty chart says nothing about why it is empty.
+  a market the archive holds nothing for, a window without bars, and at an edge a batch on its way
+  or one that failed — an empty chart says nothing about why it is empty.
 
 ## Chart Engine — Lightweight Charts (TradingView)
 

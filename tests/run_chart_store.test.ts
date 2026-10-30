@@ -61,6 +61,21 @@ function chooseFixtureRun(): void {
   reports.portfolio = portfolio
 }
 
+/**
+ * The ETHUSD unit's window begun ten days earlier, read in M10: half a batch before a position of it
+ * then stays inside the window, where at its captured eighteen hours it reaches past the start.
+ */
+function widenEthusd(): void {
+  useRunReportsStore().scenarios = {
+    ...scenarios,
+    units: scenarios.units.map(row => row.name === 'ETHUSD_spot_two_balances'
+      ? { ...row, first_tick_time: '2026-02-01T00:00:00+00:00' }
+      : row),
+  }
+}
+
+const M10 = 600_000
+
 /** The executed opening of a position — where it opened, closed later or not. */
 function openingOf(scenario: string, position: string) {
   return orders.orders.find(row => row.scenario_name === scenario && row.position_id === position
@@ -453,6 +468,44 @@ describe('useRunChartStore', () => {
     expect(limit).toBe(2000)
     expect(chart.bars).toHaveLength(60)
     expect(chart.events.some(mark => mark.at > last)).toBe(true)
+  })
+
+  /** A position looked at past half a batch into the window: the first batch starts half a batch before it. */
+  it('asks for the first batch from half a batch before the position looked at', async () => {
+    chooseFixtureRun()
+    widenEthusd()
+    const chart = useRunChartStore()
+    chart.showPosition({ scenario: 'ETHUSD_spot_two_balances', position: 'pos_ethusd_10' })
+    chart.attach()
+    await flushPromises()
+    const [, , timeframe, from] = vi.mocked(apiClient.getBars).mock.lastCall!
+    expect(timeframe).toBe('M10')
+    expect(Math.abs(Date.parse(from) - (chart.focusAt! * 1000 - 1000 * M10))).toBeLessThanOrEqual(1)
+  })
+
+  /** The chart mark can point past what is loaded: the bars come to the position, not the position to the last bar. */
+  it('loads afresh around a position looked at past the bars loaded, and asks nothing for one inside them', async () => {
+    const start = Date.parse('2026-02-01T00:00:00Z') / 1000
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: [{ ...ANSWER.bars[0]!, t: start }, { ...ANSWER.bars[0]!, t: start + 60 }], truncated: true, priceBasis: '',
+    })
+    chooseFixtureRun()
+    widenEthusd()
+    const chart = useRunChartStore()
+    chart.chooseUnit('ETHUSD_spot_two_balances')
+    chart.attach()
+    await flushPromises()
+    vi.mocked(apiClient.getBars).mockClear()
+    vi.mocked(apiClient.getBars).mockResolvedValue(ANSWER)
+
+    chart.showPosition({ scenario: 'ETHUSD_spot_two_balances', position: 'pos_ethusd_10' })
+    await flushPromises()
+    expect(apiClient.getBars).toHaveBeenCalledOnce()
+    expect(Math.abs(Date.parse(vi.mocked(apiClient.getBars).mock.lastCall![3]) - (chart.focusAt! * 1000 - 1000 * M10))).toBeLessThanOrEqual(1)
+
+    chart.showPosition({ scenario: 'ETHUSD_spot_two_balances', position: 'pos_ethusd_9' })
+    await flushPromises()
+    expect(apiClient.getBars).toHaveBeenCalledOnce()
   })
 
   /** Without a position looked at the first batch starts at the window (decided 2026-10-29, 251.a). */

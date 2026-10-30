@@ -503,7 +503,7 @@ watch(() => props.priceFormat, () => series?.applyOptions(
     <!-- notices stand INSIDE the frame, over the plot: a line above it would move the chart each
          time one appeared, and a selection never moves the layout -->
     <slot />
-    <!-- a batch at an edge: a quiet sign in that corner while it is on its way, its failure said
+    <!-- a batch at an edge: a quiet sign at that edge while it is on its way, its failure said
          there — never a block over the plot -->
     <div v-for="side in edgeStates" :key="side.edge" class="edge-state" :class="side.edge" :data-edge="side.edge">
       <span v-if="side.error" class="edge-error">
@@ -539,11 +539,13 @@ watch(() => props.priceFormat, () => series?.applyOptions(
   height: 100%;
 }
 
-/* the corner of the edge a batch is on its way to: low, above the time axis — clear of the notices
-   at the top left and of the price scale at the right */
+/* the edge a batch is on its way to, halfway up it: clear of the notices at the top left, of the
+   library's logo at the bottom left — its attribution, which stays visible — and of the price scale
+   at the right (on screen 2026-10-29: low at the left it covered the logo) */
 .edge-state {
   position: absolute;
-  bottom: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: var(--z-chart);
   display: flex;
   max-width: calc(100% - 6rem);
