@@ -146,7 +146,7 @@ describe('sweep_rows', () => {
    * A strategy that keeps its stop itself gives a trade no R (contract 45), so `expectancy` reads 0 with
    * `r_trade_count` 0 and every row ties on a figure it prints as n/a. Nobody is first on that.
    */
-  it('stars no row on a figure it does not state, and says where the order says nothing', () => {
+  it('stars no row on a figure it does not state, and says so', () => {
     const empty = { expectancy: 0, r_trade_count: 0 }
     const noR = {
       objective: 'expectancy',
@@ -155,8 +155,40 @@ describe('sweep_rows', () => {
     const rows = combinations(noR)
     expect(rows.map(objectiveFigure)).toEqual(['n/a', 'n/a'])
     expect(rows.map(row => row.first)).toEqual([false, false])
-    const notice = sweepNotices(SWEEP, { ...DETAIL, ...noR }).find(entry => entry.word === 'nothing to rank by')!
+    const notice = sweepNotices(SWEEP, { ...DETAIL, ...noR }).find(entry => entry.word === 'first states no figure')!
     expect(notice.sentence).toContain('expectancy')
+    expect(notice.sentence).not.toContain('(')
+  })
+
+  /** A 0 nobody measured sorts above every negative mean: the rows below it state one, and none is first. */
+  it('stars no row where the first states no figure, whatever the rows below it state', () => {
+    const led = (...below: Partial<SweepCombination>[]) => ({
+      objective: 'expectancy',
+      combinations: [
+        combination({ run_id: 'run_a', expectancy: 0, r_trade_count: 0 }),
+        ...below.map((fields, index) => combination({ run_id: `run_${index}`, ...fields })),
+      ],
+    })
+    const negative = led({ expectancy: -0.25, r_trade_count: 12 }, { expectancy: -0.8, r_trade_count: 9 })
+    expect(combinations(negative).map(row => row.first)).toEqual([false, false, false])
+    expect(sweepNotices(SWEEP, { ...DETAIL, ...negative }).map(entry => entry.word)).toContain('first states no figure')
+    // a stated 0 below it ties with no first
+    expect(combinations(led({ expectancy: 0, r_trade_count: 4 })).map(row => row.first)).toEqual([false, false])
+  })
+
+  /** The stars are decided within each account currency, so the word is too, and names the one it means. */
+  it('says which account currency has no first, and keeps the star of the other', () => {
+    const mixed = {
+      objective: 'expectancy',
+      combinations: [
+        combination({ run_id: 'run_a', currency: 'USD', expectancy: 0.4, r_trade_count: 5 }),
+        combination({ run_id: 'run_a', currency: 'EUR', expectancy: 0, r_trade_count: 0 }),
+        combination({ run_id: 'run_b', currency: 'EUR', expectancy: 0, r_trade_count: 0 }),
+      ],
+    }
+    expect(combinations(mixed).map(row => row.first)).toEqual([true, false, false])
+    const notice = sweepNotices(SWEEP, { ...DETAIL, ...mixed }).find(entry => entry.word === 'first states no figure')!
+    expect(notice.sentence).toContain('(EUR)')
   })
 
   /** A 0 a row states is a figure like any other: the rows tied on it are first, and nothing needs saying. */
@@ -170,7 +202,7 @@ describe('sweep_rows', () => {
       ],
     }
     expect(combinations(stated).map(row => row.first)).toEqual([true, true, false])
-    expect(sweepNotices(SWEEP, { ...DETAIL, ...stated }).map(entry => entry.word)).not.toContain('nothing to rank by')
+    expect(sweepNotices(SWEEP, { ...DETAIL, ...stated }).map(entry => entry.word)).not.toContain('first states no figure')
   })
 
   /** Two rows of one run are one combination, wherever a notice counts combinations. */

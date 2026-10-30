@@ -28,7 +28,8 @@ and direction the sweep declared — or, where it declared neither, by the one i
 
 - the rows stand in the served order, numbered; the first of each currency carries ★ — a position,
   not a figure — and so does every row that ties it on the objective: a tie has no single winner
-  (measured 2026-10-19, all four combinations of `sweep_20261008_223212` read `net_pnl` 0.0);
+  (measured 2026-10-19, all four combinations of `sweep_20261008_223212` read `net_pnl` 0.0). Where the
+  first states no figure for the objective, no row carries it;
 - the *Objective* column prints each sweep's own objective, in weight, formatted as the executive
   summary formats the same field; the sweep's heading names it (`expectancy ↑`), and its title
   says whose objective it was;
@@ -48,10 +49,11 @@ nothing is printed**:
   compares measures that may have changed underneath;
 - combinations the ranking left out because they carry no value for its objective (`unranked`,
   contract 40) — without the count a shorter ranking would read as the whole sweep;
-- *nothing to rank by*, where no combination states a figure for the objective: `expectancy` reads 0
-  where no trade has an R, and a strategy that keeps its stop itself gives a trade none (contract 45).
-  Every row would tie on a figure it prints as n/a, so none wears the ★ and the word says the order says
-  nothing. A row that does state a figure keeps its star, a stated 0 included;
+- *first states no figure*, where the first of a ranking states none for the objective, naming the
+  account currency where the ranking holds several: `expectancy` reads 0 where no trade has an R — a
+  combination that never traded, and since contract 45 one whose strategy keeps its stop itself — which
+  sorts above every negative mean. Its place rests on a value nobody measured, so no row wears the ★. A
+  first that does state a figure keeps its star, a stated 0 included;
 - combinations whose records were pruned (`records_pruned_at`) — their figures can no longer be
   checked;
 - error combinations, as above.
@@ -118,7 +120,7 @@ splits, and several sweeps can stand open at once, to be compared.
 ## How it is tested
 
 - `sweep_rows.test.ts` — the lines of the list: a closed sweep's one silent line, the state of an
-  open one, its combinations in the served order with ★ on the first and on every tie, two
+  open one, its combinations in the served order with ★ on a first that states a figure and on every tie, two
   currencies numbered apart, the objective formatted by its field, parameters by their last key,
   whose objective ordered it, and the heading's words only where the ranking compares unlike.
 - `sweeps_store.test.ts` — the list and each ranking as served, loaded once, the link, a stale id, a

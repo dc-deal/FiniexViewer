@@ -59,6 +59,7 @@ function rankedRows(sweep: SweepRow, detail: SweepDetail): SweepListRow[] {
   return currencies.flatMap(currency => {
     const rows = detail.combinations.filter(row => row.currency === currency)
     const best = objectiveValue(rows[0]!, detail.objective)
+    const led = statesFigure(rows[0]!, detail.objective)
     return rows.map((combination, index): CombinationRow => ({
       kind: 'combination',
       sweep,
@@ -67,9 +68,9 @@ function rankedRows(sweep: SweepRow, detail: SweepDetail): SweepListRow[] {
       key: `${sweep.sweep_id}|${rowKey(combination, detail.key)}`,
       place: index + 1,
       // equality of the served value, nothing ranked here: four combinations of
-      // `sweep_20261008_223212` all read `net_pnl` 0.0 (measured 2026-10-19). Never on a figure the
-      // row does not state, or a ranking with nothing to rank by would star every row
-      first: objectiveValue(combination, detail.objective) === best && statesFigure(combination, detail.objective),
+      // `sweep_20261008_223212` all read `net_pnl` 0.0 (measured 2026-10-19). Only on a figure the row
+      // and the first both state: a ranking led by a value nobody measured has no first
+      first: led && objectiveValue(combination, detail.objective) === best && statesFigure(combination, detail.objective),
     }))
   })
 }
@@ -168,6 +169,14 @@ function combinationCount(rows: SweepCombination[]): number {
   return new Set(rows.map(row => row.run_id)).size
 }
 
+/** The account currencies whose ranking is led by a row that does not state the objective's figure. */
+function unledCurrencies(detail: SweepDetail): string[] {
+  return [...new Set(detail.combinations.map(row => row.currency))].filter(currency => {
+    const first = detail.combinations.find(row => row.currency === currency)!
+    return !statesFigure(first, detail.objective)
+  })
+}
+
 /** Only where the ranking compares unlike things — where everything is alike, nothing is said. */
 export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): SweepNotice[] {
   const notices: SweepNotice[] = []
@@ -178,13 +187,15 @@ export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): 
     })
   }
   if (!detail) return notices
-  // `expectancy` reads 0 where no trade has an R, and a strategy that keeps its stop itself gives a
-  // trade none (contract 45): every row then ties on a figure it does not state, and the order is only
-  // the route's tie-break
-  if (detail.combinations.length && !detail.combinations.some(row => statesFigure(row, detail.objective))) {
+  // `expectancy` reads 0 where no trade has an R, as on all four rows of `sweep_20261008_223212`
+  // (measured 2026-10-30): a combination that never traded, and since contract 45 one whose strategy
+  // keeps its stop itself. That sorts above every negative mean, so it can lead a ranking
+  const unled = unledCurrencies(detail)
+  if (unled.length) {
+    const within = new Set(detail.combinations.map(row => row.currency)).size > 1 ? ` (${unled.join(', ')})` : ''
     notices.push({
-      word: t('nothing to rank by'),
-      sentence: `${t('No combination states a figure for')} ${detail.objective} — ${t('the order says nothing, and no row is first')}`,
+      word: t('first states no figure'),
+      sentence: `${t('The first combination states no figure for')} ${detail.objective}${within} — ${t('its place rests on a value nobody measured, and no row is first')}`,
     })
   }
   // without it a shorter ranking would read as the whole sweep (contract 40)
