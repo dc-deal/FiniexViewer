@@ -65,6 +65,9 @@ export interface SweepCombination {
   orders_to: string
   bot_id: string
   deployment_id: string
+  // The order features this row was allowed beyond its venue, comma-joined (contract 45): such a row
+  // does not predict a session on that venue. Empty for every other row
+  features_beyond_venue: string
 
   /**
    * The mean R, which a sweep usually ranks on. R is `net_pnl` over the loss the stop would have

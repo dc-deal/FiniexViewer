@@ -108,6 +108,10 @@ export interface RunHeader {
   start_time: string
   run_type: string
   run_name: string
+  // The order features a backtest was allowed beyond what its venue's API holds, as its scenario set
+  // declared (contract 45): `stop_loss` · `take_profit`. Empty for every other run and always for a
+  // session; null on a run recorded before this contract
+  features_beyond_venue: string[] | null
   parent_id: string | null
   parent_kind: string | null
   config_snapshot: string
@@ -1094,6 +1098,10 @@ export interface TradeRow {
   position_closes: number
   stop_loss: number | null
   take_profit: number | null
+  // The level a stop-loss or take-profit exit fired at (contract 45), null for every other exit and on
+  // an older record. A logic that keeps its stop itself leaves the two above null: this is where its
+  // level is read, with `close_reason` still `sl_triggered` or `tp_triggered`
+  exit_level: number | null
   entry_side: string
   exit_side: string
   entry_executions: TradeExecution[]
@@ -1111,7 +1119,9 @@ export interface TradeRow {
    * test could not catch it: it proves the mirror against ONE capture, and that run had no null.
    *
    * Since contract 44 a stop-loss or take-profit exit is measured against the LEVEL that fired, no
-   * longer against the submission mid: a backtest reads 0 there, a session the real distance.
+   * longer against the submission mid. A level the position carries fills there in a backtest and reads
+   * 0; since contract 45 a level the strategy keeps itself fills at the next price and does not, under
+   * the same `protective_level` — so that value never means "reads 0 in a backtest".
    */
   exit_slippage: number | null
   exit_slippage_pct: number | null

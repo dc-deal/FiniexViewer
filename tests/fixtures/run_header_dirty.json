@@ -139,5 +139,6 @@
     }
   ],
   "run_purpose": "fixture",
+  "features_beyond_venue": null,
   "report_contract": 28
 }

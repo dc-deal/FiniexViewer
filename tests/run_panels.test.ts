@@ -757,6 +757,7 @@ describe('RunHeaderPanel', () => {
       start_time: '2026-08-30T14:58:19Z',
       run_type: 'simulation',
       run_name: 'ETHUSD_blocks',
+      features_beyond_venue: null,
       parent_id: null,
       parent_kind: null,
       config_snapshot: 'ETHUSD_blocks.json',

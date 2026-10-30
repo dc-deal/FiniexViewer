@@ -106,7 +106,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'trade-slippage',
-    text: t("A trade's card gives its slippage: how far the fills landed from the mid when the order was sent — half the spread for a market fill — or, marked vs SL/TP level, from the level that closed it, where a backtest reads 0."),
+    text: t("A trade's card gives its slippage: how far the fills landed from the mid when the order was sent — half the spread for a market fill — or, marked vs SL/TP level, from the level that closed it."),
   },
   {
     id: 'position-link',

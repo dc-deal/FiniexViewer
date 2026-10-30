@@ -44,8 +44,9 @@ function stops(row: Pick<TradeRow, 'stop_loss' | 'take_profit'>): Figure[] {
 /**
  * The reference of the exit's slippage, said only where it is not the mid the entry and every other
  * exit are measured against (contract 44, `exit_slippage_measured_against`): a stop-loss or
- * take-profit exit is measured against the level that closed it, where a backtest reads 0 because
- * it fills there. Without the word the two halves of the card read as one comparison.
+ * take-profit exit is measured against the level that closed it. A backtest reads 0 only where the
+ * position carries that level; one the strategy keeps itself fills at the next price (contract 45).
+ * Without the word the two halves of the card read as one comparison.
  */
 function exitReference(trade: TradeRow): string {
   if (trade.exit_slippage === null || trade.exit_slippage_measured_against !== 'protective_level') return ''

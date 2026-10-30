@@ -80,8 +80,9 @@ depends on the question.
 **The slippage says what its exit was measured against where that is not the mid** (contract 44,
 operator 2026-10-28). A trade's entry, and every exit but one, are measured against the mid when the
 order was sent; a stop-loss or take-profit exit against the level that closed it
-(`exit_slippage_measured_against: protective_level`), where a backtest reads 0 because it fills
-there. Without a word the two halves read as one comparison, so that exit carries `vs SL/TP level`
+(`exit_slippage_measured_against: protective_level`). A backtest reads 0 there only where the position
+carries the level; one the strategy keeps itself is a close sent once the market reached it, filled at
+the next price (contract 45), under the same value. Without a word the two halves read as one comparison, so that exit carries `vs SL/TP level`
 and the others nothing. Live, the fill price is the venue's own answer, in a backtest the
 simulation's; the rule is the same for both, and setting the two side by side is not this panel's
 job. The `trade-slippage` hint says what the figure holds — for a market fill, half the spread.

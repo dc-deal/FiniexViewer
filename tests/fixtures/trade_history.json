@@ -67,6 +67,7 @@
       "entry_slippage_pct": 0.007390520804313988,
       "exit_slippage_pct": 0.009093905946274225,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -137,6 +138,7 @@
       "entry_slippage_pct": 0.007957348611444315,
       "exit_slippage_pct": 0.007390184697767793,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -207,6 +209,7 @@
       "entry_slippage_pct": 0.005174465736421082,
       "exit_slippage_pct": 0.0051755964875035525,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -277,6 +280,7 @@
       "entry_slippage_pct": 0.008626093357338476,
       "exit_slippage_pct": 0.0074740564003773526,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -347,6 +351,7 @@
       "entry_slippage_pct": 0.008050974167888749,
       "exit_slippage_pct": 0.008048937540246354,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -417,6 +422,7 @@
       "entry_slippage_pct": -0.003998050084957296,
       "exit_slippage_pct": 0.008944225311274197,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -487,6 +493,7 @@
       "entry_slippage_pct": 0.01836602265369063,
       "exit_slippage_pct": -0.0020055682685075514,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -557,6 +564,7 @@
       "entry_slippage_pct": 0.026366258967064755,
       "exit_slippage_pct": 0.009936766252541543,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -627,6 +635,7 @@
       "entry_slippage_pct": 0.001003818962379162,
       "exit_slippage_pct": -0.02546097764405064,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -697,6 +706,7 @@
       "entry_slippage_pct": 0.013932202579368218,
       "exit_slippage_pct": 0.009436060392952984,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -767,6 +777,7 @@
       "entry_slippage_pct": -0.0018761997089752403,
       "exit_slippage_pct": 0.018849533509694177,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -837,6 +848,7 @@
       "entry_slippage_pct": 0.04362053160334014,
       "exit_slippage_pct": -0.041637204133814575,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -907,6 +919,7 @@
       "entry_slippage_pct": -0.02029886745068089,
       "exit_slippage_pct": 0.006152566672320672,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -977,6 +990,7 @@
       "entry_slippage_pct": -0.023081503874833403,
       "exit_slippage_pct": 0.008134495615964363,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -1047,6 +1061,7 @@
       "entry_slippage_pct": -0.010592972368135504,
       "exit_slippage_pct": -0.002280332029723689,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
       "entry_lots": 0.1
@@ -1117,6 +1132,7 @@
       "entry_slippage_pct": 0.005684725143538683,
       "exit_slippage_pct": 0.006820351930166417,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "partial",
       "position_closes": 3,
       "entry_lots": 0.03
@@ -1187,6 +1203,7 @@
       "entry_slippage_pct": 0.005684725143538683,
       "exit_slippage_pct": 0.010231342011031035,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "partial",
       "position_closes": 3,
       "entry_lots": 0.03
@@ -1257,6 +1274,7 @@
       "entry_slippage_pct": 0.005684725143538683,
       "exit_slippage_pct": 0.005116049045865124,
       "exit_slippage_measured_against": null,
+      "exit_level": null,
       "close_type": "full",
       "position_closes": 3,
       "entry_lots": 0.03

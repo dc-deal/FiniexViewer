@@ -7,6 +7,46 @@
   ],
   "runs": [
     {
+      "run_id": "20261028_085956_87d1ba84",
+      "group": "simulation",
+      "name": "eth_allocator_backtest",
+      "artifacts": [],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-10-28T08:59:56.400688+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "a3f102b74cee059b3d46d84914d824b77fab13d48004953d00f18a4664d3f4d4",
+      "app_version": "1.4.0",
+      "git_commit": "b511f9ef",
+      "config_snapshot": "eth_allocator_short.json",
+      "reporting": "none",
+      "size_bytes": 0,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "ETHUSD_short",
+          "start_date": "2026-08-05T00:00:00+00:00",
+          "end_date": "2026-08-09T00:30:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 44,
+      "origin_channel": "direct",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
       "run_id": "20261027_145422_15a68d06",
       "group": "simulation",
       "name": "eth_allocator_backtest",
@@ -13256,5 +13296,5 @@
       "has_reports": true
     }
   ],
-  "count": 168
+  "count": 169
 }

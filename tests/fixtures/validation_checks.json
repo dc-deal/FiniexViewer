@@ -4,6 +4,26 @@
   ],
   "checks": [
     {
+      "check": "order_feature_refused",
+      "title": "Order feature the venue does not hold",
+      "description": "The scenario's decision logic declares an order feature its venue's API does not hold, and its scenario set declares no exception for it."
+    },
+    {
+      "check": "order_feature_undeclared",
+      "title": "Order features not declared",
+      "description": "The scenario's decision logic does not say which order features it uses."
+    },
+    {
+      "check": "feature_beyond_venue_unneeded",
+      "title": "Exception nothing needs",
+      "description": "The scenario set declares an order feature as beyond its venue that no scenario needs, or that the venue holds anyway."
+    },
+    {
+      "check": "features_beyond_venue",
+      "title": "Order features beyond the venue",
+      "description": "The run used order features its venue's API does not hold, as its scenario set declared."
+    },
+    {
       "check": "scenario_name_missing",
       "title": "Scenario without a name",
       "description": "A scenario in the set has no name."
