@@ -38,7 +38,8 @@ const HIDDEN = (process.env['PICTURES_HIDE'] ?? '').split(',').map(word => word.
 const HINTS = [
   'scenario-pick', 'quick-bar', 'open-as-panel', 'bundle-commands', 'dock-edges', 'facet-bar', 'activities',
   'deployment-sessions', 'sweeps', 'layers', 'layer-trades', 'layer-entry-exit', 'layer-levels', 'layer-candles',
-  'layer-volume', 'layer-empty-levels', 'layer-empty-entry-exit', 'layer-empty-trades', 'chart-marks',
+  'layer-volume', 'layer-state-frame', 'layer-empty-levels', 'layer-empty-entry-exit', 'layer-empty-trades',
+  'layer-empty-state-frame', 'chart-marks',
   'trade-slippage', 'position-link',
 ]
 

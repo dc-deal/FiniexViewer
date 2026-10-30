@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
+import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -269,7 +270,7 @@ describe('useRunChartStore', () => {
     chart.attach()
     await flushPromises()
     const layer = (id: string) => chart.layers.find(entry => entry.id === id)!.drawings
-    expect(chart.layers.map(entry => entry.id)).toEqual(['levels', 'entry-exit', 'trades'])
+    expect(chart.layers.map(entry => entry.id)).toEqual(['state-frame', 'levels', 'entry-exit', 'trades'])
     expect(layer('levels')).toEqual([])
     expect(layer('trades').length).toBeGreaterThan(0)
 
@@ -363,8 +364,8 @@ describe('useRunChartStore', () => {
     // back to front as moved, the fainter one at its share, the hidden one handed over marked so —
     // the chart paints nothing of it and keeps its marks' room
     expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1, entry.hidden ?? false]))
-      .toEqual([['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true]])
-    const [trading, levels] = chart.layers
+      .toEqual([['state-frame', 1, false], ['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true]])
+    const [, trading, levels] = chart.layers
     expect(trading!.drawings.length).toBeGreaterThan(0)
     // the signs switched off keep their room and paint no text, so the switch rescales nothing
     expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.textHidden === true)).toBe(true)
@@ -468,6 +469,81 @@ describe('useRunChartStore', () => {
     expect(limit).toBe(2000)
     expect(chart.bars).toHaveLength(60)
     expect(chart.events.some(mark => mark.at > last)).toBe(true)
+  })
+
+  /** The frame on show in the player of the unit on show, on the session's own clock (viewer#51). */
+  describe('the state frame on show', () => {
+    const FRAMES = [
+      { record_no: 1, frame_time: '2025-10-31T05:00:30+00:00' },
+      { record_no: 2, frame_time: '2025-10-31T05:01:30+00:00' },
+    ]
+
+    function play(runId: string, unit: string, cursor: number | null, frames: unknown[] = FRAMES): void {
+      useFramePlayerStore().players.set(unit, {
+        runId, unit, stream: { record_count: 2 }, recording: 'ended', absence: null, error: null, loading: false,
+        frames, cursor, playing: false, speed: 1,
+      } as never)
+    }
+
+    async function shown(): Promise<ReturnType<typeof useRunChartStore>> {
+      chooseFixtureRun()
+      const chart = useRunChartStore()
+      chart.attach()
+      await flushPromises()
+      return chart
+    }
+
+    const moment = (chart: ReturnType<typeof useRunChartStore>) =>
+      chart.layers.find(entry => entry.id === 'state-frame')!.drawings
+
+    it('stands at the bar the frame falls in, says which frame it is, and moves with a step', async () => {
+      const chart = await shown()
+      expect(moment(chart)).toEqual([])
+      play(RUN, chart.unit!.name, 1)
+      expect(moment(chart)[0]).toMatchObject({ kind: 'time', time: 1761886800, role: 'annotation' })
+      const card = moment(chart)[0]!.card
+      expect(card.title).toBe('State frame')
+      expect(card.details[0]).toEqual({ label: 'Frame', value: '1 of 2' })
+      const others = chart.layers.filter(entry => entry.id !== 'state-frame').map(entry => entry.drawings)
+      useFramePlayerStore().players.get(chart.unit!.name)!.cursor = 2
+      expect(moment(chart)[0]).toMatchObject({ time: 1761886860 })
+      // a step moves this layer and rebuilds no other: the frames are played several a second
+      chart.layers.filter(entry => entry.id !== 'state-frame').forEach((entry, index) => {
+        expect(entry.drawings).toBe(others[index])
+      })
+    })
+
+    it('follows the newest frame where the player follows it', async () => {
+      const chart = await shown()
+      play(RUN, chart.unit!.name, null)
+      expect(moment(chart)[0]).toMatchObject({ time: 1761886860 })
+    })
+
+    it('draws nothing for the player of another unit or another run', async () => {
+      const chart = await shown()
+      play(RUN, 'another_unit', 1)
+      expect(moment(chart)).toEqual([])
+      play('another_run', chart.unit!.name, 1)
+      expect(moment(chart)).toEqual([])
+    })
+
+    it('draws nothing before the bars, and past the bars loaded until they arrive', async () => {
+      vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true, priceBasis: '' })
+      const chart = await shown()
+      play(RUN, chart.unit!.name, 1, [{ record_no: 1, frame_time: '2025-10-31T04:00:00+00:00' }])
+      expect(moment(chart)).toEqual([])
+      play(RUN, chart.unit!.name, 2)
+      expect(moment(chart)).toEqual([])
+      play(RUN, chart.unit!.name, 1)
+      expect(moment(chart)).toHaveLength(1)
+    })
+
+    it('is handed over hidden where the Layers panel switched it off', async () => {
+      const chart = await shown()
+      play(RUN, chart.unit!.name, 1)
+      useArrangementStore().setPanelView('run-chart', { layers: { hidden: ['state-frame'] } })
+      expect(chart.layers.find(entry => entry.id === 'state-frame')).toMatchObject({ hidden: true })
+    })
   })
 
   /** A position looked at past half a batch into the window: the first batch starts half a batch before it. */

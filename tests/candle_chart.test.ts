@@ -325,6 +325,22 @@ describe('CandleChart', () => {
       expect(wrapper.find('.chart-card').exists()).toBe(false)
     })
 
+    /** A frame played moves the layers several times a second: the card under the pointer stays, and says what it says now. */
+    it('keeps a card whose drawing still stands as the layers change, with what the drawing says now', async () => {
+      size = { width: 800, height: 400 }
+      const moment = (title: string): ChartLayer[] => [
+        { id: 'state-frame', drawings: [{ kind: 'time', id: 'state-frame', time: BARS[0]!.time, role: 'annotation', card: { title, details: [] } }] },
+      ]
+      const wrapper = mount(CandleChart, { props: { data: BARS, layers: moment('frame 1') } })
+      mounted = wrapper
+      lw.pointer.move!({ hoveredInfo: { objectId: 'state-frame' }, point: { x: 100, y: 80 } })
+      await nextTick()
+      expect(wrapper.find('.chart-card').text()).toContain('frame 1')
+      await wrapper.setProps({ layers: moment('frame 2') })
+      expect(wrapper.find('.chart-card').text()).toContain('frame 2')
+      expect(wrapper.find('.candle-chart').attributes('data-time-at')).toBe(String(BARS[0]!.time))
+    })
+
     it('drops a card whose mark is gone', async () => {
       size = { width: 800, height: 400 }
       const wrapper = mountChart(BARS, { marks: MARKS })
@@ -533,6 +549,14 @@ describe('CandleChart', () => {
       document.documentElement.dataset.theme = 'light'
       await flushPromises()
       expect(roles()).toEqual(['#ffff07', '#ffff05', '#ffff06', '#ffff02', '#ffff02'])
+    })
+
+    /** A moment is a boundary on the chart: the annotation role, from its own token. */
+    it('paints a moment in the annotation token', () => {
+      size = { width: 800, height: 400 }
+      const annotation = getComputedStyle(document.documentElement).getPropertyValue('--color-annotation').trim()
+      mountChart(BARS, { marks: [mark({})] })
+      expect(lastDrawn().colours.roles['annotation']).toBe(annotation)
     })
 
     /** The width of a bar is what overlapping marks are gathered by, so the chart reports every zoom. */

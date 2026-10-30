@@ -89,6 +89,14 @@ const HINTS: HintDefinition[] = [
     text: t('The trades are marked where the unit on show opened a position in the window drawn — this one opened none.'),
   },
   {
+    id: 'layer-state-frame',
+    text: t('The state frame on show in the player of the Latest state frame section: a dashed line where it stands on the session clock. It moves with each step.'),
+  },
+  {
+    id: 'layer-empty-state-frame',
+    text: t('The frame on show in the Latest state frame section stands here as a dashed line, where a session records its frames.'),
+  },
+  {
     id: 'chart-marks',
     text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },

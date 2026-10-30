@@ -12,7 +12,7 @@ import type { ChartMark } from '@/types/run_chart_types'
  */
 
 const COLOURS: DrawingColours = {
-  roles: { positive: '#0a0', negative: '#a00', flat: '#888', mixed: '#888', entry: '#fff' },
+  roles: { positive: '#0a0', negative: '#a00', flat: '#888', mixed: '#888', entry: '#fff', annotation: '#f0f' },
   surface: '#111',
 }
 const BARS = new Map<number, BarRange>([[1, { high: 300, low: 200 }], [2, { high: 310, low: 210 }]])
@@ -107,10 +107,10 @@ describe('ChartDrawingHost', () => {
   it('paints a layer at the opacity it was given, and leaves the others at full strength', () => {
     const scale = { x: (time: number) => time * 10, y: (price: number) => 500 - price, spacing: 80, width: 800 }
     const faint = recordingContext()
-    paintLayer(faint.context, placeLayer({ ...LAYERS[1]!, opacity: 0.4 }, BARS, scale), COLOURS, '10px Probe Sans')
+    paintLayer(faint.context, placeLayer({ ...LAYERS[1]!, opacity: 0.4 }, BARS, scale), COLOURS, '10px Probe Sans', 400)
     expect(faint.calls).toContain('globalAlpha=0.4')
     const plain = recordingContext()
-    paintLayer(plain.context, placeLayer(LAYERS[1]!, BARS, scale), COLOURS, '10px Probe Sans')
+    paintLayer(plain.context, placeLayer(LAYERS[1]!, BARS, scale), COLOURS, '10px Probe Sans', 400)
     expect(plain.calls.some(call => call.startsWith('globalAlpha='))).toBe(false)
   })
 
@@ -157,7 +157,7 @@ describe('ChartDrawingHost', () => {
   it('paints a level dashed with its word, and a mark with its sign in the colour of its role', () => {
     const placed = LAYERS.map(layer => placeLayer(layer, BARS, { x: time => time * 10, y: price => 500 - price, spacing: 80, width: 800 }))
     const { context, calls } = recordingContext()
-    for (const layer of placed) paintLayer(context, layer, COLOURS, '10px Probe Sans')
+    for (const layer of placed) paintLayer(context, layer, COLOURS, '10px Probe Sans', 400)
     expect(calls).toContain('setLineDash(4,3)')
     expect(calls.some(call => call.startsWith('fillText(SL,'))).toBe(true)
     expect(calls).toContain('strokeStyle=#a00')
@@ -185,7 +185,22 @@ describe('ChartDrawingHost', () => {
     expect(host.autoscaleInfo()!.margins).toEqual(signed)
     const placed = quiet.map(layer => placeLayer(layer, BARS, { x: time => time * 10, y: price => 500 - price, spacing: 80, width: 800 }))
     const { context, calls } = recordingContext()
-    for (const layer of placed) paintLayer(context, layer, COLOURS, '10px Probe Sans')
+    for (const layer of placed) paintLayer(context, layer, COLOURS, '10px Probe Sans', 400)
     expect(calls.some(call => call.startsWith('fillText(+,'))).toBe(false)
+  })
+
+  /** A moment stands over the whole height of the pane, dashed: the role's second channel beside its hue. */
+  it('paints a moment dashed over the height of the pane, in its role', () => {
+    const scale = { x: (time: number) => time * 10, y: (price: number) => 500 - price, spacing: 10, width: 800 }
+    const placed = placeLayer({
+      id: 'state-frame',
+      drawings: [{ kind: 'time', id: 'state-frame', time: 2, role: 'annotation', card: { title: 'a', details: [] } }],
+    }, BARS, scale)
+    const { context, calls } = recordingContext()
+    paintLayer(context, placed, COLOURS, '10px Probe Sans', 400)
+    expect(calls).toContain('strokeStyle=#f0f')
+    expect(calls).toContain('setLineDash(4,3)')
+    expect(calls).toContain('moveTo(20,0)')
+    expect(calls).toContain('lineTo(20,400)')
   })
 })

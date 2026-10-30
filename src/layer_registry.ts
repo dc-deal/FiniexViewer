@@ -44,6 +44,11 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
     emptyHintId: 'layer-empty-trades',
     option: { id: 'trade-signs', label: t('signs'), fallback: true },
   },
+  'state-frame': {
+    title: t('State frame'),
+    hintId: 'layer-state-frame',
+    emptyHintId: 'layer-empty-state-frame',
+  },
 }
 
 /**
@@ -51,7 +56,7 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
  * draws only its candles, and the Layers panel has nothing to arrange for it: the free chart today.
  */
 const CHART_LAYERS: Record<string, readonly ChartLayerId[]> = {
-  'run-chart': ['volume', 'candles', 'levels', 'entry-exit', 'trades'],
+  'run-chart': ['volume', 'candles', 'state-frame', 'levels', 'entry-exit', 'trades'],
 }
 
 export function layerDefinition(id: ChartLayerId): LayerDefinition {

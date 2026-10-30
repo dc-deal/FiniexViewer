@@ -68,7 +68,8 @@ by its tab, the way a reader does.
   never written, an ended one folding its last frame behind its outcome, its frames over time
   played — opened on the newest, stepped back to the first and played on to the end — a session whose
   frames over time are not recorded showing its latest alone, and a backtest drawing no such
-  section.
+  section; and the frame on show on the run chart beside it, moving with each step
+  of the player, read off the element since a canvas cannot be read back.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel — or, with the run
@@ -208,7 +209,8 @@ at the size a real search reaches (viewer#32): 500 combinations built from the c
 the sweep opened until the 500th row stands — what says whether the ranking needs a row cap. A
 deployment picked in its list until its bundle draws the sessions (viewer#43), and a step of a
 session's frame player (viewer#51) over 500 frames built from the captured ones and served as the
-route serves them — from, to and a limit — the mean of twenty. And bars loaded as the view moves
+route serves them — from, to and a limit — the mean of twenty. The same steps again with the run chart beside the
+player, whose line moves with each one (viewer#51). And bars loaded as the view moves
 (viewer#9): from M1 chosen on a unit widened over both captured EURGBP stretches until both are
 drawn — the first batch, the pieces across the three-week gap, the earlier bars merged in front.
 

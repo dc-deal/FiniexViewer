@@ -69,7 +69,8 @@ section plays them (`StateFramePlayer`): the first, one back, play or stop, one 
 speed in frames per second; and a slider along the session's own clock — `frame_time`, the only
 axis, since the machine's clock says only how long ago. The arrows on the slider step a frame, since
 frames come at no fixed interval. The frame on show is drawn by `StateFrameBody`, the same body the
-latest frame used, so a session reads one way whichever moment is on show.
+latest frame used, so a session reads one way whichever moment is on show. The run chart draws the
+frame on show as a dashed line ([Chart Drawings and Layers](../panels/chart_drawings_and_layers.md)).
 
 ```
 ⏮ ◀ ▶ ▶| ⏭  5 per s ▾   ├────────●───────────────────┤

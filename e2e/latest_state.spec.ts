@@ -1,5 +1,5 @@
 import { test, expect } from './cdp_fixture'
-import { FIXTURE_RUN, STATE_FRAME_RUNS, mockApi } from './api_mock'
+import { FIXTURE_RUN, STATE_FRAME_RUNS, fixture, mockApi } from './api_mock'
 import { openWith } from './arrangement_seed'
 
 /**
@@ -64,4 +64,48 @@ test('a backtest has no such section', async ({ page }) => {
   const bundle = page.locator('[data-panel-kind="run"]')
   await expect(bundle.locator('[data-panel="executive"]')).toBeVisible()
   await expect(bundle.locator('[data-panel="latest-state"]')).toHaveCount(0)
+})
+
+/**
+ * The frame on show stands on the run chart beside it, as a dashed line drawn on a real canvas, and
+ * moves with each step (viewer#51). The captures of this session do not fit together for a chart: its
+ * index row names another unit than its frames, no configuration names its market and no bars are held.
+ * So the row of the session that wrote the frames, a live configuration and a bar a minute are served.
+ */
+test('the frame on show stands on the run chart and moves with each step', async ({ page }) => {
+  const opened = Date.parse('2026-01-25T02:19:00Z') / 1000
+  const bars = Array.from({ length: 60 }, (_, index) =>
+    ({ t: opened + index * 60, o: 1, h: 1.1, l: 0.9, c: 1, v: 1, tc: 1 }))
+  await page.route(/\/reports\/runs$/, route => {
+    const list = fixture('runs_list.json') as { runs: { run_id: string }[] }
+    return route.fulfill({
+      json: {
+        ...list,
+        runs: list.runs.map(run => run.run_id !== STATE_FRAME_RUNS.ended ? run : {
+          ...run, data_windows: [{ unit_name: 'state_frames_test', start_date: '2026-01-25T02:19:46+00:00', end_date: '2026-01-25T08:00:00+00:00' }],
+        }),
+      },
+    })
+  })
+  await page.route(/\/reports\/runs\/[^/]+\/config/, route => route.fulfill({
+    json: { ...(fixture('run_config_live.json') as object), run_id: STATE_FRAME_RUNS.ended },
+  }))
+  await page.route(/\/symbols\/[^/]+\/coverage/, route => route.fulfill({
+    json: { start: '2026-01-25T02:00:00+00:00', end: '2026-01-25T08:00:00+00:00', timeframes: ['M1'] },
+  }))
+  await page.route(/\/symbols\/[^/]+\/bars/, route => route.fulfill({ json: bars }))
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: STATE_FRAME_RUNS.ended })
+  const section = page.locator('[data-panel-kind="run"] [data-panel="latest-state"]')
+  await section.locator('details summary').click()
+  const where = section.locator('.player .where')
+  await expect(where).toContainText('frame 3 of 3')
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect(chart).toHaveAttribute('data-drawings', /state-frame:1/)
+  // frames 3, 2 and 1 fall in the bars of 02:21, 02:20 and 02:19
+  await expect(chart).toHaveAttribute('data-time-at', String(opened + 120))
+  await section.locator('[data-action="back"]').click()
+  await expect(chart).toHaveAttribute('data-time-at', String(opened + 60))
+  await section.locator('[data-action="first"]').click()
+  await expect(chart).toHaveAttribute('data-time-at', String(opened))
 })

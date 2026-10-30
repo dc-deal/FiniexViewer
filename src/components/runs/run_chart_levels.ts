@@ -3,7 +3,8 @@ import { polarity, sortInstant, utcInstant } from '@/components/runs/report_form
 import { barOf } from '@/components/runs/run_chart_marks'
 import { exitCard } from '@/components/runs/trade_card'
 import type { OpenPosition, TradeRow } from '@/types/api/report_types'
-import type { LineDrawing, SegmentDrawing } from '@/types/chart_drawing_types'
+import type { RecordedStateFrame } from '@/types/api/state_frame_types'
+import type { LineDrawing, SegmentDrawing, TimeDrawing } from '@/types/chart_drawing_types'
 import type { Figure } from '@/types/figure_types'
 import { t } from '@/translate'
 
@@ -124,4 +125,21 @@ export function entryExitLines(trades: TradeRow[], key: string[], barTimes: numb
     })
   }
   return lines
+}
+
+/**
+ * The state frame on show in the player, as a moment on the chart, at the bar its `frame_time` falls
+ * in — the session's own clock, the one the bars stand on. None before the bars loaded or past how far
+ * they are loaded: it is drawn once its bar arrives. `count` is the timeline's, null until it is read.
+ */
+export function frameMoment(
+  frame: RecordedStateFrame, count: number | null, barTimes: number[], cutAt: number | null,
+): TimeDrawing[] {
+  const time = barIn(barTimes, seconds(frame.frame_time), cutAt)
+  if (time === null) return []
+  const details: Figure[] = [
+    { label: t('Frame'), value: count === null ? String(frame.record_no) : `${frame.record_no} ${t('of')} ${count}` },
+    { label: t('The session clock'), value: utcInstant(frame.frame_time) },
+  ]
+  return [{ kind: 'time', id: 'state-frame', time, role: 'annotation', card: { title: t('State frame'), details } }]
 }

@@ -132,6 +132,8 @@ const cards = computed(() => new Map<string, FigureCard>(drawings.value.map(draw
 const markCount = computed(() => drawings.value.filter(drawing => drawing.kind === 'marker').length)
 const events = computed(() => drawings.value.reduce(
   (sum, drawing) => sum + (drawing.kind === 'marker' ? drawing.count ?? 1 : 0), 0))
+/** The moment marked over the whole height, in UTC seconds — on the element, as the marks are counted there. */
+const timeAt = computed(() => drawings.value.find(drawing => drawing.kind === 'time')?.time)
 /** Each layer and how many drawings it holds — `levels:2 entry-exit:1 trades:12`. */
 const drawingCounts = computed(() => shownLayers.value.map(layer => `${layer.id}:${layer.drawings.length}`).join(' '))
 
@@ -150,12 +152,12 @@ const edgeStates = computed(() => (['left', 'right'] as const).flatMap(edge => {
 }))
 
 /** The card under the pointer, and where the pointer is — null off every drawn thing. */
-const pointed = shallowRef<{ card: FigureCard, x: number, y: number } | null>(null)
+const pointed = shallowRef<{ id: string, card: FigureCard, x: number, y: number } | null>(null)
 
 function onPointer(param: MouseEventParams): void {
   const id = param.hoveredInfo?.objectId
   const card = typeof id === 'string' ? cards.value.get(id) : undefined
-  pointed.value = card && param.point ? { card, x: param.point.x, y: param.point.y } : null
+  pointed.value = card && param.point ? { id: id as string, card, x: param.point.x, y: param.point.y } : null
 }
 
 /** What the chart paints with — each one a token, in its role where `tokens.css` names one. */
@@ -168,6 +170,7 @@ interface ChartColours {
   fall: string
   mark: string
   quiet: string
+  annotation: string
 }
 
 /**
@@ -191,6 +194,7 @@ function readColours(): ChartColours {
     // an entry is a fact about the trade, not a result: plain ink
     mark: token('--color-text-primary'),
     quiet: token('--color-text-secondary'),
+    annotation: token('--color-annotation'),
   }
 }
 
@@ -207,6 +211,7 @@ function drawingColours(colours: ChartColours): DrawingColours {
       flat: colours.quiet,
       mixed: colours.quiet,
       entry: colours.mark,
+      annotation: colours.annotation,
     },
     surface: colours.surface,
   }
@@ -496,9 +501,12 @@ onUnmounted(() => {
 
 // bars that arrive before the chart has a size wait for it: onResize hands them over at build time
 watch(() => props.data, newData => showData(newData))
-// a card of a drawing that is gone is not shown on: the next move of the pointer finds what is there
+// a card of a drawing that is gone is not shown on: the next move of the pointer finds what is there.
+// One whose drawing stands stays, and says what it says now: a frame played moves the layers several
+// times a second, and a card under the pointer would blink with each step
 watch(() => props.layers, () => {
-  pointed.value = null
+  const card = pointed.value ? cards.value.get(pointed.value.id) : undefined
+  pointed.value = pointed.value && card ? { ...pointed.value, card } : null
   showDrawings()
 })
 watch(() => props.focus, () => frame())
@@ -517,6 +525,7 @@ watch(() => props.priceFormat, () => series?.applyOptions(
     :data-events="events"
     :data-drawings="drawingCounts"
     :data-bars="data.length"
+    :data-time-at="timeAt"
     :data-visible-from="visibleFrom ?? undefined"
   >
     <!-- what is drawn, counted on the element above: the canvas cannot be read back. `data-events`

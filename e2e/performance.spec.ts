@@ -1,4 +1,5 @@
 import { test, expect } from './cdp_fixture'
+import type { Page } from '@playwright/test'
 import { fixture, mockApi, revealFixtureRun, FIXTURE_DEPLOYMENT, FIXTURE_RUN, STATE_FRAME_RUNS } from './api_mock'
 import { openWith, showPanel, FIXTURES_SHOWN } from './arrangement_seed'
 
@@ -261,9 +262,10 @@ test('a deployment opens its bundle quickly', async ({ page }) => {
 /**
  * A session's frames stepped through (viewer#51): 500 frames built from the captured ones, one a
  * minute, the window served as the route serves it — from, to and a limit. One step is the click
- * until the player names the next frame, on the page's own frames; the mean of twenty.
+ * until the player names the next frame, on the page's own frames; the mean of twenty. Once alone, and
+ * once with the run chart beside it, whose line moves with each step (a bar a minute served for it).
  */
-test('a session steps through its frames quickly', async ({ page }) => {
+async function stepFrames(page: Page, width: number, label: string): Promise<void> {
   const window = fixture('recorded_window.json') as { state_frames: { frame_time: string, record_no: number }[] }
   const timeline = fixture('recorded_streams.json') as { streams: Record<string, unknown>[] }
   const start = Date.parse(window.state_frames[0]!.frame_time)
@@ -295,7 +297,30 @@ test('a session steps through its frames quickly', async ({ page }) => {
       },
     })
   })
-  await page.setViewportSize({ width: 1600, height: 900 })
+  const opened = Math.floor(start / 60_000) * 60
+  const bars = Array.from({ length: 500 }, (_, index) =>
+    ({ t: opened + index * 60, o: 1, h: 1.1, l: 0.9, c: 1, v: 1, tc: 1 }))
+  await page.route(/\/reports\/runs$/, route => {
+    const list = fixture('runs_list.json') as { runs: { run_id: string }[] }
+    return route.fulfill({
+      json: {
+        ...list,
+        runs: list.runs.map(run => run.run_id !== STATE_FRAME_RUNS.ended ? run : {
+          ...run, data_windows: [{ unit_name: 'state_frames_test', start_date: new Date(opened * 1000).toISOString(), end_date: new Date((opened + 500 * 60) * 1000).toISOString() }],
+        }),
+      },
+    })
+  })
+  await page.route(/\/reports\/runs\/[^/]+\/config/, route => route.fulfill({
+    json: { ...(fixture('run_config_live.json') as object), run_id: STATE_FRAME_RUNS.ended },
+  }))
+  await page.route(/\/symbols\/[^/]+\/coverage/, route => route.fulfill({
+    json: {
+      start: new Date(opened * 1000).toISOString(), end: new Date((opened + 500 * 60) * 1000).toISOString(), timeframes: ['M1'],
+    },
+  }))
+  await page.route(/\/symbols\/[^/]+\/bars/, route => route.fulfill({ json: bars }))
+  await page.setViewportSize({ width, height: 900 })
   await openWith(page, '/', { run: STATE_FRAME_RUNS.ended })
   const section = page.locator('[data-panel-kind="run"] [data-panel="latest-state"]')
   await section.locator('details summary').click()
@@ -316,6 +341,14 @@ test('a session steps through its frames quickly', async ({ page }) => {
     )
   }
   const perStep = Math.round((Date.now() - started) / steps)
-  timings.push({ label: 'frames — a step drawn (mean of 20)', ms: perStep })
+  timings.push({ label, ms: perStep })
   expect(perStep).toBeLessThan(500)
+}
+
+test('a session steps through its frames quickly', async ({ page }) => {
+  await stepFrames(page, 1600, 'frames — a step drawn (mean of 20)')
+})
+
+test('a step of the frames moves the line on the run chart beside it quickly', async ({ page }) => {
+  await stepFrames(page, 1800, 'frames — a step, chart beside (mean of 20)')
 })

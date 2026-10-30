@@ -15,7 +15,7 @@ describe('useChartLayers', () => {
 
   it('reads a chart\'s layers front first', () => {
     const { rows } = useChartLayers(() => 'run-chart')
-    expect(rows.value.map(row => row.id)).toEqual(['trades', 'entry-exit', 'levels', 'candles', 'volume'])
+    expect(rows.value.map(row => row.id)).toEqual(['trades', 'entry-exit', 'levels', 'state-frame', 'candles', 'volume'])
   })
 
   it('keeps a hidden layer, a fainter one and a switched option with the chart\'s own view', () => {
@@ -47,11 +47,11 @@ describe('useChartLayers', () => {
    */
   it('takes a new order of the movable layers whole, and keeps the fixed ones at the back', () => {
     const { rows, reorder } = useChartLayers(() => 'run-chart')
-    reorder(['levels', 'trades', 'entry-exit'])
-    expect(rows.value.map(row => row.id)).toEqual(['levels', 'trades', 'entry-exit', 'candles', 'volume'])
+    reorder(['levels', 'trades', 'entry-exit', 'state-frame'])
+    expect(rows.value.map(row => row.id)).toEqual(['levels', 'trades', 'entry-exit', 'state-frame', 'candles', 'volume'])
     reorder(['trades', 'levels'])
     reorder(['trades', 'trades', 'levels'])
-    expect(rows.value.map(row => row.id)).toEqual(['levels', 'trades', 'entry-exit', 'candles', 'volume'])
+    expect(rows.value.map(row => row.id)).toEqual(['levels', 'trades', 'entry-exit', 'state-frame', 'candles', 'volume'])
   })
 
   /** Back to the chart's own arrangement, nothing is kept — no entry stands for a chart nobody arranged. */

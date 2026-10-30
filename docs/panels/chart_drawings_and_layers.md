@@ -43,8 +43,9 @@ and the card it shows there; a time is the open of a bar drawn.
 | marker (`ChartMark`) | an opening ↑↓ or an exit ●, single or gathered `×N` | [Candle Charts](candle_charts.md) |
 | `segment { from, to, price }` | a level held from one bar to another — `to` null: to the window's edge; `from` equal to `to`: known at that bar alone, a short stroke ending there | `run_chart_levels.ts` |
 | `line { from, to }` | two points joined: where a trade entered and where it left | `run_chart_levels.ts` |
+| `time { time }` | a moment over the whole height, dashed: the state frame on show. Ours until testingide#379 names one | `run_chart_levels.ts` |
 
-A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry`), read from the
+A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry` · `annotation`), read from the
 theme tokens by the chart and handed to the host — a canvas cannot read CSS. The shape and the word
 come first: a level carries `SL` or `TP`, a mark its sign or its count, so the colour only reinforces.
 
@@ -157,6 +158,26 @@ Run chart · ETHUSD_aug_sep
 - **The run chart's store applies it.** A hidden layer is handed over marked `hidden`: the host
   neither paints nor hits it and puts nothing of it on the axis, and only the room its marks take is
   kept. A fainter one carries its `opacity`, and the host paints that layer whole at it.
+
+## The state frame on show (2026-10-30)
+
+Where a session records its frames, the frame on show in the player of [Latest state
+frame](../runs/latest_state_frame.md) stands on the chart as a dashed line over the whole height, in
+the `annotation` role, at the bar its `frame_time` falls in — the session's own clock, the one the bars
+stand on. It moves with each step, and with each frame a running session writes. Under the pointer its
+card says which frame it is and when.
+
+- **The player of the unit on show and of the run on show**, matched by name: a unit is called the same
+  in `data_windows` and on its streams. Any other player draws nothing, and a backtest records no stream
+  over time yet (their `recorded-streams` document).
+- **It stands as soon as the player has a frame**, the newest at first (decided 2026-10-30): on a running
+  session it is also where the record has got to. The layer's lever takes it away.
+- **The view does not follow it** (decided 2026-10-30). At the automatic timeframe the whole window is in
+  view, so the line is too; zoomed in, it can leave the view while the reader looks elsewhere.
+- **Past the bars loaded there is no line yet**: it is drawn once its bar arrives.
+- **A step rebuilds no other layer.** Each layer's drawings are a `computed` of their own, since a player
+  moves them several times a second. The card under the pointer stays through a step while its drawing
+  stands, and says what it says now.
 
 ## The volume — a layer the library draws (2026-10-27)
 

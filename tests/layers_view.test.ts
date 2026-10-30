@@ -41,7 +41,7 @@ describe('LayersView', () => {
 
   it('lists the chart\'s layers front first, the candles behind the drawings and the volume behind them, under the chart\'s name', () => {
     const wrapper = mountOn('run-chart')
-    expect(order(wrapper)).toEqual(['trades', 'entry-exit', 'levels', 'candles', 'volume'])
+    expect(order(wrapper)).toEqual(['trades', 'entry-exit', 'levels', 'state-frame', 'candles', 'volume'])
     expect(wrapper.find('.fixed').text()).toContain('Candles')
     expect(wrapper.find('.chart-name').text()).toBe('Run chart')
   })
@@ -124,6 +124,7 @@ describe('LayersView', () => {
     const summary = row(wrapper, 'levels').find('.layer-summary')
     expect(summary.text()).toBe('pick a position')
     expect(row(wrapper, 'trades').find('.layer-summary').text()).toBe('none in view')
+    expect(row(wrapper, 'state-frame').find('.layer-summary').text()).toBe('no frame on show')
     // why stands in the hint below, the one pattern an explanation takes — never in a browser tooltip
     expect(summary.attributes('title')).toBeUndefined()
     // and below the list, in full, front first, as hints in one box: a narrow panel cuts the row's

@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import type { ComputedRef } from 'vue'
 import { findCoverage } from '@/api/api_client'
 import {
   autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
 } from '@/components/runs/run_chart'
-import { entryExitLines, positionLevels } from '@/components/runs/run_chart_levels'
+import { entryExitLines, frameMoment, positionLevels } from '@/components/runs/run_chart_levels'
 import {
   barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
 } from '@/components/runs/run_chart_marks'
@@ -14,6 +15,7 @@ import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
 import { useContextStore } from '@/stores/context_store'
+import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
@@ -52,6 +54,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   const context = useContextStore()
   const arrangement = useArrangementStore()
   const timeframeStore = useTimeframeStore()
+  const framePlayers = useFramePlayerStore()
 
   /** How many run charts are on show. Nothing is fetched while there are none. */
   const viewers = ref(0)
@@ -198,36 +201,57 @@ export const useRunChartStore = defineStore('runChart', () => {
   /** The chart's drawing layers as the reader arranged them in the Layers panel, back to front. */
   const arranged = computed(() => arrangeLayers(RUN_CHART, arrangement.panelViews[RUN_CHART]?.layers))
 
+  /** The option a drawing layer stands at, as arranged. */
+  function optionOf(id: DrawingLayerId): boolean | null {
+    return arranged.value.find(state => state.id === id)?.option ?? null
+  }
+
   /**
-   * What the chart draws, layer by layer, each in front of the one before, as the reader arranged
-   * them — by default the levels of the position looked at, the line from its entry to its exit, and
-   * the marks of every trade in front. A hidden layer is handed over marked so: the chart paints
-   * nothing of it, and its marks keep their room, so the candles stay where they were (operator,
-   * on screen 2026-10-27: switching the trades off stretched the candles).
+   * Each layer's drawings, apart: a step of the frame player, several a second while it plays, moves
+   * one of them and rebuilds no other.
    */
-  const layers = computed<ChartLayer[]>(() => {
-    const key = reports.tradeHistory?.keys.trades ?? []
-    const looked = focus.value?.position ?? null
-    const drawings: Record<DrawingLayerId, (option: boolean | null) => ChartDrawing[]> = {
-      levels: every => every
+  const drawn: Record<DrawingLayerId, ComputedRef<ChartDrawing[]>> = {
+    levels: computed(() => {
+      const key = reports.tradeHistory?.keys.trades ?? []
+      const looked = focus.value?.position ?? null
+      return optionOf('levels')
         ? positionLevels(
           unitTrades.value, key, unitPortfolio.value?.open_positions ?? [], looked, barTimes.value, cutAt.value,
         )
         : positionLevels(
           focusTrades.value, key, focusOpen.value ? [focusOpen.value] : [], looked, barTimes.value, cutAt.value,
-        ),
-      'entry-exit': every => entryExitLines(every ? unitTrades.value : focusTrades.value, key, barTimes.value, cutAt.value),
-      // without their signs the marks keep their shapes and the signs' room, so the switch rescales
-      // nothing; a gathered mark's card still counts it
-      trades: signs => signs === false ? marks.value.map(mark => ({ ...mark, textHidden: true })) : marks.value,
-    }
-    return arranged.value.flatMap(state => state.id === 'volume' || state.id === 'candles' ? [] : [{
+        )
+    }),
+    'entry-exit': computed(() => entryExitLines(
+      optionOf('entry-exit') ? unitTrades.value : focusTrades.value,
+      reports.tradeHistory?.keys.trades ?? [], barTimes.value, cutAt.value,
+    )),
+    // without their signs the marks keep their shapes and the signs' room, so the switch rescales
+    // nothing; a gathered mark's card still counts it
+    trades: computed(() => optionOf('trades') === false ? marks.value.map(mark => ({ ...mark, textHidden: true })) : marks.value),
+    // the player of the unit on show and of the run on show: its name is the unit's in `data_windows`
+    'state-frame': computed(() => {
+      const player = unit.value ? framePlayers.playerOf(unit.value.name) : null
+      if (!player || player.runId !== runsStore.selectedRunId) return []
+      const frame = framePlayers.frameOf(player)
+      return frame ? frameMoment(frame, player.stream?.record_count ?? null, barTimes.value, cutAt.value) : []
+    }),
+  }
+
+  /**
+   * What the chart draws, layer by layer, each in front of the one before, as the reader arranged
+   * them — by default the state frame on show at the back, the levels of the position looked at, the
+   * line from its entry to its exit, and the marks of every trade in front. A hidden layer is handed over marked so: the chart paints
+   * nothing of it, and its marks keep their room, so the candles stay where they were (operator,
+   * on screen 2026-10-27: switching the trades off stretched the candles).
+   */
+  const layers = computed<ChartLayer[]>(() => arranged.value.flatMap(state =>
+    state.id === 'volume' || state.id === 'candles' ? [] : [{
       id: state.id,
-      drawings: drawings[state.id](state.option),
+      drawings: drawn[state.id].value,
       ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
       ...(state.shown ? {} : { hidden: true }),
-    }])
-  })
+    }]))
 
   /**
    * What the volume layer counts. Their `market-data` document: `v` is the traded volume, `0.0` on

@@ -82,6 +82,7 @@ function refuseFixed(event: { related: HTMLElement }): boolean {
  * the unit on show (operator, 2026-10-28: "nothing to draw" said that, not what to do).
  */
 function emptyWord(row: LayerState): string {
+  if (row.id === 'state-frame') return t('no frame on show')
   if (row.id === 'trades' || row.option) return t('none in view')
   return runChart.focus ? t('none for this position') : t('pick a position')
 }
