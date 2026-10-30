@@ -288,7 +288,7 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   /**
    * Loads the unit's bars afresh: the window's from the position looked at on — half a batch before
-   * it — or from the window's start where none is (decided 2026-10-29, 251.a). The rest arrives as
+   * it — or from the window's start where none is (decided 2026-10-29). The rest arrives as
    * the reader moves toward it.
    */
   async function loadBars(): Promise<void> {

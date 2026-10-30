@@ -3,7 +3,7 @@ import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import { getBars } from '@/api/api_client'
 import type { ApiBar } from '@/types/api/bar_types'
 
-/** How many bars one ask brings, at the first look and at the right edge (decided 2026-10-29, 252.a). */
+/** How many bars one ask brings, at the first look and at the right edge (decided 2026-10-29). */
 export const BARS_PER_BATCH = 2000
 
 /**

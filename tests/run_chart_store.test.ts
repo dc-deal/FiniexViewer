@@ -508,7 +508,7 @@ describe('useRunChartStore', () => {
     expect(apiClient.getBars).toHaveBeenCalledOnce()
   })
 
-  /** Without a position looked at the first batch starts at the window (decided 2026-10-29, 251.a). */
+  /** Without a position looked at the first batch starts at the window (decided 2026-10-29). */
   it('asks for the first batch from the window on, a period before it', async () => {
     chooseFixtureRun()
     const chart = useRunChartStore()
