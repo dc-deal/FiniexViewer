@@ -7,6 +7,7 @@ import { provideTestOpenInContext } from './open_in_context_harness'
 import type { TestOpenInContext } from './open_in_context_harness'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
+import HoverCard from '@/components/base/HoverCard.vue'
 import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import { provideCheckTitles } from '@/composables/use_check_titles'
@@ -744,7 +745,7 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
 }
 
 describe('RunHeaderPanel', () => {
-  // its hint reads its store
+  // its hints read their store
   beforeEach(() => setActivePinia(createPinia()))
 
   /**
@@ -861,6 +862,9 @@ describe('RunHeaderPanel', () => {
     })
     await wrapper.find('.jump-link').trigger('click')
     expect(way.opened).toEqual([{ what: 'deployment', id: 'deploy_20260922_121648' }])
+    // what it opens stands in a hint, never on a browser tooltip
+    expect(wrapper.text()).toContain("the deployment's history")
+    expect(wrapper.find('.jump-link').attributes('title')).toBeUndefined()
   })
 
   it('names the deployment as plain text where nothing can open it', () => {
@@ -872,6 +876,7 @@ describe('RunHeaderPanel', () => {
     expect(wrapper.find('.jump-link').exists()).toBe(false)
     const value = wrapper.findAll('dd').find(node => node.text().includes('deploy_20260922_121648'))
     expect(value!.text()).toBe('deploy_20260922_121648')
+    expect(wrapper.text()).not.toContain("the deployment's history")
   })
 
   /** A sweep has a panel of its own since viewer#32: its id opens its ranking, where the run stands among the others. */
@@ -883,6 +888,7 @@ describe('RunHeaderPanel', () => {
     })
     await wrapper.find('.jump-link').trigger('click')
     expect(way.opened).toEqual([{ what: 'sweep', id: 'sweep_20260830_154907' }])
+    expect(wrapper.text()).toContain("the sweep's ranking")
   })
 
   /**
@@ -980,6 +986,10 @@ describe('RunHeaderPanel', () => {
     })
     expect(first.text()).toContain('Declared first start')
     expect(first.find('.flagged').exists()).toBe(false)
+    // what it means stands in a hint, never on a browser tooltip
+    expect(first.text()).toContain('without a carry-over to continue')
+    expect(first.find('dd[title]').exists()).toBe(false)
+    expect(quiet.text()).not.toContain('without a carry-over to continue')
   })
 
   /**
@@ -1022,8 +1032,32 @@ describe('RunHeaderPanel', () => {
     })
     expect(wrapper.text()).toContain('118 uncommitted changes')
     expect(wrapper.text()).not.toContain('2 uncommitted changes')
-    // the sample is one hover away rather than two lines on the panel
-    expect(wrapper.find('.flagged').attributes('title')).toContain('M a.py')
+    // the sample is one hover away rather than two lines on the panel, in their words — the leading
+    // space is git's status column — and says it is a sample
+    const sample = wrapper.findComponent(HoverCard).props('paths')!
+    expect(sample[0]).toBe(' M a.py')
+    expect(sample.at(-1)).toContain('and more')
+    expect(wrapper.find('.flagged').attributes('title')).toBeUndefined()
+  })
+
+  /** The patch kept and the file a component came from are data under the pointer: a card, in their words. */
+  it('keeps where the patch and a component came from in a card, one hover away', () => {
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        code_identity: {
+          framework: repository({ dirty: true, uncommitted_count: 1, changes: [' M a.py'], restorable: true, patch_ref: 'run_patches/abc.patch' }),
+          repositories: [],
+          components: [{ role: 'decision', name: 'trend', type: 'CORE/trend', version: '1.0.0', repository: 'algos', source_path: 'trend.py' } as never],
+        },
+      })) },
+    })
+    const cards = wrapper.findAllComponents(HoverCard).map(card => ({ title: card.props('title'), paths: card.props('paths')! }))
+    expect(cards).toEqual(expect.arrayContaining([
+      { title: 'Changes', paths: [' M a.py'] },
+      { title: 'Patch', paths: ['run_patches/abc.patch'] },
+      { title: 'Source', paths: ['algos/trend.py'] },
+    ]))
+    expect(wrapper.find('[title]').exists()).toBe(false)
   })
 
   it('names every repository and every component that ran', () => {
@@ -1039,7 +1073,7 @@ describe('RunHeaderPanel', () => {
             },
             {
               role: 'worker', name: 'rsi_fast', type: 'RSI', version: '1.0.0',
-              source_path: 'user_algos/rsi.py', repository: 'user_algos', package_digest: 'ab12',
+              source_path: 'rsi.py', repository: 'user_algos', package_digest: 'ab12',
             },
           ],
         },
@@ -1051,8 +1085,11 @@ describe('RunHeaderPanel', () => {
     expect(components).toHaveLength(2)
     expect(components[1]!.text()).toContain('rsi_fast')
     expect(components[1]!.text()).toContain('1.0.0')
-    // the file it came from is a hover, not a column: it is a path and paths are long
-    expect(components[1]!.find('.mono').attributes('title')).toContain('user_algos/rsi.py')
+    // the file it came from is a hover, not a column: it is a path and paths are long. Relative to
+    // its own repository, and the framework's own needs no name
+    const source = (at: number) => components[at]!.findComponent(HoverCard).props('paths')![0]
+    expect(source(0)).toBe('python/x.py')
+    expect(source(1)).toBe('user_algos/rsi.py')
   })
 
   it('shows a membership of an unknown kind without claiming what it means', () => {

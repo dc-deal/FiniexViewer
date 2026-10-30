@@ -40,7 +40,7 @@ const HINTS = [
   'deployment-sessions', 'sweeps', 'layers', 'layer-trades', 'layer-entry-exit', 'layer-levels', 'layer-candles',
   'layer-volume', 'layer-state-frame', 'layer-empty-levels', 'layer-empty-entry-exit', 'layer-empty-trades',
   'layer-empty-state-frame', 'chart-marks',
-  'trade-slippage', 'position-link', 'beyond-the-venue',
+  'trade-slippage', 'position-link', 'beyond-the-venue', 'first-start', 'run-membership',
 ]
 
 async function prepare(page: Page): Promise<void> {

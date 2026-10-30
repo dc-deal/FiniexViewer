@@ -59,6 +59,17 @@ describe('HoverCard', () => {
     expect(text).toContain('-207.80 USD')
   })
 
+  // a path is not a pair: it may wrap at its separators, and it comes out whole, spaces included
+  it('lists paths one per row, each able to wrap at its separators', async () => {
+    const wrapper = mountCard({ details: undefined, paths: [' M configs/mock/a.json', '…and more'] })
+    await wrapper.find('.trigger').trigger('focus')
+    await flushPromises()
+    const rows = [...document.querySelectorAll('.card-paths li')].map(row => row.textContent)
+    expect(rows).toEqual([' M configs/mock/a.json', '…and more'])
+    expect(document.querySelectorAll('.card-paths wbr').length).toBeGreaterThan(0)
+    expect(document.querySelector('.card-paths [title]')).toBeNull()
+  })
+
   // the card formats nothing; it carries the polarity the caller attached, so a figure reads the
   // same here as it does in the table
   it('keeps the polarity the caller gave a figure', async () => {

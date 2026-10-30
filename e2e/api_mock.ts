@@ -149,6 +149,11 @@ interface ApiMockOptions {
    */
   ownLevel?: { scenario: string, position: string, level: number, reason: string }
   /**
+   * What the framework's tree held uncommitted, in the run's header. The fixture run's tree is clean,
+   * so a check of the card that lists the changes hands it the paths of a dirty one.
+   */
+  changes?: string[]
+  /**
    * Rows appended to the captured activities. The capture holds whatever ran when it was taken, so
    * an activity a spec relies on is built from the server's row by the spec that needs one.
    */
@@ -307,6 +312,11 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       if (firstTick && section === 'scenario-details') {
         body['units'] = (body['units'] as Record<string, unknown>[]).map(row =>
           row['name'] === firstTick.unit ? { ...row, first_tick_time: firstTick.at } : row)
+      }
+      const changes = options.changes
+      if (changes && section === 'header') {
+        const code = body['code_identity'] as Record<string, Record<string, unknown>>
+        code['framework'] = { ...code['framework'], dirty: true, uncommitted_count: changes.length, changes }
       }
       const ownLevel = options.ownLevel
       if (ownLevel && section === 'trade-history') {

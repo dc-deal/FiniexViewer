@@ -30,6 +30,14 @@ const HINTS: HintDefinition[] = [
     text: t("This backtest was allowed order features its venue's API does not hold, as its scenario set declared. Its results do not predict a session on that venue."),
   },
   {
+    id: 'first-start',
+    text: t('A declared first start is the one way a session trading real money starts without a carry-over to continue.'),
+  },
+  {
+    id: 'run-membership',
+    text: t("The id of the deployment or the sweep this run belongs to opens it: the deployment's history, or the sweep's ranking."),
+  },
+  {
     id: 'bundle-places',
     text: t('A bundle holds its sections one below the other, and any of them can stand apart as a panel of its own. Each row here says where it stands. A section in a closed bundle is on show nowhere: a click opens it.'),
   },

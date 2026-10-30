@@ -36,6 +36,11 @@ as written — do not coin another: the label is how a reader finds the term in 
 That is also why the run list's `Run type` became `Pipeline` in the same change — one field, one
 word, and ours sat beside a `Purpose` facet it could not be told apart from.
 
+What a word cannot say stands in a hint or a card, never on a browser tooltip (the rule for every
+explanation, moved here 2026-10-30): the changed paths, the patch kept and the file a component came
+from are one hover away in a card, wrapping at their separators and keeping git's status columns; what a
+declared first start means, and what the id of the deployment or the sweep opens, are hints.
+
 What the panel does NOT print: a clean tree states nothing beyond its commit, and `allow_dirty`
 appears only when it is true, in the warning role with its glyph and its word. It says real orders
 were explicitly allowed from code that was not committed, which is a thing to weigh before

@@ -30,6 +30,23 @@ test.beforeEach(async ({ page }) => {
   await mockApi(page)
 })
 
+/**
+ * A long path in a card wraps. Measured 2026-10-30, 81 of the 107 dirty repositories on record hold a
+ * changed file too long for one line; unwrapped the card scrolls sideways and hides the file's name,
+ * which is the end of the path. Its spaces stay: git's two status columns say whether it is staged.
+ */
+test('a changed file too long for its card wraps inside it, rather than scrolling the card sideways', async ({ page }) => {
+  await mockApi(page, { changes: [' M configs/autotrader_profiles/mock/deployment_continuity_test.json', ' M a.py'] })
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await page.locator('.panel-trigger', { hasText: 'Run header' }).click()
+  await page.locator('.repo .flagged').hover()
+  const card = page.locator('.hover-card')
+  await expect(card).toContainText('deployment_continuity_test.json')
+  expect(await card.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(0)
+  expect(await card.locator('li').first().evaluate(row => getComputedStyle(row).whiteSpace)).toBe('pre-wrap')
+})
+
 for (const width of WIDTHS) {
   test(`no panel scrolls sideways at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 })

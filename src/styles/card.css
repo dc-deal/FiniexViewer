@@ -57,6 +57,17 @@
 .hover-card .card-rows dd.warning { color: var(--color-warning); }
 .hover-card .card-rows dd.error { color: var(--color-error); }
 
+/* paths rather than pairs: each wraps at its separators (`PathLabel`), and a row keeps its spaces,
+   since the two status columns of a changed file say whether it is staged */
+.hover-card .card-paths {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  white-space: pre-wrap;
+}
+
 .card-arrow {
   fill: var(--color-border-overlay);
 }
