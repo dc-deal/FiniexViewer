@@ -88,22 +88,59 @@ describe('AppMenuBar', () => {
     expect(sections.indexOf('broker')).toBeLessThan(sections.indexOf('executive'))
   })
 
-  it('says where each section is: in the column, open as a panel, or hidden', async () => {
+  it('says where each section is: in the bundle, open as a panel, or hidden', async () => {
     useLayoutStore().hide('config')
-    useDockStore().openIds = ['runs', reportKindId('orders')]
+    useDockStore().openIds = ['runs', 'run', reportKindId('orders')]
     await openRunsSubmenu()
 
     expect(sectionEntry('executive').dataset['place']).toBe('column')
     expect(sectionEntry('executive').dataset['state']).toBe('checked')
+    expect(sectionEntry('executive').querySelector('.menu-place')!.textContent).toContain('in bundle')
     expect(sectionEntry('orders').dataset['place']).toBe('panel')
+    expect(sectionEntry('orders').querySelector('.menu-place')!.textContent).toContain('panel')
     expect(sectionEntry('orders').querySelector('[data-icon="action-open-panel"]')).not.toBeNull()
     expect(sectionEntry('config').dataset['place']).toBe('hidden')
     expect(sectionEntry('config').dataset['state']).toBe('unchecked')
+    expect(sectionEntry('config').querySelector('.menu-place')!.textContent!.trim()).toBe('')
+  })
+
+  /**
+   * In a closed bundle a section is not hidden and on show nowhere: a tick read as shown, and it could
+   * not be found (operator, on screen 2026-10-30). The row says so, and a click opens it at once.
+   */
+  it('gives a section in a closed bundle no tick, says so, and opens it at a click', async () => {
+    const dock = useDockStore()
+    dock.openIds = ['runs', reportKindId('orders')]
+    const shown: string[] = []
+    const hidden: string[] = []
+    dock.showSection = (id: string) => { shown.push(id) }
+    dock.hideSection = (id: string) => { hidden.push(id) }
+    await openRunsSubmenu()
+
+    const entry = sectionEntry('executive')
+    expect(entry.dataset['place']).toBe('closed')
+    expect(entry.dataset['state']).toBe('unchecked')
+    expect(entry.querySelector('.menu-place')!.textContent).toContain('in closed bundle')
+    // one standing apart keeps its tick and its word, whatever the bundle does
+    expect(sectionEntry('orders').dataset['state']).toBe('checked')
+
+    entry.click()
+    await flushPromises()
+    expect(shown).toEqual(['executive'])
+    expect(hidden).toEqual([])
+  })
+
+  /** The rows explained once, where they are read: dismissible and bannable, like every hint. */
+  it('explains the places of the sections in a hint below them', async () => {
+    await openRunsSubmenu()
+    const hint = document.querySelector('.menu-hint')!
+    expect(hint.textContent).toContain('A section in a closed bundle is on show nowhere')
   })
 
   it('hides a shown section and shows a hidden one again', async () => {
     useLayoutStore().hide('config')
     const dock = useDockStore()
+    dock.openIds = ['runs', 'run']
     const shown: string[] = []
     const hidden: string[] = []
     dock.showSection = (id: string) => { shown.push(id) }
@@ -129,6 +166,7 @@ describe('AppMenuBar', () => {
     const entry = sectionEntry('feed-health')
     expect(entry.classList.contains('absent')).toBe(true)
     expect(entry.hasAttribute('data-disabled')).toBe(true)
+    expect(entry.querySelector('.menu-place')!.textContent).toContain('not in this run')
     entry.click()
     await flushPromises()
     expect(hidden).not.toHaveBeenCalled()

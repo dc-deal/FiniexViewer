@@ -149,3 +149,25 @@ test('a jump to a section of a closed bundle opens it beside the sections standi
   await expect(page.locator(`${ownPanel('trade-history')} .trade-list .record-row.marked`).first()).toBeInViewport()
   await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(0)
 })
+
+/**
+ * The bundle closed, one section standing apart: the rest are on show nowhere, and the Panels menu says
+ * so where a tick said otherwise (operator, on screen 2026-10-30). A click opens one beside the other.
+ */
+test('a section in a closed bundle has no tick, says so, and opens as a panel at a click', async ({ page }) => {
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await openAsPanel(page, 'Trade history')
+  await page.locator('.dv-tab', { hasText: 'Run bundle' }).locator('.panel-tab-close').click()
+  await expect(page.locator('.panel-column')).toHaveCount(0)
+
+  await openSectionMenu(page)
+  const entry = page.locator('.menu-toggle[data-section="executive"]')
+  await expect(entry).toHaveAttribute('data-place', 'closed')
+  await expect(entry).toHaveAttribute('data-state', 'unchecked')
+  await expect(entry).toContainText('in closed bundle')
+  await expect(page.locator('.menu-toggle[data-section="trade-history"]')).toContainText('panel')
+  await entry.click()
+  await page.keyboard.press('Escape')
+  await expect(page.locator(`${ownPanel('executive')} [data-panel="executive"]`)).toBeVisible()
+  await expect(page.locator('.panel-column')).toHaveCount(0)
+})

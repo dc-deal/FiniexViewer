@@ -26,6 +26,10 @@ const HINTS: HintDefinition[] = [
     text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the bundle. On the tab of that panel, “Back into the bundle” puts it back and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
   },
   {
+    id: 'bundle-places',
+    text: t('A bundle holds its sections one below the other, and any of them can stand apart as a panel of its own. Each row here says where it stands. A section in a closed bundle is on show nowhere: a click opens it.'),
+  },
+  {
     id: 'bundle-commands',
     text: t('⋯ on the tab of the bundle folds every section at once, or resets the bundle — its sections back in their first order, none of them hidden.'),
   },

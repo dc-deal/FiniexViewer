@@ -105,9 +105,12 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
 (viewer#31, 2026-10-14). The section bar above the column is gone; the Panels menu took its place.
 A tick is a panel on show, a click hides it or shows it again, and the menu stays open so several
 can be switched in one visit. The run bundle's sections stand in the submenu *Runs*, in
-the column's order, each with where it is (`use_section_states.ts`): in the column, open as a panel
-(⇱), hidden, or struck where the chosen run has none — listed rather than left out, because an
-inventory that silently shortens is not one. The deployment bundle's members stand the same way in
+the column's order, each saying at the end of its row where it stands (`use_section_states.ts`):
+*in bundle*, *panel* (⇱), *in closed bundle*, nothing where it is hidden, or struck with *not in this
+run* where the chosen run has none — listed rather than left out, because an inventory that silently
+shortens is not one. A section in a closed bundle has no tick and a click opens it: it is not hidden
+and it is on show nowhere, and a tick on it read as shown (operator, on screen 2026-10-30). A hint
+below the rows explains the places once. The deployment bundle's members stand the same way in
 the submenu *Deployments* (viewer#43): every bundle's members in its area, through one register
 (`bundle_members.ts`).
 

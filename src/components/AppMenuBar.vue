@@ -10,6 +10,7 @@ import ContractStatus from '@/components/ContractStatus.vue'
 import MachineStatus from '@/components/MachineStatus.vue'
 import NarrowingStatement from '@/components/NarrowingStatement.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
+import HintLine from '@/components/base/HintLine.vue'
 import TopMenu from '@/components/TopMenu.vue'
 import { useSectionStates, type SectionState } from '@/composables/use_section_states'
 import { PANEL_KINDS } from '@/panel_kinds'
@@ -81,23 +82,35 @@ function toggleKind(kind: PanelKind): void {
   else dock.reveal(kind.id, 'command')
 }
 
-/** On show: in the column or open as a panel — but not in the column of a run that lacks it. */
-function sectionShown(state: SectionState): boolean {
-  return state.place === 'panel' || (state.place === 'column' && !state.absent)
+/**
+ * Where a section stands, as the reader meets it: `closed` is in the column of a bundle that is shut.
+ * It is not hidden, and it is on show nowhere (operator, on screen 2026-10-30: a tick on such a row
+ * read as shown, and the section could not be found).
+ */
+function whereOf(state: SectionState, bundle: BundleId): 'panel' | 'column' | 'closed' | 'hidden' {
+  return state.place === 'column' && !openIds.value.includes(bundle) ? 'closed' : state.place
 }
 
+/** On show: in the column of an open bundle or as a panel — but not in the column of a run that lacks it. */
+function sectionShown(state: SectionState, bundle: BundleId): boolean {
+  const where = whereOf(state, bundle)
+  return where === 'panel' || (where === 'column' && !state.absent)
+}
+
+/** A click brings what is not on show to the screen: a section in a closed bundle opens at once. */
 function toggleSection(state: SectionState, bundle: BundleId): void {
-  if (state.place === 'hidden') dock.showSection(state.section.id, bundle)
+  const where = whereOf(state, bundle)
+  if (where === 'hidden' || where === 'closed') dock.showSection(state.section.id, bundle)
   else dock.hideSection(state.section.id, bundle)
 }
 
-function sectionTitle(state: SectionState, bundle: BundleId): string {
-  if (state.place === 'panel') return `${t(state.section.title)} — ${t('open as a panel of its own')}`
-  if (state.absent) {
-    const lacking = bundle === 'deployment' ? t('this deployment carries no such section') : t('this run carries no such section')
-    return `${t(state.section.title)} — ${lacking}`
-  }
-  return t(state.section.title)
+/** The words at the end of a row: where the section stands, or that the run has none. */
+function placeWord(state: SectionState, bundle: BundleId): string {
+  const where = whereOf(state, bundle)
+  if (where === 'panel') return t('panel')
+  if (state.absent) return bundle === 'deployment' ? t('not in this deployment') : t('not in this run')
+  if (where === 'column') return t('in bundle')
+  return where === 'closed' ? t('in closed bundle') : ''
 }
 
 /** Keeps the menu open, so several panels can be shown or hidden in one visit. */
@@ -145,18 +158,21 @@ function stayOpen(event: Event): void {
                       class="menu-item menu-toggle"
                       :class="{ absent: state.absent && state.place !== 'panel' }"
                       :data-section="state.section.id"
-                      :data-place="state.place"
-                      :title="sectionTitle(state, membersOf(entry.id)!.bundle)"
-                      :model-value="sectionShown(state)"
+                      :data-place="whereOf(state, membersOf(entry.id)!.bundle)"
+                      :model-value="sectionShown(state, membersOf(entry.id)!.bundle)"
                       :disabled="state.absent && state.place !== 'panel'"
                       @update:model-value="toggleSection(state, membersOf(entry.id)!.bundle)"
                       @select="stayOpen"
                     >
-                      <span class="menu-check" aria-hidden="true">{{ sectionShown(state) ? '✓' : '' }}</span>
+                      <span class="menu-check" aria-hidden="true">{{ sectionShown(state, membersOf(entry.id)!.bundle) ? '✓' : '' }}</span>
                       <AppIcon :name="state.section.icon" />
                       <span class="menu-label">{{ t(state.section.title) }}</span>
-                      <AppIcon v-if="state.place === 'panel'" name="action-open-panel" class="menu-opened" />
+                      <span class="menu-place">
+                        {{ placeWord(state, membersOf(entry.id)!.bundle) }}
+                        <AppIcon v-if="state.place === 'panel'" name="action-open-panel" />
+                      </span>
                     </DropdownMenuCheckboxItem>
+                    <HintLine id="bundle-places" class="menu-hint" />
                   </template>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
@@ -251,9 +267,22 @@ function stayOpen(event: Event): void {
 
 /* the entries' grid — tick, icon, word — is every menu's, beside `.menu-item` in TopMenu.vue */
 
-/* open as a panel of its own — the mark beside the word, in the entry's own ink */
-.menu-opened {
-  margin-left: var(--space-sm);
+/* where the section stands, in words at the end of its row: a mark alone said nothing of the rest */
+.menu-place {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* as wide as the rows it explains, never wider: a line of its length would stretch the whole menu */
+.menu-hint {
+  width: 0;
+  min-width: 100%;
+  margin-top: var(--space-xs);
 }
 
 /* the run's doing: the section does not exist, so the entry cannot be switched */
