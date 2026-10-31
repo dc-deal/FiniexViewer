@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import HoverCard from '@/components/base/HoverCard.vue'
 import SweepsView from '@/views/SweepsView.vue'
 import * as apiClient from '@/api/api_client'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
@@ -97,6 +98,17 @@ describe('SweepsView', () => {
     const head = wrapper.find(`[data-sweep="${ID}"]`)
     expect(head.text()).toContain(`${DETAIL.objective} ${DETAIL.maximize ? '↑' : '↓'}`)
     expect(head.find('.sweep-notice').exists()).toBe(false)
+  })
+
+  /** What the line and the rows have no width for stands in a card a keyboard reaches, never on a browser tooltip. */
+  it('keeps what a line cannot say in its card, with no browser tooltip on the heading or the rows', async () => {
+    useContextStore().selectSweep(ID)
+    const wrapper = mountPanel()
+    await flushPromises()
+    expect(wrapper.findAllComponents(HoverCard).map(card => card.props('title'))).toContain(ID)
+    expect(wrapper.find('.sweep-head').attributes('title')).toBeUndefined()
+    expect(wrapper.findAll('.sweep-head [title], .sweep-list .record-row [title]')).toHaveLength(0)
+    expect(wrapper.findAll('.sweep-list .place').length).toBeGreaterThan(0)
   })
 
   it('says a linked sweep is gone, and a refused surface for what it is', async () => {

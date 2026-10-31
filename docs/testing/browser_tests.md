@@ -62,7 +62,8 @@ by its tab, the way a reader does.
   backtest's label opening its run in the run bundle, the activity built from the server's row.
 - `sweeps.spec.ts` holds the parameter searches: the Sweeps panel opened from the Panels menu, a
   sweep opened in its one list, its combinations beneath it in the order the route ranked them with
-  the first marked ★, and a combination chosen as a run, its report coming forward in the run bundle.
+  the first marked ★, a combination chosen as a run, its report coming forward in the run bundle, and
+  the card on a heading, under the pointer and for a keyboard.
 - `latest_state.spec.ts` holds the check-in on a session, from the two captured answers: a session
   whose recording stopped standing first in its bundle with its frame open and its report said as
   never written, an ended one folding its last frame behind its outcome, its frames over time

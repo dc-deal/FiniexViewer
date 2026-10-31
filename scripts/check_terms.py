@@ -93,7 +93,7 @@ TEMPLATE_EXPR = re.compile(r'\$\{(.*?)\}')
 READING = re.compile(r'(?:[A-Za-z_][A-Za-z0-9_]*(?:\([^()]*\))?!?\.)+([a-z][a-z0-9_]{2,})')
 HOLDERS = (r'row|unit|summary|model|order|trade|period|entry|session|deployment|bar|scenario|'
            r'headline|aggregate|funnel|info|fold|item|broker|total|combination|run|block|card|'
-           r'symbol|check|warning|detail|instance|window|execution')
+           r'symbol|check|warning|detail|instance|window|execution|sweep')
 FIELD = re.compile(r'\b(?:' + HOLDERS + r')\.([a-z][a-z0-9_]*)')
 SKIP = ('value', 'label', 'currency', 'length', 'key', 'rows', 'open', 'map', 'filter', 'find',
         'join')

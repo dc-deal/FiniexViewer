@@ -8,7 +8,7 @@ import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { amount, magnitude, numberOrNa, orDash, percentOrNa, signClass, sortInstant, startedAt } from '@/components/runs/report_format'
 import {
-  combinationCard, objectiveFigure, parametersText, parametersTitle, rankedBy, sweepListRows, sweepNotices, sweepTitle,
+  combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
 } from '@/components/sweeps/sweep_rows'
 import type { SweepListRow } from '@/components/sweeps/sweep_rows'
 import { useFacetState } from '@/composables/use_facet_state'
@@ -66,7 +66,7 @@ const shown = computed(() => sortRows(
 
 /**
  * Every figure column keeps a floor its heading fits in: the parameters and the run give way
- * instead, each whole on its title (at 960 px the headings were cut one after the other).
+ * instead, each whole in the row's card (at 960 px the headings were cut one after the other).
  */
 const columns: ListColumn[] = [
   // a combination is indented one step under its sweep's heading, and "1 ★" still has to fit
@@ -167,27 +167,26 @@ function choose(row: SweepListRow): void {
       :can-pick="row => row.kind === 'combination'"
       :is-picked="row => row.kind === 'combination' && row.combination.run_id === selectedRunId"
       :row-card="row => row.kind === 'combination' ? combinationCard(row) : null"
+      :group-card="group => sweepCard(group.rows[0]!.sweep, rankings[group.key])"
       @toggle="toggle"
       @pick="choose"
     >
       <!-- the sweep on a line of its own: WHAT it searched, HOW MANY runs, by WHICH objective, WHEN —
            and, only where the ranking compares unlike things, a word saying so -->
       <template #group="{ group, marker }">
-        <span class="sweep-head" :data-sweep="group.key" :title="sweepTitle(group.rows[0]!.sweep)">
+        <span class="sweep-head" :data-sweep="group.key">
           <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
           <span class="sweep-id">{{ group.key }}</span>
           <span class="sweep-meta">
             {{ group.rows[0]!.sweep.decision_logic_type }} {{ group.rows[0]!.sweep.decision_version }}
             · {{ plural(group.rows[0]!.sweep.run_count, t('run'), t('runs')) }}
-            · <span :title="rankedBy(group.rows[0]!.sweep, rankings[group.key]).sentence"
-              >{{ rankedBy(group.rows[0]!.sweep, rankings[group.key]).word }}</span>
+            · {{ rankedBy(group.rows[0]!.sweep, rankings[group.key]).word }}
             · {{ startedAt(group.rows[0]!.sweep.started) || t('no date') }}
           </span>
           <span
             v-for="notice in sweepNotices(group.rows[0]!.sweep, rankings[group.key])"
             :key="notice.word"
             class="sweep-notice"
-            :title="notice.sentence"
           >
             <AppIcon name="status-warning" /> {{ notice.word }}
           </span>
@@ -201,9 +200,8 @@ function choose(row: SweepListRow): void {
             :data-rank="1"
             class="figure-cell place"
             :class="{ best: row.first }"
-            :title="row.first ? (row.place === 1 ? t('First in the ranking — the best by its objective') : t('Tied with the first on its objective')) : undefined"
           >{{ row.place }}<template v-if="row.first"> ★</template></span>
-          <span :data-rank="1" :title="parametersTitle(row.combination)">{{ parametersText(row.combination) }}</span>
+          <span :data-rank="1">{{ parametersText(row.combination) }}</span>
           <span :data-rank="1" class="figure-cell objective">{{ objectiveFigure(row) }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.combination.net_pnl)">
             {{ amount(row.combination.net_pnl, row.combination.currency) }}
@@ -213,7 +211,7 @@ function choose(row: SweepListRow): void {
           <span :data-rank="3" class="figure-cell">{{ percentOrNa(row.combination.win_rate, row.combination.total_trades) }}</span>
           <span :data-rank="3" class="figure-cell">{{ numberOrNa(row.combination.profit_factor, row.combination.total_trades) }}</span>
           <span :data-rank="4" class="figure-cell">{{ orDash(row.combination.account_max_drawdown, value => magnitude(value, row.combination.currency)) }}</span>
-          <span :data-rank="2" class="run-id" :title="row.combination.run_id">{{ row.combination.run_id }}</span>
+          <span :data-rank="2" class="run-id">{{ row.combination.run_id }}</span>
         </template>
         <!-- where the ranking is not on screen, one line across every column says why -->
         <span v-else :data-rank="1" class="state-line">{{ row.message }}</span>

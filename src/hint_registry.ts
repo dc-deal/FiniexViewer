@@ -63,7 +63,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'sweeps',
-    text: t("Every parameter search on record. Open one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first, and any tied with it, where it states a figure. A click on a combination chooses its run, as the run list does. “beyond the venue” says a search was allowed order features its venue's API does not hold, so it does not predict a session there."),
+    text: t("Every parameter search on record. Open one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first, and any tied with it, where it states a figure. A click on a combination chooses its run, as the run list does. The card on a sweep's line says what it searched and what each warning word on it means."),
   },
   {
     id: 'layers',

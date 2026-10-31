@@ -31,7 +31,7 @@ and direction the sweep declared — or, where it declared neither, by the one i
   (measured 2026-10-19, all four combinations of `sweep_20261008_223212` read `net_pnl` 0.0). Where the
   first states no figure for the objective, no row carries it;
 - the *Objective* column prints each sweep's own objective, in weight, formatted as the executive
-  summary formats the same field; the sweep's heading names it (`expectancy ↑`), and its title
+  summary formats the same field; the sweep's heading names it (`expectancy ↑`), and its card
   says whose objective it was;
 - two currencies are two rankings under one heading, each numbered from 1.
 
@@ -41,8 +41,8 @@ still counts them — said on the sweep's heading where it is not zero.
 ## What makes a ranking comparable
 
 Their document: *"A ranking is comparable only where the things ranked are."* The panel says so only
-where it is not — a ⚠ word on the sweep's heading, its sentence on hover; **where everything is alike,
-nothing is printed**:
+where it is not — a ⚠ word on the sweep's heading, its sentence in the heading's card, the one a
+keyboard reaches too; **where everything is alike, nothing is printed**:
 
 - combinations that differ in `logic_version`, `decision_version`, `git_commit`, `profile_hash` or,
   since contract 40, `broker_config_id` (equality of served values, nothing more) — the ranking
@@ -88,8 +88,8 @@ splits, and several sweeps can stand open at once, to be compared.
   link's, every panel that follows it switches, and the run bundle comes forward
   (`reveal(…, 'selection')`) — unless it stands as a tab beside the list, which a pick never covers.
   The row of the run chosen is marked.
-- **Parameters** by the last part of their configuration key, the whole key on the title and in the
-  card. The card carries every figure a combination is judged on and the fields that make it
+- **Parameters** by the last part of their configuration key, the whole key in the card. The card
+  carries every figure a combination is judged on and the fields that make it
   comparable: the code, its logic version, the parameter and settings fingerprints, the rendered and
   the broker configuration it ran with (contract 40, where the row records them), how many
   candidates it was selected from. Its *Orders* are the counts that counted something, in the
@@ -100,8 +100,8 @@ splits, and several sweeps can stand open at once, to be compared.
   words that say a ranking needs weighing: such a combination does not predict a session on that venue
   (FiniexTestingIDE, 2026-10-30). The field is the scenario set's, so the ranked rows of a sweep read
   alike. The ranking has to be read first because the row of the sweep list does not carry the field
-  (measured 2026-10-30). The `sweeps` hint says what the word means, its sentence on hover which
-  features, and how many combinations.
+  (measured 2026-10-30). The heading's card says what the word means, which features, and how many
+  combinations.
 - **The sweep looked at last is the link's `sweep` key**, stored with the arrangement: it stands open
   after a reload, and the run header's *Combination in sweep* (`openSweep`) opens it and brings it
   into view. A link stored before the key existed reads as none chosen.

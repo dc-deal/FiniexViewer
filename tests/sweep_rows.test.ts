@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  combinationCard, objectiveFigure, parametersText, parametersTitle, rankedBy, sweepListRows, sweepNotices,
+  combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
 } from '@/components/sweeps/sweep_rows'
 import type { CombinationRow, SweepRankings } from '@/components/sweeps/sweep_rows'
 import type { SweepCombination, SweepDetail, SweepList, SweepRow } from '@/types/api/sweep_types'
@@ -92,10 +92,29 @@ describe('sweep_rows', () => {
     expect(objectiveFigure({ ...row!, objective: 'no_such_field' })).toBe('n/a')
   })
 
-  it('names each parameter by the last part of its key, the whole key on its title', () => {
+  it('names each parameter by the last part of its key, the whole key in its card', () => {
     const params = combination({ sweep_params: { 'decision_logic_config.sl_mult': 0.8, 'decision_logic_config.tp_mult': 1.5 } })
     expect(parametersText(params)).toBe('sl_mult 0.8 · tp_mult 1.5')
-    expect(parametersTitle(params)).toContain('decision_logic_config.sl_mult 0.8')
+    const [row] = combinations({ combinations: [params] })
+    expect(combinationCard(row!).details).toContainEqual({ label: 'decision_logic_config.sl_mult', value: '0.8' })
+  })
+
+  /** What the line has no width for, and what each word on it means: one card, which a keyboard reaches too. */
+  it('says in the card of a heading what the sweep searched, how it is ranked and each word on its line', () => {
+    const detail = { ...DETAIL, combinations: [combination({ features_beyond_venue: 'stop_loss' })] }
+    const card = sweepCard(SWEEP, detail)
+    expect(card.title).toBe(SWEEP.sweep_id)
+    const pairs = Object.fromEntries(card.details.map(pair => [pair.label, pair]))
+    expect(pairs['Set']!.value).toBe(SWEEP.base_config)
+    expect(pairs['Ranked by']!.value).toContain(`${DETAIL.objective}, `)
+    expect(pairs['beyond the venue']).toMatchObject({ tone: 'warning' })
+    expect(pairs['beyond the venue']!.value).toMatch(/^⚠ .*does not predict a session there$/)
+    // no row of a card shares its label, which is its key
+    expect(new Set(card.details.map(pair => pair.label)).size).toBe(card.details.length)
+    // a ranking not read yet: what the sweep's own row holds stands, and no word
+    const closed = sweepCard(SWEEP, undefined).details.map(pair => pair.label)
+    expect(closed).toContain('Set')
+    expect(closed).not.toContain('beyond the venue')
   })
 
   it('says whose objective ordered the ranking — the sweep\'s own, or the backend\'s stand-in', () => {

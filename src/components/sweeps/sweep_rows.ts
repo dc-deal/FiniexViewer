@@ -112,22 +112,18 @@ function statesFigure(combination: SweepCombination, objective: string): boolean
   return shown !== t('n/a') && shown !== '—'
 }
 
-/** A parameter by the last part of its configuration key; the whole key is on the title and the card. */
+/** A parameter by the last part of its configuration key; the whole key is in the row's card. */
 export function parametersText(combination: SweepCombination): string {
   return Object.entries(combination.sweep_params).map(([key, value]) => `${key.split('.').pop()} ${value}`).join(' · ')
 }
 
-export function parametersTitle(combination: SweepCombination): string {
-  return Object.entries(combination.sweep_params).map(([key, value]) => `${key} ${value}`).join('\n')
-}
-
 /**
- * What the ranking is ordered by, in a word for the heading and a sentence for its title: the
+ * What the ranking is ordered by, in a word for the heading and a sentence for its card: the
  * sweep's own objective, or — where it declared none — the one the route names instead.
  */
 export function rankedBy(sweep: SweepRow, detail: SweepDetail | undefined): { word: string, sentence: string } {
   const objective = detail?.objective ?? sweep.objective
-  if (!objective) return { word: t('no objective'), sentence: t('The sweep declared no objective') }
+  if (!objective) return { word: t('no objective'), sentence: t('nothing: the sweep declared no objective') }
   const maximize = detail?.maximize ?? sweep.maximize
   const direction = maximize ? t('highest first') : t('lowest first')
   const whose = sweep.objective ? t("the sweep's own objective") : t('the sweep declared none, so the backend ranked by this')
@@ -135,7 +131,7 @@ export function rankedBy(sweep: SweepRow, detail: SweepDetail | undefined): { wo
   const within = currencies > 1 ? ` · ${t('within each account currency')}` : ''
   return {
     word: `${objective} ${maximize ? '↑' : '↓'}`,
-    sentence: `${t('Ranked by')} ${objective}, ${direction} — ${whose}${within}`,
+    sentence: `${objective}, ${direction} — ${whose}${within}`,
   }
 }
 
@@ -144,7 +140,7 @@ function featureWords(features: string): string[] {
   return features.split(',').map(word => word.trim()).filter(Boolean)
 }
 
-/** A word for the heading, and the sentence behind it on hover. */
+/** A word for the heading, and the sentence behind it in the heading's card. */
 export interface SweepNotice {
   word: string
   sentence: string
@@ -235,16 +231,25 @@ export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): 
   return notices
 }
 
-/** The heading's title: what the search was, beyond the words on its line. */
-export function sweepTitle(sweep: SweepRow): string {
-  return [
-    `${t('Set')}: ${sweep.base_config}`,
-    `${t('Symbols')}: ${sweep.symbols.join(', ')}`,
-    `${t('Started')}: ${utcInstant(sweep.started)}`,
-    // the spread of the starts, not how long the sweep took: the last run's duration falls outside it
-    `${t('Starts spread over')}: ${duration(sweep.duration_s / 3600)}`,
-    `${plural(sweep.run_count, t('combination'), t('combinations'))} · ${sweep.ok_count} ${t('usable')}`,
-  ].join('\n')
+/**
+ * The heading's card: what the search was beyond the words on its line, how it is ranked, and what
+ * each word on the line means. A notice's row stands in the warning role with its glyph, and its own
+ * word as the label. One card, because a heading is one button: a keyboard reaches it and nothing inside.
+ */
+export function sweepCard(sweep: SweepRow, detail: SweepDetail | undefined): FigureCard {
+  return {
+    title: sweep.sweep_id,
+    details: [
+      { label: t('Set'), value: sweep.base_config },
+      { label: t('Symbols'), value: sweep.symbols.join(', ') },
+      { label: t('Started'), value: utcInstant(sweep.started) },
+      // the spread of the starts, not how long the sweep took: the last run's duration falls outside it
+      { label: t('Starts spread over'), value: duration(sweep.duration_s / 3600) },
+      { label: t('Combinations'), value: `${sweep.run_count} · ${sweep.ok_count} ${t('usable')}` },
+      { label: t('Ranked by'), value: rankedBy(sweep, detail).sentence },
+      ...sweepNotices(sweep, detail).map(notice => ({ label: notice.word, value: `⚠ ${notice.sentence}`, tone: 'warning' })),
+    ],
+  }
 }
 
 /**
