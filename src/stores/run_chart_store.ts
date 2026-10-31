@@ -163,14 +163,17 @@ export const useRunChartStore = defineStore('runChart', () => {
     ? loader.loadedTo.value / 1000
     : null)
 
+  /** The tick size of the unit's instrument, from the run's broker report — null without one. */
+  const tickSize = computed(() => unit.value ? unitTickSize(reports.broker, unit.value) : null)
+
   /** Every opening and exit of the unit on show, one mark each, in time order. */
   const events = computed<ChartMark[]>(() => {
     const all = [
       ...openingMarks(
         unitOpenings.value, unitPortfolio.value?.open_positions ?? [], unitTrades.value,
-        unitPortfolio.value?.currency ?? '', barTimes.value, focus.value,
+        unitPortfolio.value?.currency ?? '', barTimes.value, focus.value, tickSize.value,
       ),
-      ...exitMarks(unitTrades.value, reports.tradeHistory?.keys.trades ?? [], barTimes.value, focus.value),
+      ...exitMarks(unitTrades.value, reports.tradeHistory?.keys.trades ?? [], barTimes.value, focus.value, tickSize.value),
     ].sort((a, b) => a.time - b.time)
     const cut = cutAt.value
     return cut !== null ? all.filter(mark => mark.at <= cut) : all
@@ -216,15 +219,15 @@ export const useRunChartStore = defineStore('runChart', () => {
       const looked = focus.value?.position ?? null
       return optionOf('levels')
         ? positionLevels(
-          unitTrades.value, key, unitPortfolio.value?.open_positions ?? [], looked, barTimes.value, cutAt.value,
+          unitTrades.value, key, unitPortfolio.value?.open_positions ?? [], looked, barTimes.value, cutAt.value, tickSize.value,
         )
         : positionLevels(
-          focusTrades.value, key, focusOpen.value ? [focusOpen.value] : [], looked, barTimes.value, cutAt.value,
+          focusTrades.value, key, focusOpen.value ? [focusOpen.value] : [], looked, barTimes.value, cutAt.value, tickSize.value,
         )
     }),
     'entry-exit': computed(() => entryExitLines(
       optionOf('entry-exit') ? unitTrades.value : focusTrades.value,
-      reports.tradeHistory?.keys.trades ?? [], barTimes.value, cutAt.value,
+      reports.tradeHistory?.keys.trades ?? [], barTimes.value, cutAt.value, tickSize.value,
     )),
     // without their signs the marks keep their shapes and the signs' room, so the switch rescales
     // nothing; a gathered mark's card still counts it
@@ -294,9 +297,8 @@ export const useRunChartStore = defineStore('runChart', () => {
   const focusAt = computed<number | null>(() =>
     offerAt.value ?? focusTime(unitOpenings.value, unitTrades.value, focus.value))
 
-  /** The unit's prices at its instrument's tick size, from the run's broker report — null without one. */
-  const priceFormat = computed(() =>
-    unit.value ? chartPriceFormat(unitTickSize(reports.broker, unit.value)) : null)
+  /** The unit's prices at its instrument's tick size — null without one. */
+  const priceFormat = computed(() => chartPriceFormat(tickSize.value))
 
   async function askCoverage(target: ChartUnit): Promise<void> {
     const key = marketKey(target)

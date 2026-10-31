@@ -1,3 +1,4 @@
+import { tickDecimals } from '@/components/runs/report_format'
 import { executedOpenings } from '@/components/runs/run_chart_marks'
 import type { BrokerReport, DataWindow, OrderHistoryRow } from '@/types/api/report_types'
 import type { ScenarioRow } from '@/types/api/scenario_types'
@@ -87,12 +88,15 @@ export function defaultUnit(units: ChartUnit[]): ChartUnit | null {
 
 /**
  * The tick size of the unit's instrument, as the run's broker report states it: the broker the unit
- * traded through names it among its scenarios, and that broker's symbol carries the tick size. Null
- * where the report has not arrived or names no such symbol — the chart then keeps its own format.
+ * traded through names it among its scenarios, and that broker's symbol carries the tick size. A
+ * session's report is one row that lists no scenario (measured 2026-10-31, `"scenarios": []`), so a
+ * report of one row answers for every unit. Null where the report has not arrived or names no such
+ * symbol — the chart then keeps its own format.
  */
-export function unitTickSize(broker: BrokerReport | null, unit: ChartUnit): number | null {
+export function unitTickSize(broker: BrokerReport | null, unit: Pick<ChartUnit, 'name' | 'symbol'>): number | null {
   if (!broker || !unit.symbol) return null
   const own = broker.units.find(entry => entry.scenarios.includes(unit.name))
+    ?? (broker.units.length === 1 ? broker.units[0] : undefined)
   const symbol = own?.symbols.find(entry => entry.symbol === unit.symbol)
   return symbol && symbol.tick_size > 0 ? symbol.tick_size : null
 }
@@ -106,14 +110,7 @@ export function unitTickSize(broker: BrokerReport | null, unit: ChartUnit): numb
  */
 export function chartPriceFormat(tickSize: number | null): { precision: number, minMove: number } | null {
   if (tickSize === null || !(tickSize > 0)) return null
-  // the decimals of the step, read without its float noise: 0.00001 is 1.0000000000000002e-5 × 10⁵
-  let precision = 0
-  while (precision < 10) {
-    const scaled = tickSize * 10 ** precision
-    if (Math.abs(scaled - Math.round(scaled)) < 1e-9 * Math.max(1, scaled)) break
-    precision++
-  }
-  return { precision, minMove: tickSize }
+  return { precision: tickDecimals(tickSize), minMove: tickSize }
 }
 
 /**

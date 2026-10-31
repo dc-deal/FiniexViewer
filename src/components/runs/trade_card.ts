@@ -1,5 +1,5 @@
 import {
-  amount, magnitude, modelledSpreadFigures, numberOrNa, signClass, utcInstant,
+  amount, magnitude, modelledSpreadFigures, numberOrNa, priceAt, priceDistance, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { OpenPosition, TradeRow } from '@/types/api/report_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
@@ -9,15 +9,16 @@ import { t } from '@/translate'
 /**
  * What a card says about a trade, wherever the trade is shown: beside its row in the trade list,
  * and on its marks on the run chart. One builder, so the two cannot come to say a trade differently.
- * Every figure is a field of the row as served; nothing is worked out here.
+ * Every figure is a field of the row as served; nothing is worked out here. `tick` is the tick size
+ * of the row's instrument, which a price is printed at, or null where none is known.
  */
 
-function opened(trade: TradeRow): Figure {
-  return { label: t('Opened'), value: `${utcInstant(trade.entry_time)} @ ${trade.entry_price}` }
+function opened(trade: TradeRow, tick: number | null): Figure {
+  return { label: t('Opened'), value: `${utcInstant(trade.entry_time)} @ ${priceAt(trade.entry_price, tick)}` }
 }
 
-function closed(trade: TradeRow): Figure {
-  return { label: t('Closed'), value: `${utcInstant(trade.exit_time)} @ ${trade.exit_price}` }
+function closed(trade: TradeRow, tick: number | null): Figure {
+  return { label: t('Closed'), value: `${utcInstant(trade.exit_time)} @ ${priceAt(trade.exit_price, tick)}` }
 }
 
 function entry(trade: TradeRow): Figure {
@@ -54,22 +55,22 @@ export function ownLevel(trade: Pick<TradeRow, 'stop_loss' | 'take_profit' | 'ex
 }
 
 /** Its line on a card: their word, short enough to leave a narrow chart card room for its values. */
-export function ownLevelFigure(own: OwnLevel): Figure {
+export function ownLevelFigure(own: OwnLevel, tick: number | null = null): Figure {
   const word = own.label === 'SL' ? t('stop loss') : t('take profit')
-  return { label: t('Own level'), value: `${word} ${own.price}` }
+  return { label: t('Own level'), value: `${word} ${priceAt(own.price, tick)}` }
 }
 
 /** The own level this part of a position closed at, where it did. */
-function firedLevel(trade: TradeRow): Figure[] {
+function firedLevel(trade: TradeRow, tick: number | null): Figure[] {
   const own = ownLevel(trade)
-  return own ? [ownLevelFigure(own)] : []
+  return own ? [ownLevelFigure(own, tick)] : []
 }
 
 /** A stop or a target only where one was set — on a trade row, or on a position still open. */
-function stops(row: Pick<TradeRow, 'stop_loss' | 'take_profit'>): Figure[] {
+function stops(row: Pick<TradeRow, 'stop_loss' | 'take_profit'>, tick: number | null): Figure[] {
   const rows: Figure[] = []
-  if (row.stop_loss !== null) rows.push({ label: t('Stop loss'), value: String(row.stop_loss) })
-  if (row.take_profit !== null) rows.push({ label: t('Take profit'), value: String(row.take_profit) })
+  if (row.stop_loss !== null) rows.push({ label: t('Stop loss'), value: priceAt(row.stop_loss, tick) })
+  if (row.take_profit !== null) rows.push({ label: t('Take profit'), value: priceAt(row.take_profit, tick) })
   return rows
 }
 
@@ -90,10 +91,10 @@ function exitReference(trade: TradeRow): string {
  * price, as the unrealised P&L at that price, and as a distance — and all three are here, because
  * which one answers a question depends on the question.
  */
-export function tradeDetails(trade: TradeRow): Figure[] {
+export function tradeDetails(trade: TradeRow, tick: number | null = null): Figure[] {
   return [
-    opened(trade),
-    closed(trade),
+    opened(trade, tick),
+    closed(trade, tick),
     { label: t('Ticks'), value: `${trade.entry_tick_index} to ${trade.exit_tick_index}` },
     ...closedBy(trade),
     entry(trade),
@@ -121,18 +122,18 @@ export function tradeDetails(trade: TradeRow): Figure[] {
       label: t('Slippage'),
       // the exit half is absent on a quarter of the trades in this archive — stated as such rather
       // than as a zero, and never assumed to be a number
-      value: `${t('in')} ${trade.entry_slippage.toFixed(4)} · `
-        + `${t('out')} ${trade.exit_slippage === null ? t('n/a') : trade.exit_slippage.toFixed(4)}`
+      value: `${t('in')} ${priceDistance(trade.entry_slippage)} · `
+        + `${t('out')} ${trade.exit_slippage === null ? t('n/a') : priceDistance(trade.exit_slippage)}`
         + exitReference(trade),
     },
     {
       label: t('Worst against'),
-      value: `${magnitude(trade.mae_pnl, trade.currency)} @ ${trade.mae_price} · `
+      value: `${magnitude(trade.mae_pnl, trade.currency)} @ ${priceAt(trade.mae_price, tick)} · `
         + `${trade.mae_distance.toFixed(2)} ${trade.price_unit}`,
     },
     {
       label: t('Best in favour'),
-      value: `${amount(trade.mfe_pnl, trade.currency)} @ ${trade.mfe_price} · `
+      value: `${amount(trade.mfe_pnl, trade.currency)} @ ${priceAt(trade.mfe_price, tick)} · `
         + `${trade.mfe_distance.toFixed(2)} ${trade.price_unit}`,
     },
     // null where the position carried no stop, an own stop included: the trade has no R to be a
@@ -142,8 +143,8 @@ export function tradeDetails(trade: TradeRow): Figure[] {
       label: t('Fills'),
       value: `${trade.entry_executions.length} / ${trade.exit_executions.length}`,
     },
-    ...stops(trade),
-    ...firedLevel(trade),
+    ...stops(trade, tick),
+    ...firedLevel(trade, tick),
   ]
 }
 
@@ -151,10 +152,10 @@ export function tradeDetails(trade: TradeRow): Figure[] {
  * What a position still open at the end stood at — its entry in `open_positions`: what was left of
  * it and its value at the last price, which is a mark rather than a result.
  */
-function stillOpen(entry: OpenPosition, currency: string): Figure[] {
+function stillOpen(entry: OpenPosition, currency: string, tick: number | null): Figure[] {
   return [
     { label: t('Still open'), value: String(entry.lots) },
-    { label: t('Last price'), value: String(entry.last_price) },
+    { label: t('Last price'), value: priceAt(entry.last_price, tick) },
     entry.valued
       ? {
           label: t('Unrealized'),
@@ -176,13 +177,13 @@ function stillOpen(entry: OpenPosition, currency: string): Figure[] {
  * stands on that exit's card and not here.
  */
 export function openingCard(
-  row: Opening, open: OpenPosition | null, trade: TradeRow | null, currency: string,
+  row: Opening, open: OpenPosition | null, trade: TradeRow | null, currency: string, tick: number | null = null,
 ): FigureCard {
-  const details: Figure[] = [{ label: t('Opened'), value: `${utcInstant(row.event_time)} @ ${row.executed_price}` }]
+  const details: Figure[] = [{ label: t('Opened'), value: `${utcInstant(row.event_time)} @ ${priceAt(row.executed_price, tick)}` }]
   if (row.order_type) details.push({ label: t('Type'), value: row.order_type })
-  if (open) details.push(...stillOpen(open, currency))
+  if (open) details.push(...stillOpen(open, currency, tick))
   const levels = open ?? trade
-  if (levels) details.push(...stops(levels))
+  if (levels) details.push(...stops(levels, tick))
   return { title: `${row.position_id} · ${row.direction} ${row.executed_lots}`, details }
 }
 
@@ -190,9 +191,9 @@ export function openingCard(
  * Where a trade closed, for the mark on its exit candle: which position, what part of it, how it
  * ended and what it came to. The rest stands in the card beside its row in the trade list.
  */
-export function exitCard(trade: TradeRow): FigureCard {
+export function exitCard(trade: TradeRow, tick: number | null = null): FigureCard {
   return {
     title: `${trade.position_id} · ${trade.direction} ${trade.lots}`,
-    details: [opened(trade), closed(trade), ...closedBy(trade), ...firedLevel(trade), net(trade)],
+    details: [opened(trade, tick), closed(trade, tick), ...closedBy(trade), ...firedLevel(trade, tick), net(trade)],
   }
 }

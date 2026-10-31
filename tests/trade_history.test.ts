@@ -9,6 +9,8 @@ import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { providePanelView } from '@/composables/use_panel_view'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestPositionLink } from './position_link_harness'
+import { provideTickSizes } from '@/composables/use_tick_sizes'
+import type { TickSizeLookup } from '@/composables/use_tick_sizes'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings } from '@/types/settings_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
@@ -47,6 +49,17 @@ function mountWithDisplay(
     setup() {
       provideDisplaySettings(display)
       return () => h(TradeHistoryPanel, { model })
+    },
+  })
+  return mount(Host)
+}
+
+/** The panel under a host that states the tick size, the way the app root does from the broker report. */
+function mountAtTick(history: TradeHistoryReport, lookup: TickSizeLookup) {
+  const Host = defineComponent({
+    setup() {
+      provideTickSizes(lookup)
+      return () => h(TradeHistoryPanel, { model: history })
     },
   })
   return mount(Host)
@@ -399,6 +412,39 @@ describe('TradeHistoryPanel', () => {
       }
     })
 
+    /** Their rule for a price they computed, and a run recorded before contract 34 keeps what it read, widened. */
+    it('prints every price at the tick size of the row\'s own instrument', () => {
+      const seen: [string, string | null][] = []
+      const row = trade({
+        entry_price: 1.1625800132751465, exit_price: 1.1677499513751617, mae_price: 1.1601000213623047,
+        mfe_price: 1.1699000000000002, stop_loss: 1.1654013009624113, take_profit: null,
+      })
+      const rows = cardRows(mountAtTick(report({ trades: [row] }), (unit, symbol) => {
+        seen.push([unit, symbol])
+        return 0.00001
+      }))
+      expect(rows['Opened']).toContain('@ 1.16258')
+      expect(rows['Closed']).toContain('@ 1.16775')
+      expect(rows['Worst against']).toContain('@ 1.16010')
+      expect(rows['Best in favour']).toContain('@ 1.16990')
+      expect(rows['Stop loss']).toBe('1.16540')
+      expect(seen).toContainEqual([row.scenario_name, row.symbol])
+    })
+
+    it('prints an own level at the tick size, and a slippage below it in full', () => {
+      const rows = cardRows(mountAtTick(report({ trades: [trade({
+        stop_loss: null, take_profit: null, exit_level: 1.1677499513751617, close_reason: 'tp_triggered',
+        exit_slippage: -0.000009951375161687537, exit_slippage_measured_against: 'protective_level',
+      })] }), () => 0.00001))
+      expect(rows['Own level']).toBe('take profit 1.16775')
+      expect(rows['Slippage']).toContain('out -0.00000995 vs SL/TP level')
+    })
+
+    it('goes no further than the eighth decimal where no tick size is known', () => {
+      const rows = cardRows(mountPanel(report({ trades: [trade({ entry_price: 1.1625800132751465 })] })))
+      expect(rows['Opened']).toContain('@ 1.16258001')
+    })
+
     it('omits a stop that was never set rather than showing it as none', () => {
       expect(cardRows(mountPanel(report({ trades: [trade({ stop_loss: null })] }))))
         .not.toHaveProperty('Stop loss')
@@ -674,6 +720,17 @@ describe('TradeHistoryPanel', () => {
 
       await tradeRows(wrapper)[0]!.trigger('click')
       expect(wrapper.find('.fill-list').exists()).toBe(false)
+    })
+
+    it('prints a fill\'s price at the tick size of its trade\'s instrument, in its row and its card', async () => {
+      const wrapper = mountAtTick(report({
+        trades: [trade({ entry_executions: [fill({ price: 1.1625800132751465 })], exit_executions: [] })],
+      }), () => 0.00001)
+      await tradeRows(wrapper)[0]!.trigger('click')
+      const fills = wrapper.find('.fill-list')
+      expect(fills.text()).toContain('price 1.16258')
+      const card = fills.findComponent(HoverCard).props('details')!
+      expect(card).toContainEqual({ label: 'Price', value: '1.16258' })
     })
 
     /** The in-then-out ORDER is the content, so the sub-list offers nothing to reorder it with. */

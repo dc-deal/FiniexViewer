@@ -87,7 +87,8 @@ it says so and draws nothing.
   on what is being looked at, and that position's marks are drawn larger. A long window is centred
   on where the position opened; a short one is shown whole.
 - **Prices are drawn at the instrument's tick size** (`priceFormat`). The run's broker report names
-  the unit among a broker's scenarios, and that broker's symbol carries `tick_size`
+  the unit among a broker's scenarios, or is the one row a session writes, and that broker's symbol
+  carries `tick_size`
   (`broker.units[].symbols[]`): its decimals are the chart's precision, the step its least move —
   EURUSD reads `1.15162` where it read `1.15`. The backend's rule for a price it COMPUTED, such as a
   quote-driven bar's midpoint, is to round it for display to that tick size (its `prices` document,

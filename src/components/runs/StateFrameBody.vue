@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import FigureBlock from '@/components/base/FigureBlock.vue'
 import {
-  amount, percentFigure, polarity, quantity, readingOf, utcInstant,
+  amount, percentFigure, polarity, priceAt, quantity, readingOf, utcInstant,
 } from '@/components/runs/report_format'
+import { useTickSizes } from '@/composables/use_tick_sizes'
 import { t } from '@/translate'
 import type { Figure } from '@/types/figure_types'
 import type { StateFrame } from '@/types/api/state_frame_types'
@@ -12,14 +13,23 @@ import type { StateFrame } from '@/types/api/state_frame_types'
  * worker's outputs, and what is open and resting. The same for the latest frame and for the frame a
  * player stands on, so a session reads one way whichever moment is on show.
  */
-defineProps<{
+const props = defineProps<{
   frame: StateFrame
+  /** The unit the frame is of, which says the instrument's tick size. */
+  unit: string
 }>()
 
 /**
  * What is off, and what could have been checked and was not. A check that passed is not here.
  * `feed_stale` null is not among them: it is null where the session reads no signal at all.
  */
+const tickSizes = useTickSizes()
+
+/** A price of the frame's instrument, at its tick size. */
+function priceOf(value: number): string {
+  return priceAt(value, tickSizes(props.unit, props.frame.symbol))
+}
+
 function healthOf(frame: StateFrame): { words: string, warning: boolean }[] {
   const lines: { words: string, warning: boolean }[] = []
   if (frame.safety_blocked) lines.push({ words: t('The circuit breaker blocks new orders'), warning: true })
@@ -56,7 +66,7 @@ function accountOf(frame: StateFrame): Figure[] {
   })
   figures.push({
     label: t('Last price'),
-    value: frame.last_price === null ? t('no price yet') : `${quantity(frame.last_price)} ${frame.symbol}`,
+    value: frame.last_price === null ? t('no price yet') : `${priceOf(frame.last_price)} ${frame.symbol}`,
     title: t('The mid the account is valued at'),
   })
   if (frame.safety_drawdown_pct !== null) {
@@ -113,19 +123,19 @@ function outputsOf(outputs: Record<string, unknown>): Figure[] {
       :title="`${position.position_id} · ${t('opened')} ${utcInstant(position.entry_time)}`"
     >
       {{ position.direction }} {{ quantity(position.lots) }} {{ frame.symbol }}
-      @ {{ quantity(position.entry_price) }}
+      @ {{ priceOf(position.entry_price) }}
       · {{ amount(position.unrealized_pnl, frame.account_currency) }}
-      <template v-if="position.stop_loss !== null">· SL {{ quantity(position.stop_loss) }}</template>
-      <template v-if="position.take_profit !== null">· TP {{ quantity(position.take_profit) }}</template>
+      <template v-if="position.stop_loss !== null">· SL {{ priceOf(position.stop_loss) }}</template>
+      <template v-if="position.take_profit !== null">· TP {{ priceOf(position.take_profit) }}</template>
     </p>
     <p class="holding-line">
       <span class="holding-label">{{ t('Resting orders') }}</span> {{ frame.active_orders.length ? '' : t('none') }}
     </p>
     <p v-for="order in frame.active_orders" :key="order.order_id" class="holding" :title="order.order_id">
       {{ order.order_type }} {{ order.direction }} {{ quantity(order.lots) }} {{ frame.symbol }}
-      @ {{ quantity(order.entry_price) }}
+      @ {{ priceOf(order.entry_price) }}
       <!-- `entry_price` is the limit on a limit, the trigger on a stop; a stop-limit's fill limit beside it -->
-      <template v-if="order.limit_price">· {{ t('limit') }} {{ quantity(order.limit_price) }}</template>
+      <template v-if="order.limit_price">· {{ t('limit') }} {{ priceOf(order.limit_price) }}</template>
     </p>
   </div>
 </template>

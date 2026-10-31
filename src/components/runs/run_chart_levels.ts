@@ -1,5 +1,5 @@
 import { rowKey } from '@/api/list_key'
-import { polarity, sortInstant, utcInstant } from '@/components/runs/report_format'
+import { polarity, priceAt, sortInstant, utcInstant } from '@/components/runs/report_format'
 import { barOf } from '@/components/runs/run_chart_marks'
 import { exitCard, ownLevel, ownLevelFigure } from '@/components/runs/trade_card'
 import type { OpenPosition, TradeRow } from '@/types/api/report_types'
@@ -41,8 +41,9 @@ function barIn(barTimes: number[], instant: number, cutAt: number | null): numbe
 
 function level(
   id: string, label: 'SL' | 'TP', price: number, at: number, when: string, position: string, focused: boolean,
+  tick: number | null,
   details: Figure[] = [
-    { label: WORD[label], value: String(price) },
+    { label: WORD[label], value: priceAt(price, tick) },
     {
       label: t('In force at'),
       value: when,
@@ -69,11 +70,12 @@ function level(
  * The stops and the targets of the trade rows given: one level per row that had one, at its exit's
  * bar, and for each position still open at the end, its levels at the last bar. `looked` is the
  * position looked at — only its levels put their price on the axis. `cutAt` is how far the bars are
- * loaded while the window holds more — nothing past it has a candle yet.
+ * loaded while the window holds more — nothing past it has a candle yet. `tick` is the instrument's tick
+ * size: a card prints a price at it, while the drawing keeps the price as served.
  */
 export function positionLevels(
   trades: TradeRow[], key: string[], open: OpenPosition[], looked: string | null, barTimes: number[],
-  cutAt: number | null,
+  cutAt: number | null, tick: number | null = null,
 ): SegmentDrawing[] {
   const segments: SegmentDrawing[] = []
   for (const trade of trades) {
@@ -84,17 +86,17 @@ export function positionLevels(
     const row = rowKey(trade, key)
     const focused = trade.position_id === looked
     if (trade.stop_loss !== null) {
-      segments.push(level(`level|SL|${row}`, 'SL', trade.stop_loss, at, when, trade.position_id, focused))
+      segments.push(level(`level|SL|${row}`, 'SL', trade.stop_loss, at, when, trade.position_id, focused, tick))
     }
     if (trade.take_profit !== null) {
-      segments.push(level(`level|TP|${row}`, 'TP', trade.take_profit, at, when, trade.position_id, focused))
+      segments.push(level(`level|TP|${row}`, 'TP', trade.take_profit, at, when, trade.position_id, focused, tick))
     }
     const own = ownLevel(trade)
     if (own) {
       // an id of its own: the position can carry a level of the same kind beside it. The time is the
       // close's: it fills at the next price, and no field says when the level was reached
-      segments.push(level(`level|own|${own.label}|${row}`, own.label, own.price, at, when, trade.position_id, focused, [
-        ownLevelFigure(own),
+      segments.push(level(`level|own|${own.label}|${row}`, own.label, own.price, at, when, trade.position_id, focused, tick, [
+        ownLevelFigure(own, tick),
         { label: t('Closed'), value: when },
       ]))
     }
@@ -109,10 +111,10 @@ export function positionLevels(
     const id = `level|open|${entry.position_id}`
     const when = t('the end of the record, still open')
     if (entry.stop_loss !== null) {
-      segments.push(level(`${id}|SL`, 'SL', entry.stop_loss, last, when, entry.position_id, focused))
+      segments.push(level(`${id}|SL`, 'SL', entry.stop_loss, last, when, entry.position_id, focused, tick))
     }
     if (entry.take_profit !== null) {
-      segments.push(level(`${id}|TP`, 'TP', entry.take_profit, last, when, entry.position_id, focused))
+      segments.push(level(`${id}|TP`, 'TP', entry.take_profit, last, when, entry.position_id, focused, tick))
     }
   }
   return segments
@@ -123,7 +125,9 @@ export function positionLevels(
  * the polarity of its result — none where both fall in one candle, where it would be a dot inside
  * the marks already there.
  */
-export function entryExitLines(trades: TradeRow[], key: string[], barTimes: number[], cutAt: number | null): LineDrawing[] {
+export function entryExitLines(
+  trades: TradeRow[], key: string[], barTimes: number[], cutAt: number | null, tick: number | null = null,
+): LineDrawing[] {
   const lines: LineDrawing[] = []
   for (const trade of trades) {
     const from = barIn(barTimes, seconds(trade.entry_time), cutAt)
@@ -135,7 +139,7 @@ export function entryExitLines(trades: TradeRow[], key: string[], barTimes: numb
       from: { time: from, price: trade.entry_price },
       to: { time: to, price: trade.exit_price },
       role: polarity(trade.net_pnl),
-      card: exitCard(trade),
+      card: exitCard(trade, tick),
     })
   }
   return lines

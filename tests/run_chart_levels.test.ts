@@ -108,6 +108,21 @@ describe('run_chart_levels', () => {
       expect(positionLevels([late], KEY, [], 'pos_1', BARS, null)).toHaveLength(1)
     })
 
+    /** Only the printed figure is rounded: the card reads the tick size, the drawing stays on the price as served. */
+    it('prints a price at the tick size in the card, and draws on the price as served', () => {
+      const served = 1.1677499513751617
+      const [carried] = positionLevels([trade({ stop_loss: served })], KEY, [], 'pos_1', BARS, null, 0.00001)
+      expect(carried!.price).toBe(served)
+      expect(carried!.card.details).toContainEqual({ label: 'Stop loss', value: '1.16775' })
+      const [own] = positionLevels(
+        [trade({ exit_level: served, close_reason: 'tp_triggered' })], KEY, [], 'pos_1', BARS, null, 0.00001,
+      )
+      expect(own!.price).toBe(served)
+      expect(own!.card.details).toContainEqual({ label: 'Own level', value: 'take profit 1.16775' })
+      const [open] = positionLevels([], KEY, [{ ...OPEN, stop_loss: served }], 'pos_1', BARS, null, 0.00001)
+      expect(open!.card.details).toContainEqual({ label: 'Stop loss', value: '1.16775' })
+    })
+
     it('draws nothing where no level was set', () => {
       expect(positionLevels([trade({})], KEY, [], 'pos_1', BARS, null)).toEqual([])
       // a stop that fired on a row recorded before contract 45 names no level
@@ -154,6 +169,12 @@ describe('run_chart_levels', () => {
         kind: 'line', role: 'negative', from: { time: BARS[0], price: 1.1 }, to: { time: BARS[2], price: 1.2 },
       })
       expect(line!.id.startsWith('line|')).toBe(true)
+    })
+
+    it('prints the prices of its card at the tick size, and draws on the prices as served', () => {
+      const [line] = entryExitLines([trade({ exit_price: 1.2000000476837158 })], KEY, BARS, null, 0.00001)
+      expect(line).toMatchObject({ to: { price: 1.2000000476837158 } })
+      expect(line!.card.details.find(pair => pair.label === 'Closed')?.value).toContain('@ 1.20000')
     })
 
     it('draws no line where the trade entered and left in one candle', () => {

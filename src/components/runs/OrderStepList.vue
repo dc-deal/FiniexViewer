@@ -2,7 +2,8 @@
 import { ref, watch } from 'vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { orderKeyOf } from '@/composables/use_order_steps'
-import { utcInstant } from '@/components/runs/report_format'
+import { useTickSizes } from '@/composables/use_tick_sizes'
+import { priceAt, utcInstant } from '@/components/runs/report_format'
 import type { ListColumn } from '@/types/list_types'
 import type { OrderEvent } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
@@ -60,10 +61,7 @@ function toggleOrder(key: string): void {
   folded.value = next
 }
 
-/** A value the stream never held reads as absent, never as a zero nobody recorded. */
-function figure(value: number | null, digits = 2): string {
-  return value === null ? '—' : value.toFixed(digits)
-}
+const tickSizes = useTickSizes()
 
 function at(value: string | null): string {
   return value === null ? '—' : utcInstant(value)
@@ -115,7 +113,7 @@ function mainNoteOf(step: OrderEvent): string {
   const ended = [step.initiator, step.end_reason].filter(Boolean)
   if (ended.length) return ended.join(' · ')
   if (step.in_flight_ms !== null) return `${t('in flight')} ${step.in_flight_ms.toFixed(0)} ms`
-  if (step.fill_price !== null) return `${t('at')} ${figure(step.fill_price, 5)}`
+  if (step.fill_price !== null) return `${t('at')} ${priceAt(step.fill_price, tickSizes(step.scenario_name, step.symbol))}`
   return ''
 }
 

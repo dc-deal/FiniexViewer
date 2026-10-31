@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import LatestStatePanel from '@/components/runs/LatestStatePanel.vue'
+import { provideTickSizes } from '@/composables/use_tick_sizes'
 import type { StateFrame, StateFrameUnit, StateFramesLatest } from '@/types/api/state_frame_types'
 import endedFixture from './fixtures/state_frames_ended.json'
 import stoppedFixture from './fixtures/state_frames_stopped.json'
@@ -108,11 +110,34 @@ describe('LatestStatePanel', () => {
     expect(text).not.toContain('0.016555830000')
   })
 
+  /** A frame's prices at the tick size of the unit's instrument; a holding is no price and keeps its own digits. */
+  it('prints the prices of a frame at the tick size of its unit\'s instrument', () => {
+    const model = answer(endedFixture)
+    const unit = model.units[0]!
+    const position = unit.frame.open_positions[0]!
+    position.entry_price = 88635.14999999999
+    position.stop_loss = 88000.04000000001
+    const seen: [string, string | null][] = []
+    const Host = defineComponent({
+      setup() {
+        provideTickSizes((name, symbol) => {
+          seen.push([name, symbol])
+          return 0.1
+        })
+        return () => h(LatestStatePanel, { model })
+      },
+    })
+    const holding = mount(Host).find('.holding').text()
+    expect(holding).toContain('@ 88635.1')
+    expect(holding).toContain('SL 88000.0')
+    expect(seen).toContainEqual([unit.unit_name, unit.frame.symbol])
+  })
+
   /** The rows the portfolio serves, said as a position; none is said as none. */
   it('lists the open positions and the resting orders, and says none where there are none', () => {
     const ended = mountPanel(answer(endedFixture))
     expect(ended.findAll('.holding')).toHaveLength(1)
-    expect(ended.find('.holding').text()).toContain('long 0.1 BTCUSD @ 88,635.1')
+    expect(ended.find('.holding').text()).toContain('long 0.1 BTCUSD @ 88635.1')
 
     const none = mountPanel(answer(stoppedFixture))
     expect(none.findAll('.holding')).toHaveLength(0)

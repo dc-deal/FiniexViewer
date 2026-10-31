@@ -117,7 +117,7 @@ function onKey(event: KeyboardEvent): void {
     </p>
   </div>
   <p v-if="view?.error" class="error">{{ view.error }}</p>
-  <StateFrameBody :frame="frame" />
+  <StateFrameBody :frame="frame" :unit="unit" />
 </template>
 
 <style scoped>

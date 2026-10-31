@@ -120,6 +120,16 @@ describe('run_chart', () => {
       expect(unitTickSize(broker, { ...unit, symbol: 'USDJPY' })).toBeNull()
     })
 
+    /** A session's report is one row that lists no scenario (measured 2026-10-31), so it answers for every unit. */
+    it('reads a session\'s tick size off its one row, and stays silent among several', () => {
+      const one = broker.units[0]!
+      const session = { ...broker, units: [{ ...one, scenarios: [], symbols: [{ ...one.symbols[0]!, symbol: 'BTCUSD', tick_size: 0.1 }] }] }
+      expect(unitTickSize(session, { name: 'a_session', symbol: 'BTCUSD' })).toBe(0.1)
+      expect(unitTickSize(session, { name: 'a_session', symbol: 'ETHUSD' })).toBeNull()
+      // several brokers, none of which lists the unit: nobody can say whose it is
+      expect(unitTickSize(broker, { name: 'no_such_unit', symbol: one.symbols[0]!.symbol })).toBeNull()
+    })
+
     it('draws as many decimals as the step has, and moves by the step', () => {
       expect(chartPriceFormat(0.00001)).toEqual({ precision: 5, minMove: 0.00001 })
       expect(chartPriceFormat(0.001)).toEqual({ precision: 3, minMove: 0.001 })

@@ -9,6 +9,7 @@ import { providePanelView } from '@/composables/use_panel_view'
 import { provideTestPositionLink } from './position_link_harness'
 import type { PositionRef } from '@/types/context_types'
 import { provideTestOrderSteps, step } from './order_steps_harness'
+import { provideTickSizes } from '@/composables/use_tick_sizes'
 import type {
   OrderHistoryRow,
   OrderHistoryReport,
@@ -294,6 +295,26 @@ describe('OrdersPanel', () => {
       expect(text).toContain('0.05')
       expect(text).toContain('1.37424')
       expect(text).toContain('2026-01-29')
+    })
+
+    /** Five decimals on every instrument were a guess: a row's price prints at the tick size of its own. */
+    it('prints a price at the tick size of its instrument, and a row that holds none as absent', () => {
+      const filled = order({ status: 'executed', executed_price: 2573.6000000000004, order_id: 'pos_filled' })
+      const refused = order({ status: 'rejected', executed_price: null, order_id: 'pos_refused' })
+      const seen: [string, string | null][] = []
+      const Host = defineComponent({
+        setup() {
+          provideTickSizes((unit, symbol) => {
+            seen.push([unit, symbol])
+            return 0.01
+          })
+          return () => h(OrdersPanel, { model: model([filled, refused]) })
+        },
+      })
+      const rows = mount(Host).findAll('.order-list .record-row').map(row => row.text())
+      expect(rows.some(row => row.includes('2573.60'))).toBe(true)
+      expect(rows.some(row => row.includes('—'))).toBe(true)
+      expect(seen).toContainEqual([filled.scenario_name, filled.symbol])
     })
 
     it('marks a refusal and an expiry on different channels from an ordinary row', () => {
@@ -693,11 +714,13 @@ describe('OrdersPanel', () => {
       value: ReturnType<typeof model>,
       held: Parameters<typeof provideTestOrderSteps>[0] = {},
       available: Parameters<typeof provideTestOrderSteps>[1] = true,
-      reading: Parameters<typeof provideTestOrderSteps>[2] = []
+      reading: Parameters<typeof provideTestOrderSteps>[2] = [],
+      tick: number | null = null,
     ) {
       let state!: ReturnType<typeof provideTestOrderSteps>
       const Host = defineComponent({
         setup() {
+          provideTickSizes(() => tick)
           provideTestPositionLink(null, [])
           state = provideTestOrderSteps(held, available, reading)
           return () => h(OrdersPanel, { model: value })
@@ -865,7 +888,7 @@ describe('OrdersPanel', () => {
       expect(notes[1]).toContain('strategy')
       expect(notes[1]).toContain('cancel_requested')
       // the price carries its word too, like the duration above it
-      expect(notes[2]).toBe('at 2573.60000')
+      expect(notes[2]).toBe('at 2573.6')
     })
 
     /**
@@ -881,7 +904,14 @@ describe('OrdersPanel', () => {
       const { wrapper } = mountStepped(TWO_ROWS, held)
       await openPosition(wrapper)
       expect(wrapper.find('.step-detail').text())
-        .toBe('at 2401.50000 · Settles the estimated fee of the previous step')
+        .toBe('at 2401.5 · Settles the estimated fee of the previous step')
+    })
+
+    it('prints a step\'s price at the tick size of its instrument', async () => {
+      const held = { [SCENARIO + '~pos_1']: [step({ seq: 3, event_type: 'filled', fill_price: 2573.6000000000004 })] }
+      const { wrapper } = mountStepped(TWO_ROWS, held, true, [], 0.01)
+      await openPosition(wrapper)
+      expect(wrapper.find('.step-detail').text()).toBe('at 2573.60')
     })
 
     /**

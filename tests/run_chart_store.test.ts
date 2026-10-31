@@ -280,6 +280,34 @@ describe('useRunChartStore', () => {
     expect(layer('entry-exit').every(drawing => drawing.kind === 'line')).toBe(true)
   })
 
+  /** The cards print a price at the tick size once the broker report is there; the drawing keeps the price as served. */
+  it('prints the prices of its cards at the tick size of the unit\'s instrument', async () => {
+    chooseFixtureRun()
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 })),
+      truncated: false,
+      priceBasis: '',
+    })
+    const served = 0.8612345678
+    const traded = trades.trades.find(row => row.scenario_name === firstWithOpenings())!
+    useRunReportsStore().tradeHistory = {
+      ...trades,
+      trades: trades.trades.map(row => row === traded ? { ...row, stop_loss: served } : row),
+    }
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    chart.showPosition({ scenario: traded.scenario_name, position: traded.position_id })
+    await flushPromises()
+    const stop = () => chart.layers.find(entry => entry.id === 'levels')!.drawings
+      .flatMap(drawing => drawing.kind === 'segment' ? [drawing] : [])[0]!
+    expect(stop().card.details[0]!.value).toBe('0.86123457')
+
+    useRunReportsStore().broker = brokerFixture as unknown as BrokerReport
+    expect(stop().card.details[0]!.value).toBe('0.86123')
+    expect(stop().price).toBe(served)
+  })
+
   /** Switched to every position, the line is drawn for each trade of the unit, with none looked at. */
   /**
    * The volume counts what the venue prints: the traded volume where the bars are order-driven, the

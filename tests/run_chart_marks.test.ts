@@ -121,6 +121,22 @@ describe('run_chart_marks', () => {
       expect(labels).toEqual(expect.arrayContaining(['Opened', 'Stop loss', 'Take profit']))
     })
 
+    /** The card and the line a gathered mark lists print the price at the tick size of the unit's instrument. */
+    it('prints the prices of an opening at the tick size', () => {
+      const widened = opening({ ...longOpening, executed_price: 1.1625800132751465 })
+      const closed = trade({ ...long, stop_loss: 1.1654013009624113, take_profit: null })
+      const [mark] = openingMarks([widened], [], [closed], 'EUR', BARS, null, 0.00001)
+      expect(mark!.card.details.find(pair => pair.label === 'Opened')?.value).toContain('@ 1.16258')
+      expect(mark!.card.details).toContainEqual({ label: 'Stop loss', value: '1.16540' })
+      expect(mark!.line!.value).toContain('@ 1.16258')
+      const open: OpenPosition = {
+        position_id: 'pos_1', direction: 'long', lots: 0.1, entry_price: 1.1, entry_time: longOpening.event_time,
+        last_price: 1.1677499513751617, unrealized_pnl: 0, valued: true, stop_loss: null, take_profit: null,
+      }
+      const [held] = openingMarks([widened], [open], [], 'EUR', BARS, null, 0.00001)
+      expect(held!.card.details.find(pair => pair.label === 'Last price')?.value).toBe('1.16775')
+    })
+
     /** An own level says how a part ended, whichever part that was: it stands on that exit's card. */
     it('leaves an own level off the card of the opening', () => {
       const own = trade({ ...long, stop_loss: null, take_profit: null, exit_level: 0.86, close_reason: 'sl_triggered' })
@@ -170,6 +186,12 @@ describe('run_chart_marks', () => {
       expect(mark!.focused).toBe(true)
       expect(mark!.card.details.map(pair => pair.label)).toEqual(expect.arrayContaining(['Closed', 'Closed by', 'Net P&L']))
       expect(mark!.card.details.find(pair => pair.label === 'Net P&L')).toMatchObject({ tone: 'negative' })
+    })
+
+    it('prints the prices of an exit at the tick size', () => {
+      const widened = trade({ ...long, exit_price: 1.1677499513751617 })
+      const [mark] = exitMarks([widened], KEY, BARS, null, 0.00001)
+      expect(mark!.card.details.find(pair => pair.label === 'Closed')?.value).toContain('@ 1.16775')
     })
 
     /** A position closed in parts: the own level stands on the part it closed (contract 45), the partial's says none. */

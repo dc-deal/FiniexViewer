@@ -7,13 +7,14 @@ import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useChartLink } from '@/composables/use_chart_link'
 import {
-  SPREAD_NOT_RECORDED, amount, magnitude, modelledSpreadFigures, signClass, spreadFigure, utcInstant,
+  SPREAD_NOT_RECORDED, amount, magnitude, modelledSpreadFigures, priceAt, signClass, spreadFigure, utcInstant,
 } from '@/components/runs/report_format'
 import { tradeDetails } from '@/components/runs/trade_card'
 import { useDisplaySettings } from '@/composables/use_display_settings'
 import { useViewRows } from '@/composables/use_panel_view'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
+import { useTickSizes } from '@/composables/use_tick_sizes'
 import { rowKey } from '@/api/list_key'
 import type { Figure, FigureCard } from '@/types/figure_types'
 import type { ListColumn, ListGroup } from '@/types/list_types'
@@ -106,6 +107,12 @@ const rowCap = computed(() => display.value.tradeRowCap)
 
 const narrowing = useScenarioSelection()
 const link = usePositionLink()
+const tickSizes = useTickSizes()
+
+/** The tick size of a trade's instrument, which its prices are printed at. */
+function tickOf(trade: TradeRow): number | null {
+  return tickSizes(trade.scenario_name, trade.symbol)
+}
 const chartLink = useChartLink()
 
 /**
@@ -412,16 +419,16 @@ function held(seconds: number): string {
 function card(trade: TradeRow): FigureCard {
   return {
     title: `${trade.position_id} · ${trade.direction} ${trade.lots}`,
-    details: [...partsOf(trade), ...tradeDetails(trade)],
+    details: [...partsOf(trade), ...tradeDetails(trade, tickOf(trade))],
   }
 }
 
 /** A fill's card: what its cells cut short at a narrow width — its id, its price and its fee. */
-function fillCard(fill: FillRow): FigureCard {
+function fillCard(fill: FillRow, tick: number | null): FigureCard {
   return {
     title: `${fill.leg} · ${fill.execution.trade_id}`,
     details: [
-      { label: t('Price'), value: String(fill.execution.price) },
+      { label: t('Price'), value: priceAt(fill.execution.price, tick) },
       { label: t('Fee'), value: `${fill.execution.fee} ${fill.execution.fee_currency}` },
     ],
   }
@@ -539,7 +546,7 @@ function fillCard(fill: FillRow): FigureCard {
           :rows="fillsOf(trade)"
           :columns="fillColumns"
           :row-key="fill => `${fill.leg}-${fill.execution.trade_id}`"
-          :row-card="fillCard"
+          :row-card="fill => fillCard(fill, tickOf(trade))"
           hide-head
           inert
         >
@@ -549,7 +556,7 @@ function fillCard(fill: FillRow): FigureCard {
             <span>{{ t('vol') }} {{ fill.execution.volume }}</span>
             <span class="fill-share">{{ shareOf(trade, fill) }}</span>
             <!-- cut short at a narrow width; the fill's card carries the id, price and fee whole -->
-            <span>{{ t('price') }} {{ fill.execution.price }}</span>
+            <span>{{ t('price') }} {{ priceAt(fill.execution.price, tickOf(trade)) }}</span>
             <span>{{ t('fee') }} {{ fill.execution.fee }} {{ fill.execution.fee_currency }}</span>
             <span>{{ fill.execution.liquidity }}</span>
           </template>

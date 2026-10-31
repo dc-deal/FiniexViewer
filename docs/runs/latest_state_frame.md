@@ -48,7 +48,8 @@ Resting orders none
   signal and an unclean reconciliation speak in the warning role. A breaker, market or
   reconciliation check that was not made (null) is said in the quiet ink, because unchecked is not
   fine. `feed_stale` null is not said: it means the session reads no signal at all.
-- **Account and decision as figure blocks.** Holdings and prices go to eight decimals, dropping
+- **Account and decision as figure blocks.** Prices stand at the tick size of the unit's instrument,
+  to eight decimals while a run still running has no broker report. Holdings go to eight decimals, dropping
   the float noise a computed figure carries. Worker and decision outputs appear under the
   strategy's own keys, to four decimals.
 - **Positions and resting orders** are the rows the portfolio and the pending orders serve. A

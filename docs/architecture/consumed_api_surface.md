@@ -57,6 +57,11 @@ GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams/window  its fram
 GET /api/v1/reports/runs/{run_id}/...                 the further per-section reports, not yet consumed
 ```
 
+**A price is printed at its instrument's tick size**, which only the run's broker report states
+(`broker.units[].symbols[].tick_size`). It reaches the sections through a channel (`use_tick_sizes`),
+so a section reads no store. A session's report is one row that lists no scenario (measured
+2026-10-31), so a report of one row answers for every unit.
+
 **A `major` warning names the check that decided it** (`check`, `domain`), and
 `/validation-checks` says what every check id means — its title and a sentence. The catalogue is
 read once at the app root (`validation_checks_store`) and reaches the warnings section through a

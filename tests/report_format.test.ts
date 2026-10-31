@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  bytes, drawdownFigure, largerFirst, modelledSpreadFigures, orDash, polarity, shortHash, signClass, sortInstant,
+  bytes, drawdownFigure, largerFirst, modelledSpreadFigures, orDash, polarity, priceAt, priceDistance, shortHash, signClass, sortInstant,
   spreadFigure, utcInstant, utcSpan,
 } from '@/components/runs/report_format'
 
@@ -11,6 +11,49 @@ import {
  * a card asked it to render a damaged field.
  */
 describe('report_format', () => {
+  /** A price the backend computed is ours to round for display, to the instrument's tick size (their `prices` document). */
+  describe('priceAt', () => {
+    it('prints a computed price on the tick, and one the venue wrote as it wrote it', () => {
+      expect(priceAt(1.1677499513751617, 0.00001)).toBe('1.16775')
+      // a run recorded before contract 34 keeps what it read, widened from a 32-bit float
+      expect(priceAt(1.1625800132751465, 0.00001)).toBe('1.16258')
+      expect(priceAt(0.87957, 0.00001)).toBe('0.87957')
+    })
+
+    it('prints as many decimals as the step has, ungrouped, as the chart axis does', () => {
+      expect(priceAt(1.1677, 0.00001)).toBe('1.16770')
+      expect(priceAt(64123.44, 0.1)).toBe('64123.4')
+      expect(priceAt(2345.678, 0.01)).toBe('2345.68')
+      expect(priceAt(101.4, 1)).toBe('101')
+    })
+
+    it('rounds to a multiple of a step that is no power of ten', () => {
+      expect(priceAt(100.37, 0.25)).toBe('100.25')
+      expect(priceAt(100.4, 0.25)).toBe('100.50')
+    })
+
+    /** A run still running has written no broker report yet. */
+    it('goes no further than the eighth decimal where no tick size is known, and guesses nothing', () => {
+      expect(priceAt(1.1654013009624113, null)).toBe('1.1654013')
+      expect(priceAt(64123.4, null)).toBe('64123.4')
+      expect(priceAt(0.00000995, null)).toBe('0.00000995')
+      expect(priceAt(1.5, 0)).toBe('1.5')
+    })
+  })
+
+  /** A slippage is a distance, and off the tick where a fill is measured against a level a strategy computed. */
+  describe('priceDistance', () => {
+    it('shows a distance below the tick, to the eighth decimal', () => {
+      expect(priceDistance(-0.000009951375161687537)).toBe('-0.00000995')
+      expect(priceDistance(0.0012)).toBe('0.0012')
+    })
+
+    it('reads float noise around zero as zero, with no sign', () => {
+      expect(priceDistance(-2.220446049250313e-16)).toBe('0')
+      expect(priceDistance(0)).toBe('0')
+    })
+  })
+
   describe('utcInstant', () => {
     it('renders an ISO instant as the canonical UTC clock', () => {
       expect(utcInstant('2026-09-25T09:52:27+00:00')).toBe('2026-09-25 09:52:27Z')

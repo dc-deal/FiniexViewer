@@ -19,6 +19,29 @@ The rule behind all of them: **a value that means "not measured" must never rend
 
 Its sibling on the categorical side: **a value that means "not applicable" must never render as a state.** `run_outcome` is `''` on artifacts written before the grading existed, so the panel says "no outcome recorded" rather than showing an empty verdict. `shutdown_mode` is AutoTrader-only and `''` on a backtest, so it is absent rather than rendered — and where it *is* present it is detail, never a verdict: an operator stopping a healthy session with Ctrl+C produces the same `emergency` as a crash, so it is shown as alarming only where `run_outcome` is `failed`. `operator_interrupted` would resolve that ambiguity, but it is newer than most artifacts, which default it to `false`; it is mirrored and deliberately not rendered until an artifact can carry a true value. `refused_at_first_tick` separates a second kind of `emergency` from a crash: a live session that stopped at its first tick because its warmup history had a gap the venue could not fill yet. It is graded `failed`, because a restart is the remedy, but nothing broke — so the shutdown detail reads *emergency (refused at the first tick)* and its reason stands in the warning role with the warning mark, where a crash's reason stands in the error role with the error mark. The backend's console draws the same distinction, yellow against red. The mark is an icon in the line's own colour rather than the console's ⛔, which renders as a red emoji whatever the line's role.
 
+## Prices
+
+A price the venue wrote is served as its decimal. One the backend computed — a midpoint, a modelled
+quote, a level a strategy computed — keeps every digit and is ours to round for display, to the
+instrument's tick size (their `prices` document). `priceAt` in `report_format.ts` is the one formatter:
+it rounds to a multiple of the tick and prints the decimals the tick has, ungrouped, as the chart's axis
+does. `1.1677499513751617` at 0.00001 reads `1.16775`, and `1.1677` reads `1.16770`. A run recorded
+before contract 34 keeps the prices it read, widened from a 32-bit float, and reads the same way.
+
+- **Only the printed figure is rounded.** Nothing is rounded before it is compared or summed, and a
+  level on the chart is drawn on the price as served.
+- **The tick size comes from the run's broker report**, `broker.units[].symbols[].tick_size`, per
+  broker and symbol. A section is given its own report and no other, so the root hands it a lookup
+  through the `use_tick_sizes` channel, and the run chart's builders take it as a parameter.
+- **Where none is known a price goes no further than the eighth decimal**, the finest step any venue
+  here quotes, and never at a precision guessed from the market. A run still running has written no
+  broker report yet.
+- **A slippage is a distance, not a price.** A fill on the tick measured against a level a strategy
+  computed lies off the tick, so `priceDistance` prints up to eight decimals: `out -0.00000995`, which
+  on the tick would read `-0.00001`, and one below half a tick would read as zero. Float noise around
+  zero reads `0`.
+- Money, lots and distances in `price_unit` are not prices and keep their own formats.
+
 ## The printout never computes
 
 The backend derives every figure once, off the hot loop, and its renderers only format. The viewer follows the same rule: no KPI is re-derived here. If a figure a panel needs is not on a model, it is requested as a model field rather than calculated locally — a second calculation drifts from the first, which is exactly the defect the backend removed from its own console (`execution_rate_pct` and `max_dd_pct` were divisions inside a renderer and are now fields).

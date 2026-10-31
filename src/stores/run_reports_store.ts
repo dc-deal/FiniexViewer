@@ -200,8 +200,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   }
 
   /**
-   * The brokers the run traded through. Absent on an AutoTrader session, which writes no such
-   * section — so the absence is structure and the view says it once above the column.
+   * The brokers the run traded through, and the tick size every price is printed at. A session writes
+   * one row (measured 2026-10-31); a run still running has written none yet.
    */
   function loadBroker(runId: string): Promise<void> {
     return loadSection('broker', broker, loadingBroker,

@@ -14,6 +14,10 @@ const decimal = new Intl.NumberFormat('en-US', {
 // (`0.018555830000000002` ETH) that is no digit of the amount.
 const fine = new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 })
 
+// A price where no tick size is known, and a distance between two prices: to the same eighth decimal,
+// ungrouped as a chart axis prints a price.
+const finePrice = new Intl.NumberFormat('en-US', { maximumFractionDigits: 8, useGrouping: false })
+
 // What a strategy's worker or decision states about itself, to four decimals: a reading, not money.
 const reading = new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 })
 
@@ -41,9 +45,41 @@ export function noReportReason(run: RunInfo): string {
   return t('This run has no report — it is still running, or it died before its report phase')
 }
 
-/** A holding, a size or a price, with no decimal the venue could not have quoted. */
+/** A holding or a size, with no decimal the venue could not have quoted. */
 export function quantity(value: number): string {
   return fine.format(value)
+}
+
+/** The decimals of a price step, read without its float noise: 0.00001 is 1.0000000000000002e-5 × 10⁵. */
+export function tickDecimals(tickSize: number): number {
+  let decimals = 0
+  while (decimals < 10) {
+    const scaled = tickSize * 10 ** decimals
+    if (Math.abs(scaled - Math.round(scaled)) < 1e-9 * Math.max(1, scaled)) break
+    decimals++
+  }
+  return decimals
+}
+
+/**
+ * A price for display, on its instrument's tick size: the backend's rule for a price it computed (its
+ * prices document, contract 34), and a price the venue wrote already lies on that step. Only the
+ * printed figure: nothing compares or sums this. Without a tick size to the eighth decimal, never a
+ * precision guessed from the market. A run still running has written no broker report yet.
+ */
+export function priceAt(value: number, tickSize: number | null): string {
+  if (tickSize === null || !(tickSize > 0)) return finePrice.format(value)
+  return (Math.round(value / tickSize) * tickSize).toFixed(tickDecimals(tickSize))
+}
+
+/**
+ * A distance between two prices, such as a fill's slippage. It is not a price: a fill on the tick
+ * measured against a level a strategy computed lies off the tick, so rounding to it would show
+ * nothing of a slippage below half a tick. Float noise around zero reads as zero.
+ */
+export function priceDistance(value: number): string {
+  const shown = finePrice.format(value)
+  return shown === '-0' ? '0' : shown
 }
 
 /**
