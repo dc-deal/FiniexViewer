@@ -184,8 +184,10 @@ and a pick showing the deployment's bundle beside the list, which stays whole an
 session's summary answered with its own net P&L, so two runs cannot be mistaken for each other — the
 spec went red against the jump that only changed the context), the selection surviving a reload as a link, a stale link saying so in the bundle, the
 figure cells right-aligned under their headings, the timeline marking round moments rather than
-the overlapping stamps an operator photographed, and a change mark opening the configuration of the
-session before it as a panel of its own, its links whole on the line at about the list floor. `panel_layout.spec.ts` also holds that **a list's heading sticks flush to the top of the area it scrolls in**, nothing showing through above it — measured in the trade history open as a panel of its own; that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow deployment bundle keeps its deployment line to one line. It holds that **a long path in a card wraps** rather than scrolling the card sideways, on a changed file in the run header. It holds that **no panel scrolls sideways**, at a wide
+the overlapping stamps an operator photographed, a change mark opening the configuration of the
+session before it as a panel of its own, its links whole on the line at about the list floor, and a
+long code change between two sessions, mocked because no stored session carries one yet: its words give
+way, its dashes stay and its commits stand in the card. `panel_layout.spec.ts` also holds that **a list's heading sticks flush to the top of the area it scrolls in**, nothing showing through above it — measured in the trade history open as a panel of its own; that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow deployment bundle keeps its deployment line to one line. It holds that **a long path in a card wraps** rather than scrolling the card sideways, on a changed file in the run header. It holds that **no panel scrolls sideways**, at a wide
 and at a narrow width: `.panel-content` carries `overflow-x: auto`, which is the right safety valve
 and a poor everyday state, because the moment it engages the panel's leftmost column slides out of
 view and nothing says so. Two defects of exactly that shape reached the screen in one week — a

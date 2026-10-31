@@ -1,14 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { defineComponent, h } from 'vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
+import DeploymentSessionsPanel from '@/components/deployments/DeploymentSessionsPanel.vue'
 import type {
   DeploymentAdvisory,
+  DeploymentDetail,
   DeploymentRow,
   DeploymentSessionRow,
+  SessionCodeChange,
 } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
 import { provideTestOpenInContext } from './open_in_context_harness'
@@ -53,6 +57,23 @@ function mountSessions(sessions: DeploymentSessionRow[], canOpen = true) {
   return mount(Host)
 }
 
+/** The head of the sessions: a code change is a plain fact there, and the advisory stays null for it. */
+describe('DeploymentSessionsPanel', () => {
+  function counts(codeSummary: DeploymentDetail['code_summary']) {
+    const detail = { ...(detailFixture as unknown as DeploymentDetail), advisory: null, code_summary: codeSummary }
+    return mount(DeploymentSessionsPanel, {
+      props: { model: { detail, rows: [] } },
+      global: { plugins: [createPinia()] },
+    }).find('.counts').text()
+  }
+
+  it('says how far the code moved and how long ago, where it moved at all', () => {
+    expect(counts({ code_stands: 3, sessions: 12, last_change_at: '2026-10-26T08:00:00+00:00', age_days: 5 }))
+      .toContain('3 code stands · last moved 5 days ago')
+    expect(counts(null)).not.toContain('code stand')
+  })
+})
+
 describe('SessionsTable', () => {
   it('opens a session through the run it is', async () => {
     const wrapper = mountSessions([session()])
@@ -72,6 +93,65 @@ describe('SessionsTable', () => {
    * at the end of a row reads as the latter, which is why it renders as a line ABOVE the first
    * session produced by the new stand.
    */
+  describe('where the code moved', () => {
+    function change(overrides: Partial<SessionCodeChange> = {}): SessionCodeChange {
+      return {
+        repository_label: 'framework', old_commit: 'a1b2c3d4e5f6', new_commit: '0f9e8d7c6b5a', commits_between: 3,
+        change_direction: 'forward', subject: 'Correct a sentence in a guide', ...overrides,
+      }
+    }
+
+    /** Apart from the marks: a session can have a code change and no mark, and the other way round. */
+    it('draws the line where only the code moved, with the repository, how far and the message', () => {
+      const wrapper = mountSessions([session({ run_id: 'run_a' }), session({ run_id: 'run_b', code_changes: [change()] })])
+      const leads = wrapper.findAll('.record-lead')
+      expect(leads).toHaveLength(1)
+      expect(leads[0]!.text()).toBe('framework: 3 commits newer — Correct a sentence in a guide')
+    })
+
+    /** Their six values, and one they may add later named as it came. */
+    it('says how it moved for every direction', () => {
+      const clause = (fields: Partial<SessionCodeChange>) =>
+        mountSessions([session({ code_changes: [change(fields)] })]).find('.record-lead').text()
+      expect(clause({ change_direction: 'back', commits_between: 1, subject: null })).toBe('framework: rolled back 1 commit')
+      expect(clause({ change_direction: 'unknown', commits_between: null, subject: null })).toBe('framework: moved, how far is not known')
+      expect(clause({ change_direction: 'uncommitted', commits_between: null, subject: null })).toBe('framework: uncommitted changes')
+      expect(clause({ change_direction: 'added', commits_between: null, subject: null, old_commit: null })).toBe('framework: added')
+      expect(clause({ change_direction: 'removed', commits_between: null, subject: null, new_commit: null })).toBe('framework: no longer used')
+      expect(clause({ change_direction: 'sideways', commits_between: null, subject: null })).toBe('framework: sideways')
+    })
+
+    it('stands beside a mark on the one line, each repository on its own', () => {
+      const wrapper = mountSessions([session({
+        strategy_changed: true,
+        code_changes: [change({ subject: null }), change({ repository_label: 'strategy touch_and_turn', commits_between: 1, subject: null })],
+      })])
+      expect(wrapper.find('.record-lead').findAll('.boundary-words').map(words => words.text())).toEqual([
+        'Strategy changed from here', 'framework: 3 commits newer', 'strategy touch_and_turn: 1 commit newer',
+      ])
+    })
+
+    /** The commits are data under the pointer. Read as they came: one commit can read at two lengths. */
+    it('names the commits in its card, and nothing of a side nobody could read', () => {
+      const card = (fields: Partial<SessionCodeChange>) =>
+        mountSessions([session({ code_changes: [change(fields)] })]).find('.record-lead').findComponent(HoverCard).props('details')!
+      expect(card({})).toEqual(expect.arrayContaining([
+        { label: 'Repository', value: 'framework' },
+        { label: 'Moved', value: '3 commits newer' },
+        { label: 'Commit before', value: 'a1b2c3d4e5f6' },
+        { label: 'Commit now', value: '0f9e8d7c6b5a' },
+        { label: 'Commit message', value: 'Correct a sentence in a guide' },
+      ]))
+      const labels = card({ old_commit: null, change_direction: 'added', commits_between: null }).map(row => row.label)
+      expect(labels).not.toContain('Commit before')
+      expect(labels).toContain('Commit now')
+    })
+
+    it('draws no line where nothing moved, as on a session recorded before the contract', () => {
+      expect(mountSessions([session({ code_changes: [] })]).find('.record-lead').exists()).toBe(false)
+    })
+  })
+
   it('places the change mark before the session that starts the new stand', () => {
     const wrapper = mountSessions([
       session({ index: 1, run_id: 'run_a' }),

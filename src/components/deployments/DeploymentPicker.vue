@@ -55,15 +55,15 @@ const facets: FacetDefinition<DeploymentRow>[] = [
   { id: 'bot', label: 'Bot', valuesOf: row => stated(row.bot) },
   { id: 'currency', label: 'Currency', valuesOf: row => stated(row.currency) },
   /*
-   * Built rather than read, like the run list's `artifacts` facet: `changed` is a boolean, and a
-   * facet offering `true` / `false` asks the reader to translate. It is also the one property of a
+   * Built rather than read, like the run list's `artifacts` facet: `configuration_changed` is a boolean,
+   * and a facet offering `true` / `false` asks the reader to translate. It is also the one property of a
    * deployment that changes how its own figures must be read, which is what earns it a facet at
    * all — the sessions below a moved configuration were produced by a different stand.
    */
   {
     id: 'stand',
     label: 'Configuration',
-    valuesOf: row => [row.changed ? 'moved' : 'one stand'],
+    valuesOf: row => [row.configuration_changed ? 'moved' : 'one stand'],
   },
 ]
 
@@ -76,8 +76,9 @@ const facets: FacetDefinition<DeploymentRow>[] = [
  * one I mean" — the id because it is a stamp, the name because an operator improves it and two
  * deployments can share it.
  *
- * The last track carries the configuration mark and has no heading: it is a mark, not a measured
- * field, the same treatment the run list gives its origin marks.
+ * The last track carries the marks of what moved and has no heading: they are marks, not a measured
+ * field, the same treatment the run list gives its origin marks. How long ago the code moved stands in
+ * the row's card.
  */
 const columns: ListColumn[] = [
   { label: t('Deployment'), width: 'minmax(9rem, 20fr)', rank: 1 },
@@ -88,7 +89,7 @@ const columns: ListColumn[] = [
   { label: t('Net P&L'), width: 'minmax(0, 16fr)', figure: true, rank: 1 },
   { label: t('Max DD'), width: 'minmax(0, 15fr)', figure: true, rank: 2 },
   { label: t('Longest gap'), width: 'minmax(0, 12fr)', figure: true, rank: 4 },
-  { label: '', width: 'minmax(0, 10fr)', rank: 3 },
+  { label: '', width: 'minmax(0, 14fr)', rank: 3 },
 ]
 
 const sorts: SortDefinition<DeploymentRow>[] = [
@@ -195,7 +196,9 @@ function pick(row: DeploymentRow): void {
           <span :data-rank="4" class="figure-cell">{{ idleGap(row) }}</span>
           <!-- one cell whether or not a mark is in it, so the gap column never moves -->
           <span :data-rank="3" class="deployment-marks">
-            <span v-if="row.changed" class="deployment-mark">{{ t('changed') }}</span>
+            <!-- `changed` says only that one of the two moved; the reason is read from these -->
+            <span v-if="row.configuration_changed" class="deployment-mark">{{ t('config') }}</span>
+            <span v-if="row.code_summary" class="deployment-mark">{{ t('code') }}</span>
           </span>
         </template>
       </RecordList>
@@ -266,6 +269,7 @@ function pick(row: DeploymentRow): void {
 .deployment-marks {
   display: flex;
   justify-content: flex-end;
+  gap: var(--space-xs);
 }
 
 /* the mark fits INSIDE the text line rather than standing on it, or a row carrying one is taller

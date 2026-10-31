@@ -36,6 +36,10 @@ export interface RepositoryIdentity {
   in_repository: boolean | null
   commit: string | null
   branch: string | null
+  // the commit's message, and the last commits on its first-parent line, newest first: filled for a
+  // session of a deployment and null on every other run (contract 47)
+  commit_subject: string | null
+  recent_commits: string[] | null
   dirty: boolean
   uncommitted_count: number
   changes: string[]

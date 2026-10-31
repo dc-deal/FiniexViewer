@@ -59,7 +59,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'deployment-sessions',
-    text: t('A run id opens that run. Where a session changed its configuration, before and after open the configuration of the session above the mark and of the one carrying it, each compared with the other. Unfinished counts the runs that never reached their close, a session running now among them — one that sealed a day is among the sessions too, so the two counts overlap and are never added.'),
+    text: t('A run id opens that run. Where a session changed its configuration, before and after open the configuration of the session above the mark and of the one carrying it, each compared with the other. Unfinished counts the runs that never reached their close, a session running now among them — one that sealed a day is among the sessions too, so the two counts overlap and are never added. Where its code moved, the line says which repository, how far and the message of the commit, and its card names the commits.'),
   },
   {
     id: 'sweeps',

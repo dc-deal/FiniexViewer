@@ -34,10 +34,15 @@ export interface DeploymentRow {
   // null where no idle stretch exists at all — a deployment of one session has nothing between
   // its sessions. An absence, and 0 would claim a measured stretch of no length.
   longest_gap_hours: number | null
-  // true when the sessions did not all run under one profile: one set of strategy parameters, one
-  // operational configuration and one place for their orders. Neither the code each session ran
-  // nor its broker configuration is compared.
+  // true when the sessions did not all run under one profile, or their code moved (contract 47), so
+  // `changed: true` with a null advisory is a code change alone. Read the reason from the two below,
+  // never from this. Every commit counts, so a deployment whose code once moved stays `changed` for good.
   changed: boolean
+  // what `changed` said until contract 47: not one set of strategy parameters, one operational
+  // configuration and one place for their orders. The broker configuration is not compared.
+  configuration_changed: boolean
+  // null under two code stands
+  code_summary: DeploymentCodeSummary | null
   /**
    * Where this deployment's orders went, as the DISTINCT values of its sessions (contract 23):
    * `["venue"]` is real money throughout, `["simulated"]` a rehearsal throughout, and BOTH is a
@@ -45,6 +50,44 @@ export interface DeploymentRow {
    * on by itself.
    */
   orders_to: string[]
+}
+
+/**
+ * A deployment's code over its sessions (contract 47). Unlike the advisory it dates the change, because
+ * a change half a year old is still in the history: `age_days` is what tells a maintained deployment
+ * from one whose code moved last week.
+ */
+export interface DeploymentCodeSummary {
+  // how many distinct stands the sessions started on: a rollback to an earlier one adds none, and an
+  // unreadable commit is a stand of its own every time
+  code_stands: number
+  // how many sessions the deployment holds: distinct runs, not rows, in every currency
+  sessions: number
+  // when the latest session whose code differs from the one before it started; null where that start
+  // could not be read, and `age_days`, whole days from then to the answer, with it
+  last_change_at: string | null
+  age_days: number | null
+}
+
+/**
+ * One repository whose code differs from the session before (contract 47). Its identity is its place
+ * in the list: `code_changes_key` is empty on the detail.
+ */
+export interface SessionCodeChange {
+  // `framework`, `strategy`, or `strategy` with its directory's name: a word for reading and no key,
+  // it can repeat, and one repository can read differently for another pair of sessions
+  repository_label: string
+  // compared by their shared beginning and never for equality: one commit can read at two lengths.
+  // Null where nobody could read it, and on the side where the repository was not used
+  old_commit: string | null
+  new_commit: string | null
+  // only on `forward` and `back`
+  commits_between: number | null
+  // `forward` · `back` · `unknown` · `uncommitted` · `added` · `removed` (their `deployments` document)
+  change_direction: string
+  // the message of the commit that made the difference; null where it could not be read, on
+  // `uncommitted` and on `removed`
+  subject: string | null
 }
 
 /** Response type for GET /api/v1/deployments */
@@ -98,6 +141,10 @@ export interface DeploymentSessionRow {
   // a change (contract 23).
   orders_to: string | null
   orders_to_changed: boolean
+  // One entry per repository whose code differs from the session before (contract 47). Apart from the
+  // marks above: a session can have one without the other. Empty when nothing moved, and on a session
+  // recorded before this contract, which draws no change in either direction.
+  code_changes: SessionCodeChange[]
 }
 
 /**
@@ -133,11 +180,16 @@ export interface DeploymentDetail {
    */
   unfinished: number
   /**
-   * Null when nothing moved. Belongs ABOVE the table: by the time a reader reaches a change mark
+   * Null when the profile held: it speaks of the profile alone, and stays null for a code change
+   * (contract 47). Belongs ABOVE the table: by the time a reader reaches a change mark
    * in row 3 they have already added up the column above it. The wording is the component's — this
    * carries counts, not a sentence.
    */
   advisory: DeploymentAdvisory | null
+  // empty: an entry of `code_changes` is identified by its place in the list
+  code_changes_key: string[]
+  // null under two code stands
+  code_summary: DeploymentCodeSummary | null
 }
 
 /**

@@ -17,6 +17,8 @@
       "bot_id": "ethday01",
       "longest_gap_hours": null,
       "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -34,6 +36,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": null,
       "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -51,6 +55,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": 0.0017922627777777777,
       "changed": true,
+      "configuration_changed": true,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -68,6 +74,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": null,
       "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -85,6 +93,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": 0.0023712802777777777,
       "changed": true,
+      "configuration_changed": true,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -102,6 +112,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": null,
       "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -119,6 +131,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": 0.001930515,
       "changed": true,
+      "configuration_changed": true,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -136,6 +150,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": null,
       "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -153,6 +169,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": 0.001732156111111111,
       "changed": true,
+      "configuration_changed": true,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -170,6 +188,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": null,
       "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -187,6 +207,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": 0.001770175277777778,
       "changed": true,
+      "configuration_changed": true,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -204,6 +226,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": null,
       "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -221,6 +245,8 @@
       "bot_id": "demo-btc",
       "longest_gap_hours": 0.0018787516666666667,
       "changed": true,
+      "configuration_changed": true,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]
@@ -238,6 +264,8 @@
       "bot_id": "deploy01",
       "longest_gap_hours": null,
       "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
       "orders_to": [
         "simulated"
       ]

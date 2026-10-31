@@ -23,6 +23,8 @@ const BASE: DeploymentRow = {
   // null where no idle stretch EXISTS — one session has nothing between its sessions
   longest_gap_hours: null,
   changed: false,
+  configuration_changed: false,
+  code_summary: null,
   // the DISTINCT values of its sessions (contract 23): one entry is a deployment that stayed on
   // one side, both would be a rehearsal mixed with real money and `changed` by itself
   orders_to: ['simulated'],
@@ -186,17 +188,35 @@ describe('DeploymentPicker', () => {
      * says nothing. A configuration that MOVED changes how the figures beneath it must be read.
      */
     it('speaks about the configuration only where it moved', () => {
-      const moved = cardRows(mountPicker([deployment({ changed: true })]))
+      const moved = cardRows(mountPicker([deployment({ changed: true, configuration_changed: true })]))
       expect(moved['Configuration']).toBe('moved between sessions')
-      expect(cardRows(mountPicker([deployment({ changed: false })]))['Configuration'])
+      expect(cardRows(mountPicker([deployment()]))['Configuration'])
         .toBeUndefined()
     })
 
+    /** Contract 47: `changed` with a held configuration is the code alone, and the card says how long ago. */
+    it('says the code moved apart from the configuration, and how long ago', () => {
+      const code = { code_stands: 3, sessions: 12, last_change_at: '2026-10-26T08:00:00+00:00', age_days: 5 }
+      const rows = cardRows(mountPicker([deployment({ changed: true, code_summary: code })]))
+      expect(rows['Configuration']).toBeUndefined()
+      expect(rows['Code']).toBe('3 code stands · last moved 5 days ago')
+      // whole days, so a 0 is a change of under a day
+      const recent = cardRows(mountPicker([deployment({ changed: true, code_summary: { ...code, age_days: 0 } })]))
+      expect(recent['Code']).toBe('3 code stands · last moved under a day ago')
+      // where the start of that session could not be read the age is null with it
+      const undated = cardRows(mountPicker([deployment({ changed: true, code_summary: { ...code, last_change_at: null, age_days: null } })]))
+      expect(undated['Code']).toBe('3 code stands')
+      expect(cardRows(mountPicker([deployment()]))['Code']).toBeUndefined()
+    })
+
     it('marks a moved configuration on the row as well, and nothing where it held', () => {
-      expect(mountPicker([deployment({ changed: true })]).find('.deployment-mark').exists())
-        .toBe(true)
-      expect(mountPicker([deployment({ changed: false })]).find('.deployment-mark').exists())
-        .toBe(false)
+      const marks = (row: Partial<DeploymentRow>) => mountPicker([deployment(row)]).findAll('.deployment-mark').map(mark => mark.text())
+      const code = { code_stands: 2, sessions: 4, last_change_at: null, age_days: null }
+      expect(marks({ changed: true, configuration_changed: true })).toEqual(['config'])
+      // `changed` alone says nothing of which: the code moved here and the configuration held
+      expect(marks({ changed: true, code_summary: code })).toEqual(['code'])
+      expect(marks({ changed: true, configuration_changed: true, code_summary: code })).toEqual(['config', 'code'])
+      expect(marks({})).toEqual([])
     })
 
     /**

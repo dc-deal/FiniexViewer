@@ -788,6 +788,7 @@ describe('RunHeaderPanel', () => {
   function repository(overrides = {}) {
     return {
       root: '.', in_repository: true, commit: '3b31c84a', branch: 'dev-v-1-4',
+      commit_subject: null, recent_commits: null,
       dirty: false, uncommitted_count: 0, changes: [], diff_hash: null,
       patch_ref: null, patch_excluded: [], restorable: true,
       ...overrides,
@@ -1058,6 +1059,30 @@ describe('RunHeaderPanel', () => {
       { title: 'Source', paths: ['algos/trend.py'] },
     ]))
     expect(wrapper.find('[title]').exists()).toBe(false)
+  })
+
+  /** Contract 47: on a session of a deployment the commit says what it was; null on every other run. */
+  it('keeps what a commit says in a card, one hover away, and offers none where nothing is known', () => {
+    const named = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        code_identity: {
+          framework: repository({ commit_subject: 'Correct a sentence in a guide', recent_commits: ['a1b2c3d4e5f6', '0f9e8d7c6b5a'] }),
+          repositories: [],
+          components: [],
+        },
+      })) },
+    })
+    const card = named.find('.repo').findComponent(HoverCard).props('details')!
+    expect(card).toContainEqual({ label: 'Commit message', value: 'Correct a sentence in a guide' })
+    expect(card).toContainEqual({ label: 'Recent commits', value: 'a1b2c3d4e5f6 · 0f9e8d7c6b5a' })
+
+    const plain = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        code_identity: { framework: repository(), repositories: [], components: [] },
+      })) },
+    })
+    expect(plain.find('.repo').text()).toContain('3b31c84a')
+    expect(plain.find('.repo').findComponent(HoverCard).exists()).toBe(false)
   })
 
   it('names every repository and every component that ran', () => {

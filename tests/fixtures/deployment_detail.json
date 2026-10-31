@@ -3,6 +3,7 @@
     "run_id",
     "currency"
   ],
+  "code_changes_key": [],
   "deployment_id": "deploy_20261012_205734",
   "sessions": [
     {
@@ -22,7 +23,8 @@
       "strategy_changed": false,
       "operation_changed": false,
       "orders_to": "simulated",
-      "orders_to_changed": false
+      "orders_to_changed": false,
+      "code_changes": []
     },
     {
       "index": 2,
@@ -41,7 +43,8 @@
       "strategy_changed": false,
       "operation_changed": false,
       "orders_to": "simulated",
-      "orders_to_changed": false
+      "orders_to_changed": false,
+      "code_changes": []
     },
     {
       "index": 3,
@@ -60,7 +63,8 @@
       "strategy_changed": true,
       "operation_changed": false,
       "orders_to": "simulated",
-      "orders_to_changed": false
+      "orders_to_changed": false,
+      "code_changes": []
     },
     {
       "index": 4,
@@ -79,7 +83,8 @@
       "strategy_changed": false,
       "operation_changed": true,
       "orders_to": "simulated",
-      "orders_to_changed": false
+      "orders_to_changed": false,
+      "code_changes": []
     }
   ],
   "count": 4,
@@ -92,5 +97,6 @@
     "orders_to": [
       "simulated"
     ]
-  }
+  },
+  "code_summary": null
 }

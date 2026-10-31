@@ -71,6 +71,9 @@ export interface SweepCombination {
   // The order features this row was allowed beyond its venue, comma-joined (contract 45): such a row
   // does not predict a session on that venue. Empty for every other row
   features_beyond_venue: string
+  // which code a session started on: null on every combination, because only a session records one
+  // (contract 47); the deployment's rows are where it is read
+  code_stand: null
 
   /**
    * The mean R, which a sweep usually ranks on. R is `net_pnl` over the loss the stop would have

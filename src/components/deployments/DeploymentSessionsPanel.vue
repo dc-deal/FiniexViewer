@@ -2,6 +2,7 @@
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
 import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
+import { codeSummaryText } from '@/components/deployments/deployment_card'
 import HintLine from '@/components/base/HintLine.vue'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { DeploymentSessionsModel } from '@/types/deployment_bundle_types'
@@ -33,6 +34,8 @@ function sessionsOf(currency: string): DeploymentSessionRow[] {
       <span>{{ plural(model.detail.count, t('session'), t('sessions')) }}</span>
       <!-- the WHY is in the hint above: the number is the fact, the explanation is a caveat -->
       <span :class="{ flagged: model.detail.unfinished > 0 }">{{ model.detail.unfinished }} {{ t('unfinished') }}</span>
+      <!-- a plain fact, apart from the advisory: that speaks of the profile alone -->
+      <span v-if="model.detail.code_summary">{{ codeSummaryText(model.detail.code_summary) }}</span>
       <!-- ABOVE the table, never beside it: by the time a reader reaches a change mark in the
            third row they have already added up the column above it -->
       <AdvisoryNotice v-if="model.detail.advisory" :advisory="model.detail.advisory" />

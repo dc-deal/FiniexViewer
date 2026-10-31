@@ -2,8 +2,20 @@ import {
   amount, drawdownFigure, duration, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { Figure, FigureCard } from '@/types/figure_types'
-import type { DeploymentRow } from '@/types/api/deployment_types'
+import type { DeploymentCodeSummary, DeploymentRow } from '@/types/api/deployment_types'
 import { plural, t } from '@/translate'
+
+/**
+ * A deployment's code over its sessions, from `code_summary`. Every commit counts and a change stays in
+ * the history, so how long ago it moved is what tells a maintained deployment from one moved last week.
+ * Its `sessions` stays unprinted: the count stands beside this wherever it is shown. `age_days` is whole
+ * days, so 0 is a change of under a day and not of no time.
+ */
+export function codeSummaryText(summary: DeploymentCodeSummary): string {
+  const stands = plural(summary.code_stands, t('code stand'), t('code stands'))
+  if (summary.age_days === null) return stands
+  return `${stands} · ${t('last moved')} ${summary.age_days === 0 ? t('under a day') : plural(summary.age_days, t('day'), t('days'))} ${t('ago')}`
+}
 
 /**
  * The longest idle stretch between two sessions. `null` where no such stretch EXISTS — a deployment
@@ -41,7 +53,7 @@ export function deploymentCard(row: DeploymentRow): FigureCard {
   // row above". Empty on a profile that declares none, so it is stated or it is absent.
   if (row.bot_id) details.push({ label: t('Bot id'), value: row.bot_id })
   // and where everything is fine, nothing is printed: one stand throughout is the ordinary case
-  if (row.changed) {
+  if (row.configuration_changed) {
     details.push({
       label: t('Configuration'),
       value: t('moved between sessions'),
@@ -49,5 +61,7 @@ export function deploymentCard(row: DeploymentRow): FigureCard {
       title: t('The sessions were not all produced by one configuration. Where the boundary falls is in the sessions table.'),
     })
   }
+  // the code stands apart: it can move with the configuration holding, and the advisory then stays null
+  if (row.code_summary) details.push({ label: t('Code'), value: codeSummaryText(row.code_summary) })
   return { title: `${row.deployment_id} · ${row.currency}`, details }
 }

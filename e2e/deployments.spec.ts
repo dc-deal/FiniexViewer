@@ -145,6 +145,53 @@ test('a change mark opens the configuration of a session beside it, its links wh
   await expect(page.locator('.panel-host[data-panel-kind$="config"] [data-panel="config"]')).toBeVisible()
 })
 
+/**
+ * Where the code moved, the line carries the whole message of a commit. No stored session has one yet
+ * (measured 2026-10-31, over 14 rows), so it is mocked here. The words give way and keep their card,
+ * the list is not widened, and the dashes stay beside them: they are the colour's second channel.
+ */
+test('a long code change stays on its line, its rule drawn and its commits in a card', async ({ page }) => {
+  await page.route(`**/api/v1/deployments/${FIXTURE_DEPLOYMENT}`, route => {
+    const body = structuredClone(fixture('deployment_detail.json')) as { sessions: Record<string, unknown>[] }
+    body.sessions[1]!['code_changes'] = [
+      {
+        repository_label: 'framework',
+        old_commit: '758e39e2a1b2',
+        new_commit: '2234e043c3d4',
+        commits_between: 3,
+        change_direction: 'forward',
+        subject: 'Let a deployment say where its sessions ran different code, in a message that fills the line',
+      },
+      {
+        repository_label: 'strategy touch_and_turn',
+        old_commit: 'a1b2c3d4e5f6',
+        new_commit: '0f9e8d7c6b5a',
+        commits_between: 1,
+        change_direction: 'back',
+        subject: 'Correct a sentence in a guide, in a message long enough to need the room of the first one too',
+      },
+    ]
+    return route.fulfill({ json: body })
+  })
+  await page.setViewportSize({ width: 1500, height: 1000 })
+  await openLedger(page)
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+
+  const lead = page.locator('.sessions-list .record-lead', { hasText: 'framework' })
+  await expect(lead).toBeVisible()
+  const { sideways, rule } = await lead.evaluate(line => ({
+    sideways: line.scrollWidth - line.clientWidth,
+    rule: parseFloat(getComputedStyle(line, '::before').width),
+  }))
+  expect(sideways).toBeLessThanOrEqual(1)
+  expect(rule, 'long words squeezed the dashed rule away').toBeGreaterThan(8)
+
+  await lead.locator('.boundary-words').first().hover()
+  const card = page.locator('.hover-card')
+  await expect(card).toContainText('758e39e2a1b2', { timeout: 15_000 })
+  await expect(card).toContainText('in a message that fills the line')
+})
+
 test('a chosen deployment survives a reload', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)

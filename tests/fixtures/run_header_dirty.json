@@ -53,7 +53,9 @@
       "diff_hash": "6dd114cd5fb3332fb759ab9ad254213e247d4e85bf4b3545bb8000d8f8ff0c85",
       "patch_ref": "run_patches/e7195d1726aadc11777804a6eca4f50e60d930169301f168de250d8fcc010ef8.patch",
       "patch_excluded": [],
-      "restorable": true
+      "restorable": true,
+      "commit_subject": null,
+      "recent_commits": null
     },
     "repositories": [],
     "components": [

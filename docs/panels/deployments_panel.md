@@ -82,6 +82,17 @@ misreports something:
   change without the contract changing. A null advisory is the backend's answer that there is
   nothing to report, so a non-null one is ALWAYS a warning — and where the stands held, it is the
   orders: real money and simulated orders in one history is the one case it fires on by itself.
+- **`changed` on a list row says only that something moved** (contract 47), so the marks read the
+  reason: *config* from `configuration_changed`, *code* from `code_summary`, which is null under two code
+  stands. `changed: true` with a null advisory is a code change alone: the advisory speaks of the profile
+  and nothing else, so the head of the sessions says *3 code stands · last moved 5 days ago* beside it.
+  Every commit counts and a change stays in the history, so a deployment stays `changed` for good, and
+  the age tells a maintained one from one moved last week. Measured 2026-10-31: none of the
+  14 rows on record carries a summary yet, since a session recorded before the contract has no code stand.
+- **`code_changes` stands on the line between two sessions**, one entry per repository whose code
+  differs from the session before: its word, how it moved (`change_direction`) and the message of the
+  commit that made the difference, which shows at once when a commit did not matter. The two commits are
+  in the card. It is apart from the marks below: a session can have one without the other.
 - `strategy_changed` / `operation_changed` / `orders_to_changed` render as a line BETWEEN two rows,
   the words on a dashed rule half a row high. A badge at the end of a row reads as a property of
   that session, which is the wrong reading — the flag marks a boundary.

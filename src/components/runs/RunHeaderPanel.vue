@@ -6,6 +6,7 @@ import JumpLink from '@/components/base/JumpLink.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import type { ComponentIdentity, RepositoryIdentity, RunHeader, RunInfo } from '@/types/api/report_types'
 import { utcInstant } from '@/components/runs/report_format'
+import type { Figure } from '@/types/figure_types'
 import { plural, t } from '@/translate'
 
 /**
@@ -96,6 +97,16 @@ function changeNote(repository: RepositoryIdentity): string {
 function changeSample(repository: RepositoryIdentity): string[] {
   if (repository.changes.length >= repository.uncommitted_count) return repository.changes
   return [...repository.changes, `…${t('and more')}`]
+}
+
+/** What the commit says and the commits before it: on a session of a deployment, null on every other run. */
+function commitCard(repository: RepositoryIdentity): Figure[] {
+  const rows: Figure[] = []
+  if (repository.commit_subject) rows.push({ label: t('Commit message'), value: repository.commit_subject })
+  if (repository.recent_commits?.length) {
+    rows.push({ label: t('Recent commits'), value: repository.recent_commits.join(' · ') })
+  }
+  return rows
 }
 
 /** A component names itself by role, name and version; the file it came from is one hover away. */
@@ -208,7 +219,10 @@ const hints = computed(() => [
 
     <p v-for="{ name, held: repository } in repositories" :key="name" class="repo">
       <span class="repo-root">{{ name }}</span>
-      <span v-if="repository.commit" class="mono">{{ repository.commit }}</span>
+      <HoverCard v-if="repository.commit && commitCard(repository).length" :details="commitCard(repository)">
+        <span class="mono" tabindex="0">{{ repository.commit }}</span>
+      </HoverCard>
+      <span v-else-if="repository.commit" class="mono">{{ repository.commit }}</span>
       <span v-if="repository.branch" class="repo-branch">{{ repository.branch }}</span>
       <!-- a clean tree states nothing beyond its commit: the commit IS the statement -->
       <HoverCard v-if="repository.dirty" :title="t('Changes')" :paths="changeSample(repository)">

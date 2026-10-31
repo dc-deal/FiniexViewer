@@ -6,10 +6,10 @@ import RecordList from '@/components/base/RecordList.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
 import { amount, magnitude, duration, orDash, signClass, utcInstant } from '@/components/runs/report_format'
-import type { DeploymentSessionRow } from '@/types/api/deployment_types'
+import type { DeploymentSessionRow, SessionCodeChange } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
 import type { ListColumn } from '@/types/list_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 /**
  * The sessions of one deployment in one account currency, oldest first — a life reads forwards.
@@ -70,6 +70,7 @@ const columns: ListColumn[] = [
 /** Whether anything changed at the boundary before a session. */
 function hasBoundary(session: DeploymentSessionRow): boolean {
   return session.strategy_changed || session.operation_changed || session.orders_to_changed
+    || session.code_changes.length > 0
 }
 
 function configurationClause(session: DeploymentSessionRow): string {
@@ -107,6 +108,45 @@ function markCard(session: DeploymentSessionRow): Figure[] {
       value: t('Two identical configurations mean the change lies in a default or a start option, which no route serves'),
     })
   }
+  return rows
+}
+
+/**
+ * How a repository's code moved from the session before, for each `change_direction` of their
+ * `deployments` document. Their vocabulary may grow: a value unknown here is named as it came.
+ */
+function codeMove(change: SessionCodeChange): string {
+  const commits = plural(change.commits_between ?? 0, t('commit'), t('commits'))
+  switch (change.change_direction) {
+    case 'forward': return `${commits} ${t('newer')}`
+    case 'back': return `${t('rolled back')} ${commits}`
+    case 'unknown': return t('moved, how far is not known')
+    case 'uncommitted': return t('uncommitted changes')
+    case 'added': return t('added')
+    case 'removed': return t('no longer used')
+  }
+  return change.change_direction
+}
+
+/**
+ * The words on the line: which repository, how it moved, and the message of the commit that made the
+ * difference. Every commit counts, a documentation commit too, and the message shows at once when one
+ * did not matter (their `deployments` document).
+ */
+function codeClause(change: SessionCodeChange): string {
+  const moved = `${change.repository_label}: ${codeMove(change)}`
+  return change.subject ? `${moved} — ${change.subject}` : moved
+}
+
+/** What the line has no room for. A commit nobody could read, or a side that did not use it, says nothing. */
+function codeCard(change: SessionCodeChange): Figure[] {
+  const rows: Figure[] = [
+    { label: t('Repository'), value: change.repository_label },
+    { label: t('Moved'), value: codeMove(change) },
+  ]
+  if (change.old_commit) rows.push({ label: t('Commit before'), value: change.old_commit })
+  if (change.new_commit) rows.push({ label: t('Commit now'), value: change.new_commit })
+  if (change.subject) rows.push({ label: t('Commit message'), value: change.subject })
   return rows
 }
 
@@ -166,6 +206,17 @@ function gap(session: DeploymentSessionRow): string {
       </template>
       <span v-if="configurationClause(session) && session.orders_to_changed" aria-hidden="true">·</span>
       <span v-if="session.orders_to_changed" class="boundary-words">{{ ordersClause(session.orders_to) }}</span>
+      <!-- the code on the same line and apart from the marks: a session can have one without the other.
+           An entry's identity is its place in the list, since their `code_changes_key` is empty -->
+      <template v-for="(change, place) in session.code_changes" :key="place">
+        <span
+          v-if="place > 0 || configurationClause(session) || session.orders_to_changed"
+          aria-hidden="true"
+        >·</span>
+        <HoverCard :details="codeCard(change)">
+          <span class="boundary-words" tabindex="0">{{ codeClause(change) }}</span>
+        </HoverCard>
+      </template>
     </template>
 
     <template #default="{ row: session }">
