@@ -10,7 +10,7 @@ import { t } from '@/translate'
 
 const { isReady } = storeToRefs(useSelectionStore())
 const bars = useBarsStore()
-const { chartData, loading, error, loadingEdges, edgeError } = storeToRefs(bars)
+const { chartData, priceFormat, loading, error, loadingEdges, edgeError } = storeToRefs(bars)
 
 useChartBinding()
 </script>
@@ -30,6 +30,7 @@ useChartBinding()
     <CandleChart
       v-else-if="chartData.length"
       :data="chartData"
+      :price-format="priceFormat"
       :loading-edges="loadingEdges"
       :edge-error="edgeError"
       @edge="bars.extend"

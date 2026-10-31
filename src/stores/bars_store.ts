@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { chartPriceFormat } from '@/components/runs/run_chart'
 import { useSelectionStore } from '@/stores/selection_store'
+import { useSymbolStore } from '@/stores/symbol_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import { getCoverage } from '@/api/api_client'
 import { useBarLoader } from '@/composables/use_bar_loader'
@@ -41,6 +43,17 @@ export const useBarsStore = defineStore('bars', () => {
 
   const selectionStore = useSelectionStore()
   const timeframeStore = useTimeframeStore()
+  const symbolStore = useSymbolStore()
+
+  /**
+   * The market's prices at its tick size, from the symbols list (contract 35). Null until the list has
+   * arrived, or where it names none: the chart then keeps its own format.
+   */
+  const priceFormat = computed(() => {
+    const listed = symbolStore.symbolsByBroker[selectionStore.broker ?? '']
+      ?.find(row => row.symbol === selectionStore.symbol)
+    return chartPriceFormat(listed?.tick_size ?? null)
+  })
 
   async function fetchBars(): Promise<void> {
     const { broker, symbol, timeframe } = selectionStore
@@ -88,6 +101,6 @@ export const useBarsStore = defineStore('bars', () => {
   )
 
   return {
-    chartData, loading, error, timeframeUncovered, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError, extend,
+    chartData, priceFormat, loading, error, timeframeUncovered, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError, extend,
   }
 })

@@ -3,6 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { flushPromises } from '@vue/test-utils'
 import { useBarsStore } from '@/stores/bars_store'
 import { useSelectionStore } from '@/stores/selection_store'
+import { useSymbolStore } from '@/stores/symbol_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { TimeframeInfo } from '@/types/api/timeframe_types'
 import * as apiClient from '@/api/api_client'
@@ -46,6 +47,30 @@ describe('useBarsStore', () => {
     vi.clearAllMocks()
     vi.mocked(apiClient.getTimeframes).mockResolvedValue(TF_INFOS)
     await useTimeframeStore().loadTimeframes()
+  })
+
+  /** The symbols list states the tick size (contract 35): the chart is handed it, and nothing before. */
+  it('hands the chart the price format of the market once the symbols list is there', () => {
+    const bars = useBarsStore()
+    const selection = useSelectionStore()
+    selection.setBroker('kraken_spot')
+    selection.setSymbol('ETHUSD')
+    expect(bars.priceFormat).toBeNull()
+
+    const symbols = useSymbolStore()
+    symbols.symbolsByBroker = {
+      kraken_spot: [
+        { symbol: 'BTCUSD', market_type: 'crypto', tick_size: 0.1 },
+        { symbol: 'ETHUSD', market_type: 'crypto', tick_size: 0.01 },
+      ],
+    }
+    expect(bars.priceFormat).toEqual({ precision: 2, minMove: 0.01 })
+    selection.setSymbol('BTCUSD')
+    expect(bars.priceFormat).toEqual({ precision: 1, minMove: 0.1 })
+
+    // a configuration that names no such symbol: the list says null, and the chart keeps its own format
+    symbols.symbolsByBroker = { kraken_spot: [{ symbol: 'BTCUSD', market_type: 'crypto', tick_size: null }] }
+    expect(bars.priceFormat).toBeNull()
   })
 
   it('does not call getCoverage when selection is incomplete', async () => {
