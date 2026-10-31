@@ -71,7 +71,7 @@ describe('sweep_rows', () => {
     const rows = combinations({
       combinations: [
         combination({ run_id: 'run_a', currency: 'USD' }),
-        combination({ run_id: 'run_b', currency: 'USD', expectancy: 1 }),
+        combination({ run_id: 'run_b', currency: 'USD', net_pnl: -9999 }),
         combination({ run_id: 'run_a', currency: 'EUR' }),
       ],
     })
@@ -93,7 +93,7 @@ describe('sweep_rows', () => {
   })
 
   it('prints the objective as the summary prints the same field, and an unknown one as its number', () => {
-    const [row] = combinations({})
+    const [row] = combinations({ combinations: [combination({ expectancy: 0.5, r_trade_count: 4 })] })
     expect(objectiveFigure({ ...row!, objective: 'expectancy' })).toMatch(/R$/)
     expect(objectiveFigure({ ...row!, objective: 'net_pnl' })).toContain(row!.combination.currency)
     expect(objectiveFigure({ ...row!, objective: 'total_trades' })).toMatch(new RegExp(`^${row!.combination.total_trades}`))

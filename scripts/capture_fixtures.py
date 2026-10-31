@@ -87,7 +87,9 @@ DEPLOY = 'deploy_20261012_205734'
 # The sweep the ranking fixtures come from: a stored search of several combinations, every one of
 # them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get
 # right. The preflight below checks exactly that; any sweep it accepts can replace this one.
-SWEEP = 'sweep_20261012_210055'
+# Re-pinned 2026-10-31 to the catalog's `sweep` entry, produced again on contract 46: a logic on own
+# levels, ranked by `net_pnl`, every row's `expectancy` null.
+SWEEP = 'sweep_20261031_100348_42d8ea0b'
 
 # The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
 # than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs
