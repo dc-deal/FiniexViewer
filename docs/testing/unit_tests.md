@@ -82,6 +82,11 @@ python scripts/capture_fixtures.py --dry   # what would move, nothing written
 python scripts/capture_fixtures.py         # every target, or nothing
 ```
 
+**The fixtures are public, and the archive they come from is not.** Before it writes, the capture
+replaces the names listed in `FIXTURE_RENAME` (in `.env.local`, as `old=new,old=new`), gives
+`venue_balances` a fixed value and numbers the venue's order ids. A test in `api_contract.test.ts` holds
+the balances and the ids. The names have no test, because a versioned test would have to name them.
+
 **When a refresh is needed, and when it is not.** It is needed when the contract changes SHAPE — a
 field added, removed or renamed — because every fixture is assigned to its mirrored interface and a
 new required field fails the type-check against an old capture; making the field optional instead

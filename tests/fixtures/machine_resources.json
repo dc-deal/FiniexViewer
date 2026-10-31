@@ -1,15 +1,15 @@
 {
-  "measured_at": "2026-10-31T13:01:49.834444+00:00",
+  "measured_at": "2026-10-31T17:35:08.243551+00:00",
   "cpu": {
     "count": 16.0,
     "count_source": "machine",
-    "used_pct": 37.3,
-    "window_s": 233.17
+    "used_pct": 37.2,
+    "window_s": 106.79
   },
   "memory": {
     "limit_bytes": 32495558656,
-    "used_bytes": 5170003968,
-    "used_pct": 15.9,
+    "used_bytes": 5761630208,
+    "used_pct": 17.7,
     "limit_source": "machine",
     "warn_at_pct": 80.0,
     "critical_at_pct": 90.0

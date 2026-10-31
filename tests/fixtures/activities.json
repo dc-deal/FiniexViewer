@@ -2,11 +2,11 @@
   "key": [
     "activity_id"
   ],
-  "measured_at": "2026-10-31T13:01:51.876532+00:00",
+  "measured_at": "2026-10-31T17:35:10.331559+00:00",
   "machine_memory": {
     "limit_bytes": 32495558656,
-    "used_bytes": 5171818496,
-    "used_pct": 15.9,
+    "used_bytes": 5758193664,
+    "used_pct": 17.7,
     "limit_source": "machine",
     "warn_at_pct": 80.0,
     "critical_at_pct": 90.0
@@ -16,6 +16,28 @@
   "server_activity_id": "act_20261031_122907_43e88e2d",
   "unreadable_activity_ids": [],
   "activities": [
+    {
+      "activity_id": "act_20261031_172722_0c8620f2",
+      "activity_kind": "autotrader_session",
+      "activity_state": "running",
+      "activity_label": "spot_venue_field_study",
+      "run_id": "20261031_172719_fde14368",
+      "sweep_id": null,
+      "parent_activity_id": null,
+      "pid": 31571,
+      "command_line": "python/cli/autotrader_cli.py run --config configs/autotrader_profiles/field_study/spot_venue_field_study.json",
+      "started_at": "2026-10-31T17:27:22.887969+00:00",
+      "uptime_s": 467.7,
+      "working_tree": ".",
+      "git_commit": "2234e043",
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "console_session": null,
+      "rss_bytes": 235352064,
+      "process_count": 1
+    },
     {
       "activity_id": "act_20261031_122907_43e88e2d",
       "activity_kind": "api_server",
@@ -27,7 +49,7 @@
       "pid": 69568,
       "command_line": "python/cli/api_server_cli.py",
       "started_at": "2026-10-31T12:29:07.548318+00:00",
-      "uptime_s": 1964.6,
+      "uptime_s": 18363.8,
       "working_tree": ".",
       "git_commit": "2234e043",
       "origin_channel": "cli",
@@ -35,7 +57,7 @@
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
       "console_session": null,
-      "rss_bytes": 452894720,
+      "rss_bytes": 698408960,
       "process_count": 1
     }
   ]

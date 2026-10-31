@@ -523,6 +523,21 @@ describe('api contract', () => {
     }
   })
 
+  /**
+   * The fixtures are public and this one comes from a real account, so its capture writes neutral
+   * balances and order ids. Red here means a capture ran past that step.
+   */
+  it('carries neither a balance nor an order id of the real account it comes from', () => {
+    const live: OrderEventsReport = eventsLive
+    expect(live.broker_truth.length).toBeGreaterThan(0)
+    for (const row of live.broker_truth) {
+      expect(row.venue_balances).toEqual({ XETH: 1, ZUSD: 100 })
+    }
+    const orderIds = live.events.flatMap(row => row.broker_ref ?? [])
+    expect(orderIds.length).toBeGreaterThan(0)
+    for (const orderId of orderIds) expect(orderId).toMatch(/^O\d{5}-00000-000000$/)
+  })
+
   it('the order history still satisfies the mirrored shape', () => {
     const typed: OrderHistoryReport = history
     expect(typed.orders.length).toBeGreaterThan(0)

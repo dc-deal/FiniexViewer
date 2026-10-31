@@ -13,7 +13,7 @@
       "max_drawdown": 0.39653300169999994,
       "max_drawdown_pct": 0.628756251312497,
       "currency": "USD",
-      "bot": "kraken_spot_ethusd_day_boundary",
+      "bot": "spot_venue_day_boundary",
       "bot_id": "ethday01",
       "longest_gap_hours": null,
       "changed": false,

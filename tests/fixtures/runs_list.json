@@ -7,6 +7,49 @@
   ],
   "runs": [
     {
+      "run_id": "20261031_172719_fde14368",
+      "group": "autotrader",
+      "name": "spot_venue_field_study",
+      "artifacts": [],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "current",
+      "start_time": "2026-10-31T17:27:19.127396+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "8d0371a70d7128a03527edf35e0d0f4a431b8c929b7239df119889097d191c5e",
+      "app_version": "1.4.0",
+      "git_commit": "2234e043",
+      "config_snapshot": "spot_venue_field_study.json",
+      "reporting": "expected",
+      "size_bytes": 0,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "spot_venue_field_study",
+          "start_date": "2026-10-31T17:27:19.127396+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 47,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "has_reports": false
+    },
+    {
       "run_id": "20261031_101128_bed258ad",
       "group": "simulation",
       "name": "trend_channel_reference_sweep_base__sweep_20261031_100348_42d8ea0b_c008",
@@ -666,7 +709,7 @@
     {
       "run_id": "20261028_085956_87d1ba84",
       "group": "simulation",
-      "name": "eth_allocator_backtest",
+      "name": "spot_strategy_backtest",
       "artifacts": [],
       "stream_files": [],
       "recording": null,
@@ -676,7 +719,7 @@
       "config_id": "a3f102b74cee059b3d46d84914d824b77fab13d48004953d00f18a4664d3f4d4",
       "app_version": "1.4.0",
       "git_commit": "b511f9ef",
-      "config_snapshot": "eth_allocator_short.json",
+      "config_snapshot": "spot_strategy_short.json",
       "reporting": "none",
       "size_bytes": 0,
       "ticks_from": "archive",
@@ -706,7 +749,7 @@
     {
       "run_id": "20261027_145422_15a68d06",
       "group": "simulation",
-      "name": "eth_allocator_backtest",
+      "name": "spot_strategy_backtest",
       "artifacts": [],
       "stream_files": [],
       "recording": null,
@@ -716,7 +759,7 @@
       "config_id": "a3f102b74cee059b3d46d84914d824b77fab13d48004953d00f18a4664d3f4d4",
       "app_version": "1.4.0",
       "git_commit": "108d0a66",
-      "config_snapshot": "eth_allocator_short.json",
+      "config_snapshot": "spot_strategy_short.json",
       "reporting": "none",
       "size_bytes": 0,
       "ticks_from": "archive",
@@ -746,7 +789,7 @@
     {
       "run_id": "20261027_145340_9ded583a",
       "group": "simulation",
-      "name": "eth_allocator_backtest",
+      "name": "spot_strategy_backtest",
       "artifacts": [],
       "stream_files": [],
       "recording": null,
@@ -756,7 +799,7 @@
       "config_id": "a3f102b74cee059b3d46d84914d824b77fab13d48004953d00f18a4664d3f4d4",
       "app_version": "1.4.0",
       "git_commit": "108d0a66",
-      "config_snapshot": "eth_allocator_short.json",
+      "config_snapshot": "spot_strategy_short.json",
       "reporting": "none",
       "size_bytes": 0,
       "ticks_from": "archive",
@@ -786,7 +829,7 @@
     {
       "run_id": "20261022_123736_7a3450e9",
       "group": "autotrader",
-      "name": "kraken_spot_ethusd_day_boundary",
+      "name": "spot_venue_day_boundary",
       "artifacts": [
         "booking_periods.json",
         "broker.json",
@@ -816,14 +859,14 @@
       "config_id": "62b1c1853c755edcfee4bcdb18b823f92f52ab4121c0dcc6964a5634910a40bb",
       "app_version": "1.4.0",
       "git_commit": "454029dd",
-      "config_snapshot": "kraken_spot_ethusd_day_boundary.json",
+      "config_snapshot": "spot_venue_day_boundary.json",
       "reporting": "expected",
       "size_bytes": 493863,
       "ticks_from": "venue",
       "orders_to": "simulated",
       "data_windows": [
         {
-          "unit_name": "kraken_spot_ethusd_day_boundary",
+          "unit_name": "spot_venue_day_boundary",
           "start_date": "2026-10-22T12:37:36.180770+00:00",
           "end_date": null
         }
@@ -852,7 +895,7 @@
     {
       "run_id": "20261022_123713_e059d354",
       "group": "autotrader",
-      "name": "kraken_spot_ethusd_day_boundary",
+      "name": "spot_venue_day_boundary",
       "artifacts": [],
       "stream_files": [
         "order_events.jsonl",
@@ -865,14 +908,14 @@
       "config_id": "62b1c1853c755edcfee4bcdb18b823f92f52ab4121c0dcc6964a5634910a40bb",
       "app_version": "1.4.0",
       "git_commit": "454029dd",
-      "config_snapshot": "kraken_spot_ethusd_day_boundary.json",
+      "config_snapshot": "spot_venue_day_boundary.json",
       "reporting": "expected",
       "size_bytes": 28196,
       "ticks_from": "venue",
       "orders_to": "simulated",
       "data_windows": [
         {
-          "unit_name": "kraken_spot_ethusd_day_boundary",
+          "unit_name": "spot_venue_day_boundary",
           "start_date": "2026-10-22T12:37:13.510376+00:00",
           "end_date": null
         }
@@ -3752,7 +3795,7 @@
     {
       "run_id": "20261012_131126_88b20443",
       "group": "simulation",
-      "name": "eth_allocator_backtest",
+      "name": "spot_strategy_backtest",
       "artifacts": [
         "aggregated_portfolio.json",
         "booking_periods.json",
@@ -3784,7 +3827,7 @@
       "config_id": "5a777b0d9849fad43d00a9a22409564990743836b8aaa999f534c980d4d9d118",
       "app_version": "1.4.0",
       "git_commit": "a27e1ce2",
-      "config_snapshot": "eth_allocator_backtest.json",
+      "config_snapshot": "spot_strategy_backtest.json",
       "reporting": "expected",
       "size_bytes": 253435,
       "ticks_from": "archive",
@@ -5084,7 +5127,7 @@
     {
       "run_id": "20261012_072038_b60404ee",
       "group": "autotrader",
-      "name": "kraken_spot_ethusd_field_study",
+      "name": "spot_venue_field_study",
       "artifacts": [
         "booking_periods.json",
         "broker.json",
@@ -5114,14 +5157,14 @@
       "config_id": "99882442051fa38662046dc553e5192126ae6151f5b5d4818ae1a0c4afa61d5e",
       "app_version": "1.4.0",
       "git_commit": "85b5b314",
-      "config_snapshot": "kraken_spot_ethusd_field_study.json",
+      "config_snapshot": "spot_venue_field_study.json",
       "reporting": "expected",
       "size_bytes": 311752,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
         {
-          "unit_name": "kraken_spot_ethusd_field_study",
+          "unit_name": "spot_venue_field_study",
           "start_date": "2026-10-12T07:20:38.203700+00:00",
           "end_date": null
         }
@@ -9112,7 +9155,7 @@
     {
       "run_id": "20261007_234345_ea606e02",
       "group": "autotrader",
-      "name": "kraken_spot_ethusd_field_study",
+      "name": "spot_venue_field_study",
       "artifacts": [
         "booking_periods.json",
         "broker.json",
@@ -9142,14 +9185,14 @@
       "config_id": "278003a41cd246e7beb3fc8da12efb12f336caafd148a7ae4a7128b4b40d9581",
       "app_version": "1.4.0",
       "git_commit": "8b7a6cfa",
-      "config_snapshot": "kraken_spot_ethusd_field_study.json",
+      "config_snapshot": "spot_venue_field_study.json",
       "reporting": "expected",
       "size_bytes": 352485,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
         {
-          "unit_name": "kraken_spot_ethusd_field_study",
+          "unit_name": "spot_venue_field_study",
           "start_date": "2026-10-07T23:43:45.658373+00:00",
           "end_date": null
         }
@@ -9266,7 +9309,7 @@
     {
       "run_id": "20261007_152959_0275a107",
       "group": "autotrader",
-      "name": "kraken_spot_ethusd_field_study",
+      "name": "spot_venue_field_study",
       "artifacts": [
         "booking_periods.json",
         "broker.json",
@@ -9296,14 +9339,14 @@
       "config_id": "278003a41cd246e7beb3fc8da12efb12f336caafd148a7ae4a7128b4b40d9581",
       "app_version": "1.4.0",
       "git_commit": "68cf6362",
-      "config_snapshot": "kraken_spot_ethusd_field_study.json",
+      "config_snapshot": "spot_venue_field_study.json",
       "reporting": "expected",
       "size_bytes": 270346,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
         {
-          "unit_name": "kraken_spot_ethusd_field_study",
+          "unit_name": "spot_venue_field_study",
           "start_date": "2026-10-07T15:29:59.968229+00:00",
           "end_date": null
         }
@@ -13953,5 +13996,5 @@
       "has_reports": true
     }
   ],
-  "count": 178
+  "count": 179
 }

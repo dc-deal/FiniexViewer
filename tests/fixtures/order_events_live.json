@@ -2,7 +2,7 @@
   "run_id": "20261007_152959_0275a107",
   "events": [
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 2,
       "event_type": "submitted",
       "order_id": "pos_ethusd_1",
@@ -38,7 +38,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 3,
       "event_type": "accepted",
       "order_id": "pos_ethusd_1",
@@ -50,7 +50,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_1",
-      "broker_ref": "OMZ425-MYQ5F-ZKQLVT",
+      "broker_ref": "O00001-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -74,7 +74,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 4,
       "event_type": "filled",
       "order_id": "pos_ethusd_1",
@@ -86,7 +86,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_1",
-      "broker_ref": "OMZ425-MYQ5F-ZKQLVT",
+      "broker_ref": "O00001-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_1-000001",
       "lots": 0.002,
@@ -110,7 +110,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 5,
       "event_type": "submitted",
       "order_id": "pos_ethusd_1",
@@ -146,7 +146,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 6,
       "event_type": "accepted",
       "order_id": "pos_ethusd_1",
@@ -158,7 +158,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_2",
-      "broker_ref": "OMWNCS-EU6QT-6ZZIVW",
+      "broker_ref": "O00002-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -182,7 +182,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 7,
       "event_type": "filled",
       "order_id": "pos_ethusd_1",
@@ -194,7 +194,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_2",
-      "broker_ref": "OMWNCS-EU6QT-6ZZIVW",
+      "broker_ref": "O00002-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_1-000002",
       "lots": 0.002,
@@ -218,7 +218,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 8,
       "event_type": "submitted",
       "order_id": "pos_ethusd_3",
@@ -254,7 +254,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 9,
       "event_type": "accepted",
       "order_id": "pos_ethusd_3",
@@ -266,7 +266,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_3",
-      "broker_ref": "OHHPSS-LS3T6-TG6WNM",
+      "broker_ref": "O00003-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -290,7 +290,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 10,
       "event_type": "filled",
       "order_id": "pos_ethusd_3",
@@ -302,7 +302,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_3",
-      "broker_ref": "OHHPSS-LS3T6-TG6WNM",
+      "broker_ref": "O00003-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_3-000003",
       "lots": 0.002,
@@ -326,7 +326,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 11,
       "event_type": "submitted",
       "order_id": "pos_ethusd_3",
@@ -362,7 +362,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 12,
       "event_type": "accepted",
       "order_id": "pos_ethusd_3",
@@ -374,7 +374,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_4",
-      "broker_ref": "OHCRXW-OEE2H-NRVKAZ",
+      "broker_ref": "O00004-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -398,7 +398,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 13,
       "event_type": "filled",
       "order_id": "pos_ethusd_3",
@@ -410,7 +410,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_4",
-      "broker_ref": "OHCRXW-OEE2H-NRVKAZ",
+      "broker_ref": "O00004-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_3-000004",
       "lots": 0.002,
@@ -434,7 +434,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 14,
       "event_type": "denied",
       "order_id": "pos_ethusd_5",
@@ -470,7 +470,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 15,
       "event_type": "denied",
       "order_id": "pos_ethusd_6",
@@ -506,7 +506,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 16,
       "event_type": "submitted",
       "order_id": "pos_ethusd_7",
@@ -542,7 +542,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 17,
       "event_type": "accepted",
       "order_id": "pos_ethusd_7",
@@ -554,7 +554,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_7",
-      "broker_ref": "O4XOEL-5AZZ3-MP45WY",
+      "broker_ref": "O00005-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -578,7 +578,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 18,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_7",
@@ -590,7 +590,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_7",
-      "broker_ref": "O4XOEL-5AZZ3-MP45WY",
+      "broker_ref": "O00005-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -614,7 +614,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 19,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_7",
@@ -626,7 +626,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_7",
-      "broker_ref": "O4XOEL-5AZZ3-MP45WY",
+      "broker_ref": "O00005-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -650,7 +650,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 20,
       "event_type": "submitted",
       "order_id": "pos_ethusd_8",
@@ -686,7 +686,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 21,
       "event_type": "accepted",
       "order_id": "pos_ethusd_8",
@@ -698,7 +698,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_8",
-      "broker_ref": "OH22T4-OF5ZU-BAHUTW",
+      "broker_ref": "O00006-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -722,7 +722,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 22,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_8",
@@ -734,7 +734,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_8",
-      "broker_ref": "OH22T4-OF5ZU-BAHUTW",
+      "broker_ref": "O00006-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -758,7 +758,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 23,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_8",
@@ -770,7 +770,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_8",
-      "broker_ref": "OH22T4-OF5ZU-BAHUTW",
+      "broker_ref": "O00006-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -794,7 +794,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 24,
       "event_type": "submitted",
       "order_id": "pos_ethusd_9",
@@ -830,7 +830,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 25,
       "event_type": "accepted",
       "order_id": "pos_ethusd_9",
@@ -842,7 +842,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_9",
-      "broker_ref": "OCKLSX-276JR-SC7UXF",
+      "broker_ref": "O00007-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -866,7 +866,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 26,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_9",
@@ -878,7 +878,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_9",
-      "broker_ref": "OCKLSX-276JR-SC7UXF",
+      "broker_ref": "O00007-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -902,7 +902,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 27,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_9",
@@ -914,7 +914,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_9",
-      "broker_ref": "OCKLSX-276JR-SC7UXF",
+      "broker_ref": "O00007-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -938,7 +938,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 28,
       "event_type": "submitted",
       "order_id": "pos_ethusd_10",
@@ -974,7 +974,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 29,
       "event_type": "accepted",
       "order_id": "pos_ethusd_10",
@@ -986,7 +986,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_10",
-      "broker_ref": "OY5R5E-LEVGQ-LTXB5J",
+      "broker_ref": "O00008-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1010,7 +1010,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 30,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_10",
@@ -1022,7 +1022,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_10",
-      "broker_ref": "OY5R5E-LEVGQ-LTXB5J",
+      "broker_ref": "O00008-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1046,7 +1046,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 31,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_10",
@@ -1058,7 +1058,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_10",
-      "broker_ref": "OY5R5E-LEVGQ-LTXB5J",
+      "broker_ref": "O00008-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1082,7 +1082,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 32,
       "event_type": "submitted",
       "order_id": "pos_ethusd_11",
@@ -1118,7 +1118,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 33,
       "event_type": "accepted",
       "order_id": "pos_ethusd_11",
@@ -1130,7 +1130,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_11",
-      "broker_ref": "OQLNNX-VYY5I-MP5BG5",
+      "broker_ref": "O00009-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1154,7 +1154,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 34,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_11",
@@ -1166,7 +1166,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_11",
-      "broker_ref": "OQLNNX-VYY5I-MP5BG5",
+      "broker_ref": "O00009-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1190,7 +1190,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 35,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_11",
@@ -1202,7 +1202,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_11",
-      "broker_ref": "OQLNNX-VYY5I-MP5BG5",
+      "broker_ref": "O00009-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1226,7 +1226,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 36,
       "event_type": "submitted",
       "order_id": "pos_ethusd_12",
@@ -1262,7 +1262,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 37,
       "event_type": "accepted",
       "order_id": "pos_ethusd_12",
@@ -1274,7 +1274,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_12",
-      "broker_ref": "OGN2VG-6YNID-YSV6DK",
+      "broker_ref": "O00010-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1298,7 +1298,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 38,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_12",
@@ -1310,7 +1310,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_12",
-      "broker_ref": "OGN2VG-6YNID-YSV6DK",
+      "broker_ref": "O00010-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1334,7 +1334,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 39,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_12",
@@ -1346,7 +1346,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_12",
-      "broker_ref": "OGN2VG-6YNID-YSV6DK",
+      "broker_ref": "O00010-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1370,7 +1370,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 40,
       "event_type": "submitted",
       "order_id": "pos_ethusd_13",
@@ -1406,7 +1406,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 41,
       "event_type": "accepted",
       "order_id": "pos_ethusd_13",
@@ -1418,7 +1418,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_13",
-      "broker_ref": "OLOIS4-AVUTW-N6O6NB",
+      "broker_ref": "O00011-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1442,7 +1442,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 42,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_13",
@@ -1454,7 +1454,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_13",
-      "broker_ref": "OLOIS4-AVUTW-N6O6NB",
+      "broker_ref": "O00011-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1478,7 +1478,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 43,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_13",
@@ -1490,7 +1490,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_13",
-      "broker_ref": "OLOIS4-AVUTW-N6O6NB",
+      "broker_ref": "O00011-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1514,7 +1514,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 44,
       "event_type": "submitted",
       "order_id": "pos_ethusd_14",
@@ -1550,7 +1550,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 45,
       "event_type": "accepted",
       "order_id": "pos_ethusd_14",
@@ -1562,7 +1562,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_14",
-      "broker_ref": "OZJMT3-LWHBY-IJBLEU",
+      "broker_ref": "O00012-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1586,7 +1586,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 46,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_14",
@@ -1598,7 +1598,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_14",
-      "broker_ref": "OZJMT3-LWHBY-IJBLEU",
+      "broker_ref": "O00012-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1622,7 +1622,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 47,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_14",
@@ -1634,7 +1634,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_14",
-      "broker_ref": "OZJMT3-LWHBY-IJBLEU",
+      "broker_ref": "O00012-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1658,7 +1658,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 48,
       "event_type": "submitted",
       "order_id": "pos_ethusd_15",
@@ -1694,7 +1694,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 49,
       "event_type": "accepted",
       "order_id": "pos_ethusd_15",
@@ -1706,7 +1706,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_15",
-      "broker_ref": "OP3I2N-2H5TK-KHJUJ4",
+      "broker_ref": "O00013-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1730,7 +1730,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 50,
       "event_type": "filled",
       "order_id": "pos_ethusd_15",
@@ -1742,7 +1742,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_15",
-      "broker_ref": "OP3I2N-2H5TK-KHJUJ4",
+      "broker_ref": "O00013-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_15-000005",
       "lots": 0.002,
@@ -1766,7 +1766,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 51,
       "event_type": "submitted",
       "order_id": "pos_ethusd_15",
@@ -1802,7 +1802,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 52,
       "event_type": "accepted",
       "order_id": "pos_ethusd_15",
@@ -1814,7 +1814,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_16",
-      "broker_ref": "OPQYIW-IAU2G-ALT6UO",
+      "broker_ref": "O00014-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1838,7 +1838,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 53,
       "event_type": "filled",
       "order_id": "pos_ethusd_15",
@@ -1850,7 +1850,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_16",
-      "broker_ref": "OPQYIW-IAU2G-ALT6UO",
+      "broker_ref": "O00014-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_15-000006",
       "lots": 0.002,
@@ -1874,7 +1874,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 54,
       "event_type": "submitted",
       "order_id": "pos_ethusd_17",
@@ -1910,7 +1910,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 55,
       "event_type": "accepted",
       "order_id": "pos_ethusd_17",
@@ -1922,7 +1922,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_17",
-      "broker_ref": "ORZ6XZ-NEGSY-2AMNYW",
+      "broker_ref": "O00015-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1946,7 +1946,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 56,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_17",
@@ -1958,7 +1958,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_17",
-      "broker_ref": "ORZ6XZ-NEGSY-2AMNYW",
+      "broker_ref": "O00015-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -1982,7 +1982,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 57,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_17",
@@ -1994,7 +1994,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_17",
-      "broker_ref": "ORZ6XZ-NEGSY-2AMNYW",
+      "broker_ref": "O00015-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2018,7 +2018,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 58,
       "event_type": "submitted",
       "order_id": "pos_ethusd_18",
@@ -2054,7 +2054,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 59,
       "event_type": "accepted",
       "order_id": "pos_ethusd_18",
@@ -2066,7 +2066,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_18",
-      "broker_ref": "OF7CMW-THZGO-UV37KO",
+      "broker_ref": "O00016-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2090,7 +2090,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 60,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_18",
@@ -2102,7 +2102,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_18",
-      "broker_ref": "OF7CMW-THZGO-UV37KO",
+      "broker_ref": "O00016-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2126,7 +2126,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 61,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_18",
@@ -2138,7 +2138,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_18",
-      "broker_ref": "OF7CMW-THZGO-UV37KO",
+      "broker_ref": "O00016-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2162,7 +2162,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 62,
       "event_type": "submitted",
       "order_id": "pos_ethusd_19",
@@ -2198,7 +2198,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 63,
       "event_type": "accepted",
       "order_id": "pos_ethusd_19",
@@ -2210,7 +2210,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_19",
-      "broker_ref": "OK5AU5-IX67A-HQEFBE",
+      "broker_ref": "O00017-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2234,7 +2234,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 64,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_19",
@@ -2246,7 +2246,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_19",
-      "broker_ref": "OK5AU5-IX67A-HQEFBE",
+      "broker_ref": "O00017-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2270,7 +2270,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 65,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_19",
@@ -2282,7 +2282,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_19",
-      "broker_ref": "OK5AU5-IX67A-HQEFBE",
+      "broker_ref": "O00017-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2306,7 +2306,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 66,
       "event_type": "submitted",
       "order_id": "pos_ethusd_20",
@@ -2342,7 +2342,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 67,
       "event_type": "accepted",
       "order_id": "pos_ethusd_20",
@@ -2354,7 +2354,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_20",
-      "broker_ref": "OSW4HW-PDC7K-JQSRYT",
+      "broker_ref": "O00018-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2378,7 +2378,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 68,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_20",
@@ -2390,7 +2390,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_20",
-      "broker_ref": "OSW4HW-PDC7K-JQSRYT",
+      "broker_ref": "O00018-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2414,7 +2414,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 69,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_20",
@@ -2426,7 +2426,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_20",
-      "broker_ref": "OSW4HW-PDC7K-JQSRYT",
+      "broker_ref": "O00018-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2450,7 +2450,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 70,
       "event_type": "submitted",
       "order_id": "pos_ethusd_21",
@@ -2486,7 +2486,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 71,
       "event_type": "accepted",
       "order_id": "pos_ethusd_21",
@@ -2498,7 +2498,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_21",
-      "broker_ref": "OOPSQZ-2XZSC-26L2XP",
+      "broker_ref": "O00019-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2522,7 +2522,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 72,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_21",
@@ -2534,7 +2534,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_21",
-      "broker_ref": "OOPSQZ-2XZSC-26L2XP",
+      "broker_ref": "O00019-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2558,7 +2558,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 73,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_21",
@@ -2570,7 +2570,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_21",
-      "broker_ref": "OOPSQZ-2XZSC-26L2XP",
+      "broker_ref": "O00019-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2594,7 +2594,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 74,
       "event_type": "submitted",
       "order_id": "pos_ethusd_22",
@@ -2630,7 +2630,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 75,
       "event_type": "accepted",
       "order_id": "pos_ethusd_22",
@@ -2642,7 +2642,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_22",
-      "broker_ref": "OO2CC6-G5FYU-DSDSLO",
+      "broker_ref": "O00020-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2666,7 +2666,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 76,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_22",
@@ -2678,7 +2678,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_22",
-      "broker_ref": "OO2CC6-G5FYU-DSDSLO",
+      "broker_ref": "O00020-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2702,7 +2702,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 77,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_22",
@@ -2714,7 +2714,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_22",
-      "broker_ref": "OO2CC6-G5FYU-DSDSLO",
+      "broker_ref": "O00020-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2738,7 +2738,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 78,
       "event_type": "submitted",
       "order_id": "pos_ethusd_23",
@@ -2774,7 +2774,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 79,
       "event_type": "accepted",
       "order_id": "pos_ethusd_23",
@@ -2786,7 +2786,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_23",
-      "broker_ref": "OGGIS6-62OOR-2U2RER",
+      "broker_ref": "O00021-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2810,7 +2810,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 80,
       "event_type": "filled",
       "order_id": "pos_ethusd_23",
@@ -2822,7 +2822,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_23",
-      "broker_ref": "OGGIS6-62OOR-2U2RER",
+      "broker_ref": "O00021-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_23-000007",
       "lots": 0.002,
@@ -2846,7 +2846,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 81,
       "event_type": "submitted",
       "order_id": "pos_ethusd_23",
@@ -2882,7 +2882,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 82,
       "event_type": "accepted",
       "order_id": "pos_ethusd_23",
@@ -2894,7 +2894,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_24",
-      "broker_ref": "OSM7IK-TF4FN-JRDYZE",
+      "broker_ref": "O00022-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -2918,7 +2918,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 83,
       "event_type": "filled",
       "order_id": "pos_ethusd_23",
@@ -2930,7 +2930,7 @@
       "symbol": "ETHUSD",
       "direction": "short",
       "client_order_id": "p0275_24",
-      "broker_ref": "OSM7IK-TF4FN-JRDYZE",
+      "broker_ref": "O00022-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_23-000008",
       "lots": 0.002,
@@ -2954,7 +2954,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 84,
       "event_type": "submitted",
       "order_id": "pos_ethusd_25",
@@ -2990,7 +2990,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 85,
       "event_type": "accepted",
       "order_id": "pos_ethusd_25",
@@ -3002,7 +3002,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_25",
-      "broker_ref": "OFUTTW-NFZWK-Y7VSCN",
+      "broker_ref": "O00023-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -3026,7 +3026,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 86,
       "event_type": "submitted",
       "order_id": "pos_ethusd_26",
@@ -3062,7 +3062,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 87,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_25",
@@ -3074,7 +3074,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_25",
-      "broker_ref": "OFUTTW-NFZWK-Y7VSCN",
+      "broker_ref": "O00023-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -3098,7 +3098,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 88,
       "event_type": "cancel_deferred",
       "order_id": "pos_ethusd_26",
@@ -3134,7 +3134,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 89,
       "event_type": "accepted",
       "order_id": "pos_ethusd_26",
@@ -3146,7 +3146,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_26",
-      "broker_ref": "ODLSRC-35WIR-6NPZKR",
+      "broker_ref": "O00024-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -3170,7 +3170,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 90,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_26",
@@ -3182,7 +3182,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_26",
-      "broker_ref": "ODLSRC-35WIR-6NPZKR",
+      "broker_ref": "O00024-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -3206,7 +3206,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 91,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_25",
@@ -3218,7 +3218,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_25",
-      "broker_ref": "OFUTTW-NFZWK-Y7VSCN",
+      "broker_ref": "O00023-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -3242,7 +3242,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 92,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_26",
@@ -3254,7 +3254,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_26",
-      "broker_ref": "ODLSRC-35WIR-6NPZKR",
+      "broker_ref": "O00024-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -3278,7 +3278,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 93,
       "event_type": "submitted",
       "order_id": "pos_ethusd_27",
@@ -3314,7 +3314,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 94,
       "event_type": "cancel_deferred",
       "order_id": "pos_ethusd_27",
@@ -3350,7 +3350,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 95,
       "event_type": "accepted",
       "order_id": "pos_ethusd_27",
@@ -3362,7 +3362,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_27",
-      "broker_ref": "OXII7B-SUX33-AVQKGM",
+      "broker_ref": "O00025-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.004,
@@ -3386,7 +3386,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 96,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_27",
@@ -3398,7 +3398,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_27",
-      "broker_ref": "OXII7B-SUX33-AVQKGM",
+      "broker_ref": "O00025-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.004,
@@ -3422,7 +3422,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 97,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_27",
@@ -3434,7 +3434,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_27",
-      "broker_ref": "OXII7B-SUX33-AVQKGM",
+      "broker_ref": "O00025-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.004,
@@ -3458,7 +3458,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 98,
       "event_type": "submitted",
       "order_id": "pos_ethusd_28",
@@ -3494,7 +3494,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 99,
       "event_type": "accepted",
       "order_id": "pos_ethusd_28",
@@ -3506,7 +3506,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_28",
-      "broker_ref": "O4C5FL-5G6ZY-2MJ4DS",
+      "broker_ref": "O00026-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.003,
@@ -3530,7 +3530,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 100,
       "event_type": "filled",
       "order_id": "pos_ethusd_28",
@@ -3542,7 +3542,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_28",
-      "broker_ref": "O4C5FL-5G6ZY-2MJ4DS",
+      "broker_ref": "O00026-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_28-000009",
       "lots": 0.003,
@@ -3566,7 +3566,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 101,
       "event_type": "submitted",
       "order_id": "protect_pos_ethusd_29",
@@ -3602,7 +3602,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 102,
       "event_type": "cancel_deferred",
       "order_id": "protect_pos_ethusd_29",
@@ -3638,7 +3638,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 103,
       "event_type": "accepted",
       "order_id": "protect_pos_ethusd_29",
@@ -3650,7 +3650,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_29",
-      "broker_ref": "OPFV34-Y4EOK-SWOQTZ",
+      "broker_ref": "O00027-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.003,
@@ -3674,7 +3674,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 104,
       "event_type": "cancel_requested",
       "order_id": "protect_pos_ethusd_29",
@@ -3686,7 +3686,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_29",
-      "broker_ref": "OPFV34-Y4EOK-SWOQTZ",
+      "broker_ref": "O00027-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.003,
@@ -3710,7 +3710,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 105,
       "event_type": "cancelled",
       "order_id": "protect_pos_ethusd_29",
@@ -3722,7 +3722,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_29",
-      "broker_ref": "OPFV34-Y4EOK-SWOQTZ",
+      "broker_ref": "O00027-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.003,
@@ -3746,7 +3746,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 106,
       "event_type": "submitted",
       "order_id": "pos_ethusd_28",
@@ -3782,7 +3782,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 107,
       "event_type": "accepted",
       "order_id": "pos_ethusd_28",
@@ -3794,7 +3794,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_30",
-      "broker_ref": "OEA5FS-HJ6HC-32WVQO",
+      "broker_ref": "O00028-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.003,
@@ -3818,7 +3818,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 108,
       "event_type": "filled",
       "order_id": "pos_ethusd_28",
@@ -3830,7 +3830,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_30",
-      "broker_ref": "OEA5FS-HJ6HC-32WVQO",
+      "broker_ref": "O00028-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_28-000010",
       "lots": 0.003,
@@ -3854,7 +3854,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 109,
       "event_type": "submitted",
       "order_id": "pos_ethusd_31",
@@ -3890,7 +3890,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 110,
       "event_type": "submitted",
       "order_id": "pos_ethusd_32",
@@ -3926,7 +3926,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 111,
       "event_type": "submitted",
       "order_id": "pos_ethusd_33",
@@ -3962,7 +3962,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 112,
       "event_type": "accepted",
       "order_id": "pos_ethusd_31",
@@ -3974,7 +3974,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_31",
-      "broker_ref": "OW4HXU-U4Y4J-JVWI3O",
+      "broker_ref": "O00029-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -3998,7 +3998,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 113,
       "event_type": "accepted",
       "order_id": "pos_ethusd_32",
@@ -4010,7 +4010,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_32",
-      "broker_ref": "OLHIXK-VCTTO-GEDGS6",
+      "broker_ref": "O00030-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -4034,7 +4034,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 114,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_31",
@@ -4046,7 +4046,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_31",
-      "broker_ref": "OW4HXU-U4Y4J-JVWI3O",
+      "broker_ref": "O00029-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -4070,7 +4070,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 115,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_32",
@@ -4082,7 +4082,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_32",
-      "broker_ref": "OLHIXK-VCTTO-GEDGS6",
+      "broker_ref": "O00030-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -4106,7 +4106,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 116,
       "event_type": "cancel_deferred",
       "order_id": "pos_ethusd_33",
@@ -4142,7 +4142,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 117,
       "event_type": "accepted",
       "order_id": "pos_ethusd_33",
@@ -4154,7 +4154,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_33",
-      "broker_ref": "O6ZCWA-2XK6D-WRQ6QH",
+      "broker_ref": "O00031-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -4178,7 +4178,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 118,
       "event_type": "cancel_requested",
       "order_id": "pos_ethusd_33",
@@ -4190,7 +4190,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_33",
-      "broker_ref": "O6ZCWA-2XK6D-WRQ6QH",
+      "broker_ref": "O00031-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -4214,7 +4214,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 119,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_31",
@@ -4226,7 +4226,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_31",
-      "broker_ref": "OW4HXU-U4Y4J-JVWI3O",
+      "broker_ref": "O00029-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -4250,7 +4250,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 120,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_32",
@@ -4262,7 +4262,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_32",
-      "broker_ref": "OLHIXK-VCTTO-GEDGS6",
+      "broker_ref": "O00030-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -4286,7 +4286,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 121,
       "event_type": "cancelled",
       "order_id": "pos_ethusd_33",
@@ -4298,7 +4298,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_33",
-      "broker_ref": "O6ZCWA-2XK6D-WRQ6QH",
+      "broker_ref": "O00031-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -4322,7 +4322,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 122,
       "event_type": "submitted",
       "order_id": "pos_ethusd_34",
@@ -4358,7 +4358,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 123,
       "event_type": "accepted",
       "order_id": "pos_ethusd_34",
@@ -4370,7 +4370,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_34",
-      "broker_ref": "OMFEPW-XVTPB-EXCXG4",
+      "broker_ref": "O00032-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.002,
@@ -4394,7 +4394,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 124,
       "event_type": "filled",
       "order_id": "pos_ethusd_34",
@@ -4406,7 +4406,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_34",
-      "broker_ref": "OMFEPW-XVTPB-EXCXG4",
+      "broker_ref": "O00032-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_34-000011",
       "lots": 0.002,
@@ -4430,7 +4430,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 125,
       "event_type": "submitted",
       "order_id": "pos_ethusd_34",
@@ -4466,7 +4466,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 126,
       "event_type": "accepted",
       "order_id": "pos_ethusd_34",
@@ -4478,7 +4478,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_35",
-      "broker_ref": "OIVXOF-4KVED-WN745H",
+      "broker_ref": "O00033-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.001,
@@ -4502,7 +4502,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 127,
       "event_type": "filled",
       "order_id": "pos_ethusd_34",
@@ -4514,7 +4514,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_35",
-      "broker_ref": "OIVXOF-4KVED-WN745H",
+      "broker_ref": "O00033-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_34-000012",
       "lots": 0.001,
@@ -4538,7 +4538,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 128,
       "event_type": "submitted",
       "order_id": "pos_ethusd_34",
@@ -4574,7 +4574,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 129,
       "event_type": "accepted",
       "order_id": "pos_ethusd_34",
@@ -4586,7 +4586,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_36",
-      "broker_ref": "OJTBAV-DWZIX-MRZTJG",
+      "broker_ref": "O00034-00000-000000",
       "previous_broker_ref": null,
       "trade_id": null,
       "lots": 0.001,
@@ -4610,7 +4610,7 @@
       "lost_request": null
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 130,
       "event_type": "filled",
       "order_id": "pos_ethusd_34",
@@ -4622,7 +4622,7 @@
       "symbol": "ETHUSD",
       "direction": "long",
       "client_order_id": "p0275_36",
-      "broker_ref": "OJTBAV-DWZIX-MRZTJG",
+      "broker_ref": "O00034-00000-000000",
       "previous_broker_ref": null,
       "trade_id": "SYNTH-pos_ethusd_34-000013",
       "lots": 0.001,
@@ -4649,7 +4649,7 @@
   "count": 129,
   "broker_truth": [
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 1,
       "record_plane": "broker_truth",
       "read_reason": "session_start",
@@ -4657,10 +4657,8 @@
       "divergence": null,
       "venue_orders": [],
       "venue_balances": {
-        "DASH": 0.16397033,
-        "DOT": 3.9,
-        "XETH": 0.01655583,
-        "ZUSD": 25.2869
+        "XETH": 1.0,
+        "ZUSD": 100.0
       },
       "venue_positions": null,
       "unread_parts": [],
@@ -4668,7 +4666,7 @@
       "ts_init": "2026-10-07T15:30:09.756449+00:00"
     },
     {
-      "scenario_name": "kraken_spot_ethusd_field_study",
+      "scenario_name": "spot_venue_field_study",
       "seq": 131,
       "record_plane": "broker_truth",
       "read_reason": "session_end",
@@ -4676,10 +4674,8 @@
       "divergence": null,
       "venue_orders": [],
       "venue_balances": {
-        "DASH": 0.16397033,
-        "DOT": 3.9,
-        "XETH": 0.01655583,
-        "ZUSD": 24.7934
+        "XETH": 1.0,
+        "ZUSD": 100.0
       },
       "venue_positions": null,
       "unread_parts": [],

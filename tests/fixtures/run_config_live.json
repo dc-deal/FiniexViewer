@@ -1,6 +1,6 @@
 {
   "run_id": "20261007_152959_0275a107",
-  "config_snapshot": "kraken_spot_ethusd_field_study.json",
+  "config_snapshot": "spot_venue_field_study.json",
   "config_id": "278003a41cd246e7beb3fc8da12efb12f336caafd148a7ae4a7128b4b40d9581",
   "config": {
     "_comment": "THE RELEASE-CERTIFICATE PROFILE. #332 names ETHUSD primary, the release checklist runs this one by name, and it is the only field-study profile with a launch entry. REAL MONEY: adapter_type live, dry_run false. Its sibling kraken_spot_btcusd_field_study.json runs the identical phase sequence on a second pair and is NOT on the release path.",
@@ -16,7 +16,7 @@
       "_comment": "#503 — the protective_level_test phase is the only one that declares a stop_loss, so this switch places exactly one protective order per run. Every other phase passes no level and is untouched by it.",
       "venue_held_protection": true
     },
-    "profile_name": "kraken_spot_ethusd_field_study",
+    "profile_name": "spot_venue_field_study",
     "safety": {
       "enabled": true,
       "max_drawdown_pct": 50.0,

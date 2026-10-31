@@ -2,14 +2,14 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-10-31T13:01:03.378001Z",
+  "served_at": "2026-10-31T17:34:23.340425Z",
   "units": [
     {
-      "unit_name": "kraken_spot_ethusd_day_boundary",
+      "unit_name": "spot_venue_day_boundary",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
       "written_at": "2026-10-22T12:37:25.711505Z",
-      "age_s": 779017.666496,
+      "age_s": 795417.62892,
       "recording": "stopped",
       "truncated_tail": false,
       "first_frame": {
