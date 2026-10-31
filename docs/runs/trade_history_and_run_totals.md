@@ -122,6 +122,7 @@ the rest would be the same figure twice on one screen.
 
 **A spread that was never measured reads `not recorded`, never `0`** (contract 32). A unit that read
 data without a quote — every row bid = ask — has a null `total_spread_cost`, and the run's
+`avg_spread` is money per trade, in the account currency: `total_spread_cost` over `total_trades`.
 `total_spread_cost` and `avg_spread` are null as soon as one unit's is, since a sum over a part
 would read as the whole. `spreadFigure` in `report_format.ts` says so, and the figure's hover gives
 the reason; the roster's card does the same per unit.

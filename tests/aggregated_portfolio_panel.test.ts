@@ -100,11 +100,12 @@ describe('AggregatedPortfolioPanel', () => {
       expect(figures(mountPanel(), 1)['Maker / taker']).toBe('0.00 USD / 33.89 USD')
     })
 
-    /** A price-unit figure, and it says so rather than wearing a currency it does not have. */
-    it('keeps the average spread out of the account currency', () => {
+    /** The spread cost over the trades: money per trade, which their figures divide out to exactly. */
+    it('says the average spread in the account currency', () => {
+      const row = REPORT.currencies[0]!
       const spread = figurePairs(mountPanel()).find(pair => pair.label === 'Avg spread')
-      expect(spread?.value).not.toContain('EUR')
-      expect(spread?.title).toContain('price units')
+      expect(spread?.value).toBe(`${row.combined.avg_spread!.toFixed(2)} ${row.currency}`)
+      expect(spread?.title).toBeUndefined()
     })
 
     /** Contract 32: null as soon as one unit read data without a quote — not a spread of zero. */
