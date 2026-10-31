@@ -289,10 +289,15 @@ describe('useRunChartStore', () => {
       priceBasis: '',
     })
     const served = 0.8612345678
-    const traded = trades.trades.find(row => row.scenario_name === firstWithOpenings())!
+    const unitName = firstWithOpenings()
+    const traded = trades.trades.find(row => row.scenario_name === unitName)!
     useRunReportsStore().tradeHistory = {
       ...trades,
-      trades: trades.trades.map(row => row === traded ? { ...row, stop_loss: served } : row),
+      trades: trades.trades.map(row => row.scenario_name === unitName ? { ...row, stop_loss: served, exit_price: served } : row),
+    }
+    useRunReportsStore().orderHistory = {
+      ...orders,
+      orders: orders.orders.map(row => row.scenario_name === unitName && row.executed_price !== null ? { ...row, executed_price: served } : row),
     }
     const chart = useRunChartStore()
     chart.attach()
@@ -306,6 +311,21 @@ describe('useRunChartStore', () => {
     useRunReportsStore().broker = brokerFixture as unknown as BrokerReport
     expect(stop().card.details[0]!.value).toBe('0.86123')
     expect(stop().price).toBe(served)
+
+    // every way the store hands it on: the marks' cards, and with the options the line and every position's levels
+    const value = (details: { label: string, value: string }[], label: string) =>
+      details.find(pair => pair.label === label)?.value ?? ''
+    const marks = chart.events.filter(mark => mark.card.title.startsWith(`${traded.position_id} `))
+    expect(marks.some(mark => mark.role === 'entry' && value(mark.card.details, 'Opened').endsWith('@ 0.86123'))).toBe(true)
+    expect(marks.some(mark => mark.role !== 'entry' && value(mark.card.details, 'Closed').endsWith('@ 0.86123'))).toBe(true)
+    useArrangementStore().setPanelView('run-chart', { layers: { options: { 'every-position': true, 'every-position-line': true } } })
+    const drawn = (id: string) => chart.layers.find(entry => entry.id === id)!.drawings
+    const lines = drawn('entry-exit')
+    expect(lines.length).toBeGreaterThan(0)
+    expect(lines.every(line => value(line.card.details, 'Closed').endsWith('@ 0.86123'))).toBe(true)
+    const levels = drawn('levels')
+    expect(levels.length).toBeGreaterThan(1)
+    expect(levels.every(level => level.card.details[0]!.value === '0.86123')).toBe(true)
   })
 
   /** Switched to every position, the line is drawn for each trade of the unit, with none looked at. */

@@ -40,7 +40,7 @@ before contract 34 keeps the prices it read, widened from a 32-bit float, and re
   computed lies off the tick, so `priceDistance` prints up to eight decimals: `out -0.00000995`, which
   on the tick would read `-0.00001`, and one below half a tick would read as zero. Float noise around
   zero reads `0`.
-- Money, lots and distances in `price_unit` are not prices and keep their own formats.
+- Money, lots, a fill's fee and distances in `price_unit` are not prices and keep their own formats.
 
 ## The printout never computes
 

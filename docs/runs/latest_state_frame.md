@@ -25,7 +25,7 @@ MEMORY   Latest frame  private 170.7 MB · resident 237.6 MB   First frame  priv
 No reconciliation with the venue checked yet
 Account · Decision · Worker rsi_fast · Worker bollinger_main   (figure blocks)
 Open positions
-    long 0.002 ETHUSD @ 2,398.97 · -0.04 USD
+    long 0.002 ETHUSD @ 2398.97 · -0.04 USD
 Resting orders none
 ```
 

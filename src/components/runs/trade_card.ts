@@ -87,6 +87,14 @@ function exitReference(trade: TradeRow): string {
 }
 
 /**
+ * A slippage, or that none was measured: *"All four are null when no submission tick was captured"*
+ * (their trade-history document). Never a zero, and a formatter would make one of a null.
+ */
+function slippageOf(value: number | null): string {
+  return value === null ? t('n/a') : priceDistance(value)
+}
+
+/**
  * Everything the row has no width for. The excursions are given three ways by the backend — as a
  * price, as the unrealised P&L at that price, and as a distance — and all three are here, because
  * which one answers a question depends on the question.
@@ -122,8 +130,7 @@ export function tradeDetails(trade: TradeRow, tick: number | null = null): Figur
       label: t('Slippage'),
       // the exit half is absent on a quarter of the trades in this archive — stated as such rather
       // than as a zero, and never assumed to be a number
-      value: `${t('in')} ${priceDistance(trade.entry_slippage)} · `
-        + `${t('out')} ${trade.exit_slippage === null ? t('n/a') : priceDistance(trade.exit_slippage)}`
+      value: `${t('in')} ${slippageOf(trade.entry_slippage)} · ${t('out')} ${slippageOf(trade.exit_slippage)}`
         + exitReference(trade),
     },
     {

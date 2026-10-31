@@ -114,9 +114,16 @@ describe('LatestStatePanel', () => {
   it('prints the prices of a frame at the tick size of its unit\'s instrument', () => {
     const model = answer(endedFixture)
     const unit = model.units[0]!
+    // values that round UP, so an unrounded print does not contain the expected one
+    unit.frame.last_price = 88635.16000000001
     const position = unit.frame.open_positions[0]!
-    position.entry_price = 88635.14999999999
-    position.stop_loss = 88000.04000000001
+    position.entry_price = 88635.16000000001
+    position.stop_loss = 88000.06000000001
+    position.take_profit = 89000.06000000001
+    unit.frame.active_orders = [{
+      order_id: 'pos_resting', order_type: 'stop_limit', direction: 'long', lots: 0.1,
+      entry_price: 88500.16000000001, limit_price: 88500.26000000001,
+    } as never]
     const seen: [string, string | null][] = []
     const Host = defineComponent({
       setup() {
@@ -127,9 +134,14 @@ describe('LatestStatePanel', () => {
         return () => h(LatestStatePanel, { model })
       },
     })
-    const holding = mount(Host).find('.holding').text()
-    expect(holding).toContain('@ 88635.1')
-    expect(holding).toContain('SL 88000.0')
+    const wrapper = mount(Host)
+    const [holding, resting] = wrapper.findAll('.holding').map(row => row.text())
+    expect(holding).toContain('@ 88635.2')
+    expect(holding).toContain('SL 88000.1')
+    expect(holding).toContain('TP 89000.1')
+    expect(resting).toContain('@ 88500.2')
+    expect(resting).toContain('limit 88500.3')
+    expect(wrapper.text()).toContain('88635.2 BTCUSD')
     expect(seen).toContainEqual([unit.unit_name, unit.frame.symbol])
   })
 

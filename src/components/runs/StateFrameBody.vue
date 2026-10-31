@@ -19,10 +19,6 @@ const props = defineProps<{
   unit: string
 }>()
 
-/**
- * What is off, and what could have been checked and was not. A check that passed is not here.
- * `feed_stale` null is not among them: it is null where the session reads no signal at all.
- */
 const tickSizes = useTickSizes()
 
 /** A price of the frame's instrument, at its tick size. */
@@ -30,6 +26,10 @@ function priceOf(value: number): string {
   return priceAt(value, tickSizes(props.unit, props.frame.symbol))
 }
 
+/**
+ * What is off, and what could have been checked and was not. A check that passed is not here.
+ * `feed_stale` null is not among them: it is null where the session reads no signal at all.
+ */
 function healthOf(frame: StateFrame): { words: string, warning: boolean }[] {
   const lines: { words: string, warning: boolean }[] = []
   if (frame.safety_blocked) lines.push({ words: t('The circuit breaker blocks new orders'), warning: true })

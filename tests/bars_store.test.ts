@@ -63,6 +63,8 @@ describe('useBarsStore', () => {
         { symbol: 'BTCUSD', market_type: 'crypto', tick_size: 0.1 },
         { symbol: 'ETHUSD', market_type: 'crypto', tick_size: 0.01 },
       ],
+      // the same symbol at another broker has its own step, and is not read for this one
+      mt5: [{ symbol: 'ETHUSD', market_type: 'crypto', tick_size: 0.5 }],
     }
     expect(bars.priceFormat).toEqual({ precision: 2, minMove: 0.01 })
     selection.setSymbol('BTCUSD')

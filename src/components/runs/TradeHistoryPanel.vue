@@ -7,7 +7,7 @@ import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useChartLink } from '@/composables/use_chart_link'
 import {
-  SPREAD_NOT_RECORDED, amount, magnitude, modelledSpreadFigures, priceAt, signClass, spreadFigure, utcInstant,
+  SPREAD_NOT_RECORDED, amount, magnitude, modelledSpreadFigures, priceAt, quantity, signClass, spreadFigure, utcInstant,
 } from '@/components/runs/report_format'
 import { tradeDetails } from '@/components/runs/trade_card'
 import { useDisplaySettings } from '@/composables/use_display_settings'
@@ -429,7 +429,7 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
     title: `${fill.leg} · ${fill.execution.trade_id}`,
     details: [
       { label: t('Price'), value: priceAt(fill.execution.price, tick) },
-      { label: t('Fee'), value: `${fill.execution.fee} ${fill.execution.fee_currency}` },
+      { label: t('Fee'), value: `${quantity(fill.execution.fee)} ${fill.execution.fee_currency}` },
     ],
   }
 }
@@ -557,7 +557,7 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
             <span class="fill-share">{{ shareOf(trade, fill) }}</span>
             <!-- cut short at a narrow width; the fill's card carries the id, price and fee whole -->
             <span>{{ t('price') }} {{ priceAt(fill.execution.price, tickOf(trade)) }}</span>
-            <span>{{ t('fee') }} {{ fill.execution.fee }} {{ fill.execution.fee_currency }}</span>
+            <span>{{ t('fee') }} {{ quantity(fill.execution.fee) }} {{ fill.execution.fee_currency }}</span>
             <span>{{ fill.execution.liquidity }}</span>
           </template>
         </RecordList>

@@ -1106,13 +1106,12 @@ export interface TradeRow {
   exit_side: string
   entry_executions: TradeExecution[]
   exit_executions: TradeExecution[]
-  entry_slippage: number
-  entry_slippage_pct: number
+  // null where no submission tick was captured, as the exit half below (their trade-history document)
+  entry_slippage: number | null
+  entry_slippage_pct: number | null
   /**
    * NULL on a trade that records no exit slippage — measured 2026-09-29 over 437 trades from eight
-   * runs: null on 118 of them, 27 %. The entry half was stated on every one of the 437, so it is
-   * mirrored as a plain number; whether that is guaranteed or only true of this archive is a
-   * question for the backend rather than something to infer from a sample.
+   * runs: null on 118 of them, 27 %.
    *
    * The mirror said `number` until this measurement and the panel called `.toFixed()` on it, which
    * threw while rendering an expanded scenario group and took the whole panel with it. The contract

@@ -124,11 +124,12 @@ describe('run_chart_marks', () => {
     /** The card and the line a gathered mark lists print the price at the tick size of the unit's instrument. */
     it('prints the prices of an opening at the tick size', () => {
       const widened = opening({ ...longOpening, executed_price: 1.1625800132751465 })
-      const closed = trade({ ...long, stop_loss: 1.1654013009624113, take_profit: null })
+      const closed = trade({ ...long, stop_loss: 1.1654013009624113, take_profit: 1.1699000000000002 })
       const [mark] = openingMarks([widened], [], [closed], 'EUR', BARS, null, 0.00001)
-      expect(mark!.card.details.find(pair => pair.label === 'Opened')?.value).toContain('@ 1.16258')
+      expect(mark!.card.details.find(pair => pair.label === 'Opened')?.value.endsWith('@ 1.16258')).toBe(true)
       expect(mark!.card.details).toContainEqual({ label: 'Stop loss', value: '1.16540' })
-      expect(mark!.line!.value).toContain('@ 1.16258')
+      expect(mark!.card.details).toContainEqual({ label: 'Take profit', value: '1.16990' })
+      expect(mark!.line!.value).toContain('@ 1.16258 ·')
       const open: OpenPosition = {
         position_id: 'pos_1', direction: 'long', lots: 0.1, entry_price: 1.1, entry_time: longOpening.event_time,
         last_price: 1.1677499513751617, unrealized_pnl: 0, valued: true, stop_loss: null, take_profit: null,
@@ -189,9 +190,14 @@ describe('run_chart_marks', () => {
     })
 
     it('prints the prices of an exit at the tick size', () => {
-      const widened = trade({ ...long, exit_price: 1.1677499513751617 })
+      const widened = trade({
+        ...long, entry_price: 1.1625800132751465, exit_price: 1.1677499513751617, stop_loss: null, take_profit: null,
+        exit_level: 1.1677499513751617, close_reason: 'tp_triggered',
+      })
       const [mark] = exitMarks([widened], KEY, BARS, null, 0.00001)
-      expect(mark!.card.details.find(pair => pair.label === 'Closed')?.value).toContain('@ 1.16775')
+      expect(mark!.card.details.find(pair => pair.label === 'Opened')?.value.endsWith('@ 1.16258')).toBe(true)
+      expect(mark!.card.details.find(pair => pair.label === 'Closed')?.value.endsWith('@ 1.16775')).toBe(true)
+      expect(mark!.card.details).toContainEqual({ label: 'Own level', value: 'take profit 1.16775' })
     })
 
     /** A position closed in parts: the own level stands on the part it closed (contract 45), the partial's says none. */

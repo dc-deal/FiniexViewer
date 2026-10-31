@@ -9,7 +9,7 @@ const decimal = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 })
 
-// A holding, a size or a price, to the eighth decimal and no further: a satoshi is the finest step
+// A holding or a size, to the eighth decimal and no further: a satoshi is the finest step
 // any venue here quotes, and a figure the session COMPUTED carries float noise below it
 // (`0.018555830000000002` ETH) that is no digit of the amount.
 const fine = new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 })
