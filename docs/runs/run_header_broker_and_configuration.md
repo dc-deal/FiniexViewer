@@ -54,8 +54,8 @@ session's `composite_change_accepted` warning says whether it let anything throu
 `features_beyond_venue` (contract 45) appears only where a backtest declared any, as *Beyond the venue*
 with the features, in the warning role: it was allowed order features its venue's API does not hold, so
 its results do not predict a session on that venue, which a hint below the block says once. Empty on
-every other run and null on an older one, and both state nothing. Their `run-header` document lists it
-as on the run list too; measured 2026-10-30 no row of the run list carries it, so it is read here alone.
+every other run and null on an older one, and both state nothing. It stands on no row of the run list:
+only the header holds it (FiniexTestingIDE, 2026-10-31).
 
 ## Broker — the conditions a run traded under
 

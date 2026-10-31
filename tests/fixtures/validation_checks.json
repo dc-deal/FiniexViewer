@@ -334,6 +334,11 @@
       "description": "The robustness figures rest on fewer windows than the configured minimum."
     },
     {
+      "check": "robustness_metric_unmeasured",
+      "title": "Expectancy not measured in some windows",
+      "description": "Some windows have no trade with an R, so the metric has no value there and no verdict is given. A logic keeping its own exits has none; use another metric."
+    },
+    {
       "check": "robustness_low_trust",
       "title": "Block splitting distorts the windows",
       "description": "Splitting the data into blocks distorted the windows beyond the trust limit, so no verdict is given."

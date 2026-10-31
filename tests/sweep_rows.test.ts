@@ -84,6 +84,14 @@ describe('sweep_rows', () => {
     expect(rows).toEqual([expect.objectContaining({ kind: 'state', message: 'No combination produced usable data' })])
   })
 
+  /** Contract 46: ranked by `expectancy` where no trade has an R, the ranking is empty and every row counted out. They ran. */
+  it('says a ranking left empty by its objective for what it is, not as data that failed', () => {
+    const empty = { ...DETAIL, objective: 'expectancy', combinations: [], count: 0, unranked: 9 }
+    const [row] = sweepListRows([SWEEP], state({ rankings: { [SWEEP.sweep_id]: empty } }))
+    expect(row).toMatchObject({ kind: 'state', message: '9 combinations ran, and none has a figure for expectancy' })
+    expect(sweepNotices(SWEEP, empty).map(entry => entry.word)).toEqual(['9 not ranked'])
+  })
+
   it('prints the objective as the summary prints the same field, and an unknown one as its number', () => {
     const [row] = combinations({})
     expect(objectiveFigure({ ...row!, objective: 'expectancy' })).toMatch(/R$/)
@@ -101,17 +109,16 @@ describe('sweep_rows', () => {
 
   /** What the line has no width for, and what each word on it means: one card, which a keyboard reaches too. */
   it('says in the card of a heading what the sweep searched, how it is ranked and each word on its line', () => {
-    const detail = { ...DETAIL, combinations: [combination({ features_beyond_venue: 'stop_loss' })] }
-    const card = sweepCard(SWEEP, detail)
+    const card = sweepCard({ ...SWEEP, features_beyond_venue: 'stop_loss' }, DETAIL)
     expect(card.title).toBe(SWEEP.sweep_id)
     const pairs = Object.fromEntries(card.details.map(pair => [pair.label, pair]))
     expect(pairs['Set']!.value).toBe(SWEEP.base_config)
     expect(pairs['Ranked by']!.value).toContain(`${DETAIL.objective}, `)
     expect(pairs['beyond the venue']).toMatchObject({ tone: 'warning' })
-    expect(pairs['beyond the venue']!.value).toMatch(/^⚠ .*does not predict a session there$/)
+    expect(pairs['beyond the venue']!.value).toMatch(/^⚠ .*do not predict a session there$/)
     // no row of a card shares its label, which is its key
     expect(new Set(card.details.map(pair => pair.label)).size).toBe(card.details.length)
-    // a ranking not read yet: what the sweep's own row holds stands, and no word
+    // a ranking not read yet: what the sweep's own row holds stands, and nothing it does not state
     const closed = sweepCard(SWEEP, undefined).details.map(pair => pair.label)
     expect(closed).toContain('Set')
     expect(closed).not.toContain('beyond the venue')
@@ -139,70 +146,59 @@ describe('sweep_rows', () => {
   })
 
   /**
-   * Contract 45: a row allowed order features its venue's API does not hold does not predict a session
-   * there. Read off the ranking, since the row of the sweep list does not carry it. The field is the
-   * scenario set's, so the ranked rows of a sweep read alike.
+   * A search allowed order features its venue's API does not hold does not predict a session there.
+   * On the sweep's own row since contract 46, so the word stands before a ranking is read.
    */
-  it('says which features a ranking was allowed beyond the venue, and nothing where it was allowed none', () => {
-    const allowed = 'stop_loss,take_profit'
-    const notices = sweepNotices(SWEEP, {
-      ...DETAIL,
-      combinations: [
-        combination({ run_id: 'run_a', currency: 'EUR', features_beyond_venue: allowed }),
-        combination({ run_id: 'run_a', currency: 'USD', features_beyond_venue: allowed }),
-        combination({ run_id: 'run_b', currency: 'EUR', features_beyond_venue: allowed }),
-      ],
-    })
-    const notice = notices.find(entry => entry.word === 'beyond the venue')!
-    expect(notice.sentence).toContain('2 combinations')
-    expect(notice.sentence).toContain(': stop_loss · take_profit — ')
-    expect(notice.sentence).toContain('does not predict a session there')
-    const none = sweepNotices(SWEEP, { ...DETAIL, combinations: [combination({ features_beyond_venue: '' })] })
-    expect(none.map(entry => entry.word)).not.toContain('beyond the venue')
+  it('says which features a search was allowed beyond the venue, closed or open, and nothing where it was allowed none', () => {
+    const allowed = { ...SWEEP, features_beyond_venue: 'stop_loss,take_profit' }
+    for (const detail of [undefined, DETAIL]) {
+      const notice = sweepNotices(allowed, detail).find(entry => entry.word === 'beyond the venue')!
+      expect(notice.sentence).toContain(': stop_loss · take_profit — ')
+      expect(notice.sentence).toContain('do not predict a session there')
+      expect(sweepNotices(SWEEP, detail).map(entry => entry.word)).not.toContain('beyond the venue')
+    }
   })
 
-  /**
-   * A strategy that keeps its stop itself gives a trade no R (contract 45), so `expectancy` reads 0 with
-   * `r_trade_count` 0 and every row ties on a figure it prints as n/a. Nobody is first on that.
-   */
+  /** Where a row prints the objective's figure as an absence, nobody is first on it: `win_rate` over no trades reads 0. */
   it('stars no row on a figure it does not state, and says so', () => {
-    const empty = { expectancy: 0, r_trade_count: 0 }
-    const noR = {
-      objective: 'expectancy',
+    const empty = { win_rate: 0, total_trades: 0 }
+    const none = {
+      objective: 'win_rate',
       combinations: [combination({ run_id: 'run_a', ...empty, net_pnl: -47 }), combination({ run_id: 'run_b', ...empty, net_pnl: -198 })],
     }
-    const rows = combinations(noR)
+    const rows = combinations(none)
     expect(rows.map(objectiveFigure)).toEqual(['n/a', 'n/a'])
     expect(rows.map(row => row.first)).toEqual([false, false])
-    const notice = sweepNotices(SWEEP, { ...DETAIL, ...noR }).find(entry => entry.word === 'first states no figure')!
-    expect(notice.sentence).toContain('expectancy')
+    const notice = sweepNotices(SWEEP, { ...DETAIL, ...none }).find(entry => entry.word === 'first states no figure')!
+    expect(notice.sentence).toContain('win_rate')
     expect(notice.sentence).not.toContain('(')
   })
 
-  /** A 0 nobody measured sorts above every negative mean: the rows below it state one, and none is first. */
+  /** Lowest first, a row with no trades leads on a 0 nobody measured: the rows below it state one, and none is first. */
   it('stars no row where the first states no figure, whatever the rows below it state', () => {
     const led = (...below: Partial<SweepCombination>[]) => ({
-      objective: 'expectancy',
+      objective: 'win_rate',
+      maximize: false,
       combinations: [
-        combination({ run_id: 'run_a', expectancy: 0, r_trade_count: 0 }),
+        combination({ run_id: 'run_a', win_rate: 0, total_trades: 0 }),
         ...below.map((fields, index) => combination({ run_id: `run_${index}`, ...fields })),
       ],
     })
-    const negative = led({ expectancy: -0.25, r_trade_count: 12 }, { expectancy: -0.8, r_trade_count: 9 })
-    expect(combinations(negative).map(row => row.first)).toEqual([false, false, false])
-    expect(sweepNotices(SWEEP, { ...DETAIL, ...negative }).map(entry => entry.word)).toContain('first states no figure')
+    const stated = led({ win_rate: 0.25, total_trades: 12 }, { win_rate: 0.8, total_trades: 9 })
+    expect(combinations(stated).map(row => row.first)).toEqual([false, false, false])
+    expect(sweepNotices(SWEEP, { ...DETAIL, ...stated }).map(entry => entry.word)).toContain('first states no figure')
     // a stated 0 below it ties with no first
-    expect(combinations(led({ expectancy: 0, r_trade_count: 4 })).map(row => row.first)).toEqual([false, false])
+    expect(combinations(led({ win_rate: 0, total_trades: 4 })).map(row => row.first)).toEqual([false, false])
   })
 
   /** The stars are decided within each account currency, so the word is too, and names the one it means. */
   it('says which account currency has no first, and keeps the star of the other', () => {
     const mixed = {
-      objective: 'expectancy',
+      objective: 'win_rate',
       combinations: [
-        combination({ run_id: 'run_a', currency: 'USD', expectancy: 0.4, r_trade_count: 5 }),
-        combination({ run_id: 'run_a', currency: 'EUR', expectancy: 0, r_trade_count: 0 }),
-        combination({ run_id: 'run_b', currency: 'EUR', expectancy: 0, r_trade_count: 0 }),
+        combination({ run_id: 'run_a', currency: 'USD', win_rate: 0.4, total_trades: 5 }),
+        combination({ run_id: 'run_a', currency: 'EUR', win_rate: 0, total_trades: 0 }),
+        combination({ run_id: 'run_b', currency: 'EUR', win_rate: 0, total_trades: 0 }),
       ],
     }
     expect(combinations(mixed).map(row => row.first)).toEqual([true, false, false])
@@ -213,15 +209,21 @@ describe('sweep_rows', () => {
   /** A 0 a row states is a figure like any other: the rows tied on it are first, and nothing needs saying. */
   it('keeps the star on a figure a row does state, zero included', () => {
     const stated = {
-      objective: 'expectancy',
+      objective: 'win_rate',
       combinations: [
-        combination({ run_id: 'run_a', expectancy: 0, r_trade_count: 4 }),
-        combination({ run_id: 'run_b', expectancy: 0, r_trade_count: 7 }),
-        combination({ run_id: 'run_c', expectancy: 0, r_trade_count: 0 }),
+        combination({ run_id: 'run_a', win_rate: 0, total_trades: 4 }),
+        combination({ run_id: 'run_b', win_rate: 0, total_trades: 7 }),
+        combination({ run_id: 'run_c', win_rate: 0, total_trades: 0 }),
       ],
     }
     expect(combinations(stated).map(row => row.first)).toEqual([true, true, false])
     expect(sweepNotices(SWEEP, { ...DETAIL, ...stated }).map(entry => entry.word)).not.toContain('first states no figure')
+  })
+
+  /** Contract 46: a logic on own levels has no R, so beside a ranking by `net_pnl` its expectancy reads as absent. */
+  it('reads an expectancy of null as absent in the card', () => {
+    const [row] = combinations({ combinations: [combination({ expectancy: null, r_trade_count: 0 })] })
+    expect(combinationCard(row!).details.find(pair => pair.label === 'Expectancy')?.value).toBe('n/a')
   })
 
   /** Two rows of one run are one combination, wherever a notice counts combinations. */
@@ -230,13 +232,11 @@ describe('sweep_rows', () => {
     const notices = sweepNotices(SWEEP, {
       ...DETAIL,
       combinations: [
-        combination({ run_id: 'run_a', currency: 'EUR', records_pruned_at: pruned, features_beyond_venue: 'stop_loss' }),
-        combination({ run_id: 'run_a', currency: 'USD', records_pruned_at: pruned, features_beyond_venue: 'stop_loss' }),
+        combination({ run_id: 'run_a', currency: 'EUR', records_pruned_at: pruned }),
+        combination({ run_id: 'run_a', currency: 'USD', records_pruned_at: pruned }),
       ],
     })
-    for (const word of ['records pruned', 'beyond the venue']) {
-      expect(notices.find(entry => entry.word === word)!.sentence).toMatch(/^1 combination /)
-    }
+    expect(notices.find(entry => entry.word === 'records pruned')!.sentence).toMatch(/^1 combination /)
   })
 
   /** In the card of the combination it concerns, in the warning role with its glyph; nothing on any other. */

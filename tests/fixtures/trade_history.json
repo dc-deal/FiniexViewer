@@ -1289,7 +1289,7 @@
     {
       "currency": "EUR",
       "trade_count": 8,
-      "expectancy": 0.0,
+      "expectancy": null,
       "avg_win_r": null,
       "avg_loss_r": null,
       "r_trade_count": 0,
@@ -1310,7 +1310,7 @@
     {
       "currency": "USD",
       "trade_count": 10,
-      "expectancy": 0.0,
+      "expectancy": null,
       "avg_win_r": null,
       "avg_loss_r": null,
       "r_trade_count": 0,

@@ -8,7 +8,8 @@ The models carry numbers, not units. These are contract, confirmed by the backen
 
 - `win_rate` is a **ratio 0..1** — multiply for display.
 - `max_drawdown` is a **positive magnitude** in account currency. The sign is a display choice, not data.
-- `expectancy` is mean R, meaningful only when `r_trade_count > 0`.
+- `expectancy` is mean R, meaningful only when `r_trade_count > 0`: null where no trade has an R since
+  contract 46, and 0.0 there on a run recorded before.
 - `profit_factor` is `null` when it is **undefined** (a run without a losing trade), never 0.
 - `avg_win_r` / `avg_loss_r` are `null` when their subset is empty. Gate each on **its own** count (`r_win_count` / `r_loss_count`): a run can have R-defined trades with no winner among them, so `r_trade_count` alone would still print a mean nobody measured.
 - `signal_fresh_ratio` is `null` when no SIGNAL worker was involved — deliberately not 1.0, which would claim a perfect feed.

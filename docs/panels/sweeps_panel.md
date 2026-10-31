@@ -49,11 +49,13 @@ keyboard reaches too; **where everything is alike, nothing is printed**:
   compares measures that may have changed underneath;
 - combinations the ranking left out because they carry no value for its objective (`unranked`,
   contract 40) — without the count a shorter ranking would read as the whole sweep;
-- *first states no figure*, where the first of a ranking states none for the objective, naming the
-  account currency where the ranking holds several: `expectancy` reads 0 where no trade has an R — a
-  combination that never traded, and since contract 45 one whose strategy keeps its stop itself — which
-  sorts above every negative mean. Its place rests on a value nobody measured, so no row wears the ★. A
-  first that does state a figure keeps its star, a stated 0 included;
+- *first states no figure*, where the first of a ranking prints the objective's figure as an absence,
+  naming the account currency where the ranking holds several: `win_rate` over no trades reads 0. Its
+  place rests on a value nobody measured, so no row wears the ★. A first that does state a figure keeps
+  its star, a stated 0 included;
+- *beyond the venue*, from the sweep's own row, so it stands on a closed sweep too: the search was allowed
+  order features its venue's API does not hold, and its combinations do not predict a session there
+  (FiniexTestingIDE, 2026-10-30; on the row since contract 46). The heading's card says which features;
 - combinations whose records were pruned (`records_pruned_at`) — their figures can no longer be
   checked;
 - error combinations, as above.
@@ -96,12 +98,11 @@ splits, and several sweeps can stand open at once, to be compared.
   executive panel's words; they fold from the booking periods since contract 42 and read a dash on
   a row written before. A combination allowed order features its venue's API does not hold names them
   as *Beyond the venue*, in the warning role (contract 45).
-- **The word *beyond the venue* stands on a sweep's line once its ranking is read**, beside the other
-  words that say a ranking needs weighing: such a combination does not predict a session on that venue
-  (FiniexTestingIDE, 2026-10-30). The field is the scenario set's, so the ranked rows of a sweep read
-  alike. The ranking has to be read first because the row of the sweep list does not carry the field
-  (measured 2026-10-30). The heading's card says what the word means, which features, and how many
-  combinations.
+- **A ranking left empty by its objective says so** (contract 46): a sweep ranked by `expectancy` where
+  no trade has an R, a strategy that keeps its stop itself giving none, serves no combination and counts
+  them in `unranked`. The line reads *9 combinations ran, and none has a figure for expectancy*, where
+  no combination at all still reads *No combination produced usable data*. A sweep that recorded no
+  objective ranks by `net_pnl`, maximized.
 - **The sweep looked at last is the link's `sweep` key**, stored with the arrangement: it stands open
   after a reload, and the run header's *Combination in sweep* (`openSweep`) opens it and brings it
   into view. A link stored before the key existed reads as none chosen.

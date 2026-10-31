@@ -54,7 +54,13 @@ function objectiveValue(row: SweepCombination, objective: string): unknown {
 }
 
 function rankedRows(sweep: SweepRow, detail: SweepDetail): SweepListRow[] {
-  if (!detail.combinations.length) return [stateRow(sweep, t('No combination produced usable data'))]
+  // `unranked` says they ran and carry no value for the objective: a sweep ranked by `expectancy` where
+  // no trade has an R serves an empty ranking (contract 46), and nothing about that data is unusable
+  if (!detail.combinations.length) {
+    return [stateRow(sweep, detail.unranked
+      ? `${plural(detail.unranked, t('combination'), t('combinations'))} ${t('ran, and none has a figure for')} ${detail.objective}`
+      : t('No combination produced usable data'))]
+  }
   const currencies = [...new Set(detail.combinations.map(row => row.currency))]
   return currencies.flatMap(currency => {
     const rows = detail.combinations.filter(row => row.currency === currency)
@@ -135,7 +141,7 @@ export function rankedBy(sweep: SweepRow, detail: SweepDetail | undefined): { wo
   }
 }
 
-/** The order features a row was allowed beyond its venue, from their comma-joined string (contract 45). */
+/** The order features a row was allowed beyond its venue, from their comma-joined string. */
 function featureWords(features: string): string[] {
   return features.split(',').map(word => word.trim()).filter(Boolean)
 }
@@ -182,10 +188,17 @@ export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): 
       sentence: `${plural(sweep.error_count, t('combination'), t('combinations'))} ${t('produced no usable data and are not ranked')}`,
     })
   }
+  // a search allowed features its venue's API does not hold does not predict a session there
+  // (FiniexTestingIDE, 2026-10-30). On the sweep's own row since contract 46, so it is said closed too
+  if (sweep.features_beyond_venue) {
+    notices.push({
+      word: t('beyond the venue'),
+      sentence: `${t("The search was allowed order features the venue's API does not hold")}: ${featureWords(sweep.features_beyond_venue).join(' · ')} — ${t('its combinations do not predict a session there')}`,
+    })
+  }
   if (!detail) return notices
-  // `expectancy` reads 0 where no trade has an R, as on all four rows of `sweep_20261008_223212`
-  // (measured 2026-10-30): a combination that never traded, and since contract 45 one whose strategy
-  // keeps its stop itself. That sorts above every negative mean, so it can lead a ranking
+  // a figure printed as an absence on a row the route still ranks, as `win_rate` over no trades reads
+  // 0. `expectancy` no longer comes here: with no R it is null and the route leaves the row out
   const unled = unledCurrencies(detail)
   if (unled.length) {
     const within = new Set(detail.combinations.map(row => row.currency)).size > 1 ? ` (${unled.join(', ')})` : ''
@@ -215,17 +228,6 @@ export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): 
     notices.push({
       word: t('records pruned'),
       sentence: `${plural(pruned, t('combination'), t('combinations'))} ${t('whose run records a prune removed — the figures can no longer be checked against them')}`,
-    })
-  }
-  // a row allowed features its venue's API does not hold does not predict a session there
-  // (FiniexTestingIDE, 2026-10-30). The field is the scenario set's, so the ranked rows of a sweep read
-  // alike. Read off the ranking: the row of the sweep list does not carry it
-  const beyond = detail.combinations.filter(row => row.features_beyond_venue !== '')
-  if (beyond.length) {
-    const features = new Set(beyond.flatMap(row => featureWords(row.features_beyond_venue)))
-    notices.push({
-      word: t('beyond the venue'),
-      sentence: `${plural(combinationCount(beyond), t('combination'), t('combinations'))} ${t("allowed order features the venue's API does not hold")}: ${[...features].join(' · ')} — ${t('such a combination does not predict a session there')}`,
     })
   }
   return notices

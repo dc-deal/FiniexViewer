@@ -23,7 +23,6 @@ function trade(fields: Partial<TradeRow>): TradeRow {
 const OPEN: OpenPosition = {
   position_id: 'pos_1', direction: 'long', lots: 0.1, entry_price: 1.1, entry_time: '2025-10-31T05:01:10+00:00',
   last_price: 1.15, unrealized_pnl: 0.5, valued: true, stop_loss: 1.05, take_profit: null,
-  protective_level_enforcement: 'local', take_profit_enforcement: '',
 }
 
 /**

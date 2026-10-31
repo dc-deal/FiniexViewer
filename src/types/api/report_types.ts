@@ -385,7 +385,9 @@ export interface RunSummaryCurrency {
   total_trades: number
   winning_trades: number
   losing_trades: number
-  expectancy: number            // mean R — only meaningful when r_trade_count > 0
+  // mean R. Null where no trade has an R; a run recorded before contract 46 reads 0.0 there, beside
+  // r_trade_count 0, so it is gated on that count as well
+  expectancy: number | null
   // null when the matching subset is empty. Gate each on ITS OWN count: a run can have
   // R-defined trades with no winner among them, so r_trade_count alone is not enough.
   avg_win_r: number | null
@@ -726,9 +728,6 @@ export interface OpenPosition {
   // null where no level was set
   stop_loss: number | null
   take_profit: number | null
-  // where a level is held — `local` on every one measured, '' where none was set
-  protective_level_enforcement: string
-  take_profit_enforcement: string
 }
 
 /** The fills of one fee source, and what their fees came to in the row's account currency. */
@@ -1135,7 +1134,8 @@ export interface TradeRow {
 export interface TradeAnalytics {
   currency: string
   trade_count: number
-  expectancy: number
+  // null where no trade has an R (contract 46); an older run reads 0.0 beside r_trade_count 0
+  expectancy: number | null
   // null when no trade carried a stop, so nothing is denominated in R
   avg_win_r: number | null
   avg_loss_r: number | null
@@ -1610,8 +1610,8 @@ export interface OrderHistoryRow {
   // why the row ended as it did, beside the status that says WHAT it ended as
   end_reason: string | null
   // a whole sentence of the backend's, on a refused row and nowhere else. Contract 23 added
-  // `unaccounted_order`, `position_not_found` and `close_withheld`, and dropped
-  // `broker_unreachable` and `unresolved_write`.
+  // `unaccounted_order` and `position_not_found`, and dropped `broker_unreachable` and
+  // `unresolved_write`.
   rejection_reason: string | null
   rejection_message: string | null
   // the order event this row was booked with — its `seq` in order-events (contract 44); null on a

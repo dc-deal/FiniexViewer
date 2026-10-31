@@ -24,6 +24,9 @@ export interface SweepRow {
   /** The KPI it ranks by — their vocabulary (`expectancy`, `net_pnl`, …). Empty where it recorded none. */
   objective: string
   maximize: boolean
+  // The order features the search was allowed beyond its venue's API, comma-joined: the scenario set's,
+  // so one value per sweep (contract 46). Empty for every other sweep
+  features_beyond_venue: string
 }
 
 export interface SweepList {
@@ -73,9 +76,11 @@ export interface SweepCombination {
    * The mean R, which a sweep usually ranks on. R is `net_pnl` over the loss the stop would have
    * taken, and measured 2026-10-19 that stop is the one OF THE ROW: a stop trailed to break-even
    * gave one partial close 308.9 R, and this mean read +11.07 on a set that lost 93.99. Asked of
-   * FiniexTestingIDE; rendered as served meanwhile, with the count it rests on beside it.
+   * FiniexTestingIDE; rendered as served meanwhile, with the count it rests on beside it. Null where
+   * no trade has an R, as a strategy that keeps its stop itself gives none (contract 46), and a fold
+   * of stored rows at 0.0 reads null too.
    */
-  expectancy: number
+  expectancy: number | null
   avg_win_r: number | null
   avg_loss_r: number | null
   r_trade_count: number
@@ -180,7 +185,7 @@ export interface SweepCombination {
 
 /**
  * GET /api/v1/sweeps/{sweep_id}. `objective` and `maximize` are what the ranking USED: the sweep's
- * own where it declared them, and where it declared neither, what was used instead (`expectancy`,
+ * own where it declared them, and where it declared neither, what was used instead (`net_pnl`,
  * maximized). `count` counts rows — one per combination and currency — not combinations.
  */
 export interface SweepDetail {

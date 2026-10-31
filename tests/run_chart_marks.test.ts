@@ -134,7 +134,6 @@ describe('run_chart_marks', () => {
       const open: OpenPosition = {
         position_id: 'pos_1', direction: 'long', lots: 0.1, entry_price: 0.87, entry_time: longOpening.event_time,
         last_price: 0.88, unrealized_pnl: 0, valued: false, stop_loss: null, take_profit: null,
-        protective_level_enforcement: '', take_profit_enforcement: '',
       }
       const [mark] = openingMarks([longOpening], [open], [], 'EUR', BARS, null)
       expect(mark!.card.details.find(pair => pair.label === 'Unrealized')).toMatchObject({ value: 'n/a' })
