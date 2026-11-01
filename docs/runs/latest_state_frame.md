@@ -102,7 +102,10 @@ frame on show as a dashed line ([Chart Drawings and Layers](../panels/chart_draw
 The app root loads it with the run's other sections and asks again **once a cadence** (`cadence_s`,
 a minute until an answer names one). It asks only while the run bundle or the section's own panel is
 on show and the page is in view. A frame stays on screen until the next one arrives, so the section
-never blanks between answers; a failure is said beside the frame held. When the session has ended
+never blanks between answers; a failure is said beside the frame held. A new frame on the followed
+timeline brings the check-in along, so the two never show different frames, and that is still one
+answer per frame. *Written … ago* moves on every second by this browser's clock from the moment the
+answer arrived: the route's `age_s` at that moment plus the time since. When the session has ended
 and written its outcome, the asking stops and the run index is read again. The bundle then loads
 the reports the session wrote.
 

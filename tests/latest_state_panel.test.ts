@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import LatestStatePanel from '@/components/runs/LatestStatePanel.vue'
 import { provideTickSizes } from '@/composables/use_tick_sizes'
 import type { StateFrame, StateFrameUnit, StateFramesLatest } from '@/types/api/state_frame_types'
@@ -39,6 +39,31 @@ describe('LatestStatePanel', () => {
     expect(replay.find('.status').text()).toContain('replaying recorded data')
     // the age of a replayed frame says nothing, so it is not said
     expect(replay.find('.status').text()).not.toContain('ago')
+  })
+
+  /** Between two answers the age moves on, or a session that writes reads the same at every look. */
+  it('moves the age on every second and starts again from the next answer', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = mountPanel(answer(stoppedFixture, { recording: 'current', age_s: 21 }))
+      vi.advanceTimersByTime(5000)
+      await nextTick()
+      expect(wrapper.find('.status').text()).toContain('written 26 s ago')
+
+      await wrapper.setProps({ model: answer(stoppedFixture, { recording: 'current', age_s: 2 }) })
+      expect(wrapper.find('.status').text()).toContain('written 2 s ago')
+
+      // a frame ahead of the server's clock has no age to move on
+      await wrapper.setProps({ model: answer(stoppedFixture, { recording: 'current', age_s: null }) })
+      vi.advanceTimersByTime(5000)
+      await nextTick()
+      expect(wrapper.find('.status').text()).toContain('written at a time ahead of this server clock')
+
+      wrapper.unmount()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   /** The session clock is said as a time and named as that clock; the machine clock only as an age. */

@@ -120,16 +120,19 @@ export function useRunReportsLoading(): void {
     const run = runs.selectedRun
     if (!run || !recordsStateFrames(run) || !onShow.value || finished()) return
     const runId = run.run_id
-    timer = setTimeout(async () => {
+    timer = setTimeout(() => {
       timer = null
-      if (runs.selectedRun?.run_id !== runId) return
-      if (document.visibilityState === 'visible') await reports.refreshStateFrames(runId)
-      if (finished()) {
-        await reportsWritten(runId)
-        return
-      }
-      schedule()
+      if (runs.selectedRun?.run_id === runId) void checkIn(runId)
     }, cadenceSeconds() * 1000)
+  }
+
+  async function checkIn(runId: string): Promise<void> {
+    if (document.visibilityState === 'visible') await reports.refreshStateFrames(runId)
+    if (finished()) {
+      await reportsWritten(runId)
+      return
+    }
+    schedule()
   }
 
   watch([() => runs.selectedRun?.run_id ?? null, onShow], schedule, { immediate: true })
@@ -140,6 +143,10 @@ export function useRunReportsLoading(): void {
    * whose player is open and reads `current`, asked every two seconds while the section is on show
    * and the page in view, and the frames written since read in. A player on the newest frame
    * follows them; the polling stops once the timeline no longer says `current`.
+   *
+   * A new frame on the timeline brings the check-in along and restarts its wait. Left on its own
+   * timer it asks in step with the writing, so its age reads the same at every answer, measured
+   * 2026-11-01: 13 s for three minutes, and its time a frame behind the player for 13 s of each.
    */
   const players = useFramePlayerStore()
   const recordingUnits = computed(() => [...players.players.values()]
@@ -147,6 +154,10 @@ export function useRunReportsLoading(): void {
     .map(player => player.unit))
 
   let follower: ReturnType<typeof setTimeout> | null = null
+
+  function recordCounts(): string {
+    return recordingUnits.value.map(unit => players.playerOf(unit)?.stream?.record_count ?? 0).join('|')
+  }
 
   function stopFollowing(): void {
     if (follower) clearTimeout(follower)
@@ -158,7 +169,12 @@ export function useRunReportsLoading(): void {
     if (!onShow.value || !recordingUnits.value.length) return
     follower = setTimeout(async () => {
       follower = null
-      if (document.visibilityState === 'visible') await Promise.all(recordingUnits.value.map(unit => players.refresh(unit)))
+      if (document.visibilityState === 'visible') {
+        const seen = recordCounts()
+        await Promise.all(recordingUnits.value.map(unit => players.refresh(unit)))
+        const runId = runs.selectedRun?.run_id
+        if (runId && recordCounts() !== seen) await checkIn(runId)
+      }
       follow()
     }, FOLLOW_MS)
   }

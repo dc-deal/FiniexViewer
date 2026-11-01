@@ -13,7 +13,7 @@ import stateFramesFixture from './fixtures/state_frames_ended.json'
 import * as apiClient from '@/api/api_client'
 import type { SectionAbsence } from '@/types/api/absence_types'
 import type { RunInfo } from '@/types/api/report_types'
-import type { StateFramesLatest } from '@/types/api/state_frame_types'
+import type { RecordedStream, StateFramesLatest } from '@/types/api/state_frame_types'
 
 const ABSENT: SectionAbsence = { absent: true, cause: 'artifact_not_produced', detail: '' }
 
@@ -207,6 +207,45 @@ describe('useRunReportsLoading', () => {
       await flushPromises()
       await vi.advanceTimersByTimeAsync(10_000)
       expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
+    /**
+     * Its own timer asks in step with the writing, so the age it brings reads the same each time and
+     * its frame lags the player's. A frame the timeline names brings it along, and restarts its wait.
+     */
+    it('asks the check-in when the timeline names a new frame, and waits a cadence from there', async () => {
+      vi.mocked(apiClient.getLatestStateFrames).mockResolvedValue(recording())
+      useRunsStore().runs = [row('session', [], false, ['state_frames.jsonl'])]
+      useDockStore().noteShown(RUN_BUNDLE, true)
+      choose('session')
+      mountLoading()
+      await flushPromises()
+      expect(apiClient.getLatestStateFrames).toHaveBeenCalledTimes(1)
+
+      const players = useFramePlayerStore()
+      players.players.set('unit', {
+        runId: 'session', unit: 'unit', stream: { record_count: 5 } as RecordedStream, recording: 'current',
+        absence: null, error: null, loading: false, frames: [], cursor: null, playing: false, speed: 5,
+      })
+      const refresh = vi.spyOn(players, 'refresh').mockResolvedValue()
+      await flushPromises()
+
+      // the same count: the timeline is asked and the check-in is not
+      await vi.advanceTimersByTimeAsync(40_000)
+      expect(refresh).toHaveBeenCalled()
+      expect(apiClient.getLatestStateFrames).toHaveBeenCalledTimes(1)
+
+      refresh.mockImplementationOnce(async () => {
+        players.playerOf('unit')!.stream!.record_count = 6
+      })
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(apiClient.getLatestStateFrames).toHaveBeenCalledTimes(2)
+
+      // the first load's timer would have fired here; the new frame restarted it
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(apiClient.getLatestStateFrames).toHaveBeenCalledTimes(2)
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(apiClient.getLatestStateFrames).toHaveBeenCalledTimes(3)
     })
   })
 })
