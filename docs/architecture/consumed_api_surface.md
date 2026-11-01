@@ -10,6 +10,7 @@ The backend exposes two planes. The viewer consumes both, and treats them differ
 GET /api/v1/health                                    open, no token
 GET /api/v1/timeframes                                open, no token
 GET /api/v1/caller                                    token, no grant — who the server takes us to be
+GET /api/v1/health                                    open — a server's own identity: host_id, host_name (contract 48)
 GET /api/v1/brokers                                   a `brokers` grant since contract 35, as the routes below
 GET /api/v1/brokers/{broker}/symbols                   each symbol with its `tick_size` (contract 35)
 GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage   404 where the archive holds nothing (`findCoverage`)

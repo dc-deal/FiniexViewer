@@ -22,6 +22,8 @@ import tradeHistory from './fixtures/trade_history.json'
 import scenarioDetails from './fixtures/scenario_details.json'
 import manifest from './fixtures/capture_manifest.json'
 import machineResources from './fixtures/machine_resources.json'
+import health from './fixtures/health.json'
+import activities from './fixtures/activities.json'
 import sweepsList from './fixtures/sweeps_list.json'
 import sweepDetail from './fixtures/sweep_detail.json'
 import stateFramesEnded from './fixtures/state_frames_ended.json'
@@ -54,6 +56,7 @@ import type {
   DeploymentListResponse,
 } from '@/types/api/deployment_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { ServerHealth } from '@/types/api/health_types'
 import type { MachineResources } from '@/types/api/machine_types'
 import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
 
@@ -536,6 +539,14 @@ describe('api contract', () => {
     const orderIds = live.events.flatMap(row => row.broker_ref ?? [])
     expect(orderIds.length).toBeGreaterThan(0)
     for (const orderId of orderIds) expect(orderId).toMatch(/^O\d{5}-00000-000000$/)
+  })
+
+  /** What a server is kept under: `origin_host` on the rows, stated by the server itself since contract 48. */
+  it('a server states its own identity, the value its rows carry', () => {
+    const typed: ServerHealth = health
+    expect(typed.host_id).toBeTruthy()
+    const hosts = (activities as { activities: { origin_host: string | null }[] }).activities.map(row => row.origin_host)
+    expect(hosts).toContain(typed.host_id)
   })
 
   it('the order history still satisfies the mirrored shape', () => {

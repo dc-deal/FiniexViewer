@@ -4,6 +4,7 @@ import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
+import type { ServerHealth } from '@/types/api/health_types'
 import type { ApiBar, BarAnswer, CoverageResponse } from '@/types/api/bar_types'
 import type { CallerIdentity } from '@/types/api/caller_types'
 import type { ActivityList, MachineResources } from '@/types/api/machine_types'
@@ -73,6 +74,11 @@ http.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+export async function getHealth(): Promise<ServerHealth> {
+  const response = await http.get<ServerHealth>('/health')
+  return response.data
+}
 
 export async function getTimeframes(): Promise<TimeframeList> {
   const response = await http.get<{ timeframes: TimeframeList }>('/timeframes')

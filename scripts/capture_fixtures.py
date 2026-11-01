@@ -155,6 +155,8 @@ TARGETS = [
     # re-capture moves them every time. Nothing asserts a figure, only the shape and the rules
     # the answer states about itself.
     ('machine_resources.json', 'machine-resources'),
+    # A READING as well: its clock moves with every capture. Only its identity fields are asserted.
+    ('health.json', 'health'),
     # A READING as well: what runs on the machine at capture time — the server's own row at least.
     # Tests build the other rows from it; nothing asserts which activities happened to run.
     ('activities.json', 'activities'),

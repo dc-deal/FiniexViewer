@@ -7,15 +7,375 @@
   ],
   "runs": [
     {
-      "run_id": "20261031_172719_fde14368",
+      "run_id": "20261031_174435_52cb0cd4",
       "group": "autotrader",
-      "name": "spot_venue_field_study",
-      "artifacts": [],
+      "name": "kraken_spot_btcusd_security_cert_hard_restart",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "cold_start.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "venue_api_performance.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
       "stream_files": [
         "order_events.jsonl",
         "state_frames.jsonl"
       ],
-      "recording": "current",
+      "recording": "ended",
+      "start_time": "2026-10-31T17:44:35.467209+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "d705a50eeca25dda0c105f1168f60c1cf6c1e3f9ec3d5add44c71653586f2b22",
+      "app_version": "1.4.0",
+      "git_commit": "2234e043",
+      "config_snapshot": "security_cert_5_hard_restart.json",
+      "reporting": "expected",
+      "size_bytes": 62239,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_hard_restart",
+          "start_date": "2026-10-31T17:44:35.467209+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 47,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -0.07473600000000034,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "failed",
+      "error_count": 1,
+      "warning_count": 0,
+      "log_warning_count": 2,
+      "tick_timespan_seconds": 7.770828,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261031_174400_4da0afe9",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_hard_kept",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "venue_api_performance.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-10-31T17:44:00.113426+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "213835270109b2d5bd32439ba4e6f1b0a19c9a7f483400a9536703ed6942b2e1",
+      "app_version": "1.4.0",
+      "git_commit": "2234e043",
+      "config_snapshot": "security_cert_4_hard_kept.json",
+      "reporting": "expected",
+      "size_bytes": 58643,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_hard_kept",
+          "start_date": "2026-10-31T17:44:00.113426+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 47,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "failed",
+      "error_count": 1,
+      "warning_count": 0,
+      "log_warning_count": 2,
+      "tick_timespan_seconds": 0.6926,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261031_174327_81b50ea6",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_restart",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "venue_api_performance.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-10-31T17:43:27.152919+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "3ed2700e837e3358d66c4afa81b1a08875c826e46cd3b0b94830a25804f694ee",
+      "app_version": "1.4.0",
+      "git_commit": "2234e043",
+      "config_snapshot": "security_cert_3_restart.json",
+      "reporting": "expected",
+      "size_bytes": 49173,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_restart",
+          "start_date": "2026-10-31T17:43:27.152919+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 47,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 3,
+      "tick_timespan_seconds": 0.0,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261031_174238_c3588874",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_soft",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "venue_api_performance.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-10-31T17:42:38.995480+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "44a4c27d049cd439847f1bdb81d5f59084ab3e2ea5e3967459eee69a4cde9396",
+      "app_version": "1.4.0",
+      "git_commit": "2234e043",
+      "config_snapshot": "security_cert_2_soft.json",
+      "reporting": "expected",
+      "size_bytes": 73512,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_soft",
+          "start_date": "2026-10-31T17:42:38.995480+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 47,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -0.0744,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 1,
+      "log_warning_count": 4,
+      "tick_timespan_seconds": 15.718119,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261031_174052_4dc4f901",
+      "group": "autotrader",
+      "name": "kraken_spot_btcusd_security_cert_guards",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "venue_api_performance.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-10-31T17:40:52.977463+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "3d4cc7302a60add1afd319ea4a115768f66fef1547c843b549dd909f75ec479d",
+      "app_version": "1.4.0",
+      "git_commit": "2234e043",
+      "config_snapshot": "security_cert_1_guards.json",
+      "reporting": "expected",
+      "size_bytes": 129736,
+      "ticks_from": "venue",
+      "orders_to": "venue",
+      "data_windows": [
+        {
+          "unit_name": "kraken_spot_btcusd_security_cert_guards",
+          "start_date": "2026-10-31T17:40:52.977463+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "certificate",
+      "report_contract": 47,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -0.07440600000000035,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 1,
+      "log_warning_count": 8,
+      "tick_timespan_seconds": 75.19158,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261031_172719_fde14368",
+      "group": "autotrader",
+      "name": "spot_venue_field_study",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "venue_api_performance.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
       "start_time": "2026-10-31T17:27:19.127396+00:00",
       "parent_id": null,
       "parent_kind": null,
@@ -24,7 +384,7 @@
       "git_commit": "2234e043",
       "config_snapshot": "spot_venue_field_study.json",
       "reporting": "expected",
-      "size_bytes": 0,
+      "size_bytes": 375651,
       "ticks_from": "venue",
       "orders_to": "venue",
       "data_windows": [
@@ -41,13 +401,19 @@
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
       "fixture_superseded": null,
-      "results": null,
-      "run_outcome": null,
-      "error_count": null,
-      "warning_count": null,
-      "log_warning_count": null,
-      "tick_timespan_seconds": null,
-      "has_reports": false
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -0.4323600000000006,
+          "total_trades": 6
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 12,
+      "tick_timespan_seconds": 641.869997,
+      "has_reports": true
     },
     {
       "run_id": "20261031_101128_bed258ad",
@@ -13996,5 +14362,5 @@
       "has_reports": true
     }
   ],
-  "count": 179
+  "count": 184
 }
