@@ -82,19 +82,17 @@ describe('ServersSettings', () => {
     expect(wrapper.findAll('.server-row').map(row => row.text())).toEqual(['Development', 'Second'])
   })
 
-  it('keeps the default server\'s address and token out of reach, and it cannot be removed', async () => {
+  it('never offers to remove the default server', async () => {
     const wrapper = await settings()
-    expect(wrapper.find('input[name="server-url"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('input[name="server-token"]').exists()).toBe(false)
     expect(wrapper.find('[data-action="remove-server"]').exists()).toBe(false)
   })
 
-  it('renames the default server and sends nothing else', async () => {
+  it('renames the default server', async () => {
     const wrapper = await settings()
     await wrapper.find('input[name="server-name"]').setValue('Dev')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
-    expect(serversApi.updateServer).toHaveBeenCalledWith(DEFAULT_SERVER_ID, { name: 'Dev' })
+    expect(vi.mocked(serversApi.updateServer).mock.lastCall).toMatchObject([DEFAULT_SERVER_ID, { name: 'Dev' }])
   })
 
   /** It cannot be read back, so an empty field means "leave it", never "clear it". */

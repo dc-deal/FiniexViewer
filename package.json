@@ -43,7 +43,8 @@
     "typescript": "^5.7.2",
     "vite": "^6.0.7",
     "vitest": "^4.1.12",
-    "vue-tsc": "^2.2.0"
+    "vue-tsc": "^2.2.0",
+    "zod": "^4.6.7"
   },
   "overrides": {
     "dockview": "8.5.1",

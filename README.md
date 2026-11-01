@@ -92,19 +92,15 @@ cd FiniexViewer
 npm install
 ```
 
-Create `.env.local` to point at your API server (default is `http://localhost:8000` — skip if that matches):
+The servers stand in `configs/servers.json`. Where yours differs, say only that in `user_configs/servers.json`, which is gitignored, under the same keys:
 
-```bash
-echo "VITE_API_BASE_URL=http://localhost:8000" > .env.local
+```json
+{ "endpoints": { "default": { "base_url": "http://localhost:8000/api/v1" } } }
 ```
+
+If the API requires a bearer token, put it in `user_configs/credentials/peers/development_api_token.json` as `{ "api_token": "<your token>" }`. A misspelled setting refuses the start.
 
 Further servers are added in the settings (*Servers*), and each browser window shows one of them.
-
-If the API requires a bearer token, put it in the same file:
-
-```bash
-echo "FINIEX_API_TOKEN=<your token>" >> .env.local
-```
 
 **Note the missing `VITE_` prefix, and do not add one.** A `VITE_*` variable is inlined into the
 browser bundle at build time, which would publish the token to anyone who opens the page. This one

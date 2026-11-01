@@ -39,7 +39,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'servers',
-    text: t('A server is one installation of the API, as an address and a token. Each browser window shows one, and switching reloads the page: the arrangement stays, and the selection comes back as you left it on that server. A token can be set here and never read back. A tunnel needs its key files in the folder .secrets.'),
+    text: t('A server is one installation of the API, as an address and a token. Each browser window shows one, and switching reloads the page: the arrangement stays, and the selection comes back as you left it on that server. A token can be set here and never read back. A tunnel needs its key files in the folder user_configs/credentials.'),
   },
   {
     id: 'bundle-places',

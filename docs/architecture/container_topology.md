@@ -148,29 +148,23 @@ Instead the dev server attaches it, in the Node process (`vite_servers_plugin.ts
 
 ```
 browser ──/api/v1/…──▶  Vite dev proxy  ──Authorization: Bearer …──▶  backend
-                        (holds FINIEX_API_TOKEN)
+                        (holds the tokens)
 ```
 
 This is the backend-for-frontend pattern, and it is what the IETF draft on browser-based apps
 recommends. Three properties, all measured rather than assumed:
 
-- **Inert until a token exists.** With `FINIEX_API_TOKEN` unset no header is sent at all — the
-  previous behaviour, byte for byte.
-- **The browser never receives it.** Verified against a request-capturing stand-in: the request to
-  `:5173` carries no `Authorization`, the request that reaches the target does.
-- **A real environment variable wins over a `.env` file.** Vite's `loadEnv` prioritises
-  `process.env`, so Compose keeps deciding `VITE_API_BASE_URL` while the token can come from
-  `.env.local`, which Compose does not set.
+- **Inert until a token exists.** With an empty token no header is sent at all.
+- **The browser never receives it.** The request to `:5173` carries no `Authorization`, the request that
+  reaches the target does.
 
-**Several servers pass through the same place.** `/api/v1/…` goes to the default server, from the
-environment as above. `/server/<id>/api/v1/…` goes to a server of the list in `.secrets/servers.json`
-(gitignored), with that server's token. `/__viewer/servers` serves the list without a token in it, and
-takes a change only from this page: an `Origin` equal to the `Host`, and JSON. The middleware is installed
-behind Vite's own host check.
+**Several servers pass through the same place.** `/api/v1/…` goes to the default server. `/server/<id>/api/v1/…` goes to any other of the list, with that server's token. `/__viewer/servers` serves the list without a token in it, and takes a change only from this page: an `Origin` equal to the `Host`, and JSON. The middleware is installed behind Vite's own host check.
+
+**The list is configuration, in two folders with the same file names** (`vite_server_config.ts`). `configs/` is tracked and holds the defaults and a placeholder for every secret. `user_configs/` is gitignored and holds this machine's own. `servers.json` is merged over the tracked one, and it holds only what differs: objects merge key by key, values and lists are replaced whole. A file under `credentials/` is used instead of the tracked one, nothing merged, and a token standing in a tracked file refuses the start. After the merge the whole result passes a strict schema, so a misspelled setting refuses the start too, naming the file and the key; `_comment` and `_comment_<what>` are allowed at every level. It is read once at the start, and what the settings page changes goes to `user_configs/`. The arrangement is FiniexTestingIDE's: its `docs/user_configs_override_system.md` and `docs/architecture/credentials_layout.md`.
 
 **One server per browser window.** `src/active_server.ts` holds the window's choice, read before anything else starts: the client's address and the saved state both hang on it. Switching reloads the page, because every store then starts empty and nothing of one server can stand beside the other. The arrangement's placement (`dock`, `places`) is shared; the selection (`links`, `bars`, `chart`, `runChart`, `panelViews`) of any but the default server stands under `arrangement.v1:<host_id>`, because a run id means something only on its own system and `host_id` survives a new address.
 
-**A tunnel is the dev server's to keep up** (`vite_server_tunnels.ts`). A server of the list may declare one: an account, a host, two ports, and two files in `.secrets/`, the key and the pinned host key. The browser cannot open one and the proxy that needs it runs in the container, so `localhost:<port>` is right where it is needed. It runs `ssh -N` with the host key pinned and no prompt, and starts it again when it ends. `openssh-client` is added at the start where it is missing and the system is Alpine, because the container is a plain Node image. Without its files a tunnel does nothing, and nothing about a host or an account is versioned.
+**A tunnel is the dev server's to keep up** (`vite_server_tunnels.ts`). A server of the list may declare one: an account, a host, two ports, and two files in `user_configs/credentials/`, the key and the pinned host key. The browser cannot open one and the proxy that needs it runs in the container, so `localhost:<port>` is right where it is needed. It runs `ssh -N` with the host key pinned and no prompt, and starts it again when it ends. `openssh-client` is added at the start where it is missing and the system is Alpine, because the container is a plain Node image. Without its files a tunnel does nothing, and nothing about a host or an account is versioned.
 
 **A connection that fails answers `502` with `{"error":"no_connection"}`**, where Vite's proxy answered a
 500 that read as a fault of the backend. The viewer cannot tell a tunnel that is down from a host that

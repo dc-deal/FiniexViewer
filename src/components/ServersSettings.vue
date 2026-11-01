@@ -16,8 +16,8 @@ import { t } from '@/translate'
 
 /**
  * The servers as a list with a detail. A token can be set here and never read back: it goes straight to
- * the dev server, and the browser keeps nothing of it. The default server's address and token are the
- * environment's, so only its name can change.
+ * the dev server, and the browser keeps nothing of it. What is changed here goes to this machine's own
+ * `user_configs`, and never into the tracked defaults. The default server cannot be removed.
  */
 const store = useServersStore()
 const { servers, secretFiles } = storeToRefs(store)
@@ -91,9 +91,7 @@ const tunnelNote = computed(() => {
 })
 
 function editOf(): ServerEdit {
-  const edit: ServerEdit = { name: name.value.trim() || null }
-  if (isDefault.value) return edit
-  edit.url = url.value.trim()
+  const edit: ServerEdit = { name: name.value.trim() || null, url: url.value.trim() }
   edit.tunnel = hasTunnel.value ? { ...tunnel.value } : null
   if (token.value) edit.token = token.value
   return edit
@@ -169,11 +167,10 @@ function remove(): Promise<void> {
             v-model="url"
             class="field-input"
             name="server-url"
-            placeholder="http://localhost:8010"
-            :disabled="isDefault"
+            placeholder="http://localhost:8010/api/v1"
           >
         </label>
-        <label v-if="!isDefault" class="field">
+        <label class="field">
           <span class="field-label">{{ t('Token') }}</span>
           <input
             v-model="token"
@@ -318,10 +315,6 @@ function remove(): Promise<void> {
 
 .field-input:focus {
   border-color: var(--color-accent);
-}
-
-.field-input:disabled {
-  color: var(--color-text-secondary);
 }
 
 .server-actions {

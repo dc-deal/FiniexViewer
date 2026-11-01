@@ -38,10 +38,11 @@ it has now, and the switch says so: the selection kept for the earlier one is no
 
 - **A token can be set and never read back.** It goes straight to the dev server and the browser keeps
   nothing of it. An empty field leaves the token as it is.
-- **The default server** comes from the environment: only its name can change, and it cannot be removed.
+- **The default server** stands in the tracked `configs/servers.json`, and it cannot be removed.
+- **What is changed here goes to `user_configs/`**, only what differs from the tracked file.
 - **A server's first name** is what its first health check said: `host_name` where it has one, otherwise its
   address and version. The reader can rename it.
-- **A tunnel** takes an account, a host, two ports and two files from `.secrets/`. How it runs is in
+- **A tunnel** takes an account, a host, two ports and two files from `user_configs/credentials/`. How it runs is in
   [Container Topology](../architecture/container_topology.md).
 - **Check connection** reads `/health`, `/caller` and the contract of that server, and shows the grants.
 

@@ -1,9 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs'
 import http from 'node:http'
 import https from 'node:https'
-import { dirname, join } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Plugin } from 'vite'
+import { credentialFiles, credentialsRoot, loadServers, saveServers, saveToken } from './vite_server_config'
+import type { ConfigDirs, StoredServer } from './vite_server_config'
 import { ServerTunnels } from './vite_server_tunnels'
 import type { TunnelStatus } from './vite_server_tunnels'
 import { DEFAULT_SERVER_ID } from './src/types/server_types'
@@ -12,81 +12,18 @@ import type { ServerEdit, ServerEntry, ServerList, ServerTunnel } from './src/ty
 /**
  * The dev server as the viewer's one way out: every API request passes here, whichever server it is
  * meant for, and the token is attached here so that the browser never receives one. A value a browser
- * transmits is a value its user possesses, so the same reason that keeps `FINIEX_API_TOKEN` out of the
- * bundle keeps every other server's token out of it.
+ * transmits is a value its user possesses.
  *
- *   /api/v1/…               the default server, from the environment, as before
- *   /server/<id>/api/v1/…   a server of the list
+ *   /api/v1/…               the default server
+ *   /server/<id>/api/v1/…   any other of the list
  *   /__viewer/servers       the list itself, without a token in it
  *
  * Written by hand rather than with Vite's own `server.proxy`: its target is fixed when the dev server
  * starts, and it answers a refused connection as a 500, which reads as a fault of the backend.
  */
 
-/** A server as it is stored: the entry the browser may see, and the token it may not. */
-export interface StoredServer {
-  id: string
-  name: string | null
-  url: string
-  token: string
-  tunnel: ServerTunnel | null
-  hostId: string | null
-}
-
-export interface ServersPluginOptions {
-  defaultUrl: string
-  defaultToken: string
-  // gitignored: it holds tokens
-  secretsDir: string
-}
-
-const STORE_VERSION = 1
 const ADMIN_PATH = '/__viewer/servers'
 const MAX_BODY_BYTES = 64 * 1024
-
-function storePath(secretsDir: string): string {
-  return join(secretsDir, 'servers.json')
-}
-
-/**
- * The stored list. An unreadable or foreign file is the same as none: this runs in the way of every
- * request, so a broken entry must never stop the viewer reading its default server.
- */
-export function readStoredServers(secretsDir: string): StoredServer[] {
-  try {
-    const parsed = JSON.parse(readFileSync(storePath(secretsDir), 'utf-8')) as { version?: number, servers?: StoredServer[] }
-    return parsed.version === STORE_VERSION && Array.isArray(parsed.servers) ? parsed.servers : []
-  } catch {
-    return []
-  }
-}
-
-/** Whole or not at all: a file cut off by a crash would lose every token in it. */
-function writeStoredServers(secretsDir: string, servers: StoredServer[]): void {
-  const target = storePath(secretsDir)
-  mkdirSync(dirname(target), { recursive: true })
-  writeFileSync(`${target}.tmp`, `${JSON.stringify({ version: STORE_VERSION, servers }, null, 2)}\n`, { mode: 0o600 })
-  renameSync(`${target}.tmp`, target)
-}
-
-/**
- * The default server first and always there. Its address and token stay the environment's, so a
- * checkout with no list reads as it always did; only its name and its identity are stored.
- */
-export function resolveServers(stored: StoredServer[], options: ServersPluginOptions): StoredServer[] {
-  const own = stored.find(server => server.id === DEFAULT_SERVER_ID)
-  return [
-    {
-      id: DEFAULT_SERVER_ID,
-      name: own?.name ?? null,
-      url: options.defaultUrl,
-      token: options.defaultToken,
-      tunnel: null,
-      hostId: own?.hostId ?? null,
-    },
-    ...stored.filter(server => server.id !== DEFAULT_SERVER_ID),
-  ]
-}
 
 /** What leaves this process. Built field by field, so a field added to the store stays in here. */
 export function entryOf(server: StoredServer, tunnel: TunnelStatus = { state: 'none', message: null }): ServerEntry {
@@ -106,7 +43,7 @@ export function entryOf(server: StoredServer, tunnel: TunnelStatus = { state: 'n
 /** Which server a request is for, and the path it has there; null when it is no API request. */
 export function routeOf(url: string): { serverId: string, path: string } | null {
   if (url === '/api' || url.startsWith('/api/')) return { serverId: DEFAULT_SERVER_ID, path: url }
-  const match = /^\/server\/([a-z0-9-]+)(\/api\/.*)$/.exec(url)
+  const match = /^\/server\/([a-z0-9_-]+)(\/api\/.*)$/.exec(url)
   return match ? { serverId: match[1]!, path: match[2]! } : null
 }
 
@@ -125,32 +62,6 @@ export function isOwnPage(headers: IncomingMessage['headers']): boolean {
   }
 }
 
-// these reach a command line once a tunnel starts, so a leading dash must not read as an option
-const SSH_WORD = /^[A-Za-z0-9_.][A-Za-z0-9_.-]*$/
-const SECRET_FILE = /^[A-Za-z0-9_.][A-Za-z0-9_./-]*$/
-
-/** What is wrong with a tunnel, in words for the settings page; null when nothing is. */
-export function tunnelProblem(tunnel: ServerTunnel): string | null {
-  if (!SSH_WORD.test(tunnel.account)) return 'the account'
-  if (!SSH_WORD.test(tunnel.host)) return 'the host'
-  for (const port of [tunnel.localPort, tunnel.remotePort]) {
-    if (!Number.isInteger(port) || port < 1 || port > 65535) return 'a port'
-  }
-  for (const file of [tunnel.keyFile, tunnel.knownHostsFile]) {
-    if (!SECRET_FILE.test(file) || file.split('/').includes('..')) return 'a file'
-  }
-  return null
-}
-
-function urlProblem(url: string): string | null {
-  try {
-    const { protocol } = new URL(url)
-    return protocol === 'http:' || protocol === 'https:' ? null : 'the address'
-  } catch {
-    return 'the address'
-  }
-}
-
 /** A readable id from the name, unique in the list: it stands in a request's path. */
 export function newServerId(name: string, taken: string[]): string {
   const stem = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'server'
@@ -160,28 +71,15 @@ export function newServerId(name: string, taken: string[]): string {
   return `${stem}-${number}`
 }
 
-/** The server with the change applied. The default server's address and token are the environment's. */
+/** The server with the change applied; what the edit does not name stays. */
 export function applyEdit(server: StoredServer, edit: ServerEdit): StoredServer {
-  if (server.id === DEFAULT_SERVER_ID) {
-    return {
-      ...server,
-      name: edit.name === undefined ? server.name : edit.name,
-      hostId: edit.hostId === undefined ? server.hostId : edit.hostId,
-    }
-  }
   return {
     ...server,
     name: edit.name === undefined ? server.name : edit.name,
     url: edit.url ?? server.url,
-    token: edit.token ?? server.token,
     tunnel: edit.tunnel === undefined ? server.tunnel : edit.tunnel,
     hostId: edit.hostId === undefined ? server.hostId : edit.hostId,
   }
-}
-
-function editProblem(edit: ServerEdit): string | null {
-  if (edit.url !== undefined && urlProblem(edit.url)) return 'the address'
-  return edit.tunnel ? tunnelProblem(edit.tunnel) : null
 }
 
 function answer(response: ServerResponse, status: number, body: unknown): void {
@@ -237,90 +135,108 @@ async function bodyOf(request: IncomingMessage): Promise<ServerEdit | null> {
   }
 }
 
-/** Names only: a tunnel's key is chosen from these, and its content never leaves the folder. */
-function secretFilesIn(secretsDir: string, below = ''): string[] {
-  const folder = join(secretsDir, below)
-  if (!existsSync(folder)) return []
-  return readdirSync(folder, { withFileTypes: true }).flatMap(item => {
-    const name = below ? `${below}/${item.name}` : item.name
-    if (item.isDirectory()) return secretFilesIn(secretsDir, name)
-    return name === 'servers.json' || name.endsWith('.tmp') ? [] : [name]
-  })
-}
-
-/** The tunnels the list declares: one that does not read as valid never reaches a command line. */
+/** The tunnels the list declares. */
 function tunnelsOf(servers: StoredServer[]): Map<string, ServerTunnel> {
   const wanted = new Map<string, ServerTunnel>()
   for (const server of servers) {
-    if (server.tunnel && !tunnelProblem(server.tunnel)) wanted.set(server.id, server.tunnel)
+    if (server.tunnel) wanted.set(server.id, server.tunnel)
   }
   return wanted
 }
 
-function listOf(servers: StoredServer[], options: ServersPluginOptions, tunnels?: ServerTunnels): ServerList {
-  return {
-    servers: servers.map(server => entryOf(server, tunnels?.statusOf(server.id))),
-    secretFiles: secretFilesIn(options.secretsDir),
-  }
+/** A new server, or one changed: its token in this machine's own file, the rest on the list. */
+function nextList(dirs: ConfigDirs, servers: StoredServer[], id: string | null, edit: ServerEdit): StoredServer[] | null {
+  const known = id === null ? null : servers.find(server => server.id === id) ?? null
+  if (!known && !edit.url) return null
+  const newId = known ? known.id : newServerId(edit.name ?? '', servers.map(server => server.id))
+  const blank: StoredServer = { id: newId, name: null, url: edit.url ?? '', credentialsFile: `peers/${newId}_api_token.json`, token: '', tunnel: null, hostId: null }
+  return known
+    ? servers.map(server => (server.id === known.id ? applyEdit(server, edit) : server))
+    : [...servers, applyEdit(blank, edit)]
 }
 
-async function administer(request: IncomingMessage, response: ServerResponse, options: ServersPluginOptions, id: string | null, tunnels?: ServerTunnels): Promise<void> {
-  const stored = readStoredServers(options.secretsDir)
-  const servers = resolveServers(stored, options)
+interface ServersState {
+  dirs: ConfigDirs
+  servers: StoredServer[]
+  tunnels?: ServerTunnels
+}
+
+/** Written after the list passed, so a refused change leaves no token behind. */
+function storeToken(state: ServersState, next: StoredServer[], id: string | null, edit: ServerEdit): StoredServer[] {
+  if (edit.token === undefined) return next
+  const target = id ?? next[next.length - 1]!.id
+  const name = saveToken(state.dirs, target, edit.token)
+  return next.map(server => (server.id === target ? { ...server, credentialsFile: name, token: edit.token! } : server))
+}
+
+/**
+ * The list, read once at the start and held here; what the settings page changes goes to this machine's
+ * file and into this copy.
+ */
+function administer(
+  request: IncomingMessage,
+  response: ServerResponse,
+  state: ServersState,
+  id: string | null,
+  body: ServerEdit | null,
+): void {
+  const list = (): ServerList => ({
+    servers: state.servers.map(server => entryOf(server, state.tunnels?.statusOf(server.id))),
+    secretFiles: credentialFiles(state.dirs),
+  })
   if (request.method === 'GET') {
-    answer(response, 200, listOf(servers, options, tunnels))
+    answer(response, 200, list())
     return
   }
   if (!isOwnPage(request.headers)) {
     answer(response, 403, { error: 'not_this_page' })
     return
   }
-  const known = id === null ? null : servers.find(server => server.id === id) ?? null
-  if (id !== null && !known) {
+  if (id !== null && !state.servers.some(server => server.id === id)) {
     answer(response, 404, { error: 'unknown_server' })
     return
   }
-  let next: StoredServer[]
-  if (request.method === 'DELETE' && known && !entryOf(known).isDefault) {
-    next = servers.filter(server => server.id !== known.id)
+  let next: StoredServer[] | null
+  if (request.method === 'DELETE' && id !== null && id !== DEFAULT_SERVER_ID) {
+    next = state.servers.filter(server => server.id !== id)
   } else if (request.method === 'POST' || request.method === 'PUT') {
-    const edit = await bodyOf(request)
-    const problem = edit ? editProblem(edit) : 'the request'
-    if (problem || !edit) {
-      answer(response, 400, { error: 'not_valid', problem })
-      return
-    }
-    if (known) {
-      next = servers.map(server => (server.id === known.id ? applyEdit(server, edit) : server))
-    } else if (edit.url) {
-      const blank: StoredServer = { id: newServerId(edit.name ?? '', servers.map(server => server.id)), name: null, url: edit.url, token: '', tunnel: null, hostId: null }
-      next = [...servers, applyEdit(blank, edit)]
-    } else {
-      answer(response, 400, { error: 'not_valid', problem: 'the address' })
+    next = body && nextList(state.dirs, state.servers, id, body)
+    if (!next) {
+      answer(response, 400, { error: 'not_valid' })
       return
     }
   } else {
     answer(response, 405, { error: 'not_allowed' })
     return
   }
-  // the default server's address and token belong to the environment and are not written down
-  writeStoredServers(options.secretsDir, next.map(server => (
-    server.id === DEFAULT_SERVER_ID ? { ...server, url: '', token: '' } : server
-  )))
-  const written = resolveServers(readStoredServers(options.secretsDir), options)
-  tunnels?.sync(tunnelsOf(written))
-  answer(response, 200, listOf(written, options, tunnels))
+  try {
+    saveServers(state.dirs, next)
+    if (body) {
+      next = storeToken(state, next, id, body)
+      saveServers(state.dirs, next)
+    }
+  } catch {
+    answer(response, 400, { error: 'not_valid' })
+    return
+  }
+  state.servers = next
+  state.tunnels?.sync(tunnelsOf(next))
+  answer(response, 200, list())
 }
 
 /** The middleware itself, apart from Vite, so a test can stand it in front of a real socket. */
-export function serversMiddleware(options: ServersPluginOptions, tunnels?: ServerTunnels) {
+export function serversMiddleware(dirs: ConfigDirs, tunnels?: ServerTunnels) {
+  const state: ServersState = { dirs, servers: loadServers(dirs), tunnels }
+  tunnels?.sync(tunnelsOf(state.servers))
   return (request: IncomingMessage, response: ServerResponse, next: () => void): void => {
     // the path as the browser sent it: behind Vite's host check its html fallback has already rewritten
     // `request.url` to /index.html, which read every API request as the page (measured 2026-11-01)
     const url = (request as IncomingMessage & { originalUrl?: string }).originalUrl ?? request.url ?? ''
     if (url === ADMIN_PATH || url.startsWith(`${ADMIN_PATH}/`)) {
       const id = url.slice(ADMIN_PATH.length + 1) || null
-      void administer(request, response, options, id, tunnels)
+      const hasBody = request.method === 'POST' || request.method === 'PUT'
+      void (hasBody ? bodyOf(request) : Promise.resolve(null))
+        .then(body => administer(request, response, state, id, body))
       return
     }
     const route = routeOf(url)
@@ -328,26 +244,29 @@ export function serversMiddleware(options: ServersPluginOptions, tunnels?: Serve
       next()
       return
     }
-    const server = resolveServers(readStoredServers(options.secretsDir), options).find(item => item.id === route.serverId)
+    const server = state.servers.find(item => item.id === route.serverId)
     if (server) forward(request, response, server, route.path)
     else answer(response, 404, { error: 'unknown_server' })
   }
 }
 
-export function viteServersPlugin(options: ServersPluginOptions): Plugin {
+export function viteServersPlugin(dirs: ConfigDirs): Plugin {
   type Host = { middlewares: { use: (handler: ReturnType<typeof serversMiddleware>) => unknown } }
   // returned rather than called: Vite then installs it behind its own host check, which is what stops
   // a page on another name reaching this one through a rebound address
-  const install = (server: Host, tunnels?: ServerTunnels) => () => {
-    server.middlewares.use(serversMiddleware(options, tunnels))
+  const install = (server: Host, tunnels?: ServerTunnels) => {
+    // here and not in the hook returned: a typo in the configuration refuses the start, at once
+    const handler = serversMiddleware(dirs, tunnels)
+    return () => {
+      server.middlewares.use(handler)
+    }
   }
   return {
     name: 'finiex-servers',
     configureServer(server) {
-      // the unit suite starts this config as well, and a test must not open a tunnel
-      if (process.env['VITEST']) return install(server)
-      const tunnels = new ServerTunnels(options.secretsDir)
-      tunnels.sync(tunnelsOf(resolveServers(readStoredServers(options.secretsDir), options)))
+      // the unit suite starts this config as well, and it neither reads this machine's files nor opens a tunnel
+      if (process.env['VITEST']) return
+      const tunnels = new ServerTunnels(credentialsRoot(dirs))
       // a restart of the dev server closes this one: the next starts them again
       server.httpServer?.once('close', () => tunnels.stop())
       return install(server, tunnels)
