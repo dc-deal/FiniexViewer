@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef, watch } from 'vue'
+import { serverStateKey } from '@/active_server'
 import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
 import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { FacetSelection } from '@/types/facet_types'
@@ -192,13 +193,13 @@ function readFacets(value: unknown): StoredFacets {
  * REMOVED rather than converted: the project is alpha, and code that reads a shape nobody writes
  * any more outlives the one day it was useful.
  */
-function readStored(): StoredArrangement | null {
+function readStored(key: string): StoredArrangement | null {
   try {
-    const raw = readTabEntry(STORAGE_KEY)
+    const raw = readTabEntry(key)
     if (!raw) return null
     const parsed = record(JSON.parse(raw))
     if (parsed['version'] !== SCHEMA_VERSION) {
-      removeTabAndShared(STORAGE_KEY)
+      removeTabAndShared(key)
       return null
     }
     const links: Record<string, LinkContext> = {}
@@ -236,18 +237,26 @@ function readStored(): StoredArrangement | null {
 export const useArrangementStore = defineStore('arrangement', () => {
   const context = useContextStore()
 
-  const stored = readStored()
-  if (stored) context.restore(stored.links)
+  /*
+   * The arrangement is shared and the selection belongs to the server: a run id means something only
+   * on its own system. The default server's selection stays in the main entry; any other's stands
+   * under a key of its own, in the same shape, and only its selection is read from there.
+   */
+  const serverKey = serverStateKey()
+  const ownKey = serverKey === null ? null : `${STORAGE_KEY}:${serverKey}`
+  const stored = readStored(STORAGE_KEY)
+  const own = ownKey === null ? stored : readStored(ownKey)
+  if (own) context.restore(own.links)
 
-  const bars = ref<Record<string, StoredFacets>>(stored?.bars ?? {})
-  const chart = ref<StoredChart>(stored?.chart ?? { timeframe: null })
-  const runChart = ref<StoredRunChart>(stored?.runChart ?? { run: null, unit: null, timeframe: null })
+  const bars = ref<Record<string, StoredFacets>>(own?.bars ?? {})
+  const chart = ref<StoredChart>(own?.chart ?? { timeframe: null })
+  const runChart = ref<StoredRunChart>(own?.runChart ?? { run: null, unit: null, timeframe: null })
   // the layout is large and replaced whole, never edited in place — no deep reactivity needed
   const dock = shallowRef<object | null>(stored?.dock ?? null)
   // replaced whole as well, by the dock store, which owns what a place means
   const places = shallowRef<Record<string, DockPlace>>(stored?.places ?? {})
   // replaced whole on every change, one panel's entry at a time — see `setPanelView`
-  const panelViews = shallowRef<Record<string, StoredPanelView>>(stored?.panelViews ?? {})
+  const panelViews = shallowRef<Record<string, StoredPanelView>>(own?.panelViews ?? {})
 
   function persist(): void {
     const arrangement: StoredArrangement = {
@@ -262,7 +271,24 @@ export const useArrangementStore = defineStore('arrangement', () => {
     }
     // this tab's own, and the start of the next new one — a full or blocked storage must not break
     // the app: the selection still works, unstored
-    writeTabAndShared(STORAGE_KEY, JSON.stringify(arrangement))
+    if (ownKey === null) {
+      writeTabAndShared(STORAGE_KEY, JSON.stringify(arrangement))
+      return
+    }
+    writeTabAndShared(ownKey, JSON.stringify({ ...arrangement, dock: null, places: {} }))
+    // the placement goes to the main entry, around the default server's selection, read fresh
+    const main = readStored(STORAGE_KEY)
+    const shared: StoredArrangement = {
+      version: SCHEMA_VERSION,
+      links: main?.links ?? { [MAIN_LINK]: emptyLink() },
+      bars: main?.bars ?? {},
+      chart: main?.chart ?? { timeframe: null },
+      runChart: main?.runChart ?? { run: null, unit: null, timeframe: null },
+      panelViews: main?.panelViews ?? {},
+      dock: dock.value,
+      places: places.value,
+    }
+    writeTabAndShared(STORAGE_KEY, JSON.stringify(shared))
   }
 
   watch([() => context.links, bars, chart, runChart], persist, { deep: true })

@@ -4,6 +4,9 @@ import https from 'node:https'
 import { dirname, join } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Plugin } from 'vite'
+import { ServerTunnels } from './vite_server_tunnels'
+import type { TunnelStatus } from './vite_server_tunnels'
+import { DEFAULT_SERVER_ID } from './src/types/server_types'
 import type { ServerEdit, ServerEntry, ServerList, ServerTunnel } from './src/types/server_types'
 
 /**
@@ -19,8 +22,6 @@ import type { ServerEdit, ServerEntry, ServerList, ServerTunnel } from './src/ty
  * Written by hand rather than with Vite's own `server.proxy`: its target is fixed when the dev server
  * starts, and it answers a refused connection as a 500, which reads as a fault of the backend.
  */
-
-export const DEFAULT_SERVER_ID = 'default'
 
 /** A server as it is stored: the entry the browser may see, and the token it may not. */
 export interface StoredServer {
@@ -88,7 +89,7 @@ export function resolveServers(stored: StoredServer[], options: ServersPluginOpt
 }
 
 /** What leaves this process. Built field by field, so a field added to the store stays in here. */
-export function entryOf(server: StoredServer): ServerEntry {
+export function entryOf(server: StoredServer, tunnel: TunnelStatus = { state: 'none', message: null }): ServerEntry {
   return {
     id: server.id,
     name: server.name,
@@ -96,6 +97,8 @@ export function entryOf(server: StoredServer): ServerEntry {
     isDefault: server.id === DEFAULT_SERVER_ID,
     hasToken: server.token !== '',
     tunnel: server.tunnel,
+    tunnelState: tunnel.state,
+    tunnelMessage: tunnel.message,
     hostId: server.hostId,
   }
 }
@@ -245,12 +248,27 @@ function secretFilesIn(secretsDir: string, below = ''): string[] {
   })
 }
 
-async function administer(request: IncomingMessage, response: ServerResponse, options: ServersPluginOptions, id: string | null): Promise<void> {
+/** The tunnels the list declares: one that does not read as valid never reaches a command line. */
+function tunnelsOf(servers: StoredServer[]): Map<string, ServerTunnel> {
+  const wanted = new Map<string, ServerTunnel>()
+  for (const server of servers) {
+    if (server.tunnel && !tunnelProblem(server.tunnel)) wanted.set(server.id, server.tunnel)
+  }
+  return wanted
+}
+
+function listOf(servers: StoredServer[], options: ServersPluginOptions, tunnels?: ServerTunnels): ServerList {
+  return {
+    servers: servers.map(server => entryOf(server, tunnels?.statusOf(server.id))),
+    secretFiles: secretFilesIn(options.secretsDir),
+  }
+}
+
+async function administer(request: IncomingMessage, response: ServerResponse, options: ServersPluginOptions, id: string | null, tunnels?: ServerTunnels): Promise<void> {
   const stored = readStoredServers(options.secretsDir)
   const servers = resolveServers(stored, options)
   if (request.method === 'GET') {
-    const list: ServerList = { servers: servers.map(entryOf), secretFiles: secretFilesIn(options.secretsDir) }
-    answer(response, 200, list)
+    answer(response, 200, listOf(servers, options, tunnels))
     return
   }
   if (!isOwnPage(request.headers)) {
@@ -289,19 +307,20 @@ async function administer(request: IncomingMessage, response: ServerResponse, op
   writeStoredServers(options.secretsDir, next.map(server => (
     server.id === DEFAULT_SERVER_ID ? { ...server, url: '', token: '' } : server
   )))
-  const list: ServerList = { servers: resolveServers(readStoredServers(options.secretsDir), options).map(entryOf), secretFiles: secretFilesIn(options.secretsDir) }
-  answer(response, 200, list)
+  const written = resolveServers(readStoredServers(options.secretsDir), options)
+  tunnels?.sync(tunnelsOf(written))
+  answer(response, 200, listOf(written, options, tunnels))
 }
 
 /** The middleware itself, apart from Vite, so a test can stand it in front of a real socket. */
-export function serversMiddleware(options: ServersPluginOptions) {
+export function serversMiddleware(options: ServersPluginOptions, tunnels?: ServerTunnels) {
   return (request: IncomingMessage, response: ServerResponse, next: () => void): void => {
     // the path as the browser sent it: behind Vite's host check its html fallback has already rewritten
     // `request.url` to /index.html, which read every API request as the page (measured 2026-11-01)
     const url = (request as IncomingMessage & { originalUrl?: string }).originalUrl ?? request.url ?? ''
     if (url === ADMIN_PATH || url.startsWith(`${ADMIN_PATH}/`)) {
       const id = url.slice(ADMIN_PATH.length + 1) || null
-      void administer(request, response, options, id)
+      void administer(request, response, options, id, tunnels)
       return
     }
     const route = routeOf(url)
@@ -316,14 +335,23 @@ export function serversMiddleware(options: ServersPluginOptions) {
 }
 
 export function viteServersPlugin(options: ServersPluginOptions): Plugin {
+  type Host = { middlewares: { use: (handler: ReturnType<typeof serversMiddleware>) => unknown } }
   // returned rather than called: Vite then installs it behind its own host check, which is what stops
   // a page on another name reaching this one through a rebound address
-  const install = (server: { middlewares: { use: (handler: ReturnType<typeof serversMiddleware>) => unknown } }) => () => {
-    server.middlewares.use(serversMiddleware(options))
+  const install = (server: Host, tunnels?: ServerTunnels) => () => {
+    server.middlewares.use(serversMiddleware(options, tunnels))
   }
   return {
     name: 'finiex-servers',
-    configureServer: install,
-    configurePreviewServer: install,
+    configureServer(server) {
+      // the unit suite starts this config as well, and a test must not open a tunnel
+      if (process.env['VITEST']) return install(server)
+      const tunnels = new ServerTunnels(options.secretsDir)
+      tunnels.sync(tunnelsOf(resolveServers(readStoredServers(options.secretsDir), options)))
+      // a restart of the dev server closes this one: the next starts them again
+      server.httpServer?.once('close', () => tunnels.stop())
+      return install(server, tunnels)
+    },
+    configurePreviewServer: server => install(server),
   }
 }

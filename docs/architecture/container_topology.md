@@ -168,6 +168,10 @@ environment as above. `/server/<id>/api/v1/…` goes to a server of the list in 
 takes a change only from this page: an `Origin` equal to the `Host`, and JSON. The middleware is installed
 behind Vite's own host check.
 
+**One server per browser window.** `src/active_server.ts` holds the window's choice, read before anything else starts: the client's address and the saved state both hang on it. Switching reloads the page, because every store then starts empty and nothing of one server can stand beside the other. The arrangement's placement (`dock`, `places`) is shared; the selection (`links`, `bars`, `chart`, `runChart`, `panelViews`) of any but the default server stands under `arrangement.v1:<host_id>`, because a run id means something only on its own system and `host_id` survives a new address.
+
+**A tunnel is the dev server's to keep up** (`vite_server_tunnels.ts`). A server of the list may declare one: an account, a host, two ports, and two files in `.secrets/`, the key and the pinned host key. The browser cannot open one and the proxy that needs it runs in the container, so `localhost:<port>` is right where it is needed. It runs `ssh -N` with the host key pinned and no prompt, and starts it again when it ends. `openssh-client` is added at the start where it is missing and the system is Alpine, because the container is a plain Node image. Without its files a tunnel does nothing, and nothing about a host or an account is versioned.
+
 **A connection that fails answers `502` with `{"error":"no_connection"}`**, where Vite's proxy answered a
 500 that read as a fault of the backend. The viewer cannot tell a tunnel that is down from a host that
 is, so it says neither.

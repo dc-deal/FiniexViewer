@@ -6,10 +6,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { AddressInfo } from 'node:net'
 import {
-  DEFAULT_SERVER_ID, applyEdit, entryOf, isOwnPage, newServerId, readStoredServers, resolveServers, routeOf,
+  applyEdit, entryOf, isOwnPage, newServerId, readStoredServers, resolveServers, routeOf,
   serversMiddleware, tunnelProblem,
 } from '../vite_servers_plugin'
 import type { ServersPluginOptions, StoredServer } from '../vite_servers_plugin'
+import { DEFAULT_SERVER_ID } from '@/types/server_types'
 import type { ServerList, ServerTunnel } from '@/types/server_types'
 
 const TUNNEL: ServerTunnel = {

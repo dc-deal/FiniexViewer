@@ -22,6 +22,7 @@ import {
   IconStack2,
   IconSum,
   IconTag,
+  IconServer,
   IconUser,
   IconX,
 } from '@tabler/icons-vue'
@@ -45,6 +46,7 @@ export const ICONS = {
   'status-warning': IconAlertCircle,
   'status-error': IconCircleX,
   'status-account': IconUser,
+  'status-server': IconServer,
   'status-connecting': IconCircleDashed,
   'action-close': IconX,
   'action-open-panel': IconLayoutSidebarRightExpand,

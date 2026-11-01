@@ -69,5 +69,7 @@ chart's broker, symbol and timeframe, the run chart's unit and timeframe.
 *Run chart*, opened beside the run report from the Panels menu or by the chart mark on a trade or
 an order. It shows the unit in focus (see *narrowing*), else its own choice. See *free chart*.
 
+**server** — One installation of the API as this viewer reaches it: an address and a token that come as a pair. Each browser window shows one. FiniexTestingIDE's word, in its document `server`, and agreed with it for this label on 2026-11-01. Not *host*, which is the machine's identity there (`origin.host`), and not *connection*, which there is an external call with its give-up rule; *installation* stays its word for what stands behind a server. See [Servers](interface/servers.md).
+
 **tab** — A panel's handle in the dock: its form, its title, and one status that prints only when
 it has something to say.

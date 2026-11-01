@@ -38,6 +38,10 @@ const HINTS: HintDefinition[] = [
     text: t("The id of the deployment or the sweep this run belongs to opens it: the deployment's history, or the sweep's ranking."),
   },
   {
+    id: 'servers',
+    text: t('A server is one installation of the API, as an address and a token. Each browser window shows one, and switching reloads the page: the arrangement stays, and the selection comes back as you left it on that server. A token can be set here and never read back. A tunnel needs its key files in the folder .secrets.'),
+  },
+  {
     id: 'bundle-places',
     text: t('A bundle holds its sections one below the other, and any of them can stand apart as a panel of its own. Each row here says where it stands. A section in a closed bundle is on show nowhere: a click opens it.'),
   },

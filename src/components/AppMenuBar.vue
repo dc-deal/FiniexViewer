@@ -8,6 +8,7 @@ import {
 import AccountStatus from '@/components/AccountStatus.vue'
 import ContractStatus from '@/components/ContractStatus.vue'
 import MachineStatus from '@/components/MachineStatus.vue'
+import ServerSwitch from '@/components/ServerSwitch.vue'
 import NarrowingStatement from '@/components/NarrowingStatement.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import HintLine from '@/components/base/HintLine.vue'
@@ -202,6 +203,7 @@ function stayOpen(event: Event): void {
          beside it moves -->
     <NarrowingStatement class="menu-bar-narrowing" />
     <div class="menu-bar-spacer" />
+    <ServerSwitch />
     <ContractStatus />
     <MachineStatus />
     <AccountStatus />
@@ -241,7 +243,7 @@ function stayOpen(event: Event): void {
 
 /* a control in the link ink, with the two-channel states every control here carries. It never
    gives way: it shared the bar's shortfall with the narrowing and wrapped its ▾ onto a second line */
-.menu-bar-trigger {
+.menu-bar :deep(.menu-bar-trigger) {
   flex-shrink: 0;
   white-space: nowrap;
   padding: var(--space-xs) var(--space-sm);
@@ -254,18 +256,18 @@ function stayOpen(event: Event): void {
   cursor: pointer;
 }
 
-.menu-bar-trigger:hover,
-.menu-bar-trigger[data-state='open'] {
+.menu-bar :deep(.menu-bar-trigger:hover),
+.menu-bar :deep(.menu-bar-trigger[data-state='open']) {
   background-color: var(--color-bg-hover);
   border-color: var(--color-border);
 }
 
-.menu-bar-trigger:active {
+.menu-bar :deep(.menu-bar-trigger:active) {
   background-color: var(--color-bg-active);
   transform: translateY(1px);
 }
 
-.menu-bar-trigger:focus-visible {
+.menu-bar :deep(.menu-bar-trigger:focus-visible) {
   outline: 1px solid var(--color-accent);
 }
 

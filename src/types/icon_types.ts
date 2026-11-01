@@ -10,6 +10,7 @@ export type IconName =
   | 'status-warning'
   | 'status-error'
   | 'status-account'
+  | 'status-server'
   | 'status-connecting'
   | 'action-close'
   | 'action-open-panel'

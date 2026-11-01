@@ -134,7 +134,25 @@ const CONTRACT = {
  * rather than null on purpose — a null passes a nullish guard, and what the boundary exists for is
  * the case the mirror did not predict.
  */
+/** A list of servers as the dev server keeps it, for a spec that needs more than the default one. */
+export interface MockServer {
+  id: string
+  name: string | null
+  url: string
+  isDefault: boolean
+  hasToken: boolean
+  tunnel: null
+  tunnelState: 'none'
+  tunnelMessage: null
+  hostId: string | null
+}
+
+const DEFAULT_MOCK_SERVER: MockServer = {
+  id: 'default', name: 'Development', url: 'http://backend:8000', isDefault: true, hasToken: true, tunnel: null, tunnelState: 'none', tunnelMessage: null, hostId: 'h_x29og8',
+}
+
 interface ApiMockOptions {
+  servers?: MockServer[]
   corrupt?: { section: string, field: string }
   /**
    * Levels set on one position's trade rows. No trade of the fixture run set a stop or a target, so
@@ -178,8 +196,32 @@ interface StreamCapture {
 
 /** Serves every `/api/v1/**` call from the captures. Anything unmapped fails loudly, never silently. */
 export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise<void> {
+  // the list is the dev server's own file: a spec must never write the operator's
+  let servers = options.servers ?? [DEFAULT_MOCK_SERVER]
+  await page.route('**/__viewer/servers**', async (route: Route) => {
+    const request = route.request()
+    const id = new URL(request.url()).pathname.split('/')[3]
+    if (request.method() === 'POST') {
+      const edit = request.postDataJSON() as { name?: string, url: string, token?: string }
+      const name = edit.name ?? 'new'
+      servers = [...servers, { id: name.toLowerCase(), name, url: edit.url, isDefault: false, hasToken: Boolean(edit.token), tunnel: null, tunnelState: 'none', tunnelMessage: null, hostId: null }]
+    } else if (request.method() === 'PUT') {
+      const { token, ...edit } = request.postDataJSON() as Partial<MockServer> & { token?: string }
+      servers = servers.map(server => (server.id === id
+        ? { ...server, ...edit, hasToken: server.hasToken || Boolean(token) }
+        : server))
+    } else if (request.method() === 'DELETE') {
+      servers = servers.filter(server => server.id !== id)
+    }
+    return route.fulfill({ json: { servers, secretFiles: [] } })
+  })
   await page.route('**/api/v1/**', async (route: Route) => {
-    const path = new URL(route.request().url()).pathname
+    // every server answers from the same captures: which one was asked is the spec's to check
+    const path = new URL(route.request().url()).pathname.replace(/^\/server\/[^/]+/, '')
+
+    if (path === '/api/v1/health') {
+      return route.fulfill({ json: fixture('health.json'), headers: CONTRACT })
+    }
 
     const shell = SHELL[path]
     if (shell) return route.fulfill({ json: shell, headers: CONTRACT })

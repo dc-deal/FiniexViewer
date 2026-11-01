@@ -91,6 +91,7 @@
   "Held": {"field": "duration_s", "doc": "sweeps", "their": null, "ours": null, "note": ""},
   "Highest equity": {"field": "highest_equity", "doc": "aggregated-portfolio", "their": null, "ours": null, "note": ""},
   "Host": {"field": "origin_host", "doc": "activities", "their": null, "ours": null, "note": ""},
+  "Identity": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/ServersSettings.vue"},
   "Idle before": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/deployments/SessionsTable.vue"},
   "In force at": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/runs/run_chart_levels.ts"},
   "Initial capital": {"field": "total_initial_balance", "doc": "portfolio", "their": null, "ours": null, "note": ""},

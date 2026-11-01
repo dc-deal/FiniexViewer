@@ -5,6 +5,7 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import AppButton from '@/components/base/AppButton.vue'
 import AppDialog from '@/components/base/AppDialog.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
+import ServersSettings from '@/components/ServersSettings.vue'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
 import { useLayoutStore } from '@/stores/layout_store'
@@ -16,6 +17,8 @@ import { t } from '@/translate'
 
 const props = defineProps<{
   open: boolean
+  // the tab a fresh open starts on
+  tab?: SettingsTab
 }>()
 const emit = defineEmits<{ 'update:open': [boolean] }>()
 
@@ -32,7 +35,7 @@ const importNotice = ref<string | null>(null)
 // a fresh open honours the tab it was asked for, and drops a notice from the previous visit
 watch(() => props.open, isOpen => {
   if (!isOpen) return
-  activeTab.value = 'display'
+  activeTab.value = props.tab ?? 'display'
   importNotice.value = null
 })
 
@@ -83,13 +86,19 @@ async function onImportPicked(event: Event): Promise<void> {
     :title="`⚙️ ${t('Settings')}`"
     name="settings"
     height="min(38rem, 80vh)"
+    width="min(46rem, 90vw)"
     @update:open="value => emit('update:open', value)"
   >
     <TabsRoot v-model="activeTab" class="settings-tabs">
       <TabsList class="tab-list">
         <TabsTrigger value="display" class="tab-trigger">🎚️ {{ t('Display') }}</TabsTrigger>
         <TabsTrigger value="layout" class="tab-trigger">🗂️ {{ t('Layout') }}</TabsTrigger>
+        <TabsTrigger value="servers" class="tab-trigger">🖧 {{ t('Servers') }}</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="servers" class="tab-panel">
+        <ServersSettings />
+      </TabsContent>
 
       <TabsContent value="display" class="tab-panel">
         <div class="setting">

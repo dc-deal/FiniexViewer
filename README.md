@@ -98,6 +98,8 @@ Create `.env.local` to point at your API server (default is `http://localhost:80
 echo "VITE_API_BASE_URL=http://localhost:8000" > .env.local
 ```
 
+Further servers are added in the settings (*Servers*), and each browser window shows one of them.
+
 If the API requires a bearer token, put it in the same file:
 
 ```bash

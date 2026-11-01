@@ -215,7 +215,9 @@ describe('AppMenuBar', () => {
 
   /** One way back to the suggested order, and it lives in the settings — not a menu of one entry. */
   it('offers no Layout menu of its own', () => {
-    expect(mounted!.findAll('.menu-bar-trigger').map(node => node.text())).toEqual(['Panels ▾'])
+    const menus = mounted!.findAll('.menu-bar-trigger').map(node => node.text())
+    expect(menus).toContain('Panels ▾')
+    expect(menus.filter(menu => menu.includes('Layout'))).toEqual([])
   })
 
   /**

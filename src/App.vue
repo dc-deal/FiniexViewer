@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useCallerStore } from '@/stores/caller_store'
+import { useServersStore } from '@/stores/servers_store'
 import { useMachineStore } from '@/stores/machine_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { provideOpenInContext } from '@/composables/use_open_in_context'
@@ -16,6 +17,7 @@ import { openInDock } from '@/components/dock/open_in_dock'
 
 const { settings } = storeToRefs(useSettingsStore())
 const callerStore = useCallerStore()
+const serversStore = useServersStore()
 
 // created here, at the root, so every view mounts onto the selection the reader left behind
 useArrangementStore()
@@ -56,6 +58,7 @@ const machineStore = useMachineStore()
 
 onMounted(() => {
   callerStore.load()
+  void serversStore.load()
   machineStore.start()
   document.addEventListener('visibilitychange', readCallerWhenVisible)
 })

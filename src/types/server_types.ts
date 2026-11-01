@@ -4,6 +4,9 @@
  * stays its word for what stands behind one. Our own record, not a mirror of a response.
  */
 
+/** The server from the environment, which every checkout has. */
+export const DEFAULT_SERVER_ID = 'default'
+
 /** How a server is reached through an SSH tunnel; file names are relative to the secrets folder. */
 export interface ServerTunnel {
   account: string
@@ -14,6 +17,12 @@ export interface ServerTunnel {
   knownHostsFile: string
 }
 
+/**
+ * How a tunnel stands, as far as the dev server can know. `running` says ssh is up and nothing about
+ * what stands behind it.
+ */
+export type TunnelState = 'none' | 'missing_files' | 'no_ssh' | 'connecting' | 'running' | 'retrying'
+
 /** What the browser may know about a server. It holds no token, only whether there is one. */
 export interface ServerEntry {
   id: string
@@ -23,6 +32,9 @@ export interface ServerEntry {
   isDefault: boolean
   hasToken: boolean
   tunnel: ServerTunnel | null
+  tunnelState: TunnelState
+  // the last thing ssh said
+  tunnelMessage: string | null
   // `origin_host` of the installation, null until it was read: what the saved state is kept under
   hostId: string | null
 }
