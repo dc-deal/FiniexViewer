@@ -13,7 +13,8 @@ be a guess. Its menu lists the servers and leads to the settings.
   `tab_storage.ts`), so a second window is how two servers are compared. A new window starts on the last
   one chosen.
 - **Switching reloads the page.** Every store then starts empty, and nothing of one server can stand beside
-  the other. A run id means something only on its own system.
+  the other. A run id means something only on its own system. The page says so at the click: the reload
+  takes a moment, and nothing else would.
 - **The contract is per window, by itself.** The window reads one server, so the stamp on its answers is
   that server's, and the existing notice says where it differs from what this viewer mirrors.
 

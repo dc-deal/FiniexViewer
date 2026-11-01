@@ -184,6 +184,20 @@ describe('switchTo', () => {
     expect(reloadPage).toHaveBeenCalledOnce()
   })
 
+  /** Over a tunnel the look costs a noticeable moment, and the reader has just clicked. */
+  it('asks a server it knows nothing first, and says at once where it is going', async () => {
+    const store = await ready()
+    vi.mocked(serversApi.listServers).mockResolvedValue(list(DEFAULT, { ...SECOND, hostId: 'h_second', name: 'Second' }))
+    await store.load()
+    vi.mocked(serversApi.probeServer).mockClear()
+    reloadPage.mockReset()
+    const switched = store.switchTo('second')
+    expect(store.switchingTo?.id).toBe('second')
+    await switched
+    expect(serversApi.probeServer).not.toHaveBeenCalled()
+    expect(reloadPage).toHaveBeenCalledOnce()
+  })
+
   it('does nothing for the server on show', async () => {
     const store = await ready()
     await store.switchTo(DEFAULT_SERVER_ID)

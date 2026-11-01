@@ -6,6 +6,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from 'reka-ui'
 import AppIcon from '@/components/base/AppIcon.vue'
+import AppSpinner from '@/components/base/AppSpinner.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import { serverName, useServersStore } from '@/stores/servers_store'
@@ -16,7 +17,7 @@ import { t } from '@/translate'
  * for looking right. One server per window; a second window is how two are compared.
  */
 const store = useServersStore()
-const { servers, current, answeredAsAnother } = storeToRefs(store)
+const { servers, current, answeredAsAnother, switchingTo } = storeToRefs(store)
 const settingsOpen = ref(false)
 
 const name = computed(() => (current.value ? serverName(current.value) : t('Server')))
@@ -59,6 +60,13 @@ const name = computed(() => (current.value ? serverName(current.value) : t('Serv
       </DropdownMenuPortal>
     </DropdownMenuRoot>
     <SettingsDialog v-model:open="settingsOpen" tab="servers" />
+    <!-- at the click, because the reload that follows takes a moment and nothing else would say so -->
+    <Teleport to="body">
+      <div v-if="switchingTo" class="server-switching" role="status">
+        <AppSpinner />
+        <span>{{ t('Switching to') }} {{ serverName(switchingTo) }}</span>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -99,5 +107,19 @@ const name = computed(() => (current.value ? serverName(current.value) : t('Serv
   white-space: nowrap;
   color: var(--color-warning);
   cursor: default;
+}
+
+.server-switching {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
 }
 </style>

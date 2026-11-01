@@ -45,6 +45,8 @@ export const useServersStore = defineStore('servers', () => {
   const active = activeServer()
   const current = computed(() => servers.value.find(server => server.id === active.id) ?? null)
   const answeredAsAnother = ref(takeMovedNote())
+  /** The server a switch is on its way to: the page is about to reload, and says so at the click. */
+  const switchingTo = ref<ServerEntry | null>(null)
 
   function apply(list: ServerList): void {
     servers.value = list.servers
@@ -103,11 +105,16 @@ export const useServersStore = defineStore('servers', () => {
   async function switchTo(id: string): Promise<void> {
     const entry = servers.value.find(server => server.id === id)
     if (!entry || id === active.id) return
+    switchingTo.value = entry
     let known = entry
-    try {
-      known = await remember(entry, await probeServer(id))
-    } catch {
-      // no connection yet: it can still be chosen, and it says so once it is on show
+    // asked first only where it is needed: over a tunnel the look costs a noticeable moment, and a
+    // server already identified is looked at again when the page has loaded
+    if (entry.hostId === null) {
+      try {
+        known = await remember(entry, await probeServer(id))
+      } catch {
+        // no connection yet: it can still be chosen, and it says so once it is on show
+      }
     }
     await go(known)
   }
@@ -128,5 +135,5 @@ export const useServersStore = defineStore('servers', () => {
     return probe
   }
 
-  return { servers, secretFiles, activeId: active.id, current, answeredAsAnother, load, switchTo, save, remove, check }
+  return { servers, secretFiles, activeId: active.id, current, answeredAsAnother, switchingTo, load, switchTo, save, remove, check }
 })

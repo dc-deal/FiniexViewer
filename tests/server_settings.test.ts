@@ -69,6 +69,14 @@ describe('ServerSwitch', () => {
     expect(mounted.find('[data-icon="status-server"]').exists()).toBe(true)
   })
 
+  it('covers the page at the click, naming the server it goes to', async () => {
+    mounted = mount(ServerSwitch, { attachTo: document.body })
+    expect(document.querySelector('.server-switching')).toBeNull()
+    useServersStore().switchingTo = SECOND
+    await flushPromises()
+    expect(document.querySelector('.server-switching')?.textContent).toContain('Switching to Second')
+  })
+
   it('says nothing about another installation where nothing happened', async () => {
     mounted = mount(ServerSwitch, { attachTo: document.body })
     await flushPromises()

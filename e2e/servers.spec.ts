@@ -11,8 +11,9 @@ import { FIXTURES_SHOWN, openWith } from './arrangement_seed'
 const DEFAULT: MockServer = {
   id: 'default', name: 'Development', url: 'http://backend:8000', isDefault: true, hasToken: true, tunnel: null, tunnelState: 'none', tunnelMessage: null, hostId: 'h_x29og8',
 }
+// the captures answer for every server, so its identity is theirs: another would read as a moved address
 const SECOND: MockServer = {
-  id: 'second', name: 'Second', url: 'http://localhost:8010', isDefault: false, hasToken: true, tunnel: null, tunnelState: 'none', tunnelMessage: null, hostId: 'h_second',
+  id: 'second', name: 'Second', url: 'http://localhost:8010', isDefault: false, hasToken: true, tunnel: null, tunnelState: 'none', tunnelMessage: null, hostId: 'h_x29og8',
 }
 
 test('a window reads the server it chose, and each server keeps its own selection', async ({ page }) => {
@@ -38,7 +39,7 @@ test('a window reads the server it chose, and each server keeps its own selectio
   // the placement came along; the run of the other server did not
   const after = await page.evaluate(() => ({
     main: JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}'),
-    own: JSON.parse(localStorage.getItem('arrangement.v1:h_second') ?? 'null'),
+    own: JSON.parse(localStorage.getItem('arrangement.v1:h_x29og8') ?? 'null'),
   }))
   expect(after.main.links.A.run.id).toBe(FIXTURE_RUN)
   expect(after.main.dock).toEqual(dockBefore)
@@ -58,7 +59,7 @@ test('a server with no connection says so, as no connection, and nothing about w
   }))
   await page.setViewportSize({ width: 1500, height: 900 })
   await page.addInitScript(() => {
-    if (!sessionStorage.getItem('server.v1')) sessionStorage.setItem('server.v1', JSON.stringify({ id: 'second', hostId: 'h_second' }))
+    if (!sessionStorage.getItem('server.v1')) sessionStorage.setItem('server.v1', JSON.stringify({ id: 'second', hostId: 'h_x29og8' }))
   })
   await page.goto('/')
   await expect(page.locator('.server-name')).toHaveText('Second')
