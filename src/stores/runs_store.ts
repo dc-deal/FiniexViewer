@@ -13,6 +13,19 @@ export const useRunsStore = defineStore('runs', () => {
   const context = useContextStore()
 
   const runs = ref<RunInfo[]>([])
+  /** Each run's `recording` verdict, where it has one. */
+  const recordingByRun = computed<Record<string, string>>(() => Object.fromEntries(
+    runs.value.flatMap(run => (run.recording ? [[run.run_id, run.recording]] : [])),
+  ))
+  /**
+   * The session recording right now, per deployment. No deployment route states it, so this reads the
+   * run list's `recording` and `parent_id`, both served: which session it is, not a judgement of ours.
+   */
+  const recordingSessionOf = computed<Record<string, string>>(() => Object.fromEntries(
+    runs.value.flatMap(run => (run.recording === 'current' && run.parent_kind === 'deployment' && run.parent_id
+      ? [[run.parent_id, run.run_id]]
+      : [])),
+  ))
   /** The run the reader chose — the CONTEXT's, read here so the run view keeps one place to ask. */
   const selectedRunId = computed(() => context.main.run.id)
   const summary = ref<RunSummary | null>(null)
@@ -216,6 +229,8 @@ export const useRunsStore = defineStore('runs', () => {
   }
 
   return {
+    recordingByRun,
+    recordingSessionOf,
     runs,
     selectedRunId,
     selectedRun,

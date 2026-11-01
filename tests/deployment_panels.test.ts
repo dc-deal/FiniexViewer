@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { defineComponent, h } from 'vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
+import { provideOpenInContext } from '@/composables/use_open_in_context'
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
 import DeploymentSessionsPanel from '@/components/deployments/DeploymentSessionsPanel.vue'
@@ -62,7 +63,7 @@ describe('DeploymentSessionsPanel', () => {
   function counts(codeSummary: DeploymentDetail['code_summary']) {
     const detail = { ...(detailFixture as unknown as DeploymentDetail), advisory: null, code_summary: codeSummary }
     return mount(DeploymentSessionsPanel, {
-      props: { model: { detail, rows: [] } },
+      props: { model: { detail, rows: [], recordings: {} } },
       global: { plugins: [createPinia()] },
     }).find('.counts').text()
   }
@@ -393,5 +394,34 @@ describe('AdvisoryNotice', () => {
 
   it('says nothing of the orders where they all went to one place', () => {
     expect(mountAdvisory({ orders_to: ['simulated'] }).text()).not.toContain('orders')
+  })
+})
+
+/** No deployment route states what is running, so the verdict arrives beside the sessions. */
+describe('SessionsTable, what is running now', () => {
+  const session = { ...(detailFixture as unknown as DeploymentDetail).sessions[0]!, run_id: 'run_live', ran_hours: null }
+  const openRun = vi.fn()
+
+  function table(recordings: Record<string, string>) {
+    const Host = defineComponent({
+      setup() {
+        provideOpenInContext({ openRun, compareConfiguration: () => {}, openDeployment: () => {}, openSweep: () => {}, canOpen: true })
+        return () => h(SessionsTable, { sessions: [session], keyFields: ['run_id', 'currency'], recordings })
+      },
+    })
+    return mount(Host)
+  }
+
+  it('says the verdict where the ledger has no close yet', () => {
+    expect(table({ run_live: 'current' }).text()).toContain('● recording')
+    expect(table({ run_live: 'stopped' }).text()).toContain('⚠ recording stopped')
+    expect(table({}).text()).not.toContain('recording')
+  })
+
+  it('goes straight to the latest frame from the mark, and offers it only while it records', async () => {
+    const wrapper = table({ run_live: 'current' })
+    await wrapper.find('.session-live').trigger('click')
+    expect(openRun).toHaveBeenCalledWith('run_live', 'latest-state')
+    expect(table({ run_live: 'ended' }).find('.session-live').exists()).toBe(false)
   })
 })

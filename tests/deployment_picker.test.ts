@@ -4,6 +4,8 @@ import { setActivePinia, createPinia } from 'pinia'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { useContextStore } from '@/stores/context_store'
+import { useRunsStore } from '@/stores/runs_store'
+import type { RunInfo } from '@/types/api/report_types'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import type { DeploymentRow } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
@@ -322,5 +324,31 @@ describe('DeploymentPicker', () => {
       expect(rows(wrapper)).toHaveLength(1)
       expect(rows(wrapper)[0]!.text()).toContain('beta_bot')
     })
+  })
+})
+
+/** The list's route does not state it: the row reads the run list, by the run's `parent_id`. */
+describe('DeploymentPicker, what is running now', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  const run = (over: Partial<RunInfo>) => ({ run_id: 'run_live', recording: 'current', parent_kind: 'deployment', parent_id: BASE.deployment_id, ...over }) as RunInfo
+
+  it('marks the deployment with a recording session, and names the session in the card', () => {
+    useRunsStore().runs = [run({})]
+    const wrapper = mountPicker([deployment()])
+    expect(wrapper.findAll('.deployment-recording').map(mark => mark.text())).toEqual(['●', 'recording'])
+    expect(cardRows(wrapper)['Now']).toBe('● recording · run_live')
+  })
+
+  it.each([
+    ['one that ended', { recording: 'ended' }],
+    ['a recording run of another deployment', { parent_id: 'deploy_other' }],
+    ['a recording run that is no deployment\'s', { parent_kind: 'sweep' }],
+  ])('marks nothing for %s', (_name, over) => {
+    useRunsStore().runs = [run(over)]
+    expect(mountPicker([deployment()]).find('.deployment-recording').exists()).toBe(false)
   })
 })

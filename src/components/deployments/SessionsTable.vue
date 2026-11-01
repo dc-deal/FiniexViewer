@@ -6,6 +6,7 @@ import RecordList from '@/components/base/RecordList.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
 import { amount, magnitude, duration, orDash, signClass, utcInstant } from '@/components/runs/report_format'
+import { recordingOf } from '@/components/runs/recording_mark'
 import type { DeploymentSessionRow, SessionCodeChange } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
 import type { ListColumn } from '@/types/list_types'
@@ -24,6 +25,8 @@ import { plural, t } from '@/translate'
 const props = defineProps<{
   sessions: DeploymentSessionRow[]
   keyFields: string[]
+  // each session's `recording` verdict by run
+  recordings?: Record<string, string>
 }>()
 
 const { openRun, compareConfiguration, canOpen } = useOpenInContext()
@@ -223,10 +226,27 @@ function gap(session: DeploymentSessionRow): string {
       <span :data-rank="1" class="session-run">
         <JumpLink v-if="canOpen" @click="openRun(session.run_id)">{{ session.run_id }}</JumpLink>
         <template v-else>{{ session.run_id }}</template>
+        <!-- straight to what it is doing now: the run's own link opens the report, which it has not written yet -->
+        <JumpLink
+          v-if="canOpen && recordings?.[session.run_id] === 'current'"
+          class="session-live"
+          @click="openRun(session.run_id, 'latest-state')"
+        >
+          {{ recordingOf('current').glyph }}
+        </JumpLink>
       </span>
       <span :data-rank="2">{{ utcInstant(session.started) }}</span>
       <!-- null until the row of its close exists: a session still running, or one that died (contract 40) -->
-      <span :data-rank="3" class="figure-cell">{{ orDash(session.ran_hours, duration) }}</span>
+      <!-- no figure until its close: the verdict says why, where the run list states one -->
+      <span
+        v-if="session.ran_hours === null && recordings?.[session.run_id]"
+        :data-rank="3"
+        class="figure-cell"
+        :class="`recording-${recordings[session.run_id]}`"
+      >
+        {{ recordingOf(recordings[session.run_id]!).glyph }} {{ recordingOf(recordings[session.run_id]!).word }}
+      </span>
+      <span v-else :data-rank="3" class="figure-cell">{{ orDash(session.ran_hours, duration) }}</span>
       <span :data-rank="3" class="figure-cell">{{ gap(session) }}</span>
       <span :data-rank="1" class="figure-cell" :class="signClass(session.net_pnl)">
         {{ amount(session.net_pnl, session.currency) }}
@@ -272,6 +292,15 @@ function gap(session: DeploymentSessionRow): string {
 .session-run {
   text-align: left;
 }
+
+.session-live {
+  margin-left: var(--space-xs);
+  color: var(--color-positive);
+}
+
+.recording-current { color: var(--color-positive); }
+.recording-stopped { color: var(--color-warning); }
+.recording-ended { color: var(--color-text-secondary); }
 
 .positive { color: var(--color-positive); }
 .negative { color: var(--color-negative); }

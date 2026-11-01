@@ -43,7 +43,7 @@ function sessionsOf(currency: string): DeploymentSessionRow[] {
 
     <section v-for="row in model.rows" :key="row.currency" class="currency-block">
       <DeploymentHeader :row="row" />
-      <SessionsTable :sessions="sessionsOf(row.currency)" :key-fields="model.detail.key" />
+      <SessionsTable :recordings="model.recordings" :sessions="sessionsOf(row.currency)" :key-fields="model.detail.key" />
     </section>
   </div>
 </template>

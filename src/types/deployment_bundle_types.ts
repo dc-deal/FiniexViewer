@@ -12,6 +12,8 @@ export interface DeploymentSessionsModel {
   detail: DeploymentDetail
   /** The chosen deployment's ledger rows — one per account currency. */
   rows: DeploymentRow[]
+  /** Each session's `recording` verdict by run, from the run list: no deployment route states it. */
+  recordings: Record<string, string>
 }
 
 /** The booking periods member: every session's periods on one clock. */

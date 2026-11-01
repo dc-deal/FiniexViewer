@@ -89,6 +89,7 @@ misreports something:
   Every commit counts and a change stays in the history, so a deployment stays `changed` for good, and
   the age tells a maintained one from one moved last week. Measured 2026-10-31: none of the
   14 rows on record carries a summary yet, since a session recorded before the contract has no code stand.
+- **What is running now is marked, on the list and on the session.** No deployment route states it, so both read the run list's `recording` and `parent_id`: `●` on the row of the deployment with `recording` beside it where the width allows, the verdict in the session's `Ran` until it has a close. The `●` opens that session's *Latest state frame*.
 - **`code_changes` stands on the line between two sessions**, one entry per repository whose code
   differs from the session before: its word, how it moved (`change_direction`) and the message of the
   commit that made the difference, which shows at once when a commit did not matter. The two commits are

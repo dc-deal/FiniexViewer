@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDeploymentsStore } from '@/stores/deployments_store'
+import { useRunsStore } from '@/stores/runs_store'
+import { recordingOf } from '@/components/runs/recording_mark'
+import { useOpenInContext } from '@/composables/use_open_in_context'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
@@ -40,6 +43,8 @@ import { t } from '@/translate'
  * USD), so this is the declared key being honoured rather than a case being served.
  */
 const store = useDeploymentsStore()
+const runsStore = useRunsStore()
+const { openRun } = useOpenInContext()
 const {
   deployments, deploymentsKey, selectedDeploymentId, loadingList,
 } = storeToRefs(store)
@@ -135,6 +140,32 @@ const shown = computed(() => sortRows(
  */
 const emit = defineEmits<{ chosen: [] }>()
 
+/** The session recording right now, which the row's card names as well. */
+function recordingSession(row: DeploymentRow): string | null {
+  return runsStore.recordingSessionOf[row.deployment_id] ?? null
+}
+
+function cardOf(row: DeploymentRow) {
+  const card = deploymentCard(row)
+  const session = recordingSession(row)
+  if (!session) return card
+  const { glyph, word } = recordingOf('current')
+  const now = { label: t('Now'), value: `${glyph} ${word} · ${session}` }
+  return { ...card, details: [now, ...card.details] }
+}
+
+/**
+ * A click on the mark goes straight to what the session is doing now. Inside a row that is itself a
+ * button a second control cannot be one, so this serves the pointer; the keyboard has the same link on
+ * the session's row.
+ */
+function openRecording(row: DeploymentRow): void {
+  const session = recordingSession(row)
+  if (!session) return
+  pick(row)
+  openRun(session, 'latest-state')
+}
+
 function pick(row: DeploymentRow): void {
   void store.selectDeployment(row.deployment_id)
   emit('chosen')
@@ -172,13 +203,14 @@ function pick(row: DeploymentRow): void {
         :columns="columns"
         :row-key="row => rowKey(row, deploymentsKey)"
         :is-picked="row => row.deployment_id === selectedDeploymentId"
-        :row-card="deploymentCard"
+        :row-card="cardOf"
         @pick="pick"
       >
         <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
              this template owns the cells -->
         <template #default="{ row }">
           <span :data-rank="1" class="deployment-id" :title="row.deployment_id">
+            <span v-if="recordingSession(row)" class="deployment-recording" @click.stop="openRecording(row)">{{ recordingOf('current').glyph }}</span>
             {{ row.deployment_id }}
           </span>
           <span :data-rank="1" class="deployment-bot" :title="row.bot">{{ row.bot }}</span>
@@ -197,6 +229,7 @@ function pick(row: DeploymentRow): void {
           <!-- one cell whether or not a mark is in it, so the gap column never moves -->
           <span :data-rank="3" class="deployment-marks">
             <!-- `changed` says only that one of the two moved; the reason is read from these -->
+            <span v-if="recordingSession(row)" class="deployment-recording" @click.stop="openRecording(row)">{{ recordingOf('current').word }}</span>
             <span v-if="row.configuration_changed" class="deployment-mark">{{ t('config') }}</span>
             <span v-if="row.code_summary" class="deployment-mark">{{ t('code') }}</span>
           </span>
@@ -264,6 +297,11 @@ function pick(row: DeploymentRow): void {
    `e2e/list_ranks.spec.ts` — no unit test can see it. */
 .deployment-list :deep(.figure-cell) {
   text-align: right;
+}
+
+.deployment-recording {
+  color: var(--color-positive);
+  cursor: pointer;
 }
 
 .deployment-marks {
