@@ -144,7 +144,7 @@ changes this, which is why the token is **not** a `VITE_` variable: anything wit
 inlined into the client bundle at build time, and that would publish the credential to anyone who
 opens the page.
 
-Instead the dev server's `/api` proxy attaches it, in the Node process:
+Instead the dev server attaches it, in the Node process (`vite_servers_plugin.ts`, in the dev server and in `vite preview`):
 
 ```
 browser ──/api/v1/…──▶  Vite dev proxy  ──Authorization: Bearer …──▶  backend
@@ -161,6 +161,16 @@ recommends. Three properties, all measured rather than assumed:
 - **A real environment variable wins over a `.env` file.** Vite's `loadEnv` prioritises
   `process.env`, so Compose keeps deciding `VITE_API_BASE_URL` while the token can come from
   `.env.local`, which Compose does not set.
+
+**Several servers pass through the same place.** `/api/v1/…` goes to the default server, from the
+environment as above. `/server/<id>/api/v1/…` goes to a server of the list in `.secrets/servers.json`
+(gitignored), with that server's token. `/__viewer/servers` serves the list without a token in it, and
+takes a change only from this page: an `Origin` equal to the `Host`, and JSON. The middleware is installed
+behind Vite's own host check.
+
+**A connection that fails answers `502` with `{"error":"no_connection"}`**, where Vite's proxy answered a
+500 that read as a fault of the backend. The viewer cannot tell a tunnel that is down from a host that
+is, so it says neither.
 
 **The production case is unsolved and deliberately not faked.** A statically served bundle has no
 proxy, so there is nowhere to put a token that the user does not also get. The same proxy is the

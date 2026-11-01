@@ -24,7 +24,7 @@ the backend grades memory alone:
 | `ready` | gating is on and the identity is real | `status-account` · the display name, quiet |
 | `unenforced` | a 200 arrived and **proves nothing** — the server verifies no token, so every identity field is null even for a caller that sent a valid one | `status-warning` · *no sign-in*, warning role |
 | `unauthenticated` | 401: the credential was refused | `status-warning` · *token refused*, warning role |
-| `failed` | the server did not answer — a different problem with a different fix | `status-error` · *server unreachable*, error role |
+| `failed` | no answer reached the viewer — a different problem with a different fix, and no statement about what runs behind the server | `status-error` · *no connection*, error role |
 
 Only the FIRST read shows as `loading`. Every return to the tab reads again, and a re-read keeps
 the last answer on show until the new one arrives — otherwise the menu bar would flicker through

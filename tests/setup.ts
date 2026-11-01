@@ -6,7 +6,7 @@ import { beforeEach } from 'vitest'
  * which the `localStorage.clear()` each test does for itself does not reach.
  */
 beforeEach(() => {
-  sessionStorage.clear()
+  if (typeof sessionStorage !== 'undefined') sessionStorage.clear()
 })
 
 /**
@@ -25,7 +25,8 @@ if (!('ResizeObserver' in globalThis)) {
   globalThis.ResizeObserver = ResizeObserverStub
 }
 
-if (!Element.prototype.hasPointerCapture) {
+// absent in the suites that run on Node's own sockets, which draw nothing
+if (typeof Element !== 'undefined' && !Element.prototype.hasPointerCapture) {
   Element.prototype.hasPointerCapture = (): boolean => false
   Element.prototype.setPointerCapture = (): void => {}
   Element.prototype.releasePointerCapture = (): void => {}

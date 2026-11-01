@@ -41,7 +41,7 @@ describe('AccountStatus', () => {
     ['loading', 'connecting', 'quiet', 'status-connecting'],
     ['unenforced', 'no sign-in', 'warning', 'status-warning'],
     ['unauthenticated', 'token refused', 'warning', 'status-warning'],
-    ['failed', 'server unreachable', 'error', 'status-error'],
+    ['failed', 'no connection', 'error', 'status-error'],
   ] as const)('shows %s as a mark and the word "%s"', (state, word, role, icon) => {
     const wrapper = mountIn(state)
     expect(wrapper.find('.account-word').text()).toBe(word)

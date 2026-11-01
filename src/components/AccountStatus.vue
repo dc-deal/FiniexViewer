@@ -48,7 +48,7 @@ const view = computed<StatusView>(() => {
     case 'unauthenticated':
       return { icon: 'status-warning', word: t('token refused'), role: 'warning', sentence: t('The token was refused') }
     case 'failed':
-      return { icon: 'status-error', word: t('server unreachable'), role: 'error', sentence: t('The server did not answer') }
+      return { icon: 'status-error', word: t('no connection'), role: 'error', sentence: t('No connection to this server: tunnel or host') }
     default:
       return {
         icon: 'status-connecting',

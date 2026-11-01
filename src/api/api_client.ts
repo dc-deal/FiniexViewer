@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
+import { noConnectionFrom } from '@/api/no_connection_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
@@ -71,7 +72,7 @@ http.interceptors.response.use(
   },
   (error: unknown) => {
     if (axios.isAxiosError(error)) noteStamp(error.response?.headers)
-    return Promise.reject(error)
+    return Promise.reject(noConnectionFrom(error) ?? error)
   },
 )
 

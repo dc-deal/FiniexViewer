@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import { viteServersPlugin } from './vite_servers_plugin'
 
 // Both prefixes are named explicitly rather than reading the whole environment: VITE_* is what the
 // client may see, FINIEX_* is what only this Node process may see. Loaded at module scope so the
@@ -18,7 +19,16 @@ const env = loadEnv(process.env['NODE_ENV'] ?? 'development', process.cwd(), ['V
 const apiToken = env['FINIEX_API_TOKEN'] ?? ''
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    viteServersPlugin({
+      // Forwards all /api/* requests to the backend.
+      // VITE_API_BASE_URL is set to http://finiex-dev:8000 inside Docker Compose.
+      defaultUrl: env['VITE_API_BASE_URL'] ?? 'http://localhost:8000',
+      defaultToken: apiToken,
+      secretsDir: '.secrets',
+    }),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
@@ -32,25 +42,11 @@ export default defineConfig({
       // src) held the container at 56 % CPU idle and starved the event loop — a request that does
       // no work at all took 1.7 s, and the index page 6.5 s. Only `src` can change under an
       // editor, so only `src` is worth ten looks a second.
-      ignored: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/github_issues/**'],
+      ignored: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/github_issues/**', '**/.secrets/**', '**/.claude/**'],
       interval: 300
     },
     hmr: {
       clientPort: 5173  // tells the browser to connect HMR WebSocket to localhost:5173, not the internal Docker address
-    },
-    proxy: {
-      '/api': {
-        // Forwards all /api/* requests to the backend.
-        // VITE_API_BASE_URL is set to http://finiex-dev:8000 inside Docker Compose.
-        target: env['VITE_API_BASE_URL'] ?? 'http://localhost:8000',
-        changeOrigin: true,
-        configure: proxy => {
-          if (!apiToken) return
-          proxy.on('proxyReq', proxyReq => {
-            proxyReq.setHeader('Authorization', `Bearer ${apiToken}`)
-          })
-        }
-      }
     }
   }
 })

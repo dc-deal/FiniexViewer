@@ -78,3 +78,4 @@ sync_ide_docs.sh
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.secrets/
