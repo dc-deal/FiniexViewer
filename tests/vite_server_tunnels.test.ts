@@ -92,7 +92,8 @@ describe('ServerTunnels', () => {
     expect(tunnels.statusOf('second')).toEqual({ state: 'retrying', message: 'ssh: connect to host example.org port 22: Connection refused' })
     vi.advanceTimersByTime(5000)
     expect(children).toHaveLength(2)
-    expect(tunnels.statusOf('second').state).toBe('running')
+    // what the ended one said is not said beside the one running now
+    expect(tunnels.statusOf('second')).toEqual({ state: 'running', message: null })
   })
 
   it('leaves one running that did not change', () => {

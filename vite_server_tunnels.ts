@@ -113,7 +113,8 @@ export class ServerTunnels {
   private _run(id: string, kept: Kept): void {
     const child = this._spawn('ssh', sshArguments(kept.tunnel, this._secretsDir))
     kept.child = child
-    kept.status = { state: 'running', message: kept.status.message }
+    // the message is this process's own: kept from the one before, `running` stood beside a closed connection
+    kept.status = { state: 'running', message: null }
     child.stderr?.on('data', (part: Buffer) => {
       const line = part.toString().trim().split('\n').pop()
       if (line) kept.status = { ...kept.status, message: line }
