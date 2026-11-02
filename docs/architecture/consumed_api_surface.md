@@ -77,7 +77,7 @@ and its cause where no check refused it.
 **Ledger plane** — a bot's life across its restarts, on its own grant surface `deployments`:
 
 ```
-GET /api/v1/deployments                               one row per (deployment x account currency)
+GET /api/v1/deployments                               one row per (deployment x account currency), from a first session's start: currency null until its first seal
 GET /api/v1/deployments/{deployment_id}               the sessions, oldest first
 GET /api/v1/deployments/{deployment_id}/booking-periods   every period of every session, in one call
 ```

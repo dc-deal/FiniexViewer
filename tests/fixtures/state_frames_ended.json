@@ -2,14 +2,14 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-11-01T12:13:14.063192Z",
+  "served_at": "2026-11-02T23:09:15.929274Z",
   "units": [
     {
       "unit_name": "state_frames_test",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
       "written_at": "2026-10-22T12:35:57.805860Z",
-      "age_s": 862636.257332,
+      "age_s": 988398.123414,
       "recording": "ended",
       "truncated_tail": false,
       "first_frame": {

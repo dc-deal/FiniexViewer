@@ -5,7 +5,7 @@ import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
-import { amount, magnitude, duration, orDash, signClass, utcInstant } from '@/components/runs/report_format'
+import { bookedAmount, drawdownFigure, duration, orDash, signClass, utcInstant } from '@/components/runs/report_format'
 import { recordingOf } from '@/components/runs/recording_mark'
 import type { DeploymentSessionRow, SessionCodeChange } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
@@ -249,9 +249,9 @@ function gap(session: DeploymentSessionRow): string {
       <span v-else :data-rank="3" class="figure-cell">{{ orDash(session.ran_hours, duration) }}</span>
       <span :data-rank="3" class="figure-cell">{{ gap(session) }}</span>
       <span :data-rank="1" class="figure-cell" :class="signClass(session.net_pnl)">
-        {{ amount(session.net_pnl, session.currency) }}
+        {{ bookedAmount(session.net_pnl, session.currency) }}
       </span>
-      <span :data-rank="2" class="figure-cell">{{ orDash(session.max_drawdown, value => magnitude(value, session.currency)) }}</span>
+      <span :data-rank="2" class="figure-cell">{{ drawdownFigure(session.max_drawdown, null, session.currency) }}</span>
     </template>
   </RecordList>
 </template>

@@ -14,20 +14,27 @@ export interface DeploymentRow {
    * improves that; `deployment_id` is minted per deployment and a deliberate restart mints a
    * fresh one. Two deployments sharing a bot_id are one bot restarted with --new-deployment,
    * which is the only join that answers "is this the same bot as the row above". Empty on a
-   * profile that declares none.
+   * profile that declares none, and on the row of sessions that have booked nothing yet.
    */
   bot_id: string
   sessions: number
   first_started: string   // ISO-8601 UTC
   last_started: string    // ISO-8601 UTC
-  currency: string
+  /**
+   * Null on the row of the sessions that have booked no trading day yet (contract 49): a deployment is
+   * listed from its first session's start, and such sessions have no account currency until their
+   * first seal. That row stands after the deployment's other rows, and the null keeps it apart in
+   * the key. Its figures are null too, never zero, because nothing was measured.
+   */
+  currency: string | null
   /**
    * A SUM over the sessions. Its neighbour below is not, and that is the trap: `max_drawdown` is
    * their MAXIMUM and never a sum, because each session carries the running decline against the
    * peak the deployment has reached so far. Adding the column counts one decline once per session
-   * that was still inside it. Both arrive already reduced — nothing here is re-aggregated.
+   * that was still inside it. Both arrive already reduced — nothing here is re-aggregated. Null on
+   * the row that has booked nothing yet (contract 49).
    */
-  net_pnl: number
+  net_pnl: number | null
   // null where no drawdown was measured (contract 40)
   max_drawdown: number | null
   max_drawdown_pct: number | null
@@ -115,11 +122,12 @@ export interface DeploymentSessionRow {
    */
   ended: string | null
   ran_hours: number | null
-  net_pnl: number
+  // null, with `currency`, on a session that has booked no trading day yet (contract 49)
+  net_pnl: number | null
   // null where no drawdown was measured (contract 40)
   max_drawdown: number | null
   max_drawdown_pct: number | null
-  currency: string
+  currency: string | null
   bot: string
   bot_id: string
   /**
@@ -215,6 +223,7 @@ export interface DeploymentBookingPeriodsReport {
   // every account currency these periods span
   currencies: string[]
   sessions: number
-  // sessions whose rows predate the booking journal — counted rather than silently absent
+  // sessions that booked no period, from before the booking journal or before their first seal
+  // (contract 49) — counted rather than silently absent
   sessions_without_periods: number
 }

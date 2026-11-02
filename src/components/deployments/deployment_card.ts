@@ -1,5 +1,5 @@
 import {
-  amount, drawdownFigure, duration, signClass, utcInstant,
+  bookedAmount, drawdownFigure, duration, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { Figure, FigureCard } from '@/types/figure_types'
 import type { DeploymentCodeSummary, DeploymentRow } from '@/types/api/deployment_types'
@@ -38,7 +38,7 @@ export function deploymentCard(row: DeploymentRow): FigureCard {
     { label: t('Sessions'), value: plural(row.sessions, t('session'), t('sessions')) },
     {
       label: t('Net P&L'),
-      value: amount(row.net_pnl, row.currency),
+      value: bookedAmount(row.net_pnl, row.currency),
       tone: signClass(row.net_pnl),
       title: t('A sum over the sessions. The drawdown beside it is NOT — see its own caveat.'),
     },
@@ -63,5 +63,5 @@ export function deploymentCard(row: DeploymentRow): FigureCard {
   }
   // the code stands apart: it can move with the configuration holding, and the advisory then stays null
   if (row.code_summary) details.push({ label: t('Code'), value: codeSummaryText(row.code_summary) })
-  return { title: `${row.deployment_id} · ${row.currency}`, details }
+  return { title: row.currency ? `${row.deployment_id} · ${row.currency}` : row.deployment_id, details }
 }

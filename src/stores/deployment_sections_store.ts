@@ -16,8 +16,9 @@ export const useDeploymentSectionsStore = defineStore('deployment_sections', () 
 
   const sources = computed<Record<string, DeploymentSessionsModel | DeploymentPeriodsModel | null>>(() => ({
     sessions: detail.value ? { detail: detail.value, rows: selectedRows.value, recordings: runs.recordingByRun } : null,
-    // a deployment whose sessions sealed no day yet has no period to draw
-    periods: periods.value?.periods.length
+    // no period and no session counted without one is nothing to say; a session before its first seal
+    // is said, so that an incomplete history is not read as a quiet one (their `booking-periods` document)
+    periods: periods.value?.periods.length || periods.value?.sessions_without_periods
       ? { periods: periods.value, sessions: detail.value?.sessions ?? [] }
       : null,
   }))

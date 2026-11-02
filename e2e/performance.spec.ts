@@ -249,7 +249,7 @@ test('a deployment opens its bundle quickly', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 })
   await openWith(page, '/')
   await showPanel(page, 'Deployments')
-  const row = page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT })
+  const row = page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first()
   await row.waitFor()
 
   const ms = await timed('deployment chosen to its bundle drawn', async () => {

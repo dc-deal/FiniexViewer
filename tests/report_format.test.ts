@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  bytes, drawdownFigure, largerFirst, modelledSpreadFigures, orDash, polarity, priceAt, priceDistance, shortHash, signClass, sortInstant,
+  bookedAmount, bytes, drawdownFigure, largerFirst, modelledSpreadFigures, orDash, polarity, priceAt, priceDistance, shortHash, signClass, sortInstant,
   spreadFigure, utcInstant, utcSpan,
 } from '@/components/runs/report_format'
 
@@ -10,6 +10,15 @@ import {
  * two of them are new, and because the third carried a crash that no panel test could reach until
  * a card asked it to render a damaged field.
  */
+describe('bookedAmount', () => {
+  /** Contract 49: a session before its first seal has neither. Unguarded this read `0.00 null`. */
+  it('says a dash where nothing was booked yet, and the amount where it was', () => {
+    expect(bookedAmount(null, null)).toBe('—')
+    expect(bookedAmount(12.5, 'USD')).toBe('12.50 USD')
+    expect(bookedAmount(0, 'USD')).toBe('0.00 USD')
+  })
+})
+
 describe('report_format', () => {
   /** A price the backend computed is ours to round for display, to the instrument's tick size (their `prices` document). */
   describe('priceAt', () => {
@@ -121,7 +130,7 @@ describe('report_format', () => {
     })
 
     it('leaves a flat cell without a colour class', () => {
-      expect([12.5, -0.01, 0].map(signClass)).toEqual(['positive', 'negative', ''])
+      expect([12.5, -0.01, 0, null].map(value => signClass(value))).toEqual(['positive', 'negative', '', ''])
     })
   })
 
@@ -193,6 +202,7 @@ describe('report_format', () => {
       expect(drawdownFigure(-12.5, 3.47, 'USD')).toBe('12.50 USD (3.47%)')
       expect(drawdownFigure(12.5, null, 'USD')).toBe('12.50 USD')
       expect(drawdownFigure(null, null, 'USD')).toBe('—')
+      expect(drawdownFigure(null, null, null)).toBe('—')
     })
   })
 })

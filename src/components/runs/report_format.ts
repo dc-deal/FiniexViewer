@@ -98,6 +98,15 @@ export function amount(value: number, currency: string): string {
 }
 
 /**
+ * An amount a deployment's session may not have booked yet, or the dash that says so: before its
+ * first sealed trading day it has neither figure nor account currency (contract 49), which is no
+ * zero. Unguarded, `amount` reads that as `0.00 null`.
+ */
+export function bookedAmount(value: number | null, currency: string | null): string {
+  return value === null || currency === null ? '—' : amount(value, currency)
+}
+
+/**
  * A spread figure, or the words for its absence. null means the data the unit read carried NO
  * QUOTE — every row bid = ask — so no spread was measured, which is not a spread of zero (contract
  * 32; their `portfolio` and `trade-history` documents). `SPREAD_NOT_RECORDED` says so on hover.
@@ -266,7 +275,8 @@ export function polarity(value: number): Polarity {
 }
 
 /** Sign class for P&L-denominated cells. Empty for zero — no colour claim on a flat result. */
-export function signClass(value: number): string {
+export function signClass(value: number | null): string {
+  if (value === null) return ''
   const sign = polarity(value)
   return sign === 'flat' ? '' : sign
 }
@@ -296,8 +306,8 @@ export function orDash(value: number | null, format: (value: number) => string):
 }
 
 /** A drawdown with its share where one is stated (`_pct` is already a percentage), or the dash. */
-export function drawdownFigure(value: number | null, share: number | null, currency: string): string {
-  if (value === null) return '—'
+export function drawdownFigure(value: number | null, share: number | null, currency: string | null): string {
+  if (value === null || currency === null) return '—'
   const shown = magnitude(value, currency)
   return share === null ? shown : `${shown} (${percentFigure(share)})`
 }

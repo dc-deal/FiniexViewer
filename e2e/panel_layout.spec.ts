@@ -138,7 +138,7 @@ test('a narrow deployment bundle keeps its deployment line to one line', async (
   await page.setViewportSize({ width: 600, height: 900 })
   await page.goto('/')
   await showPanel(page, 'Deployments')
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   await showPanel(page, 'Deployment bundle')
   const line = page.locator('.deployment-bundle .chosen')
   await expect(line).toBeVisible()

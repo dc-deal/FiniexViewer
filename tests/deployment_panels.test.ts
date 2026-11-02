@@ -398,6 +398,25 @@ describe('AdvisoryNotice', () => {
 })
 
 /** No deployment route states what is running, so the verdict arrives beside the sessions. */
+describe('a session that has booked nothing yet', () => {
+  /** Contract 49: no currency and no figure, which is no zero. The list row states it the same way. */
+  const notBooked = { currency: null, net_pnl: null, max_drawdown: null, max_drawdown_pct: null, bot_id: '' }
+
+  it('heads its block in their word, with no figure and no `null`', () => {
+    const header = mount(DeploymentHeader, { props: { row: { ...BASE_ROW, ...notBooked } as DeploymentRow } })
+    expect(header.text()).toContain('booked nothing yet')
+    expect(header.text()).not.toContain('null')
+    expect(header.text()).not.toContain('0.00')
+  })
+
+  it('shows dashes on its session row, never a zero', () => {
+    const row = mountSessions([session({ ...notBooked, ended: null, ran_hours: null })])
+    expect(row.text()).toContain('—')
+    expect(row.text()).not.toContain('null')
+    expect(row.text()).not.toContain('0.00')
+  })
+})
+
 describe('SessionsTable, what is running now', () => {
   const session = { ...(detailFixture as unknown as DeploymentDetail).sessions[0]!, run_id: 'run_live', ran_hours: null }
   const openRun = vi.fn()

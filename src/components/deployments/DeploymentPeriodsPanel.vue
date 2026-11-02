@@ -8,7 +8,7 @@ import { useViewExpanded } from '@/composables/use_panel_view'
 import { useSettingsStore } from '@/stores/settings_store'
 import type { LaneOrder } from '@/types/settings_types'
 import type { DeploymentPeriodsModel } from '@/types/deployment_bundle_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 /**
  * The deployment bundle's booking periods (viewer#43): every session's periods on one clock, the
@@ -44,8 +44,8 @@ const orderedPeriods = computed(() =>
 <template>
   <div class="deployment-periods">
     <p v-if="model.periods.sessions_without_periods > 0" class="notice">
-      {{ model.periods.sessions_without_periods }}
-      {{ t('sessions predate the booking journal and contribute no periods') }}
+      {{ plural(model.periods.sessions_without_periods, t('session'), t('sessions')) }}
+      {{ t('without a period: from before the booking journal, or no trading day sealed yet') }}
     </p>
     <!-- passing the sessions is what switches the lane to the session and the axis to the
          wall clock — see the note in BookingPeriodTimeline -->
@@ -55,7 +55,13 @@ const orderedPeriods = computed(() =>
       :key-fields="model.periods.key"
       :sessions="model.sessions"
     />
-    <BookingPeriodTable v-model:open="periodsOpen" :periods="orderedPeriods" :key-fields="model.periods.key" show-run />
+    <BookingPeriodTable
+      v-if="orderedPeriods.length"
+      v-model:open="periodsOpen"
+      :periods="orderedPeriods"
+      :key-fields="model.periods.key"
+      show-run
+    />
   </div>
 </template>
 

@@ -14,7 +14,7 @@ import { deploymentCard, idleGap } from '@/components/deployments/deployment_car
 import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
 import {
-  amount, magnitude, orDash, percentFigure, signClass, sortInstant, startedAt,
+  bookedAmount, drawdownFigure, orDash, percentFigure, signClass, sortInstant, startedAt,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListColumn } from '@/types/list_types'
@@ -218,12 +218,12 @@ function pick(row: DeploymentRow): void {
           <span :data-rank="4">{{ startedAt(row.first_started) || t('no date') }}</span>
           <span :data-rank="3">{{ startedAt(row.last_started) || t('no date') }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.net_pnl)">
-            {{ amount(row.net_pnl, row.currency) }}
+            {{ bookedAmount(row.net_pnl, row.currency) }}
           </span>
           <!-- the percentage one hover away rather than a tenth column: the magnitude is what
                compares two deployments, the ratio is what a single one is read against -->
           <span :data-rank="2" class="figure-cell" :title="orDash(row.max_drawdown_pct, percentFigure)">
-            {{ orDash(row.max_drawdown, value => magnitude(value, row.currency)) }}
+            {{ drawdownFigure(row.max_drawdown, null, row.currency) }}
           </span>
           <span :data-rank="4" class="figure-cell">{{ idleGap(row) }}</span>
           <!-- one cell whether or not a mark is in it, so the gap column never moves -->

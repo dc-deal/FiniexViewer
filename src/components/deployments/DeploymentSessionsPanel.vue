@@ -18,8 +18,11 @@ const props = defineProps<{
   model: DeploymentSessionsModel
 }>()
 
-/** Sessions of one account currency — the rows are keyed by (run_id, currency), so they split. */
-function sessionsOf(currency: string): DeploymentSessionRow[] {
+/**
+ * Sessions of one account currency — the rows are keyed by (run_id, currency), so they split. Null is
+ * a block of its own: the sessions that have booked nothing yet, which the list row states the same way.
+ */
+function sessionsOf(currency: string | null): DeploymentSessionRow[] {
   return props.model.detail.sessions.filter(session => session.currency === currency)
 }
 </script>
@@ -28,8 +31,8 @@ function sessionsOf(currency: string): DeploymentSessionRow[] {
   <div class="deployment-sessions">
     <!-- what a run id, before and after, and the unfinished count mean: the one explanation pattern -->
     <HintLine id="deployment-sessions" />
-    <!-- the deployment's own line, above every currency: a run that died before its first sealed
-         day has no ledger row and so no currency, and the advisory speaks of the whole history -->
+    <!-- the deployment's own line, above every currency: a run can be unfinished in any of them or
+         before it has one, and the advisory speaks of the whole history -->
     <p class="counts">
       <span>{{ plural(model.detail.count, t('session'), t('sessions')) }}</span>
       <!-- the WHY is in the hint above: the number is the fact, the explanation is a caveat -->
@@ -41,7 +44,7 @@ function sessionsOf(currency: string): DeploymentSessionRow[] {
       <AdvisoryNotice v-if="model.detail.advisory" :advisory="model.detail.advisory" />
     </p>
 
-    <section v-for="row in model.rows" :key="row.currency" class="currency-block">
+    <section v-for="row in model.rows" :key="String(row.currency)" class="currency-block">
       <DeploymentHeader :row="row" />
       <SessionsTable :recordings="model.recordings" :sessions="sessionsOf(row.currency)" :key-fields="model.detail.key" />
     </section>

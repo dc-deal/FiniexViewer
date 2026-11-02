@@ -77,12 +77,12 @@ test('the picker lists the ledger and choosing one opens its history', async ({ 
   await expect(first).toContainText('deploy_')
   await expect(first).toContainText('USD')
 
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
 
   // the pick shows the deployment's bundle beside the list, which stays whole and marks it (viewer#43)
   await expect(page.locator('.deployment-bundle .chosen-id')).toContainText(FIXTURE_DEPLOYMENT)
   await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
-  await expect(page.locator('.deployment-list .record-row.picked')).toContainText(FIXTURE_DEPLOYMENT)
+  await expect(page.locator('.deployment-list .record-row.picked').first()).toContainText(FIXTURE_DEPLOYMENT)
 })
 
 /**
@@ -110,7 +110,7 @@ test('each run opened from the deployment shows its own executive summary', asyn
 
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   const links = page.locator('.sessions-list .session-run button')
   const executive = page.locator('[data-panel="executive"]')
 
@@ -132,7 +132,7 @@ test('a change mark opens the configuration of a session beside it, its links wh
   // about the list floor: the narrowest the Deployments panel stands
   await page.setViewportSize({ width: 520, height: 1000 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   // one group at this width: a pick never covers its list, so the bundle is a tab to bring forward
   await showPanel(page, 'Deployment bundle')
   const lead = page.locator('.sessions-list .record-lead', { hasText: 'Strategy changed' })
@@ -175,7 +175,7 @@ test('a long code change stays on its line, its rule drawn and its commits in a 
   })
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
 
   const lead = page.locator('.sessions-list .record-lead', { hasText: 'framework' })
   await expect(lead).toBeVisible()
@@ -195,7 +195,7 @@ test('a long code change stays on its line, its rule drawn and its commits in a 
 test('a chosen deployment survives a reload', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   await expect(page.locator('.deployment-bundle .chosen-id')).toContainText(FIXTURE_DEPLOYMENT)
 
   await page.reload()
@@ -218,7 +218,7 @@ test('a stored deployment the ledger no longer lists says so', async ({ page }) 
 test('every figure cell stands under its own heading', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1100 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
   await page.locator('details').evaluateAll(
     list => list.forEach(element => element.setAttribute('open', ''))
@@ -237,7 +237,7 @@ test('every figure cell stands under its own heading', async ({ page }) => {
 test('the timeline marks round moments rather than overlapping stamps', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   await expect(page.locator('.timeline').first()).toBeVisible()
 
   const marks = await page.locator('.timeline .tick').allTextContents()

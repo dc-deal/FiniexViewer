@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
+import { deploymentCard } from '@/components/deployments/deployment_card'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -328,6 +329,35 @@ describe('DeploymentPicker', () => {
 })
 
 /** The list's route does not state it: the row reads the run list, by the run's `parent_id`. */
+describe('DeploymentPicker, a deployment that has booked nothing yet', () => {
+  /** Contract 49: listed from its first session's start, with a row whose currency is null. */
+  const notBooked = { currency: null, net_pnl: null, max_drawdown: null, max_drawdown_pct: null, bot_id: '' }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  it('lists it with dashes, never a zero and never the word null', () => {
+    const wrapper = mountPicker([deployment(notBooked)])
+    expect(rows(wrapper)).toHaveLength(1)
+    expect(rows(wrapper)[0]!.text()).toContain('—')
+    expect(rows(wrapper)[0]!.text()).not.toContain('null')
+    expect(rows(wrapper)[0]!.text()).not.toContain('0.00')
+  })
+
+  it('leaves the currency out of its card, and offers no empty currency to filter by', () => {
+    const row = deployment(notBooked)
+    expect(deploymentCard(row).title).toBe(row.deployment_id)
+    expect(cardRows(mountPicker([row]))['Net P&L']).toBe('—')
+  })
+
+  it('tells it apart from the deployment\'s booked row by the key the response declares', () => {
+    const wrapper = mountPicker([deployment(), deployment(notBooked)])
+    expect(rows(wrapper)).toHaveLength(2)
+  })
+})
+
 describe('DeploymentPicker, what is running now', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

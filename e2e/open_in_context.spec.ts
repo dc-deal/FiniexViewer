@@ -50,7 +50,7 @@ test('a session leaves a closed run bundle closed where its sections stand apart
   await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(0)
   await expect(page.locator('[data-panel-kind="report-trade-history"]')).toBeVisible()
   // the panel the click was made in is not covered
-  await expect(page.locator('[data-panel-kind="deployment"] .sessions-list')).toBeVisible()
+  await expect(page.locator('[data-panel-kind="deployment"] .sessions-list').first()).toBeVisible()
 })
 
 test('a run opens the deployment it was a session of', async ({ page }) => {
