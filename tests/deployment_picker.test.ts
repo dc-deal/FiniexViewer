@@ -352,9 +352,23 @@ describe('DeploymentPicker, a deployment that has booked nothing yet', () => {
     expect(cardRows(mountPicker([row]))['Net P&L']).toBe('—')
   })
 
-  it('tells it apart from the deployment\'s booked row by the key the response declares', () => {
-    const wrapper = mountPicker([deployment(), deployment(notBooked)])
-    expect(rows(wrapper)).toHaveLength(2)
+  /**
+   * Beside a booked row it is no second deployment (operator, 2026-11-03): one row, the booked
+   * figures as served and the sessions that booked nothing said beside them, never added up.
+   */
+  it('folds into the deployment\'s booked row, said beside its figures', () => {
+    const booked = deployment()
+    const nothing = deployment({ ...notBooked, sessions: 2 })
+    const wrapper = mountPicker([nothing, booked])
+    expect(rows(wrapper)).toHaveLength(1)
+    expect(rows(wrapper)[0]!.text()).toContain('+2 booked nothing yet')
+    expect(rows(wrapper)[0]!.find('.figure-cell').text()).toBe(String(booked.sessions))
+    expect(cardRows(wrapper)['Booked nothing yet']).toContain('2 sessions')
+  })
+
+  it('stays a row of its own where the deployment booked nothing at all', () => {
+    const wrapper = mountPicker([deployment(notBooked)])
+    expect(rows(wrapper)[0]!.text()).toContain('booked nothing yet')
   })
 })
 

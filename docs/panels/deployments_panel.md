@@ -113,12 +113,16 @@ misreports something:
   now among them. Each of them also stands in `sessions`, its *Ran* a dash until its close is booked
   — the two counts overlap and are never added. A bare session count is a number the reader has no
   reason to doubt.
-- **A session that has booked nothing yet has a row of its own** (contract 49). A deployment is listed
-  from its first session's start, and until its first sealed day such a session has no account
-  currency: the list row carries `currency: null` after the deployment's other rows, with dashes for
-  its figures, and the sessions show a block headed *booked nothing yet*. Null is never a zero, and at
-  the first seal the session moves into its currency's row. Until then its booking periods are an
-  empty list and `sessions_without_periods` counts it.
+- **A session that has booked nothing yet** (contract 49). A deployment is listed from its first
+  session's start, and until its first sealed day such a session has no account currency: the ledger
+  serves it in a row of its own with `currency: null`, after the deployment's other rows. **The list
+  folds that row into the deployment's booked one** (operator, 2026-11-03: drawn as served it read as
+  the same deployment twice), `deployment_rows.ts`: the booked figures as served and *+1 booked nothing
+  yet* beside them, the two session counts never added up; a deployment that booked nothing at all
+  keeps that row, saying *booked nothing yet* where its figures would stand. The sessions show a block
+  headed *booked nothing yet*. Null is never a zero, and at the first seal the session moves into its
+  currency's row. Until then its booking periods are an empty list and `sessions_without_periods`
+  counts it.
 - What the run ids, *before · after* and the unfinished count mean is said by the
   `deployment-sessions` hint above the sessions, never on a browser tooltip (operator, 2026-10-28).
 

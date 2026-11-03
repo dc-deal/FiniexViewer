@@ -17,6 +17,7 @@
   "Best in favour": {"field": ["largest_mfe", "mfe_pnl", "mfe_price", "mfe_distance", "price_unit"], "doc": "run-summary", "their": null, "ours": null, "note": ""},
   "Between": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/runs/run_chart_marks.ts"},
   "Beyond the venue": {"field": "features_beyond_venue", "doc": "run-header", "their": null, "ours": null, "note": ""},
+  "Booked nothing yet": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/deployments/DeploymentPicker.vue"},
   "Bot": {"field": "bot", "doc": "deployments", "their": null, "ours": null, "note": ""},
   "Bot id": {"field": "bot_id", "doc": "deployments", "their": null, "ours": null, "note": ""},
   "Breaker drawdown": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/runs/StateFrameBody.vue"},

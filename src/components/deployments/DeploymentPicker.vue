@@ -11,15 +11,16 @@ import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { deploymentCard, idleGap } from '@/components/deployments/deployment_card'
+import { listedRows, unbookedOf } from '@/components/deployments/deployment_rows'
 import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
 import {
-  bookedAmount, drawdownFigure, orDash, percentFigure, signClass, sortInstant, startedAt,
+  bookedAmount, drawdownFigure, orDash, percentFigure, signClass, sortInstant, startedAt, utcSpan,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListColumn } from '@/types/list_types'
 import type { DeploymentRow } from '@/types/api/deployment_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 /**
  * Which deployment to look at — the same facet bar over a flat list that the run picker and the
@@ -122,9 +123,17 @@ const sorts: SortDefinition<DeploymentRow>[] = [
   },
 ]
 
+/** One row per deployment and currency: the sessions that booked nothing stand beside a booked row. */
+const listed = computed(() => listedRows(deployments.value))
+
+/** The row of this deployment's sessions that have booked nothing yet, beside its booked row. */
+function unbooked(row: DeploymentRow): DeploymentRow | null {
+  return unbookedOf(row, deployments.value)
+}
+
 const shown = computed(() => sortRows(
   applyFacets({
-    rows: deployments.value,
+    rows: listed.value,
     definitions: facets,
     selection: selection.value,
     search: search.value,
@@ -147,11 +156,21 @@ function recordingSession(row: DeploymentRow): string | null {
 
 function cardOf(row: DeploymentRow) {
   const card = deploymentCard(row)
+  const details = [...card.details]
+  // the sessions that booked nothing yet, in their own row's words: its count and the span of its starts
+  const nothing = row.currency === null ? row : unbooked(row)
+  if (nothing) {
+    details.push({
+      label: t('Booked nothing yet'),
+      value: `${plural(nothing.sessions, t('session'), t('sessions'))} · ${utcSpan(nothing.first_started, nothing.last_started)}`,
+    })
+  }
   const session = recordingSession(row)
-  if (!session) return card
-  const { glyph, word } = recordingOf('current')
-  const now = { label: t('Now'), value: `${glyph} ${word} · ${session}` }
-  return { ...card, details: [now, ...card.details] }
+  if (session) {
+    const { glyph, word } = recordingOf('current')
+    details.unshift({ label: t('Now'), value: `${glyph} ${word} · ${session}` })
+  }
+  return { ...card, details }
 }
 
 /**
@@ -184,7 +203,7 @@ function pick(row: DeploymentRow): void {
         v-model:selection="selection"
         v-model:search="search"
         v-model:sort="sort"
-        :rows="deployments"
+        :rows="listed"
         :facets="facets"
         :sorts="sorts"
         :search-of="row => `${row.deployment_id} ${row.bot}`"
@@ -230,6 +249,9 @@ function pick(row: DeploymentRow): void {
           <span :data-rank="3" class="deployment-marks">
             <!-- `changed` says only that one of the two moved; the reason is read from these -->
             <span v-if="recordingSession(row)" class="deployment-recording" @click.stop="openRecording(row)">{{ recordingOf('current').word }}</span>
+            <!-- the sessions that booked nothing yet: beside the booked figures, or the reason none stands -->
+            <span v-if="row.currency === null" class="deployment-unbooked">{{ t('booked nothing yet') }}</span>
+            <span v-else-if="unbooked(row)" class="deployment-unbooked">+{{ unbooked(row)!.sessions }} {{ t('booked nothing yet') }}</span>
             <span v-if="row.configuration_changed" class="deployment-mark">{{ t('config') }}</span>
             <span v-if="row.code_summary" class="deployment-mark">{{ t('code') }}</span>
           </span>
@@ -302,6 +324,11 @@ function pick(row: DeploymentRow): void {
 .deployment-recording {
   color: var(--color-positive);
   cursor: pointer;
+}
+
+/* a plain fact, no change mark: secondary ink, and never the dashed rule of `config` and `code` */
+.deployment-unbooked {
+  color: var(--color-text-secondary);
 }
 
 .deployment-marks {
