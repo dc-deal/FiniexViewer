@@ -162,4 +162,16 @@ describe('useSettingsStore', () => {
     expect(store.settings).toEqual(DEFAULT_SETTINGS)
     expect(stored()).toEqual(saved())
   })
+
+  /** Shared by every window: one window's change reaches the other, which no longer writes over it. */
+  it('reads the settings again when another window changes them', () => {
+    const store = useSettingsStore()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved({ theme: 'light' })))
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
+    expect(store.settings.theme).toBe('light')
+    // a write to another key is none of the settings' business
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved({ theme: 'dark' })))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'arrangement.v1' }))
+    expect(store.settings.theme).toBe('light')
+  })
 })

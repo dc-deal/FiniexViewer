@@ -12,6 +12,7 @@ import ServerSwitch from '@/components/ServerSwitch.vue'
 import NarrowingStatement from '@/components/NarrowingStatement.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import LayoutsMenu from '@/components/LayoutsMenu.vue'
 import TopMenu from '@/components/TopMenu.vue'
 import { useSectionStates, type SectionState } from '@/composables/use_section_states'
 import { PANEL_KINDS } from '@/panel_kinds'
@@ -198,6 +199,7 @@ function stayOpen(event: Event): void {
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
+    <LayoutsMenu />
 
     <!-- the scenario in focus, said once for every panel it narrows; it gives way before anything
          beside it moves -->
@@ -233,6 +235,14 @@ function stayOpen(event: Event): void {
 
 .menu-bar-spacer {
   flex: 1;
+}
+
+/* in a narrow window the app's name is the first part of the frame to go: the browser's tab names it,
+   and the room it frees keeps the server's name and the application menu in the window */
+@media (max-width: 900px) {
+  .menu-bar-title {
+    display: none;
+  }
 }
 
 /* the statement shortens its name and nothing more: its least width is the grid's own — the mark

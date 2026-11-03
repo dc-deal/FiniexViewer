@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { onSharedWrite } from '@/tab_storage'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings, LaneOrder, Settings, ThemeName } from '@/types/settings_types'
 
@@ -82,6 +83,11 @@ export const useSettingsStore = defineStore('settings', () => {
     laneOrder: settings.value.laneOrder,
     tradeRowCap: settings.value.tradeRowCap,
   }))
+
+  // another window changed them: this one reads them again rather than writing its own over them
+  onSharedWrite(STORAGE_KEY, () => {
+    settings.value = reconcile(readStored())
+  })
 
   function persist(): void {
     try {

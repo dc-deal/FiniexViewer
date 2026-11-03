@@ -77,7 +77,7 @@ function readPlace(value: unknown): DockPlace | null {
   return place
 }
 
-function readPlaces(value: unknown): Record<string, DockPlace> {
+export function readPlaces(value: unknown): Record<string, DockPlace> {
   const places: Record<string, DockPlace> = {}
   for (const [id, stored] of Object.entries(record(value))) {
     const place = readPlace(stored)
@@ -151,7 +151,7 @@ function readLayers(value: unknown): StoredLayers | undefined {
 }
 
 /** Each panel's view, field by field: a name this build does not know is never copied, an empty entry is none. */
-function readPanelViews(value: unknown): Record<string, StoredPanelView> {
+export function readPanelViews(value: unknown): Record<string, StoredPanelView> {
   const views: Record<string, StoredPanelView> = {}
   for (const [id, stored] of Object.entries(record(value))) {
     const view: StoredPanelView = {}
@@ -220,6 +220,8 @@ function readStored(key: string): StoredArrangement | null {
       places: readPlaces(parsed['places']),
       // added under version 1: an entry written before it reads as no view kept, which is the truth
       panelViews: readPanelViews(parsed['panelViews']),
+      // added under version 1 as well: an entry written before it reads as no layout loaded
+      layout: text(parsed['layout']),
     }
   } catch {
     // a corrupt or unreadable entry is the same as none — never a broken start
@@ -257,6 +259,8 @@ export const useArrangementStore = defineStore('arrangement', () => {
   const places = shallowRef<Record<string, DockPlace>>(stored?.places ?? {})
   // replaced whole on every change, one panel's entry at a time — see `setPanelView`
   const panelViews = shallowRef<Record<string, StoredPanelView>>(own?.panelViews ?? {})
+  // part of the placement, so it stands beside the dock in the main entry
+  const layout = ref<string | null>(stored?.layout ?? null)
 
   function persist(): void {
     const arrangement: StoredArrangement = {
@@ -268,6 +272,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       dock: dock.value,
       places: places.value,
       panelViews: panelViews.value,
+      layout: layout.value,
     }
     // this tab's own, and the start of the next new one — a full or blocked storage must not break
     // the app: the selection still works, unstored
@@ -275,7 +280,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       writeTabAndShared(STORAGE_KEY, JSON.stringify(arrangement))
       return
     }
-    writeTabAndShared(ownKey, JSON.stringify({ ...arrangement, dock: null, places: {} }))
+    writeTabAndShared(ownKey, JSON.stringify({ ...arrangement, dock: null, places: {}, layout: null }))
     // the placement goes to the main entry, around the default server's selection, read fresh
     const main = readStored(STORAGE_KEY)
     const shared: StoredArrangement = {
@@ -287,12 +292,13 @@ export const useArrangementStore = defineStore('arrangement', () => {
       panelViews: main?.panelViews ?? {},
       dock: dock.value,
       places: places.value,
+      layout: layout.value,
     }
     writeTabAndShared(STORAGE_KEY, JSON.stringify(shared))
   }
 
   watch([() => context.links, bars, chart, runChart], persist, { deep: true })
-  watch([dock, places, panelViews], persist)
+  watch([dock, places, panelViews, layout], persist)
 
   function setFacets(bar: string, facets: StoredFacets): void {
     bars.value = { ...bars.value, [bar]: facets }
@@ -312,6 +318,29 @@ export const useArrangementStore = defineStore('arrangement', () => {
 
   function setRunChart(next: StoredRunChart): void {
     runChart.value = next
+  }
+
+  /** The named layout this tab loaded, or null — see `named_layouts_store`. */
+  function setLayout(id: string | null): void {
+    layout.value = id
+  }
+
+  /**
+   * A named layout's views: what each panel shows expanded and a chart's layers, as the layout holds
+   * them. The rows this tab keeps for the run it shows are no part of a layout and stay as they are.
+   */
+  function setPlacedViews(views: Record<string, StoredPanelView>): void {
+    const next: Record<string, StoredPanelView> = {}
+    for (const [id, view] of Object.entries(panelViews.value)) {
+      if (view.rows) next[id] = { rows: view.rows }
+    }
+    for (const [id, view] of Object.entries(views)) {
+      const kept: StoredPanelView = { ...next[id] }
+      if (view.expanded && Object.keys(view.expanded).length) kept.expanded = view.expanded
+      if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
+      if (Object.keys(kept).length) next[id] = kept
+    }
+    if (JSON.stringify(next) !== JSON.stringify(panelViews.value)) panelViews.value = next
   }
 
   /**
@@ -358,7 +387,8 @@ export const useArrangementStore = defineStore('arrangement', () => {
   }
 
   return {
-    bars, chart, runChart, dock, places, panelViews,
+    bars, chart, runChart, dock, places, panelViews, layout,
     setFacets, setTimeframe, setRunChart, setDock, setPlaces, keepPlaces, setPanelView, keepPanelViews,
+    setLayout, setPlacedViews,
   }
 })

@@ -130,6 +130,29 @@ test('narrowing to a scenario is immediate', async ({ page }) => {
 })
 
 /**
+ * A named layout laid out (viewer#37). The panels both layouts hold are moved rather than rebuilt,
+ * so the switch is measured inside the page, from the click to the second frame after it: a round
+ * trip of the test runner would be most of the number. Measured 2026-11-03 from the first
+ * arrangement to Backtests, five panels to fifteen: 54–117 ms.
+ */
+test('a layout is laid out at once', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { ...FIXTURES_SHOWN, run: FIXTURE_RUN })
+  await page.locator('[data-panel-kind="run"] [data-panel]').first().waitFor()
+  await page.locator('.layouts-trigger').click()
+  await page.locator('.layouts-menu [data-layout="backtests"]').waitFor()
+  const ms = await page.evaluate(async () => {
+    const started = performance.now()
+    document.querySelector<HTMLElement>('.layouts-menu [data-layout="backtests"]')!.click()
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    return performance.now() - started
+  })
+  timings.push({ label: 'a layout laid out', ms: Math.round(ms) })
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toBeVisible()
+  expect(ms).toBeLessThan(300)
+})
+
+/**
  * The trade list is the one place a real run can produce thousands of rows, and it is already a
  * known finding (101: `HoverCard` mounts a tooltip provider PER ROW, ~4.8 s for 500 rows in
  * jsdom). Whether that reproduces in a real browser is the open half of that finding — this

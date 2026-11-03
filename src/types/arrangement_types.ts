@@ -123,4 +123,9 @@ export interface StoredArrangement {
   places: Record<string, DockPlace>
   /** Each panel's own view, by dock id — read here by shape, kept against the kinds by the dock store. */
   panelViews: Record<string, StoredPanelView>
+  /**
+   * The named layout this tab loaded, by id (viewer#37) — what its placement is saved into as it
+   * changes. Null where none was: the tab's arrangement is then its own and nobody else's.
+   */
+  layout: string | null
 }

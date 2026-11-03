@@ -66,6 +66,10 @@ const HINTS: HintDefinition[] = [
     text: t('What the venue itself held, beside the books the session keeps, in the asset codes of the venue and never rounded. Not read means the venue could not be read; not listed means it did not name the asset. Every read opens what the venue answered, in the order it came.'),
   },
   {
+    id: 'layouts',
+    text: t('A layout holds where the panels stand and nothing they show: loading one moves the panels and leaves the run, the deployment and every filter as they are. Changes go into the layout you loaded.'),
+  },
+  {
     id: 'deployment-sessions',
     text: t('● opens what a recording session is doing now. A run id opens that run. Where a session changed its configuration, before and after open the configuration of the session above the mark and of the one carrying it, each compared with the other. Unfinished counts the runs that never reached their close, a session running now among them — they stand among the sessions too, so the two counts overlap and are never added. A session that has sealed no trading day yet stands under booked nothing yet, without figures. Where its code moved, the line says which repository, how far and the message of the commit, and its card names the commits.'),
   },

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
+import { onSharedWrite, readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 
 const KEY = 'arrangement.v1'
 
@@ -73,5 +73,15 @@ describe('tab_storage', () => {
     expect(readTabEntry(KEY)).toBeNull()
     expect(() => writeTabAndShared(KEY, 'value')).not.toThrow()
     expect(() => removeTabAndShared(KEY)).not.toThrow()
+  })
+
+  /** The browser tells every window but the writer; a cleared storage names no key at all. */
+  it('reacts to another window writing its key, and to the storage being cleared', () => {
+    const heard: string[] = []
+    onSharedWrite('settings.v1', () => heard.push('settings'))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'settings.v1' }))
+    window.dispatchEvent(new StorageEvent('storage', { key: KEY }))
+    window.dispatchEvent(new StorageEvent('storage', { key: null }))
+    expect(heard).toEqual(['settings', 'settings'])
   })
 })

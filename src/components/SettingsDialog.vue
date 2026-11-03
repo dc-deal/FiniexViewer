@@ -8,7 +8,7 @@ import AppSelect from '@/components/base/AppSelect.vue'
 import ServersSettings from '@/components/ServersSettings.vue'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
-import { useLayoutStore } from '@/stores/layout_store'
+import { useNamedLayoutsStore } from '@/stores/named_layouts_store'
 import {
   SCENARIO_THRESHOLD_RANGE, TRADE_ROW_CAP_RANGE, useSettingsStore,
 } from '@/stores/settings_store'
@@ -24,19 +24,16 @@ const emit = defineEmits<{ 'update:open': [boolean] }>()
 
 const settingsStore = useSettingsStore()
 const hintsStore = useHintsStore()
-const layoutStore = useLayoutStore()
+const namedLayouts = useNamedLayoutsStore()
 const dock = useDockStore()
 const { settings } = storeToRefs(settingsStore)
 
 const activeTab = ref<SettingsTab>('display')
-const importInput = ref<HTMLInputElement | null>(null)
-const importNotice = ref<string | null>(null)
 
-// a fresh open honours the tab it was asked for, and drops a notice from the previous visit
+// a fresh open honours the tab it was asked for
 watch(() => props.open, isOpen => {
   if (!isOpen) return
   activeTab.value = props.tab ?? 'display'
-  importNotice.value = null
 })
 
 const themeOptions = [
@@ -55,24 +52,13 @@ function onNumber(event: Event, apply: (value: number) => void): void {
   apply(parsed)
 }
 
-function exportLayout(): void {
-  const blob = new Blob([layoutStore.exportLayout()], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'finiexviewer-layout.json'
-  link.click()
-  URL.revokeObjectURL(url)
-}
-
-async function onImportPicked(event: Event): Promise<void> {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
-  // reported rather than thrown: a file that is not a layout is a mistake, not a failure
-  const accepted = layoutStore.importLayout(await file.text())
-  importNotice.value = accepted ? t('Layout replaced') : t('That file is not a layout')
+/**
+ * The suggested order is no named layout: a layout loaded before would otherwise take it in as its
+ * own placement and lose the one it held.
+ */
+function suggestedOrder(): void {
+  namedLayouts.unload()
+  dock.reset()
 }
 
 /** Local time at the rendering edge — the identity is only ever as of the instant it was read. */
@@ -169,7 +155,7 @@ async function onImportPicked(event: Event): Promise<void> {
         <!-- where the docked panels stand: one way back, beside everything else about arrangement -->
         <div class="setting">
           <span class="setting-label">{{ t('Panels') }}</span>
-          <AppButton data-action="reset-dock" @click="dock.reset()">
+          <AppButton data-action="reset-dock" @click="suggestedOrder()">
             {{ t('Back to the suggested order') }}
           </AppButton>
         </div>
@@ -177,28 +163,10 @@ async function onImportPicked(event: Event): Promise<void> {
           {{ t('Deployments, Runs and the run bundle as tabs in one group, the run chart beside them in a wide window and among them in a narrow one — in front, the bundle where a run is chosen and the run list where none is.') }}
         </p>
 
-        <div class="setting">
-          <span class="setting-label">{{ t('Run bundle') }}</span>
-          <p class="setting-hint">
-            {{ t('How the run bundle holds its sections — their order, which are folded, pinned or hidden — is stored on this machine. A file carries it to another.') }}
-          </p>
-        </div>
-        <div class="layout-actions">
-          <AppButton @click="exportLayout()">
-            ⬇️ {{ t('Export layout') }}
-          </AppButton>
-          <AppButton @click="importInput?.click()">
-            ⬆️ {{ t('Import layout') }}
-          </AppButton>
-        </div>
-        <input
-          ref="importInput"
-          class="import-input"
-          type="file"
-          accept="application/json"
-          @change="onImportPicked"
-        >
-        <p v-if="importNotice" class="setting-hint">{{ importNotice }}</p>
+        <!-- the file that carries an arrangement to another machine is the named layouts' now -->
+        <p class="setting-hint">
+          {{ t('Layouts in the menu bar save this placement under a name, load another, and carry them all to another machine in one file.') }}
+        </p>
       </TabsContent>
     </TabsRoot>
   </AppDialog>
@@ -289,15 +257,6 @@ async function onImportPicked(event: Event): Promise<void> {
 
 .setting-number:focus {
   border-color: var(--color-accent);
-}
-
-.layout-actions {
-  display: flex;
-  gap: var(--space-sm);
-}
-
-.import-input {
-  display: none;
 }
 
 /* the dialog only places its buttons; how a button looks belongs to AppButton */

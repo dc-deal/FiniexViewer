@@ -101,6 +101,17 @@ const details = computed<Figure[]>(() => {
   cursor: default;
 }
 
+/* in a narrow window the name gives way, down to its mark: the card says whose access it is in full */
+.account-status {
+  min-width: 0;
+}
+
+.account-word {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .account-status:focus-visible {
   outline: 1px solid var(--color-accent);
 }

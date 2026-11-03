@@ -54,6 +54,7 @@ starts with the first group.
 | [Figures and Words on Screen](interface/figures_and_words_on_screen.md) | Units and `n/a` for what was never measured, why no figure is computed here, FiniexTestingIDE's vocabulary, the `t()` marker with `plural()`, and the hint registry |
 | [Menu Bar Status](interface/menu_bar_status.md) | What the menu bar always states: the identity from `GET /api/v1/caller`, the machine's load from `GET /api/v1/machine-resources`, and the scenario in focus |
 | [Servers](interface/servers.md) | Which server a window shows, what stays across a switch, the settings page, and what no connection says. |
+| [Named Layouts](interface/named_layouts.md) | The placement of the panels saved under a name and loaded at once: what a layout holds and never holds, panels moved rather than rebuilt, the loaded layout following the reader, the shipped ones, and storage shared by every window |
 
 ## Lists
 

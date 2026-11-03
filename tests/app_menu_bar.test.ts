@@ -213,11 +213,13 @@ describe('AppMenuBar', () => {
     expect(mounted!.find('.account-status').exists()).toBe(true)
   })
 
-  /** One way back to the suggested order, and it lives in the settings — not a menu of one entry. */
-  it('offers no Layout menu of its own', () => {
+  /**
+   * The named layouts beside the panels they place (viewer#37). The one way back to the suggested
+   * order stays in the settings: it is no layout.
+   */
+  it('offers the Layouts menu right after the Panels menu', () => {
     const menus = mounted!.findAll('.menu-bar-trigger').map(node => node.text())
-    expect(menus).toContain('Panels ▾')
-    expect(menus.filter(menu => menu.includes('Layout'))).toEqual([])
+    expect(menus.slice(0, 2)).toEqual(['Panels ▾', 'Layouts ▾'])
   })
 
   /**

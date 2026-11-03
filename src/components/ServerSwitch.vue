@@ -75,17 +75,25 @@ const name = computed(() => (current.value ? serverName(current.value) : t('Serv
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  min-width: 0;
 }
 
+/* no narrower than its mark, a few letters and its ▾: below that the ▾ was drawn over the machine's
+   load beside it */
 .server-trigger {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  min-width: 0;
 }
 
+/* the bar's triggers never give way, and this one must: shrunk to nothing around a name that did
+   not, the switch drew its name over the machine's load beside it (measured at 760 px, 2026-11-03) */
+.server-switch .server-trigger.menu-bar-trigger {
+  flex-shrink: 1;
+}
+
+/* shortened, never gone: which server this window shows is the one word here that must stay */
 .server-name {
+  min-width: 6ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

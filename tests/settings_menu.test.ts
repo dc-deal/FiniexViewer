@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import TopMenu from '@/components/TopMenu.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
+import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
-import { SCHEMA_VERSION } from '@/stores/layout_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import { hintIds } from '@/hint_registry'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
@@ -22,21 +22,6 @@ function mountMenu() {
 function mountDialog() {
   mounted = mount(SettingsDialog, { attachTo: document.body, props: { open: true } })
   return mounted
-}
-
-/**
- * Waits for the panel on show to say something, rather than for a fixed number of turns.
- *
- * Reading a file resolves through FileReader, which jsdom schedules as a TASK — flushing promises
- * alone never reaches it. A single `setTimeout(0)` did reach it, until it did not: under a loaded
- * suite the task landed a turn late and the assertion read the panel before the notice was on it.
- * A test that is red once and green on the retry is worse than no test, because it teaches the
- * reader to run it again.
- */
-async function waitForPanelText(fragment: string): Promise<void> {
-  await vi.waitFor(() => {
-    expect(activePanel()?.textContent ?? '').toContain(fragment)
-  }, { timeout: 2000, interval: 10 })
 }
 
 /** Portalled, so it is read off the document rather than off the wrapper. */
@@ -72,18 +57,6 @@ async function openTab(word: string): Promise<void> {
   trigger!.click()
   await flushPromises()
 }
-
-async function pickFile(text: string, name = 'layout.json'): Promise<void> {
-  const input = panel('.import-input') as HTMLInputElement
-  const file = new File([text], name, { type: 'application/json' })
-  Object.defineProperty(input, 'files', { value: [file], configurable: true })
-  input.dispatchEvent(new Event('change', { bubbles: true }))
-}
-
-const A_LAYOUT = JSON.stringify({
-  version: SCHEMA_VERSION,
-  bundles: { run: { columns: [{ width: 1, panels: [] }] } },
-})
 
 describe('SettingsDialog', () => {
   beforeEach(() => {
@@ -182,40 +155,30 @@ describe('SettingsDialog', () => {
   })
 
   describe('the layout tab', () => {
-    it('carries the export and import the layout has no other home for', async () => {
+    /** The file that carries an arrangement to another machine is the named layouts' (viewer#37). */
+    it('points to the Layouts menu for saving and carrying an arrangement', async () => {
       mountDialog()
       await flushPromises()
       await openTab('Layout')
-      expect(activePanel()?.textContent).toContain('Export layout')
-      expect(activePanel()?.textContent).toContain('Import layout')
+      expect(activePanel()?.textContent).toContain('Layouts in the menu bar')
+      expect(activePanel()?.querySelector('.import-input')).toBeNull()
     })
 
-    it('reports a file that is not a layout instead of failing silently', async () => {
-      mountDialog()
-      await flushPromises()
-      await openTab('Layout')
-      await pickFile('this is not a layout', 'notes.json')
-      await waitForPanelText('not a layout')
-    })
-
-    it('confirms a layout that imported cleanly', async () => {
-      mountDialog()
-      await flushPromises()
-      await openTab('Layout')
-      await pickFile(A_LAYOUT)
-      await waitForPanelText('Layout replaced')
-    })
-
-    /** The one way back to the suggested order — beside everything else about arrangement. */
-    it('takes the docked panels back to the suggested order', async () => {
+    /**
+     * The one way back to the suggested order — beside everything else about arrangement. It is no
+     * named layout, so a layout loaded before does not take it in as its own placement.
+     */
+    it('takes the docked panels back to the suggested order, and the loaded layout off', async () => {
       const dock = useDockStore()
       let resets = 0
       dock.reset = () => { resets += 1 }
+      useArrangementStore().setLayout('backtests')
       mountDialog()
       await flushPromises()
       await openTab('Layout')
       panel('[data-action="reset-dock"]')!.click()
       expect(resets).toBe(1)
+      expect(useArrangementStore().layout).toBeNull()
     })
   })
 })
