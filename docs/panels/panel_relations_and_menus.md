@@ -181,4 +181,8 @@ whole shortfall and left for the overflow menu, and `≡ Layers` stood past the 
 let the browser scroll it to bring a focused control into view: the focused `≡ Layers` button past
 the edge scrolled the run chart's group by 171 px once the Layers panel opened, and the chart kept in
 the page stood over the report. `overflow: clip` makes the group no scroll container at all; the
-Layers browser spec holds the chart inside its group.
+Layers browser spec holds the chart inside its group. **The dock's own box clips the same way**
+(`PanelDock.vue`, 2026-11-03): a panel behind another tab keeps the size it had and can reach past
+the bottom, and after a layout was loaded in a zoomed window the box stood scrolled 156 px, every
+tab under the menu bar with nothing to scroll it back. The named layouts' browser spec holds it in
+place with such a panel stood in.

@@ -84,13 +84,17 @@ onBeforeUnmount(() => {
 /* CLIPPED: dockview sizes a panel's overlay only while the panel is on show, so one behind another
    tab keeps its old size — after the window was made smaller it reached past the bottom, unseen,
    and the page grew a scrollbar over empty space (measured 2026-10-16). The dock is the window;
-   nothing of it may spill. */
+   nothing of it may spill.
+   `clip`, never `hidden`: hidden still lets the browser scroll the box, and something did after a
+   layout was loaded in a zoomed window — the dock stood 156 px up, its tabs under the menu bar,
+   with no scrollbar to bring it back (the operator's screen, 2026-11-03). Clip cuts the same and
+   scrolls for nobody. */
 .panel-dock {
   /* the frame the dock's own edges stand in, and how wide they are */
   position: relative;
   --dock-edge-band: 12px;
   height: 100%;
-  overflow: hidden;
+  overflow: clip;
 }
 
 /* dockview's root carries no scope id of ours, so its height is set from the frame around it */

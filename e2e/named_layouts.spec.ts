@@ -56,6 +56,29 @@ test('a layout saved under a name comes back after a reload, loaded and as it wa
   await expect(own).toHaveAttribute('data-loaded', 'true')
 })
 
+/**
+ * After a switch nothing may leave the dock scrolled: something scrolled it 156 px up in a zoomed
+ * window, the tabs under the menu bar and no scrollbar to bring them back (2026-11-03). A panel
+ * behind another tab keeps the size it had and can reach past the bottom, which made the box
+ * scrollable at all; an element as tall stands in for it here. Whatever tries, the dock stays.
+ */
+test('the dock cannot be scrolled out of its place, whatever tries', async ({ page }) => {
+  await loadLayout(page, 'deploys')
+  await loadLayout(page, 'backtests')
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toBeVisible()
+  const top = await page.locator('.panel-dock').evaluate(dock => {
+    const spill = document.createElement('div')
+    spill.style.height = '3000px'
+    dock.appendChild(spill)
+    dock.scrollTop = 200
+    spill.scrollIntoView({ block: 'end' })
+    const scrolled = dock.scrollTop
+    spill.remove()
+    return scrolled
+  })
+  expect(top).toBe(0)
+})
+
 /** A layout naming a panel this build does not know leaves that one out, never a blank workspace. */
 test('a layout with a panel this build does not know lays out the rest', async ({ page }) => {
   const errors: string[] = []
