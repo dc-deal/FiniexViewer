@@ -24,6 +24,8 @@ import type {
   BrokerReport,
   OrderEventsReport,
   OrderHistoryReport,
+  VenueAccountReport,
+  VenueReads,
   PendingOrdersReport,
   PortfolioReport,
   RunInfo,
@@ -313,6 +315,40 @@ export async function getOrderEvents(
     const absence = absenceFrom(error)
     if (absence) return absence
     raiseIfUnreadable(error, 'The stream could not be read')
+    throw error
+  }
+}
+
+/**
+ * The venue's reads of a live session, from the UNNARROWED stream: the reads are the venue's whole
+ * account at a moment, never a step of one order, so the per-position answer the Orders panel asks
+ * for carries none. Asked only for an AutoTrader session that writes the stream — a backtest's
+ * stream holds no read and can be the largest answer the API serves.
+ *
+ * Only the reads are kept. The order steps in the same answer stay with the Orders panel.
+ */
+export async function getVenueReads(runId: string): Promise<VenueReads | SectionAbsence> {
+  try {
+    const response = await http.get<OrderEventsReport>(`/reports/runs/${runId}/order-events`)
+    const answer = assertBelongsTo(runId, response.data)
+    return { reads: answer.broker_truth, key: answer.keys['broker_truth'] ?? [], truncated_tail: answer.truncated_tail }
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error, 'The stream could not be read')
+    throw error
+  }
+}
+
+/** What the venue held when a live session began and ended, and how its reconciliation went. */
+export async function getVenueAccount(runId: string): Promise<VenueAccountReport | SectionAbsence> {
+  try {
+    const response = await http.get<VenueAccountReport>(`/reports/runs/${runId}/venue-account`)
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }

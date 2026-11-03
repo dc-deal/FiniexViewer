@@ -143,6 +143,8 @@ TARGETS = [
     # has no venue to ask, and a narrowed request carries none by design. It is also the only
     # capture holding the live-only event types `cancel_deferred` and `cancel_requested`.
     ('order_events_live.json', f'reports/runs/{LIVE_RUN}/order-events'),
+    # what the venue held at the live run's start and end, its balances neutralised like every other
+    ('venue_account.json', f'reports/runs/{LIVE_RUN}/venue-account'),
     ('run_config_simulation.json', f'reports/runs/{RUN}/config'),
     ('run_config_live.json', f'reports/runs/{LIVE_RUN}/config'),
     ('deployments_list.json', 'deployments'),
@@ -206,7 +208,8 @@ RENAMES = [
     for old, _, new in (pair.partition('=') for pair in local_setting('FIXTURE_RENAME').split(',') if pair)
 ]
 
-# What `venue_balances` reads in a fixture, whatever the account held. Nothing renders it yet.
+# What `venue_balances` reads in a fixture, whatever the account held: the venue account section
+# renders it, and a real account's balances never stand in a public repository.
 NEUTRAL_BALANCES = {'XETH': 1.0, 'ZUSD': 100.0}
 
 # An order id as the venue writes it, `O4C5FL-5G6ZY-2MJ4DS`, in any string: a message can quote one.

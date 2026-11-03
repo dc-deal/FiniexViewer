@@ -244,6 +244,7 @@
   "candles": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/layer_registry.ts"},
   "commission": {"field": "commission_cost", "doc": "booking-periods", "their": null, "ours": null, "note": ""},
   "digest": {"field": "day_digest", "doc": "scenario-details", "their": null, "ours": null, "note": ""},
+  "divergent": {"field": "divergence", "doc": "order-events", "their": null, "ours": null, "note": ""},
   "estimator": {"field": "estimator_version", "doc": "scenario-details", "their": null, "ours": null, "note": ""},
   "every position": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/layer_registry.ts"},
   "expired": {"field": "total_expired", "doc": "pending-orders", "their": null, "ours": null, "note": ""},

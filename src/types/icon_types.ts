@@ -29,3 +29,4 @@ export type IconName =
   | 'kind-config'
   | 'kind-run-header'
   | 'kind-latest-state'
+  | 'kind-venue-account'

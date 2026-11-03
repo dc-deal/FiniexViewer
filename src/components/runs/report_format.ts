@@ -21,6 +21,10 @@ const finePrice = new Intl.NumberFormat('en-US', { maximumFractionDigits: 8, use
 // What a strategy's worker or decision states about itself, to four decimals: a reading, not money.
 const reading = new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 })
 
+// A venue's figure with every decimal it wrote and no more: the shortest form that reads back as the
+// same number, so nothing is rounded (their `prices` document: the venue's own decimals).
+const asWritten = new Intl.NumberFormat('en-US', { maximumFractionDigits: 20 })
+
 /**
  * The bare figure, for a table that states its currency ONCE in the column header. Repeating the
  * code in every cell is what makes such a table too wide to read without scrolling — and it says
@@ -43,6 +47,11 @@ export function noReportReason(run: RunInfo): string {
     return t('This session stopped recording without an end — it hangs or its process died, and wrote no report')
   }
   return t('This run has no report — it is still running, or it died before its report phase')
+}
+
+/** A balance or a count as the venue reported it, never rounded. */
+export function venueFigure(value: number): string {
+  return asWritten.format(value)
 }
 
 /** A holding or a size, with no decimal the venue could not have quoted. */

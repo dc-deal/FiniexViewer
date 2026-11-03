@@ -40,6 +40,8 @@ const REPORTS: Record<string, string> = {
   'trade-history': 'trade_history.json',
   'scenario-details': 'scenario_details.json',
   'config': 'run_config_simulation.json',
+  // the live run's: the report route below serves a capture only under the run it names
+  'venue-account': 'venue_account.json',
 }
 
 /**
@@ -54,6 +56,9 @@ export const STATE_FRAME_RUNS: Record<'ended' | 'stopped', string> = (() => {
 
 /** The run every report capture was taken from — the only one the mock can answer for. */
 export const FIXTURE_RUN = (fixture('scenario_details.json') as { run_id: string }).run_id
+
+/** The live run whose whole stream is captured, the venue's reads in it — and its venue account. */
+export const LIVE_RUN = (fixture('order_events_live.json') as { run_id: string }).run_id
 
 /**
  * The deployment the ledger captures belong to, read from the capture rather than transcribed —
@@ -319,6 +324,10 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
      */
     const stream = /^\/api\/v1\/reports\/runs\/([^/]+)\/order-events$/.exec(path)
     if (stream) {
+      // the live run's stream is asked for WHOLE, for the venue's reads — and captured whole
+      if (stream[1] === LIVE_RUN && !new URL(route.request().url()).searchParams.has('order_id')) {
+        return route.fulfill({ json: fixture('order_events_live.json'), headers: CONTRACT })
+      }
       if (stream[1] !== FIXTURE_RUN) {
         return route.fulfill(absent('run_not_found', `Only ${FIXTURE_RUN} is captured`))
       }

@@ -12,7 +12,7 @@ import { RUN_BUNDLE } from '@/panel_kinds'
 import stateFramesFixture from './fixtures/state_frames_ended.json'
 import * as apiClient from '@/api/api_client'
 import type { SectionAbsence } from '@/types/api/absence_types'
-import type { RunInfo } from '@/types/api/report_types'
+import type { BrokerTruthRow, RunInfo } from '@/types/api/report_types'
 import type { RecordedStream, StateFramesLatest } from '@/types/api/state_frame_types'
 
 const ABSENT: SectionAbsence = { absent: true, cause: 'artifact_not_produced', detail: '' }
@@ -33,13 +33,15 @@ vi.mock('@/api/api_client', () => ({
   getLatestStateFrames: vi.fn(async () => ABSENT),
   getRecordedStreams: vi.fn(async () => ABSENT),
   getRecordedWindow: vi.fn(async () => ABSENT),
+  getVenueReads: vi.fn(async () => ABSENT),
+  getVenueAccount: vi.fn(async () => ABSENT),
   getRuns: vi.fn(async () => []),
   getRunSummary: vi.fn(async () => ABSENT),
 }))
 
 /** Only what the loader reads off an index row. */
-function row(run_id: string, artifacts: string[], has_reports = true, stream_files: string[] = []): RunInfo {
-  return { run_id, artifacts, has_reports, stream_files } as RunInfo
+function row(run_id: string, artifacts: string[], has_reports = true, stream_files: string[] = [], group = 'simulation'): RunInfo {
+  return { run_id, artifacts, has_reports, stream_files, group } as RunInfo
 }
 
 /** The ended fixture, with each unit read as still recording. */
@@ -136,6 +138,28 @@ describe('useRunReportsLoading', () => {
     expect(apiClient.getLatestStateFrames).toHaveBeenCalledTimes(1)
   })
 
+  /**
+   * The venue's reads come from the WHOLE stream, so only a live session's is asked for: a backtest's
+   * holds no read and can be the largest answer the API serves. Its account follows its artifacts.
+   */
+  it('asks a live session for what the venue said, and a backtest never for its whole stream', async () => {
+    useRunsStore().runs = [
+      row('session', ['venue_account.json'], true, ['order_events.jsonl'], 'autotrader'),
+      row('backtest', ['trade_history.json'], true, ['order_events.jsonl'], 'simulation'),
+    ]
+    useDockStore()
+    choose('session')
+    mountLoading()
+    await flushPromises()
+    expect(apiClient.getVenueReads).toHaveBeenCalledWith('session')
+    expect(apiClient.getVenueAccount).toHaveBeenCalledWith('session')
+
+    choose('backtest')
+    await flushPromises()
+    expect(apiClient.getVenueReads).toHaveBeenCalledTimes(1)
+    expect(apiClient.getVenueAccount).toHaveBeenCalledTimes(1)
+  })
+
   describe('the check-in, asked again once a cadence', () => {
     // only the timers: the promise flushing between steps runs on setImmediate
     beforeEach(() => {
@@ -170,6 +194,28 @@ describe('useRunReportsLoading', () => {
 
       await vi.advanceTimersByTimeAsync(180_000)
       expect(apiClient.getLatestStateFrames).toHaveBeenCalledTimes(3)
+    })
+
+    /**
+     * With the check-in, and only where the first ask found a read: a dry run against the real venue
+     * writes none, and its stream would be asked every minute for nothing.
+     */
+    it('asks for the reads of the venue again with the check-in only where there were any', async () => {
+      vi.mocked(apiClient.getLatestStateFrames).mockResolvedValue(recording())
+      useRunsStore().runs = [row('session', [], false, ['order_events.jsonl', 'state_frames.jsonl'], 'autotrader')]
+      useDockStore().noteShown(RUN_BUNDLE, true)
+      choose('session')
+      mountLoading()
+      await flushPromises()
+      expect(apiClient.getVenueReads).toHaveBeenCalledTimes(1)
+
+      // the dry run: the answer holds no read, so it is not asked again
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(apiClient.getVenueReads).toHaveBeenCalledTimes(1)
+
+      useRunReportsStore().venueReads = { reads: [{ seq: 1 } as BrokerTruthRow], key: ['scenario_name', 'seq'], truncated_tail: false }
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(apiClient.getVenueReads).toHaveBeenCalledTimes(2)
     })
 
     /** Nobody reads a section that is not on show; a panel behind another tab stays mounted. */

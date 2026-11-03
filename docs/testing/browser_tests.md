@@ -71,6 +71,7 @@ by its tab, the way a reader does.
   frames over time are not recorded showing its latest alone, and a backtest drawing no such
   section; and the frame on show on the run chart beside it, moving with each step
   of the player, read off the element since a canvas cannot be read back.
+- `venue_account.spec.ts` holds the venue account of the captured live run: what the venue held at its start and end in its bundle, every read on a fold that opens, and a backtest drawing no such section
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel — or, with the run

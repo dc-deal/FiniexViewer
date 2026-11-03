@@ -1841,6 +1841,77 @@ export interface OrderEventsReport {
 }
 
 /**
+ * The venue's reads of one session, as the unnarrowed `order-events` answer carries them in
+ * `broker_truth` — only that list, its key and whether the last line was cut, never the order steps,
+ * which the Orders panel asks for one position at a time.
+ */
+export interface VenueReads {
+  reads: BrokerTruthRow[]
+  /** The list's own key, `["scenario_name", "seq"]` — declared by the answer, not assumed. */
+  key: string[]
+  truncated_tail: boolean
+}
+
+/**
+ * One read of the venue in `venue-account`, counted rather than listed: the orders one by one stand
+ * on the order-event stream, on the line `seq` names.
+ *
+ * Every part keeps the three states of `BrokerTruthRow`: a value is what the venue holds, `null` with
+ * the part named in `unread_parts` is a read that failed, and a null position count without the name
+ * is a spot account, where a holding is a balance.
+ */
+export interface VenueAccountRead {
+  seq: number
+  /** Every order the venue reported as open, also orders this session did not place. */
+  venue_order_count: number | null
+  /** The venue's balance sheet, every asset under the venue's own codes. */
+  venue_balances: Record<string, number> | null
+  /** A margin account only. */
+  venue_position_count: number | null
+  unread_parts: string[]
+}
+
+/**
+ * How often the comparison of the session's books with the venue's ran (contract 23 and later). The
+ * counts are null where it was switched off; both cycle counts at 0 say it never came due, and
+ * `cycles_compared: 0` beside skipped cycles is a session that only looks clean.
+ */
+export interface VenueReconciliation {
+  enabled: boolean
+  cycles_compared: number | null
+  cycles_skipped: number | null
+  /** Summed over the cycles: one divergence that stood for three cycles counts three. */
+  divergences_seen: number | null
+}
+
+/** One live session in `venue-account`, keyed by `name` as every section of the run names it. */
+export interface VenueAccountUnit {
+  name: string
+  /** Null where the session never took that read: it stopped before its start, or was ended before its end. */
+  at_start: VenueAccountRead | null
+  at_end: VenueAccountRead | null
+  reconcile_lines: number
+  divergent_lines: number
+  // `clean` · `divergent`, where the last reconcile line left the books; null where none was written
+  last_reconcile_state: string | null
+  last_divergence: ReconcileDivergence | null
+  /** Null on a record from before the field existed. */
+  reconciliation: VenueReconciliation | null
+}
+
+/**
+ * Response type for GET /api/v1/reports/runs/{run_id}/venue-account — what the venue held when the
+ * session began and ended, and whether its books and the venue's came apart between. Written when a
+ * live session ENDS: a running one answers 404 `run_not_completed`, a backtest and a dry run against
+ * the real venue have none (their `venue-account` document).
+ */
+export interface VenueAccountReport {
+  run_id: string
+  units: VenueAccountUnit[]
+  key: string[]
+}
+
+/**
  * Response type for GET /api/v1/reports/runs/{run_id}/pending-orders
  *
  * `units` was said here to be empty on an AutoTrader run. Measured 2026-10-08, it is NOT: both

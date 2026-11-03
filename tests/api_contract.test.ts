@@ -31,6 +31,7 @@ import stateFramesStopped from './fixtures/state_frames_stopped.json'
 import validationChecks from './fixtures/validation_checks.json'
 import recordedStreams from './fixtures/recorded_streams.json'
 import recordedWindow from './fixtures/recorded_window.json'
+import venueAccount from './fixtures/venue_account.json'
 import { EXPECTED_CONTRACT } from '@/api/expected_contract'
 import type { ValidationCheckList } from '@/types/api/validation_check_types'
 import type { RecordedStreams, RecordedWindow, StateFramesLatest } from '@/types/api/state_frame_types'
@@ -48,6 +49,7 @@ import type {
   RunListResponse,
   RunSummary,
   TradeHistoryReport,
+  VenueAccountReport,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
 import type {
@@ -105,6 +107,8 @@ const EXPECTED_KEYS = {
   recordedStreams: ['stream_kind', 'stream_name'],
   // a frame's place in its stream — two frames can share an instant
   recordedFrames: ['record_no'],
+  // one row per live session that asked its venue anything
+  venueAccountUnits: ['name'],
 }
 
 describe('api contract', () => {
@@ -646,6 +650,21 @@ describe('api contract', () => {
     expect(live.config['global']).toBeUndefined()
     expect(simulation.config['global']).toBeDefined()
     expect(simulation.config['scenarios']).toBeDefined()
+  })
+
+  /**
+   * The venue account of the live run (contract 23), its balances neutralised by the capture: one row
+   * per session, keyed by name, each read naming its line on the order-event stream.
+   */
+  it('the venue account still states its key, and each read the line it was taken on', () => {
+    const typed: VenueAccountReport = venueAccount
+    expect(typed.key).toEqual(EXPECTED_KEYS.venueAccountUnits)
+    expect(typed.units.length).toBeGreaterThan(0)
+    const lines = (eventsLive as OrderEventsReport).broker_truth.map(read => read.seq)
+    for (const unit of typed.units) {
+      if (unit.at_start) expect(lines).toContain(unit.at_start.seq)
+      if (unit.at_end) expect(lines).toContain(unit.at_end.seq)
+    }
   })
 
   it('the trade history still satisfies the mirrored shape', () => {

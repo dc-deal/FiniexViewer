@@ -24,6 +24,7 @@ import {
   IconTag,
   IconServer,
   IconUser,
+  IconWallet,
   IconX,
 } from '@tabler/icons-vue'
 import type { IconName } from '@/types/icon_types'
@@ -65,4 +66,5 @@ export const ICONS = {
   'kind-config': IconAdjustmentsHorizontal,
   'kind-run-header': IconTag,
   'kind-latest-state': IconBroadcast,
+  'kind-venue-account': IconWallet,
 } as const satisfies Record<IconName, Component>

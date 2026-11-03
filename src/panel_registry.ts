@@ -10,6 +10,7 @@ import ConfigPanel from '@/components/runs/ConfigPanel.vue'
 import TradeHistoryPanel from '@/components/runs/TradeHistoryPanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
 import LatestStatePanel from '@/components/runs/LatestStatePanel.vue'
+import VenueAccountPanel from '@/components/runs/VenueAccountPanel.vue'
 import type { PanelDescriptor } from '@/types/panel_types'
 
 /**
@@ -55,6 +56,23 @@ const PANELS: PanelDescriptor[] = [
     icon: 'kind-latest-state',
     component: LatestStatePanel,
     source: 'latestState',
+    defaultOpen: true,
+    narrowing: null,
+    follows: ['run'],
+    chooses: [],
+  },
+  {
+    /*
+     * What the venue itself held, beside the session's own books in the section above (viewer#54) —
+     * second, because it is the other half of the same question while a session runs. Only a live
+     * session that read its venue carries it: a backtest's venue is its own book, and a dry run against
+     * the real venue answers its own reads, so both leave it out.
+     */
+    id: 'venue-account',
+    title: 'Venue account',
+    icon: 'kind-venue-account',
+    component: VenueAccountPanel,
+    source: 'venueAccount',
     defaultOpen: true,
     narrowing: null,
     follows: ['run'],
