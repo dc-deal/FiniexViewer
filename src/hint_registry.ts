@@ -67,7 +67,11 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layouts',
-    text: t('A layout holds where the panels stand and nothing they show: loading one moves the panels and leaves the run, the deployment and every filter as they are. Changes go into the layout you loaded.'),
+    text: t('A layout holds where the panels stand and nothing they show: loading one from the Layouts menu moves the panels and leaves the run, the deployment and every filter as they are. Changes go into the layout you loaded. A shipped layout keeps its name, and Reset brings it back as shipped.'),
+  },
+  {
+    id: 'suggested-order',
+    text: t('Deployments, Runs and the run bundle as tabs in one group, the run chart beside them in a wide window and among them in a narrow one — in front, the bundle where a run is chosen and the run list where none is. No layout is loaded after it.'),
   },
   {
     id: 'deployment-sessions',

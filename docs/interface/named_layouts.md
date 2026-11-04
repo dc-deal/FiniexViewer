@@ -1,15 +1,30 @@
 # Named Layouts
 
-The placement of the panels saved under a name and loaded with one click (viewer#37) — MetaTrader's *profiles*, TradingView's *layouts*. Read this before you change `src/stores/named_layouts_store.ts`, `src/components/LayoutsMenu.vue`, the shipped layouts in `src/layout_presets.json`, or how the dock lays a stored layout out.
+The placement of the panels saved under a name and loaded with one click (viewer#37) — MetaTrader's *profiles*, TradingView's *layouts*. Read this before you change `src/stores/named_layouts_store.ts`, `src/components/LayoutsMenu.vue`, `src/components/LayoutsSettings.vue`, the shipped layouts in `src/layout_presets.json`, or how the dock lays a stored layout out.
 
 ```
 FiniexViewer  Panels ▾  Layouts ▾
                         ├ ✓ Backtests                            shipped
                         ├   Deploys                              shipped
                         ├   Morning review
-                        ├ Save as … · Rename … · Delete … · Reset to shipped
-                        └ Export all … · Import …
+                        └ ⚙️ Manage layouts…        → Settings › Layouts
+
+Settings › Layouts
+┌─────────────────────────┬──────────────────────────────────────────┐
+│ ✓ Backtests     shipped │ Name  Morning review                     │
+│   Deploys       shipped │ [Rename] [Delete]                        │
+│ ▸ Morning review        │                                          │
+│ [+ Save this window as …]                                          │
+│ [⬇️ Export all …] [⬆️ Import …]                                     │
+├─────────────────────────┴──────────────────────────────────────────┤
+│ Panels  [Back to the suggested order]                              │
+└────────────────────────────────────────────────────────────────────┘
 ```
+
+**The menu chooses, the settings manage** (operator, 2026-11-04). The Layouts menu lists the
+layouts, ticks the loaded one and ends with *Manage layouts…*, which opens the settings on their
+Layouts tab — the way the server switch ends with *Manage servers…*. Everything that makes, changes
+or carries a layout stands there, as a list with a detail, never in the menu.
 
 ## What a layout holds — and what it never holds
 
@@ -55,13 +70,16 @@ rests (operator, 2026-11-03: the way MetaTrader keeps a profile). Back in it, ev
 it was left, and nothing asks to be saved. Which layout a tab loaded is `layout` in its
 `arrangement.v1`; a new tab starts from it like from the rest of the arrangement.
 
-- **Save as …** makes a layout of this placement under a new name and loads it. A name is refused
-  where it is empty or taken, whatever its case.
-- **Rename …** and **Delete …** act on the loaded layout, and only on a reader's own. Delete asks on
-  the first click and deletes on the second; the tab keeps its placement, loaded from none.
+In Settings › Layouts, on the layout picked in the list:
+
+- **+ Save this window as …** makes a layout of this placement under a new name and loads it. A name
+  is refused where it is empty or taken, whatever its case, and said so beneath the field.
+- **Rename** and **Delete** act on a reader's own layout only; a shipped one's name is read, not
+  typed. Delete asks on the first click and deletes on the second; a tab that had it loaded keeps its
+  placement, loaded from none.
 - **Reset to shipped** brings a shipped layout back as it shipped, laid out again where it is loaded.
-- **Back to the suggested order** in the settings takes the tab off its layout: the suggested order
-  is no layout, and the loaded one would otherwise take it in as its own placement.
+- **Back to the suggested order**, below the layouts, takes the tab off its layout: the suggested
+  order is no layout, and the loaded one would otherwise take it in as its own placement.
 
 ## The shipped layouts
 
@@ -83,7 +101,7 @@ later change wins.
 
 **Export all …** writes every layout into one file, `finiexviewer-layouts.json`. **Import …** takes a
 file's layouts beside these — one with an id already here replaces it, the rest are added — and lays
-nothing out. A file of another version, or with no layout in it, is refused and said so. This
+nothing out. A file of another version, or with no layout in it, is refused and said so beneath the buttons. This
 replaces the export and import of the bundle's column, which lived in the settings.
 
 ## Open in viewer#37

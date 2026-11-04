@@ -5,10 +5,9 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import AppButton from '@/components/base/AppButton.vue'
 import AppDialog from '@/components/base/AppDialog.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
+import LayoutsSettings from '@/components/LayoutsSettings.vue'
 import ServersSettings from '@/components/ServersSettings.vue'
-import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
-import { useNamedLayoutsStore } from '@/stores/named_layouts_store'
 import {
   SCENARIO_THRESHOLD_RANGE, TRADE_ROW_CAP_RANGE, useSettingsStore,
 } from '@/stores/settings_store'
@@ -24,8 +23,6 @@ const emit = defineEmits<{ 'update:open': [boolean] }>()
 
 const settingsStore = useSettingsStore()
 const hintsStore = useHintsStore()
-const namedLayouts = useNamedLayoutsStore()
-const dock = useDockStore()
 const { settings } = storeToRefs(settingsStore)
 
 const activeTab = ref<SettingsTab>('display')
@@ -52,15 +49,6 @@ function onNumber(event: Event, apply: (value: number) => void): void {
   apply(parsed)
 }
 
-/**
- * The suggested order is no named layout: a layout loaded before would otherwise take it in as its
- * own placement and lose the one it held.
- */
-function suggestedOrder(): void {
-  namedLayouts.unload()
-  dock.reset()
-}
-
 /** Local time at the rendering edge — the identity is only ever as of the instant it was read. */
 </script>
 
@@ -78,7 +66,7 @@ function suggestedOrder(): void {
     <TabsRoot v-model="activeTab" class="settings-tabs">
       <TabsList class="tab-list">
         <TabsTrigger value="display" class="tab-trigger">🎚️ {{ t('Display') }}</TabsTrigger>
-        <TabsTrigger value="layout" class="tab-trigger">🗂️ {{ t('Layout') }}</TabsTrigger>
+        <TabsTrigger value="layouts" class="tab-trigger">🗂️ {{ t('Layouts') }}</TabsTrigger>
         <TabsTrigger value="servers" class="tab-trigger">🖧 {{ t('Servers') }}</TabsTrigger>
       </TabsList>
 
@@ -151,22 +139,8 @@ function suggestedOrder(): void {
         </AppButton>
       </TabsContent>
 
-      <TabsContent value="layout" class="tab-panel">
-        <!-- where the docked panels stand: one way back, beside everything else about arrangement -->
-        <div class="setting">
-          <span class="setting-label">{{ t('Panels') }}</span>
-          <AppButton data-action="reset-dock" @click="suggestedOrder()">
-            {{ t('Back to the suggested order') }}
-          </AppButton>
-        </div>
-        <p class="setting-hint">
-          {{ t('Deployments, Runs and the run bundle as tabs in one group, the run chart beside them in a wide window and among them in a narrow one — in front, the bundle where a run is chosen and the run list where none is.') }}
-        </p>
-
-        <!-- the file that carries an arrangement to another machine is the named layouts' now -->
-        <p class="setting-hint">
-          {{ t('Layouts in the menu bar save this placement under a name, load another, and carry them all to another machine in one file.') }}
-        </p>
+      <TabsContent value="layouts" class="tab-panel">
+        <LayoutsSettings />
       </TabsContent>
     </TabsRoot>
   </AppDialog>
@@ -208,10 +182,12 @@ function suggestedOrder(): void {
   outline-offset: -1px;
 }
 
+/* the scrollbar's track held free: a tab that scrolls and one that does not keep one width */
 .tab-panel {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);

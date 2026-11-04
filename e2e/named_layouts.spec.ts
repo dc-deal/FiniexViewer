@@ -39,11 +39,16 @@ test('a shipped layout moves the panels and leaves the run as it was', async ({ 
 test('a layout saved under a name comes back after a reload, loaded and as it was', async ({ page }) => {
   await loadLayout(page, 'backtests')
   await expect(page.locator('[data-panel-kind="report-executive"]')).toBeVisible()
+  // the menu chooses, the settings manage: saving under a name is one entry away, on the Layouts tab
   await page.locator('.layouts-trigger').click()
-  await page.locator('.layouts-menu [data-action="save-as"]').click()
-  await page.locator('.layout-name-input').fill('Morning review')
-  await page.locator('.layout-name-input').press('Enter')
-  await expect(page.locator('.layout-name-input')).toHaveCount(0)
+  await page.locator('.layouts-menu [data-action="manage-layouts"]').click()
+  const settings = page.locator('.layouts-settings')
+  await settings.locator('[data-action="new-layout"]').click()
+  await settings.locator('.layout-name-input').fill('Morning review')
+  await settings.locator('.layout-name-input').press('Enter')
+  await expect(settings.locator('.layout-row[data-loaded="true"]')).toHaveText(/Morning review/)
+  await page.keyboard.press('Escape')
+  await expect(settings).toHaveCount(0)
   const before = await page.locator('[data-panel-kind]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-panel-kind')).sort())
 
   await page.reload()

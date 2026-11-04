@@ -16,6 +16,10 @@ states of a control on two channels, form before word before colour — is the s
   issue or the plan of the work that needs it: what it is for, its states, which channels carry
   them. It is built in `src/components/base/` with its unit test, its line in this map and its
   paragraph in the style guide, in the same change. `AppSwitch` and `AppSlider` came that way (#41).
+- **A menu chooses, the settings manage** (2026-11-04). A menu in the menu bar lists what can be
+  chosen, marks the choice and ends with one entry, *Manage …*, that opens the settings on their own
+  tab; making, renaming, deleting, resetting, importing and exporting stand there, as a `RecordList`
+  with a detail beside it. *Manage servers…* and *Manage layouts…* are the two.
 - **One text size for every building block**, and a heading told by its form — an uppercase label
   or a `RuleHeading` — never by a larger size ([style guide](theme_buttons_and_icons.md#one-text-size--a-heading-told-by-its-form)).
 - **Underneath are Reka UI's headless primitives and Lightweight Charts.** A new building block

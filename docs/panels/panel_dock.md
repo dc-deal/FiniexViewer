@@ -86,8 +86,7 @@ it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the o
   open — for a command only, never for a selection. A restored layout takes every panel's title
   from its kind: dockview stores the title with the layout, and an old one kept the tab's
   accessible name and the dock's announcements on a name the panel no longer has. `reset()` goes back to the suggested order and forgets every place — offered in the
-  settings' Layout tab, beside everything else about arrangement, rather than as a menu of one
-  entry. The layout is written
+  settings' Layouts tab, below the named layouts, rather than as a menu of one entry. The layout is written
   into `arrangement.v1` once it has held still for 300 ms, and at once when the page goes or the dock
   is about to unmount — BEFORE, while dockview still holds the panels: written after, it was empty,
   and every hot reload during development replaced the reader's arrangement with the suggested one

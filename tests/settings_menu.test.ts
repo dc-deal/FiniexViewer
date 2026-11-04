@@ -154,14 +154,14 @@ describe('SettingsDialog', () => {
     })
   })
 
-  describe('the layout tab', () => {
-    /** The file that carries an arrangement to another machine is the named layouts' (viewer#37). */
-    it('points to the Layouts menu for saving and carrying an arrangement', async () => {
+  describe('the layouts tab', () => {
+    /** The menu chooses and the settings manage (2026-11-04): the layouts are kept on this tab. */
+    it('keeps the named layouts, and carries them to another machine', async () => {
       mountDialog()
       await flushPromises()
-      await openTab('Layout')
-      expect(activePanel()?.textContent).toContain('Layouts in the menu bar')
-      expect(activePanel()?.querySelector('.import-input')).toBeNull()
+      await openTab('Layouts')
+      expect(activePanel()?.querySelector('.layouts-settings .layout-row[data-layout="backtests"]')).not.toBeNull()
+      expect(activePanel()?.querySelector('.import-input')).not.toBeNull()
     })
 
     /**
@@ -175,7 +175,7 @@ describe('SettingsDialog', () => {
       useArrangementStore().setLayout('backtests')
       mountDialog()
       await flushPromises()
-      await openTab('Layout')
+      await openTab('Layouts')
       panel('[data-action="reset-dock"]')!.click()
       expect(resets).toBe(1)
       expect(useArrangementStore().layout).toBeNull()

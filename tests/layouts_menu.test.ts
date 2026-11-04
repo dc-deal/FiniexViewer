@@ -25,11 +25,6 @@ function layOut() {
   })
 }
 
-/** A dock that has been laid out, so there is a placement to save. */
-function placed(): void {
-  useArrangementStore().setDock({ grid: { root: { type: 'leaf', data: { id: 'g', views: ['runs'] } } }, panels: { runs: { id: 'runs' } } })
-}
-
 describe('LayoutsMenu', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -40,6 +35,7 @@ describe('LayoutsMenu', () => {
   afterEach(() => {
     mounted?.unmount()
     mounted = null
+    document.body.innerHTML = ''
   })
 
   function mountMenu(): void {
@@ -68,81 +64,20 @@ describe('LayoutsMenu', () => {
     expect(useArrangementStore().layout).toBe('backtests')
   })
 
-  /** A shipped layout is reset, never renamed or deleted; a reader's own the other way round. */
-  it('offers each action on the loaded layout only where it applies', async () => {
-    layOut()
-    placed()
-    const store = useNamedLayoutsStore()
-    store.load('backtests')
+  /**
+   * The menu chooses and the settings manage (2026-11-04): after the layouts comes one entry, and it
+   * opens the settings on their Layouts tab. No action stands beside the choices.
+   */
+  it('ends with one entry that opens the settings on their Layouts tab', async () => {
     mountMenu()
     await openMenu()
-    expect(entry('[data-action="rename"]').hasAttribute('data-disabled')).toBe(true)
-    expect(entry('[data-action="delete"]').hasAttribute('data-disabled')).toBe(true)
-    expect(entry('[data-action="reset-shipped"]').hasAttribute('data-disabled')).toBe(false)
+    const actions = [...document.querySelectorAll<HTMLElement>('.layouts-menu [data-action]')].map(item => item.dataset['action'])
+    expect(actions).toEqual(['manage-layouts'])
 
-    store.saveAs('Mine')
+    entry('[data-action="manage-layouts"]').click()
     await flushPromises()
-    expect(entry('[data-action="rename"]').hasAttribute('data-disabled')).toBe(false)
-    expect(entry('[data-action="delete"]').hasAttribute('data-disabled')).toBe(false)
-    expect(entry('[data-action="reset-shipped"]').hasAttribute('data-disabled')).toBe(true)
-  })
-
-  it('asks before it deletes, and deletes on the second click', async () => {
-    placed()
-    const store = useNamedLayoutsStore()
-    store.saveAs('Mine')
-    mountMenu()
-    await openMenu()
-    entry('[data-action="delete"]').click()
-    await flushPromises()
-    expect(entry('[data-action="delete"]').textContent).toContain('Really delete Mine')
-    expect(store.layouts.map(layout => layout.name)).toContain('Mine')
-
-    entry('[data-action="delete"]').click()
-    await flushPromises()
-    expect(store.layouts.map(layout => layout.name)).not.toContain('Mine')
-  })
-
-  /** A name that is taken is said so where it is typed, and nothing is saved until it is free. */
-  it('saves this placement under a free name, and says why a taken one cannot be', async () => {
-    placed()
-    mountMenu()
-    await openMenu()
-    entry('[data-action="save-as"]').click()
-    await flushPromises()
-    const input = document.querySelector<HTMLInputElement>('.layout-name-input')!
-    input.value = 'Backtests'
-    input.dispatchEvent(new Event('input'))
-    await flushPromises()
-    expect(document.querySelector('.layout-name-problem')?.textContent).toContain('A layout of this name exists')
-    expect(document.querySelector<HTMLButtonElement>('[data-action="confirm-name"]')!.disabled).toBe(true)
-
-    input.value = 'Morning review'
-    input.dispatchEvent(new Event('input'))
-    await flushPromises()
-    document.querySelector<HTMLButtonElement>('[data-action="confirm-name"]')!.click()
-    await flushPromises()
-    expect(useNamedLayoutsStore().loaded?.name).toBe('Morning review')
-    expect(document.querySelector('.layout-name-input')).toBeNull()
-  })
-
-  it('says how many layouts a file brought, and that a file brought none', async () => {
-    placed()
-    const store = useNamedLayoutsStore()
-    store.saveAs('Mine')
-    const file = store.exportAll()
-    mountMenu()
-    const input = mounted!.find<HTMLInputElement>('.import-input').element
-
-    for (const [text, said] of [[file, '3 layouts taken'], ['not a layout', 'That file holds no layout']]) {
-      Object.defineProperty(input, 'files', { value: [new File([text], 'layouts.json', { type: 'application/json' })], configurable: true })
-      input.dispatchEvent(new Event('change'))
-      // the file is read through FileReader, which jsdom schedules as a task of its own
-      await vi.waitFor(() => {
-        expect(document.querySelector('.layout-notice')?.textContent).toBe(said)
-      }, { timeout: 2000, interval: 10 })
-      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-      await flushPromises()
-    }
+    expect(document.querySelector('.settings-dialog')).not.toBeNull()
+    expect(document.querySelector('.tab-trigger[data-state="active"]')?.textContent).toContain('Layouts')
+    expect(document.querySelector('.layouts-settings')).not.toBeNull()
   })
 })
