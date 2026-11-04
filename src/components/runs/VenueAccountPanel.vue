@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import HintLine from '@/components/base/HintLine.vue'
+import RuleHeading from '@/components/base/RuleHeading.vue'
 import { utcInstant, venueFigure } from '@/components/runs/report_format'
 import {
   accountOf, assetsOf, balanceOf, missingReads, partOf, readSummary, readsOf, reasonOf, reconciliationNotices,
@@ -45,7 +46,7 @@ const units = computed(() => unitNames(props.model).map(name => {
   <div class="venue-account">
     <HintLine id="venue-account" />
     <section v-for="unit in units" :key="unit.name" class="unit" :data-unit="unit.name">
-      <h4 v-if="units.length > 1" class="unit-name">{{ unit.name }}</h4>
+      <RuleHeading v-if="units.length > 1" class="unit-name">{{ unit.name }}</RuleHeading>
 
       <div class="venue-table">
         <span class="heading" />
@@ -107,7 +108,6 @@ const units = computed(() => unitNames(props.model).map(name => {
   gap: var(--space-xs);
 }
 
-.unit-name,
 .missing,
 .notice {
   margin: 0;

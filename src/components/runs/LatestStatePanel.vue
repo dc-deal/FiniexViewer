@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
+import RuleHeading from '@/components/base/RuleHeading.vue'
 import StateFramePlayer from '@/components/runs/StateFramePlayer.vue'
 import { bytes, duration, utcInstant } from '@/components/runs/report_format'
 import { t } from '@/translate'
@@ -135,7 +136,7 @@ function memoryOf(unit: StateFrameUnit): Figure[] {
       class="unit"
       :data-unit="unit.unit_name"
     >
-      <h4 v-if="model.units.length > 1" class="unit-name">{{ unit.unit_name }}</h4>
+      <RuleHeading v-if="model.units.length > 1" class="unit-name">{{ unit.unit_name }}</RuleHeading>
 
       <p class="status" :class="statusOf(unit).role">
         <span class="glyph">{{ statusOf(unit).glyph }}</span> {{ statusOf(unit).words }}
@@ -175,10 +176,6 @@ function memoryOf(unit: StateFrameUnit): Figure[] {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-}
-
-.unit-name {
-  margin: 0;
 }
 
 .status,

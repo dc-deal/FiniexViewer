@@ -50,6 +50,11 @@ by its tab, the way a reader does.
 - `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per
   tab, and to a frame that stays inside a small window with its content scrolling, and the account
   standing in the menu bar with no tab for it in the settings.
+- `font_size.spec.ts` holds every text to ONE size: each that the dock and the menu bar draw for a
+  backtest, a live session, an ended one and a deployment, every section of their bundles opened,
+  and each on every tab of the settings dialog, measured as the browser computed it against the
+  body's. A failure names every text at another size, so a component that forgot to set none and
+  inherited a larger one is found by name.
 - `machine_status.spec.ts` holds the machine's state in the menu bar — both shares from the captured
   reading, on one line, its card naming where the limit was read — and that a new reading moves
   nothing beside it: the account keeps its place while a share goes from 100 to 9.

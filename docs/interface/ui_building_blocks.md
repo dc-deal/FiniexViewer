@@ -16,6 +16,8 @@ states of a control on two channels, form before word before colour — is the s
   issue or the plan of the work that needs it: what it is for, its states, which channels carry
   them. It is built in `src/components/base/` with its unit test, its line in this map and its
   paragraph in the style guide, in the same change. `AppSwitch` and `AppSlider` came that way (#41).
+- **One text size for every building block**, and a heading told by its form — an uppercase label
+  or a `RuleHeading` — never by a larger size ([style guide](theme_buttons_and_icons.md#one-text-size--a-heading-told-by-its-form)).
 - **Underneath are Reka UI's headless primitives and Lightweight Charts.** A new building block
   builds on them rather than on a hand-rolled overlay, focus trap or positioning.
 
@@ -47,6 +49,7 @@ Everything in `src/components/base/` unless the third column names another place
 | Building block | What it is for | Lives in | Described in |
 |---|---|---|---|
 | `FigureBlock` | a titled block of label/value pairs — the shape figures are shown in | base | [Run Header, Broker and Configuration](../runs/run_header_broker_and_configuration.md) |
+| `RuleHeading` | a heading that parts a panel into blocks of one kind — a currency, a unit — between two rules, at the one text size | base | [style guide](theme_buttons_and_icons.md#one-text-size--a-heading-told-by-its-form) |
 | `HoverCard` | a card of figures beside the element it wraps, on hover or focus | base | [Candle Charts](../panels/candle_charts.md) |
 | `ChartCard` | the card of a thing drawn on a chart, at the pointer — a mark is paint, not an element | base | [Candle Charts](../panels/candle_charts.md) |
 | `FigureCardBody` | what a card of figures says, its heading, its pairs and any paths — both cards say it alike | base | [Candle Charts](../panels/candle_charts.md) |

@@ -117,9 +117,9 @@ describe('ExecutivePanel', () => {
       },
     })
     const wrapper = mount(Host)
-    // the mark says it in the line; the sentence is on the mark, a hover away (viewer#42)
+    // the mark says it in the heading's line; the sentence is on the mark, a hover away (viewer#42)
     expect(wrapper.find('.scope').text()).toBe('whole run')
-    expect(wrapper.find('.scope-line').text()).toBe('whole run')
+    expect(wrapper.find('.currency-title .scope').exists()).toBe(true)
     expect(wrapper.find('.scope').attributes('title')).toContain('every scenario')
   })
 

@@ -226,10 +226,6 @@ function hasDetail(row: UnitErrorRow): boolean {
   border-color: var(--color-error);
 }
 
-.outcome-verdict {
-  font-size: var(--font-size-md);
-}
-
 .outcome.failed .outcome-verdict {
   color: var(--color-error);
 }

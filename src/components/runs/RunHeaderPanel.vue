@@ -298,11 +298,14 @@ const hints = computed(() => [
   padding-top: var(--space-sm);
 }
 
+/* the label every block of figures wears (`FigureBlock`) */
 .code h4 {
   margin: 0 0 var(--space-xs);
   font-size: var(--font-size-sm);
   font-weight: normal;
   color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .repo,

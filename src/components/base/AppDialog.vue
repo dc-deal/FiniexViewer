@@ -87,7 +87,6 @@ const emit = defineEmits<{ 'update:open': [boolean] }>()
   flex-shrink: 0;
   margin: 0;
   font-family: monospace;
-  font-size: var(--font-size-md);
   color: var(--color-text-primary);
 }
 

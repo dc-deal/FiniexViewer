@@ -37,6 +37,34 @@ channel that makes 10.7 ΔE enough.
 it.** A settings button did, and the first person to meet it read it as greyed out and unusable
 although it worked. That is not a misreading — it is the correct reading of a wrong style.
 
+## One text size — a heading told by its form
+
+**Every text stands at one size, `--font-size-sm`, set once on the body** (2026-11-04). A larger
+size read as a defect beside the panels' text, not as a heading: measured before, 23 texts of a
+backtest's bundle stood at 16 px among 2401 at 13.6 px — the executive summary's currencies, the
+run header's list, the latest state's status, the venue account's table — and nobody had chosen
+any of them. A component that set no size inherited the body's, which was the larger one. The
+browser's own heading sizes are switched off in `base.css` for the same reason.
+
+A heading is told by its FORM instead, in one of two:
+
+- **an uppercase label** in the muted ink, as every `FigureBlock` wears its title — *RESULT*,
+  *ACCOUNT*, *CODE* — for a heading over a block of figures;
+- **a rule through the middle**, `RuleHeading`, for a heading that parts a panel into blocks of
+  the same kind — one account currency from the next in the executive summary, one unit from
+  another in the latest state and the venue account:
+
+```
+──────────────── EUR ────────────────
+RESULT
+Net P&L      3.74 EUR   Profit factor   33.90
+──────────────── USD ────────────────
+```
+
+Its words stand at the panel's size, centred, with what belongs in their line — the *whole run*
+mark — beside them. `font_size.spec.ts` holds every text of the dock, the menu bar and the
+settings dialog to the body's size, and names any that is not.
+
 ## Buttons — `AppButton`, and why the states are the component
 
 `base/AppButton.vue` is every button in three shapes: `solid` has a surface of its own, `quiet` is an
