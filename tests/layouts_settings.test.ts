@@ -5,6 +5,7 @@ import LayoutsSettings from '@/components/LayoutsSettings.vue'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useNamedLayoutsStore } from '@/stores/named_layouts_store'
+import { useSettingsStore } from '@/stores/settings_store'
 
 let mounted: VueWrapper | null = null
 
@@ -163,6 +164,24 @@ describe('LayoutsSettings', () => {
         expect(wrapper.find('.layout-notice').text()).toBe(said)
       }, { timeout: 2000, interval: 10 })
     }
+  })
+
+  /** The window's width choosing the size is off until switched on; a width across the other is refused and shown back. */
+  it('switches the size by the window on, and keeps its two widths apart', async () => {
+    const wrapper = await settings()
+    const settingsStore = useSettingsStore()
+    expect(settingsStore.settings.sizeByWindow).toBe(false)
+    await wrapper.find('[data-setting="size-by-window"]').trigger('click')
+    expect(settingsStore.settings.sizeByWindow).toBe(true)
+
+    const medium = wrapper.find<HTMLInputElement>('input[name="medium-from"]')
+    await medium.setValue('1600')
+    await medium.trigger('change')
+    expect(settingsStore.settings.mediumFrom).toBe(900)
+    expect(medium.element.value).toBe('900')
+    await medium.setValue('1000')
+    await medium.trigger('change')
+    expect(settingsStore.settings.mediumFrom).toBe(1000)
   })
 
   /** The suggested order is no named layout: the one loaded before lets go of this window first. */

@@ -13,6 +13,8 @@ import type {
 import { CHART_LAYER_IDS } from '@/types/chart_drawing_types'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import { LAYER_OPACITY_MIN, LAYER_OPTION_IDS } from '@/types/layer_types'
+import { LAYOUT_SIZES } from '@/types/named_layout_types'
+import type { LayoutSize } from '@/types/named_layout_types'
 import { PRICE_FORMS } from '@/types/run_chart_types'
 import type { PriceForm } from '@/types/run_chart_types'
 import type { LayerOptionId } from '@/types/layer_types'
@@ -222,6 +224,8 @@ function readStored(key: string): StoredArrangement | null {
       panelViews: readPanelViews(parsed['panelViews']),
       // added under version 1 as well: an entry written before it reads as no layout loaded
       layout: text(parsed['layout']),
+      // and the size of it: an entry written before sizes existed stood in Full
+      layoutSize: LAYOUT_SIZES.find(size => size === parsed['layoutSize']) ?? 'full',
     }
   } catch {
     // a corrupt or unreadable entry is the same as none — never a broken start
@@ -261,6 +265,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
   const panelViews = shallowRef<Record<string, StoredPanelView>>(own?.panelViews ?? {})
   // part of the placement, so it stands beside the dock in the main entry
   const layout = ref<string | null>(stored?.layout ?? null)
+  const layoutSize = ref<LayoutSize>(stored?.layoutSize ?? 'full')
 
   function persist(): void {
     const arrangement: StoredArrangement = {
@@ -273,6 +278,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       places: places.value,
       panelViews: panelViews.value,
       layout: layout.value,
+      layoutSize: layoutSize.value,
     }
     // this tab's own, and the start of the next new one — a full or blocked storage must not break
     // the app: the selection still works, unstored
@@ -280,7 +286,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       writeTabAndShared(STORAGE_KEY, JSON.stringify(arrangement))
       return
     }
-    writeTabAndShared(ownKey, JSON.stringify({ ...arrangement, dock: null, places: {}, layout: null }))
+    writeTabAndShared(ownKey, JSON.stringify({ ...arrangement, dock: null, places: {}, layout: null, layoutSize: 'full' }))
     // the placement goes to the main entry, around the default server's selection, read fresh
     const main = readStored(STORAGE_KEY)
     const shared: StoredArrangement = {
@@ -293,12 +299,13 @@ export const useArrangementStore = defineStore('arrangement', () => {
       dock: dock.value,
       places: places.value,
       layout: layout.value,
+      layoutSize: layoutSize.value,
     }
     writeTabAndShared(STORAGE_KEY, JSON.stringify(shared))
   }
 
   watch([() => context.links, bars, chart, runChart], persist, { deep: true })
-  watch([dock, places, panelViews, layout], persist)
+  watch([dock, places, panelViews, layout, layoutSize], persist)
 
   function setFacets(bar: string, facets: StoredFacets): void {
     bars.value = { ...bars.value, [bar]: facets }
@@ -320,9 +327,10 @@ export const useArrangementStore = defineStore('arrangement', () => {
     runChart.value = next
   }
 
-  /** The named layout this tab loaded, or null — see `named_layouts_store`. */
-  function setLayout(id: string | null): void {
+  /** The named layout this tab loaded, or null, and its size — see `named_layouts_store`. */
+  function setLayout(id: string | null, size: LayoutSize = layoutSize.value): void {
     layout.value = id
+    layoutSize.value = size
   }
 
   /**
@@ -387,7 +395,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
   }
 
   return {
-    bars, chart, runChart, dock, places, panelViews, layout,
+    bars, chart, runChart, dock, places, panelViews, layout, layoutSize,
     setFacets, setTimeframe, setRunChart, setDock, setPlaces, keepPlaces, setPanelView, keepPanelViews,
     setLayout, setPlacedViews,
   }

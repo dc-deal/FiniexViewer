@@ -64,6 +64,16 @@ describe('reconcile', () => {
     expect(reconcile({ ...saved({ theme: 'light' }), version: 99 })).toEqual(DEFAULT_SETTINGS)
   })
 
+  /** The window widths of a layout's sizes (viewer#37) are taken together, and only with Medium below Full. */
+  it('takes the window widths together, and only where Medium stands below Full', () => {
+    expect(reconcile(saved({ sizeByWindow: true, mediumFrom: 700, fullFrom: 1300 }))).toMatchObject({
+      sizeByWindow: true, mediumFrom: 700, fullFrom: 1300,
+    })
+    expect(reconcile(saved({ mediumFrom: 1600, fullFrom: 1300 }))).toMatchObject({ mediumFrom: 900, fullFrom: 1500 })
+    expect(reconcile(saved({ mediumFrom: 700, fullFrom: 'wide' }))).toMatchObject({ mediumFrom: 900, fullFrom: 1500 })
+    expect(reconcile(saved({ sizeByWindow: 'yes' })).sizeByWindow).toBe(false)
+  })
+
   it.each([
     ['a string', 'settings'],
     ['a number', 7],
@@ -153,6 +163,17 @@ describe('useSettingsStore', () => {
     store.setTheme('light')
     expect(Object.keys(store.display).sort())
       .toEqual(['laneOrder', 'scenarioThreshold', 'tradeRowCap'])
+  })
+
+  it('refuses a window width that would cross the other, and keeps one that does not', () => {
+    const store = useSettingsStore()
+    store.setMediumFrom(1500)
+    store.setFullFrom(900)
+    expect(store.settings).toMatchObject({ mediumFrom: 900, fullFrom: 1500 })
+    store.setMediumFrom(1000)
+    store.setFullFrom(1800)
+    store.setSizeByWindow(true)
+    expect(stored()).toMatchObject({ mediumFrom: 1000, fullFrom: 1800, sizeByWindow: true })
   })
 
   it('returns to the defaults on reset and stores that too', () => {

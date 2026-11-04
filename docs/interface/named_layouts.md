@@ -4,9 +4,9 @@ The placement of the panels saved under a name and loaded with one click (viewer
 
 ```
 FiniexViewer  Panels ▾  Layouts ▾
-                        ├ ✓ Backtests                            shipped
-                        ├   Deploys                              shipped
-                        ├   Morning review
+                        ├ ✓ Backtests                 shipped ▸ ┬ ✓ Full
+                        ├   Deploys                   shipped ▸ ├   Medium
+                        ├   Morning review                    ▸ └   Mobile
                         └ ⚙️ Manage layouts…        → Settings › Layouts
 
 Settings › Layouts
@@ -17,6 +17,7 @@ Settings › Layouts
 │ [+ Save this window as …]                                          │
 │ [⬇️ Export all …] [⬆️ Import …]                                     │
 ├─────────────────────────┴──────────────────────────────────────────┤
+│ (○) Choose the size by the window   Medium from [900] Full from [1500]
 │ Panels  [Back to the suggested order]                              │
 └────────────────────────────────────────────────────────────────────┘
 ```
@@ -81,10 +82,37 @@ In Settings › Layouts, on the layout picked in the list:
 - **Back to the suggested order**, below the layouts, takes the tab off its layout: the suggested
   order is no layout, and the loaded one would otherwise take it in as its own placement.
 
+## Three sizes, each a layout of its own
+
+*Full*, *Medium* and *Mobile* (operator, 2026-11-04): every layout keeps a placement for each, in
+`placement` (Full) and `sizes.medium` / `sizes.mobile`, stored whole and never derived from one
+another. A tab loads a layout in one size — `layoutSize` beside `layout` in its `arrangement.v1` —
+and what it changes goes into that size alone; back in another size, that one stands as it was left.
+
+- **The submenu** of a layout in the menu loads it in a size and ticks the loaded one. A click on
+  the layout itself loads it in the size the tab stands in.
+- **Every size starts from a placement made for it.** *Save this window as …* takes the size the tab
+  stands in from this window, and the other two from the layout it was saved from, each in its own
+  size — *Backtests* where none was loaded. A layout stored before sizes existed holds Full alone;
+  its narrower sizes start from the shipped layout's, *Backtests* for a reader's own.
+- **Reset to shipped** brings every size back as shipped.
+- **Choose the size by the window**, in Settings › Layouts, is off by default. Switched on, the
+  window's width chooses the size: Mobile below *Medium from* (900 px), Medium below *Full from*
+  (1500 px), Full from there, in CSS pixels as the window reads them (`use_layout_size_by_window.ts`).
+  The size changes once the window rests after crossing a width, so a size chosen by hand holds until
+  the next crossing, and opening the app keeps the size it was left in; switching it on applies it at
+  once. The two widths are refused where Medium's would stand at or above Full's.
+
+*Mobile* is the arrangement for a narrow window, one column of the bundles, which are built for
+little width. A phone below about 500 px would need more than an arrangement — a menu bar for it and
+touch in the dock — and is not built.
+
 ## The shipped layouts
 
-`src/layout_presets.json` holds *Backtests* and *Deploys*, each as the dock serialised it at
-1600 × 900 — laid out by the dock itself, never written by hand. *Backtests* is the arrangement of
+`src/layout_presets.json` holds *Backtests* and *Deploys* in all three sizes, each as the dock
+serialised it — Full at 1600 × 900, Medium at 1200 × 800, Mobile at 600 × 800 — laid out by the dock
+itself, never written by hand. Medium stands in two columns, Mobile in one: the lists above, the
+bundle or the panels a reader of that layout looks at below. *Backtests* is the arrangement of
 the README pictures (`e2e/readme_arrangement.json`) without its selection. *Deploys* is for following
 a bot: the deployment list with the run list and the sweeps behind it, the sessions and the booking
 periods across the deployment, the latest state frame, and the venue account with the orders behind
@@ -106,5 +134,4 @@ replaces the export and import of the bundle's column, which lived in the settin
 
 ## Open in viewer#37
 
-A placement per screen size, and a layout chosen by the run that is opened, stay in the issue with
-their questions.
+A layout chosen by the run that is opened stays in the issue with its questions.

@@ -5,8 +5,10 @@ import { readPanelViews, readPlaces, useArrangementStore } from '@/stores/arrang
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { onSharedWrite } from '@/tab_storage'
-import { SHIPPED_LAYOUT_IDS } from '@/types/named_layout_types'
-import type { NamedLayout, Placement, ShippedLayoutId, StoredLayouts } from '@/types/named_layout_types'
+import { LAYOUT_SIZES, SHIPPED_LAYOUT_IDS } from '@/types/named_layout_types'
+import type {
+  LayoutSize, NamedLayout, NarrowSize, Placement, ShippedLayoutId, StoredLayouts,
+} from '@/types/named_layout_types'
 import type { StoredPanelView } from '@/types/arrangement_types'
 import { BUNDLE_IDS } from '@/types/panel_types'
 import type { ColumnState, PanelState, WorkspaceState } from '@/types/panel_types'
@@ -92,9 +94,40 @@ function shippedOf(id: string): ShippedLayoutId | null {
   return SHIPPED_LAYOUT_IDS.find(shipped => shipped === id) ?? null
 }
 
-/** A shipped layout as it shipped. */
+const NARROW_SIZES = LAYOUT_SIZES.filter((size): size is NarrowSize => size !== 'full')
+
+/** The sizes beside Full, each read by shape; one that cannot be read is left out, never guessed. */
+function readSizes(value: unknown): NamedLayout['sizes'] {
+  const stored = object(value) ?? {}
+  const sizes: NamedLayout['sizes'] = {}
+  for (const size of NARROW_SIZES) {
+    const placement = readPlacement(stored[size])
+    if (placement) sizes[size] = placement
+  }
+  return sizes
+}
+
+/** A shipped layout as it shipped, in every size: each laid out by the dock at that size. */
 function shippedLayout(id: ShippedLayoutId): NamedLayout {
-  return { id, name: SHIPPED_NAMES[id], shipped: id, placement: readPlacement(presets[id])! }
+  const preset = presets[id]
+  return { id, name: SHIPPED_NAMES[id], shipped: id, placement: readPlacement(preset.full)!, sizes: readSizes(preset) }
+}
+
+/**
+ * A layout's placement in one size. A size it does not hold — a layout saved before sizes existed —
+ * starts from the shipped layout's own for that size, *Backtests* for a reader's own: a narrow size
+ * never starts as a copy of Full, which was laid out for a wide window.
+ */
+function placementOf(layout: NamedLayout, size: LayoutSize): Placement {
+  if (size === 'full') return layout.placement
+  return layout.sizes[size] ?? shippedLayout(layout.shipped ?? 'backtests').sizes[size]!
+}
+
+/** A layout with one size's placement replaced, the others as they were. */
+function withPlacement(layout: NamedLayout, size: LayoutSize, placement: Placement): NamedLayout {
+  return size === 'full'
+    ? { ...layout, placement }
+    : { ...layout, sizes: { ...layout.sizes, [size]: placement } }
 }
 
 /** One stored layout by shape. A shipped one keeps its shipped name: only a reader's own is renamed. */
@@ -105,7 +138,8 @@ function readLayout(value: unknown): NamedLayout | null {
   const placement = readPlacement(stored?.['placement'])
   if (!id || !name || !placement) return null
   const shipped = shippedOf(id)
-  return { id, name: shipped ? SHIPPED_NAMES[shipped] : name, shipped, placement }
+  // added under version 1: a layout stored before sizes existed reads as one holding Full alone
+  return { id, name: shipped ? SHIPPED_NAMES[shipped] : name, shipped, placement, sizes: readSizes(stored?.['sizes']) }
 }
 
 /** The shipped layouts first, in their order and always there, then a reader's own in the order made. */
@@ -152,6 +186,9 @@ function copied<T>(value: T): T {
  * placement is written into the layout it loaded, the way MetaTrader keeps a profile — back in it, it
  * stands as it was left. A shipped one changed that way comes back as shipped with *Reset*.
  *
+ * **Each size is a layout of its own** (operator, 2026-11-04): *Full*, *Medium* and *Mobile* each keep
+ * a placement, a tab loads one of them, and what it changes goes into that size alone.
+ *
  * Shared by every window, in `localStorage`. Every write reads the stored list again first, and a write
  * in another window reaches this one, so a layout saved there is never lost here.
  */
@@ -167,6 +204,8 @@ export const useNamedLayoutsStore = defineStore('named_layouts', () => {
 
   /** The layout this tab loaded, or null — also where its id names one that is gone. */
   const loaded = computed(() => layouts.value.find(layout => layout.id === arrangement.layout) ?? null)
+  /** The size of it this tab loaded — and the one a layout is loaded in where no size is named. */
+  const loadedSize = computed<LayoutSize>(() => arrangement.layoutSize)
 
   /** Forgets a loaded layout that no longer exists — deleted here or in another window. */
   function dropMissing(): void {
@@ -212,36 +251,42 @@ export const useNamedLayoutsStore = defineStore('named_layouts', () => {
     timer = setTimeout(saveLoaded, SAVE_DELAY_MS)
   }
 
+  /** Into the size this tab loaded, and that size alone. */
   function saveLoaded(): void {
     timer = null
     const id = arrangement.layout
+    const size = arrangement.layoutSize
     const placement = capture()
     if (id === null || !placement) return
-    write(list => list.map(layout => (layout.id === id ? { ...layout, placement } : layout)))
+    write(list => list.map(layout => (layout.id === id ? withPlacement(layout, size, placement) : layout)))
   }
 
-  /** Lays a layout out in this tab and marks it loaded. Says whether its dock could be laid out. */
-  function apply(layout: NamedLayout): boolean {
+  /** Lays a layout out in this tab in one size and marks it loaded. Says whether its dock could be laid out. */
+  function apply(layout: NamedLayout, size: LayoutSize): boolean {
     cancelSave()
     applying = true
+    const placement = placementOf(layout, size)
     try {
-      const done = dock.restore(layout.placement.dock, () => {
+      const done = dock.restore(placement.dock, () => {
         // the places first: they keep out a bundle the layout leaves out
-        arrangement.setPlaces(copied(layout.placement.places))
-        layoutStore.replace(copied(layout.placement.bundles))
-        arrangement.setPlacedViews(copied(layout.placement.views))
+        arrangement.setPlaces(copied(placement.places))
+        layoutStore.replace(copied(placement.bundles))
+        arrangement.setPlacedViews(copied(placement.views))
       })
-      if (done) arrangement.setLayout(layout.id)
+      if (done) arrangement.setLayout(layout.id, size)
       return done
     } finally {
       applying = false
     }
   }
 
-  /** A layout by id, laid out. The selection stays as it is: a layout says where, never what. */
-  function load(id: string): boolean {
+  /**
+   * A layout by id, laid out in a size — the one this tab stands in where none is named. The selection
+   * stays as it is: a layout says where, never what.
+   */
+  function load(id: string, size: LayoutSize = arrangement.layoutSize): boolean {
     const layout = layouts.value.find(entry => entry.id === id)
-    return layout ? apply(layout) : false
+    return layout ? apply(layout, size) : false
   }
 
   /** Why a name cannot be given, in words — or null where it can. */
@@ -254,14 +299,25 @@ export const useNamedLayoutsStore = defineStore('named_layouts', () => {
     return null
   }
 
-  /** This tab's placement as a layout of its own, loaded from then on. */
+  /**
+   * This tab's placement as a layout of its own, loaded from then on in the size it stands in. The
+   * other sizes come from the layout it was saved from, each in its own size — *Backtests* where none
+   * was loaded — so every size starts from a placement made for it.
+   */
   function saveAs(name: string): boolean {
     dock.flush()
     const placement = capture()
     if (nameProblem(name) || !placement) return false
     const id = `own-${Date.now().toString(36)}`
-    write(list => [...list, { id, name: name.trim(), shipped: null, placement }])
-    arrangement.setLayout(id)
+    const size = arrangement.layoutSize
+    const source = loaded.value ?? shippedLayout('backtests')
+    const fresh: NamedLayout = {
+      id, name: name.trim(), shipped: null,
+      placement: copied(placementOf(source, 'full')),
+      sizes: Object.fromEntries(NARROW_SIZES.map(narrow => [narrow, copied(placementOf(source, narrow))])),
+    }
+    write(list => [...list, withPlacement(fresh, size, placement)])
+    arrangement.setLayout(id, size)
     return true
   }
 
@@ -281,19 +337,19 @@ export const useNamedLayoutsStore = defineStore('named_layouts', () => {
     dropMissing()
   }
 
-  /** A shipped layout as it shipped — laid out again where this tab has it loaded. */
+  /** A shipped layout as it shipped, in every size — laid out again where this tab has it loaded. */
   function resetShipped(id: string): void {
     const shipped = shippedOf(id)
     if (!shipped) return
     const fresh = shippedLayout(shipped)
     write(list => list.map(entry => (entry.id === id ? fresh : entry)))
-    if (arrangement.layout === id) apply(fresh)
+    if (arrangement.layout === id) apply(fresh, arrangement.layoutSize)
   }
 
   /** This tab's placement as its own again, loaded from no layout — the suggested order is not one. */
   function unload(): void {
     cancelSave()
-    arrangement.setLayout(null)
+    arrangement.setLayout(null, arrangement.layoutSize)
   }
 
   /** Every layout as one file, to take them to another machine. */
@@ -335,7 +391,7 @@ export const useNamedLayoutsStore = defineStore('named_layouts', () => {
   dropMissing()
 
   return {
-    layouts, loaded,
+    layouts, loaded, loadedSize,
     load, saveAs, rename, remove, resetShipped, unload, nameProblem, exportAll, importAll,
   }
 })

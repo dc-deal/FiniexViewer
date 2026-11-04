@@ -67,7 +67,11 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layouts',
-    text: t('A layout holds where the panels stand and nothing they show: loading one from the Layouts menu moves the panels and leaves the run, the deployment and every filter as they are. Changes go into the layout you loaded. A shipped layout keeps its name, and Reset brings it back as shipped.'),
+    text: t('A layout holds where the panels stand and nothing they show: loading one from the Layouts menu moves the panels and leaves the run, the deployment and every filter as they are. Changes go into the layout you loaded, and into the size you loaded it in: Full, Medium and Mobile are each a placement of their own, chosen in the submenu of the layout. A shipped layout keeps its name, and Reset brings every size back as shipped.'),
+  },
+  {
+    id: 'size-by-window',
+    text: t('When on, the width of the window chooses the size of the loaded layout: Mobile below the first width, Medium below the second, Full from there. It changes once the window rests after crossing a width; a size chosen in the menu holds until then.'),
   },
   {
     id: 'suggested-order',

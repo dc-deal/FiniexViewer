@@ -143,6 +143,19 @@ describe('useArrangementStore', () => {
     expect(places['odd-size']).toEqual({ besides: ['runs'], direction: 'left' })
   })
 
+  /** The named layout this tab loaded and its size (viewer#37), kept across a reload; an unknown size reads as Full. */
+  it('keeps the loaded layout and its size across a reload, and reads an unknown size as Full', async () => {
+    useArrangementStore().setLayout('deploys', 'mobile')
+    await nextTick()
+    setActivePinia(createPinia())
+    expect(useArrangementStore().layout).toBe('deploys')
+    expect(useArrangementStore().layoutSize).toBe('mobile')
+
+    store({ ...stored(), layoutSize: 'huge' })
+    setActivePinia(createPinia())
+    expect(useArrangementStore().layoutSize).toBe('full')
+  })
+
   describe('each panel\'s own view', () => {
     /**
      * Added under version 1: an entry from before the field reads as no view kept, not as a broken

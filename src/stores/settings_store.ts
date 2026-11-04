@@ -9,6 +9,8 @@ const SCHEMA_VERSION = 1
 
 export const SCENARIO_THRESHOLD_RANGE = { min: 1, max: 100 } as const
 export const TRADE_ROW_CAP_RANGE = { min: 50, max: 5000 } as const
+/** The window widths a layout's size may change at; Medium always starts below Full. */
+export const LAYOUT_WIDTH_RANGE = { min: 320, max: 4000 } as const
 
 /** What is written to storage: the settings plus the schema they were written under. */
 interface StoredSettings extends Settings {
@@ -43,6 +45,14 @@ export function reconcile(stored: unknown): Settings {
   }
   if (isWholeNumberWithin(raw.tradeRowCap, TRADE_ROW_CAP_RANGE)) {
     settings.tradeRowCap = raw.tradeRowCap as number
+  }
+  // added under version 1: an entry written before them reads as their defaults
+  if (typeof raw.sizeByWindow === 'boolean') settings.sizeByWindow = raw.sizeByWindow
+  // the two widths are taken together or not at all: one alone could stand above the other
+  if (isWholeNumberWithin(raw.mediumFrom, LAYOUT_WIDTH_RANGE) && isWholeNumberWithin(raw.fullFrom, LAYOUT_WIDTH_RANGE)
+    && (raw.mediumFrom as number) < (raw.fullFrom as number)) {
+    settings.mediumFrom = raw.mediumFrom as number
+    settings.fullFrom = raw.fullFrom as number
   }
   return settings
 }
@@ -125,6 +135,24 @@ export const useSettingsStore = defineStore('settings', () => {
     persist()
   }
 
+  function setSizeByWindow(value: boolean): void {
+    settings.value.sizeByWindow = value
+    persist()
+  }
+
+  /** A width that would stand at or above Full's, or out of range, is ignored rather than clamped. */
+  function setMediumFrom(value: number): void {
+    if (!isWholeNumberWithin(value, LAYOUT_WIDTH_RANGE) || value >= settings.value.fullFrom) return
+    settings.value.mediumFrom = value
+    persist()
+  }
+
+  function setFullFrom(value: number): void {
+    if (!isWholeNumberWithin(value, LAYOUT_WIDTH_RANGE) || value <= settings.value.mediumFrom) return
+    settings.value.fullFrom = value
+    persist()
+  }
+
   function reset(): void {
     settings.value = { ...DEFAULT_SETTINGS }
     persist()
@@ -138,6 +166,9 @@ export const useSettingsStore = defineStore('settings', () => {
     setLaneOrder,
     setScenarioThreshold,
     setTradeRowCap,
+    setSizeByWindow,
+    setMediumFrom,
+    setFullFrom,
     reset,
   }
 })

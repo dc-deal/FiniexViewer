@@ -89,10 +89,10 @@ describe('useNamedLayoutsStore', () => {
     const store = useNamedLayoutsStore()
 
     expect(store.load('backtests')).toBe(true)
-    expect(restore).toHaveBeenCalledWith(presets.backtests.dock, expect.any(Function))
-    expect(useArrangementStore().places).toEqual(presets.backtests.places)
+    expect(restore).toHaveBeenCalledWith(presets.backtests.full.dock, expect.any(Function))
+    expect(useArrangementStore().places).toEqual(presets.backtests.full.places)
     expect(useArrangementStore().panelViews['report-booking-periods']?.expanded).toEqual(
-      presets.backtests.views['report-booking-periods'].expanded)
+      presets.backtests.full.views['report-booking-periods'].expanded)
     // the rows this tab keeps for its run are no part of a layout
     expect(useArrangementStore().panelViews['report-trade-history']?.rows?.keys['fills-open']).toEqual(['t1'])
     expect(context.main.run.id).toBe('run-1')
@@ -157,7 +157,7 @@ describe('useNamedLayoutsStore', () => {
     expect(stored().layouts.find(layout => layout.id === 'deploys')!.placement.places).toEqual({ runs: A_PLACE })
 
     store.resetShipped('deploys')
-    expect(stored().layouts.find(layout => layout.id === 'deploys')!.placement.places).toEqual(presets.deploys.places)
+    expect(stored().layouts.find(layout => layout.id === 'deploys')!.placement.places).toEqual(presets.deploys.full.places)
     expect(restore).toHaveBeenCalledTimes(2)
   })
 
@@ -215,6 +215,78 @@ describe('useNamedLayoutsStore', () => {
     store.unload()
     expect(store.loaded).toBeNull()
     expect(useArrangementStore().layout).toBeNull()
+  })
+
+  /** Each size is a layout of its own (2026-11-04): a size laid out is that size's placement, and it is kept. */
+  it('lays a layout out in a size, and the next load without a size takes the same', () => {
+    const restore = layOut()
+    const store = useNamedLayoutsStore()
+    expect(store.load('deploys', 'mobile')).toBe(true)
+    expect(restore).toHaveBeenLastCalledWith(presets.deploys.mobile.dock, expect.any(Function))
+    expect(useArrangementStore().places).toEqual(presets.deploys.mobile.places)
+    expect(store.loadedSize).toBe('mobile')
+
+    store.load('backtests')
+    expect(restore).toHaveBeenLastCalledWith(presets.backtests.mobile.dock, expect.any(Function))
+    expect(useArrangementStore().layoutSize).toBe('mobile')
+  })
+
+  it('writes a change into the size it was made in, and leaves the other sizes as they were', async () => {
+    vi.useFakeTimers()
+    placed()
+    layOut()
+    const store = useNamedLayoutsStore()
+    store.load('backtests', 'medium')
+    useArrangementStore().setPlaces({ runs: A_PLACE })
+    await nextTick()
+    vi.advanceTimersByTime(1000)
+
+    const backtests = stored().layouts.find(layout => layout.id === 'backtests')!
+    expect(backtests.sizes.medium?.places).toEqual({ runs: A_PLACE })
+    expect(backtests.sizes.mobile?.places).toEqual(presets.backtests.mobile.places)
+    expect(backtests.placement.places).toEqual(presets.backtests.full.places)
+  })
+
+  /** Every size starts from a placement made for it: the one saved from, never a copy of this one. */
+  it('saves this window as the size it stands in, the other sizes taken from the layout it came from', () => {
+    layOut()
+    const store = useNamedLayoutsStore()
+    store.load('deploys', 'medium')
+    placed()
+    store.saveAs('Mine')
+
+    const own = stored().layouts.find(layout => layout.name === 'Mine')!
+    expect(own.sizes.medium?.dock).toEqual(A_DOCK)
+    expect(own.placement.dock).toEqual(presets.deploys.full.dock)
+    expect(own.sizes.mobile?.dock).toEqual(presets.deploys.mobile.dock)
+    expect(store.loadedSize).toBe('medium')
+  })
+
+  it('brings every size of a shipped layout back as shipped', async () => {
+    vi.useFakeTimers()
+    placed()
+    layOut()
+    const store = useNamedLayoutsStore()
+    store.load('backtests', 'mobile')
+    useArrangementStore().setPlaces({ runs: A_PLACE })
+    await nextTick()
+    vi.advanceTimersByTime(1000)
+    expect(stored().layouts.find(layout => layout.id === 'backtests')!.sizes.mobile?.places).toEqual({ runs: A_PLACE })
+
+    store.resetShipped('backtests')
+    expect(stored().layouts.find(layout => layout.id === 'backtests')!.sizes.mobile?.places).toEqual(presets.backtests.mobile.places)
+  })
+
+  /** A layout stored before sizes existed holds Full alone: a narrow size starts from a shipped one, never from Full. */
+  it('lays a size a stored layout does not hold out from the shipped one', () => {
+    const restore = layOut()
+    const old = { id: 'own-old', name: 'Old', shipped: null, placement: { dock: A_DOCK, places: {}, views: {}, bundles: {} } }
+    localStorage.setItem(KEY, JSON.stringify({ version: 1, layouts: [old] }))
+    const store = useNamedLayoutsStore()
+    expect(store.load('own-old', 'mobile')).toBe(true)
+    expect(restore).toHaveBeenLastCalledWith(presets.backtests.mobile.dock, expect.any(Function))
+    store.load('own-old', 'full')
+    expect(restore).toHaveBeenLastCalledWith(A_DOCK, expect.any(Function))
   })
 
   it('carries the columns into the layout, and lays them out again on load', () => {

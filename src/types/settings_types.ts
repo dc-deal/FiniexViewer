@@ -34,6 +34,15 @@ export interface DisplaySettings {
 /** Everything the settings store keeps. `theme` is applied to the document, not passed to panels. */
 export interface Settings extends DisplaySettings {
   theme: ThemeName
+  /**
+   * Whether the window's width chooses the size of the loaded layout (viewer#37) — off by default,
+   * the size then being the one chosen in its submenu.
+   */
+  sizeByWindow: boolean
+  /** From this window width on, in CSS pixels, a layout takes Medium; below it, Mobile. */
+  mediumFrom: number
+  /** From this window width on, a layout takes Full. */
+  fullFrom: number
 }
 
 /**
@@ -48,4 +57,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scenarioThreshold: 6,
   laneOrder: 'time',
   tradeRowCap: 500,
+  sizeByWindow: false,
+  mediumFrom: 900,
+  fullFrom: 1500,
 }

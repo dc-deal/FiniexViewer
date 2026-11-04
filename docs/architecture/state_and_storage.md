@@ -86,8 +86,8 @@ tells every window but the writer, and `onSharedWrite` in `src/tab_storage.ts` m
 the banned hints and the named layouts read it again. The named layouts also read the stored list
 before every write, so a layout saved in another window is never lost — see
 [Named Layouts](../interface/named_layouts.md), which holds the dock, the places, the views no run is
-bound to and the bundles' columns under a name, and which layout a tab loaded as `layout` in its
-`arrangement.v1`.
+bound to and the bundles' columns under a name, in three sizes, and which layout a tab loaded as
+`layout` and in which size as `layoutSize` in its `arrangement.v1`.
 
 **Adopted at the READ, not at the first write.** With one shared key, measured in the browser on
 2026-10-14, a reload brought back the column the OTHER window had changed every time — the column's

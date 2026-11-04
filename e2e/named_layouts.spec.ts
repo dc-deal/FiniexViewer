@@ -85,6 +85,50 @@ test('the dock cannot be scrolled out of its place, whatever tries', async ({ pa
 })
 
 /** A layout naming a panel this build does not know leaves that one out, never a blank workspace. */
+/** A layout in a size, picked from the submenu its row opens on hover. */
+async function loadSize(page: import('@playwright/test').Page, id: string, size: string): Promise<void> {
+  await page.locator('.layouts-trigger').click()
+  await page.locator(`.layouts-menu [data-layout="${id}"]`).hover()
+  await page.locator(`[data-sizes-of="${id}"] [data-size="${size}"]`).click()
+}
+
+function kinds(page: import('@playwright/test').Page): Promise<string[]> {
+  return page.locator('[data-panel-kind]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-panel-kind')!).sort())
+}
+
+/**
+ * Each size is a layout of its own (2026-11-04): Mobile lays the run bundle out where Full stands its
+ * sections as panels, and a panel hidden in Mobile is still there in Full — and still hidden back in
+ * Mobile, because that change went into Mobile alone.
+ */
+test('each size of a layout is a placement of its own, and a change goes into its size alone', async ({ page }) => {
+  await loadLayout(page, 'backtests')
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toBeVisible()
+  await expect(page.locator('.layouts-menu')).toHaveCount(0)
+  const full = await kinds(page)
+
+  await loadSize(page, 'backtests', 'mobile')
+  await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(1)
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toHaveCount(0)
+  expect(await kinds(page)).toContain('run-chart')
+
+  // the run chart hidden in Mobile, through the Panels menu, and written into Mobile once it rests
+  await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).click()
+  await page.locator('.menu-sub-trigger[data-area="runs"]').hover()
+  await page.locator('.menu-toggle[data-kind="run-chart"]').click()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('[data-panel-kind="run-chart"]')).toHaveCount(0)
+  await page.waitForTimeout(800)
+
+  await loadSize(page, 'backtests', 'full')
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toBeVisible()
+  expect(await kinds(page)).toEqual(full)
+
+  await loadSize(page, 'backtests', 'mobile')
+  await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(1)
+  await expect(page.locator('[data-panel-kind="run-chart"]')).toHaveCount(0)
+})
+
 test('a layout with a panel this build does not know lays out the rest', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))

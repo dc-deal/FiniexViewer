@@ -64,6 +64,25 @@ describe('LayoutsMenu', () => {
     expect(useArrangementStore().layout).toBe('backtests')
   })
 
+  /** Each layout's submenu offers its three sizes, the loaded one ticked; a pick loads the layout in it. */
+  it('loads a layout in the size picked from its submenu, the loaded size ticked', async () => {
+    const restore = layOut()
+    useNamedLayoutsStore().load('deploys', 'medium')
+    mountMenu()
+    await openMenu()
+    await mounted!.vm.$nextTick()
+    entry('[data-layout="deploys"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    await flushPromises()
+    const sizes = () => document.querySelector<HTMLElement>('[data-sizes-of="deploys"]')!
+    expect([...sizes().querySelectorAll<HTMLElement>('[data-size]')].map(item => item.dataset['size'])).toEqual(['full', 'medium', 'mobile'])
+    expect(sizes().querySelector<HTMLElement>('[data-size="medium"]')!.dataset['loaded']).toBe('true')
+
+    sizes().querySelector<HTMLElement>('[data-size="mobile"]')!.click()
+    await flushPromises()
+    expect(restore).toHaveBeenCalledTimes(2)
+    expect(useArrangementStore().layoutSize).toBe('mobile')
+  })
+
   /**
    * The menu chooses and the settings manage (2026-11-04): after the layouts comes one entry, and it
    * opens the settings on their Layouts tab. No action stands beside the choices.

@@ -2,10 +2,12 @@
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppButton from '@/components/base/AppButton.vue'
+import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { useDockStore } from '@/stores/dock_store'
 import { useNamedLayoutsStore } from '@/stores/named_layouts_store'
+import { LAYOUT_WIDTH_RANGE, useSettingsStore } from '@/stores/settings_store'
 import type { ListColumn } from '@/types/list_types'
 import { t } from '@/translate'
 
@@ -16,7 +18,17 @@ import { t } from '@/translate'
  */
 const store = useNamedLayoutsStore()
 const dock = useDockStore()
+const settingsStore = useSettingsStore()
 const { layouts, loaded } = storeToRefs(store)
+const { settings } = storeToRefs(settingsStore)
+
+/** A width the store refuses — out of range, or across the other bound — leaves the field showing what holds. */
+function onWidth(event: Event, apply: (value: number) => void): void {
+  const input = event.target as HTMLInputElement
+  const parsed = Number(input.value)
+  if (!Number.isNaN(parsed)) apply(parsed)
+  input.value = String(input.name === 'medium-from' ? settings.value.mediumFrom : settings.value.fullFrom)
+}
 
 /** A new layout's draft has no entry yet. */
 const NEW = '__new'
@@ -163,6 +175,45 @@ function suggestedOrder(): void {
       </form>
     </div>
 
+    <!-- the window's width choosing the loaded layout's size: off unless the reader wants it -->
+    <div class="setting size-by-window">
+      <AppSwitch
+        :model-value="settings.sizeByWindow"
+        :label="t('Choose the size by the window')"
+        data-setting="size-by-window"
+        @update:model-value="settingsStore.setSizeByWindow"
+      />
+      <div class="widths">
+        <label class="field width">
+          <span class="field-label">{{ t('Medium from') }}</span>
+          <input
+            class="field-input"
+            name="medium-from"
+            type="number"
+            :min="LAYOUT_WIDTH_RANGE.min"
+            :max="LAYOUT_WIDTH_RANGE.max"
+            :step="50"
+            :value="settings.mediumFrom"
+            @change="event => onWidth(event, settingsStore.setMediumFrom)"
+          >
+        </label>
+        <label class="field width">
+          <span class="field-label">{{ t('Full from') }}</span>
+          <input
+            class="field-input"
+            name="full-from"
+            type="number"
+            :min="LAYOUT_WIDTH_RANGE.min"
+            :max="LAYOUT_WIDTH_RANGE.max"
+            :step="50"
+            :value="settings.fullFrom"
+            @change="event => onWidth(event, settingsStore.setFullFrom)"
+          >
+        </label>
+      </div>
+      <HintLine id="size-by-window" />
+    </div>
+
     <!-- where the docked panels stand without a layout: one way back, beside the layouts -->
     <div class="setting">
       <span class="field-label">{{ t('Panels') }}</span>
@@ -300,5 +351,15 @@ function suggestedOrder(): void {
 
 .setting .app-button {
   align-self: flex-start;
+}
+
+.widths {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.width {
+  width: 9rem;
 }
 </style>
