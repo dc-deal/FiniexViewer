@@ -74,6 +74,16 @@ describe('reconcile', () => {
     expect(reconcile(saved({ sizeByWindow: 'yes' })).sizeByWindow).toBe(false)
   })
 
+  /** What picking a run does to the layout (viewer#37): a mode it knows, and a layout id by shape. */
+  it('takes a known mode of choosing the layout by the run, and a layout id that is a word', () => {
+    expect(reconcile(saved({ layoutByRun: 'switch', layoutForSession: 'own-x' }))).toMatchObject({
+      layoutByRun: 'switch', layoutForSession: 'own-x', layoutForBacktest: 'backtests',
+    })
+    expect(reconcile(saved({ layoutByRun: 'always', layoutForBacktest: '' }))).toMatchObject({
+      layoutByRun: 'offer', layoutForBacktest: 'backtests',
+    })
+  })
+
   it.each([
     ['a string', 'settings'],
     ['a number', 7],

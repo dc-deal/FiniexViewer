@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { onSharedWrite } from '@/tab_storage'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
-import type { DisplaySettings, LaneOrder, Settings, ThemeName } from '@/types/settings_types'
+import type { DisplaySettings, LaneOrder, LayoutByRun, Settings, ThemeName } from '@/types/settings_types'
 
 const STORAGE_KEY = 'settings.v1'
 const SCHEMA_VERSION = 1
@@ -54,6 +54,12 @@ export function reconcile(stored: unknown): Settings {
     settings.mediumFrom = raw.mediumFrom as number
     settings.fullFrom = raw.fullFrom as number
   }
+  if (raw.layoutByRun === 'off' || raw.layoutByRun === 'offer' || raw.layoutByRun === 'switch') {
+    settings.layoutByRun = raw.layoutByRun
+  }
+  // an id is taken by shape; whether its layout still exists is asked where it is used
+  if (typeof raw.layoutForBacktest === 'string' && raw.layoutForBacktest) settings.layoutForBacktest = raw.layoutForBacktest
+  if (typeof raw.layoutForSession === 'string' && raw.layoutForSession) settings.layoutForSession = raw.layoutForSession
   return settings
 }
 
@@ -153,6 +159,19 @@ export const useSettingsStore = defineStore('settings', () => {
     persist()
   }
 
+  function setLayoutByRun(value: LayoutByRun): void {
+    settings.value.layoutByRun = value
+    persist()
+  }
+
+  /** The layout a kind of run maps to. */
+  function setLayoutFor(kind: 'backtest' | 'session', id: string): void {
+    if (!id) return
+    if (kind === 'backtest') settings.value.layoutForBacktest = id
+    else settings.value.layoutForSession = id
+    persist()
+  }
+
   function reset(): void {
     settings.value = { ...DEFAULT_SETTINGS }
     persist()
@@ -169,6 +188,8 @@ export const useSettingsStore = defineStore('settings', () => {
     setSizeByWindow,
     setMediumFrom,
     setFullFrom,
+    setLayoutByRun,
+    setLayoutFor,
     reset,
   }
 })

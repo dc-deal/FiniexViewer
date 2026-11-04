@@ -184,6 +184,16 @@ describe('LayoutsSettings', () => {
     expect(settingsStore.settings.mediumFrom).toBe(1000)
   })
 
+  /** The layout a kind of run maps to is chosen among the layouts, a reader's own included. */
+  it('offers every layout for a kind of run to map to', async () => {
+    placed()
+    useNamedLayoutsStore().saveAs('Mine')
+    const wrapper = await settings()
+    expect(wrapper.find('[data-setting="layout-by-run"]').exists()).toBe(true)
+    const options = [...wrapper.findAll('[data-setting="layout-for-session"] option')].map(option => option.text())
+    expect(options).toEqual(expect.arrayContaining(['Backtests', 'Deploys', 'Mine']))
+  })
+
   /** The suggested order is no named layout: the one loaded before lets go of this window first. */
   it('goes back to the suggested order with no layout loaded', async () => {
     layOut()

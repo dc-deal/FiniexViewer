@@ -206,6 +206,13 @@ export const useNamedLayoutsStore = defineStore('named_layouts', () => {
   const loaded = computed(() => layouts.value.find(layout => layout.id === arrangement.layout) ?? null)
   /** The size of it this tab loaded — and the one a layout is loaded in where no size is named. */
   const loadedSize = computed<LayoutSize>(() => arrangement.layoutSize)
+  /** The layout the chosen run maps to, offered beside the menu — set by `use_layout_by_run`, null where none is. */
+  const offeredId = ref<string | null>(null)
+  const offered = computed(() => layouts.value.find(layout => layout.id === offeredId.value) ?? null)
+
+  function offer(id: string | null): void {
+    offeredId.value = id
+  }
 
   /** Forgets a loaded layout that no longer exists — deleted here or in another window. */
   function dropMissing(): void {
@@ -391,7 +398,7 @@ export const useNamedLayoutsStore = defineStore('named_layouts', () => {
   dropMissing()
 
   return {
-    layouts, loaded, loadedSize,
-    load, saveAs, rename, remove, resetShipped, unload, nameProblem, exportAll, importAll,
+    layouts, loaded, loadedSize, offered,
+    offer, load, saveAs, rename, remove, resetShipped, unload, nameProblem, exportAll, importAll,
   }
 })

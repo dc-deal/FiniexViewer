@@ -17,6 +17,7 @@ Settings › Layouts
 │ [+ Save this window as …]                                          │
 │ [⬇️ Export all …] [⬆️ Import …]                                     │
 ├─────────────────────────┴──────────────────────────────────────────┤
+│ Choose the layout by the run [Offer it ▾]  Backtest [Backtests ▾]  Session [Deploys ▾]
 │ (○) Choose the size by the window   Medium from [900] Full from [1500]
 │ Panels  [Back to the suggested order]                              │
 └────────────────────────────────────────────────────────────────────┘
@@ -132,6 +133,23 @@ file's layouts beside these — one with an id already here replaces it, the res
 nothing out. A file of another version, or with no layout in it, is refused and said so beneath the buttons. This
 replaces the export and import of the bundle's column, which lived in the settings.
 
-## Open in viewer#37
+## The layout by the run
 
-A layout chosen by the run that is opened stays in the issue with its questions.
+Picking a run chooses its layout (operator, 2026-11-04): a backtest maps to *Backtests*, an
+AutoTrader session or a deployment to *Deploys* — the kind read from the run's `group`, the
+pipeline that produced it (`simulation`, `autotrader`), as the backend's `run-kinds` names it. Both
+mappings are chosen in Settings › Layouts among all layouts; one whose layout was deleted maps to
+nothing. `use_layout_by_run.ts` does it, at the app root, in one of three modes:
+
+```
+FiniexViewer  Panels ▾  Layouts ▾  [⇄ Deploys]     ← offer: a session picked while Backtests is loaded
+```
+
+- **Offer it** (the default) puts the layout the run maps to beside the Layouts menu, as ⇄ and its
+  name, where another layout is loaded; a click loads it in the size the tab stands in. Picking a
+  run that fits the loaded layout takes it away. Nothing is offered while no layout is loaded: a
+  reader who never loaded one is not using layouts.
+- **Switch to it** loads it at the pick. Only a pick switches, never the selection a reload brings
+  back — that is in place before the binding exists, so its watchers never see it.
+- **Off** leaves the layout to the reader. Since a switch moves the panels at a selection, it is the
+  one exception, chosen by the reader, to *a selection never moves the layout*.

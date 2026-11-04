@@ -83,6 +83,24 @@ describe('LayoutsMenu', () => {
     expect(useArrangementStore().layoutSize).toBe('mobile')
   })
 
+  /** The layout the chosen run maps to stands beside the menu, and a click loads it. */
+  it('shows the offered layout beside the menu, and loads it on a click', async () => {
+    const restore = layOut()
+    const store = useNamedLayoutsStore()
+    store.load('backtests', 'medium')
+    mountMenu()
+    expect(mounted!.find('[data-action="layout-offer"]').exists()).toBe(false)
+
+    store.offer('deploys')
+    await flushPromises()
+    const offer = mounted!.find('[data-action="layout-offer"]')
+    expect(offer.text()).toBe('⇄ Deploys')
+    await offer.trigger('click')
+    expect(restore).toHaveBeenCalledTimes(2)
+    expect(store.loaded?.id).toBe('deploys')
+    expect(store.loadedSize).toBe('medium')
+  })
+
   /**
    * The menu chooses and the settings manage (2026-11-04): after the layouts comes one entry, and it
    * opens the settings on their Layouts tab. No action stands beside the choices.

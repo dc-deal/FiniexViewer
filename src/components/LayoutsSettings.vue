@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppButton from '@/components/base/AppButton.vue'
+import AppSelect from '@/components/base/AppSelect.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
@@ -9,6 +10,7 @@ import { useDockStore } from '@/stores/dock_store'
 import { useNamedLayoutsStore } from '@/stores/named_layouts_store'
 import { LAYOUT_WIDTH_RANGE, useSettingsStore } from '@/stores/settings_store'
 import type { ListColumn } from '@/types/list_types'
+import type { LayoutByRun } from '@/types/settings_types'
 import { t } from '@/translate'
 
 /**
@@ -21,6 +23,15 @@ const dock = useDockStore()
 const settingsStore = useSettingsStore()
 const { layouts, loaded } = storeToRefs(store)
 const { settings } = storeToRefs(settingsStore)
+
+const modeOptions = [
+  { value: 'off', label: t('Off') },
+  { value: 'offer', label: t('Offer it') },
+  { value: 'switch', label: t('Switch to it') },
+]
+
+/** Every layout a kind of run can map to; one mapped and since deleted stands as its id until another is chosen. */
+const layoutOptions = computed(() => layouts.value.map(layout => ({ value: layout.id, label: layout.name })))
 
 /** A width the store refuses — out of range, or across the other bound — leaves the field showing what holds. */
 function onWidth(event: Event, apply: (value: number) => void): void {
@@ -173,6 +184,43 @@ function suggestedOrder(): void {
           </AppButton>
         </div>
       </form>
+    </div>
+
+    <!-- the layout the chosen run maps to: offered by default, and switchable off -->
+    <div class="setting by-run">
+      <div class="widths">
+        <div class="field mode">
+          <span class="field-label">{{ t('Choose the layout by the run') }}</span>
+          <AppSelect
+            :model-value="settings.layoutByRun"
+            :options="modeOptions"
+            :label="t('Choose the layout by the run')"
+            data-setting="layout-by-run"
+            @update:model-value="value => settingsStore.setLayoutByRun(value as LayoutByRun)"
+          />
+        </div>
+        <div class="field mode">
+          <span class="field-label">{{ t('Backtest') }}</span>
+          <AppSelect
+            :model-value="settings.layoutForBacktest"
+            :options="layoutOptions"
+            :label="t('The layout of a backtest')"
+            data-setting="layout-for-backtest"
+            @update:model-value="value => settingsStore.setLayoutFor('backtest', value)"
+          />
+        </div>
+        <div class="field mode">
+          <span class="field-label">{{ t('Session') }}</span>
+          <AppSelect
+            :model-value="settings.layoutForSession"
+            :options="layoutOptions"
+            :label="t('The layout of a session')"
+            data-setting="layout-for-session"
+            @update:model-value="value => settingsStore.setLayoutFor('session', value)"
+          />
+        </div>
+      </div>
+      <HintLine id="layout-by-run" />
     </div>
 
     <!-- the window's width choosing the loaded layout's size: off unless the reader wants it -->
@@ -361,5 +409,9 @@ function suggestedOrder(): void {
 
 .width {
   width: 9rem;
+}
+
+.mode {
+  min-width: 10rem;
 }
 </style>

@@ -1,5 +1,5 @@
 import { test, expect } from './cdp_fixture'
-import { FIXTURE_RUN, mockApi } from './api_mock'
+import { FIXTURE_DEPLOYMENT, FIXTURE_RUN, mockApi } from './api_mock'
 import { FIXTURES_SHOWN, openWith, storedLink } from './arrangement_seed'
 
 /**
@@ -127,6 +127,43 @@ test('each size of a layout is a placement of its own, and a change goes into it
   await loadSize(page, 'backtests', 'mobile')
   await expect(page.locator('[data-panel-kind="run"]')).toHaveCount(1)
   await expect(page.locator('[data-panel-kind="run-chart"]')).toHaveCount(0)
+})
+
+/**
+ * The layout by the run (2026-11-04), offered by default: the backtest a reload brings back is offered
+ * its layout while *Deploys* is loaded, never switched to, and a click on the offer loads it.
+ */
+test('the layout a backtest maps to is offered beside the menu, and loaded at a click', async ({ page }) => {
+  await loadLayout(page, 'deploys')
+  const offer = page.locator('[data-action="layout-offer"]')
+  await expect(offer).toHaveText('⇄ Backtests')
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toHaveCount(0)
+
+  await offer.click()
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toBeVisible()
+  await expect(offer).toHaveCount(0)
+})
+
+/** Where the reader chose to switch, a pick loads its layout — and a reload brings nothing back but the pick. */
+test('a pick loads its layout where the reader chose to switch, and a reload switches nothing', async ({ page }) => {
+  await page.locator('.layouts-trigger').click()
+  await page.locator('.layouts-menu [data-action="manage-layouts"]').click()
+  await page.locator('[data-setting="layout-by-run"]').selectOption('switch')
+  await page.keyboard.press('Escape')
+  await loadLayout(page, 'backtests')
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toBeVisible()
+
+  await page.locator('.dv-tab', { hasText: 'Deployments' }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
+  await expect(page.locator('[data-panel-kind="deployment-sessions"]')).toBeVisible()
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toHaveCount(0)
+  await expect(page.locator('[data-action="layout-offer"]')).toHaveCount(0)
+
+  // the stored backtest comes back with the reload; the layout stays the one the pick loaded
+  await page.waitForTimeout(800)
+  await page.reload()
+  await page.locator('[data-panel-kind="deployment-sessions"]').waitFor()
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toHaveCount(0)
 })
 
 test('a layout with a panel this build does not know lays out the rest', async ({ page }) => {

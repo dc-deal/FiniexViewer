@@ -10,6 +10,7 @@ import { provideOpenInContext } from '@/composables/use_open_in_context'
 import { provideRunReportChannels } from '@/composables/use_run_report_channels'
 import { useRunBinding } from '@/composables/use_run_binding'
 import { useDeploymentBinding } from '@/composables/use_deployment_binding'
+import { useLayoutByRun } from '@/composables/use_layout_by_run'
 import { useLayoutSizeByWindow } from '@/composables/use_layout_size_by_window'
 import { useRunReportsLoading } from '@/composables/use_run_reports_loading'
 import AppMenuBar from '@/components/AppMenuBar.vue'
@@ -35,6 +36,8 @@ provideRunReportChannels()
 useDeploymentBinding()
 // the window's width choosing the loaded layout's size, where the reader switched that on (viewer#37)
 useLayoutSizeByWindow()
+// the layout the chosen run maps to, offered or loaded as the reader chose (viewer#37)
+useLayoutByRun()
 
 // The one place the theme reaches the document. Panels never receive it — they read the tokens the
 // attribute selects, which is why a theme change needs no re-render anywhere else. The exception is
