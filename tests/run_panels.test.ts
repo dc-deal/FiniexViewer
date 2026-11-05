@@ -1,11 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import { defineComponent, h } from 'vue'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestOpenInContext } from './open_in_context_harness'
 import type { TestOpenInContext } from './open_in_context_harness'
 import ExecutivePanel from '@/components/runs/ExecutivePanel.vue'
 import FeedHealthPanel from '@/components/runs/FeedHealthPanel.vue'
+import HoverCard from '@/components/base/HoverCard.vue'
 import RunHeaderPanel from '@/components/runs/RunHeaderPanel.vue'
 import WarningsErrorsPanel from '@/components/runs/WarningsErrorsPanel.vue'
 import { provideCheckTitles } from '@/composables/use_check_titles'
@@ -115,9 +117,9 @@ describe('ExecutivePanel', () => {
       },
     })
     const wrapper = mount(Host)
-    // the mark says it in the line; the sentence is on the mark, a hover away (viewer#42)
+    // the mark says it in the heading's line; the sentence is on the mark, a hover away (viewer#42)
     expect(wrapper.find('.scope').text()).toBe('whole run')
-    expect(wrapper.find('.scope-line').text()).toBe('whole run')
+    expect(wrapper.find('.currency-title .scope').exists()).toBe(true)
     expect(wrapper.find('.scope').attributes('title')).toContain('every scenario')
   })
 
@@ -743,6 +745,9 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
 }
 
 describe('RunHeaderPanel', () => {
+  // its hints read their store
+  beforeEach(() => setActivePinia(createPinia()))
+
   /**
    * TWO models. The index ROW is never absent; the served HEADER may be, and the panel then draws
    * what the row knows and nothing more — which is the case a run recorded before contract 26.
@@ -757,6 +762,7 @@ describe('RunHeaderPanel', () => {
       start_time: '2026-08-30T14:58:19Z',
       run_type: 'simulation',
       run_name: 'ETHUSD_blocks',
+      features_beyond_venue: null,
       parent_id: null,
       parent_kind: null,
       config_snapshot: 'ETHUSD_blocks.json',
@@ -782,6 +788,7 @@ describe('RunHeaderPanel', () => {
   function repository(overrides = {}) {
     return {
       root: '.', in_repository: true, commit: '3b31c84a', branch: 'dev-v-1-4',
+      commit_subject: null, recent_commits: null,
       dirty: false, uncommitted_count: 0, changes: [], diff_hash: null,
       patch_ref: null, patch_excluded: [], restorable: true,
       ...overrides,
@@ -856,6 +863,9 @@ describe('RunHeaderPanel', () => {
     })
     await wrapper.find('.jump-link').trigger('click')
     expect(way.opened).toEqual([{ what: 'deployment', id: 'deploy_20260922_121648' }])
+    // what it opens stands in a hint, never on a browser tooltip
+    expect(wrapper.text()).toContain("the deployment's history")
+    expect(wrapper.find('.jump-link').attributes('title')).toBeUndefined()
   })
 
   it('names the deployment as plain text where nothing can open it', () => {
@@ -867,6 +877,7 @@ describe('RunHeaderPanel', () => {
     expect(wrapper.find('.jump-link').exists()).toBe(false)
     const value = wrapper.findAll('dd').find(node => node.text().includes('deploy_20260922_121648'))
     expect(value!.text()).toBe('deploy_20260922_121648')
+    expect(wrapper.text()).not.toContain("the deployment's history")
   })
 
   /** A sweep has a panel of its own since viewer#32: its id opens its ranking, where the run stands among the others. */
@@ -878,6 +889,7 @@ describe('RunHeaderPanel', () => {
     })
     await wrapper.find('.jump-link').trigger('click')
     expect(way.opened).toEqual([{ what: 'sweep', id: 'sweep_20260830_154907' }])
+    expect(wrapper.text()).toContain("the sweep's ranking")
   })
 
   /**
@@ -934,6 +946,27 @@ describe('RunHeaderPanel', () => {
   })
 
   /**
+   * Contract 45: the order features a backtest was allowed beyond what its venue's API holds, in the
+   * warning role under their label, with a hint saying what it means for the results. Empty on every
+   * other run and null on an older one: both say nothing.
+   */
+  it('flags the order features a backtest was allowed beyond the venue, and says nothing where there are none', () => {
+    for (const features of [[], null]) {
+      const quiet = mount(RunHeaderPanel, {
+        props: { model: headerModel({}, header({ features_beyond_venue: features })) },
+      })
+      expect(quiet.text()).not.toContain('Beyond the venue')
+      expect(quiet.text()).not.toContain('do not predict')
+    }
+    const beyond = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({ features_beyond_venue: ['stop_loss', 'take_profit'] })) },
+    })
+    expect(beyond.text()).toContain('Beyond the venue')
+    expect(beyond.find('.flagged').text()).toBe('⚠ stop_loss · take_profit')
+    expect(beyond.text()).toContain('do not predict a session on that venue')
+  })
+
+  /**
    * `first_start` (contract 37) says a session trading real money started without a carry-over,
    * because its start was declared the bot's first. A stated fact, not a warning, and false says
    * nothing.
@@ -954,6 +987,10 @@ describe('RunHeaderPanel', () => {
     })
     expect(first.text()).toContain('Declared first start')
     expect(first.find('.flagged').exists()).toBe(false)
+    // what it means stands in a hint, never on a browser tooltip
+    expect(first.text()).toContain('without a carry-over to continue')
+    expect(first.find('dd[title]').exists()).toBe(false)
+    expect(quiet.text()).not.toContain('without a carry-over to continue')
   })
 
   /**
@@ -996,8 +1033,56 @@ describe('RunHeaderPanel', () => {
     })
     expect(wrapper.text()).toContain('118 uncommitted changes')
     expect(wrapper.text()).not.toContain('2 uncommitted changes')
-    // the sample is one hover away rather than two lines on the panel
-    expect(wrapper.find('.flagged').attributes('title')).toContain('M a.py')
+    // the sample is one hover away rather than two lines on the panel, in their words — the leading
+    // space is git's status column — and says it is a sample
+    const sample = wrapper.findComponent(HoverCard).props('paths')!
+    expect(sample[0]).toBe(' M a.py')
+    expect(sample.at(-1)).toContain('and more')
+    expect(wrapper.find('.flagged').attributes('title')).toBeUndefined()
+  })
+
+  /** The patch kept and the file a component came from are data under the pointer: a card, in their words. */
+  it('keeps where the patch and a component came from in a card, one hover away', () => {
+    const wrapper = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        code_identity: {
+          framework: repository({ dirty: true, uncommitted_count: 1, changes: [' M a.py'], restorable: true, patch_ref: 'run_patches/abc.patch' }),
+          repositories: [],
+          components: [{ role: 'decision', name: 'trend', type: 'CORE/trend', version: '1.0.0', repository: 'algos', source_path: 'trend.py' } as never],
+        },
+      })) },
+    })
+    const cards = wrapper.findAllComponents(HoverCard).map(card => ({ title: card.props('title'), paths: card.props('paths')! }))
+    expect(cards).toEqual(expect.arrayContaining([
+      { title: 'Changes', paths: [' M a.py'] },
+      { title: 'Patch', paths: ['run_patches/abc.patch'] },
+      { title: 'Source', paths: ['algos/trend.py'] },
+    ]))
+    expect(wrapper.find('[title]').exists()).toBe(false)
+  })
+
+  /** Contract 47: on a session of a deployment the commit says what it was; null on every other run. */
+  it('keeps what a commit says in a card, one hover away, and offers none where nothing is known', () => {
+    const named = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        code_identity: {
+          framework: repository({ commit_subject: 'Correct a sentence in a guide', recent_commits: ['a1b2c3d4e5f6', '0f9e8d7c6b5a'] }),
+          repositories: [],
+          components: [],
+        },
+      })) },
+    })
+    const card = named.find('.repo').findComponent(HoverCard).props('details')!
+    expect(card).toContainEqual({ label: 'Commit message', value: 'Correct a sentence in a guide' })
+    expect(card).toContainEqual({ label: 'Recent commits', value: 'a1b2c3d4e5f6 · 0f9e8d7c6b5a' })
+
+    const plain = mount(RunHeaderPanel, {
+      props: { model: headerModel({}, header({
+        code_identity: { framework: repository(), repositories: [], components: [] },
+      })) },
+    })
+    expect(plain.find('.repo').text()).toContain('3b31c84a')
+    expect(plain.find('.repo').findComponent(HoverCard).exists()).toBe(false)
   })
 
   it('names every repository and every component that ran', () => {
@@ -1013,7 +1098,7 @@ describe('RunHeaderPanel', () => {
             },
             {
               role: 'worker', name: 'rsi_fast', type: 'RSI', version: '1.0.0',
-              source_path: 'user_algos/rsi.py', repository: 'user_algos', package_digest: 'ab12',
+              source_path: 'rsi.py', repository: 'user_algos', package_digest: 'ab12',
             },
           ],
         },
@@ -1025,8 +1110,11 @@ describe('RunHeaderPanel', () => {
     expect(components).toHaveLength(2)
     expect(components[1]!.text()).toContain('rsi_fast')
     expect(components[1]!.text()).toContain('1.0.0')
-    // the file it came from is a hover, not a column: it is a path and paths are long
-    expect(components[1]!.find('.mono').attributes('title')).toContain('user_algos/rsi.py')
+    // the file it came from is a hover, not a column: it is a path and paths are long. Relative to
+    // its own repository, and the framework's own needs no name
+    const source = (at: number) => components[at]!.findComponent(HoverCard).props('paths')![0]
+    expect(source(0)).toBe('python/x.py')
+    expect(source(1)).toBe('user_algos/rsi.py')
   })
 
   it('shows a membership of an unknown kind without claiming what it means', () => {

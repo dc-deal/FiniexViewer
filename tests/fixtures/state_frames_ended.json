@@ -2,14 +2,14 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-10-28T08:13:29.749019Z",
+  "served_at": "2026-11-05T10:23:10.615572Z",
   "units": [
     {
       "unit_name": "state_frames_test",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
       "written_at": "2026-10-22T12:35:57.805860Z",
-      "age_s": 502651.943159,
+      "age_s": 1201632.809712,
       "recording": "ended",
       "truncated_tail": false,
       "first_frame": {
@@ -62,9 +62,7 @@
             "unrealized_pnl": -83.10808000000002,
             "valued": true,
             "stop_loss": null,
-            "take_profit": null,
-            "protective_level_enforcement": "",
-            "take_profit_enforcement": ""
+            "take_profit": null
           }
         ],
         "active_orders": [],

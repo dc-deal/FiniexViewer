@@ -16,6 +16,12 @@ states of a control on two channels, form before word before colour — is the s
   issue or the plan of the work that needs it: what it is for, its states, which channels carry
   them. It is built in `src/components/base/` with its unit test, its line in this map and its
   paragraph in the style guide, in the same change. `AppSwitch` and `AppSlider` came that way (#41).
+- **A menu chooses, the settings manage** (2026-11-04). A menu in the menu bar lists what can be
+  chosen, marks the choice and ends with one entry, *Manage …*, that opens the settings on their own
+  tab; making, renaming, deleting, resetting, importing and exporting stand there, as a `RecordList`
+  with a detail beside it. *Manage servers…* and *Manage layouts…* are the two.
+- **One text size for every building block**, and a heading told by its form — an uppercase label
+  or a `RuleHeading` — never by a larger size ([style guide](theme_buttons_and_icons.md#one-text-size--a-heading-told-by-its-form)).
 - **Underneath are Reka UI's headless primitives and Lightweight Charts.** A new building block
   builds on them rather than on a hand-rolled overlay, focus trap or positioning.
 
@@ -47,10 +53,11 @@ Everything in `src/components/base/` unless the third column names another place
 | Building block | What it is for | Lives in | Described in |
 |---|---|---|---|
 | `FigureBlock` | a titled block of label/value pairs — the shape figures are shown in | base | [Run Header, Broker and Configuration](../runs/run_header_broker_and_configuration.md) |
+| `RuleHeading` | a heading that parts a panel into blocks of one kind — a currency, a unit — between two rules, at the one text size | base | [style guide](theme_buttons_and_icons.md#one-text-size--a-heading-told-by-its-form) |
 | `HoverCard` | a card of figures beside the element it wraps, on hover or focus | base | [Candle Charts](../panels/candle_charts.md) |
 | `ChartCard` | the card of a thing drawn on a chart, at the pointer — a mark is paint, not an element | base | [Candle Charts](../panels/candle_charts.md) |
-| `FigureCardBody` | what a card of figures says, its heading and its pairs — both cards say it alike | base | [Candle Charts](../panels/candle_charts.md) |
-| `PathLabel` | a path-shaped identifier, a worker type or a decision logic, held by a column | base | [Run Header, Broker and Configuration](../runs/run_header_broker_and_configuration.md) |
+| `FigureCardBody` | what a card of figures says, its heading, its pairs and any paths — both cards say it alike | base | [Candle Charts](../panels/candle_charts.md) |
+| `PathLabel` | a path-shaped identifier, a worker type or a decision logic, held by a column or a card | base | [Run Header, Broker and Configuration](../runs/run_header_broker_and_configuration.md) |
 | `ScopeMark` | the mark that a figure is the whole run's, beside one a narrowing cannot split | base | [Scenario Roster and Focus](../runs/scenario_roster_and_focus.md) |
 | `JsonTree` | any JSON value as a collapsible tree — the floor under every named view | base | [Run Header, Broker and Configuration](../runs/run_header_broker_and_configuration.md) |
 

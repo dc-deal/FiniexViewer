@@ -50,6 +50,11 @@ by its tab, the way a reader does.
 - `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per
   tab, and to a frame that stays inside a small window with its content scrolling, and the account
   standing in the menu bar with no tab for it in the settings.
+- `font_size.spec.ts` holds every text to ONE size: each that the dock and the menu bar draw for a
+  backtest, a live session, an ended one and a deployment, every section of their bundles opened,
+  and each on every tab of the settings dialog, measured as the browser computed it against the
+  body's. A failure names every text at another size, so a component that forgot to set none and
+  inherited a larger one is found by name.
 - `machine_status.spec.ts` holds the machine's state in the menu bar — both shares from the captured
   reading, on one line, its card naming where the limit was read — and that a new reading moves
   nothing beside it: the account keeps its place while a share goes from 100 to 9.
@@ -62,13 +67,17 @@ by its tab, the way a reader does.
   backtest's label opening its run in the run bundle, the activity built from the server's row.
 - `sweeps.spec.ts` holds the parameter searches: the Sweeps panel opened from the Panels menu, a
   sweep opened in its one list, its combinations beneath it in the order the route ranked them with
-  the first marked ★, and a combination chosen as a run, its report coming forward in the run bundle.
+  the first marked ★, a combination chosen as a run, its report coming forward in the run bundle, and
+  the card on a heading, under the pointer and for a keyboard.
 - `latest_state.spec.ts` holds the check-in on a session, from the two captured answers: a session
   whose recording stopped standing first in its bundle with its frame open and its report said as
   never written, an ended one folding its last frame behind its outcome, its frames over time
   played — opened on the newest, stepped back to the first and played on to the end — a session whose
   frames over time are not recorded showing its latest alone, and a backtest drawing no such
-  section.
+  section; and the frame on show on the run chart beside it, moving with each step
+  of the player, read off the element since a canvas cannot be read back.
+- `venue_account.spec.ts` holds the venue account of the captured live run: what the venue held at its start and end in its bundle, every read on a fold that opens, and a backtest drawing no such section
+- `named_layouts.spec.ts` holds the named layouts in the real dock: a shipped layout moving the panels and leaving the run as it was, a layout saved under a name on the settings' Layouts tab, reached from the menu's one entry, coming back after a reload loaded and as it was, each size of a layout a placement of its own — Mobile laying the run bundle out where Full stands its sections as panels, a panel hidden in Mobile still there in Full and still hidden back in Mobile — the layout a restored backtest maps to offered beside the menu while Deploys is loaded and loaded at a click, a pick of a deployment loading its layout where the reader chose to switch and a reload switching nothing, and a layout naming a panel this build does not know laying out the rest; `performance.spec.ts` measures a layout laid out from the click to the second frame after it
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel — or, with the run
@@ -77,7 +86,8 @@ by its tab, the way a reader does.
   menu bar shortening its name before anything beside it moves, its button still whole and inside
   the bar, the Panels trigger on one line — at 760 px, where the bar fits its mark and button and
   not its whole text — and no figure of the executive summary breaking onto a second line or cut
-  short, at the width where they broke; and the run list's facet bar on one line at 1400 and 700 px
+  short, at the width where they broke; the menu bar inside a window 600 px wide, the machine's
+  figures by their glyphs and the page never wider than the window; and the run list's facet bar on one line at 1400 and 700 px
   and on two at most at 420 px, measured against the height of one chip. All of them were red
   against the code before them.
 - `show_in_list.spec.ts` holds the way back from the run bundle to the chosen run's row: the run
@@ -99,9 +109,13 @@ by its tab, the way a reader does.
   of a position the run ended with still open marked, though it has no trade; marks that would cover
   each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
   the chart leaving the whole chart inside its panel; the levels of the position looked at painted
-  on a real canvas, from a position the mock hands a stop and a target; and ONE
+  on a real canvas, from a position the mock hands a stop and a target; an own level that fired drawn
+  from the row that names it, which no stored run carries yet; ONE
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
-  in the chart narrows the lists to it.
+  in the chart narrows the lists to it; and bars loaded as the view moves (viewer#9) — a unit's first
+  tick moved three weeks back over both stretches of the captured EURGBP bars, read in M1, has its
+  earlier stretch loaded across the gap, never asked past the window, while the first bar in view
+  stays the later stretch's: the view did not jump.
 - `layers_panel.spec.ts` holds the Layers panel: opened from the run chart's quick bar BESIDE the
   chart it arranges, the chart still on show and, ten frames later, still inside its own group, its
   group scrolled by nothing — it once stood 171 px left of it, over the report; a layer switched off at its lever and no longer drawn
@@ -178,8 +192,10 @@ and a pick showing the deployment's bundle beside the list, which stays whole an
 session's summary answered with its own net P&L, so two runs cannot be mistaken for each other — the
 spec went red against the jump that only changed the context), the selection surviving a reload as a link, a stale link saying so in the bundle, the
 figure cells right-aligned under their headings, the timeline marking round moments rather than
-the overlapping stamps an operator photographed, and a change mark opening the configuration of the
-session before it as a panel of its own, its links whole on the line at about the list floor. `panel_layout.spec.ts` also holds that **a list's heading sticks flush to the top of the area it scrolls in**, nothing showing through above it — measured in the trade history open as a panel of its own; that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow deployment bundle keeps its deployment line to one line. It holds that **no panel scrolls sideways**, at a wide
+the overlapping stamps an operator photographed, a change mark opening the configuration of the
+session before it as a panel of its own, its links whole on the line at about the list floor, and a
+long code change between two sessions, mocked because no stored session carries one yet: its words give
+way, its dashes stay and its commits stand in the card. `servers.spec.ts` holds the switch: every request of a window going to its server, the selection coming back per server while the arrangement stays, no connection said as such in the list and the menu bar, and a server added in the settings with its token sent once and never shown. `panel_layout.spec.ts` also holds that **a list's heading sticks flush to the top of the area it scrolls in**, nothing showing through above it — measured in the trade history open as a panel of its own; that **a narrow run bundle keeps its run line to one line**, that the Panels menu switches a section in the column off and on again, and that a narrow deployment bundle keeps its deployment line to one line. It holds that **a long path in a card wraps** rather than scrolling the card sideways, on a changed file in the run header. It holds that **no panel scrolls sideways**, at a wide
 and at a narrow width: `.panel-content` carries `overflow-x: auto`, which is the right safety valve
 and a poor everyday state, because the moment it engages the panel's leftmost column slides out of
 view and nothing says so. Two defects of exactly that shape reached the screen in one week — a
@@ -205,7 +221,12 @@ at the size a real search reaches (viewer#32): 500 combinations built from the c
 the sweep opened until the 500th row stands — what says whether the ranking needs a row cap. A
 deployment picked in its list until its bundle draws the sessions (viewer#43), and a step of a
 session's frame player (viewer#51) over 500 frames built from the captured ones and served as the
-route serves them — from, to and a limit — the mean of twenty.
+route serves them — from, to and a limit — the mean of twenty. The same steps again with the run chart beside the
+player, whose line moves with each one (viewer#51). And bars loaded as the view moves
+(viewer#9): from M1 chosen on a unit widened over both captured EURGBP stretches until both are
+drawn — the first batch, the pieces across the three-week gap, the earlier bars merged in front.
+A named layout laid out from the click to the second frame after it (viewer#37), and a live session
+chosen until its venue account draws the venue's table (viewer#54), read inside the page.
 
 **`readme_pictures.spec.ts` takes the README's pictures**, so they stay current (operator,
 2026-10-29): at every release, and whenever a view they show changes visibly. Against the LIVE API

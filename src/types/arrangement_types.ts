@@ -2,6 +2,7 @@ import type { ChartLayerId } from '@/types/chart_drawing_types'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext } from '@/types/context_types'
 import type { LayerOptionId } from '@/types/layer_types'
+import type { LayoutSize } from '@/types/named_layout_types'
 import type { PriceForm } from '@/types/run_chart_types'
 
 /**
@@ -123,4 +124,11 @@ export interface StoredArrangement {
   places: Record<string, DockPlace>
   /** Each panel's own view, by dock id — read here by shape, kept against the kinds by the dock store. */
   panelViews: Record<string, StoredPanelView>
+  /**
+   * The named layout this tab loaded, by id (viewer#37) — what its placement is saved into as it
+   * changes. Null where none was: the tab's arrangement is then its own and nobody else's.
+   */
+  layout: string | null
+  /** The size of it this tab loaded, and the one the next layout loads in; Full until one is chosen. */
+  layoutSize: LayoutSize
 }

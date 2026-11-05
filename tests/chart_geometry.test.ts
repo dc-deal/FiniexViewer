@@ -109,6 +109,25 @@ describe('chart_geometry', () => {
       expect(hitDrawing([covering, levels], 15, 250)).toMatchObject({ id: 'level|SL|a' })
     })
 
+    /** A moment is found anywhere along its height, and a mark in a layer in front of it wins. */
+    it('finds a moment near its rule, and the mark in front of it first', () => {
+      const moment = placeLayer({
+        id: 'state-frame',
+        drawings: [{ kind: 'time', id: 'state-frame', time: 1, role: 'annotation', card: { title: 'a', details: [] } }],
+      }, BARS, SCALE)
+      const x = moment.times[0]!.x
+      expect(x).toBe(10)
+      expect(hitDrawing([moment], x + 3, 400)).toMatchObject({ id: 'state-frame', point: false })
+      expect(hitDrawing([moment], x + 6, 400)).toBeNull()
+      const mark = trades.marks[0]!
+      expect(hitDrawing([moment, trades], mark.x, mark.y)).toMatchObject({ id: 'exit|front', point: true })
+      // off the time scale it is left out, never drawn at a guessed place
+      expect(placeLayer({
+        id: 'state-frame',
+        drawings: [{ kind: 'time', id: 'state-frame', time: 500, role: 'annotation', card: { title: 'a', details: [] } }],
+      }, BARS, SCALE).times).toEqual([])
+    })
+
     it('finds nothing where nothing is drawn', () => {
       expect(hitDrawing([levels, lines, trades], 700, 20)).toBeNull()
     })

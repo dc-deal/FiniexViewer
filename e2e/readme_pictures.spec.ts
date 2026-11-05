@@ -31,15 +31,16 @@ const SESSION = '20261022_123550_0bfde90e'
 const DEPLOYMENT = 'deploy_20261012_205734'
 // a session of that deployment, so the panels beside it show the bot's run
 const DEPLOYMENT_SESSION = '20261012_205836_86534a35'
-const SWEEP = 'sweep_20261012_210055'
+const SWEEP = 'sweep_20261031_100348_42d8ea0b'
 // the arrangement the pictures are taken in, stored with the size it was arranged at
 const ARRANGEMENT = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'readme_arrangement.json'), 'utf-8'))
 const HIDDEN = (process.env['PICTURES_HIDE'] ?? '').split(',').map(word => word.trim().toLowerCase()).filter(Boolean)
 const HINTS = [
   'scenario-pick', 'quick-bar', 'open-as-panel', 'bundle-commands', 'dock-edges', 'facet-bar', 'activities',
   'deployment-sessions', 'sweeps', 'layers', 'layer-trades', 'layer-entry-exit', 'layer-levels', 'layer-candles',
-  'layer-volume', 'layer-empty-levels', 'layer-empty-entry-exit', 'layer-empty-trades', 'chart-marks',
-  'trade-slippage', 'position-link',
+  'layer-volume', 'layer-state-frame', 'layer-empty-levels', 'layer-empty-entry-exit', 'layer-empty-trades',
+  'layer-empty-state-frame', 'chart-marks',
+  'trade-slippage', 'position-link', 'beyond-the-venue', 'first-start', 'run-membership',
 ]
 
 async function prepare(page: Page): Promise<void> {

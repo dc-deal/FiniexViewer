@@ -1,6 +1,6 @@
 import { rowKey } from '@/api/list_key'
 import {
-  amount, drawdownFigure, duration, figure, magnitude, numberOrNa, orDash, percentOrNa, rValue, shortHash, signClass, utcInstant,
+  bookedAmount, drawdownFigure, duration, figure, magnitude, numberOrNa, orDash, percentOrNa, rValue, shortHash, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { SweepCombination, SweepDetail, SweepRow } from '@/types/api/sweep_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
@@ -54,11 +54,18 @@ function objectiveValue(row: SweepCombination, objective: string): unknown {
 }
 
 function rankedRows(sweep: SweepRow, detail: SweepDetail): SweepListRow[] {
-  if (!detail.combinations.length) return [stateRow(sweep, t('No combination produced usable data'))]
+  // `unranked` says they ran and carry no value for the objective: a sweep ranked by `expectancy` where
+  // no trade has an R serves an empty ranking (contract 46), and nothing about that data is unusable
+  if (!detail.combinations.length) {
+    return [stateRow(sweep, detail.unranked
+      ? `${plural(detail.unranked, t('combination'), t('combinations'))} ${t('ran, and none has a figure for')} ${detail.objective}`
+      : t('No combination produced usable data'))]
+  }
   const currencies = [...new Set(detail.combinations.map(row => row.currency))]
   return currencies.flatMap(currency => {
     const rows = detail.combinations.filter(row => row.currency === currency)
     const best = objectiveValue(rows[0]!, detail.objective)
+    const led = statesFigure(rows[0]!, detail.objective)
     return rows.map((combination, index): CombinationRow => ({
       kind: 'combination',
       sweep,
@@ -67,8 +74,9 @@ function rankedRows(sweep: SweepRow, detail: SweepDetail): SweepListRow[] {
       key: `${sweep.sweep_id}|${rowKey(combination, detail.key)}`,
       place: index + 1,
       // equality of the served value, nothing ranked here: four combinations of
-      // `sweep_20261008_223212` all read `net_pnl` 0.0 (measured 2026-10-19)
-      first: objectiveValue(combination, detail.objective) === best,
+      // `sweep_20261008_223212` all read `net_pnl` 0.0 (measured 2026-10-19). Only on a figure the row
+      // and the first both state: a ranking led by a value nobody measured has no first
+      first: led && objectiveValue(combination, detail.objective) === best && statesFigure(combination, detail.objective),
     }))
   })
 }
@@ -87,36 +95,41 @@ export function sweepListRows(sweeps: SweepRow[], state: SweepRankings): SweepLi
 }
 
 /** The objective's figure, formatted as the summary formats the same field; one unknown here, as a number. */
-export function objectiveFigure(row: CombinationRow): string {
-  const combination = row.combination
-  switch (row.objective) {
+function figureOf(combination: SweepCombination, objective: string): string {
+  switch (objective) {
     case 'expectancy': return rValue(combination.expectancy, combination.r_trade_count)
-    case 'net_pnl': return amount(combination.net_pnl, combination.currency)
+    case 'net_pnl': return bookedAmount(combination.net_pnl, combination.currency)
     case 'win_rate': return percentOrNa(combination.win_rate, combination.total_trades)
     case 'profit_factor': return numberOrNa(combination.profit_factor, combination.total_trades)
     case 'account_max_drawdown': return orDash(combination.account_max_drawdown, value => magnitude(value, combination.currency))
   }
   // their vocabulary may grow: the field the response names, read by that name
-  const value = objectiveValue(combination, row.objective)
+  const value = objectiveValue(combination, objective)
   return typeof value === 'number' ? figure(value) : t('n/a')
 }
 
-/** A parameter by the last part of its configuration key; the whole key is on the title and the card. */
+export function objectiveFigure(row: CombinationRow): string {
+  return figureOf(row.combination, row.objective)
+}
+
+/** Whether a row states the objective's figure at all, or only an absence. */
+function statesFigure(combination: SweepCombination, objective: string): boolean {
+  const shown = figureOf(combination, objective)
+  return shown !== t('n/a') && shown !== '—'
+}
+
+/** A parameter by the last part of its configuration key; the whole key is in the row's card. */
 export function parametersText(combination: SweepCombination): string {
   return Object.entries(combination.sweep_params).map(([key, value]) => `${key.split('.').pop()} ${value}`).join(' · ')
 }
 
-export function parametersTitle(combination: SweepCombination): string {
-  return Object.entries(combination.sweep_params).map(([key, value]) => `${key} ${value}`).join('\n')
-}
-
 /**
- * What the ranking is ordered by, in a word for the heading and a sentence for its title: the
+ * What the ranking is ordered by, in a word for the heading and a sentence for its card: the
  * sweep's own objective, or — where it declared none — the one the route names instead.
  */
 export function rankedBy(sweep: SweepRow, detail: SweepDetail | undefined): { word: string, sentence: string } {
   const objective = detail?.objective ?? sweep.objective
-  if (!objective) return { word: t('no objective'), sentence: t('The sweep declared no objective') }
+  if (!objective) return { word: t('no objective'), sentence: t('nothing: the sweep declared no objective') }
   const maximize = detail?.maximize ?? sweep.maximize
   const direction = maximize ? t('highest first') : t('lowest first')
   const whose = sweep.objective ? t("the sweep's own objective") : t('the sweep declared none, so the backend ranked by this')
@@ -124,11 +137,16 @@ export function rankedBy(sweep: SweepRow, detail: SweepDetail | undefined): { wo
   const within = currencies > 1 ? ` · ${t('within each account currency')}` : ''
   return {
     word: `${objective} ${maximize ? '↑' : '↓'}`,
-    sentence: `${t('Ranked by')} ${objective}, ${direction} — ${whose}${within}`,
+    sentence: `${objective}, ${direction} — ${whose}${within}`,
   }
 }
 
-/** A word for the heading, and the sentence behind it on hover. */
+/** The order features a row was allowed beyond its venue, from their comma-joined string. */
+function featureWords(features: string): string[] {
+  return features.split(',').map(word => word.trim()).filter(Boolean)
+}
+
+/** A word for the heading, and the sentence behind it in the heading's card. */
 export interface SweepNotice {
   word: string
   sentence: string
@@ -148,6 +166,19 @@ const COMPARABLE: [keyof SweepCombination, string][] = [
   ['broker_config_id', t('broker configuration')],
 ]
 
+/** How many combinations the rows are: a run in two account currencies is a row each (their `sweeps` document). */
+function combinationCount(rows: SweepCombination[]): number {
+  return new Set(rows.map(row => row.run_id)).size
+}
+
+/** The account currencies whose ranking is led by a row that does not state the objective's figure. */
+function unledCurrencies(detail: SweepDetail): string[] {
+  return [...new Set(detail.combinations.map(row => row.currency))].filter(currency => {
+    const first = detail.combinations.find(row => row.currency === currency)!
+    return !statesFigure(first, detail.objective)
+  })
+}
+
 /** Only where the ranking compares unlike things — where everything is alike, nothing is said. */
 export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): SweepNotice[] {
   const notices: SweepNotice[] = []
@@ -157,7 +188,25 @@ export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): 
       sentence: `${plural(sweep.error_count, t('combination'), t('combinations'))} ${t('produced no usable data and are not ranked')}`,
     })
   }
+  // a search allowed features its venue's API does not hold does not predict a session there
+  // (FiniexTestingIDE, 2026-10-30). On the sweep's own row since contract 46, so it is said closed too
+  if (sweep.features_beyond_venue) {
+    notices.push({
+      word: t('beyond the venue'),
+      sentence: `${t("The search was allowed order features the venue's API does not hold")}: ${featureWords(sweep.features_beyond_venue).join(' · ')} — ${t('its combinations do not predict a session there')}`,
+    })
+  }
   if (!detail) return notices
+  // a figure printed as an absence on a row the route still ranks, as `win_rate` over no trades reads
+  // 0. `expectancy` no longer comes here: with no R it is null and the route leaves the row out
+  const unled = unledCurrencies(detail)
+  if (unled.length) {
+    const within = new Set(detail.combinations.map(row => row.currency)).size > 1 ? ` (${unled.join(', ')})` : ''
+    notices.push({
+      word: t('first states no figure'),
+      sentence: `${t('The first combination states no figure for')} ${detail.objective}${within} — ${t('its place rests on a value nobody measured, and no row is first')}`,
+    })
+  }
   // without it a shorter ranking would read as the whole sweep (contract 40)
   if (detail.unranked) {
     notices.push({
@@ -174,7 +223,7 @@ export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): 
       sentence: `${t('The combinations differ in')} ${differing.join(', ')} — ${t('the ranking compares measures that may have changed underneath')}`,
     })
   }
-  const pruned = detail.combinations.filter(row => row.records_pruned_at !== '').length
+  const pruned = combinationCount(detail.combinations.filter(row => row.records_pruned_at !== ''))
   if (pruned) {
     notices.push({
       word: t('records pruned'),
@@ -184,16 +233,25 @@ export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): 
   return notices
 }
 
-/** The heading's title: what the search was, beyond the words on its line. */
-export function sweepTitle(sweep: SweepRow): string {
-  return [
-    `${t('Set')}: ${sweep.base_config}`,
-    `${t('Symbols')}: ${sweep.symbols.join(', ')}`,
-    `${t('Started')}: ${utcInstant(sweep.started)}`,
-    // the spread of the starts, not how long the sweep took: the last run's duration falls outside it
-    `${t('Starts spread over')}: ${duration(sweep.duration_s / 3600)}`,
-    `${plural(sweep.run_count, t('combination'), t('combinations'))} · ${sweep.ok_count} ${t('usable')}`,
-  ].join('\n')
+/**
+ * The heading's card: what the search was beyond the words on its line, how it is ranked, and what
+ * each word on the line means. A notice's row stands in the warning role with its glyph, and its own
+ * word as the label. One card, because a heading is one button: a keyboard reaches it and nothing inside.
+ */
+export function sweepCard(sweep: SweepRow, detail: SweepDetail | undefined): FigureCard {
+  return {
+    title: sweep.sweep_id,
+    details: [
+      { label: t('Set'), value: sweep.base_config },
+      { label: t('Symbols'), value: sweep.symbols.join(', ') },
+      { label: t('Started'), value: utcInstant(sweep.started) },
+      // the spread of the starts, not how long the sweep took: the last run's duration falls outside it
+      { label: t('Starts spread over'), value: duration(sweep.duration_s / 3600) },
+      { label: t('Combinations'), value: `${sweep.run_count} · ${sweep.ok_count} ${t('usable')}` },
+      { label: t('Ranked by'), value: rankedBy(sweep, detail).sentence },
+      ...sweepNotices(sweep, detail).map(notice => ({ label: notice.word, value: `⚠ ${notice.sentence}`, tone: 'warning' })),
+    ],
+  }
 }
 
 /**
@@ -237,16 +295,16 @@ export function combinationCard(row: CombinationRow): FigureCard {
   const combination = row.combination
   const details: Figure[] = [
     ...Object.entries(combination.sweep_params).map(([key, value]) => ({ label: key, value: String(value) })),
-    { label: t('Net P&L'), value: amount(combination.net_pnl, combination.currency), tone: signClass(combination.net_pnl) },
+    { label: t('Net P&L'), value: bookedAmount(combination.net_pnl, combination.currency), tone: signClass(combination.net_pnl) },
     {
       label: t('Expectancy'),
       value: rValue(combination.expectancy, combination.r_trade_count),
       title: t('The mean R. Read it beside the trades it rests on: R is the result over the loss the stop of the trade would have taken'),
     },
-    { label: t('R trades'), value: `${combination.r_trade_count} (${combination.r_win_count}W/${combination.r_loss_count}L)` },
+    { label: t('R trades'), value: orDash(combination.r_trade_count, count => `${count} (${combination.r_win_count}W/${combination.r_loss_count}L)`) },
     { label: t('Avg win R'), value: rValue(combination.avg_win_r, combination.r_win_count) },
     { label: t('Avg loss R'), value: rValue(combination.avg_loss_r, combination.r_loss_count) },
-    { label: t('Trades'), value: `${combination.total_trades} (${combination.winning_trades}W/${combination.losing_trades}L)` },
+    { label: t('Trades'), value: orDash(combination.total_trades, count => `${count} (${orDash(combination.winning_trades, String)}W/${orDash(combination.losing_trades, String)}L)`) },
     { label: t('Win rate'), value: percentOrNa(combination.win_rate, combination.total_trades) },
     { label: t('Profit factor'), value: numberOrNa(combination.profit_factor, combination.total_trades) },
     {
@@ -254,7 +312,7 @@ export function combinationCard(row: CombinationRow): FigureCard {
       label: t('Deepest drawdown'),
       value: drawdownFigure(combination.account_max_drawdown, combination.account_max_drawdown_pct, combination.currency),
     },
-    { label: t('Fees'), value: amount(combination.total_fees, combination.currency) },
+    { label: t('Fees'), value: bookedAmount(combination.total_fees, combination.currency) },
     // they fold since contract 42, each period counting the orders it handled; null on an older row
     { label: t('Orders'), value: ordersText(combination) },
     {
@@ -282,6 +340,13 @@ export function combinationCard(row: CombinationRow): FigureCard {
       title: t('How many candidates this run was selected from'),
     },
   ]
+  if (combination.features_beyond_venue) {
+    details.push({
+      label: t('Beyond the venue'),
+      value: `⚠ ${featureWords(combination.features_beyond_venue).join(' · ')}`,
+      tone: 'warning',
+    })
+  }
   if (combination.records_pruned_at) {
     details.push({
       label: t('Records pruned'),

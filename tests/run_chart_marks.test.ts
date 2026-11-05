@@ -121,11 +121,36 @@ describe('run_chart_marks', () => {
       expect(labels).toEqual(expect.arrayContaining(['Opened', 'Stop loss', 'Take profit']))
     })
 
+    /** The card and the line a gathered mark lists print the price at the tick size of the unit's instrument. */
+    it('prints the prices of an opening at the tick size', () => {
+      const widened = opening({ ...longOpening, executed_price: 1.1625800132751465 })
+      const closed = trade({ ...long, stop_loss: 1.1654013009624113, take_profit: 1.1699000000000002 })
+      const [mark] = openingMarks([widened], [], [closed], 'EUR', BARS, null, 0.00001)
+      expect(mark!.card.details.find(pair => pair.label === 'Opened')?.value.endsWith('@ 1.16258')).toBe(true)
+      expect(mark!.card.details).toContainEqual({ label: 'Stop loss', value: '1.16540' })
+      expect(mark!.card.details).toContainEqual({ label: 'Take profit', value: '1.16990' })
+      expect(mark!.line!.value).toContain('@ 1.16258 ·')
+      const open: OpenPosition = {
+        position_id: 'pos_1', direction: 'long', lots: 0.1, entry_price: 1.1, entry_time: longOpening.event_time,
+        last_price: 1.1677499513751617, unrealized_pnl: 0, valued: true, stop_loss: null, take_profit: null,
+      }
+      const [held] = openingMarks([widened], [open], [], 'EUR', BARS, null, 0.00001)
+      expect(held!.card.details.find(pair => pair.label === 'Last price')?.value).toBe('1.16775')
+    })
+
+    /** An own level says how a part ended, whichever part that was: it stands on that exit's card. */
+    it('leaves an own level off the card of the opening', () => {
+      const own = trade({ ...long, stop_loss: null, take_profit: null, exit_level: 0.86, close_reason: 'sl_triggered' })
+      const [mark] = openingMarks([longOpening], [], [own], 'EUR', BARS, null)
+      const labels = mark!.card.details.map(pair => pair.label)
+      expect(labels).not.toContain('Own level')
+      expect(labels).not.toContain('Stop loss')
+    })
+
     it('says a position that could not be marked has no value, rather than a value of zero', () => {
       const open: OpenPosition = {
         position_id: 'pos_1', direction: 'long', lots: 0.1, entry_price: 0.87, entry_time: longOpening.event_time,
         last_price: 0.88, unrealized_pnl: 0, valued: false, stop_loss: null, take_profit: null,
-        protective_level_enforcement: '', take_profit_enforcement: '',
       }
       const [mark] = openingMarks([longOpening], [open], [], 'EUR', BARS, null)
       expect(mark!.card.details.find(pair => pair.label === 'Unrealized')).toMatchObject({ value: 'n/a' })
@@ -162,6 +187,27 @@ describe('run_chart_marks', () => {
       expect(mark!.focused).toBe(true)
       expect(mark!.card.details.map(pair => pair.label)).toEqual(expect.arrayContaining(['Closed', 'Closed by', 'Net P&L']))
       expect(mark!.card.details.find(pair => pair.label === 'Net P&L')).toMatchObject({ tone: 'negative' })
+    })
+
+    it('prints the prices of an exit at the tick size', () => {
+      const widened = trade({
+        ...long, entry_price: 1.1625800132751465, exit_price: 1.1677499513751617, stop_loss: null, take_profit: null,
+        exit_level: 1.1677499513751617, close_reason: 'tp_triggered',
+      })
+      const [mark] = exitMarks([widened], KEY, BARS, null, 0.00001)
+      expect(mark!.card.details.find(pair => pair.label === 'Opened')?.value.endsWith('@ 1.16258')).toBe(true)
+      expect(mark!.card.details.find(pair => pair.label === 'Closed')?.value.endsWith('@ 1.16775')).toBe(true)
+      expect(mark!.card.details).toContainEqual({ label: 'Own level', value: 'take profit 1.16775' })
+    })
+
+    /** A position closed in parts: the own level stands on the part it closed (contract 45), the partial's says none. */
+    it('names an own level on the card of the part it closed, and on no other', () => {
+      const levels = { stop_loss: null, take_profit: null }
+      const rung = trade({ ...long, ...levels, exit_time: '2025-10-31T05:01:30+00:00', exit_tick_index: long.exit_tick_index + 1, exit_level: null, close_reason: '' })
+      const fired = trade({ ...long, ...levels, exit_level: 0.86, close_reason: 'sl_triggered' })
+      const [first, last] = exitMarks([rung, fired], KEY, BARS, null)
+      expect(first!.card.details.map(pair => pair.label)).not.toContain('Own level')
+      expect(last!.card.details).toContainEqual({ label: 'Own level', value: 'stop loss 0.86' })
     })
   })
 

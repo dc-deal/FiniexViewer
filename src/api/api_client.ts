@@ -1,9 +1,12 @@
 import axios from 'axios'
+import { activeServer, apiBaseOf } from '@/active_server'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
+import { noConnectionFrom } from '@/api/no_connection_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
+import type { ServerHealth } from '@/types/api/health_types'
 import type { ApiBar, BarAnswer, CoverageResponse } from '@/types/api/bar_types'
 import type { CallerIdentity } from '@/types/api/caller_types'
 import type { ActivityList, MachineResources } from '@/types/api/machine_types'
@@ -21,6 +24,8 @@ import type {
   BrokerReport,
   OrderEventsReport,
   OrderHistoryReport,
+  VenueAccountReport,
+  VenueReads,
   PendingOrdersReport,
   PortfolioReport,
   RunInfo,
@@ -36,7 +41,8 @@ import type {
 } from '@/types/api/deployment_types'
 
 const http = axios.create({
-  baseURL: '/api/v1'
+  // fixed for the life of the page: switching the server reloads it
+  baseURL: apiBaseOf(activeServer().id)
 })
 
 /**
@@ -70,9 +76,14 @@ http.interceptors.response.use(
   },
   (error: unknown) => {
     if (axios.isAxiosError(error)) noteStamp(error.response?.headers)
-    return Promise.reject(error)
+    return Promise.reject(noConnectionFrom(error) ?? error)
   },
 )
+
+export async function getHealth(): Promise<ServerHealth> {
+  const response = await http.get<ServerHealth>('/health')
+  return response.data
+}
 
 export async function getTimeframes(): Promise<TimeframeList> {
   const response = await http.get<{ timeframes: TimeframeList }>('/timeframes')
@@ -112,11 +123,13 @@ export async function getBars(
   symbol: string,
   timeframe: string,
   from: string,
-  to: string
+  to: string,
+  /** The most rows to serve — the oldest of the range are kept. Left out, the route's maximum. */
+  limit?: number
 ): Promise<BarAnswer> {
   const response = await http.get<ApiBar[]>(
     `/brokers/${broker}/symbols/${symbol}/bars`,
-    { params: { timeframe, from, to } }
+    { params: limit === undefined ? { timeframe, from, to } : { timeframe, from, to, limit } }
   )
   return {
     bars: response.data,
@@ -302,6 +315,40 @@ export async function getOrderEvents(
     const absence = absenceFrom(error)
     if (absence) return absence
     raiseIfUnreadable(error, 'The stream could not be read')
+    throw error
+  }
+}
+
+/**
+ * The venue's reads of a live session, from the UNNARROWED stream: the reads are the venue's whole
+ * account at a moment, never a step of one order, so the per-position answer the Orders panel asks
+ * for carries none. Asked only for an AutoTrader session that writes the stream — a backtest's
+ * stream holds no read and can be the largest answer the API serves.
+ *
+ * Only the reads are kept. The order steps in the same answer stay with the Orders panel.
+ */
+export async function getVenueReads(runId: string): Promise<VenueReads | SectionAbsence> {
+  try {
+    const response = await http.get<OrderEventsReport>(`/reports/runs/${runId}/order-events`)
+    const answer = assertBelongsTo(runId, response.data)
+    return { reads: answer.broker_truth, key: answer.keys['broker_truth'] ?? [], truncated_tail: answer.truncated_tail }
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error, 'The stream could not be read')
+    throw error
+  }
+}
+
+/** What the venue held when a live session began and ended, and how its reconciliation went. */
+export async function getVenueAccount(runId: string): Promise<VenueAccountReport | SectionAbsence> {
+  try {
+    const response = await http.get<VenueAccountReport>(`/reports/runs/${runId}/venue-account`)
+    return assertBelongsTo(runId, response.data)
+  } catch (error) {
+    const absence = absenceFrom(error)
+    if (absence) return absence
+    raiseIfUnreadable(error)
     throw error
   }
 }

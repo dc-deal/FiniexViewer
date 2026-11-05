@@ -1,5 +1,6 @@
 import { test, expect } from './cdp_fixture'
-import { fixture, mockApi, revealFixtureRun, FIXTURE_DEPLOYMENT, FIXTURE_RUN, STATE_FRAME_RUNS } from './api_mock'
+import type { Page } from '@playwright/test'
+import { fixture, mockApi, revealFixtureRun, FIXTURE_DEPLOYMENT, FIXTURE_RUN, LIVE_RUN, STATE_FRAME_RUNS } from './api_mock'
 import { openWith, showPanel, FIXTURES_SHOWN } from './arrangement_seed'
 
 /**
@@ -129,6 +130,29 @@ test('narrowing to a scenario is immediate', async ({ page }) => {
 })
 
 /**
+ * A named layout laid out (viewer#37). The panels both layouts hold are moved rather than rebuilt,
+ * so the switch is measured inside the page, from the click to the second frame after it: a round
+ * trip of the test runner would be most of the number. Measured 2026-11-03 from the first
+ * arrangement to Backtests, five panels to fifteen: 54–117 ms.
+ */
+test('a layout is laid out at once', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { ...FIXTURES_SHOWN, run: FIXTURE_RUN })
+  await page.locator('[data-panel-kind="run"] [data-panel]').first().waitFor()
+  await page.locator('.layouts-trigger').click()
+  await page.locator('.layouts-menu [data-layout="backtests"]').waitFor()
+  const ms = await page.evaluate(async () => {
+    const started = performance.now()
+    document.querySelector<HTMLElement>('.layouts-menu [data-layout="backtests"]')!.click()
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    return performance.now() - started
+  })
+  timings.push({ label: 'a layout laid out', ms: Math.round(ms) })
+  await expect(page.locator('[data-panel-kind="report-executive"]')).toBeVisible()
+  expect(ms).toBeLessThan(300)
+})
+
+/**
  * The trade list is the one place a real run can produce thousands of rows, and it is already a
  * known finding (101: `HoverCard` mounts a tooltip provider PER ROW, ~4.8 s for 500 rows in
  * jsdom). Whether that reproduces in a real browser is the open half of that finding — this
@@ -186,6 +210,33 @@ test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) =>
 })
 
 /**
+ * Bars loaded as the view moves (viewer#9): a unit's window widened over both stretches of the
+ * captured EURGBP bars, three weeks apart, read in M1. Timed from the timeframe chosen until both
+ * stretches are drawn: the first batch, the pieces across the gap, and the earlier bars merged in
+ * front with the view kept where it was.
+ */
+test('earlier bars are merged across a gap quickly', async ({ page }) => {
+  await mockApi(page, { firstTick: { unit: 'EURGBP_refusals_01', at: '2025-10-10T06:00:00+00:00' } })
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', {
+    run: FIXTURE_RUN, units: ['EURGBP_refusals_01'], position: { scenario: 'EURGBP_refusals_01', position: 'pos_eurgbp_1' },
+  })
+  const timeframe = page.locator('[data-quick-bar="run-chart"] select').nth(1)
+  await expect(timeframe).toBeEnabled()
+
+  const merged = await timed('run chart — a gap crossed, bars merged', async () => {
+    await timeframe.selectOption('M1')
+    await page.waitForFunction(
+      () => document.querySelector('[data-panel-kind="run-chart"] .candle-chart')?.getAttribute('data-bars') === '120',
+      undefined,
+      { polling: 'raf' },
+    )
+  })
+
+  expect(merged).toBeLessThan(3000)
+})
+
+/**
  * A sweep's ranking at the size a real search reaches (viewer#32): 500 combinations built from the
  * captured sweep. The ranking draws every row, and this says whether it needs a cap — timed from
  * the sweep opened until the last row stands, on the page's own frames.
@@ -216,12 +267,42 @@ test('a sweep of 500 combinations is ranked on screen quickly', async ({ page })
   expect(ms).toBeLessThan(3000)
 })
 
+/**
+ * A live session's venue account (viewer#54): from the run chosen until its section draws the
+ * venue's table — the section's answer and the venue's reads from the whole order-event stream.
+ * Chosen through the context store, as a pick in the run list does: the session sits folded in its
+ * family there, and unfolding it is not what is measured.
+ */
+test('a live session draws its venue account quickly', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { ...FIXTURES_SHOWN, run: FIXTURE_RUN })
+  await page.locator('[data-panel-kind="run"] [data-panel]').first().waitFor()
+  const ms = await page.evaluate(async run => {
+    const app = (document.querySelector('#app') as unknown as {
+      __vue_app__: { config: { globalProperties: { $pinia: { _s: Map<string, { selectRun?: (id: string) => void }> } } } }
+    }).__vue_app__
+    const started = performance.now()
+    app.config.globalProperties.$pinia._s.get('context')!.selectRun!(run)
+    await new Promise<void>(resolve => {
+      const look = (): void => {
+        const table = document.querySelector('[data-panel="venue-account"] .venue-table')
+        if (table?.textContent?.includes('XETH')) resolve()
+        else requestAnimationFrame(look)
+      }
+      look()
+    })
+    return performance.now() - started
+  }, LIVE_RUN)
+  timings.push({ label: 'live session to its venue account', ms: Math.round(ms) })
+  expect(ms).toBeLessThan(3000)
+})
+
 /** A deployment picked in its list until its bundle draws the sessions (viewer#43). */
 test('a deployment opens its bundle quickly', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 })
   await openWith(page, '/')
   await showPanel(page, 'Deployments')
-  const row = page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT })
+  const row = page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first()
   await row.waitFor()
 
   const ms = await timed('deployment chosen to its bundle drawn', async () => {
@@ -234,9 +315,10 @@ test('a deployment opens its bundle quickly', async ({ page }) => {
 /**
  * A session's frames stepped through (viewer#51): 500 frames built from the captured ones, one a
  * minute, the window served as the route serves it — from, to and a limit. One step is the click
- * until the player names the next frame, on the page's own frames; the mean of twenty.
+ * until the player names the next frame, on the page's own frames; the mean of twenty. Once alone, and
+ * once with the run chart beside it, whose line moves with each step (a bar a minute served for it).
  */
-test('a session steps through its frames quickly', async ({ page }) => {
+async function stepFrames(page: Page, width: number, label: string): Promise<void> {
   const window = fixture('recorded_window.json') as { state_frames: { frame_time: string, record_no: number }[] }
   const timeline = fixture('recorded_streams.json') as { streams: Record<string, unknown>[] }
   const start = Date.parse(window.state_frames[0]!.frame_time)
@@ -268,7 +350,30 @@ test('a session steps through its frames quickly', async ({ page }) => {
       },
     })
   })
-  await page.setViewportSize({ width: 1600, height: 900 })
+  const opened = Math.floor(start / 60_000) * 60
+  const bars = Array.from({ length: 500 }, (_, index) =>
+    ({ t: opened + index * 60, o: 1, h: 1.1, l: 0.9, c: 1, v: 1, tc: 1 }))
+  await page.route(/\/reports\/runs$/, route => {
+    const list = fixture('runs_list.json') as { runs: { run_id: string }[] }
+    return route.fulfill({
+      json: {
+        ...list,
+        runs: list.runs.map(run => run.run_id !== STATE_FRAME_RUNS.ended ? run : {
+          ...run, data_windows: [{ unit_name: 'state_frames_test', start_date: new Date(opened * 1000).toISOString(), end_date: new Date((opened + 500 * 60) * 1000).toISOString() }],
+        }),
+      },
+    })
+  })
+  await page.route(/\/reports\/runs\/[^/]+\/config/, route => route.fulfill({
+    json: { ...(fixture('run_config_live.json') as object), run_id: STATE_FRAME_RUNS.ended },
+  }))
+  await page.route(/\/symbols\/[^/]+\/coverage/, route => route.fulfill({
+    json: {
+      start: new Date(opened * 1000).toISOString(), end: new Date((opened + 500 * 60) * 1000).toISOString(), timeframes: ['M1'],
+    },
+  }))
+  await page.route(/\/symbols\/[^/]+\/bars/, route => route.fulfill({ json: bars }))
+  await page.setViewportSize({ width, height: 900 })
   await openWith(page, '/', { run: STATE_FRAME_RUNS.ended })
   const section = page.locator('[data-panel-kind="run"] [data-panel="latest-state"]')
   await section.locator('details summary').click()
@@ -289,6 +394,14 @@ test('a session steps through its frames quickly', async ({ page }) => {
     )
   }
   const perStep = Math.round((Date.now() - started) / steps)
-  timings.push({ label: 'frames — a step drawn (mean of 20)', ms: perStep })
+  timings.push({ label, ms: perStep })
   expect(perStep).toBeLessThan(500)
+}
+
+test('a session steps through its frames quickly', async ({ page }) => {
+  await stepFrames(page, 1600, 'frames — a step drawn (mean of 20)')
+})
+
+test('a step of the frames moves the line on the run chart beside it quickly', async ({ page }) => {
+  await stepFrames(page, 1800, 'frames — a step, chart beside (mean of 20)')
 })

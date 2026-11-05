@@ -23,6 +23,8 @@ const SLOTS_OF_SOURCE: Record<string, string[]> = {
   scenarioRoster: ['scenarios', 'portfolio', 'warningsErrors'],
   tradeHistory: ['tradeHistory'],
   latestState: ['stateFrames'],
+  // the stream's reads first: they stand while the session runs, the account only once it ended
+  venueAccount: ['venueReads', 'venueAccount'],
 }
 
 /**
@@ -83,6 +85,12 @@ export const useRunSectionsStore = defineStore('run_sections', () => {
       }
     : null)
 
+  // composed rather than served: the venue's reads and the account written at the end, each said
+  // as its own — and nothing at all where neither has a word, which is every backtest and dry run
+  const venueModel = computed(() => (reports.venueReads?.reads.length || reports.venueAccount)
+    ? { reads: reports.venueReads, account: reports.venueAccount, recording: runs.selectedRun?.recording ?? null }
+    : null)
+
   // the models the panels render, keyed by the source each descriptor declares
   const sources = computed<Record<string, unknown>>(() => ({
     header: headerModel.value,
@@ -98,6 +106,7 @@ export const useRunSectionsStore = defineStore('run_sections', () => {
     scenarioRoster: rosterModel.value,
     tradeHistory: reports.tradeHistory,
     latestState: reports.stateFrames,
+    venueAccount: venueModel.value,
   }))
 
   /**
@@ -120,6 +129,7 @@ export const useRunSectionsStore = defineStore('run_sections', () => {
     scenarioRoster: reports.loadingScenarios,
     tradeHistory: reports.loadingTradeHistory,
     latestState: reports.loadingStateFrames,
+    venueAccount: reports.loadingVenueReads || reports.loadingVenueAccount,
   }))
 
   /**

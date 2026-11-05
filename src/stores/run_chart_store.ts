@@ -1,21 +1,25 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
-import { findCoverage, getBars } from '@/api/api_client'
+import { computed, ref, watch } from 'vue'
+import type { ComputedRef } from 'vue'
+import { findCoverage } from '@/api/api_client'
 import {
   autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
 } from '@/components/runs/run_chart'
-import { entryExitLines, positionLevels } from '@/components/runs/run_chart_levels'
+import { entryExitLines, frameMoment, positionLevels } from '@/components/runs/run_chart_levels'
 import {
   barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
 } from '@/components/runs/run_chart_marks'
+import { BARS_PER_BATCH, useBarLoader } from '@/composables/use_bar_loader'
+import type { BarEdge } from '@/composables/use_bar_loader'
 import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
 import { useContextStore } from '@/stores/context_store'
+import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
-import type { ApiBar, ChartBar, CoverageResponse } from '@/types/api/bar_types'
+import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
@@ -50,6 +54,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   const context = useContextStore()
   const arrangement = useArrangementStore()
   const timeframeStore = useTimeframeStore()
+  const framePlayers = useFramePlayerStore()
 
   /** How many run charts are on show. Nothing is fetched while there are none. */
   const viewers = ref(0)
@@ -121,16 +126,15 @@ export const useRunChartStore = defineStore('runChart', () => {
     return autoTimeframe(coveredTimeframes.value, timeframeStore.minutesFor, minutes)
   })
 
-  const bars = ref<ChartBar[]>([])
+  /** The unit's bars, loaded as the view moves (viewer#9). */
+  const loader = useBarLoader()
   /** The bars as served, for what the candles do not carry: the two counts the volume is drawn from. */
-  const served = shallowRef<ApiBar[]>([])
+  const served = loader.served
+  const bars = computed<ChartBar[]>(() => toChartBars(served.value))
   /** The file's price basis, as the route stated it with the bars — '' where it did not. */
-  const priceBasis = ref('')
-  const truncated = ref(false)
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  /** Raised for every request; an answer for an earlier one writes nothing. */
-  let generation = 0
+  const priceBasis = loader.priceBasis
+  const loading = loader.loading
+  const error = loader.error
 
   const unitTrades = computed(() =>
     (reports.tradeHistory?.trades ?? []).filter(trade => trade.scenario_name === unit.value?.name))
@@ -150,21 +154,26 @@ export const useRunChartStore = defineStore('runChart', () => {
   const barTimes = computed(() => bars.value.map(bar => bar.time))
 
   /**
-   * The last bar of a window the route CUT, or null. The bars after it were never drawn, and an
-   * event among them would stand on that last bar — weeks from where it happened (measured
-   * 2026-10-19: a unit cut at M1 piled fifteen marks onto its last candle). Past it nothing is
-   * placed for certain, so nothing is drawn there; the notice says the window was cut.
+   * How far the bars are loaded, in UTC seconds, while the window holds more to the right — null
+   * once its end is loaded. An event past it would stand on the last bar loaded, weeks from where it
+   * happened (measured 2026-10-19: a unit cut at M1 piled fifteen marks onto its last candle), so it
+   * is drawn once its bar arrives. Before the first bar loaded, `barOf` places nothing already.
    */
-  const cutAt = computed(() => truncated.value ? barTimes.value.at(-1) ?? null : null)
+  const cutAt = computed(() => loader.more.value.right && loader.loadedTo.value !== null
+    ? loader.loadedTo.value / 1000
+    : null)
+
+  /** The tick size of the unit's instrument, from the run's broker report — null without one. */
+  const tickSize = computed(() => unit.value ? unitTickSize(reports.broker, unit.value) : null)
 
   /** Every opening and exit of the unit on show, one mark each, in time order. */
   const events = computed<ChartMark[]>(() => {
     const all = [
       ...openingMarks(
         unitOpenings.value, unitPortfolio.value?.open_positions ?? [], unitTrades.value,
-        unitPortfolio.value?.currency ?? '', barTimes.value, focus.value,
+        unitPortfolio.value?.currency ?? '', barTimes.value, focus.value, tickSize.value,
       ),
-      ...exitMarks(unitTrades.value, reports.tradeHistory?.keys.trades ?? [], barTimes.value, focus.value),
+      ...exitMarks(unitTrades.value, reports.tradeHistory?.keys.trades ?? [], barTimes.value, focus.value, tickSize.value),
     ].sort((a, b) => a.time - b.time)
     const cut = cutAt.value
     return cut !== null ? all.filter(mark => mark.at <= cut) : all
@@ -195,36 +204,57 @@ export const useRunChartStore = defineStore('runChart', () => {
   /** The chart's drawing layers as the reader arranged them in the Layers panel, back to front. */
   const arranged = computed(() => arrangeLayers(RUN_CHART, arrangement.panelViews[RUN_CHART]?.layers))
 
+  /** The option a drawing layer stands at, as arranged. */
+  function optionOf(id: DrawingLayerId): boolean | null {
+    return arranged.value.find(state => state.id === id)?.option ?? null
+  }
+
+  /**
+   * Each layer's drawings, apart: a step of the frame player, several a second while it plays, moves
+   * one of them and rebuilds no other.
+   */
+  const drawn: Record<DrawingLayerId, ComputedRef<ChartDrawing[]>> = {
+    levels: computed(() => {
+      const key = reports.tradeHistory?.keys.trades ?? []
+      const looked = focus.value?.position ?? null
+      return optionOf('levels')
+        ? positionLevels(
+          unitTrades.value, key, unitPortfolio.value?.open_positions ?? [], looked, barTimes.value, cutAt.value, tickSize.value,
+        )
+        : positionLevels(
+          focusTrades.value, key, focusOpen.value ? [focusOpen.value] : [], looked, barTimes.value, cutAt.value, tickSize.value,
+        )
+    }),
+    'entry-exit': computed(() => entryExitLines(
+      optionOf('entry-exit') ? unitTrades.value : focusTrades.value,
+      reports.tradeHistory?.keys.trades ?? [], barTimes.value, cutAt.value, tickSize.value,
+    )),
+    // without their signs the marks keep their shapes and the signs' room, so the switch rescales
+    // nothing; a gathered mark's card still counts it
+    trades: computed(() => optionOf('trades') === false ? marks.value.map(mark => ({ ...mark, textHidden: true })) : marks.value),
+    // the player of the unit on show and of the run on show: its name is the unit's in `data_windows`
+    'state-frame': computed(() => {
+      const player = unit.value ? framePlayers.playerOf(unit.value.name) : null
+      if (!player || player.runId !== runsStore.selectedRunId) return []
+      const frame = framePlayers.frameOf(player)
+      return frame ? frameMoment(frame, player.stream?.record_count ?? null, barTimes.value, cutAt.value) : []
+    }),
+  }
+
   /**
    * What the chart draws, layer by layer, each in front of the one before, as the reader arranged
-   * them — by default the levels of the position looked at, the line from its entry to its exit, and
-   * the marks of every trade in front. A hidden layer is handed over marked so: the chart paints
+   * them — by default the state frame on show at the back, the levels of the position looked at, the
+   * line from its entry to its exit, and the marks of every trade in front. A hidden layer is handed over marked so: the chart paints
    * nothing of it, and its marks keep their room, so the candles stay where they were (operator,
    * on screen 2026-10-27: switching the trades off stretched the candles).
    */
-  const layers = computed<ChartLayer[]>(() => {
-    const key = reports.tradeHistory?.keys.trades ?? []
-    const looked = focus.value?.position ?? null
-    const drawings: Record<DrawingLayerId, (option: boolean | null) => ChartDrawing[]> = {
-      levels: every => every
-        ? positionLevels(
-          unitTrades.value, key, unitPortfolio.value?.open_positions ?? [], looked, barTimes.value, cutAt.value,
-        )
-        : positionLevels(
-          focusTrades.value, key, focusOpen.value ? [focusOpen.value] : [], looked, barTimes.value, cutAt.value,
-        ),
-      'entry-exit': every => entryExitLines(every ? unitTrades.value : focusTrades.value, key, barTimes.value, cutAt.value),
-      // without their signs the marks keep their shapes and the signs' room, so the switch rescales
-      // nothing; a gathered mark's card still counts it
-      trades: signs => signs === false ? marks.value.map(mark => ({ ...mark, textHidden: true })) : marks.value,
-    }
-    return arranged.value.flatMap(state => state.id === 'volume' || state.id === 'candles' ? [] : [{
+  const layers = computed<ChartLayer[]>(() => arranged.value.flatMap(state =>
+    state.id === 'volume' || state.id === 'candles' ? [] : [{
       id: state.id,
-      drawings: drawings[state.id](state.option),
+      drawings: drawn[state.id].value,
       ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
       ...(state.shown ? {} : { hidden: true }),
-    }])
-  })
+    }]))
 
   /**
    * What the volume layer counts. Their `market-data` document: `v` is the traded volume, `0.0` on
@@ -267,9 +297,8 @@ export const useRunChartStore = defineStore('runChart', () => {
   const focusAt = computed<number | null>(() =>
     offerAt.value ?? focusTime(unitOpenings.value, unitTrades.value, focus.value))
 
-  /** The unit's prices at its instrument's tick size, from the run's broker report — null without one. */
-  const priceFormat = computed(() =>
-    unit.value ? chartPriceFormat(unitTickSize(reports.broker, unit.value)) : null)
+  /** The unit's prices at its instrument's tick size — null without one. */
+  const priceFormat = computed(() => chartPriceFormat(tickSize.value))
 
   async function askCoverage(target: ChartUnit): Promise<void> {
     const key = marketKey(target)
@@ -283,40 +312,42 @@ export const useRunChartStore = defineStore('runChart', () => {
     }
   }
 
+  /**
+   * Loads the unit's bars afresh: the window's from the position looked at on — half a batch before
+   * it — or from the window's start where none is (decided 2026-10-29). The rest arrives as
+   * the reader moves toward it.
+   */
   async function loadBars(): Promise<void> {
     const target = unit.value
     const span = window.value
     const tf = timeframe.value
-    const run = ++generation
-    bars.value = []
-    served.value = []
-    priceBasis.value = ''
-    truncated.value = false
-    error.value = null
     if (!target || !span || !tf || Date.parse(span.to) <= Date.parse(span.from)) {
-      loading.value = false
+      loader.clear()
       return
     }
-    loading.value = true
+    // A minute where the length is not known: a piece of it holds at most one bar of any timeframe,
+    // so loading stays whole, only slower
+    const period = (timeframeStore.minutesFor(tf) ?? 1) * 60_000
     // The route answers the bars that OPEN in the range, and a bar is stamped with its open — so the
     // bar the first tick fell in opened BEFORE the window, and is asked for from one period earlier.
     // Measured 2026-10-15: `from=05:00:00.274` answered from the 05:01 bar, and the trade at
     // 05:00:40 had no candle. The length only widens the ask; marks stand on the bars served.
-    const period = (timeframeStore.minutesFor(tf) ?? 0) * 60_000
-    const from = new Date(Date.parse(span.from) - period).toISOString()
-    try {
-      const answer = await getBars(target.broker!, target.symbol!, tf, from, span.to)
-      if (run !== generation) return
-      bars.value = toChartBars(answer.bars)
-      served.value = answer.bars
-      priceBasis.value = answer.priceBasis
-      truncated.value = answer.truncated
-    } catch (failure) {
-      if (run !== generation) return
-      error.value = failure instanceof Error ? failure.message : String(failure)
-    } finally {
-      if (run === generation) loading.value = false
-    }
+    const from = Date.parse(span.from) - period
+    const at = focusAt.value
+    await loader.open({
+      broker: target.broker!,
+      symbol: target.symbol!,
+      timeframe: tf,
+      period,
+      from,
+      to: Date.parse(span.to),
+      start: at !== null ? at * 1000 - (BARS_PER_BATCH / 2) * period : from,
+    })
+  }
+
+  /** More bars at an edge the reader came near. */
+  function extendBars(edge: BarEdge): void {
+    void loader.extend(edge)
   }
 
   watch([viewers, unit], () => {
@@ -329,6 +360,15 @@ export const useRunChartStore = defineStore('runChart', () => {
     () => [viewers.value > 0, unit.value?.name, unit.value?.broker, unit.value?.symbol, window.value?.from, window.value?.to, timeframe.value],
     () => { if (viewers.value) void loadBars() },
   )
+
+  // a position looked at outside what is loaded: the bars are loaded afresh around it — inside, the
+  // chart only centres on it. Not while a first load is on its way, which reads the focus itself
+  watch(focusAt, at => {
+    const from = loader.loadedFrom.value
+    const to = loader.loadedTo.value
+    if (!viewers.value || at === null || loader.loading.value || from === null || to === null) return
+    if (at * 1000 < from || at * 1000 > to) void loadBars()
+  })
 
   // the place the offer centred on belongs to the unit and the position it was taken for
   watch(() => [unit.value?.name, focus.value?.position] as const, () => { offerAt.value = null })
@@ -397,7 +437,8 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
-    bars, truncated, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach,
+    bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
+    loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
+    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach, extendBars,
   }
 })

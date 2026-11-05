@@ -2,8 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import DeploymentPicker from '@/components/deployments/DeploymentPicker.vue'
+import { deploymentCard } from '@/components/deployments/deployment_card'
 import HoverCard from '@/components/base/HoverCard.vue'
 import { useContextStore } from '@/stores/context_store'
+import { useRunsStore } from '@/stores/runs_store'
+import type { RunInfo } from '@/types/api/report_types'
 import { useDeploymentsStore } from '@/stores/deployments_store'
 import type { DeploymentRow } from '@/types/api/deployment_types'
 import type { Figure } from '@/types/figure_types'
@@ -14,6 +17,8 @@ const BASE: DeploymentRow = {
   bot: 'demo_btcusd_bot',
   bot_id: 'demo-btc',
   sessions: 1,
+  sessions_without_figures: 0,
+  sessions_failed: 0,
   first_started: '2026-09-27T13:28:12.700239Z',
   last_started: '2026-09-27T13:28:12.700239Z',
   currency: 'USD',
@@ -23,6 +28,8 @@ const BASE: DeploymentRow = {
   // null where no idle stretch EXISTS — one session has nothing between its sessions
   longest_gap_hours: null,
   changed: false,
+  configuration_changed: false,
+  code_summary: null,
   // the DISTINCT values of its sessions (contract 23): one entry is a deployment that stayed on
   // one side, both would be a rehearsal mixed with real money and `changed` by itself
   orders_to: ['simulated'],
@@ -186,17 +193,35 @@ describe('DeploymentPicker', () => {
      * says nothing. A configuration that MOVED changes how the figures beneath it must be read.
      */
     it('speaks about the configuration only where it moved', () => {
-      const moved = cardRows(mountPicker([deployment({ changed: true })]))
+      const moved = cardRows(mountPicker([deployment({ changed: true, configuration_changed: true })]))
       expect(moved['Configuration']).toBe('moved between sessions')
-      expect(cardRows(mountPicker([deployment({ changed: false })]))['Configuration'])
+      expect(cardRows(mountPicker([deployment()]))['Configuration'])
         .toBeUndefined()
     })
 
+    /** Contract 47: `changed` with a held configuration is the code alone, and the card says how long ago. */
+    it('says the code moved apart from the configuration, and how long ago', () => {
+      const code = { code_stands: 3, sessions: 12, last_change_at: '2026-10-26T08:00:00+00:00', age_days: 5 }
+      const rows = cardRows(mountPicker([deployment({ changed: true, code_summary: code })]))
+      expect(rows['Configuration']).toBeUndefined()
+      expect(rows['Code']).toBe('3 code stands · last moved 5 days ago')
+      // whole days, so a 0 is a change of under a day
+      const recent = cardRows(mountPicker([deployment({ changed: true, code_summary: { ...code, age_days: 0 } })]))
+      expect(recent['Code']).toBe('3 code stands · last moved under a day ago')
+      // where the start of that session could not be read the age is null with it
+      const undated = cardRows(mountPicker([deployment({ changed: true, code_summary: { ...code, last_change_at: null, age_days: null } })]))
+      expect(undated['Code']).toBe('3 code stands')
+      expect(cardRows(mountPicker([deployment()]))['Code']).toBeUndefined()
+    })
+
     it('marks a moved configuration on the row as well, and nothing where it held', () => {
-      expect(mountPicker([deployment({ changed: true })]).find('.deployment-mark').exists())
-        .toBe(true)
-      expect(mountPicker([deployment({ changed: false })]).find('.deployment-mark').exists())
-        .toBe(false)
+      const marks = (row: Partial<DeploymentRow>) => mountPicker([deployment(row)]).findAll('.deployment-mark').map(mark => mark.text())
+      const code = { code_stands: 2, sessions: 4, last_change_at: null, age_days: null }
+      expect(marks({ changed: true, configuration_changed: true })).toEqual(['config'])
+      // `changed` alone says nothing of which: the code moved here and the configuration held
+      expect(marks({ changed: true, code_summary: code })).toEqual(['code'])
+      expect(marks({ changed: true, configuration_changed: true, code_summary: code })).toEqual(['config', 'code'])
+      expect(marks({})).toEqual([])
     })
 
     /**
@@ -302,5 +327,79 @@ describe('DeploymentPicker', () => {
       expect(rows(wrapper)).toHaveLength(1)
       expect(rows(wrapper)[0]!.text()).toContain('beta_bot')
     })
+  })
+})
+
+/** The list's route does not state it: the row reads the run list, by the run's `parent_id`. */
+describe('DeploymentPicker, a deployment without booked figures', () => {
+  /** Contract 51: a deployment that has booked nothing is served one row, its currency null. */
+  const notBooked = { currency: null, net_pnl: null, max_drawdown: null, max_drawdown_pct: null, bot_id: '' }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  it('lists it with dashes, never a zero and never the word null', () => {
+    const wrapper = mountPicker([deployment(notBooked)])
+    expect(rows(wrapper)).toHaveLength(1)
+    expect(rows(wrapper)[0]!.text()).toContain('—')
+    expect(rows(wrapper)[0]!.text()).not.toContain('null')
+    expect(rows(wrapper)[0]!.text()).not.toContain('0.00')
+  })
+
+  it('leaves the currency out of its card, and offers no empty currency to filter by', () => {
+    const row = deployment(notBooked)
+    expect(deploymentCard(row).title).toBe(row.deployment_id)
+    expect(cardRows(mountPicker([row]))['Net P&L']).toBe('—')
+  })
+
+  /**
+   * Contract 51: a deployment that has booked counts its sessions without figures on its booked row,
+   * and the viewer prints them after the row as the backend's console does — no row of our own.
+   */
+  it('counts the sessions without figures after the booked row, as the console prints them', () => {
+    const wrapper = mountPicker([deployment({ sessions: 3, sessions_without_figures: 2, sessions_failed: 1 })])
+    expect(rows(wrapper)).toHaveLength(1)
+    expect(rows(wrapper)[0]!.text()).toContain('+2 without figures (1 failed)')
+    expect(rows(wrapper)[0]!.find('.figure-cell').text()).toBe('3')
+    expect(cardRows(wrapper)['Without figures']).toBe('2 sessions · 1 failed')
+  })
+
+  it('says nothing of them where there are none', () => {
+    const wrapper = mountPicker([deployment()])
+    expect(rows(wrapper)[0]!.text()).not.toContain('without figures')
+    expect(cardRows(wrapper)['Without figures']).toBeUndefined()
+  })
+
+  it('keeps the row of a deployment that booked nothing at all, its counts after it', () => {
+    const wrapper = mountPicker([deployment({ ...notBooked, sessions: 2, sessions_without_figures: 2 })])
+    expect(rows(wrapper)[0]!.text()).toContain('+2 without figures')
+    expect(rows(wrapper)[0]!.text()).not.toContain('failed')
+  })
+})
+
+describe('DeploymentPicker, what is running now', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
+
+  const run = (over: Partial<RunInfo>) => ({ run_id: 'run_live', recording: 'current', parent_kind: 'deployment', parent_id: BASE.deployment_id, ...over }) as RunInfo
+
+  it('marks the deployment with a recording session, and names the session in the card', () => {
+    useRunsStore().runs = [run({})]
+    const wrapper = mountPicker([deployment()])
+    expect(wrapper.findAll('.deployment-recording').map(mark => mark.text())).toEqual(['●', 'recording'])
+    expect(cardRows(wrapper)['Now']).toBe('● recording · run_live')
+  })
+
+  it.each([
+    ['one that ended', { recording: 'ended' }],
+    ['a recording run of another deployment', { parent_id: 'deploy_other' }],
+    ['a recording run that is no deployment\'s', { parent_kind: 'sweep' }],
+  ])('marks nothing for %s', (_name, over) => {
+    useRunsStore().runs = [run(over)]
+    expect(mountPicker([deployment()]).find('.deployment-recording').exists()).toBe(false)
   })
 })

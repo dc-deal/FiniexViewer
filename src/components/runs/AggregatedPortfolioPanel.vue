@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
 import ScopeMark from '@/components/base/ScopeMark.vue'
 import {
-  SPREAD_NOT_RECORDED, amount, figure, modelledSpreadFigures, numberOrNa, percentFigure, signClass, spreadFigure,
+  SPREAD_NOT_RECORDED, amount, modelledSpreadFigures, numberOrNa, percentFigure, signClass, spreadFigure,
 } from '@/components/runs/report_format'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import type { Figure } from '@/types/figure_types'
@@ -75,10 +75,12 @@ function costs(row: AggregatedCurrency): Figure[] {
       value: `${money(fold.maker_fee)} / ${money(fold.taker_fee)}`,
     })
   }
+  // money per trade, not a price: `total_spread_cost` over `total_trades`, as the captured figures
+  // divide out and their console prints it, `(avg 0.98 EUR/trade)`
   figures.push({
     label: t('Avg spread'),
-    value: spreadFigure(fold.avg_spread, figure),
-    title: fold.avg_spread === null ? SPREAD_NOT_RECORDED : t('In price units, not in the account currency.'),
+    value: spreadFigure(fold.avg_spread, money),
+    title: fold.avg_spread === null ? SPREAD_NOT_RECORDED : undefined,
   })
   return figures
 }

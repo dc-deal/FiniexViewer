@@ -36,6 +36,10 @@ export interface RepositoryIdentity {
   in_repository: boolean | null
   commit: string | null
   branch: string | null
+  // the commit's message, and the last commits on its first-parent line, newest first: filled for a
+  // session of a deployment and null on every other run (contract 47)
+  commit_subject: string | null
+  recent_commits: string[] | null
   dirty: boolean
   uncommitted_count: number
   changes: string[]
@@ -108,6 +112,10 @@ export interface RunHeader {
   start_time: string
   run_type: string
   run_name: string
+  // The order features a backtest was allowed beyond what its venue's API holds, as its scenario set
+  // declared (contract 45): `stop_loss` · `take_profit`. Empty for every other run and always for a
+  // session; null on a run recorded before this contract
+  features_beyond_venue: string[] | null
   parent_id: string | null
   parent_kind: string | null
   config_snapshot: string
@@ -381,7 +389,9 @@ export interface RunSummaryCurrency {
   total_trades: number
   winning_trades: number
   losing_trades: number
-  expectancy: number            // mean R — only meaningful when r_trade_count > 0
+  // mean R. Null where no trade has an R; a run recorded before contract 46 reads 0.0 there, beside
+  // r_trade_count 0, so it is gated on that count as well
+  expectancy: number | null
   // null when the matching subset is empty. Gate each on ITS OWN count: a run can have
   // R-defined trades with no winner among them, so r_trade_count alone is not enough.
   avg_win_r: number | null
@@ -722,9 +732,6 @@ export interface OpenPosition {
   // null where no level was set
   stop_loss: number | null
   take_profit: number | null
-  // where a level is held — `local` on every one measured, '' where none was set
-  protective_level_enforcement: string
-  take_profit_enforcement: string
 }
 
 /** The fills of one fee source, and what their fees came to in the row's account currency. */
@@ -1075,7 +1082,8 @@ export interface TradeRow {
   mfe_distance: number
   // what mae_distance / mfe_distance are counted in: 'pip' | 'tick' | …
   price_unit: string
-  // null where no stop was set, so the trade has no R to be a multiple of
+  // null where the position carried no stop, an own stop included, so the trade has no R to be a
+  // multiple of. A stop moved to the entry price leaves it null too (their trade-history document)
   r_multiple: number | null
   scenario_name: string
   entry_tick_index: number
@@ -1094,24 +1102,29 @@ export interface TradeRow {
   position_closes: number
   stop_loss: number | null
   take_profit: number | null
+  // The level a stop-loss or take-profit exit fired at (contract 45), null for every other exit and on
+  // an older record. A logic that keeps its stop itself leaves the two above null: this is where its
+  // level is read, with `close_reason` still `sl_triggered` or `tp_triggered`
+  exit_level: number | null
   entry_side: string
   exit_side: string
   entry_executions: TradeExecution[]
   exit_executions: TradeExecution[]
-  entry_slippage: number
-  entry_slippage_pct: number
+  // null where no submission tick was captured, as the exit half below (their trade-history document)
+  entry_slippage: number | null
+  entry_slippage_pct: number | null
   /**
    * NULL on a trade that records no exit slippage — measured 2026-09-29 over 437 trades from eight
-   * runs: null on 118 of them, 27 %. The entry half was stated on every one of the 437, so it is
-   * mirrored as a plain number; whether that is guaranteed or only true of this archive is a
-   * question for the backend rather than something to infer from a sample.
+   * runs: null on 118 of them, 27 %.
    *
    * The mirror said `number` until this measurement and the panel called `.toFixed()` on it, which
    * threw while rendering an expanded scenario group and took the whole panel with it. The contract
    * test could not catch it: it proves the mirror against ONE capture, and that run had no null.
    *
    * Since contract 44 a stop-loss or take-profit exit is measured against the LEVEL that fired, no
-   * longer against the submission mid: a backtest reads 0 there, a session the real distance.
+   * longer against the submission mid. A level the position carries fills there in a backtest and reads
+   * 0; since contract 45 a level the strategy keeps itself fills at the next price and does not, under
+   * the same `protective_level` — so that value never means "reads 0 in a backtest".
    */
   exit_slippage: number | null
   exit_slippage_pct: number | null
@@ -1124,7 +1137,8 @@ export interface TradeRow {
 export interface TradeAnalytics {
   currency: string
   trade_count: number
-  expectancy: number
+  // null where no trade has an R (contract 46); an older run reads 0.0 beside r_trade_count 0
+  expectancy: number | null
   // null when no trade carried a stop, so nothing is denominated in R
   avg_win_r: number | null
   avg_loss_r: number | null
@@ -1599,8 +1613,8 @@ export interface OrderHistoryRow {
   // why the row ended as it did, beside the status that says WHAT it ended as
   end_reason: string | null
   // a whole sentence of the backend's, on a refused row and nowhere else. Contract 23 added
-  // `unaccounted_order`, `position_not_found` and `close_withheld`, and dropped
-  // `broker_unreachable` and `unresolved_write`.
+  // `unaccounted_order` and `position_not_found`, and dropped `broker_unreachable` and
+  // `unresolved_write`.
   rejection_reason: string | null
   rejection_message: string | null
   // the order event this row was booked with — its `seq` in order-events (contract 44); null on a
@@ -1824,6 +1838,77 @@ export interface OrderEventsReport {
    * GOING - a live session writes it from its first order onwards.
    */
   truncated_tail: boolean
+}
+
+/**
+ * The venue's reads of one session, as the unnarrowed `order-events` answer carries them in
+ * `broker_truth` — only that list, its key and whether the last line was cut, never the order steps,
+ * which the Orders panel asks for one position at a time.
+ */
+export interface VenueReads {
+  reads: BrokerTruthRow[]
+  /** The list's own key, `["scenario_name", "seq"]` — declared by the answer, not assumed. */
+  key: string[]
+  truncated_tail: boolean
+}
+
+/**
+ * One read of the venue in `venue-account`, counted rather than listed: the orders one by one stand
+ * on the order-event stream, on the line `seq` names.
+ *
+ * Every part keeps the three states of `BrokerTruthRow`: a value is what the venue holds, `null` with
+ * the part named in `unread_parts` is a read that failed, and a null position count without the name
+ * is a spot account, where a holding is a balance.
+ */
+export interface VenueAccountRead {
+  seq: number
+  /** Every order the venue reported as open, also orders this session did not place. */
+  venue_order_count: number | null
+  /** The venue's balance sheet, every asset under the venue's own codes. */
+  venue_balances: Record<string, number> | null
+  /** A margin account only. */
+  venue_position_count: number | null
+  unread_parts: string[]
+}
+
+/**
+ * How often the comparison of the session's books with the venue's ran (contract 23 and later). The
+ * counts are null where it was switched off; both cycle counts at 0 say it never came due, and
+ * `cycles_compared: 0` beside skipped cycles is a session that only looks clean.
+ */
+export interface VenueReconciliation {
+  enabled: boolean
+  cycles_compared: number | null
+  cycles_skipped: number | null
+  /** Summed over the cycles: one divergence that stood for three cycles counts three. */
+  divergences_seen: number | null
+}
+
+/** One live session in `venue-account`, keyed by `name` as every section of the run names it. */
+export interface VenueAccountUnit {
+  name: string
+  /** Null where the session never took that read: it stopped before its start, or was ended before its end. */
+  at_start: VenueAccountRead | null
+  at_end: VenueAccountRead | null
+  reconcile_lines: number
+  divergent_lines: number
+  // `clean` · `divergent`, where the last reconcile line left the books; null where none was written
+  last_reconcile_state: string | null
+  last_divergence: ReconcileDivergence | null
+  /** Null on a record from before the field existed. */
+  reconciliation: VenueReconciliation | null
+}
+
+/**
+ * Response type for GET /api/v1/reports/runs/{run_id}/venue-account — what the venue held when the
+ * session began and ended, and whether its books and the venue's came apart between. Written when a
+ * live session ENDS: a running one answers 404 `run_not_completed`, a backtest and a dry run against
+ * the real venue have none (their `venue-account` document).
+ */
+export interface VenueAccountReport {
+  run_id: string
+  units: VenueAccountUnit[]
+  key: string[]
 }
 
 /**

@@ -230,6 +230,7 @@ function shown(value: unknown): string {
   font-weight: normal;
   color: var(--color-text-secondary);
   text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .logic-type {

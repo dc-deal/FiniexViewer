@@ -38,6 +38,7 @@ starts with the first group.
 | [Run List](runs/run_list.md) | Choosing a run: a facet bar over the flat run index, what a row says and from which field, ranked columns, and runs folded into families |
 | [Run Bundle](runs/run_bundle.md) | The column of a run's report sections: the registry and its order, models handed in, absent, loading and failed sections, and the stored layout |
 | [Latest State Frame](runs/latest_state_frame.md) | How a session stands while it runs: the recording verdict, two clocks kept apart, memory beside the first frame, checks that speak only when off, and the frame folded once the session ended |
+| [Venue Account](runs/venue_account.md) | What the venue itself held beside the session's own books: its reads on the order-event stream and the account written at the end, in its own codes and never rounded, and a comparison that speaks only where it is off |
 | [Scenario Roster and Focus](runs/scenario_roster_and_focus.md) | The only complete list of a run's scenarios, and the one scenario in focus: what narrows to it, what only marks it, and what stays run-wide |
 | [Trade History and Run Totals](runs/trade_history_and_run_totals.md) | The one panel where a single trade exists, with its fills, unit costs and visible row cap, and the run's totals minus what is already on screen |
 | [Orders and Order Steps](runs/orders_and_order_steps.md) | Why an order did not become what it was meant to be: the pending funnel, rows that are lifecycle records, and the steps opened under a position |
@@ -52,6 +53,8 @@ starts with the first group.
 | [Theme, Buttons and Icons](interface/theme_buttons_and_icons.md) | Colour tokens and roles for both themes, `AppButton` and `JumpLink` with each state on two channels, `AppSwitch` and `AppSlider` — the one on/off and the one scale for the whole app — a change of state that moves nothing, and the registry that names an icon by its meaning |
 | [Figures and Words on Screen](interface/figures_and_words_on_screen.md) | Units and `n/a` for what was never measured, why no figure is computed here, FiniexTestingIDE's vocabulary, the `t()` marker with `plural()`, and the hint registry |
 | [Menu Bar Status](interface/menu_bar_status.md) | What the menu bar always states: the identity from `GET /api/v1/caller`, the machine's load from `GET /api/v1/machine-resources`, and the scenario in focus |
+| [Servers](interface/servers.md) | Which server a window shows, what stays across a switch, the settings page, and what no connection says. |
+| [Named Layouts](interface/named_layouts.md) | The placement of the panels saved under a name and loaded at once: what a layout holds and never holds, panels moved rather than rebuilt, the loaded layout following the reader, the shipped ones, and storage shared by every window |
 
 ## Lists
 

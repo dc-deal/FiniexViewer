@@ -40,6 +40,8 @@ const REPORTS: Record<string, string> = {
   'trade-history': 'trade_history.json',
   'scenario-details': 'scenario_details.json',
   'config': 'run_config_simulation.json',
+  // the live run's: the report route below serves a capture only under the run it names
+  'venue-account': 'venue_account.json',
 }
 
 /**
@@ -54,6 +56,9 @@ export const STATE_FRAME_RUNS: Record<'ended' | 'stopped', string> = (() => {
 
 /** The run every report capture was taken from — the only one the mock can answer for. */
 export const FIXTURE_RUN = (fixture('scenario_details.json') as { run_id: string }).run_id
+
+/** The live run whose whole stream is captured, the venue's reads in it — and its venue account. */
+export const LIVE_RUN = (fixture('order_events_live.json') as { run_id: string }).run_id
 
 /**
  * The deployment the ledger captures belong to, read from the capture rather than transcribed —
@@ -134,7 +139,25 @@ const CONTRACT = {
  * rather than null on purpose — a null passes a nullish guard, and what the boundary exists for is
  * the case the mirror did not predict.
  */
+/** A list of servers as the dev server keeps it, for a spec that needs more than the default one. */
+export interface MockServer {
+  id: string
+  name: string | null
+  url: string
+  isDefault: boolean
+  hasToken: boolean
+  tunnel: null
+  tunnelState: 'none'
+  tunnelMessage: null
+  hostId: string | null
+}
+
+const DEFAULT_MOCK_SERVER: MockServer = {
+  id: 'default', name: 'Development', url: 'http://backend:8000', isDefault: true, hasToken: true, tunnel: null, tunnelState: 'none', tunnelMessage: null, hostId: 'h_x29og8',
+}
+
 interface ApiMockOptions {
+  servers?: MockServer[]
   corrupt?: { section: string, field: string }
   /**
    * Levels set on one position's trade rows. No trade of the fixture run set a stop or a target, so
@@ -143,10 +166,27 @@ interface ApiMockOptions {
    */
   levels?: { scenario: string, position: string, stopLoss: number, takeProfit: number }
   /**
+   * An own level on one position's trade rows: the one that fired, and which of the two it was. No
+   * stored run carries one yet (measured 2026-10-30), so a check of what the run chart draws for it
+   * hands one position the fields a run of such a strategy serves.
+   */
+  ownLevel?: { scenario: string, position: string, level: number, reason: string }
+  /**
+   * What the framework's tree held uncommitted, in the run's header. The fixture run's tree is clean,
+   * so a check of the card that lists the changes hands it the paths of a dirty one.
+   */
+  changes?: string[]
+  /**
    * Rows appended to the captured activities. The capture holds whatever ran when it was taken, so
    * an activity a spec relies on is built from the server's row by the spec that needs one.
    */
   activities?: Record<string, unknown>[]
+  /**
+   * A unit's first tick earlier than captured — where the run chart's window begins. The captured
+   * units span an hour each, inside one batch of bars; a spec of bars loaded as the view moves widens
+   * one over both stretches of the captured EURGBP bars, three weeks apart.
+   */
+  firstTick?: { unit: string, at: string }
 }
 
 /** A number where a list belongs: `.filter` on it throws, which is how the original defect landed. */
@@ -161,8 +201,32 @@ interface StreamCapture {
 
 /** Serves every `/api/v1/**` call from the captures. Anything unmapped fails loudly, never silently. */
 export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise<void> {
+  // the list is the dev server's own file: a spec must never write the operator's
+  let servers = options.servers ?? [DEFAULT_MOCK_SERVER]
+  await page.route('**/__viewer/servers**', async (route: Route) => {
+    const request = route.request()
+    const id = new URL(request.url()).pathname.split('/')[3]
+    if (request.method() === 'POST') {
+      const edit = request.postDataJSON() as { name?: string, url: string, token?: string }
+      const name = edit.name ?? 'new'
+      servers = [...servers, { id: name.toLowerCase(), name, url: edit.url, isDefault: false, hasToken: Boolean(edit.token), tunnel: null, tunnelState: 'none', tunnelMessage: null, hostId: null }]
+    } else if (request.method() === 'PUT') {
+      const { token, ...edit } = request.postDataJSON() as Partial<MockServer> & { token?: string }
+      servers = servers.map(server => (server.id === id
+        ? { ...server, ...edit, hasToken: server.hasToken || Boolean(token) }
+        : server))
+    } else if (request.method() === 'DELETE') {
+      servers = servers.filter(server => server.id !== id)
+    }
+    return route.fulfill({ json: { servers, secretFiles: [] } })
+  })
   await page.route('**/api/v1/**', async (route: Route) => {
-    const path = new URL(route.request().url()).pathname
+    // every server answers from the same captures: which one was asked is the spec's to check
+    const path = new URL(route.request().url()).pathname.replace(/^\/server\/[^/]+/, '')
+
+    if (path === '/api/v1/health') {
+      return route.fulfill({ json: fixture('health.json'), headers: CONTRACT })
+    }
 
     const shell = SHELL[path]
     if (shell) return route.fulfill({ json: shell, headers: CONTRACT })
@@ -260,6 +324,10 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
      */
     const stream = /^\/api\/v1\/reports\/runs\/([^/]+)\/order-events$/.exec(path)
     if (stream) {
+      // the live run's stream is asked for WHOLE, for the venue's reads — and captured whole
+      if (stream[1] === LIVE_RUN && !new URL(route.request().url()).searchParams.has('order_id')) {
+        return route.fulfill({ json: fixture('order_events_live.json'), headers: CONTRACT })
+      }
       if (stream[1] !== FIXTURE_RUN) {
         return route.fulfill(absent('run_not_found', `Only ${FIXTURE_RUN} is captured`))
       }
@@ -290,6 +358,23 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       const body = fixture(file) as Record<string, unknown>
       if (options.corrupt && options.corrupt.section === section) {
         body[options.corrupt.field] = WRONG_SHAPE
+      }
+      const firstTick = options.firstTick
+      if (firstTick && section === 'scenario-details') {
+        body['units'] = (body['units'] as Record<string, unknown>[]).map(row =>
+          row['name'] === firstTick.unit ? { ...row, first_tick_time: firstTick.at } : row)
+      }
+      const changes = options.changes
+      if (changes && section === 'header') {
+        const code = body['code_identity'] as Record<string, Record<string, unknown>>
+        code['framework'] = { ...code['framework'], dirty: true, uncommitted_count: changes.length, changes }
+      }
+      const ownLevel = options.ownLevel
+      if (ownLevel && section === 'trade-history') {
+        body['trades'] = (body['trades'] as Record<string, unknown>[]).map(row =>
+          row['scenario_name'] === ownLevel.scenario && row['position_id'] === ownLevel.position
+            ? { ...row, stop_loss: null, take_profit: null, exit_level: ownLevel.level, close_reason: ownLevel.reason }
+            : row)
       }
       const levels = options.levels
       if (levels && section === 'trade-history') {

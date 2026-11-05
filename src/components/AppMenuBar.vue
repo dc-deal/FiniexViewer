@@ -8,8 +8,11 @@ import {
 import AccountStatus from '@/components/AccountStatus.vue'
 import ContractStatus from '@/components/ContractStatus.vue'
 import MachineStatus from '@/components/MachineStatus.vue'
+import ServerSwitch from '@/components/ServerSwitch.vue'
 import NarrowingStatement from '@/components/NarrowingStatement.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
+import HintLine from '@/components/base/HintLine.vue'
+import LayoutsMenu from '@/components/LayoutsMenu.vue'
 import TopMenu from '@/components/TopMenu.vue'
 import { useSectionStates, type SectionState } from '@/composables/use_section_states'
 import { PANEL_KINDS } from '@/panel_kinds'
@@ -38,8 +41,12 @@ const { openIds } = storeToRefs(dock)
 const memberStates = Object.fromEntries(BUNDLE_IDS.map(bundle => [bundle, useSectionStates(bundle)])) as
   Record<BundleId, ComputedRef<SectionState[]>>
 
-/** The areas whose submenu also lists a bundle's members — where their column stands. */
-const AREA_BUNDLES: Record<string, BundleId> = { runs: 'run', deployments: 'deployment' }
+/**
+ * The areas whose submenu also lists a bundle's members — read off the register, where a bundle's kind
+ * names its area, so a new bundle brings its members here with no list to remember.
+ */
+const AREA_BUNDLES = Object.fromEntries(PANEL_KINDS.flatMap(kind =>
+  kind.area && (BUNDLE_IDS as readonly string[]).includes(kind.id) ? [[kind.area, kind.id]] : [])) as Record<string, BundleId>
 
 /** The members an area's submenu lists — its bundle's, where it has one. */
 function membersOf(area: string): { bundle: BundleId, states: SectionState[] } | null {
@@ -81,23 +88,35 @@ function toggleKind(kind: PanelKind): void {
   else dock.reveal(kind.id, 'command')
 }
 
-/** On show: in the column or open as a panel — but not in the column of a run that lacks it. */
-function sectionShown(state: SectionState): boolean {
-  return state.place === 'panel' || (state.place === 'column' && !state.absent)
+/**
+ * Where a section stands, as the reader meets it: `closed` is in the column of a bundle that is shut.
+ * It is not hidden, and it is on show nowhere (operator, on screen 2026-10-30: a tick on such a row
+ * read as shown, and the section could not be found).
+ */
+function whereOf(state: SectionState, bundle: BundleId): 'panel' | 'column' | 'closed' | 'hidden' {
+  return state.place === 'column' && !openIds.value.includes(bundle) ? 'closed' : state.place
 }
 
+/** On show: in the column of an open bundle or as a panel — but not in the column of a run that lacks it. */
+function sectionShown(state: SectionState, bundle: BundleId): boolean {
+  const where = whereOf(state, bundle)
+  return where === 'panel' || (where === 'column' && !state.absent)
+}
+
+/** A click brings what is not on show to the screen: a section in a closed bundle opens at once. */
 function toggleSection(state: SectionState, bundle: BundleId): void {
-  if (state.place === 'hidden') dock.showSection(state.section.id, bundle)
+  const where = whereOf(state, bundle)
+  if (where === 'hidden' || where === 'closed') dock.showSection(state.section.id, bundle)
   else dock.hideSection(state.section.id, bundle)
 }
 
-function sectionTitle(state: SectionState, bundle: BundleId): string {
-  if (state.place === 'panel') return `${t(state.section.title)} — ${t('open as a panel of its own')}`
-  if (state.absent) {
-    const lacking = bundle === 'deployment' ? t('this deployment carries no such section') : t('this run carries no such section')
-    return `${t(state.section.title)} — ${lacking}`
-  }
-  return t(state.section.title)
+/** The words at the end of a row: where the section stands, or that the run has none. */
+function placeWord(state: SectionState, bundle: BundleId): string {
+  const where = whereOf(state, bundle)
+  if (where === 'panel') return t('panel')
+  if (state.absent) return bundle === 'deployment' ? t('not in this deployment') : t('not in this run')
+  if (where === 'column') return t('in bundle')
+  return where === 'closed' ? t('in closed bundle') : ''
 }
 
 /** Keeps the menu open, so several panels can be shown or hidden in one visit. */
@@ -145,18 +164,21 @@ function stayOpen(event: Event): void {
                       class="menu-item menu-toggle"
                       :class="{ absent: state.absent && state.place !== 'panel' }"
                       :data-section="state.section.id"
-                      :data-place="state.place"
-                      :title="sectionTitle(state, membersOf(entry.id)!.bundle)"
-                      :model-value="sectionShown(state)"
+                      :data-place="whereOf(state, membersOf(entry.id)!.bundle)"
+                      :model-value="sectionShown(state, membersOf(entry.id)!.bundle)"
                       :disabled="state.absent && state.place !== 'panel'"
                       @update:model-value="toggleSection(state, membersOf(entry.id)!.bundle)"
                       @select="stayOpen"
                     >
-                      <span class="menu-check" aria-hidden="true">{{ sectionShown(state) ? '✓' : '' }}</span>
+                      <span class="menu-check" aria-hidden="true">{{ sectionShown(state, membersOf(entry.id)!.bundle) ? '✓' : '' }}</span>
                       <AppIcon :name="state.section.icon" />
                       <span class="menu-label">{{ t(state.section.title) }}</span>
-                      <AppIcon v-if="state.place === 'panel'" name="action-open-panel" class="menu-opened" />
+                      <span class="menu-place">
+                        {{ placeWord(state, membersOf(entry.id)!.bundle) }}
+                        <AppIcon v-if="state.place === 'panel'" name="action-open-panel" />
+                      </span>
                     </DropdownMenuCheckboxItem>
+                    <HintLine id="bundle-places" class="menu-hint" />
                   </template>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
@@ -177,11 +199,13 @@ function stayOpen(event: Event): void {
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
+    <LayoutsMenu />
 
     <!-- the scenario in focus, said once for every panel it narrows; it gives way before anything
          beside it moves -->
     <NarrowingStatement class="menu-bar-narrowing" />
     <div class="menu-bar-spacer" />
+    <ServerSwitch />
     <ContractStatus />
     <MachineStatus />
     <AccountStatus />
@@ -213,6 +237,14 @@ function stayOpen(event: Event): void {
   flex: 1;
 }
 
+/* in a narrow window the app's name is the first part of the frame to go: the browser's tab names it,
+   and the room it frees keeps the server's name and the application menu in the window */
+@media (max-width: 900px) {
+  .menu-bar-title {
+    display: none;
+  }
+}
+
 /* the statement shortens its name and nothing more: its least width is the grid's own — the mark
    and the button whole, the name's track down to nothing. `min-width: 0` let it shrink past them */
 .menu-bar-narrowing {
@@ -221,7 +253,7 @@ function stayOpen(event: Event): void {
 
 /* a control in the link ink, with the two-channel states every control here carries. It never
    gives way: it shared the bar's shortfall with the narrowing and wrapped its ▾ onto a second line */
-.menu-bar-trigger {
+.menu-bar :deep(.menu-bar-trigger) {
   flex-shrink: 0;
   white-space: nowrap;
   padding: var(--space-xs) var(--space-sm);
@@ -234,26 +266,39 @@ function stayOpen(event: Event): void {
   cursor: pointer;
 }
 
-.menu-bar-trigger:hover,
-.menu-bar-trigger[data-state='open'] {
+.menu-bar :deep(.menu-bar-trigger:hover),
+.menu-bar :deep(.menu-bar-trigger[data-state='open']) {
   background-color: var(--color-bg-hover);
   border-color: var(--color-border);
 }
 
-.menu-bar-trigger:active {
+.menu-bar :deep(.menu-bar-trigger:active) {
   background-color: var(--color-bg-active);
   transform: translateY(1px);
 }
 
-.menu-bar-trigger:focus-visible {
+.menu-bar :deep(.menu-bar-trigger:focus-visible) {
   outline: 1px solid var(--color-accent);
 }
 
 /* the entries' grid — tick, icon, word — is every menu's, beside `.menu-item` in TopMenu.vue */
 
-/* open as a panel of its own — the mark beside the word, in the entry's own ink */
-.menu-opened {
-  margin-left: var(--space-sm);
+/* where the section stands, in words at the end of its row: a mark alone said nothing of the rest */
+.menu-place {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* as wide as the rows it explains, never wider: a line of its length would stretch the whole menu */
+.menu-hint {
+  width: 0;
+  min-width: 100%;
+  margin-top: var(--space-xs);
 }
 
 /* the run's doing: the section does not exist, so the entry cannot be switched */

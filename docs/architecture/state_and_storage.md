@@ -76,9 +76,18 @@ step stream again.
 and the column's `layout.v1` alike, which is what makes a second window the way to compare two runs.
 A tab reads its own `sessionStorage` entry. A NEW tab has none: it adopts the last one any tab saved
 and keeps it as its own, so another tab's later write never reaches it, not even on a reload. Every
-write goes to both — the tab's own, and `localStorage` as the start of the next new tab. Settings
-and banned hints are the reader's, not the tab's, and stay in `localStorage` alone; a hint merely
-dismissed is stored nowhere and returns next visit.
+write goes to both — the tab's own, and `localStorage` as the start of the next new tab. Settings,
+banned hints and the named layouts are the reader's, not the tab's, and stay in `localStorage`
+alone; a hint merely dismissed is stored nowhere and returns next visit.
+
+**What is the reader's follows another window** (since 2026-11-03). Each window read it once and
+wrote it whole, so the last window to write took back what another had just changed. The browser
+tells every window but the writer, and `onSharedWrite` in `src/tab_storage.ts` makes the settings,
+the banned hints and the named layouts read it again. The named layouts also read the stored list
+before every write, so a layout saved in another window is never lost — see
+[Named Layouts](../interface/named_layouts.md), which holds the dock, the places, the views no run is
+bound to and the bundles' columns under a name, in three sizes, and which layout a tab loaded as
+`layout` and in which size as `layoutSize` in its `arrangement.v1`.
 
 **Adopted at the READ, not at the first write.** With one shared key, measured in the browser on
 2026-10-14, a reload brought back the column the OTHER window had changed every time — the column's

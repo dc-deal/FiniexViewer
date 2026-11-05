@@ -34,6 +34,7 @@ const unitOptions = computed(() => (units.value ?? []).map(entry => ({
 <template>
   <div class="run-chart-quick-bar">
     <AppSelect
+      class="unit-select"
       compact
       :label="t('Unit')"
       :model-value="unit?.name ?? null"
@@ -48,7 +49,7 @@ const unitOptions = computed(() => (units.value ?? []).map(entry => ({
       :label="t('Timeframe')"
       :model-value="timeframe"
       :options="coveredTimeframes.map(tf => ({ value: tf, label: tf }))"
-      :placeholder="t('Timeframe')"
+      :placeholder="timeframe ? undefined : t('Timeframe')"
       :disabled="!coveredTimeframes.length"
       @update:model-value="chart.chooseTimeframe"
     />
@@ -77,15 +78,22 @@ const unitOptions = computed(() => (units.value ?? []).map(entry => ({
   padding: 0 var(--space-sm);
 }
 
-/* The selects give way — a long unit name is cut, the unit's far more than the timeframe's — so
+/* The unit gives way — a long unit name is cut, and the tab beside it names the unit too — so
    ≡ Layers stays whole and in reach. Below about 630 px the bar overflowed its group's header, and
-   the button stood past the group's edge, reached only by scrolling the group (2026-10-28). */
-.run-chart-quick-bar > .app-select {
+   the button stood past the group's edge, reached only by scrolling the group (2026-10-28). It is
+   cut with …, as the tab is, never mid-letter; the timeframe is never cut: three characters, and
+   `M1(` named no timeframe at all (operator, 2026-10-29). A select is as wide as its widest
+   option, so the timeframe's placeholder is offered only while none is chosen: the word stood
+   wider than any timeframe and pushed ≡ Layers past the group's edge. */
+.run-chart-quick-bar > .unit-select {
   flex: 0 1 auto;
   min-width: 3rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.run-chart-quick-bar > :not(.app-select) {
+.run-chart-quick-bar > :not(.unit-select) {
   flex: none;
 }
 

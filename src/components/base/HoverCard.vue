@@ -21,6 +21,8 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Already-rendered figures — the same pair a `FigureBlock` places. */
   details?: Figure[]
+  /** Paths, one per row, each wrapping at its separators. */
+  paths?: string[]
   /** Where it prefers to sit; it flips on its own when that side has no room. */
   side?: 'top' | 'right' | 'bottom' | 'left'
   /**
@@ -53,7 +55,7 @@ const controlled = computed(() => props.open === undefined ? {} : { open: props.
           :side-offset="6"
           :collision-padding="12"
         >
-          <FigureCardBody :title="title" :details="details" />
+          <FigureCardBody :title="title" :details="details" :paths="paths" />
           <TooltipArrow class="card-arrow" :width="10" :height="5" />
         </TooltipContent>
       </TooltipPortal>

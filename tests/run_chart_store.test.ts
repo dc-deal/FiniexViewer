@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
+import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -61,6 +62,21 @@ function chooseFixtureRun(): void {
   reports.portfolio = portfolio
 }
 
+/**
+ * The ETHUSD unit's window begun ten days earlier, read in M10: half a batch before a position of it
+ * then stays inside the window, where at its captured eighteen hours it reaches past the start.
+ */
+function widenEthusd(): void {
+  useRunReportsStore().scenarios = {
+    ...scenarios,
+    units: scenarios.units.map(row => row.name === 'ETHUSD_spot_two_balances'
+      ? { ...row, first_tick_time: '2026-02-01T00:00:00+00:00' }
+      : row),
+  }
+}
+
+const M10 = 600_000
+
 /** The executed opening of a position — where it opened, closed later or not. */
 function openingOf(scenario: string, position: string) {
   return orders.orders.find(row => row.scenario_name === scenario && row.position_id === position
@@ -107,7 +123,8 @@ describe('useRunChartStore', () => {
     expect(chart.timeframe).toBe('M1')
     // from one period before the first tick: the route answers the bars that OPEN in the range
     const before = new Date(Date.parse(row.first_tick_time) - 60_000).toISOString()
-    expect(apiClient.getBars).toHaveBeenLastCalledWith(row.data_broker_type, row.symbol, 'M1', before, row.last_tick_time)
+    const end = new Date(Date.parse(row.last_tick_time)).toISOString()
+    expect(apiClient.getBars).toHaveBeenLastCalledWith(row.data_broker_type, row.symbol, 'M1', before, end, 2000)
     expect(chart.bars.map(bar => bar.time)).toEqual([1761886800, 1761886860])
     expect(chart.loading).toBe(false)
   })
@@ -216,8 +233,8 @@ describe('useRunChartStore', () => {
     expect(chart.marks.map(mark => mark.time)).toEqual([...chart.marks.map(mark => mark.time)].sort())
   })
 
-  /** A window the route cut ends at its last bar: an event past it has no candle, not the last one. */
-  it('draws nothing past the last bar of a window the route cut', async () => {
+  /** While the window holds more to the right, an event past the bars loaded has no candle yet, not the last one. */
+  it('draws nothing past the bars loaded while the window holds more', async () => {
     chooseFixtureRun()
     vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true, priceBasis: '' })
     const chart = useRunChartStore()
@@ -253,7 +270,7 @@ describe('useRunChartStore', () => {
     chart.attach()
     await flushPromises()
     const layer = (id: string) => chart.layers.find(entry => entry.id === id)!.drawings
-    expect(chart.layers.map(entry => entry.id)).toEqual(['levels', 'entry-exit', 'trades'])
+    expect(chart.layers.map(entry => entry.id)).toEqual(['state-frame', 'levels', 'entry-exit', 'trades'])
     expect(layer('levels')).toEqual([])
     expect(layer('trades').length).toBeGreaterThan(0)
 
@@ -261,6 +278,54 @@ describe('useRunChartStore', () => {
     await flushPromises()
     expect(layer('levels').map(drawing => drawing.kind === 'segment' && drawing.label)).toEqual(['SL', 'TP'])
     expect(layer('entry-exit').every(drawing => drawing.kind === 'line')).toBe(true)
+  })
+
+  /** The cards print a price at the tick size once the broker report is there; the drawing keeps the price as served. */
+  it('prints the prices of its cards at the tick size of the unit\'s instrument', async () => {
+    chooseFixtureRun()
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 })),
+      truncated: false,
+      priceBasis: '',
+    })
+    const served = 0.8612345678
+    const unitName = firstWithOpenings()
+    const traded = trades.trades.find(row => row.scenario_name === unitName)!
+    useRunReportsStore().tradeHistory = {
+      ...trades,
+      trades: trades.trades.map(row => row.scenario_name === unitName ? { ...row, stop_loss: served, exit_price: served } : row),
+    }
+    useRunReportsStore().orderHistory = {
+      ...orders,
+      orders: orders.orders.map(row => row.scenario_name === unitName && row.executed_price !== null ? { ...row, executed_price: served } : row),
+    }
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    chart.showPosition({ scenario: traded.scenario_name, position: traded.position_id })
+    await flushPromises()
+    const stop = () => chart.layers.find(entry => entry.id === 'levels')!.drawings
+      .flatMap(drawing => drawing.kind === 'segment' ? [drawing] : [])[0]!
+    expect(stop().card.details[0]!.value).toBe('0.86123457')
+
+    useRunReportsStore().broker = brokerFixture as unknown as BrokerReport
+    expect(stop().card.details[0]!.value).toBe('0.86123')
+    expect(stop().price).toBe(served)
+
+    // every way the store hands it on: the marks' cards, and with the options the line and every position's levels
+    const value = (details: { label: string, value: string }[], label: string) =>
+      details.find(pair => pair.label === label)?.value ?? ''
+    const marks = chart.events.filter(mark => mark.card.title.startsWith(`${traded.position_id} `))
+    expect(marks.some(mark => mark.role === 'entry' && value(mark.card.details, 'Opened').endsWith('@ 0.86123'))).toBe(true)
+    expect(marks.some(mark => mark.role !== 'entry' && value(mark.card.details, 'Closed').endsWith('@ 0.86123'))).toBe(true)
+    useArrangementStore().setPanelView('run-chart', { layers: { options: { 'every-position': true, 'every-position-line': true } } })
+    const drawn = (id: string) => chart.layers.find(entry => entry.id === id)!.drawings
+    const lines = drawn('entry-exit')
+    expect(lines.length).toBeGreaterThan(0)
+    expect(lines.every(line => value(line.card.details, 'Closed').endsWith('@ 0.86123'))).toBe(true)
+    const levels = drawn('levels')
+    expect(levels.length).toBeGreaterThan(1)
+    expect(levels.every(level => level.card.details[0]!.value === '0.86123')).toBe(true)
   })
 
   /** Switched to every position, the line is drawn for each trade of the unit, with none looked at. */
@@ -347,8 +412,8 @@ describe('useRunChartStore', () => {
     // back to front as moved, the fainter one at its share, the hidden one handed over marked so —
     // the chart paints nothing of it and keeps its marks' room
     expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1, entry.hidden ?? false]))
-      .toEqual([['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true]])
-    const [trading, levels] = chart.layers
+      .toEqual([['state-frame', 1, false], ['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true]])
+    const [, trading, levels] = chart.layers
     expect(trading!.drawings.length).toBeGreaterThan(0)
     // the signs switched off keep their room and paint no text, so the switch rescales nothing
     expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.textHidden === true)).toBe(true)
@@ -433,13 +498,150 @@ describe('useRunChartStore', () => {
     expect(apiClient.getBars).not.toHaveBeenCalled()
   })
 
-  it('says when the route answered with less than the window holds', async () => {
-    vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true, priceBasis: '' })
+  /** The rest of the window arrives as the reader moves toward it, and what stood past the bars with it (viewer#9). */
+  it('loads the rest of the window at its right edge, and draws there what was past it', async () => {
+    vi.mocked(apiClient.getBars).mockResolvedValueOnce({ ...ANSWER, truncated: true, priceBasis: '' })
     chooseFixtureRun()
     const chart = useRunChartStore()
     chart.attach()
     await flushPromises()
-    expect(chart.truncated).toBe(true)
+    const last = ANSWER.bars.at(-1)!.t
+    expect(chart.events.every(mark => mark.at <= last)).toBe(true)
+    const later = Array.from({ length: 58 }, (_, index) => ({ ...ANSWER.bars[0]!, t: last + 60 * (index + 1) }))
+    vi.mocked(apiClient.getBars).mockResolvedValueOnce({ bars: later, truncated: false, priceBasis: '' })
+    chart.extendBars('right')
+    await flushPromises()
+    // a millisecond past the last bar loaded, a batch's worth at most
+    const [, , , from, , limit] = vi.mocked(apiClient.getBars).mock.lastCall!
+    expect(from).toBe(new Date(last * 1000 + 1).toISOString())
+    expect(limit).toBe(2000)
+    expect(chart.bars).toHaveLength(60)
+    expect(chart.events.some(mark => mark.at > last)).toBe(true)
+  })
+
+  /** The frame on show in the player of the unit on show, on the session's own clock (viewer#51). */
+  describe('the state frame on show', () => {
+    const FRAMES = [
+      { record_no: 1, frame_time: '2025-10-31T05:00:30+00:00' },
+      { record_no: 2, frame_time: '2025-10-31T05:01:30+00:00' },
+    ]
+
+    function play(runId: string, unit: string, cursor: number | null, frames: unknown[] = FRAMES): void {
+      useFramePlayerStore().players.set(unit, {
+        runId, unit, stream: { record_count: 2 }, recording: 'ended', absence: null, error: null, loading: false,
+        frames, cursor, playing: false, speed: 1,
+      } as never)
+    }
+
+    async function shown(): Promise<ReturnType<typeof useRunChartStore>> {
+      chooseFixtureRun()
+      const chart = useRunChartStore()
+      chart.attach()
+      await flushPromises()
+      return chart
+    }
+
+    const moment = (chart: ReturnType<typeof useRunChartStore>) =>
+      chart.layers.find(entry => entry.id === 'state-frame')!.drawings
+
+    it('stands at the bar the frame falls in, says which frame it is, and moves with a step', async () => {
+      const chart = await shown()
+      expect(moment(chart)).toEqual([])
+      play(RUN, chart.unit!.name, 1)
+      expect(moment(chart)[0]).toMatchObject({ kind: 'time', time: 1761886800, role: 'annotation' })
+      const card = moment(chart)[0]!.card
+      expect(card.title).toBe('State frame')
+      expect(card.details[0]).toEqual({ label: 'Frame', value: '1 of 2' })
+      const others = chart.layers.filter(entry => entry.id !== 'state-frame').map(entry => entry.drawings)
+      useFramePlayerStore().players.get(chart.unit!.name)!.cursor = 2
+      expect(moment(chart)[0]).toMatchObject({ time: 1761886860 })
+      // a step moves this layer and rebuilds no other: the frames are played several a second
+      chart.layers.filter(entry => entry.id !== 'state-frame').forEach((entry, index) => {
+        expect(entry.drawings).toBe(others[index])
+      })
+    })
+
+    it('follows the newest frame where the player follows it', async () => {
+      const chart = await shown()
+      play(RUN, chart.unit!.name, null)
+      expect(moment(chart)[0]).toMatchObject({ time: 1761886860 })
+    })
+
+    it('draws nothing for the player of another unit or another run', async () => {
+      const chart = await shown()
+      play(RUN, 'another_unit', 1)
+      expect(moment(chart)).toEqual([])
+      play('another_run', chart.unit!.name, 1)
+      expect(moment(chart)).toEqual([])
+    })
+
+    it('draws nothing before the bars, and past the bars loaded until they arrive', async () => {
+      vi.mocked(apiClient.getBars).mockResolvedValue({ ...ANSWER, truncated: true, priceBasis: '' })
+      const chart = await shown()
+      play(RUN, chart.unit!.name, 1, [{ record_no: 1, frame_time: '2025-10-31T04:00:00+00:00' }])
+      expect(moment(chart)).toEqual([])
+      play(RUN, chart.unit!.name, 2)
+      expect(moment(chart)).toEqual([])
+      play(RUN, chart.unit!.name, 1)
+      expect(moment(chart)).toHaveLength(1)
+    })
+
+    it('is handed over hidden where the Layers panel switched it off', async () => {
+      const chart = await shown()
+      play(RUN, chart.unit!.name, 1)
+      useArrangementStore().setPanelView('run-chart', { layers: { hidden: ['state-frame'] } })
+      expect(chart.layers.find(entry => entry.id === 'state-frame')).toMatchObject({ hidden: true })
+    })
+  })
+
+  /** A position looked at past half a batch into the window: the first batch starts half a batch before it. */
+  it('asks for the first batch from half a batch before the position looked at', async () => {
+    chooseFixtureRun()
+    widenEthusd()
+    const chart = useRunChartStore()
+    chart.showPosition({ scenario: 'ETHUSD_spot_two_balances', position: 'pos_ethusd_10' })
+    chart.attach()
+    await flushPromises()
+    const [, , timeframe, from] = vi.mocked(apiClient.getBars).mock.lastCall!
+    expect(timeframe).toBe('M10')
+    expect(Math.abs(Date.parse(from) - (chart.focusAt! * 1000 - 1000 * M10))).toBeLessThanOrEqual(1)
+  })
+
+  /** The chart mark can point past what is loaded: the bars come to the position, not the position to the last bar. */
+  it('loads afresh around a position looked at past the bars loaded, and asks nothing for one inside them', async () => {
+    const start = Date.parse('2026-02-01T00:00:00Z') / 1000
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: [{ ...ANSWER.bars[0]!, t: start }, { ...ANSWER.bars[0]!, t: start + 60 }], truncated: true, priceBasis: '',
+    })
+    chooseFixtureRun()
+    widenEthusd()
+    const chart = useRunChartStore()
+    chart.chooseUnit('ETHUSD_spot_two_balances')
+    chart.attach()
+    await flushPromises()
+    vi.mocked(apiClient.getBars).mockClear()
+    vi.mocked(apiClient.getBars).mockResolvedValue(ANSWER)
+
+    chart.showPosition({ scenario: 'ETHUSD_spot_two_balances', position: 'pos_ethusd_10' })
+    await flushPromises()
+    expect(apiClient.getBars).toHaveBeenCalledOnce()
+    expect(Math.abs(Date.parse(vi.mocked(apiClient.getBars).mock.lastCall![3]) - (chart.focusAt! * 1000 - 1000 * M10))).toBeLessThanOrEqual(1)
+
+    chart.showPosition({ scenario: 'ETHUSD_spot_two_balances', position: 'pos_ethusd_9' })
+    await flushPromises()
+    expect(apiClient.getBars).toHaveBeenCalledOnce()
+  })
+
+  /** Without a position looked at the first batch starts at the window (decided 2026-10-29). */
+  it('asks for the first batch from the window on, a period before it', async () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const [, , timeframe, from, , limit] = vi.mocked(apiClient.getBars).mock.calls[0]!
+    expect(timeframe).toBe('M1')
+    expect(Date.parse(from)).toBe(Date.parse(chart.window!.from) - 60_000)
+    expect(limit).toBe(2000)
   })
 
   /** A quick change of unit must not leave the earlier unit's candles behind when they arrive late. */
@@ -456,7 +658,6 @@ describe('useRunChartStore', () => {
     late({ bars: [{ t: 1, o: 1, h: 1, l: 1, c: 1, v: 1, tc: 1 }], truncated: true, priceBasis: '' })
     await flushPromises()
     expect(chart.bars.map(bar => bar.time)).toEqual([1761886800, 1761886860])
-    expect(chart.truncated).toBe(false)
   })
 
   /** A session declares only where its window starts: it is drawn to the end of what is covered. */
@@ -476,7 +677,7 @@ describe('useRunChartStore', () => {
     expect(apiClient.findCoverage).toHaveBeenCalledWith('kraken_spot', 'BTCUSD')
     const call = vi.mocked(apiClient.getBars).mock.lastCall!
     // the session's window from its start, one period earlier, to the end of the coverage
-    expect(call[4]).toBe(COVERAGE.end)
+    expect(Date.parse(call[4])).toBe(Date.parse(COVERAGE.end))
     expect(Date.parse(call[3])).toBeLessThan(Date.parse('2026-10-01T00:00:00+00:00'))
   })
 

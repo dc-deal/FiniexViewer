@@ -171,24 +171,33 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
   private _draw(target: CanvasTarget): void {
     const colours = this._colours
     if (!colours) return
-    target.useMediaCoordinateSpace(({ context }) => {
-      for (const layer of this._shown()) paintLayer(context, layer, colours, this._font)
+    target.useMediaCoordinateSpace(({ context, mediaSize }) => {
+      for (const layer of this._shown()) paintLayer(context, layer, colours, this._font, mediaSize.height)
     })
   }
 }
 
 /**
- * One placed layer onto the canvas: its levels as dashed rules with their word, its lines, then
- * its marks — the shape, and its count or sign beyond it in the same colour, since a colour never
+ * One placed layer onto the canvas: a moment as a dashed rule over the pane's `height`, its levels as
+ * dashed rules with their word, its lines, then its marks — the shape, and its count or sign beyond it in the same colour, since a colour never
  * travels alone. A layer set fainter in the Layers panel is painted so, whole.
  */
 export function paintLayer(
-  context: CanvasRenderingContext2D, layer: PlacedLayer, colours: DrawingColours, font: string,
+  context: CanvasRenderingContext2D, layer: PlacedLayer, colours: DrawingColours, font: string, height: number,
 ): void {
   context.save()
   if (layer.opacity < 1) context.globalAlpha = layer.opacity
   context.font = font
   context.lineWidth = 1
+  for (const placed of layer.times) {
+    context.strokeStyle = colours.roles[placed.time.role]
+    context.setLineDash([4, 3])
+    context.beginPath()
+    context.moveTo(placed.x, 0)
+    context.lineTo(placed.x, height)
+    context.stroke()
+    context.setLineDash([])
+  }
   for (const placed of layer.segments) {
     const colour = colours.roles[placed.segment.role]
     context.strokeStyle = colour

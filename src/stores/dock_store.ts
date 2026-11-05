@@ -625,6 +625,45 @@ export const useDockStore = defineStore('dock', () => {
     layoutStore.hide(sectionId, bundle)
   }
 
+  /**
+   * Lays out a named layout's dock (viewer#37), reconciled like a stored one, and says whether it
+   * could. **Every panel that stands in both layouts is moved, never rebuilt**
+   * (`reuseExistingPanels`): it keeps its content, its scroll and its chart, and only what the layout
+   * adds is drawn anew. Measured 2026-11-03 at 1600 × 900, from five panels to fifteen: 54–117 ms
+   * this way, 169–240 ms rebuilding every panel, 1.7 s reloading the page.
+   *
+   * A rebuild like `reset`, so a panel the layout leaves out is not hidden on the way, and its place
+   * is the layout's: `prepare` sets the places and the rest of the layout once the dock is known to be
+   * usable — nothing changes where it is not — and the places are also what keeps a bundle the layout
+   * leaves out from being added back.
+   */
+  function restore(stored: object, prepare: () => void = () => {}): boolean {
+    const dock = api.value
+    if (!dock) return false
+    const layout = reconcileLayout(stored, kind => panelKind(kind) !== null)
+    if (!layout) return false
+    prepare()
+    restoring = true
+    try {
+      dock.fromJSON(layout, { reuseExistingPanels: true })
+      retitle(dock)
+      addMissingBundle(dock)
+      addMissingRunChart(dock)
+      addMissingDeploymentBundle(dock)
+    } catch {
+      arrangeDefault(dock)
+    } finally {
+      restoring = false
+    }
+    arrangement.keepPlaces(kind => panelKind(kind) !== null)
+    arrangement.keepPanelViews(kind => panelKind(kind) !== null)
+    lastChart.value = anyChart(dock)
+    noteActive(dock.activePanel)
+    flush()
+    syncOpen()
+    return true
+  }
+
   /** Back to the suggested order — every panel the first arrangement holds, and no other. */
   function reset(): void {
     const dock = api.value
@@ -645,7 +684,7 @@ export const useDockStore = defineStore('dock', () => {
 
   return {
     api, openIds, shownIds, dragging, lastChart,
-    attach, detach, reveal, close, openSection, backIntoColumn, standsApart, showSection, hideSection, reset, flush,
+    attach, detach, reveal, close, openSection, backIntoColumn, standsApart, showSection, hideSection, reset, restore, flush,
     dockToEdge, endDrag, noteShown,
   }
 })

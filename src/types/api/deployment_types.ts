@@ -14,30 +14,50 @@ export interface DeploymentRow {
    * improves that; `deployment_id` is minted per deployment and a deliberate restart mints a
    * fresh one. Two deployments sharing a bot_id are one bot restarted with --new-deployment,
    * which is the only join that answers "is this the same bot as the row above". Empty on a
-   * profile that declares none.
+   * profile that declares none, and on the row of a deployment that has booked nothing.
    */
   bot_id: string
+  // the sessions this row stands for: on a booked row those in its currency, on the null row all of them
   sessions: number
+  /**
+   * The deployment's sessions without booked figures — failed before they measured anything, or not
+   * booked yet — and of those, the ones that failed (contract 51). They describe the DEPLOYMENT: on a
+   * deployment with two currency rows they repeat on each, and are never added across rows.
+   */
+  sessions_without_figures: number
+  sessions_failed: number
   first_started: string   // ISO-8601 UTC
   last_started: string    // ISO-8601 UTC
-  currency: string
+  /**
+   * Null on the one row of a deployment that has booked nothing at all (contract 51): such sessions
+   * have no account currency. A deployment that has booked counts its sessions without figures on its
+   * booked rows instead and serves no null row. Its figures are null too, never zero, because nothing
+   * was measured.
+   */
+  currency: string | null
   /**
    * A SUM over the sessions. Its neighbour below is not, and that is the trap: `max_drawdown` is
    * their MAXIMUM and never a sum, because each session carries the running decline against the
    * peak the deployment has reached so far. Adding the column counts one decline once per session
-   * that was still inside it. Both arrive already reduced — nothing here is re-aggregated.
+   * that was still inside it. Both arrive already reduced — nothing here is re-aggregated. On a
+   * booked row it sums the booked sessions only; null on the row of a deployment that has booked nothing.
    */
-  net_pnl: number
+  net_pnl: number | null
   // null where no drawdown was measured (contract 40)
   max_drawdown: number | null
   max_drawdown_pct: number | null
   // null where no idle stretch exists at all — a deployment of one session has nothing between
   // its sessions. An absence, and 0 would claim a measured stretch of no length.
   longest_gap_hours: number | null
-  // true when the sessions did not all run under one profile: one set of strategy parameters, one
-  // operational configuration and one place for their orders. Neither the code each session ran
-  // nor its broker configuration is compared.
+  // true when the sessions did not all run under one profile, or their code moved (contract 47), so
+  // `changed: true` with a null advisory is a code change alone. Read the reason from the two below,
+  // never from this. Every commit counts, so a deployment whose code once moved stays `changed` for good.
   changed: boolean
+  // what `changed` said until contract 47: not one set of strategy parameters, one operational
+  // configuration and one place for their orders. The broker configuration is not compared.
+  configuration_changed: boolean
+  // null under two code stands
+  code_summary: DeploymentCodeSummary | null
   /**
    * Where this deployment's orders went, as the DISTINCT values of its sessions (contract 23):
    * `["venue"]` is real money throughout, `["simulated"]` a rehearsal throughout, and BOTH is a
@@ -45,6 +65,44 @@ export interface DeploymentRow {
    * on by itself.
    */
   orders_to: string[]
+}
+
+/**
+ * A deployment's code over its sessions (contract 47). Unlike the advisory it dates the change, because
+ * a change half a year old is still in the history: `age_days` is what tells a maintained deployment
+ * from one whose code moved last week.
+ */
+export interface DeploymentCodeSummary {
+  // how many distinct stands the sessions started on: a rollback to an earlier one adds none, and an
+  // unreadable commit is a stand of its own every time
+  code_stands: number
+  // how many sessions the deployment holds: distinct runs, not rows, in every currency
+  sessions: number
+  // when the latest session whose code differs from the one before it started; null where that start
+  // could not be read, and `age_days`, whole days from then to the answer, with it
+  last_change_at: string | null
+  age_days: number | null
+}
+
+/**
+ * One repository whose code differs from the session before (contract 47). Its identity is its place
+ * in the list: `code_changes_key` is empty on the detail.
+ */
+export interface SessionCodeChange {
+  // `framework`, `strategy`, or `strategy` with its directory's name: a word for reading and no key,
+  // it can repeat, and one repository can read differently for another pair of sessions
+  repository_label: string
+  // compared by their shared beginning and never for equality: one commit can read at two lengths.
+  // Null where nobody could read it, and on the side where the repository was not used
+  old_commit: string | null
+  new_commit: string | null
+  // only on `forward` and `back`
+  commits_between: number | null
+  // `forward` · `back` · `unknown` · `uncommitted` · `added` · `removed` (their `deployments` document)
+  change_direction: string
+  // the message of the commit that made the difference; null where it could not be read, on
+  // `uncommitted` and on `removed`
+  subject: string | null
 }
 
 /** Response type for GET /api/v1/deployments */
@@ -72,11 +130,18 @@ export interface DeploymentSessionRow {
    */
   ended: string | null
   ran_hours: number | null
-  net_pnl: number
+  // null, with `currency`, on a session without booked figures, and `booking_state` says why (contract 50)
+  net_pnl: number | null
   // null where no drawdown was measured (contract 40)
   max_drawdown: number | null
   max_drawdown_pct: number | null
-  currency: string
+  currency: string | null
+  /**
+   * Whether its figures exist (contract 50), their vocabulary: `booked`; `failed`, it failed before it
+   * measured anything, so a zero would read like a session that traded and broke even; `not_booked_yet`,
+   * its first seal has not come. The two without figures follow the booked sessions as one series.
+   */
+  booking_state: string
   bot: string
   bot_id: string
   /**
@@ -98,6 +163,10 @@ export interface DeploymentSessionRow {
   // a change (contract 23).
   orders_to: string | null
   orders_to_changed: boolean
+  // One entry per repository whose code differs from the session before (contract 47). Apart from the
+  // marks above: a session can have one without the other. Empty when nothing moved, and on a session
+  // recorded before this contract, which draws no change in either direction.
+  code_changes: SessionCodeChange[]
 }
 
 /**
@@ -133,11 +202,16 @@ export interface DeploymentDetail {
    */
   unfinished: number
   /**
-   * Null when nothing moved. Belongs ABOVE the table: by the time a reader reaches a change mark
+   * Null when the profile held: it speaks of the profile alone, and stays null for a code change
+   * (contract 47). Belongs ABOVE the table: by the time a reader reaches a change mark
    * in row 3 they have already added up the column above it. The wording is the component's — this
    * carries counts, not a sentence.
    */
   advisory: DeploymentAdvisory | null
+  // empty: an entry of `code_changes` is identified by its place in the list
+  code_changes_key: string[]
+  // null under two code stands
+  code_summary: DeploymentCodeSummary | null
 }
 
 /**
@@ -163,6 +237,7 @@ export interface DeploymentBookingPeriodsReport {
   // every account currency these periods span
   currencies: string[]
   sessions: number
-  // sessions whose rows predate the booking journal — counted rather than silently absent
+  // sessions that booked no period, from before the booking journal or before their first seal
+  // (contract 49) — counted rather than silently absent
   sessions_without_periods: number
 }

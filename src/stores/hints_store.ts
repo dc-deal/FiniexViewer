@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { hintIds } from '@/hint_registry'
+import { onSharedWrite } from '@/tab_storage'
 import type { StoredHints } from '@/types/hint_types'
 
 const STORAGE_KEY = 'hints.v1'
@@ -85,6 +86,8 @@ export const useHintsStore = defineStore('hints', () => {
   }
 
   load()
+  // another window banned or brought one back: this one reads the bans again
+  onSharedWrite(STORAGE_KEY, load)
 
   return { dismissed, banned, isVisible, dismiss, ban, reset, load }
 })

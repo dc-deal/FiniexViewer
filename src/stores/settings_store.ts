@@ -1,13 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { onSharedWrite } from '@/tab_storage'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
-import type { DisplaySettings, LaneOrder, Settings, ThemeName } from '@/types/settings_types'
+import type { DisplaySettings, LaneOrder, LayoutByRun, Settings, ThemeName } from '@/types/settings_types'
 
 const STORAGE_KEY = 'settings.v1'
 const SCHEMA_VERSION = 1
 
 export const SCENARIO_THRESHOLD_RANGE = { min: 1, max: 100 } as const
 export const TRADE_ROW_CAP_RANGE = { min: 50, max: 5000 } as const
+/** The window widths a layout's size may change at; Medium always starts below Full. */
+export const LAYOUT_WIDTH_RANGE = { min: 320, max: 4000 } as const
 
 /** What is written to storage: the settings plus the schema they were written under. */
 interface StoredSettings extends Settings {
@@ -43,6 +46,20 @@ export function reconcile(stored: unknown): Settings {
   if (isWholeNumberWithin(raw.tradeRowCap, TRADE_ROW_CAP_RANGE)) {
     settings.tradeRowCap = raw.tradeRowCap as number
   }
+  // added under version 1: an entry written before them reads as their defaults
+  if (typeof raw.sizeByWindow === 'boolean') settings.sizeByWindow = raw.sizeByWindow
+  // the two widths are taken together or not at all: one alone could stand above the other
+  if (isWholeNumberWithin(raw.mediumFrom, LAYOUT_WIDTH_RANGE) && isWholeNumberWithin(raw.fullFrom, LAYOUT_WIDTH_RANGE)
+    && (raw.mediumFrom as number) < (raw.fullFrom as number)) {
+    settings.mediumFrom = raw.mediumFrom as number
+    settings.fullFrom = raw.fullFrom as number
+  }
+  if (raw.layoutByRun === 'off' || raw.layoutByRun === 'offer' || raw.layoutByRun === 'switch') {
+    settings.layoutByRun = raw.layoutByRun
+  }
+  // an id is taken by shape; whether its layout still exists is asked where it is used
+  if (typeof raw.layoutForBacktest === 'string' && raw.layoutForBacktest) settings.layoutForBacktest = raw.layoutForBacktest
+  if (typeof raw.layoutForSession === 'string' && raw.layoutForSession) settings.layoutForSession = raw.layoutForSession
   return settings
 }
 
@@ -83,6 +100,11 @@ export const useSettingsStore = defineStore('settings', () => {
     tradeRowCap: settings.value.tradeRowCap,
   }))
 
+  // another window changed them: this one reads them again rather than writing its own over them
+  onSharedWrite(STORAGE_KEY, () => {
+    settings.value = reconcile(readStored())
+  })
+
   function persist(): void {
     try {
       const payload: StoredSettings = { version: SCHEMA_VERSION, ...settings.value }
@@ -119,6 +141,37 @@ export const useSettingsStore = defineStore('settings', () => {
     persist()
   }
 
+  function setSizeByWindow(value: boolean): void {
+    settings.value.sizeByWindow = value
+    persist()
+  }
+
+  /** A width that would stand at or above Full's, or out of range, is ignored rather than clamped. */
+  function setMediumFrom(value: number): void {
+    if (!isWholeNumberWithin(value, LAYOUT_WIDTH_RANGE) || value >= settings.value.fullFrom) return
+    settings.value.mediumFrom = value
+    persist()
+  }
+
+  function setFullFrom(value: number): void {
+    if (!isWholeNumberWithin(value, LAYOUT_WIDTH_RANGE) || value <= settings.value.mediumFrom) return
+    settings.value.fullFrom = value
+    persist()
+  }
+
+  function setLayoutByRun(value: LayoutByRun): void {
+    settings.value.layoutByRun = value
+    persist()
+  }
+
+  /** The layout a kind of run maps to. */
+  function setLayoutFor(kind: 'backtest' | 'session', id: string): void {
+    if (!id) return
+    if (kind === 'backtest') settings.value.layoutForBacktest = id
+    else settings.value.layoutForSession = id
+    persist()
+  }
+
   function reset(): void {
     settings.value = { ...DEFAULT_SETTINGS }
     persist()
@@ -132,6 +185,11 @@ export const useSettingsStore = defineStore('settings', () => {
     setLaneOrder,
     setScenarioThreshold,
     setTradeRowCap,
+    setSizeByWindow,
+    setMediumFrom,
+    setFullFrom,
+    setLayoutByRun,
+    setLayoutFor,
     reset,
   }
 })

@@ -31,6 +31,13 @@ Nothing is written unless EVERY target answered. A half-capture — two list fix
 fourteen stale ones, with a manifest claiming today's date — reads as a whole one and is worse than
 no capture at all.
 
+**The fixtures are public, and the archive they come from is not.** A stored run can carry a name its
+owner keeps private, and a session on a real account carries that account's balances and the venue's
+order ids. So every body passes `neutral()` before it is written: the names through `FIXTURE_RENAME`,
+read from the real environment or `.env.local` as `old=new,old=new` in that order, because a versioned
+file listing what to hide would publish it; the balances and the venue's ids by their shape. Nothing a
+test reads changes: one id stays one id, and only what it said about the account is gone.
+
 Not to be confused with `classify_runs.py`, which asks the opposite question: which viewer SITUATION
 each stored run produces, over the whole archive, for the smoke protocol's case catalogue. This one
 asks only whether ONE pinned run still qualifies as the fixture source, and searches only when it
@@ -39,6 +46,7 @@ does not.
 import datetime
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -87,7 +95,9 @@ DEPLOY = 'deploy_20261012_205734'
 # The sweep the ranking fixtures come from: a stored search of several combinations, every one of
 # them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get
 # right. The preflight below checks exactly that; any sweep it accepts can replace this one.
-SWEEP = 'sweep_20261012_210055'
+# Re-pinned 2026-10-31 to the catalog's `sweep` entry, produced again on contract 46: a logic on own
+# levels, ranked by `net_pnl`, every row's `expectancy` null.
+SWEEP = 'sweep_20261031_100348_42d8ea0b'
 
 # The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
 # than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs
@@ -133,6 +143,8 @@ TARGETS = [
     # has no venue to ask, and a narrowed request carries none by design. It is also the only
     # capture holding the live-only event types `cancel_deferred` and `cancel_requested`.
     ('order_events_live.json', f'reports/runs/{LIVE_RUN}/order-events'),
+    # what the venue held at the live run's start and end, its balances neutralised like every other
+    ('venue_account.json', f'reports/runs/{LIVE_RUN}/venue-account'),
     ('run_config_simulation.json', f'reports/runs/{RUN}/config'),
     ('run_config_live.json', f'reports/runs/{LIVE_RUN}/config'),
     ('deployments_list.json', 'deployments'),
@@ -145,6 +157,8 @@ TARGETS = [
     # re-capture moves them every time. Nothing asserts a figure, only the shape and the rules
     # the answer states about itself.
     ('machine_resources.json', 'machine-resources'),
+    # A READING as well: its clock moves with every capture. Only its identity fields are asserted.
+    ('health.json', 'health'),
     # A READING as well: what runs on the machine at capture time — the server's own row at least.
     # Tests build the other rows from it; nothing asserts which activities happened to run.
     ('activities.json', 'activities'),
@@ -174,6 +188,55 @@ NEEDED_ARTIFACTS = {
 
 OUT = os.path.join('tests', 'fixtures')
 dry = '--dry' in sys.argv
+
+
+def local_setting(key):
+    """A setting from the real environment or else `.env.local`, which is gitignored; empty where neither has it."""
+    if key in os.environ:
+        return os.environ[key]
+    if os.path.exists('.env.local'):
+        with open('.env.local', encoding='utf-8') as handle:
+            for line in handle:
+                name, _, value = line.strip().partition('=')
+                if name == key:
+                    return value
+    return ''
+
+
+RENAMES = [
+    (re.compile(re.escape(old), re.IGNORECASE), new)
+    for old, _, new in (pair.partition('=') for pair in local_setting('FIXTURE_RENAME').split(',') if pair)
+]
+
+# What `venue_balances` reads in a fixture, whatever the account held: the venue account section
+# renders it, and a real account's balances never stand in a public repository.
+NEUTRAL_BALANCES = {'XETH': 1.0, 'ZUSD': 100.0}
+
+# An order id as the venue writes it, `O4C5FL-5G6ZY-2MJ4DS`, in any string: a message can quote one.
+VENUE_ID = re.compile(r'\b[A-Z0-9]{6}-[A-Z0-9]{5}-[A-Z0-9]{6}\b')
+venue_ids = {}
+
+
+def neutral_text(text):
+    for word, new in RENAMES:
+        text = word.sub(new, text)
+    # numbered as they first appear, so one id stays one id across the fixtures
+    return VENUE_ID.sub(
+        lambda match: venue_ids.setdefault(match.group(), f'O{len(venue_ids) + 1:05d}-00000-000000'), text)
+
+
+def neutral(value):
+    """A response as it may stand in a public repository. Applied once to each body: its output matches `VENUE_ID`."""
+    if isinstance(value, str):
+        return neutral_text(value)
+    if isinstance(value, list):
+        return [neutral(item) for item in value]
+    if isinstance(value, dict):
+        return {
+            neutral_text(key): NEUTRAL_BALANCES if key == 'venue_balances' and item else neutral(item)
+            for key, item in value.items()
+        }
+    return value
 
 
 def fetch(path):
@@ -442,7 +505,7 @@ before = measure(old_fixture('run_summary.json'), old_fixture('warnings_errors.j
                  old_fixture('pending_orders.json'))
 
 for name, _ in TARGETS:
-    body = bodies[name]
+    body = neutral(bodies[name])
     old = old_fixture(name)
     added = removed = ''
     if isinstance(old, dict) and isinstance(body, dict):
@@ -474,6 +537,10 @@ if not dry:
     print(f'capture_manifest.json               contract {manifest["contract"]:>3}  {manifest["captured_on"]}')
 
 # ---- what MOVED, and what no longer holds. Silent where both are fine: a pass says nothing. ----
+
+if not RENAMES:
+    print()
+    print('FIXTURE_RENAME is not set, so the run names were taken as served.')
 
 now = measure(bodies['run_summary.json'], bodies['warnings_errors.json'],
               bodies['order_history.json'], bodies['trade_history.json'],

@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { onUnmounted, ref, watch } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
+import RuleHeading from '@/components/base/RuleHeading.vue'
 import StateFramePlayer from '@/components/runs/StateFramePlayer.vue'
 import { bytes, duration, utcInstant } from '@/components/runs/report_format'
 import { t } from '@/translate'
@@ -13,6 +15,7 @@ import type { ProcessMemory, StateFrameUnit, StateFramesLatest } from '@/types/a
  * **Two clocks, never one axis** (testingide, 2026-10-22): `frame_time` is the session's own clock,
  * the market data it was processing, and is said as a time; `written_at` is the machine's and only
  * answers how long ago, which the route states as `age_s` — nothing here subtracts one from another.
+ * Between two answers the age moves on by this browser's clock, from the moment the answer arrived.
  *
  * **A check that passes says nothing.** The circuit breaker, stale data and the reconciliation
  * speak only when they are off, or where a check that could have run did not.
@@ -23,9 +26,21 @@ import type { ProcessMemory, StateFrameUnit, StateFramesLatest } from '@/types/a
  * **The frames over time** play below the status (`StateFramePlayer`, contract 43): a session
  * records one a cadence, and every one of them can be stood on — the latest is where it opens.
  */
-defineProps<{
+const props = defineProps<{
   model: StateFramesLatest
 }>()
+
+/** Moves once a second. Read only where an age is said, so a closed session renders nothing for it. */
+const now = ref(Date.now())
+let answeredAt = now.value
+
+watch(() => props.model, () => {
+  answeredAt = Date.now()
+  now.value = answeredAt
+})
+
+const clock = setInterval(() => { now.value = Date.now() }, 1000)
+onUnmounted(() => clearInterval(clock))
 
 interface Status {
   glyph: string
@@ -40,7 +55,7 @@ function ago(seconds: number): string {
 
 function writtenAgo(unit: StateFrameUnit): string {
   if (unit.age_s === null) return t('written at a time ahead of this server clock')
-  return `${t('written')} ${ago(unit.age_s)} ${t('ago')}`
+  return `${t('written')} ${ago(unit.age_s + (now.value - answeredAt) / 1000)} ${t('ago')}`
 }
 
 /** The recording verdict in a line — the route's own reading of the frame's age. */
@@ -121,7 +136,7 @@ function memoryOf(unit: StateFrameUnit): Figure[] {
       class="unit"
       :data-unit="unit.unit_name"
     >
-      <h4 v-if="model.units.length > 1" class="unit-name">{{ unit.unit_name }}</h4>
+      <RuleHeading v-if="model.units.length > 1" class="unit-name">{{ unit.unit_name }}</RuleHeading>
 
       <p class="status" :class="statusOf(unit).role">
         <span class="glyph">{{ statusOf(unit).glyph }}</span> {{ statusOf(unit).words }}
@@ -161,10 +176,6 @@ function memoryOf(unit: StateFrameUnit): Figure[] {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-}
-
-.unit-name {
-  margin: 0;
 }
 
 .status,

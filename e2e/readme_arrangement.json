@@ -4,7 +4,7 @@
     "A": {
       "run": {"id": "20261007_150606_cfb42e00", "units": [], "position": null},
       "deployment": {"id": "deploy_20261012_205734"},
-      "sweep": {"id": "sweep_20261012_210055"},
+      "sweep": {"id": "sweep_20261031_100348_42d8ea0b"},
       "market": {"broker": "kraken_spot", "symbol": "BTCUSD"}
     }
   },

@@ -4,6 +4,26 @@
   ],
   "checks": [
     {
+      "check": "order_feature_refused",
+      "title": "Order feature the venue does not hold",
+      "description": "The scenario's decision logic declares an order feature its venue's API does not hold, and its scenario set declares no exception for it."
+    },
+    {
+      "check": "order_feature_undeclared",
+      "title": "Order features not declared",
+      "description": "The scenario's decision logic does not say which order features it uses."
+    },
+    {
+      "check": "feature_beyond_venue_unneeded",
+      "title": "Exception nothing needs",
+      "description": "The scenario set declares an order feature as beyond its venue that no scenario needs, or that the venue holds anyway."
+    },
+    {
+      "check": "features_beyond_venue",
+      "title": "Order features beyond the venue",
+      "description": "The run used order features its venue's API does not hold, as its scenario set declared."
+    },
+    {
       "check": "scenario_name_missing",
       "title": "Scenario without a name",
       "description": "A scenario in the set has no name."
@@ -224,6 +244,21 @@
       "description": "Some data files the run read, or the bars a warmup history started from, are a venue's published history rather than our own collection; such ticks are never admissible for a parity comparison."
     },
     {
+      "check": "shutdown_waits_beyond_kill",
+      "title": "Waits of a stop longer than the supervisor allows",
+      "description": "A session's stop can spend more on its waits, on the orders on their way and on its records than the time the session declares its supervisor gives it; the end of the stop would be lost to the kill."
+    },
+    {
+      "check": "shutdown_kill_undeclared",
+      "title": "Unattended session declares no supervisor kill",
+      "description": "A live session runs unattended without declaring when its supervisor kills it after a stop signal, so its stop has no budget to keep the session records out of the kill."
+    },
+    {
+      "check": "shutdown_order_wait_below_poll",
+      "title": "Wait for orders shorter than two status reads",
+      "description": "The time a session's stop waits for the orders on their way is below the broker's poll interval plus a second, so it can end before an order's second status read."
+    },
+    {
       "check": "data_no_quote",
       "title": "Ticks without a quote",
       "description": "Some tick files the run read carry no quote (bid equals ask as recorded), so no spread was measured on them; what a backtest charged there instead is the modelled spread."
@@ -312,6 +347,11 @@
       "check": "robustness_low_windows",
       "title": "Too few windows",
       "description": "The robustness figures rest on fewer windows than the configured minimum."
+    },
+    {
+      "check": "robustness_metric_unmeasured",
+      "title": "Expectancy not measured in some windows",
+      "description": "Some windows have no trade with an R, so the metric has no value there and no verdict is given. A logic keeping its own exits has none; use another metric."
     },
     {
       "check": "robustness_low_trust",

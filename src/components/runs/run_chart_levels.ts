@@ -1,9 +1,10 @@
 import { rowKey } from '@/api/list_key'
-import { polarity, sortInstant, utcInstant } from '@/components/runs/report_format'
+import { polarity, priceAt, sortInstant, utcInstant } from '@/components/runs/report_format'
 import { barOf } from '@/components/runs/run_chart_marks'
-import { exitCard } from '@/components/runs/trade_card'
+import { exitCard, ownLevel, ownLevelFigure } from '@/components/runs/trade_card'
 import type { OpenPosition, TradeRow } from '@/types/api/report_types'
-import type { LineDrawing, SegmentDrawing } from '@/types/chart_drawing_types'
+import type { RecordedStateFrame } from '@/types/api/state_frame_types'
+import type { LineDrawing, SegmentDrawing, TimeDrawing } from '@/types/chart_drawing_types'
 import type { Figure } from '@/types/figure_types'
 import { t } from '@/translate'
 
@@ -19,6 +20,11 @@ import { t } from '@/translate'
  * rows in the sweeps of a trailing logic moved theirs (FiniexTestingIDE, 2026-10-20). A position
  * still open at the end has the levels the portfolio's `open_positions` states at the end of the
  * record, drawn at the last bar. The levels at entry and every move are testingide#618's.
+ *
+ * An own level — one the strategy keeps itself — stands on neither of them. A trade row names only
+ * the one that fired, in `exit_level` (contract 45), drawn at the same bar in the same way. A close
+ * with no level firing shows none, and a position still open at the end only what its closed parts
+ * fired at.
  */
 
 function seconds(iso: string): number {
@@ -27,7 +33,7 @@ function seconds(iso: string): number {
 
 const WORD: Record<'SL' | 'TP', string> = { SL: t('Stop loss'), TP: t('Take profit') }
 
-/** The bar an instant falls in on a drawn window — none before it, none past the last bar of a CUT one. */
+/** The bar an instant falls in on the bars loaded — none before them, none past how far they are loaded. */
 function barIn(barTimes: number[], instant: number, cutAt: number | null): number | null {
   if (cutAt !== null && instant > cutAt) return null
   return barOf(barTimes, instant)
@@ -35,15 +41,16 @@ function barIn(barTimes: number[], instant: number, cutAt: number | null): numbe
 
 function level(
   id: string, label: 'SL' | 'TP', price: number, at: number, when: string, position: string, focused: boolean,
-): SegmentDrawing {
-  const details: Figure[] = [
-    { label: WORD[label], value: String(price) },
+  tick: number | null,
+  details: Figure[] = [
+    { label: WORD[label], value: priceAt(price, tick) },
     {
       label: t('In force at'),
       value: when,
       title: t('The level in force when the close was booked, after any move. Where it stood before is not recorded.'),
     },
-  ]
+  ],
+): SegmentDrawing {
   return {
     kind: 'segment',
     id,
@@ -62,12 +69,13 @@ function level(
 /**
  * The stops and the targets of the trade rows given: one level per row that had one, at its exit's
  * bar, and for each position still open at the end, its levels at the last bar. `looked` is the
- * position looked at — only its levels put their price on the axis. `cutAt` is the last bar of a
- * window the route cut — nothing past it has a candle.
+ * position looked at — only its levels put their price on the axis. `cutAt` is how far the bars are
+ * loaded while the window holds more — nothing past it has a candle yet. `tick` is the instrument's tick
+ * size: a card prints a price at it, while the drawing keeps the price as served.
  */
 export function positionLevels(
   trades: TradeRow[], key: string[], open: OpenPosition[], looked: string | null, barTimes: number[],
-  cutAt: number | null,
+  cutAt: number | null, tick: number | null = null,
 ): SegmentDrawing[] {
   const segments: SegmentDrawing[] = []
   for (const trade of trades) {
@@ -78,25 +86,35 @@ export function positionLevels(
     const row = rowKey(trade, key)
     const focused = trade.position_id === looked
     if (trade.stop_loss !== null) {
-      segments.push(level(`level|SL|${row}`, 'SL', trade.stop_loss, at, when, trade.position_id, focused))
+      segments.push(level(`level|SL|${row}`, 'SL', trade.stop_loss, at, when, trade.position_id, focused, tick))
     }
     if (trade.take_profit !== null) {
-      segments.push(level(`level|TP|${row}`, 'TP', trade.take_profit, at, when, trade.position_id, focused))
+      segments.push(level(`level|TP|${row}`, 'TP', trade.take_profit, at, when, trade.position_id, focused, tick))
+    }
+    const own = ownLevel(trade)
+    if (own) {
+      // an id of its own: the position can carry a level of the same kind beside it. The time is the
+      // close's: it fills at the next price, and no field says when the level was reached
+      segments.push(level(`level|own|${own.label}|${row}`, own.label, own.price, at, when, trade.position_id, focused, tick, [
+        ownLevelFigure(own, tick),
+        { label: t('Closed'), value: when },
+      ]))
     }
   }
   const last = barTimes[barTimes.length - 1]
-  if (last === undefined) return segments
+  // still open at the END of the record: drawn once the window's end is loaded — before that, the
+  // last bar loaded is not the end
+  if (last === undefined || cutAt !== null) return segments
   for (const entry of open) {
-    // opened past the cut: not on the drawn window at all
     if (barIn(barTimes, seconds(entry.entry_time), cutAt) === null) continue
     const focused = entry.position_id === looked
     const id = `level|open|${entry.position_id}`
     const when = t('the end of the record, still open')
     if (entry.stop_loss !== null) {
-      segments.push(level(`${id}|SL`, 'SL', entry.stop_loss, last, when, entry.position_id, focused))
+      segments.push(level(`${id}|SL`, 'SL', entry.stop_loss, last, when, entry.position_id, focused, tick))
     }
     if (entry.take_profit !== null) {
-      segments.push(level(`${id}|TP`, 'TP', entry.take_profit, last, when, entry.position_id, focused))
+      segments.push(level(`${id}|TP`, 'TP', entry.take_profit, last, when, entry.position_id, focused, tick))
     }
   }
   return segments
@@ -107,7 +125,9 @@ export function positionLevels(
  * the polarity of its result — none where both fall in one candle, where it would be a dot inside
  * the marks already there.
  */
-export function entryExitLines(trades: TradeRow[], key: string[], barTimes: number[], cutAt: number | null): LineDrawing[] {
+export function entryExitLines(
+  trades: TradeRow[], key: string[], barTimes: number[], cutAt: number | null, tick: number | null = null,
+): LineDrawing[] {
   const lines: LineDrawing[] = []
   for (const trade of trades) {
     const from = barIn(barTimes, seconds(trade.entry_time), cutAt)
@@ -119,8 +139,25 @@ export function entryExitLines(trades: TradeRow[], key: string[], barTimes: numb
       from: { time: from, price: trade.entry_price },
       to: { time: to, price: trade.exit_price },
       role: polarity(trade.net_pnl),
-      card: exitCard(trade),
+      card: exitCard(trade, tick),
     })
   }
   return lines
+}
+
+/**
+ * The state frame on show in the player, as a moment on the chart, at the bar its `frame_time` falls
+ * in — the session's own clock, the one the bars stand on. None before the bars loaded or past how far
+ * they are loaded: it is drawn once its bar arrives. `count` is the timeline's, null until it is read.
+ */
+export function frameMoment(
+  frame: RecordedStateFrame, count: number | null, barTimes: number[], cutAt: number | null,
+): TimeDrawing[] {
+  const time = barIn(barTimes, seconds(frame.frame_time), cutAt)
+  if (time === null) return []
+  const details: Figure[] = [
+    { label: t('Frame'), value: count === null ? String(frame.record_no) : `${frame.record_no} ${t('of')} ${count}` },
+    { label: t('The session clock'), value: utcInstant(frame.frame_time) },
+  ]
+  return [{ kind: 'time', id: 'state-frame', time, role: 'annotation', card: { title: t('State frame'), details } }]
 }

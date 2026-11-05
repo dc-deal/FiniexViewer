@@ -88,4 +88,15 @@ describe('useHintsStore', () => {
   it('answers for an id nobody registered', () => {
     expect(useHintsStore().isVisible('no-such-hint')).toBe(true)
   })
+
+  /** A hint banned in another window stays banned here, and one brought back there comes back here. */
+  it('reads the bans again when another window changes them', () => {
+    const store = useHintsStore()
+    localStorage.setItem('hints.v1', JSON.stringify({ version: 1, banned: [KNOWN] }))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'hints.v1' }))
+    expect(store.isVisible(KNOWN)).toBe(false)
+    localStorage.setItem('hints.v1', JSON.stringify({ version: 1, banned: [] }))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'hints.v1' }))
+    expect(store.isVisible(KNOWN)).toBe(true)
+  })
 })

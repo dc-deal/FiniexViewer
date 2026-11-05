@@ -59,22 +59,42 @@ it says so and draws nothing.
   length only widens the ask; a mark stands on a bar SERVED, the last one that opened at or before
   the event, never on one computed from a period's length — a trading day or a week does not start
   on a multiple of its length, and lightweight-charts snaps a mark between bars onto the next one.
-  Where the route CUT the window, an event past the last bar's open gets no mark: it would stand on
-  that last bar, weeks from where it happened — measured 2026-10-19, a unit cut at M1 piled fifteen
-  marks onto its last candle.
+  While the window holds more to the right than is loaded, an event past how far the bars are loaded
+  gets no mark yet: it would stand on the last bar loaded, weeks from where it happened — measured
+  2026-10-19, a unit cut at M1 piled fifteen marks onto its last candle. It is drawn once its bar
+  arrives, and so are a level and a line; the levels of a position still open at the end wait for
+  the window's end.
+- **The bars arrive as the view moves** (viewer#9, `src/composables/use_bar_loader.ts`), one loader
+  per chart. The run chart asks for 2,000 bars from half a batch before the position looked at, or
+  from the window's start without one; at the automatic timeframe that is the whole window in one
+  ask, as before. A finer timeframe is no longer cut: when the view comes within 20 bars of the first
+  or the last bar loaded, `CandleChart` says so (`edge`) and the loader asks for more there — one
+  batch at a time per edge, never past the window. The edges are read only after the library has
+  painted a set it was handed: on the way it reports the ranges it passes through — a first batch
+  framed in its middle reported its right end first (measured 2026-10-29) — and asked for more at once. The route keeps the OLDEST bars of a range past
+  its limit (measured 2026-10-29), so to the right it is asked from the seam to the edge with
+  `limit=2000` — the next bars, whatever gap lies between — and to the left in pieces of N periods,
+  which hold at most N bars and are never cut. An empty piece is a gap, not an edge: the next is asked
+  at once, twice as long, up to the route's 10,000. Bars that arrive before the ones on show move
+  the view by as many, so the reader sees the same bars (`data-visible-from` on the element says
+  which, `data-bars` how many are held). A small spinner stands halfway up that edge while a batch is on its way, and a batch that
+  failed is said there, the bars loaded staying drawn — clear of the library's logo at the bottom
+  left, its attribution, which a sign placed low covered. The free chart loads the same way: the last
+  300 periods first, earlier ones as the reader pans left, down to the start of the coverage.
 - **What it centres on is the link's marked position.** The chart mark on a row marks the position
   (`context.mark`), sets the chart's unit and opens the panel (`use_chart_link.ts`, provided at
   the root beside the other channels) — so the row in the list and the marks on the candles agree
   on what is being looked at, and that position's marks are drawn larger. A long window is centred
   on where the position opened; a short one is shown whole.
 - **Prices are drawn at the instrument's tick size** (`priceFormat`). The run's broker report names
-  the unit among a broker's scenarios, and that broker's symbol carries `tick_size`
+  the unit among a broker's scenarios, or is the one row a session writes, and that broker's symbol
+  carries `tick_size`
   (`broker.units[].symbols[]`): its decimals are the chart's precision, the step its least move —
   EURUSD reads `1.15162` where it read `1.15`. The backend's rule for a price it COMPUTED, such as a
   quote-driven bar's midpoint, is to round it for display to that tick size (its `prices` document,
-  contract 34). Without a report the library keeps its own format, two decimals for every
-  instrument — which is where the free chart still stands: the symbols list names each symbol's
-  `tick_size` since contract 35, and the free chart does not read it yet (viewer#47).
+  contract 34). The free chart reads the same step off the symbols list, which names each symbol's
+  `tick_size` since contract 35. Without either the library keeps its own format, two decimals for
+  every instrument.
 - **Marks that would cover each other are drawn as ONE, with a count** (viewer#41, decided
   2026-10-19). What a reader sees as density is overlap: measured over the archive, two events rarely
   share a candle at the timeframe drawn, but 2,000 bars on 600 px are 0.3 px each and the library
@@ -93,13 +113,13 @@ it says so and draws nothing.
   alignment, so no bar is computed. Measured 2026-10-19: in 72 of 137 such candles the exits share
   one instant, and no timeframe parts those. Taken, the chart draws in it centred on the first such
   candle, until the reader chooses a timeframe or a position again.
-- **Notices stand inside the plot, in its top-left corner** (`ChartNotices.vue`) — the window the
-  route cut, and the offer. A line above the chart moved it each time one appeared, and a selection
+- **Notices stand inside the plot, in its top-left corner** (`ChartNotices.vue`) — the offer. A
+  line above the chart moved it each time one appeared, and a selection
   never moves the layout. A hint above it explains the shapes once, and the chart takes the room it
   leaves rather than overflowing the panel by it, which clipped its time axis.
 - **Every state says what it is**: no run, the run's units on their way, no unit that can be drawn,
-  a market the archive holds nothing for, a window without bars, and a notice where the route cut
-  the window — an empty chart says nothing about why it is empty.
+  a market the archive holds nothing for, a window without bars, and at an edge a batch on its way
+  or one that failed — an empty chart says nothing about why it is empty.
 
 ## Chart Engine — Lightweight Charts (TradingView)
 

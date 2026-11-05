@@ -10,15 +10,18 @@ The backend exposes two planes. The viewer consumes both, and treats them differ
 GET /api/v1/health                                    open, no token
 GET /api/v1/timeframes                                open, no token
 GET /api/v1/caller                                    token, no grant — who the server takes us to be
+GET /api/v1/health                                    open — a server's own identity: host_id, host_name (contract 48)
 GET /api/v1/brokers                                   a `brokers` grant since contract 35, as the routes below
 GET /api/v1/brokers/{broker}/symbols                   each symbol with its `tick_size` (contract 35)
 GET /api/v1/brokers/{broker}/symbols/{symbol}/coverage   404 where the archive holds nothing (`findCoverage`)
-GET /api/v1/brokers/{broker}/symbols/{symbol}/bars       the bars that OPEN in the range; `X-Bar-Truncated` and `X-Bar-Price-Basis` read
+GET /api/v1/brokers/{broker}/symbols/{symbol}/bars       the bars that OPEN in the range, `limit` asked; `X-Bar-Truncated` and `X-Bar-Price-Basis` read
 ```
 
-**The bars route answers the bars that OPEN in `[from, to]`**, each stamped with the open of its
-period (`X-Bar-Time-Basis: open`), and never cuts quietly: a range past its cap of 10,000 is
-answered with the cap's worth and `X-Bar-Truncated: true` (their `market-data` document).
+**The bars route answers the bars that OPEN in `[from, to]`**, both bounds included, each stamped
+with the open of its period (`X-Bar-Time-Basis: open`), and never cuts quietly: a range past `limit`
+— its maximum, 10,000, where none is asked — is answered with the OLDEST of its bars and
+`X-Bar-Truncated: true` (their `market-data` document; which end is kept measured 2026-10-29).
+The charts load their bars in batches by that rule ([Candle Charts](../panels/candle_charts.md)).
 `getBars` returns both, so a shortened answer is never drawn as a whole one — and the file's price
 basis, from which the run chart's volume layer takes which count it draws: a bar's `v` (traded
 volume) or `tc` (its ticks).
@@ -49,11 +52,18 @@ GET /api/v1/reports/runs/{run_id}/broker              the venues, their symbols 
 GET /api/v1/reports/runs/{run_id}/aggregated-portfolio  the fold, per account currency
 GET /api/v1/reports/runs/{run_id}/pending-orders      what became of a scenario's orders
 GET /api/v1/reports/runs/{run_id}/order-history       the orders themselves, as records — and where each position opened
-GET /api/v1/reports/runs/{run_id}/order-events        the STEPS between those records
+GET /api/v1/reports/runs/{run_id}/order-events        the STEPS between those records, per position; whole for a live session's venue reads
+GET /api/v1/reports/runs/{run_id}/venue-account       what the venue held at a live session's start and end
 GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams         a unit's timeline (contract 43)
 GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams/window  its frames of [from, to), a page at a time
 GET /api/v1/reports/runs/{run_id}/...                 the further per-section reports, not yet consumed
 ```
+
+**A price is printed at its instrument's tick size.** For a run that is the size its broker report
+states (`broker.units[].symbols[].tick_size`), the specification the run ran on, and it reaches the
+sections through a channel (`use_tick_sizes`), so a section reads no store. A session's report is one
+row that lists no scenario (measured 2026-10-31), so a report of one row answers for every unit. The
+free chart has no run behind it and reads the symbols list.
 
 **A `major` warning names the check that decided it** (`check`, `domain`), and
 `/validation-checks` says what every check id means — its title and a sentence. The catalogue is
@@ -68,7 +78,7 @@ and its cause where no check refused it.
 **Ledger plane** — a bot's life across its restarts, on its own grant surface `deployments`:
 
 ```
-GET /api/v1/deployments                               one row per (deployment x account currency)
+GET /api/v1/deployments                               one row per (deployment x account currency), from a first session's start: currency null until its first seal
 GET /api/v1/deployments/{deployment_id}               the sessions, oldest first
 GET /api/v1/deployments/{deployment_id}/booking-periods   every period of every session, in one call
 ```

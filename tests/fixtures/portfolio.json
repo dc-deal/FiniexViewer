@@ -72,9 +72,7 @@
           "unrealized_pnl": -0.9093854259627266,
           "valued": true,
           "stop_loss": null,
-          "take_profit": null,
-          "protective_level_enforcement": "",
-          "take_profit_enforcement": ""
+          "take_profit": null
         }
       ],
       "unrealized_pnl": -0.9093854259627266,
@@ -153,9 +151,7 @@
           "unrealized_pnl": -6.894768594329569,
           "valued": true,
           "stop_loss": null,
-          "take_profit": null,
-          "protective_level_enforcement": "",
-          "take_profit_enforcement": ""
+          "take_profit": null
         }
       ],
       "unrealized_pnl": -6.894768594329569,
@@ -236,9 +232,7 @@
           "unrealized_pnl": -2.5563493395158448,
           "valued": true,
           "stop_loss": null,
-          "take_profit": null,
-          "protective_level_enforcement": "",
-          "take_profit_enforcement": ""
+          "take_profit": null
         }
       ],
       "unrealized_pnl": -2.5563493395158448,
@@ -317,9 +311,7 @@
           "unrealized_pnl": 0.6205291734895974,
           "valued": true,
           "stop_loss": null,
-          "take_profit": null,
-          "protective_level_enforcement": "",
-          "take_profit_enforcement": ""
+          "take_profit": null
         }
       ],
       "unrealized_pnl": 0.6205291734895974,

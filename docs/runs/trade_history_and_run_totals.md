@@ -77,11 +77,20 @@ renamed from `drawdown()` once a second quantity needed it.
 distance in `price_unit` — and the card shows all three, because which one answers a question
 depends on the question.
 
+**An own level has a row of its own in the card** (contract 45). A level the strategy keeps itself
+stands on no position, and the row names the one that fired in `exit_level`, its `close_reason` saying
+which: the card reads *Own level stop loss 1.17075*. It stands on the card of the part it closed
+and on that exit's mark on the chart, never on the opening's: it says how a part ended, and a position
+closed in parts has its rung first. A level the position carried reads as before, and one that did not
+fire stands on no trade row. The R multiple stays empty where the position carried no stop, by their
+glossary.
+
 **The slippage says what its exit was measured against where that is not the mid** (contract 44,
 operator 2026-10-28). A trade's entry, and every exit but one, are measured against the mid when the
 order was sent; a stop-loss or take-profit exit against the level that closed it
-(`exit_slippage_measured_against: protective_level`), where a backtest reads 0 because it fills
-there. Without a word the two halves read as one comparison, so that exit carries `vs SL/TP level`
+(`exit_slippage_measured_against: protective_level`). A backtest reads 0 there only where the position
+carries the level; one the strategy keeps itself is a close sent once the market reached it, filled at
+the next price (contract 45), under the same value. Without a word the two halves read as one comparison, so that exit carries `vs SL/TP level`
 and the others nothing. Live, the fill price is the venue's own answer, in a backtest the
 simulation's; the rule is the same for both, and setting the two side by side is not this panel's
 job. The `trade-slippage` hint says what the figure holds — for a market fill, half the spread.
@@ -113,6 +122,7 @@ the rest would be the same figure twice on one screen.
 
 **A spread that was never measured reads `not recorded`, never `0`** (contract 32). A unit that read
 data without a quote — every row bid = ask — has a null `total_spread_cost`, and the run's
+`avg_spread` is money per trade, in the account currency: `total_spread_cost` over `total_trades`.
 `total_spread_cost` and `avg_spread` are null as soon as one unit's is, since a sum over a part
 would read as the whole. `spreadFigure` in `report_format.ts` says so, and the figure's hover gives
 the reason; the roster's card does the same per unit.

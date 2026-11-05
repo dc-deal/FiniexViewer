@@ -14,6 +14,7 @@ import { t } from '@/translate'
  * @param open Whether it is shown — `v-model:open`.
  * @param title What it is, read out by a screen reader as its name.
  * @param name Names it for its caller's styles and tests: the frame carries `<name>-dialog`.
+ * @param width Wider than the default where the content needs it.
  * @param height A fixed height where the content must not move the frame — the settings switch
  *   tabs inside it. Left out, the frame is as tall as its content, 80 % of the window at most.
  */
@@ -22,6 +23,7 @@ const props = defineProps<{
   title: string
   name: string
   height?: string
+  width?: string
 }>()
 const emit = defineEmits<{ 'update:open': [boolean] }>()
 </script>
@@ -34,7 +36,7 @@ const emit = defineEmits<{ 'update:open': [boolean] }>()
            Stated rather than left out, which is what the primitive asks for. -->
       <DialogContent
         :class="['app-dialog', `${name}-dialog`]"
-        :style="height ? { height } : undefined"
+        :style="{ height, width }"
         :aria-describedby="undefined"
       >
         <DialogTitle class="app-dialog-title">{{ title }}</DialogTitle>
@@ -85,7 +87,6 @@ const emit = defineEmits<{ 'update:open': [boolean] }>()
   flex-shrink: 0;
   margin: 0;
   font-family: monospace;
-  font-size: var(--font-size-md);
   color: var(--color-text-primary);
 }
 

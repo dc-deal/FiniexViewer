@@ -64,6 +64,26 @@ describe('reconcile', () => {
     expect(reconcile({ ...saved({ theme: 'light' }), version: 99 })).toEqual(DEFAULT_SETTINGS)
   })
 
+  /** The window widths of a layout's sizes (viewer#37) are taken together, and only with Medium below Full. */
+  it('takes the window widths together, and only where Medium stands below Full', () => {
+    expect(reconcile(saved({ sizeByWindow: true, mediumFrom: 700, fullFrom: 1300 }))).toMatchObject({
+      sizeByWindow: true, mediumFrom: 700, fullFrom: 1300,
+    })
+    expect(reconcile(saved({ mediumFrom: 1600, fullFrom: 1300 }))).toMatchObject({ mediumFrom: 900, fullFrom: 1500 })
+    expect(reconcile(saved({ mediumFrom: 700, fullFrom: 'wide' }))).toMatchObject({ mediumFrom: 900, fullFrom: 1500 })
+    expect(reconcile(saved({ sizeByWindow: 'yes' })).sizeByWindow).toBe(false)
+  })
+
+  /** What picking a run does to the layout (viewer#37): a mode it knows, and a layout id by shape. */
+  it('takes a known mode of choosing the layout by the run, and a layout id that is a word', () => {
+    expect(reconcile(saved({ layoutByRun: 'switch', layoutForSession: 'own-x' }))).toMatchObject({
+      layoutByRun: 'switch', layoutForSession: 'own-x', layoutForBacktest: 'backtests',
+    })
+    expect(reconcile(saved({ layoutByRun: 'always', layoutForBacktest: '' }))).toMatchObject({
+      layoutByRun: 'offer', layoutForBacktest: 'backtests',
+    })
+  })
+
   it.each([
     ['a string', 'settings'],
     ['a number', 7],
@@ -155,11 +175,34 @@ describe('useSettingsStore', () => {
       .toEqual(['laneOrder', 'scenarioThreshold', 'tradeRowCap'])
   })
 
+  it('refuses a window width that would cross the other, and keeps one that does not', () => {
+    const store = useSettingsStore()
+    store.setMediumFrom(1500)
+    store.setFullFrom(900)
+    expect(store.settings).toMatchObject({ mediumFrom: 900, fullFrom: 1500 })
+    store.setMediumFrom(1000)
+    store.setFullFrom(1800)
+    store.setSizeByWindow(true)
+    expect(stored()).toMatchObject({ mediumFrom: 1000, fullFrom: 1800, sizeByWindow: true })
+  })
+
   it('returns to the defaults on reset and stores that too', () => {
     const store = useSettingsStore()
     store.setScenarioThreshold(20)
     store.reset()
     expect(store.settings).toEqual(DEFAULT_SETTINGS)
     expect(stored()).toEqual(saved())
+  })
+
+  /** Shared by every window: one window's change reaches the other, which no longer writes over it. */
+  it('reads the settings again when another window changes them', () => {
+    const store = useSettingsStore()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved({ theme: 'light' })))
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
+    expect(store.settings.theme).toBe('light')
+    // a write to another key is none of the settings' business
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved({ theme: 'dark' })))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'arrangement.v1' }))
+    expect(store.settings.theme).toBe('light')
   })
 })

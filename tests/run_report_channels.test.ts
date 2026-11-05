@@ -6,11 +6,17 @@ import { provideRunReportChannels } from '@/composables/use_run_report_channels'
 import { useConfigComparison } from '@/composables/use_config_comparison'
 import { useFramePlayer } from '@/composables/use_frame_player'
 import { useOrderSteps } from '@/composables/use_order_steps'
+import { useTickSizes } from '@/composables/use_tick_sizes'
+import type { TickSizeLookup } from '@/composables/use_tick_sizes'
+import { priceAt } from '@/components/runs/report_format'
 import { useConfigCompareStore } from '@/stores/config_compare_store'
 import { useContextStore } from '@/stores/context_store'
 import { useFramePlayerStore } from '@/stores/frame_player_store'
+import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
-import type { RunInfo } from '@/types/api/report_types'
+import type { BrokerReport, RunInfo } from '@/types/api/report_types'
+
+import brokerFixture from './fixtures/broker.json'
 
 const RUN = '20261022_081400_0a1b2c3d'
 
@@ -42,6 +48,35 @@ describe('provideRunReportChannels', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
+  })
+
+  /**
+   * A section is given its own report and no other, so the root hands it the tick size out of the
+   * broker report; a section drawn before that report arrived prints at it once it has.
+   */
+  it('hands the sections the tick size of the run\'s broker report, and follows it when it arrives', async () => {
+    let lookup!: TickSizeLookup
+    const Reader = defineComponent({
+      setup() {
+        lookup = useTickSizes()
+        return () => h('p', { class: 'price' }, priceAt(1.1677499513751617, lookup('EURGBP_refusals_01', 'EURGBP')))
+      },
+    })
+    const Root = defineComponent({
+      setup() {
+        provideRunReportChannels()
+        return () => h(Reader)
+      },
+    })
+    const wrapper = mount(Root)
+    expect(lookup('EURGBP_refusals_01', 'EURGBP')).toBeNull()
+    expect(wrapper.find('.price').text()).toBe('1.16774995')
+
+    useRunReportsStore().broker = brokerFixture as unknown as BrokerReport
+    await nextTick()
+    expect(lookup('EURGBP_refusals_01', 'EURGBP')).toBe(0.00001)
+    expect(lookup('EURGBP_refusals_01', 'USDJPY')).toBeNull()
+    expect(wrapper.find('.price').text()).toBe('1.16775')
   })
 
   /**

@@ -36,6 +36,13 @@ as written — do not coin another: the label is how a reader finds the term in 
 That is also why the run list's `Run type` became `Pipeline` in the same change — one field, one
 word, and ours sat beside a `Purpose` facet it could not be told apart from.
 
+What a word cannot say stands in a hint or a card, never on a browser tooltip (the rule for every
+explanation, moved here 2026-10-30): the changed paths, the patch kept and the file a component came
+from are one hover away in a card, wrapping at their separators and keeping git's status columns; what a
+declared first start means, and what the id of the deployment or the sweep opens, are hints. On a session
+of a deployment the commit has a card too: `commit_subject` and `recent_commits` (contract 47), null on
+every other run.
+
 What the panel does NOT print: a clean tree states nothing beyond its commit, and `allow_dirty`
 appears only when it is true, in the warning role with its glyph and its word. It says real orders
 were explicitly allowed from code that was not committed, which is a thing to weigh before
@@ -46,6 +53,11 @@ started without a carry-over to continue, because its start was declared the bot
 configuration accepted* with the key, in the warning role: the start continued what the venue held
 under another composite, so a trade across the change is the result of neither configuration. The
 session's `composite_change_accepted` warning says whether it let anything through.
+`features_beyond_venue` (contract 45) appears only where a backtest declared any, as *Beyond the venue*
+with the features, in the warning role: it was allowed order features its venue's API does not hold, so
+its results do not predict a session on that venue, which a hint below the block says once. Empty on
+every other run and null on an older one, and both state nothing. It stands on no row of the run list:
+only the header holds it (FiniexTestingIDE, 2026-10-31).
 
 ## Broker — the conditions a run traded under
 

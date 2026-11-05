@@ -4,6 +4,23 @@
   ],
   "sweeps": [
     {
+      "sweep_id": "sweep_20261031_100348_42d8ea0b",
+      "started": "2026-10-31T10:03:55.154811Z",
+      "duration_s": 452.873518,
+      "run_count": 9,
+      "ok_count": 9,
+      "error_count": 0,
+      "decision_logic_type": "CORE/trend_channel_reference",
+      "decision_version": "1.6.0",
+      "base_config": "trend_channel_reference_sweep_base",
+      "symbols": [
+        "EURUSD"
+      ],
+      "objective": "net_pnl",
+      "maximize": true,
+      "features_beyond_venue": ""
+    },
+    {
       "sweep_id": "sweep_20261019_214323_e47deb11",
       "started": "2026-10-19T21:43:34.923710Z",
       "duration_s": 828.916146,
@@ -17,7 +34,8 @@
         "EURUSD"
       ],
       "objective": "expectancy",
-      "maximize": true
+      "maximize": true,
+      "features_beyond_venue": ""
     },
     {
       "sweep_id": "sweep_20261012_210055",
@@ -33,7 +51,8 @@
         "EURUSD"
       ],
       "objective": "expectancy",
-      "maximize": true
+      "maximize": true,
+      "features_beyond_venue": ""
     },
     {
       "sweep_id": "sweep_20261012_075654",
@@ -49,7 +68,8 @@
         "EURUSD"
       ],
       "objective": "expectancy",
-      "maximize": true
+      "maximize": true,
+      "features_beyond_venue": ""
     },
     {
       "sweep_id": "sweep_20261011_171406",
@@ -65,7 +85,8 @@
         "EURUSD"
       ],
       "objective": "expectancy",
-      "maximize": true
+      "maximize": true,
+      "features_beyond_venue": ""
     },
     {
       "sweep_id": "sweep_20261008_233229",
@@ -81,7 +102,8 @@
         "EURUSD"
       ],
       "objective": "expectancy",
-      "maximize": true
+      "maximize": true,
+      "features_beyond_venue": ""
     },
     {
       "sweep_id": "sweep_20261008_223212",
@@ -97,8 +119,9 @@
         "BTCUSD"
       ],
       "objective": "net_pnl",
-      "maximize": true
+      "maximize": true,
+      "features_beyond_venue": ""
     }
   ],
-  "count": 6
+  "count": 7
 }

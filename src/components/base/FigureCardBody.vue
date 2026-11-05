@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PathLabel from '@/components/base/PathLabel.vue'
 import type { Figure } from '@/types/figure_types'
 
 /**
@@ -10,6 +11,8 @@ defineProps<{
   title?: string
   /** Already-rendered figures — the same pair a `FigureBlock` places. */
   details?: Figure[]
+  /** Paths, one per row: a path is not a pair, and wraps at its separators where a value breaks mid-word. */
+  paths?: string[]
 }>()
 </script>
 
@@ -24,4 +27,8 @@ defineProps<{
       <dd :class="row.tone" :title="row.title">{{ row.value }}</dd>
     </template>
   </dl>
+  <!-- the card shows each whole, so no browser tooltip is to repeat it: this overrides the label's own -->
+  <ul v-if="paths?.length" class="card-paths">
+    <li v-for="path in paths" :key="path"><PathLabel :value="path" :title="undefined" /></li>
+  </ul>
 </template>

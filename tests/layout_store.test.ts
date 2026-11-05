@@ -186,31 +186,26 @@ describe('useLayoutStore', () => {
     expect(store.visibleOf().map(p => p.id)).toEqual(allPanels().map(p => p.id))
   })
 
-  it('exports and imports a layout round-trip', () => {
+  /** A named layout's columns (viewer#37), taken the way a stored workspace is: reconciled, and kept. */
+  it('takes the columns a named layout holds, and keeps them', () => {
     const store = useLayoutStore()
     const id = allPanels()[0]!.id
     store.hide(id)
-    const exported = store.exportLayout()
+    const held = JSON.parse(JSON.stringify(store.workspace.bundles)) as typeof store.workspace.bundles
 
     store.reset()
     expect(store.visibleOf().map(p => p.id)).toContain(id)
 
-    expect(store.importLayout(exported)).toBe(true)
+    store.replace(held)
     expect(store.visibleOf().map(p => p.id)).not.toContain(id)
+    expect(stored().bundles.run!.columns.flatMap(c => c.panels).find(p => p.id === id)?.hidden).toBe(true)
   })
 
-  /** Another version is refused, as a stored one is removed: its fields may mean something else. */
-  it('refuses an import of another version', () => {
+  /** A section unknown to this build goes, one added since comes in, and a bundle not named gets its own. */
+  it('reconciles the columns it takes against the register', () => {
     const store = useLayoutStore()
-    const other = { ...JSON.parse(store.exportLayout()) as object, version: 1 }
-    expect(store.importLayout(JSON.stringify(other))).toBe(false)
-  })
-
-  it('refuses an import that is not a workspace, without throwing', () => {
-    const store = useLayoutStore()
-    const before = store.visibleOf().map(p => p.id)
-    expect(store.importLayout('not json at all')).toBe(false)
-    expect(store.importLayout('{"nope":1}')).toBe(false)
-    expect(store.visibleOf().map(p => p.id)).toEqual(before)
+    store.replace({ run: { columns: [{ width: 1, panels: [{ id: 'retired', open: true, pinned: false, locked: false, hidden: false }] }] } })
+    expect(store.arrangedOf().map(p => p.id)).toEqual(allPanels().map(p => p.id))
+    expect(store.arrangedOf('deployment').length).toBeGreaterThan(0)
   })
 })

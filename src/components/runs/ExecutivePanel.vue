@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
+import RuleHeading from '@/components/base/RuleHeading.vue'
 import ScopeMark from '@/components/base/ScopeMark.vue'
 import type { RunSummary, RunSummaryCurrency, UnitAbsence } from '@/types/api/report_types'
 import type { Figure } from '@/types/figure_types'
@@ -312,12 +313,13 @@ function absence(unit: UnitAbsence): string {
     <div v-for="(row, index) in model.currencies" :key="row.currency" class="currency">
       <!-- the scope is drawn in the title's own line, so a narrowing costs this panel no room; the
            mark says it, its sentence is a hover away — the frame and the menu bar say the rest -->
-      <div class="currency-head">
-        <h3 class="currency-title">{{ row.currency }}</h3>
-        <p v-if="narrowed && index === 0" class="scope-line">
-          <ScopeMark :title="t('These figures cover every scenario, not only the one in focus')" />
-        </p>
-      </div>
+      <RuleHeading class="currency-title">
+        {{ row.currency }}
+        <ScopeMark
+          v-if="narrowed && index === 0"
+          :title="t('These figures cover every scenario, not only the one in focus')"
+        />
+      </RuleHeading>
       <div class="blocks">
         <FigureBlock :title="t('Result')" :figures="result(row)" />
         <FigureBlock :title="t('Activity')" :figures="activity(row)" />
@@ -345,37 +347,9 @@ function absence(unit: UnitAbsence): string {
   align-items: start;
 }
 
-.currency-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-md);
-  margin: var(--space-sm) 0 0;
-}
-
-.currency-title {
-  margin: 0;
-  font-family: monospace;
-  font-size: var(--font-size-md);
-  font-weight: normal;
-  color: var(--color-text-primary);
-}
-
-/* a second currency is a second account, not more rows of the first */
+/* a second currency is a second account, not more rows of the first: its own rule says so */
 .currency + .currency {
   margin-top: var(--space-md);
-  border-top: 1px solid var(--color-border);
-}
-
-/* the scope of a figure that cannot be split — marked, never filtered */
-.scope-line {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-xs);
-  min-width: 0;
-  margin: 0;
-  color: var(--color-annotation);
-  font-family: monospace;
-  font-size: var(--font-size-sm);
 }
 
 .hint {

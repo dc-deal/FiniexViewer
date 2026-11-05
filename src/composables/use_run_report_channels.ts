@@ -9,6 +9,8 @@ import { provideOrderSteps } from '@/composables/use_order_steps'
 import { usePanelJump } from '@/composables/use_panel_jump'
 import { providePositionLink } from '@/composables/use_position_link'
 import { provideScenarioSelection } from '@/composables/use_scenario_selection'
+import { provideTickSizes } from '@/composables/use_tick_sizes'
+import { unitTickSize } from '@/components/runs/run_chart'
 import { panelById } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
@@ -44,6 +46,10 @@ export function provideRunReportChannels(): void {
   const validationChecks = useValidationChecksStore()
   void validationChecks.load()
   provideCheckTitles(check => validationChecks.checks.get(check) ?? null)
+
+  // The tick size a section prints a price at: it lives in the broker report, and a section is given
+  // only its own
+  provideTickSizes((unit, symbol) => unitTickSize(reportsStore.broker, { name: unit, symbol }))
 
   // A configuration compared with the one across a change mark — for the run it was asked for, and
   // gone the moment another run is chosen

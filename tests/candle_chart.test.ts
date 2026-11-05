@@ -325,6 +325,22 @@ describe('CandleChart', () => {
       expect(wrapper.find('.chart-card').exists()).toBe(false)
     })
 
+    /** A frame played moves the layers several times a second: the card under the pointer stays, and says what it says now. */
+    it('keeps a card whose drawing still stands as the layers change, with what the drawing says now', async () => {
+      size = { width: 800, height: 400 }
+      const moment = (title: string): ChartLayer[] => [
+        { id: 'state-frame', drawings: [{ kind: 'time', id: 'state-frame', time: BARS[0]!.time, role: 'annotation', card: { title, details: [] } }] },
+      ]
+      const wrapper = mount(CandleChart, { props: { data: BARS, layers: moment('frame 1') } })
+      mounted = wrapper
+      lw.pointer.move!({ hoveredInfo: { objectId: 'state-frame' }, point: { x: 100, y: 80 } })
+      await nextTick()
+      expect(wrapper.find('.chart-card').text()).toContain('frame 1')
+      await wrapper.setProps({ layers: moment('frame 2') })
+      expect(wrapper.find('.chart-card').text()).toContain('frame 2')
+      expect(wrapper.find('.candle-chart').attributes('data-time-at')).toBe(String(BARS[0]!.time))
+    })
+
     it('drops a card whose mark is gone', async () => {
       size = { width: 800, height: 400 }
       const wrapper = mountChart(BARS, { marks: MARKS })
@@ -535,6 +551,14 @@ describe('CandleChart', () => {
       expect(roles()).toEqual(['#ffff07', '#ffff05', '#ffff06', '#ffff02', '#ffff02'])
     })
 
+    /** A moment is a boundary on the chart: the annotation role, from its own token. */
+    it('paints a moment in the annotation token', () => {
+      size = { width: 800, height: 400 }
+      const annotation = getComputedStyle(document.documentElement).getPropertyValue('--color-annotation').trim()
+      mountChart(BARS, { marks: [mark({})] })
+      expect(lastDrawn().colours.roles['annotation']).toBe(annotation)
+    })
+
     /** The width of a bar is what overlapping marks are gathered by, so the chart reports every zoom. */
     it('reports the width a bar has on screen whenever the reader zooms', async () => {
       size = { width: 800, height: 400 }
@@ -614,6 +638,125 @@ describe('CandleChart', () => {
       await flushPromises()
       expect(lw.chart.applyOptions).toHaveBeenCalledTimes(painted)
       expect(lw.series.applyOptions).not.toHaveBeenCalled()
+    })
+  })
+
+  /**
+   * Bars loaded as the view moves (viewer#9): the chart says when the view nears the first or the
+   * last bar it holds, keeps the view on the bars it showed as more arrive, and says in that corner
+   * that a batch is on its way or failed.
+   */
+  describe('bars loaded at an edge', () => {
+    /** A bar a minute; the one before it, fifty more. */
+    const SPAN: ChartBar[] = Array.from({ length: 200 }, (_, index) => ({
+      time: 1_760_000_000 + index * 60, open: 1, high: 1, low: 1, close: 1,
+    }))
+    const EARLIER: ChartBar[] = Array.from({ length: 50 }, (_, index) => ({
+      time: SPAN[0]!.time - (50 - index) * 60, open: 1, high: 1, low: 1, close: 1,
+    }))
+
+    /** The library has painted what it was handed: the frames the chart waits before reading its edges. */
+    const painted = (): Promise<void> => new Promise(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+
+    beforeEach(() => {
+      lw.zoom.range = { from: 80, to: 120 }
+      lw.zoom.width = 600
+    })
+
+    afterEach(() => {
+      lw.zoom.range = { from: 0, to: 100 }
+    })
+
+    it('says so as the view comes near the first or the last bar it holds, and not in between', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(SPAN)
+      const edges = (): unknown[] => (wrapper.emitted('edge') ?? []).map(([side]) => side)
+      await painted()
+      expect(edges()).toEqual([])
+      lw.zoom.range = { from: 10, to: 60 }
+      lw.zoom.change!()
+      expect(edges()).toEqual(['left'])
+      lw.zoom.range = { from: 150, to: 190 }
+      lw.zoom.change!()
+      expect(edges()).toEqual(['left', 'right'])
+      await nextTick()
+      // the first bar in view, on the element: what a browser test reads to tell the view did not jump
+      expect(wrapper.find('.candle-chart').attributes('data-visible-from')).toBe(String(SPAN[150]!.time))
+      expect(wrapper.find('.candle-chart').attributes('data-bars')).toBe('200')
+    })
+
+    /** Bars before the ones on show move the view by exactly as many: the reader sees the same bars. */
+    it('keeps the view on the bars it showed as earlier ones arrive, without framing anew', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(SPAN)
+      vi.clearAllMocks()
+      await wrapper.setProps({ data: [...EARLIER, ...SPAN] })
+      expect(lw.setData.mock.calls[0]![0]).toHaveLength(250)
+      expect(lw.setVisibleLogicalRange).toHaveBeenCalledWith({ from: 130, to: 170 })
+      expect(lw.fitContent).not.toHaveBeenCalled()
+      // later ones move nothing at all: the range is put back as it was
+      vi.clearAllMocks()
+      await wrapper.setProps({ data: [...EARLIER, ...SPAN, { ...SPAN.at(-1)!, time: SPAN.at(-1)!.time + 60 }] })
+      expect(lw.setVisibleLogicalRange).toHaveBeenCalledWith({ from: 80, to: 120 })
+      expect(lw.fitContent).not.toHaveBeenCalled()
+    })
+
+    /** The library reports the ranges it passes through while a set is handed: those are not the view. */
+    it('says nothing of a range the library passes through while it is handed a set', async () => {
+      size = { width: 800, height: 400 }
+      lw.setData.mockImplementationOnce(() => {
+        lw.zoom.range = { from: 0, to: 10 }
+        lw.zoom.change?.()
+        lw.zoom.range = { from: 80, to: 120 }
+      })
+      const wrapper = mountChart(SPAN)
+      await painted()
+      expect(wrapper.emitted('edge')).toBeUndefined()
+    })
+
+    /**
+     * Measured on a live run: a first batch framed in its middle reported the right end first, the
+     * range it was given applying only at the next paint. What counts is the range after that paint.
+     */
+    it('reads the edges once the library has painted what it was handed', async () => {
+      size = { width: 800, height: 400 }
+      lw.zoom.range = { from: 150, to: 190 }
+      const framed = mountChart(SPAN, { focus: SPAN[100]!.time })
+      lw.zoom.change!()
+      expect(framed.emitted('edge')).toBeUndefined()
+      lw.zoom.range = { from: 25, to: 175 }
+      lw.zoom.change!()
+      await painted()
+      expect(framed.emitted('edge')).toBeUndefined()
+      framed.unmount()
+
+      // a set that stands at an edge once painted says so, with no move of the reader's
+      lw.zoom.range = { from: 80, to: 120 }
+      const atEdge = mountChart(SPAN)
+      lw.zoom.range = { from: -1, to: 199 }
+      await painted()
+      expect((atEdge.emitted('edge') ?? []).map(([side]) => side)).toEqual(['left', 'right'])
+    })
+
+    it('frames a set that is another one, as at the first look', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(SPAN)
+      vi.clearAllMocks()
+      await wrapper.setProps({ data: BARS })
+      expect(lw.fitContent).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows a quiet sign in the corner of an edge a batch is on its way to, and says there that one failed', async () => {
+      const wrapper = mountChart(SPAN, {})
+      await wrapper.setProps({ loadingEdges: ['left'] })
+      expect(wrapper.find('.edge-state.left .app-spinner').exists()).toBe(true)
+      expect(wrapper.find('.edge-state.right').exists()).toBe(false)
+      await wrapper.setProps({ loadingEdges: [], edgeError: { edge: 'right', message: 'Network Error' } })
+      expect(wrapper.find('.edge-state.left').exists()).toBe(false)
+      const failed = wrapper.find('.edge-state.right')
+      expect(failed.text()).toBe('Later bars could not be loaded: Network Error')
+      expect(failed.find('[data-icon="status-error"]').exists()).toBe(true)
     })
   })
 })

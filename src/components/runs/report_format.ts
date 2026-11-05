@@ -9,13 +9,21 @@ const decimal = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 })
 
-// A holding, a size or a price, to the eighth decimal and no further: a satoshi is the finest step
+// A holding or a size, to the eighth decimal and no further: a satoshi is the finest step
 // any venue here quotes, and a figure the session COMPUTED carries float noise below it
 // (`0.018555830000000002` ETH) that is no digit of the amount.
 const fine = new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 })
 
+// A price where no tick size is known, and a distance between two prices: to the same eighth decimal,
+// ungrouped as a chart axis prints a price.
+const finePrice = new Intl.NumberFormat('en-US', { maximumFractionDigits: 8, useGrouping: false })
+
 // What a strategy's worker or decision states about itself, to four decimals: a reading, not money.
 const reading = new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 })
+
+// A venue's figure with every decimal it wrote and no more: the shortest form that reads back as the
+// same number, so nothing is rounded (their `prices` document: the venue's own decimals).
+const asWritten = new Intl.NumberFormat('en-US', { maximumFractionDigits: 20 })
 
 /**
  * The bare figure, for a table that states its currency ONCE in the column header. Repeating the
@@ -41,9 +49,46 @@ export function noReportReason(run: RunInfo): string {
   return t('This run has no report — it is still running, or it died before its report phase')
 }
 
-/** A holding, a size or a price, with no decimal the venue could not have quoted. */
+/** A balance or a count as the venue reported it, never rounded. */
+export function venueFigure(value: number): string {
+  return asWritten.format(value)
+}
+
+/** A holding or a size, with no decimal the venue could not have quoted. */
 export function quantity(value: number): string {
   return fine.format(value)
+}
+
+/** The decimals of a price step, read without its float noise: 0.00001 is 1.0000000000000002e-5 × 10⁵. */
+export function tickDecimals(tickSize: number): number {
+  let decimals = 0
+  while (decimals < 10) {
+    const scaled = tickSize * 10 ** decimals
+    if (Math.abs(scaled - Math.round(scaled)) < 1e-9 * Math.max(1, scaled)) break
+    decimals++
+  }
+  return decimals
+}
+
+/**
+ * A price for display, on its instrument's tick size: the backend's rule for a price it computed (its
+ * prices document, contract 34), and a price the venue wrote already lies on that step. Only the
+ * printed figure: nothing compares or sums this. Without a tick size to the eighth decimal, never a
+ * precision guessed from the market. A run still running has written no broker report yet.
+ */
+export function priceAt(value: number, tickSize: number | null): string {
+  if (tickSize === null || !(tickSize > 0)) return finePrice.format(value)
+  return (Math.round(value / tickSize) * tickSize).toFixed(tickDecimals(tickSize))
+}
+
+/**
+ * A distance between two prices, such as a fill's slippage. It is not a price: a fill on the tick
+ * measured against a level a strategy computed lies off the tick, so rounding to it would show
+ * nothing of a slippage below half a tick. Float noise around zero reads as zero.
+ */
+export function priceDistance(value: number): string {
+  const shown = finePrice.format(value)
+  return shown === '-0' ? '0' : shown
 }
 
 /**
@@ -59,6 +104,15 @@ export function readingOf(value: unknown): string {
 /** Currency amount. The code is appended as text — quote currencies are not all ISO-4217. */
 export function amount(value: number, currency: string): string {
   return `${figure(value)} ${currency}`
+}
+
+/**
+ * An amount a deployment's session may not have booked yet, or the dash that says so: before its
+ * first sealed trading day it has neither figure nor account currency (contract 49), which is no
+ * zero. Unguarded, `amount` reads that as `0.00 null`.
+ */
+export function bookedAmount(value: number | null, currency: string | null): string {
+  return value === null || currency === null ? '—' : amount(value, currency)
 }
 
 /**
@@ -110,13 +164,17 @@ export function percentFigure(value: number): string {
  * subset it was measured over wherever one exists: not every section sends null for an absent
  * value — an untraded portfolio unit arrives with 0.0, and 0.00 would claim a measurement.
  */
-export function numberOrNa(value: number | null, count?: number): string {
+export function numberOrNa(value: number | null, count?: number | null): string {
+  // a subset that was never measured — a run that failed before it measured anything (contract 50) —
+  // is the dash, not n/a: there is no subset to be empty
+  if (count === null) return '—'
   if (value === null || count === 0) return t('n/a')
   return value.toFixed(2)
 }
 
 /** Percentage of a 0..1 ratio, gated on the subset it was measured over — see numberOrNa. */
-export function percentOrNa(ratio: number, count: number): string {
+export function percentOrNa(ratio: number | null, count: number | null): string {
+  if (ratio === null || count === null) return '—'
   return count === 0 ? t('n/a') : percent(ratio)
 }
 
@@ -125,7 +183,8 @@ export function percentOrNa(ratio: number, count: number): string {
  * subset. A run can have R-defined trades with no winner among them, so r_trade_count alone
  * would still print a mean nobody measured.
  */
-export function rValue(value: number | null, count: number): string {
+export function rValue(value: number | null, count: number | null): string {
+  if (count === null) return '—'
   if (count === 0 || value === null) return t('n/a')
   const sign = value >= 0 ? '+' : ''
   return `${sign}${value.toFixed(2)}R`
@@ -230,7 +289,8 @@ export function polarity(value: number): Polarity {
 }
 
 /** Sign class for P&L-denominated cells. Empty for zero — no colour claim on a flat result. */
-export function signClass(value: number): string {
+export function signClass(value: number | null): string {
+  if (value === null) return ''
   const sign = polarity(value)
   return sign === 'flat' ? '' : sign
 }
@@ -260,8 +320,8 @@ export function orDash(value: number | null, format: (value: number) => string):
 }
 
 /** A drawdown with its share where one is stated (`_pct` is already a percentage), or the dash. */
-export function drawdownFigure(value: number | null, share: number | null, currency: string): string {
-  if (value === null) return '—'
+export function drawdownFigure(value: number | null, share: number | null, currency: string | null): string {
+  if (value === null || currency === null) return '—'
   const shown = magnitude(value, currency)
   return share === null ? shown : `${shown} (${percentFigure(share)})`
 }

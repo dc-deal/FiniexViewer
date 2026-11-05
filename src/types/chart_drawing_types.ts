@@ -4,7 +4,8 @@ import type { ChartMark } from '@/types/run_chart_types'
 /**
  * What a chart draws for itself beside its candles (viewer#41), in testingide#379's vocabulary: a
  * `segment` is a price held from one time to another, a `line` joins two points, and a marker is a
- * mark on a bar — the run chart's `ChartMark`. Every drawing carries the id the chart reports under
+ * mark on a bar — the run chart's `ChartMark`; a `time` is ours, a moment marked over the whole height,
+ * until #379 names one. Every drawing carries the id the chart reports under
  * the pointer and the card it shows there. A time is the OPEN of a bar drawn, in UTC seconds.
  */
 
@@ -14,7 +15,7 @@ import type { ChartMark } from '@/types/run_chart_types'
  * Ours, so a closed set — a name read back from storage is checked against it; `layer_registry.ts`
  * describes each and says which chart draws which.
  */
-export const CHART_LAYER_IDS = ['levels', 'entry-exit', 'trades', 'volume', 'candles'] as const
+export const CHART_LAYER_IDS = ['levels', 'entry-exit', 'trades', 'state-frame', 'volume', 'candles'] as const
 export type ChartLayerId = typeof CHART_LAYER_IDS[number]
 
 /**
@@ -24,7 +25,7 @@ export type ChartLayerId = typeof CHART_LAYER_IDS[number]
 export type DrawingLayerId = Exclude<ChartLayerId, 'volume' | 'candles'>
 
 /** What a drawing's colour says — a role, never a colour; the shape and the word say it first. */
-export type DrawingRole = Polarity | 'mixed' | 'entry'
+export type DrawingRole = Polarity | 'mixed' | 'entry' | 'annotation'
 
 /**
  * A price held from one bar to another — a stop loss, a target. `to` null: to the window's edge.
@@ -55,7 +56,16 @@ export interface LineDrawing {
   card: FigureCard
 }
 
-export type ChartDrawing = ChartMark | SegmentDrawing | LineDrawing
+/** A moment over the whole height of the chart, dashed — the state frame on show. */
+export interface TimeDrawing {
+  kind: 'time'
+  id: string
+  time: number
+  role: DrawingRole
+  card: FigureCard
+}
+
+export type ChartDrawing = ChartMark | SegmentDrawing | LineDrawing | TimeDrawing
 
 /** One layer: its drawings, drawn in list order — a later layer stands in front of an earlier one. */
 export interface ChartLayer {

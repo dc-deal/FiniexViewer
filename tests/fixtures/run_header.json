@@ -32,7 +32,9 @@
       "diff_hash": null,
       "patch_ref": null,
       "patch_excluded": [],
-      "restorable": true
+      "restorable": true,
+      "commit_subject": null,
+      "recent_commits": null
     },
     "repositories": [],
     "components": [
@@ -118,5 +120,6 @@
     }
   ],
   "run_purpose": "fixture",
+  "features_beyond_venue": null,
   "report_contract": 34
 }

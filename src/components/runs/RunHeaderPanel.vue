@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import HintLine from '@/components/base/HintLine.vue'
+import HoverCard from '@/components/base/HoverCard.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import type { ComponentIdentity, RepositoryIdentity, RunHeader, RunInfo } from '@/types/api/report_types'
 import { utcInstant } from '@/components/runs/report_format'
+import type { Figure } from '@/types/figure_types'
 import { plural, t } from '@/translate'
 
 /**
@@ -90,19 +93,34 @@ function changeNote(repository: RepositoryIdentity): string {
   return plural(repository.uncommitted_count, t('uncommitted change'), t('uncommitted changes'))
 }
 
-/** The sample of changed paths, for the hover. Their own words, one per line. */
-function changeSample(repository: RepositoryIdentity): string {
-  const shown = repository.changes.join('\n')
-  if (repository.changes.length >= repository.uncommitted_count) return shown
-  return `${shown}\n…${t('and more')}`
+/** The sample of changed paths, for the card. Their own words, one per row. */
+function changeSample(repository: RepositoryIdentity): string[] {
+  if (repository.changes.length >= repository.uncommitted_count) return repository.changes
+  return [...repository.changes, `…${t('and more')}`]
+}
+
+/** What the commit says and the commits before it: on a session of a deployment, null on every other run. */
+function commitCard(repository: RepositoryIdentity): Figure[] {
+  const rows: Figure[] = []
+  if (repository.commit_subject) rows.push({ label: t('Commit message'), value: repository.commit_subject })
+  if (repository.recent_commits?.length) {
+    rows.push({ label: t('Recent commits'), value: repository.recent_commits.join(' · ') })
+  }
+  return rows
 }
 
 /** A component names itself by role, name and version; the file it came from is one hover away. */
-function componentTitle(component: ComponentIdentity): string {
-  const where = component.repository === '.' ? component.source_path
+function componentSource(component: ComponentIdentity): string {
+  return component.repository === '.' ? component.source_path
     : `${component.repository}/${component.source_path}`
-  return `${t('Source')}: ${where}`
 }
+
+/** What the rows above cannot say in a word: each once, in one box. */
+const hints = computed(() => [
+  ...(belongsTo.value?.open ? ['run-membership'] : []),
+  ...(served.value?.features_beyond_venue?.length ? ['beyond-the-venue'] : []),
+  ...(served.value?.origin?.first_start ? ['first-start'] : []),
+])
 </script>
 
 <template>
@@ -125,7 +143,6 @@ function componentTitle(component: ComponentIdentity): string {
       <dd class="mono">
         <JumpLink
           v-if="belongsTo.open"
-          :title="t('Open the deployment history')"
           @click="belongsTo.open?.()"
         >{{ belongsTo.id }}</JumpLink>
         <template v-else>{{ belongsTo.id }}</template>
@@ -138,6 +155,14 @@ function componentTitle(component: ComponentIdentity): string {
     <template v-if="info.config_snapshot">
       <dt>{{ t('Configuration file') }}</dt>
       <dd class="mono">{{ info.config_snapshot }}</dd>
+    </template>
+
+    <!-- Only where the backtest declared any, in the warning role with its glyph: it was allowed order
+         features its venue's API does not hold. The label is theirs. Empty on every other run and
+         always on a session, null on a run recorded before contract 45: both state nothing. -->
+    <template v-if="served?.features_beyond_venue?.length">
+      <dt>{{ t('Beyond the venue') }}</dt>
+      <dd class="flagged">⚠ {{ served.features_beyond_venue.join(' · ') }}</dd>
     </template>
 
     <!--
@@ -178,12 +203,11 @@ function componentTitle(component: ComponentIdentity): string {
 
       <template v-if="served.origin.first_start">
         <dt>{{ t('Declared first start') }}</dt>
-        <dd :title="t('The one way a session trading real money starts without a carry-over to continue')">
-          {{ t('yes') }}
-        </dd>
+        <dd>{{ t('yes') }}</dd>
       </template>
     </template>
   </dl>
+  <HintLine v-if="hints.length" :id="hints" class="meta-hint" />
 
   <!--
     WHICH CODE RAN. The one thing the index row cannot carry, and the question a reader arrives
@@ -195,23 +219,26 @@ function componentTitle(component: ComponentIdentity): string {
 
     <p v-for="{ name, held: repository } in repositories" :key="name" class="repo">
       <span class="repo-root">{{ name }}</span>
-      <span v-if="repository.commit" class="mono">{{ repository.commit }}</span>
+      <HoverCard v-if="repository.commit && commitCard(repository).length" :details="commitCard(repository)">
+        <span class="mono" tabindex="0">{{ repository.commit }}</span>
+      </HoverCard>
+      <span v-else-if="repository.commit" class="mono">{{ repository.commit }}</span>
       <span v-if="repository.branch" class="repo-branch">{{ repository.branch }}</span>
       <!-- a clean tree states nothing beyond its commit: the commit IS the statement -->
-      <span
-        v-if="repository.dirty"
-        class="flagged"
-        :title="changeSample(repository)"
-      >⚠ {{ changeNote(repository) }}</span>
+      <HoverCard v-if="repository.dirty" :title="t('Changes')" :paths="changeSample(repository)">
+        <span class="flagged" tabindex="0">⚠ {{ changeNote(repository) }}</span>
+      </HoverCard>
       <!-- whether the code can be put back exactly, which is the question the dirtiness raises -->
       <span v-if="repository.dirty && !repository.restorable" class="flagged">
         {{ t('not restorable') }}
       </span>
-      <span
+      <HoverCard
         v-else-if="repository.dirty && repository.patch_ref"
-        class="quiet"
-        :title="repository.patch_ref"
-      >{{ t('patch kept') }}</span>
+        :title="t('Patch')"
+        :paths="[repository.patch_ref]"
+      >
+        <span class="quiet" tabindex="0">{{ t('patch kept') }}</span>
+      </HoverCard>
       <!-- a directory under no version control at all cannot even state a commit -->
       <span v-if="repository.in_repository === false" class="flagged">
         {{ t('not versioned') }}
@@ -220,7 +247,9 @@ function componentTitle(component: ComponentIdentity): string {
 
     <p v-for="component in components" :key="component.role + component.name" class="component">
       <span class="component-role">{{ component.role }}</span>
-      <span class="mono" :title="componentTitle(component)">{{ component.name }}</span>
+      <HoverCard :title="t('Source')" :paths="[componentSource(component)]">
+        <span class="mono" tabindex="0">{{ component.name }}</span>
+      </HoverCard>
       <span class="quiet">{{ component.version }}</span>
     </p>
   </section>
@@ -251,6 +280,11 @@ function componentTitle(component: ComponentIdentity): string {
   overflow-wrap: anywhere;
 }
 
+/* a hint elsewhere stands above what it explains; this one stands below a list with no margin of its own */
+.meta-hint {
+  margin-top: var(--space-sm);
+}
+
 .mono {
   font-family: monospace;
 }
@@ -264,11 +298,14 @@ function componentTitle(component: ComponentIdentity): string {
   padding-top: var(--space-sm);
 }
 
+/* the label every block of figures wears (`FigureBlock`) */
 .code h4 {
   margin: 0 0 var(--space-xs);
   font-size: var(--font-size-sm);
   font-weight: normal;
   color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .repo,

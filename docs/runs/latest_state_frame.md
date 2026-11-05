@@ -25,7 +25,7 @@ MEMORY   Latest frame  private 170.7 MB · resident 237.6 MB   First frame  priv
 No reconciliation with the venue checked yet
 Account · Decision · Worker rsi_fast · Worker bollinger_main   (figure blocks)
 Open positions
-    long 0.002 ETHUSD @ 2,398.97 · -0.04 USD
+    long 0.002 ETHUSD @ 2398.97 · -0.04 USD
 Resting orders none
 ```
 
@@ -48,7 +48,8 @@ Resting orders none
   signal and an unclean reconciliation speak in the warning role. A breaker, market or
   reconciliation check that was not made (null) is said in the quiet ink, because unchecked is not
   fine. `feed_stale` null is not said: it means the session reads no signal at all.
-- **Account and decision as figure blocks.** Holdings and prices go to eight decimals, dropping
+- **Account and decision as figure blocks.** Prices stand at the tick size of the unit's instrument,
+  to eight decimals while a run still running has no broker report. Holdings go to eight decimals, dropping
   the float noise a computed figure carries. Worker and decision outputs appear under the
   strategy's own keys, to four decimals.
 - **Positions and resting orders** are the rows the portfolio and the pending orders serve. A
@@ -69,7 +70,8 @@ section plays them (`StateFramePlayer`): the first, one back, play or stop, one 
 speed in frames per second; and a slider along the session's own clock — `frame_time`, the only
 axis, since the machine's clock says only how long ago. The arrows on the slider step a frame, since
 frames come at no fixed interval. The frame on show is drawn by `StateFrameBody`, the same body the
-latest frame used, so a session reads one way whichever moment is on show.
+latest frame used, so a session reads one way whichever moment is on show. The run chart draws the
+frame on show as a dashed line ([Chart Drawings and Layers](../panels/chart_drawings_and_layers.md)).
 
 ```
 ⏮ ◀ ▶ ▶| ⏭  5 per s ▾   ├────────●───────────────────┤
@@ -100,7 +102,10 @@ latest frame used, so a session reads one way whichever moment is on show.
 The app root loads it with the run's other sections and asks again **once a cadence** (`cadence_s`,
 a minute until an answer names one). It asks only while the run bundle or the section's own panel is
 on show and the page is in view. A frame stays on screen until the next one arrives, so the section
-never blanks between answers; a failure is said beside the frame held. When the session has ended
+never blanks between answers; a failure is said beside the frame held. A new frame on the followed
+timeline brings the check-in along, so the two never show different frames, and that is still one
+answer per frame. *Written … ago* moves on every second by this browser's clock from the moment the
+answer arrived: the route's `age_s` at that moment plus the time since. When the session has ended
 and written its outcome, the asking stops and the run index is read again. The bundle then loads
 the reports the session wrote.
 

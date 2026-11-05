@@ -57,8 +57,4 @@ defineProps<{
 .count-label {
   color: var(--color-text-secondary);
 }
-
-.count-value {
-  font-size: var(--font-size-md);
-}
 </style>

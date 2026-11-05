@@ -1,6 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { defineComponent, h, nextTick } from 'vue'
 import LatestStatePanel from '@/components/runs/LatestStatePanel.vue'
+import { provideTickSizes } from '@/composables/use_tick_sizes'
 import type { StateFrame, StateFrameUnit, StateFramesLatest } from '@/types/api/state_frame_types'
 import endedFixture from './fixtures/state_frames_ended.json'
 import stoppedFixture from './fixtures/state_frames_stopped.json'
@@ -37,6 +39,31 @@ describe('LatestStatePanel', () => {
     expect(replay.find('.status').text()).toContain('replaying recorded data')
     // the age of a replayed frame says nothing, so it is not said
     expect(replay.find('.status').text()).not.toContain('ago')
+  })
+
+  /** Between two answers the age moves on, or a session that writes reads the same at every look. */
+  it('moves the age on every second and starts again from the next answer', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = mountPanel(answer(stoppedFixture, { recording: 'current', age_s: 21 }))
+      vi.advanceTimersByTime(5000)
+      await nextTick()
+      expect(wrapper.find('.status').text()).toContain('written 26 s ago')
+
+      await wrapper.setProps({ model: answer(stoppedFixture, { recording: 'current', age_s: 2 }) })
+      expect(wrapper.find('.status').text()).toContain('written 2 s ago')
+
+      // a frame ahead of the server's clock has no age to move on
+      await wrapper.setProps({ model: answer(stoppedFixture, { recording: 'current', age_s: null }) })
+      vi.advanceTimersByTime(5000)
+      await nextTick()
+      expect(wrapper.find('.status').text()).toContain('written at a time ahead of this server clock')
+
+      wrapper.unmount()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   /** The session clock is said as a time and named as that clock; the machine clock only as an age. */
@@ -108,11 +135,46 @@ describe('LatestStatePanel', () => {
     expect(text).not.toContain('0.016555830000')
   })
 
+  /** A frame's prices at the tick size of the unit's instrument; a holding is no price and keeps its own digits. */
+  it('prints the prices of a frame at the tick size of its unit\'s instrument', () => {
+    const model = answer(endedFixture)
+    const unit = model.units[0]!
+    // values that round UP, so an unrounded print does not contain the expected one
+    unit.frame.last_price = 88635.16000000001
+    const position = unit.frame.open_positions[0]!
+    position.entry_price = 88635.16000000001
+    position.stop_loss = 88000.06000000001
+    position.take_profit = 89000.06000000001
+    unit.frame.active_orders = [{
+      order_id: 'pos_resting', order_type: 'stop_limit', direction: 'long', lots: 0.1,
+      entry_price: 88500.16000000001, limit_price: 88500.26000000001,
+    } as never]
+    const seen: [string, string | null][] = []
+    const Host = defineComponent({
+      setup() {
+        provideTickSizes((name, symbol) => {
+          seen.push([name, symbol])
+          return 0.1
+        })
+        return () => h(LatestStatePanel, { model })
+      },
+    })
+    const wrapper = mount(Host)
+    const [holding, resting] = wrapper.findAll('.holding').map(row => row.text())
+    expect(holding).toContain('@ 88635.2')
+    expect(holding).toContain('SL 88000.1')
+    expect(holding).toContain('TP 89000.1')
+    expect(resting).toContain('@ 88500.2')
+    expect(resting).toContain('limit 88500.3')
+    expect(wrapper.text()).toContain('88635.2 BTCUSD')
+    expect(seen).toContainEqual([unit.unit_name, unit.frame.symbol])
+  })
+
   /** The rows the portfolio serves, said as a position; none is said as none. */
   it('lists the open positions and the resting orders, and says none where there are none', () => {
     const ended = mountPanel(answer(endedFixture))
     expect(ended.findAll('.holding')).toHaveLength(1)
-    expect(ended.find('.holding').text()).toContain('long 0.1 BTCUSD @ 88,635.1')
+    expect(ended.find('.holding').text()).toContain('long 0.1 BTCUSD @ 88635.1')
 
     const none = mountPanel(answer(stoppedFixture))
     expect(none.findAll('.holding')).toHaveLength(0)

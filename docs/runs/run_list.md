@@ -117,7 +117,7 @@ runs: 42 lines instead of 85, 14 of them a family and 28 a run standing alone.
 
   Oct 08, 13:06  demo_btcusd_bot            24.3 h  OK success    0.00 USD   0 trades  deployment
 > deployment deploy_20261008_110304   5 runs - Oct 08, 13:05
-> kraken_spot_ethusd_field_study      2 runs - Oct 08, 01:43
+> spot_field_study                    2 runs - Oct 08, 01:43
   Oct 07, 17:06  eurusd_aggressive_trend_mock  48.0 h  OK success  -359.85 USD  335 trades
 ```
 

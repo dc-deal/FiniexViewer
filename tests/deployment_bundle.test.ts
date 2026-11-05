@@ -47,10 +47,15 @@ describe('the deployment bundle', () => {
     expect(sections.sources['sessions']).toMatchObject({ detail: DETAIL })
     expect(sections.sources['periods']).toMatchObject({ periods: PERIODS, sessions: DETAIL.sessions })
 
-    // a deployment whose sessions sealed no day yet: loaded, and nothing to draw for its periods
-    useDeploymentsStore().periods = { ...PERIODS, periods: [] }
+    // loaded, with no period and no session counted without one: nothing to say
+    useDeploymentsStore().periods = { ...PERIODS, periods: [], sessions_without_periods: 0 }
     expect(sections.sources['periods']).toBeNull()
     expect(sections.lacks('periods')).toBe(true)
+
+    // a session before its first seal is said, or an incomplete history reads as a quiet one (contract 49)
+    useDeploymentsStore().periods = { ...PERIODS, periods: [], sessions_without_periods: 1 }
+    expect(sections.sources['periods']).toMatchObject({ sessions: DETAIL.sessions })
+    expect(sections.lacks('periods')).toBe(false)
   })
 
   it('says where the deployment is chosen while none is', () => {
@@ -80,7 +85,12 @@ describe('the deployment bundle', () => {
     loaded()
     const sessions = mount(DeploymentSection, { props: { memberId: 'sessions' } })
     expect(sessions.find('.deployment-sessions').exists()).toBe(true)
-    useDeploymentsStore().periods = { ...PERIODS, periods: [] }
+    useDeploymentsStore().periods = { ...PERIODS, periods: [], sessions_without_periods: 1 }
+    const waiting = mount(DeploymentSection, { props: { memberId: 'periods' } }).text()
+    expect(waiting).toContain('1 session without a period')
+    expect(waiting).not.toContain('no such section')
+
+    useDeploymentsStore().periods = { ...PERIODS, periods: [], sessions_without_periods: 0 }
     expect(mount(DeploymentSection, { props: { memberId: 'periods' } }).text())
       .toContain('This deployment carries no such section')
   })

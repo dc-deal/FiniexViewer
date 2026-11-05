@@ -77,12 +77,12 @@ test('the picker lists the ledger and choosing one opens its history', async ({ 
   await expect(first).toContainText('deploy_')
   await expect(first).toContainText('USD')
 
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
 
   // the pick shows the deployment's bundle beside the list, which stays whole and marks it (viewer#43)
   await expect(page.locator('.deployment-bundle .chosen-id')).toContainText(FIXTURE_DEPLOYMENT)
   await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
-  await expect(page.locator('.deployment-list .record-row.picked')).toContainText(FIXTURE_DEPLOYMENT)
+  await expect(page.locator('.deployment-list .record-row.picked').first()).toContainText(FIXTURE_DEPLOYMENT)
 })
 
 /**
@@ -110,7 +110,7 @@ test('each run opened from the deployment shows its own executive summary', asyn
 
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   const links = page.locator('.sessions-list .session-run button')
   const executive = page.locator('[data-panel="executive"]')
 
@@ -132,7 +132,7 @@ test('a change mark opens the configuration of a session beside it, its links wh
   // about the list floor: the narrowest the Deployments panel stands
   await page.setViewportSize({ width: 520, height: 1000 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   // one group at this width: a pick never covers its list, so the bundle is a tab to bring forward
   await showPanel(page, 'Deployment bundle')
   const lead = page.locator('.sessions-list .record-lead', { hasText: 'Strategy changed' })
@@ -145,10 +145,57 @@ test('a change mark opens the configuration of a session beside it, its links wh
   await expect(page.locator('.panel-host[data-panel-kind$="config"] [data-panel="config"]')).toBeVisible()
 })
 
+/**
+ * Where the code moved, the line carries the whole message of a commit. No stored session has one yet
+ * (measured 2026-10-31, over 14 rows), so it is mocked here. The words give way and keep their card,
+ * the list is not widened, and the dashes stay beside them: they are the colour's second channel.
+ */
+test('a long code change stays on its line, its rule drawn and its commits in a card', async ({ page }) => {
+  await page.route(`**/api/v1/deployments/${FIXTURE_DEPLOYMENT}`, route => {
+    const body = structuredClone(fixture('deployment_detail.json')) as { sessions: Record<string, unknown>[] }
+    body.sessions[1]!['code_changes'] = [
+      {
+        repository_label: 'framework',
+        old_commit: '758e39e2a1b2',
+        new_commit: '2234e043c3d4',
+        commits_between: 3,
+        change_direction: 'forward',
+        subject: 'Let a deployment say where its sessions ran different code, in a message that fills the line',
+      },
+      {
+        repository_label: 'strategy touch_and_turn',
+        old_commit: 'a1b2c3d4e5f6',
+        new_commit: '0f9e8d7c6b5a',
+        commits_between: 1,
+        change_direction: 'back',
+        subject: 'Correct a sentence in a guide, in a message long enough to need the room of the first one too',
+      },
+    ]
+    return route.fulfill({ json: body })
+  })
+  await page.setViewportSize({ width: 1500, height: 1000 })
+  await openLedger(page)
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
+
+  const lead = page.locator('.sessions-list .record-lead', { hasText: 'framework' })
+  await expect(lead).toBeVisible()
+  const { sideways, rule } = await lead.evaluate(line => ({
+    sideways: line.scrollWidth - line.clientWidth,
+    rule: parseFloat(getComputedStyle(line, '::before').width),
+  }))
+  expect(sideways).toBeLessThanOrEqual(1)
+  expect(rule, 'long words squeezed the dashed rule away').toBeGreaterThan(8)
+
+  await lead.locator('.boundary-words').first().hover()
+  const card = page.locator('.hover-card')
+  await expect(card).toContainText('758e39e2a1b2', { timeout: 15_000 })
+  await expect(card).toContainText('in a message that fills the line')
+})
+
 test('a chosen deployment survives a reload', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   await expect(page.locator('.deployment-bundle .chosen-id')).toContainText(FIXTURE_DEPLOYMENT)
 
   await page.reload()
@@ -171,7 +218,7 @@ test('a stored deployment the ledger no longer lists says so', async ({ page }) 
 test('every figure cell stands under its own heading', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1100 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   await expect(page.locator('.sessions-list .record-row').first()).toBeVisible()
   await page.locator('details').evaluateAll(
     list => list.forEach(element => element.setAttribute('open', ''))
@@ -190,7 +237,7 @@ test('every figure cell stands under its own heading', async ({ page }) => {
 test('the timeline marks round moments rather than overlapping stamps', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 1000 })
   await openLedger(page)
-  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).click()
+  await page.locator('.deployment-list .record-row', { hasText: FIXTURE_DEPLOYMENT }).first().click()
   await expect(page.locator('.timeline').first()).toBeVisible()
 
   const marks = await page.locator('.timeline .tick').allTextContents()

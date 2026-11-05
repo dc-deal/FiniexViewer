@@ -1,0 +1,13 @@
+{
+  "_comment": "The servers this viewer can reach, each address beside its credential. What differs on this machine goes into user_configs/servers.json, under the same keys, and only that. A window chooses its server for itself.",
+  "endpoints": {
+    "default": {
+      "_comment_base_url": "The API as the dev container reaches it. Without Docker Compose, override it with http://localhost:8000/api/v1.",
+      "name": "Development",
+      "base_url": "http://finiex-dev:8000/api/v1",
+      "credentials_file": "peers/development_api_token.json",
+      "host_id": null,
+      "tunnel": null
+    }
+  }
+}

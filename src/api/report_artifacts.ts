@@ -29,6 +29,7 @@ export const SECTION_ARTIFACTS: Record<string, string> = {
   bookingPeriods: 'booking_periods.json',
   tradeHistory: 'trade_history.json',
   scenarios: 'scenario_details.json',
+  venueAccount: 'venue_account.json',
 }
 
 /**

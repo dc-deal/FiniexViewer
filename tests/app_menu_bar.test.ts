@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import { bundleMembers } from '@/bundle_members'
 import AppMenuBar from '@/components/AppMenuBar.vue'
-import { reportKindId } from '@/panel_kinds'
+import { PANEL_KINDS, reportKindId } from '@/panel_kinds'
 import { allPanels } from '@/panel_registry'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { RunInfo } from '@/types/api/report_types'
+import { BUNDLE_IDS } from '@/types/panel_types'
 
 let mounted: VueWrapper | null = null
 
@@ -88,22 +90,77 @@ describe('AppMenuBar', () => {
     expect(sections.indexOf('broker')).toBeLessThan(sections.indexOf('executive'))
   })
 
-  it('says where each section is: in the column, open as a panel, or hidden', async () => {
+  /** Bundles, panels and the menu read one register: every bundle's members stand in the area of its kind. */
+  it('lists the members of every bundle in the submenu of its kind\'s area', async () => {
+    for (const bundle of BUNDLE_IDS) {
+      const area = PANEL_KINDS.find(kind => kind.id === bundle)!.area!
+      await openMenu('Panels')
+      const trigger = document.querySelector<HTMLElement>(`.menu-sub-trigger[data-area="${area}"]`)!
+      trigger.focus()
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+      await flushPromises()
+      const listed = [...document.querySelectorAll<HTMLElement>('.menu-toggle[data-section]')].map(node => node.dataset['section'])
+      expect(listed.sort()).toEqual(bundleMembers(bundle).map(member => member.id).sort())
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      mounted?.unmount()
+      mounted = mount(AppMenuBar, { attachTo: document.body })
+      await flushPromises()
+    }
+  })
+
+  it('says where each section is: in the bundle, open as a panel, or hidden', async () => {
     useLayoutStore().hide('config')
-    useDockStore().openIds = ['runs', reportKindId('orders')]
+    useDockStore().openIds = ['runs', 'run', reportKindId('orders')]
     await openRunsSubmenu()
 
     expect(sectionEntry('executive').dataset['place']).toBe('column')
     expect(sectionEntry('executive').dataset['state']).toBe('checked')
+    expect(sectionEntry('executive').querySelector('.menu-place')!.textContent).toContain('in bundle')
     expect(sectionEntry('orders').dataset['place']).toBe('panel')
+    expect(sectionEntry('orders').querySelector('.menu-place')!.textContent).toContain('panel')
     expect(sectionEntry('orders').querySelector('[data-icon="action-open-panel"]')).not.toBeNull()
     expect(sectionEntry('config').dataset['place']).toBe('hidden')
     expect(sectionEntry('config').dataset['state']).toBe('unchecked')
+    expect(sectionEntry('config').querySelector('.menu-place')!.textContent!.trim()).toBe('')
+  })
+
+  /**
+   * In a closed bundle a section is not hidden and on show nowhere: a tick read as shown, and it could
+   * not be found (operator, on screen 2026-10-30). The row says so, and a click opens it at once.
+   */
+  it('gives a section in a closed bundle no tick, says so, and opens it at a click', async () => {
+    const dock = useDockStore()
+    dock.openIds = ['runs', reportKindId('orders')]
+    const shown: string[] = []
+    const hidden: string[] = []
+    dock.showSection = (id: string) => { shown.push(id) }
+    dock.hideSection = (id: string) => { hidden.push(id) }
+    await openRunsSubmenu()
+
+    const entry = sectionEntry('executive')
+    expect(entry.dataset['place']).toBe('closed')
+    expect(entry.dataset['state']).toBe('unchecked')
+    expect(entry.querySelector('.menu-place')!.textContent).toContain('in closed bundle')
+    // one standing apart keeps its tick and its word, whatever the bundle does
+    expect(sectionEntry('orders').dataset['state']).toBe('checked')
+
+    entry.click()
+    await flushPromises()
+    expect(shown).toEqual(['executive'])
+    expect(hidden).toEqual([])
+  })
+
+  /** The rows explained once, where they are read: dismissible and bannable, like every hint. */
+  it('explains the places of the sections in a hint below them', async () => {
+    await openRunsSubmenu()
+    const hint = document.querySelector('.menu-hint')!
+    expect(hint.textContent).toContain('A section in a closed bundle is on show nowhere')
   })
 
   it('hides a shown section and shows a hidden one again', async () => {
     useLayoutStore().hide('config')
     const dock = useDockStore()
+    dock.openIds = ['runs', 'run']
     const shown: string[] = []
     const hidden: string[] = []
     dock.showSection = (id: string) => { shown.push(id) }
@@ -129,6 +186,7 @@ describe('AppMenuBar', () => {
     const entry = sectionEntry('feed-health')
     expect(entry.classList.contains('absent')).toBe(true)
     expect(entry.hasAttribute('data-disabled')).toBe(true)
+    expect(entry.querySelector('.menu-place')!.textContent).toContain('not in this run')
     entry.click()
     await flushPromises()
     expect(hidden).not.toHaveBeenCalled()
@@ -155,9 +213,13 @@ describe('AppMenuBar', () => {
     expect(mounted!.find('.account-status').exists()).toBe(true)
   })
 
-  /** One way back to the suggested order, and it lives in the settings — not a menu of one entry. */
-  it('offers no Layout menu of its own', () => {
-    expect(mounted!.findAll('.menu-bar-trigger').map(node => node.text())).toEqual(['Panels ▾'])
+  /**
+   * The named layouts beside the panels they place (viewer#37). The one way back to the suggested
+   * order stays in the settings: it is no layout.
+   */
+  it('offers the Layouts menu right after the Panels menu', () => {
+    const menus = mounted!.findAll('.menu-bar-trigger').map(node => node.text())
+    expect(menus.slice(0, 2)).toEqual(['Panels ▾', 'Layouts ▾'])
   })
 
   /**

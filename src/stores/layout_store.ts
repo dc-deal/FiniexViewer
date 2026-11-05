@@ -214,23 +214,14 @@ export const useLayoutStore = defineStore('layout', () => {
     persist()
   }
 
-  function exportLayout(): string {
-    return JSON.stringify(workspace.value, null, 2)
-  }
-
-  /** Returns false when the text is not a usable workspace — the caller reports, never throws. */
-  function importLayout(text: string): boolean {
-    try {
-      const parsed = JSON.parse(text) as WorkspaceState
-      if (!parsed || typeof parsed !== 'object' || !parsed.bundles) return false
-      // another version is refused, as a stored one is removed: its fields may mean something else
-      if (parsed.version !== SCHEMA_VERSION) return false
-      workspace.value = reconcile(parsed)
-      persist()
-      return true
-    } catch {
-      return false
-    }
+  /**
+   * The columns a named layout holds (viewer#37), reconciled like a stored one: a member it does not
+   * know is dropped, one added since is appended with its defaults, and a bundle it does not name
+   * gets its register's column.
+   */
+  function replace(bundles: WorkspaceState['bundles']): void {
+    workspace.value = reconcile({ version: SCHEMA_VERSION, bundles })
+    persist()
   }
 
   return {
@@ -245,7 +236,6 @@ export const useLayoutStore = defineStore('layout', () => {
     reorder,
     collapseAll,
     reset,
-    exportLayout,
-    importLayout,
+    replace,
   }
 })

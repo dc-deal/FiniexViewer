@@ -1,5 +1,5 @@
 import { rowKey } from '@/api/list_key'
-import { amount, polarity, signClass, sortInstant, utcInstant } from '@/components/runs/report_format'
+import { amount, polarity, priceAt, signClass, sortInstant, utcInstant } from '@/components/runs/report_format'
 import { exitCard, openingCard } from '@/components/runs/trade_card'
 import type { OpenPosition, OrderHistoryRow, TradeRow } from '@/types/api/report_types'
 import type { PositionRef } from '@/types/context_types'
@@ -81,11 +81,12 @@ export function executedOpenings(rows: OrderHistoryRow[]): Opening[] {
  *
  * Its card says how the position opened and, where the run ended with it still open, what the
  * portfolio states of it then (`open`, the unit's `open_positions`); a closed position's stops come
- * from its trade rows. `currency` is the unit's, which its unrealised P&L is in.
+ * from its trade rows. `currency` is the unit's, which its unrealised P&L is in, and `tick` the tick
+ * size of its instrument, which a price is printed at.
  */
 export function openingMarks(
   openings: Opening[], open: OpenPosition[], trades: TradeRow[], currency: string,
-  barTimes: number[], focus: PositionRef | null,
+  barTimes: number[], focus: PositionRef | null, tick: number | null = null,
 ): ChartMark[] {
   const stillOpen = new Map(open.map(position => [position.position_id, position]))
   const firstTrade = new Map<string, TradeRow>()
@@ -107,10 +108,10 @@ export function openingMarks(
       focused: looksAt(focus, row.scenario_name, row.position_id),
       id: `entry|${row.scenario_name}|${row.position_id}`,
       card: openingCard(
-        row, stillOpen.get(row.position_id) ?? null, firstTrade.get(row.position_id) ?? null, currency),
+        row, stillOpen.get(row.position_id) ?? null, firstTrade.get(row.position_id) ?? null, currency, tick),
       line: {
         label: row.position_id,
-        value: `${row.direction} ${row.executed_lots} @ ${row.executed_price} · ${utcInstant(row.event_time)}`,
+        value: `${row.direction} ${row.executed_lots} @ ${priceAt(row.executed_price, tick)} · ${utcInstant(row.event_time)}`,
       },
     })
   }
@@ -123,7 +124,7 @@ export function openingMarks(
  * closed in parts has an exit per part. An exit is a trade row, so its id is the row's declared key.
  */
 export function exitMarks(
-  trades: TradeRow[], key: string[], barTimes: number[], focus: PositionRef | null,
+  trades: TradeRow[], key: string[], barTimes: number[], focus: PositionRef | null, tick: number | null = null,
 ): ChartMark[] {
   const marks: ChartMark[] = []
   for (const trade of trades) {
@@ -141,7 +142,7 @@ export function exitMarks(
       text: SIGN_WORD[result],
       focused: looksAt(focus, trade.scenario_name, trade.position_id),
       id: `exit|${rowKey(trade, key)}`,
-      card: exitCard(trade),
+      card: exitCard(trade, tick),
       line: {
         label: trade.position_id,
         value: `${amount(trade.net_pnl, trade.currency)} · ${utcInstant(trade.exit_time)}`,

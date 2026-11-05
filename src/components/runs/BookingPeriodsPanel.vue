@@ -196,11 +196,6 @@ const otherCurrencies = computed(() =>
 .verdict.disagrees { border-left-color: var(--color-error); }
 .verdict.unchecked { border-left-color: var(--color-error); }
 
-.verdict-mark {
-  font-family: monospace;
-  font-size: var(--font-size-lg);
-}
-
 .verdict.disagrees .verdict-mark,
 .verdict.unchecked .verdict-mark { color: var(--color-error); }
 

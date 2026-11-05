@@ -1,4 +1,4 @@
-import type { ChartLayer, ChartLayerId, LineDrawing, SegmentDrawing } from '@/types/chart_drawing_types'
+import type { ChartLayer, ChartLayerId, LineDrawing, SegmentDrawing, TimeDrawing } from '@/types/chart_drawing_types'
 import type { ChartMark } from '@/types/run_chart_types'
 
 /**
@@ -73,6 +73,11 @@ export interface PlacedLine {
   y2: number
 }
 
+export interface PlacedTime {
+  time: TimeDrawing
+  x: number
+}
+
 export interface PlacedLayer {
   id: ChartLayerId
   /** The share of its strength it is painted at, 0–1. */
@@ -82,6 +87,7 @@ export interface PlacedLayer {
   marks: PlacedMark[]
   segments: PlacedSegment[]
   lines: PlacedLine[]
+  times: PlacedTime[]
   /** How far the marks reach beyond their bars, above and below — room the price scale has to leave. */
   reach: { above: number, below: number }
 }
@@ -94,7 +100,7 @@ export interface PlacedLayer {
 export function placeLayer(layer: ChartLayer, bars: ReadonlyMap<number, BarRange>, scale: ChartScale): PlacedLayer {
   const placed: PlacedLayer = {
     id: layer.id, opacity: layer.opacity ?? 1, hidden: layer.hidden ?? false,
-    marks: [], segments: [], lines: [], reach: { above: 0, below: 0 },
+    marks: [], segments: [], lines: [], times: [], reach: { above: 0, below: 0 },
   }
   const taken = new Map<string, number>()
   for (const drawing of layer.drawings) {
@@ -123,6 +129,9 @@ export function placeLayer(layer: ChartLayer, bars: ReadonlyMap<number, BarRange
       const y = scale.y(drawing.price)
       if (x1 === null || x2 === null || y === null) continue
       placed.segments.push({ segment: drawing, x1, x2, y })
+    } else if (drawing.kind === 'time') {
+      const x = scale.x(drawing.time)
+      if (x !== null) placed.times.push({ time: drawing, x })
     } else {
       const x1 = scale.x(drawing.from.time)
       const y1 = scale.y(drawing.from.price)
@@ -182,6 +191,12 @@ export function hitDrawing(layers: readonly PlacedLayer[], x: number, y: number)
         && x <= Math.max(placed.x1, placed.x2) + HIT_TOLERANCE_PX
       if (within && distance <= HIT_TOLERANCE_PX && (!best || distance < best.distance)) {
         best = { id: placed.segment.id, distance, point: false }
+      }
+    }
+    for (const placed of layer.times) {
+      const distance = Math.abs(x - placed.x)
+      if (distance <= HIT_TOLERANCE_PX && (!best || distance < best.distance)) {
+        best = { id: placed.time.id, distance, point: false }
       }
     }
     if (best) return best

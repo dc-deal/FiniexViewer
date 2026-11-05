@@ -95,14 +95,21 @@ describe('RunChartView', () => {
     expect(wrapper.text()).toContain('↑↓ a position opened')
   })
 
-  it('says so where the route answered with less than the window holds', async () => {
-    vi.mocked(apiClient.getBars).mockResolvedValue({ bars: barsOver('2025-10-31T05:00:00Z', '2025-10-31T05:10:00Z'), truncated: true, priceBasis: '' })
+  /** A batch at an edge that failed is said in that corner, and the bars loaded stay drawn (viewer#9). */
+  it('says in the corner of an edge that its bars could not be loaded, the chart staying drawn', async () => {
+    vi.mocked(apiClient.getBars).mockResolvedValueOnce({
+      bars: barsOver('2025-10-31T05:00:00Z', '2025-10-31T05:10:00Z'), truncated: true, priceBasis: '',
+    })
     chooseFixtureRun()
     const wrapper = await mountView()
+    vi.mocked(apiClient.getBars).mockRejectedValueOnce(new Error('Network Error'))
+    useRunChartStore().extendBars('right')
+    await flushPromises()
     // inside the chart's frame, over the plot — never a line that moves the chart down
-    const notice = wrapper.find('.candle-chart .chart-notice')
-    expect(notice.text()).toContain('more bars than the archive serves at once')
-    expect(notice.find('[data-icon="status-warning"]').exists()).toBe(true)
+    const corner = wrapper.find('.candle-chart .edge-state.right')
+    expect(corner.text()).toBe('Later bars could not be loaded: Network Error')
+    expect(corner.find('[data-icon="status-error"]').exists()).toBe(true)
+    expect(wrapper.find('.candle-chart').exists()).toBe(true)
   })
 
   it('names the market the archive holds nothing for', async () => {
@@ -199,5 +206,21 @@ describe('RunChartQuickBar', () => {
     expect(timeframes!.findAll('option').map(option => option.attributes('value')).filter(Boolean)).toEqual(['M1', 'M5', 'H1'])
     await timeframes!.setValue('M5')
     expect(chart.timeframe).toBe('M5')
+  })
+
+  /** A select is as wide as its widest option: the word stood wider than any timeframe. */
+  it('offers the timeframe placeholder only while no timeframe is chosen', async () => {
+    const chart = useRunChartStore()
+    mounted = mount(RunChartQuickBar)
+    await flushPromises()
+    const placeholder = (): boolean => mounted!.findAll('select')[1]!.findAll('option')
+      .some(option => option.text() === 'Timeframe')
+    expect(chart.timeframe).toBeNull()
+    expect(placeholder()).toBe(true)
+    chooseFixtureRun()
+    chart.attach()
+    await flushPromises()
+    expect(chart.timeframe).not.toBeNull()
+    expect(placeholder()).toBe(false)
   })
 })

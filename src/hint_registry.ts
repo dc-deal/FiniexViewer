@@ -26,6 +26,26 @@ const HINTS: HintDefinition[] = [
     text: t('Hover the header of a section for the button that opens it as a panel of its own, beside the bundle. On the tab of that panel, “Back into the bundle” puts it back and ✕ hides it — the Panels menu lists every section and shows a hidden one again.'),
   },
   {
+    id: 'beyond-the-venue',
+    text: t("This backtest was allowed order features its venue's API does not hold, as its scenario set declared. Its results do not predict a session on that venue."),
+  },
+  {
+    id: 'first-start',
+    text: t('A declared first start is the one way a session trading real money starts without a carry-over to continue.'),
+  },
+  {
+    id: 'run-membership',
+    text: t("The id of the deployment or the sweep this run belongs to opens it: the deployment's history, or the sweep's ranking."),
+  },
+  {
+    id: 'servers',
+    text: t('A server is one installation of the API, as an address and a token. Each browser window shows one, and switching reloads the page: the arrangement stays, and the selection comes back as you left it on that server. A token can be set here and never read back. A tunnel needs its key files in the folder user_configs/credentials.'),
+  },
+  {
+    id: 'bundle-places',
+    text: t('A bundle holds its sections one below the other, and any of them can stand apart as a panel of its own. Each row here says where it stands. A section in a closed bundle is on show nowhere: a click opens it.'),
+  },
+  {
     id: 'bundle-commands',
     text: t('⋯ on the tab of the bundle folds every section at once, or resets the bundle — its sections back in their first order, none of them hidden.'),
   },
@@ -42,12 +62,32 @@ const HINTS: HintDefinition[] = [
     text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. Its label opens its run, or its sweep. Rest the pointer on a row for its command line, its code and who started it."),
   },
   {
+    id: 'venue-account',
+    text: t('What the venue itself held, beside the books the session keeps, in the asset codes of the venue and never rounded. Not read means the venue could not be read; not listed means it did not name the asset. Every read opens what the venue answered, in the order it came.'),
+  },
+  {
+    id: 'layouts',
+    text: t('A layout holds where the panels stand and nothing they show: loading one from the Layouts menu moves the panels and leaves the run, the deployment and every filter as they are. Changes go into the layout you loaded, and into the size you loaded it in: Full, Medium and Mobile are each a placement of their own, chosen in the submenu of the layout. A shipped layout keeps its name, and Reset brings every size back as shipped.'),
+  },
+  {
+    id: 'layout-by-run',
+    text: t('Picking a run chooses its layout: a backtest the first, an AutoTrader session or a deployment the second. Offer it puts the layout beside the Layouts menu, as ⇄ and its name, where another one is loaded; Switch to it loads it at the pick, never when the page is opened again; Off leaves the layout to you.'),
+  },
+  {
+    id: 'size-by-window',
+    text: t('When on, the width of the window chooses the size of the loaded layout: Mobile below the first width, Medium below the second, Full from there. It changes once the window rests after crossing a width; a size chosen in the menu holds until then.'),
+  },
+  {
+    id: 'suggested-order',
+    text: t('Deployments, Runs and the run bundle as tabs in one group, the run chart beside them in a wide window and among them in a narrow one — in front, the bundle where a run is chosen and the run list where none is. No layout is loaded after it.'),
+  },
+  {
     id: 'deployment-sessions',
-    text: t('A run id opens that run. Where a session changed its configuration, before and after open the configuration of the session above the mark and of the one carrying it, each compared with the other. Unfinished counts the runs that never reached their close, a session running now among them — one that sealed a day is among the sessions too, so the two counts overlap and are never added.'),
+    text: t('● opens what a recording session is doing now. A run id opens that run. Where a session changed its configuration, before and after open the configuration of the session above the mark and of the one carrying it, each compared with the other. Unfinished counts the runs that never reached their close, a session running now among them — they stand among the sessions too, so the two counts overlap and are never added. A session without booked figures stands under that heading: one that has sealed no trading day yet with dashes, one that failed before it measured anything marked ✖ failed. Where its code moved, the line says which repository, how far and the message of the commit, and its card names the commits.'),
   },
   {
     id: 'sweeps',
-    text: t('Every parameter search on record. Open one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first, and any tied with it. A click on a combination chooses its run, as the run list does.'),
+    text: t("Every parameter search on record. Open one to see its combinations in the order the backend ranked them, by the objective the sweep declared — ★ marks the first, and any tied with it, where it states a figure. A click on a combination chooses its run, as the run list does. The card on a sweep's line says what it searched and what each warning word on it means."),
   },
   {
     id: 'layers',
@@ -65,7 +105,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layer-levels',
-    text: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded. With every position, the levels of every position of the unit.'),
+    text: t('The stop loss and take profit in force when a trade closed, drawn at its exit — where they stood before is not recorded. A level the strategy keeps itself is known only where it fired. With every position, the levels of every position of the unit.'),
   },
   {
     id: 'layer-candles',
@@ -78,7 +118,7 @@ const HINTS: HintDefinition[] = [
   // why a layer that is shown draws nothing — shown below the Layers list only while it does
   {
     id: 'layer-empty-levels',
-    text: t('The levels are drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw.'),
+    text: t('The levels are drawn for the position looked at — choose one in the trade history or the orders — or for every position where that is switched on. A position that set no stop and no target has none to draw, and a level its strategy keeps itself is known only where it fired.'),
   },
   {
     id: 'layer-empty-entry-exit',
@@ -89,12 +129,20 @@ const HINTS: HintDefinition[] = [
     text: t('The trades are marked where the unit on show opened a position in the window drawn — this one opened none.'),
   },
   {
+    id: 'layer-state-frame',
+    text: t('The state frame on show in the player of the Latest state frame section: a dashed line where it stands on the session clock. It moves with each step.'),
+  },
+  {
+    id: 'layer-empty-state-frame',
+    text: t('The frame on show in the Latest state frame section stands here as a dashed line, where a session records its frames.'),
+  },
+  {
     id: 'chart-marks',
     text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },
   {
     id: 'trade-slippage',
-    text: t("A trade's card gives its slippage: how far the fills landed from the mid when the order was sent — half the spread for a market fill — or, marked vs SL/TP level, from the level that closed it, where a backtest reads 0."),
+    text: t("A trade's card gives its slippage: how far the fills landed from the mid when the order was sent — half the spread for a market fill — or, marked vs SL/TP level, from the level that closed it."),
   },
   {
     id: 'position-link',

@@ -22,6 +22,8 @@ import tradeHistory from './fixtures/trade_history.json'
 import scenarioDetails from './fixtures/scenario_details.json'
 import manifest from './fixtures/capture_manifest.json'
 import machineResources from './fixtures/machine_resources.json'
+import health from './fixtures/health.json'
+import activities from './fixtures/activities.json'
 import sweepsList from './fixtures/sweeps_list.json'
 import sweepDetail from './fixtures/sweep_detail.json'
 import stateFramesEnded from './fixtures/state_frames_ended.json'
@@ -29,6 +31,7 @@ import stateFramesStopped from './fixtures/state_frames_stopped.json'
 import validationChecks from './fixtures/validation_checks.json'
 import recordedStreams from './fixtures/recorded_streams.json'
 import recordedWindow from './fixtures/recorded_window.json'
+import venueAccount from './fixtures/venue_account.json'
 import { EXPECTED_CONTRACT } from '@/api/expected_contract'
 import type { ValidationCheckList } from '@/types/api/validation_check_types'
 import type { RecordedStreams, RecordedWindow, StateFramesLatest } from '@/types/api/state_frame_types'
@@ -46,6 +49,7 @@ import type {
   RunListResponse,
   RunSummary,
   TradeHistoryReport,
+  VenueAccountReport,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
 import type {
@@ -54,6 +58,7 @@ import type {
   DeploymentListResponse,
 } from '@/types/api/deployment_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { ServerHealth } from '@/types/api/health_types'
 import type { MachineResources } from '@/types/api/machine_types'
 import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
 
@@ -102,6 +107,8 @@ const EXPECTED_KEYS = {
   recordedStreams: ['stream_kind', 'stream_name'],
   // a frame's place in its stream — two frames can share an instant
   recordedFrames: ['record_no'],
+  // one row per live session that asked its venue anything
+  venueAccountUnits: ['name'],
 }
 
 describe('api contract', () => {
@@ -523,6 +530,29 @@ describe('api contract', () => {
     }
   })
 
+  /**
+   * The fixtures are public and this one comes from a real account, so its capture writes neutral
+   * balances and order ids. Red here means a capture ran past that step.
+   */
+  it('carries neither a balance nor an order id of the real account it comes from', () => {
+    const live: OrderEventsReport = eventsLive
+    expect(live.broker_truth.length).toBeGreaterThan(0)
+    for (const row of live.broker_truth) {
+      expect(row.venue_balances).toEqual({ XETH: 1, ZUSD: 100 })
+    }
+    const orderIds = live.events.flatMap(row => row.broker_ref ?? [])
+    expect(orderIds.length).toBeGreaterThan(0)
+    for (const orderId of orderIds) expect(orderId).toMatch(/^O\d{5}-00000-000000$/)
+  })
+
+  /** What a server is kept under: `origin_host` on the rows, stated by the server itself since contract 48. */
+  it('a server states its own identity, the value its rows carry', () => {
+    const typed: ServerHealth = health
+    expect(typed.host_id).toBeTruthy()
+    const hosts = (activities as { activities: { origin_host: string | null }[] }).activities.map(row => row.origin_host)
+    expect(hosts).toContain(typed.host_id)
+  })
+
   it('the order history still satisfies the mirrored shape', () => {
     const typed: OrderHistoryReport = history
     expect(typed.orders.length).toBeGreaterThan(0)
@@ -620,6 +650,21 @@ describe('api contract', () => {
     expect(live.config['global']).toBeUndefined()
     expect(simulation.config['global']).toBeDefined()
     expect(simulation.config['scenarios']).toBeDefined()
+  })
+
+  /**
+   * The venue account of the live run (contract 23), its balances neutralised by the capture: one row
+   * per session, keyed by name, each read naming its line on the order-event stream.
+   */
+  it('the venue account still states its key, and each read the line it was taken on', () => {
+    const typed: VenueAccountReport = venueAccount
+    expect(typed.key).toEqual(EXPECTED_KEYS.venueAccountUnits)
+    expect(typed.units.length).toBeGreaterThan(0)
+    const lines = (eventsLive as OrderEventsReport).broker_truth.map(read => read.seq)
+    for (const unit of typed.units) {
+      if (unit.at_start) expect(lines).toContain(unit.at_start.seq)
+      if (unit.at_end) expect(lines).toContain(unit.at_end.seq)
+    }
   })
 
   it('the trade history still satisfies the mirrored shape', () => {

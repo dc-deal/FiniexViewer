@@ -8,8 +8,17 @@ body {
   background-color: var(--color-bg-base);
   color: var(--color-text-primary);
   font-family: monospace;
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   line-height: 1.5;
+}
+
+/*
+ * One text size, everywhere: a heading is told by its form — an uppercase label, or a rule
+ * through the middle (`RuleHeading`) — never by a larger size. The browser's own heading sizes
+ * would make every new heading the exception.
+ */
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
 }
 
 /*

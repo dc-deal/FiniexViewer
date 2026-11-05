@@ -82,6 +82,18 @@ misreports something:
   change without the contract changing. A null advisory is the backend's answer that there is
   nothing to report, so a non-null one is ALWAYS a warning — and where the stands held, it is the
   orders: real money and simulated orders in one history is the one case it fires on by itself.
+- **`changed` on a list row says only that something moved** (contract 47), so the marks read the
+  reason: *config* from `configuration_changed`, *code* from `code_summary`, which is null under two code
+  stands. `changed: true` with a null advisory is a code change alone: the advisory speaks of the profile
+  and nothing else, so the head of the sessions says *3 code stands · last moved 5 days ago* beside it.
+  Every commit counts and a change stays in the history, so a deployment stays `changed` for good, and
+  the age tells a maintained one from one moved last week. Measured 2026-10-31: none of the
+  14 rows on record carries a summary yet, since a session recorded before the contract has no code stand.
+- **What is running now is marked, on the list and on the session.** No deployment route states it, so both read the run list's `recording` and `parent_id`: `●` on the row of the deployment with `recording` beside it where the width allows, the verdict in the session's `Ran` until it has a close. The `●` opens that session's *Latest state frame*.
+- **`code_changes` stands on the line between two sessions**, one entry per repository whose code
+  differs from the session before: its word, how it moved (`change_direction`) and the message of the
+  commit that made the difference, which shows at once when a commit did not matter. The two commits are
+  in the card. It is apart from the marks below: a session can have one without the other.
 - `strategy_changed` / `operation_changed` / `orders_to_changed` render as a line BETWEEN two rows,
   the words on a dashed rule half a row high. A badge at the end of a row reads as a property of
   that session, which is the wrong reading — the flag marks a boundary.
@@ -98,10 +110,27 @@ misreports something:
   defaults merged in under the file and with a start option, which neither file holds, and both
   its card and the comparison say so.
 - `unfinished` is shown even when zero: the runs that never reached their close, a session running
-  now among them. Since contract 40 a session books each trading day as it closes, so one that
-  sealed a day also stands in `sessions`, its *Ran* a dash until its close is booked — the two
-  counts overlap and are never added. A bare session count is a number the reader has no reason to
-  doubt.
+  now among them. Each of them also stands in `sessions`, its *Ran* a dash until its close is booked
+  — the two counts overlap and are never added. A bare session count is a number the reader has no
+  reason to doubt.
+- **A session without booked figures** (contracts 49 to 51). A deployment is listed from its first
+  session's start, and until its first sealed day such a session has no account currency; a session
+  that **failed before it measured anything** — refused at its start, say — has none either, and
+  never will. **The list counts them on the deployment's booked rows** (contract 51):
+  `sessions_without_figures`, and of those `sessions_failed`. The viewer prints them after the row as
+  the backend's console does, *+2 without figures (1 failed)*, and the row's card says them in full.
+  The counts describe the deployment: a second currency row repeats them, as served, and they are
+  never added up. Only a deployment that has booked nothing at all is served a row with
+  `currency: null`, its figures dashes and its counts after it. Until contract 51 the viewer folded
+  that row into the booked one itself (operator, 2026-11-03); the rule is now the backend's, so the
+  console and the viewer show the list alike.
+  In the sessions, each `booking_state` tells the two apart: one `not_booked_yet` shows dashes, one
+  `failed` shows *✖ failed* in the error role where its result would stand. They stand in a block of
+  their own under *without booked figures* — the series the detail serves after the booked ones —
+  built from the detail's sessions, since a deployment that has booked serves no list row to head
+  them. Null is never a zero, and at the first seal a session not booked yet moves into its
+  currency's block. Until then its booking periods are an empty list and `sessions_without_periods`
+  counts it.
 - What the run ids, *before · after* and the unfinished count mean is said by the
   `deployment-sessions` hint above the sessions, never on a browser tooltip (operator, 2026-10-28).
 
@@ -110,8 +139,8 @@ the deployment and its bot, with the rest of its row — the bot id among it —
 list shows; the deployment's own line counts the sessions and the unfinished runs and carries the
 advisory, the full sentence on hover; and one line per account currency carries the ledger's
 figures and the span of the starts, the date said once where both fall on the same UTC day. The
-unfinished runs and the advisory stand above the currencies because they belong to none: a run that
-died before its first sealed day has no ledger row and so no currency.
+unfinished runs and the advisory stand above the currencies because they belong to none: an
+unfinished run can stand in any of them, or before it has one.
 
 **`index` on a session row is not rendered.** It rides on the row and is NOT in the declared key
 (`["run_id", "currency"]`), so presenting it as the session's number invents a counter the ledger

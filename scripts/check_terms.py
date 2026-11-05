@@ -93,7 +93,7 @@ TEMPLATE_EXPR = re.compile(r'\$\{(.*?)\}')
 READING = re.compile(r'(?:[A-Za-z_][A-Za-z0-9_]*(?:\([^()]*\))?!?\.)+([a-z][a-z0-9_]{2,})')
 HOLDERS = (r'row|unit|summary|model|order|trade|period|entry|session|deployment|bar|scenario|'
            r'headline|aggregate|funnel|info|fold|item|broker|total|combination|run|block|card|'
-           r'symbol|check|warning|detail|instance|window|execution')
+           r'symbol|check|warning|detail|instance|window|execution|sweep')
 FIELD = re.compile(r'\b(?:' + HOLDERS + r')\.([a-z][a-z0-9_]*)')
 SKIP = ('value', 'label', 'currency', 'length', 'key', 'rows', 'open', 'map', 'filter', 'find',
         'join')
@@ -469,10 +469,18 @@ def check():
         print(f'no register at {REGISTER} — run --baseline and record the judgements first')
         return 1
 
-    pairs, _, readings = our_pairs()
+    pairs, unresolved, readings = our_pairs()
     docs = their_docs()
     console = their_console()
     findings = []
+
+    # A label naming no field the check can read is not compared, but nobody has judged it either, and
+    # the next baseline would carry it in an unrelated commit. Measured 2026-10-30: `Frame` and `The
+    # session clock` stood unregistered for a day, under a check that printed nothing.
+    for label in sorted({label for _, label in unresolved}):
+        if label not in pairs and label not in register:
+            findings.append(f'  NEW      "{label}" names no field the check can read, '
+                            'and the register does not know it')
 
     for label, field in sorted(pairs.items()):
         known = register.get(label)

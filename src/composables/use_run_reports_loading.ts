@@ -20,6 +20,18 @@ function recordsStateFrames(run: RunInfo): boolean {
   return run.stream_files.includes(STATE_FRAMES)
 }
 
+/** The order-event stream, whose second list holds what the venue said each time a session asked it. */
+const ORDER_EVENTS = 'order_events.jsonl'
+
+/**
+ * A session whose stream may hold the venue's reads. `group` is one of the fields their `run-kinds`
+ * document names for telling the kinds apart: a backtest's stream holds no read and can be the
+ * largest answer the API serves, so it is never asked for whole.
+ */
+function readsVenue(run: RunInfo): boolean {
+  return run.group === 'autotrader' && run.stream_files.includes(ORDER_EVENTS)
+}
+
 /**
  * Loads the sections of the run the reader chose. Called ONCE, at the app root: a section shown as
  * a panel of its own needs its data while the run report is closed or behind a tab, and a docked
@@ -56,6 +68,8 @@ export function useRunReportsLoading(): void {
     reports.loadConfig(runId)
     // a STREAM, gated on its own name: a session writes it from its first pass, long before a report
     if (recordsStateFrames(run)) reports.loadStateFrames(runId)
+    // the venue's reads, from the same stream, are there from the session's first read on as well
+    if (readsVenue(run)) reports.loadVenueReads(runId)
 
     // a run without reports stops here, for the same reason the store skips the summary
     if (!run.has_reports) return
@@ -77,6 +91,7 @@ export function useRunReportsLoading(): void {
     if (has('bookingPeriods')) reports.loadBookingPeriods(runId)
     if (has('tradeHistory')) reports.loadTradeHistory(runId)
     if (has('scenarios')) reports.loadScenarios(runId)
+    if (has('venueAccount')) reports.loadVenueAccount(runId)
   }, { immediate: true })
 
   /*
@@ -87,8 +102,8 @@ export function useRunReportsLoading(): void {
    * ended and its outcome is written; then the session's reports exist, and the index is asked
    * again so the bundle loads them.
    */
-  const onShow = computed(() =>
-    dock.shownIds.includes(RUN_BUNDLE) || dock.shownIds.includes(reportKindId('latest-state')))
+  const onShow = computed(() => dock.shownIds.includes(RUN_BUNDLE)
+    || dock.shownIds.includes(reportKindId('latest-state')) || dock.shownIds.includes(reportKindId('venue-account')))
 
   /** Every unit's last frame is the one written at its end, and its outcome is written. */
   function finished(): boolean {
@@ -120,16 +135,24 @@ export function useRunReportsLoading(): void {
     const run = runs.selectedRun
     if (!run || !recordsStateFrames(run) || !onShow.value || finished()) return
     const runId = run.run_id
-    timer = setTimeout(async () => {
+    timer = setTimeout(() => {
       timer = null
-      if (runs.selectedRun?.run_id !== runId) return
-      if (document.visibilityState === 'visible') await reports.refreshStateFrames(runId)
-      if (finished()) {
-        await reportsWritten(runId)
-        return
-      }
-      schedule()
+      if (runs.selectedRun?.run_id === runId) void checkIn(runId)
     }, cadenceSeconds() * 1000)
+  }
+
+  async function checkIn(runId: string): Promise<void> {
+    if (document.visibilityState === 'visible') {
+      await reports.refreshStateFrames(runId)
+      // only where the first ask found a read: a dry run against the real venue writes none, and
+      // asking its stream again every minute would cost the small machine for nothing
+      if (reports.venueReads?.reads.length) await reports.refreshVenueReads(runId)
+    }
+    if (finished()) {
+      await reportsWritten(runId)
+      return
+    }
+    schedule()
   }
 
   watch([() => runs.selectedRun?.run_id ?? null, onShow], schedule, { immediate: true })
@@ -140,6 +163,10 @@ export function useRunReportsLoading(): void {
    * whose player is open and reads `current`, asked every two seconds while the section is on show
    * and the page in view, and the frames written since read in. A player on the newest frame
    * follows them; the polling stops once the timeline no longer says `current`.
+   *
+   * A new frame on the timeline brings the check-in along and restarts its wait. Left on its own
+   * timer it asks in step with the writing, so its age reads the same at every answer, measured
+   * 2026-11-01: 13 s for three minutes, and its time a frame behind the player for 13 s of each.
    */
   const players = useFramePlayerStore()
   const recordingUnits = computed(() => [...players.players.values()]
@@ -147,6 +174,10 @@ export function useRunReportsLoading(): void {
     .map(player => player.unit))
 
   let follower: ReturnType<typeof setTimeout> | null = null
+
+  function recordCounts(): string {
+    return recordingUnits.value.map(unit => players.playerOf(unit)?.stream?.record_count ?? 0).join('|')
+  }
 
   function stopFollowing(): void {
     if (follower) clearTimeout(follower)
@@ -158,7 +189,12 @@ export function useRunReportsLoading(): void {
     if (!onShow.value || !recordingUnits.value.length) return
     follower = setTimeout(async () => {
       follower = null
-      if (document.visibilityState === 'visible') await Promise.all(recordingUnits.value.map(unit => players.refresh(unit)))
+      if (document.visibilityState === 'visible') {
+        const seen = recordCounts()
+        await Promise.all(recordingUnits.value.map(unit => players.refresh(unit)))
+        const runId = runs.selectedRun?.run_id
+        if (runId && recordCounts() !== seen) await checkIn(runId)
+      }
       follow()
     }, FOLLOW_MS)
   }

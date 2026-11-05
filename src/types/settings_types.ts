@@ -1,7 +1,7 @@
 export type ThemeName = 'dark' | 'light'
 
 /** Which section of the settings dialog is on show. */
-export type SettingsTab = 'display' | 'layout'
+export type SettingsTab = 'display' | 'layouts' | 'servers'
 
 /**
  * How the lanes of a booking-period timeline are ordered — and the same order the table beneath it
@@ -31,9 +31,30 @@ export interface DisplaySettings {
   tradeRowCap: number
 }
 
+/**
+ * Whether picking a run chooses the layout (viewer#37): not at all, by offering the one it maps to
+ * beside the Layouts menu, or by loading it. Ours, a closed set.
+ */
+export type LayoutByRun = 'off' | 'offer' | 'switch'
+
 /** Everything the settings store keeps. `theme` is applied to the document, not passed to panels. */
 export interface Settings extends DisplaySettings {
   theme: ThemeName
+  /**
+   * Whether the window's width chooses the size of the loaded layout (viewer#37) — off by default,
+   * the size then being the one chosen in its submenu.
+   */
+  sizeByWindow: boolean
+  /** From this window width on, in CSS pixels, a layout takes Medium; below it, Mobile. */
+  mediumFrom: number
+  /** From this window width on, a layout takes Full. */
+  fullFrom: number
+  /** What picking a run does to the layout — offered by default, and switchable off. */
+  layoutByRun: LayoutByRun
+  /** The layout a backtest maps to, by id; one that no longer exists maps to nothing. */
+  layoutForBacktest: string
+  /** The layout an AutoTrader session and a deployment map to, by id. */
+  layoutForSession: string
 }
 
 /**
@@ -48,4 +69,10 @@ export const DEFAULT_SETTINGS: Settings = {
   scenarioThreshold: 6,
   laneOrder: 'time',
   tradeRowCap: 500,
+  sizeByWindow: false,
+  mediumFrom: 900,
+  fullFrom: 1500,
+  layoutByRun: 'offer',
+  layoutForBacktest: 'backtests',
+  layoutForSession: 'deploys',
 }

@@ -9,6 +9,8 @@ import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { providePanelView } from '@/composables/use_panel_view'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestPositionLink } from './position_link_harness'
+import { provideTickSizes } from '@/composables/use_tick_sizes'
+import type { TickSizeLookup } from '@/composables/use_tick_sizes'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings } from '@/types/settings_types'
 import type { TradeExecution, TradeHistoryReport, TradeRow } from '@/types/api/report_types'
@@ -47,6 +49,17 @@ function mountWithDisplay(
     setup() {
       provideDisplaySettings(display)
       return () => h(TradeHistoryPanel, { model })
+    },
+  })
+  return mount(Host)
+}
+
+/** The panel under a host that states the tick size, the way the app root does from the broker report. */
+function mountAtTick(history: TradeHistoryReport, lookup: TickSizeLookup) {
+  const Host = defineComponent({
+    setup() {
+      provideTickSizes(lookup)
+      return () => h(TradeHistoryPanel, { model: history })
     },
   })
   return mount(Host)
@@ -370,6 +383,76 @@ describe('TradeHistoryPanel', () => {
         .toHaveProperty('Closed by', 'stop_loss')
     })
 
+    /** No position carried an own level, so the row names it only where it fired (contract 45). */
+    it('shows an own level that fired under the level its close reason names, and nothing of one that did not', () => {
+      const rows = (fields: Partial<TradeRow>) => cardRows(mountPanel(report({
+        trades: [trade({ stop_loss: null, take_profit: null, ...fields })],
+      })))
+      const ownStop = rows({ exit_level: 149.5, close_reason: 'sl_triggered' })
+      expect(ownStop).toHaveProperty('Own level', 'stop loss 149.5')
+      expect(ownStop).not.toHaveProperty('Stop loss')
+      expect(rows({ exit_level: 151, close_reason: 'tp_triggered' })).toHaveProperty('Own level', 'take profit 151')
+      // a level the position carried states itself, and is not named twice
+      const carriedStop = rows({ stop_loss: 149.5, exit_level: 149.5, close_reason: 'sl_triggered' })
+      expect(carriedStop).toHaveProperty('Stop loss', '149.5')
+      expect(carriedStop).not.toHaveProperty('Own level')
+      const carriedTarget = rows({ take_profit: 151, exit_level: 151, close_reason: 'tp_triggered' })
+      expect(carriedTarget).toHaveProperty('Take profit', '151')
+      expect(carriedTarget).not.toHaveProperty('Own level')
+      // a stop on the position and a tighter one the strategy keeps itself: the row names where it fired
+      const both = rows({ stop_loss: 149, exit_level: 149.5, close_reason: 'sl_triggered' })
+      expect(both).toHaveProperty('Stop loss', '149')
+      expect(both).toHaveProperty('Own level', 'stop loss 149.5')
+      // a row recorded before contract 45 names no level, and a strategy's own close names none
+      for (const closed of [{ exit_level: null, close_reason: 'sl_triggered' }, { exit_level: null, close_reason: '' }]) {
+        const none = rows(closed)
+        expect(none).not.toHaveProperty('Stop loss')
+        expect(none).not.toHaveProperty('Own level')
+        expect(none).not.toHaveProperty('Take profit')
+      }
+    })
+
+    /** Their rule for a price they computed, and a run recorded before contract 34 keeps what it read, widened. */
+    it('prints every price at the tick size of the row\'s own instrument', () => {
+      const seen: [string, string | null][] = []
+      const row = trade({
+        entry_price: 1.1625800132751465, exit_price: 1.1677499513751617, mae_price: 1.1601000213623047,
+        mfe_price: 1.1699000000000002, stop_loss: 1.1654013009624113, take_profit: 1.1699000000000002,
+      })
+      const rows = cardRows(mountAtTick(report({ trades: [row] }), (unit, symbol) => {
+        seen.push([unit, symbol])
+        return 0.00001
+      }))
+      expect(rows['Opened']!.endsWith('@ 1.16258')).toBe(true)
+      expect(rows['Closed']!.endsWith('@ 1.16775')).toBe(true)
+      expect(rows['Worst against']).toContain('@ 1.16010 ·')
+      expect(rows['Best in favour']).toContain('@ 1.16990 ·')
+      expect(rows['Stop loss']).toBe('1.16540')
+      expect(rows['Take profit']).toBe('1.16990')
+      expect(seen).toContainEqual([row.scenario_name, row.symbol])
+    })
+
+    it('prints an own level at the tick size, and a slippage below it in full', () => {
+      const rows = cardRows(mountAtTick(report({ trades: [trade({
+        stop_loss: null, take_profit: null, exit_level: 1.1677499513751617, close_reason: 'tp_triggered',
+        entry_slippage: -0.0000015, exit_slippage: -0.000009951375161687537,
+        exit_slippage_measured_against: 'protective_level',
+      })] }), () => 0.00001))
+      expect(rows['Own level']).toBe('take profit 1.16775')
+      expect(rows['Slippage']).toBe('in -0.0000015 · out -0.00000995 vs SL/TP level')
+    })
+
+    /** *"All four are null when no submission tick was captured"*: an absence, never a zero. */
+    it('says a slippage nobody measured is not there, on either half', () => {
+      const rows = cardRows(mountPanel(report({ trades: [trade({ entry_slippage: null, exit_slippage: null })] })))
+      expect(rows['Slippage']).toBe('in n/a · out n/a')
+    })
+
+    it('goes no further than the eighth decimal where no tick size is known', () => {
+      const rows = cardRows(mountPanel(report({ trades: [trade({ entry_price: 1.1625800132751465 })] })))
+      expect(rows['Opened']!.endsWith('@ 1.16258001')).toBe(true)
+    })
+
     it('omits a stop that was never set rather than showing it as none', () => {
       expect(cardRows(mountPanel(report({ trades: [trade({ stop_loss: null })] }))))
         .not.toHaveProperty('Stop loss')
@@ -645,6 +728,24 @@ describe('TradeHistoryPanel', () => {
 
       await tradeRows(wrapper)[0]!.trigger('click')
       expect(wrapper.find('.fill-list').exists()).toBe(false)
+    })
+
+    it('prints a fill\'s price at the tick size of its trade\'s instrument, in its row and its card', async () => {
+      const wrapper = mountAtTick(report({
+        trades: [trade({
+          entry_executions: [fill({ price: 1.1625800132751465, fee: 1.604143465373993, fee_currency: 'USD' })],
+          exit_executions: [],
+        })],
+      }), () => 0.00001)
+      await tradeRows(wrapper)[0]!.trigger('click')
+      const fills = wrapper.find('.fill-list')
+      const cells = fills.findAll('.record-row span').map(cell => cell.text())
+      expect(cells).toContain('price 1.16258')
+      // a fee is no price, and its float noise is no digit of it
+      expect(cells).toContain('fee 1.60414347 USD')
+      const card = fills.findComponent(HoverCard).props('details')!
+      expect(card).toContainEqual({ label: 'Price', value: '1.16258' })
+      expect(card).toContainEqual({ label: 'Fee', value: '1.60414347 USD' })
     })
 
     /** The in-then-out ORDER is the content, so the sub-list offers nothing to reorder it with. */

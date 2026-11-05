@@ -78,3 +78,6 @@ sync_ide_docs.sh
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+# this machine's own configuration and credentials; the folder exists in every clone
+user_configs/*
+!user_configs/.gitkeep

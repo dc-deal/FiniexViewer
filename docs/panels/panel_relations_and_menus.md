@@ -105,9 +105,12 @@ shorter, where a grid of eleven panels would have left empty areas or moved.
 (viewer#31, 2026-10-14). The section bar above the column is gone; the Panels menu took its place.
 A tick is a panel on show, a click hides it or shows it again, and the menu stays open so several
 can be switched in one visit. The run bundle's sections stand in the submenu *Runs*, in
-the column's order, each with where it is (`use_section_states.ts`): in the column, open as a panel
-(⇱), hidden, or struck where the chosen run has none — listed rather than left out, because an
-inventory that silently shortens is not one. The deployment bundle's members stand the same way in
+the column's order, each saying at the end of its row where it stands (`use_section_states.ts`):
+*in bundle*, *panel* (⇱), *in closed bundle*, nothing where it is hidden, or struck with *not in this
+run* where the chosen run has none — listed rather than left out, because an inventory that silently
+shortens is not one. A section in a closed bundle has no tick and a click opens it: it is not hidden
+and it is on show nowhere, and a tick on it read as shown (operator, on screen 2026-10-30). A hint
+below the rows explains the places once. The deployment bundle's members stand the same way in
 the submenu *Deployments* (viewer#43): every bundle's members in its area, through one register
 (`bundle_members.ts`).
 
@@ -165,7 +168,10 @@ A share of 100 to 1 still cost the tabs 2 px, and one pixel short is enough for 
 tab into that menu (measured at 560 px).
 
 **And it fits a short header rather than running past it** (2026-10-28). The container may shrink
-below its content (`min-width: 0`), the bar's selects give way to a floor of 3rem, and in a header
+below its content (`min-width: 0`), the unit's select gives way to a floor of 3rem — cut with `…`,
+as the tab is — while the timeframe's never does: cut, `M1(` named no timeframe at all. A select is
+as wide as its widest option, so the timeframe offers its placeholder only while none is chosen;
+the word stood wider than any timeframe and pushed the button out (2026-10-29). In a header
 under 32rem — the run chart's at its first width beside an 1800 px window is 457 px — the button
 shows `≡` alone and a tab's subtitle shortens to 10ch. The header is a size container
 (`dock-header`) for exactly that. Until then the bar's floor was its full width: the tab took the
@@ -175,4 +181,8 @@ whole shortfall and left for the overflow menu, and `≡ Layers` stood past the 
 let the browser scroll it to bring a focused control into view: the focused `≡ Layers` button past
 the edge scrolled the run chart's group by 171 px once the Layers panel opened, and the chart kept in
 the page stood over the report. `overflow: clip` makes the group no scroll container at all; the
-Layers browser spec holds the chart inside its group.
+Layers browser spec holds the chart inside its group. **The dock's own box clips the same way**
+(`PanelDock.vue`, 2026-11-03): a panel behind another tab keeps the size it had and can reach past
+the bottom, and after a layout was loaded in a zoomed window the box stood scrolled 156 px, every
+tab under the menu bar with nothing to scroll it back. The named layouts' browser spec holds it in
+place with such a panel stood in.

@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDeploymentsStore } from '@/stores/deployments_store'
+import { useRunsStore } from '@/stores/runs_store'
+import { recordingOf } from '@/components/runs/recording_mark'
+import { useOpenInContext } from '@/composables/use_open_in_context'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
@@ -11,12 +14,12 @@ import { deploymentCard, idleGap } from '@/components/deployments/deployment_car
 import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
 import {
-  amount, magnitude, orDash, percentFigure, signClass, sortInstant, startedAt,
+  bookedAmount, drawdownFigure, orDash, percentFigure, signClass, sortInstant, startedAt,
 } from '@/components/runs/report_format'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
 import type { ListColumn } from '@/types/list_types'
 import type { DeploymentRow } from '@/types/api/deployment_types'
-import { t } from '@/translate'
+import { plural, t } from '@/translate'
 
 /**
  * Which deployment to look at — the same facet bar over a flat list that the run picker and the
@@ -40,6 +43,8 @@ import { t } from '@/translate'
  * USD), so this is the declared key being honoured rather than a case being served.
  */
 const store = useDeploymentsStore()
+const runsStore = useRunsStore()
+const { openRun } = useOpenInContext()
 const {
   deployments, deploymentsKey, selectedDeploymentId, loadingList,
 } = storeToRefs(store)
@@ -55,15 +60,15 @@ const facets: FacetDefinition<DeploymentRow>[] = [
   { id: 'bot', label: 'Bot', valuesOf: row => stated(row.bot) },
   { id: 'currency', label: 'Currency', valuesOf: row => stated(row.currency) },
   /*
-   * Built rather than read, like the run list's `artifacts` facet: `changed` is a boolean, and a
-   * facet offering `true` / `false` asks the reader to translate. It is also the one property of a
+   * Built rather than read, like the run list's `artifacts` facet: `configuration_changed` is a boolean,
+   * and a facet offering `true` / `false` asks the reader to translate. It is also the one property of a
    * deployment that changes how its own figures must be read, which is what earns it a facet at
    * all — the sessions below a moved configuration were produced by a different stand.
    */
   {
     id: 'stand',
     label: 'Configuration',
-    valuesOf: row => [row.changed ? 'moved' : 'one stand'],
+    valuesOf: row => [row.configuration_changed ? 'moved' : 'one stand'],
   },
 ]
 
@@ -76,8 +81,9 @@ const facets: FacetDefinition<DeploymentRow>[] = [
  * one I mean" — the id because it is a stamp, the name because an operator improves it and two
  * deployments can share it.
  *
- * The last track carries the configuration mark and has no heading: it is a mark, not a measured
- * field, the same treatment the run list gives its origin marks.
+ * The last track carries the marks of what moved and has no heading: they are marks, not a measured
+ * field, the same treatment the run list gives its origin marks. How long ago the code moved stands in
+ * the row's card.
  */
 const columns: ListColumn[] = [
   { label: t('Deployment'), width: 'minmax(9rem, 20fr)', rank: 1 },
@@ -88,7 +94,7 @@ const columns: ListColumn[] = [
   { label: t('Net P&L'), width: 'minmax(0, 16fr)', figure: true, rank: 1 },
   { label: t('Max DD'), width: 'minmax(0, 15fr)', figure: true, rank: 2 },
   { label: t('Longest gap'), width: 'minmax(0, 12fr)', figure: true, rank: 4 },
-  { label: '', width: 'minmax(0, 10fr)', rank: 3 },
+  { label: '', width: 'minmax(0, 14fr)', rank: 3 },
 ]
 
 const sorts: SortDefinition<DeploymentRow>[] = [
@@ -116,6 +122,17 @@ const sorts: SortDefinition<DeploymentRow>[] = [
   },
 ]
 
+/**
+ * The deployment's sessions without booked figures, in the words the backend's console prints after
+ * the row (contract 51): `+2 without figures (1 failed)`. They describe the deployment, so a second
+ * currency row repeats them, as served; null where there are none.
+ */
+function withoutFigures(row: DeploymentRow): string | null {
+  if (!row.sessions_without_figures) return null
+  const failed = row.sessions_failed ? ` (${row.sessions_failed} ${t('failed')})` : ''
+  return `+${row.sessions_without_figures} ${t('without figures')}${failed}`
+}
+
 const shown = computed(() => sortRows(
   applyFacets({
     rows: deployments.value,
@@ -133,6 +150,43 @@ const shown = computed(() => sortRows(
  * deployment's bundle shows it (viewer#43).
  */
 const emit = defineEmits<{ chosen: [] }>()
+
+/** The session recording right now, which the row's card names as well. */
+function recordingSession(row: DeploymentRow): string | null {
+  return runsStore.recordingSessionOf[row.deployment_id] ?? null
+}
+
+function cardOf(row: DeploymentRow) {
+  const card = deploymentCard(row)
+  const details = [...card.details]
+  // the sessions without booked figures, as the row counts them, and of those the failed ones
+  if (row.sessions_without_figures) {
+    details.push({
+      label: t('Without figures'),
+      value: row.sessions_failed
+        ? `${plural(row.sessions_without_figures, t('session'), t('sessions'))} · ${row.sessions_failed} ${t('failed')}`
+        : plural(row.sessions_without_figures, t('session'), t('sessions')),
+    })
+  }
+  const session = recordingSession(row)
+  if (session) {
+    const { glyph, word } = recordingOf('current')
+    details.unshift({ label: t('Now'), value: `${glyph} ${word} · ${session}` })
+  }
+  return { ...card, details }
+}
+
+/**
+ * A click on the mark goes straight to what the session is doing now. Inside a row that is itself a
+ * button a second control cannot be one, so this serves the pointer; the keyboard has the same link on
+ * the session's row.
+ */
+function openRecording(row: DeploymentRow): void {
+  const session = recordingSession(row)
+  if (!session) return
+  pick(row)
+  openRun(session, 'latest-state')
+}
 
 function pick(row: DeploymentRow): void {
   void store.selectDeployment(row.deployment_id)
@@ -171,13 +225,14 @@ function pick(row: DeploymentRow): void {
         :columns="columns"
         :row-key="row => rowKey(row, deploymentsKey)"
         :is-picked="row => row.deployment_id === selectedDeploymentId"
-        :row-card="deploymentCard"
+        :row-card="cardOf"
         @pick="pick"
       >
         <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
              this template owns the cells -->
         <template #default="{ row }">
           <span :data-rank="1" class="deployment-id" :title="row.deployment_id">
+            <span v-if="recordingSession(row)" class="deployment-recording" @click.stop="openRecording(row)">{{ recordingOf('current').glyph }}</span>
             {{ row.deployment_id }}
           </span>
           <span :data-rank="1" class="deployment-bot" :title="row.bot">{{ row.bot }}</span>
@@ -185,17 +240,23 @@ function pick(row: DeploymentRow): void {
           <span :data-rank="4">{{ startedAt(row.first_started) || t('no date') }}</span>
           <span :data-rank="3">{{ startedAt(row.last_started) || t('no date') }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.net_pnl)">
-            {{ amount(row.net_pnl, row.currency) }}
+            {{ bookedAmount(row.net_pnl, row.currency) }}
           </span>
           <!-- the percentage one hover away rather than a tenth column: the magnitude is what
                compares two deployments, the ratio is what a single one is read against -->
           <span :data-rank="2" class="figure-cell" :title="orDash(row.max_drawdown_pct, percentFigure)">
-            {{ orDash(row.max_drawdown, value => magnitude(value, row.currency)) }}
+            {{ drawdownFigure(row.max_drawdown, null, row.currency) }}
           </span>
           <span :data-rank="4" class="figure-cell">{{ idleGap(row) }}</span>
           <!-- one cell whether or not a mark is in it, so the gap column never moves -->
           <span :data-rank="3" class="deployment-marks">
-            <span v-if="row.changed" class="deployment-mark">{{ t('changed') }}</span>
+            <!-- `changed` says only that one of the two moved; the reason is read from these -->
+            <span v-if="recordingSession(row)" class="deployment-recording" @click.stop="openRecording(row)">{{ recordingOf('current').word }}</span>
+            <!-- the sessions without booked figures — not booked yet, or failed before they measured
+                 anything — after the row, as the backend's console prints them -->
+            <span v-if="withoutFigures(row)" class="deployment-unbooked">{{ withoutFigures(row) }}</span>
+            <span v-if="row.configuration_changed" class="deployment-mark">{{ t('config') }}</span>
+            <span v-if="row.code_summary" class="deployment-mark">{{ t('code') }}</span>
           </span>
         </template>
       </RecordList>
@@ -263,9 +324,20 @@ function pick(row: DeploymentRow): void {
   text-align: right;
 }
 
+.deployment-recording {
+  color: var(--color-positive);
+  cursor: pointer;
+}
+
+/* a plain fact, no change mark: secondary ink, and never the dashed rule of `config` and `code` */
+.deployment-unbooked {
+  color: var(--color-text-secondary);
+}
+
 .deployment-marks {
   display: flex;
   justify-content: flex-end;
+  gap: var(--space-xs);
 }
 
 /* the mark fits INSIDE the text line rather than standing on it, or a row carrying one is taller

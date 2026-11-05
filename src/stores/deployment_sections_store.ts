@@ -1,6 +1,7 @@
 import { defineStore, storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useDeploymentsStore } from '@/stores/deployments_store'
+import { useRunsStore } from '@/stores/runs_store'
 import type { DeploymentPeriodsModel, DeploymentSessionsModel } from '@/types/deployment_bundle_types'
 
 /**
@@ -11,11 +12,13 @@ import type { DeploymentPeriodsModel, DeploymentSessionsModel } from '@/types/de
 export const useDeploymentSectionsStore = defineStore('deployment_sections', () => {
   const deployments = useDeploymentsStore()
   const { detail, periods, selectedRows, loadingDetail } = storeToRefs(deployments)
+  const runs = useRunsStore()
 
   const sources = computed<Record<string, DeploymentSessionsModel | DeploymentPeriodsModel | null>>(() => ({
-    sessions: detail.value ? { detail: detail.value, rows: selectedRows.value } : null,
-    // a deployment whose sessions sealed no day yet has no period to draw
-    periods: periods.value?.periods.length
+    sessions: detail.value ? { detail: detail.value, rows: selectedRows.value, recordings: runs.recordingByRun } : null,
+    // no period and no session counted without one is nothing to say; a session before its first seal
+    // is said, so that an incomplete history is not read as a quiet one (their `booking-periods` document)
+    periods: periods.value?.periods.length || periods.value?.sessions_without_periods
       ? { periods: periods.value, sessions: detail.value?.sessions ?? [] }
       : null,
   }))

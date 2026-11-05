@@ -157,12 +157,16 @@ const details = computed<Figure[]>(() => {
         </span>
         <span class="machine-separator" aria-hidden="true">·</span>
       </template>
+      <!-- below 700 px the word gives way to its glyph and stays for a screen reader, so the menu
+           bar keeps to one line in the window; the card says both in full -->
       <span class="machine-figure">
-        {{ t('CPU') }} <span class="machine-value">{{ slot(reading?.cpu.used_pct) }}</span>%
+        <AppIcon name="status-cpu" class="machine-glyph" />
+        <span class="machine-word">{{ t('CPU') }}</span> <span class="machine-value">{{ slot(reading?.cpu.used_pct) }}</span>%
       </span>
       <span class="machine-separator" aria-hidden="true">·</span>
       <span class="machine-figure">
-        {{ t('Memory') }} <span class="machine-value">{{ slot(reading?.memory.used_pct) }}</span>%
+        <AppIcon name="status-memory" class="machine-glyph" />
+        <span class="machine-word">{{ t('Memory') }}</span> <span class="machine-value">{{ slot(reading?.memory.used_pct) }}</span>%
       </span>
       <template v-if="age">
         <span class="machine-separator" aria-hidden="true">·</span>
@@ -203,6 +207,32 @@ const details = computed<Figure[]>(() => {
 
 .machine-separator {
   color: var(--color-text-secondary);
+}
+
+.machine-figure {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.machine-glyph {
+  display: none;
+}
+
+/* the menu bar in one line at 600 px: the glyph stands for the word, which a screen reader still reads */
+@media (max-width: 700px) {
+  .machine-glyph {
+    display: inline-flex;
+  }
+
+  .machine-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .machine-mark {

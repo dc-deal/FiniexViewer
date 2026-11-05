@@ -153,7 +153,7 @@ offer a disclosure that can only ever answer 404.
 
 **`broker_truth` is deliberately not here.** A narrowed answer carries none, and their document says
 why: those lines are the venue's whole account at a moment, *"never a step of one order."* They are
-the subject of a venue-account panel, which is its own undertaking.
+the [Venue Account](venue_account.md) section's, asked for from the whole stream of a live session.
 
 **Its own component rather than a second list in the panel, and the reason is an instrument.**
 `scripts/check_terms.py` pairs ONE `ListColumn` array per file against that file's row template,

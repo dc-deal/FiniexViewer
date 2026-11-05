@@ -12,7 +12,8 @@ import { useViewRows } from '@/composables/use_panel_view'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import type { PositionRef } from '@/types/context_types'
 import { useOrderSteps } from '@/composables/use_order_steps'
-import { utcInstant } from '@/components/runs/report_format'
+import { useTickSizes } from '@/composables/use_tick_sizes'
+import { orDash, priceAt, quantity, utcInstant } from '@/components/runs/report_format'
 import { executedOpenings } from '@/components/runs/run_chart_marks'
 import type { ListColumn } from '@/types/list_types'
 import type {
@@ -325,9 +326,15 @@ function rowClass(order: OrderHistoryRow): string | undefined {
   return classes.length ? classes.join(' ') : undefined
 }
 
-/** A value the record never held reads as absent — never as a zero nobody reported. */
-function figure(value: number | null, digits = 2): string {
-  return value === null ? '—' : value.toFixed(digits)
+const tickSizes = useTickSizes()
+
+/**
+ * A price of the row's instrument, at its tick size. A value the record never held reads as absent —
+ * never as a zero nobody reported, and neither does a size: 0.00006 BTC on a real-money run read `0.00`
+ * at two fixed decimals.
+ */
+function priceOf(value: number | null, order: OrderHistoryRow): string {
+  return orDash(value, price => priceAt(price, tickSizes(order.scenario_name, order.symbol)))
 }
 
 function word(value: string | null): string {
@@ -626,8 +633,8 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
         <span :data-rank="1" :class="statusTone(order)"
           >{{ order.status }}<template v-if="order.initiator"> · {{ order.initiator }}</template></span>
         <span :data-rank="4">{{ word(order.direction) }}</span>
-        <span :data-rank="2" class="figure-cell">{{ figure(order.executed_lots ?? order.requested_lots) }}</span>
-        <span :data-rank="2" class="figure-cell">{{ figure(order.executed_price, 5) }}</span>
+        <span :data-rank="2" class="figure-cell">{{ orDash(order.executed_lots ?? order.requested_lots, quantity) }}</span>
+        <span :data-rank="2" class="figure-cell">{{ priceOf(order.executed_price, order) }}</span>
         <span :data-rank="1">{{ at(order.event_time) }}</span>
       </template>
 

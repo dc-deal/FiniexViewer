@@ -24,6 +24,9 @@ export interface SweepRow {
   /** The KPI it ranks by — their vocabulary (`expectancy`, `net_pnl`, …). Empty where it recorded none. */
   objective: string
   maximize: boolean
+  // The order features the search was allowed beyond its venue's API, comma-joined: the scenario set's,
+  // so one value per sweep (contract 46). Empty for every other sweep
+  features_beyond_venue: string
 }
 
 export interface SweepList {
@@ -65,30 +68,41 @@ export interface SweepCombination {
   orders_to: string
   bot_id: string
   deployment_id: string
+  // The order features this row was allowed beyond its venue, comma-joined (contract 45): such a row
+  // does not predict a session on that venue. Empty for every other row
+  features_beyond_venue: string
+  // which code a session started on: null on every combination, because only a session records one
+  // (contract 47); the deployment's rows are where it is read
+  code_stand: null
 
   /**
    * The mean R, which a sweep usually ranks on. R is `net_pnl` over the loss the stop would have
    * taken, and measured 2026-10-19 that stop is the one OF THE ROW: a stop trailed to break-even
    * gave one partial close 308.9 R, and this mean read +11.07 on a set that lost 93.99. Asked of
-   * FiniexTestingIDE; rendered as served meanwhile, with the count it rests on beside it.
+   * FiniexTestingIDE; rendered as served meanwhile, with the count it rests on beside it. Null where
+   * no trade has an R, as a strategy that keeps its stop itself gives none (contract 46), and a fold
+   * of stored rows at 0.0 reads null too.
    */
-  expectancy: number
+  expectancy: number | null
   avg_win_r: number | null
   avg_loss_r: number | null
-  r_trade_count: number
+  // nullable in the schema since contract 50, with the six marked below: a run that failed before it
+  // measured anything serves no figure. A RANKED combination never carries null there — such a run is
+  // left out of the ranking — so a null is drawn as a dash and never ranked
+  r_trade_count: number | null
   r_win_count: number
   r_loss_count: number
-  net_pnl: number
+  net_pnl: number | null
   // null where the combination had no losing trade: the ratio is undefined, not zero
   profit_factor: number | null
-  win_rate: number
-  total_trades: number
-  winning_trades: number
-  losing_trades: number
+  win_rate: number | null
+  total_trades: number | null
+  winning_trades: number | null
+  losing_trades: number | null
   // null on rows written before the column existed
   gross_profit: number | null
   gross_loss: number | null
-  total_fees: number
+  total_fees: number | null
   // null where no drawdown was measured (contract 40)
   account_max_drawdown: number | null
   account_max_drawdown_pct: number | null
@@ -177,7 +191,7 @@ export interface SweepCombination {
 
 /**
  * GET /api/v1/sweeps/{sweep_id}. `objective` and `maximize` are what the ranking USED: the sweep's
- * own where it declared them, and where it declared neither, what was used instead (`expectancy`,
+ * own where it declared them, and where it declared neither, what was used instead (`net_pnl`,
  * maximized). `count` counts rows — one per combination and currency — not combinations.
  */
 export interface SweepDetail {

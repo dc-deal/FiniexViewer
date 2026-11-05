@@ -35,3 +35,19 @@ test('a sweep opened in the Sweeps panel shows its combinations as ranked, and o
   // the run bundle comes to the front, its tab naming the run
   await expect(page.locator('.dv-tab', { hasText: second })).toBeVisible()
 })
+
+test('the card on a sweep heading says what it searched, under the pointer and for a keyboard', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).click()
+  await page.locator('.menu-item[data-kind="sweeps"]').click()
+  await page.keyboard.press('Escape')
+
+  const heading = page.locator(`[data-panel-kind="sweeps"] .sweep-list .record-group:has([data-sweep="${detail.sweep_id}"])`)
+  const card = page.locator('.hover-card')
+  await heading.hover()
+  await expect(card).toContainText('Ranked by')
+  await page.mouse.move(0, 0)
+  await expect(card).toHaveCount(0)
+  await heading.focus()
+  await expect(card).toContainText('Ranked by')
+})

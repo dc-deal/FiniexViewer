@@ -78,3 +78,19 @@ export function removeTabAndShared(key: string): void {
     // blocked storage: nothing was kept, so nothing has to go
   }
 }
+
+/**
+ * Reacts when ANOTHER window writes `key` — the browser tells every window but the writer. What is
+ * the reader's rather than a tab's (the settings, the hints banned, the named layouts) was read once
+ * and written whole, so the last window to write took back what the other had just changed.
+ */
+export function onSharedWrite(key: string, react: () => void): void {
+  try {
+    window.addEventListener('storage', event => {
+      // a null key is the whole storage cleared
+      if (event.key === key || event.key === null) react()
+    })
+  } catch {
+    // no window to listen on: nothing else writes either
+  }
+}

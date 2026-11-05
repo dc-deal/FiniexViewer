@@ -54,6 +54,8 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
   let groupCount = 0
   let changed: (() => void) | null = null
   const restored: unknown[] = []
+  // what each layout was laid out with: a named one keeps the panels both hold
+  const restoredWith: unknown[] = []
   const added: FakeAdd[] = []
   // dockview's own announcements: before the layout changes, and of a panel arriving or leaving
   const willMutate: (() => void)[] = []
@@ -182,9 +184,12 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
       active = null
       gone.forEach(panel => left.forEach(listener => listener(panel)))
     },
-    fromJSON: (layout: { grid?: { root?: { data?: { activeView?: string } } }, panels: Record<string, { title?: string }> }) => {
+    fromJSON: (layout: { grid?: { root?: { data?: { activeView?: string } } }, panels: Record<string, { title?: string }> }, laidOutWith?: unknown) => {
       if (options.refuse) throw new Error('refused')
+      // dockview lays a layout out in place of the one there: what it holds goes first
+      if (panels().length) api.clear()
       restored.push(layout)
+      restoredWith.push(laidOutWith)
       Object.entries(layout.panels).forEach(([id, stored]) => addPanel({ id, title: stored?.title }))
       const front = layout.grid?.root?.data?.activeView
       if (front && find(front)) active = front
@@ -242,6 +247,7 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     },
     active: () => active,
     restored,
+    restoredWith,
     added,
     close,
     change: () => changed?.(),
@@ -521,6 +527,48 @@ describe('useDockStore', () => {
     store.reveal('run-chart', 'command')
     expect(dock.rows()).toEqual([['deployments', 'runs', 'run', 'deployment'], ['run-chart']])
     expect(dock.active()).toBe('run-chart')
+  })
+
+  /**
+   * A named layout laid out in a dock already in use (viewer#37): the panels both hold are kept
+   * rather than rebuilt, the layout's places are set before, and a panel the layout leaves out is not
+   * hidden on the way — the layout says where things stand, not what the reader closed.
+   */
+  describe('a named layout laid out', () => {
+    function named(views: string[]) {
+      return {
+        grid: { root: { type: 'leaf', data: { id: 'g', views, activeView: views[0] } } },
+        panels: Object.fromEntries(views.map(id => [id, { id, params: { kind: id } }])),
+      }
+    }
+
+    it('keeps the panels both layouts hold, prepares first, and hides nothing on the way', () => {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      store.openSection('executive')
+      const order: string[] = []
+      const before = dock.restored.length
+
+      expect(store.restore(named(['runs', 'report-broker']), () => order.push('prepare'))).toBe(true)
+      expect(order).toEqual(['prepare'])
+      expect(dock.restored.length).toBe(before + 1)
+      expect(dock.restoredWith.at(-1)).toEqual({ reuseExistingPanels: true })
+      expect(dock.ids()).toContain('report-broker')
+      // the section the layout left out is no hidden section: it stands in the column again
+      expect(useLayoutStore().visibleOf().map(panel => panel.id)).toContain('executive')
+    })
+
+    it('changes nothing where the layout cannot be laid out', () => {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      const ids = dock.ids()
+      let prepared = false
+      expect(store.restore({ nonsense: true }, () => { prepared = true })).toBe(false)
+      expect(prepared).toBe(false)
+      expect(dock.ids()).toEqual(ids)
+    })
   })
 
   describe('the Layers panel and the chart last in front', () => {

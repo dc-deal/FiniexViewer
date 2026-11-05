@@ -6,7 +6,7 @@ import {
   getRunHeader,
   getPendingOrders,
   getPortfolio,
-  getRunConfig, getScenarioDetails, getTradeHistory, getWarningsErrors,
+  getRunConfig, getScenarioDetails, getTradeHistory, getVenueAccount, getVenueReads, getWarningsErrors,
 } from '@/api/api_client'
 import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { isAbsent } from '@/types/api/absence_types'
@@ -22,6 +22,8 @@ import type {
   TradeHistoryReport,
   PortfolioReport,
   RunHeader,
+  VenueAccountReport,
+  VenueReads,
   WarningsErrorsReport,
 } from '@/types/api/report_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
@@ -47,6 +49,10 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const scenarios = ref<ScenarioDetailsReport | null>(null)
   /** How a running session stands — read again once a cadence while it is on show, see `refreshStateFrames`. */
   const stateFrames = ref<StateFramesLatest | null>(null)
+  /** What the venue said each time a live session asked it — read again with the check-in while it runs. */
+  const venueReads = ref<VenueReads | null>(null)
+  /** What the venue held at a live session's start and end; written when the session ends. */
+  const venueAccount = ref<VenueAccountReport | null>(null)
   /**
    * The STEPS of one order, keyed `scenario~position`, and per position rather than per run.
    *
@@ -70,6 +76,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   const loadingTradeHistory = ref(false)
   const loadingScenarios = ref(false)
   const loadingStateFrames = ref(false)
+  const loadingVenueReads = ref(false)
+  const loadingVenueAccount = ref(false)
   /**
    * Why a section is not here, keyed by the slot it would have filled.
    *
@@ -124,6 +132,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     tradeHistory.value = null
     scenarios.value = null
     stateFrames.value = null
+    venueReads.value = null
+    venueAccount.value = null
     orderEvents.value = new Map()
     loadingOrderEvents.value = new Set()
     // the flags as well: a section the next run does not ask for would otherwise wait for an
@@ -140,6 +150,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingTradeHistory.value = false
     loadingScenarios.value = false
     loadingStateFrames.value = false
+    loadingVenueReads.value = false
+    loadingVenueAccount.value = false
     absences.value = {}
     errors.value = {}
     unreadable.value = {}
@@ -200,8 +212,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
   }
 
   /**
-   * The brokers the run traded through. Absent on an AutoTrader session, which writes no such
-   * section — so the absence is structure and the view says it once above the column.
+   * The brokers the run traded through, and the tick size every price is printed at. A session writes
+   * one row (measured 2026-10-31); a run still running has written none yet.
    */
   function loadBroker(runId: string): Promise<void> {
     return loadSection('broker', broker, loadingBroker,
@@ -336,6 +348,41 @@ export const useRunReportsStore = defineStore('run_reports', () => {
       () => getLatestStateFrames(runId), t('Could not load the latest state frame'))
   }
 
+  /** The venue's reads of a live session — gated on the stream and the pipeline by the caller. */
+  function loadVenueReads(runId: string): Promise<void> {
+    return loadSection('venueReads', venueReads, loadingVenueReads,
+      () => getVenueReads(runId), t('Could not load what the venue reported'))
+  }
+
+  function loadVenueAccount(runId: string): Promise<void> {
+    return loadSection('venueAccount', venueAccount, loadingVenueAccount,
+      () => getVenueAccount(runId), t('Could not load the venue account'))
+  }
+
+  /**
+   * The venue's reads AGAIN, with the check-in while the session runs. Like `refreshStateFrames` it
+   * keeps what it holds until the answer arrives, so the section never blanks between two asks.
+   */
+  async function refreshVenueReads(runId: string): Promise<void> {
+    const ticket = generation
+    try {
+      const answer = await getVenueReads(runId)
+      if (ticket !== generation) return
+      delete errors.value.venueReads
+      if (isAbsent(answer)) {
+        venueReads.value = null
+        absences.value.venueReads = answer
+      } else {
+        delete absences.value.venueReads
+        venueReads.value = answer
+      }
+    } catch (e) {
+      if (ticket !== generation) return
+      const detail = e instanceof Error ? e.message : String(e)
+      errors.value.venueReads = `${t('Could not load what the venue reported')}: ${detail}`
+    }
+  }
+
   /**
    * The latest state frame AGAIN, asked once a cadence while it is on show. Unlike a first load it
    * keeps the frame it holds until the next one arrives — a check-in that blanked itself every
@@ -372,6 +419,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     warningsErrors,
     scenarios,
     stateFrames,
+    venueReads,
+    venueAccount,
     absences,
     portfolio,
     broker,
@@ -395,6 +444,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadingTradeHistory,
     loadingScenarios,
     loadingStateFrames,
+    loadingVenueReads,
+    loadingVenueAccount,
     errors,
     unreadable,
     clear,
@@ -414,5 +465,8 @@ export const useRunReportsStore = defineStore('run_reports', () => {
     loadScenarios,
     loadStateFrames,
     refreshStateFrames,
+    loadVenueReads,
+    loadVenueAccount,
+    refreshVenueReads,
   }
 })

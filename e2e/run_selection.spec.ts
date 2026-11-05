@@ -86,7 +86,7 @@ for (const hint of ['shown', 'dismissed'] as const) {
     const before = { frame: await frame(), row: await rowTop() }
     await scenario.click()
     await expect(page.locator('.narrowed-head')).toBeVisible()
-    await expect(executive.locator('.scope-line')).toBeVisible()
+    await expect(executive.locator('.currency-title .scope')).toBeVisible()
 
     expect(await frame()).toEqual(before.frame)
     expect(await rowTop()).toBe(before.row)

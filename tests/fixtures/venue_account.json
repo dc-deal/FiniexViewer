@@ -1,0 +1,36 @@
+{
+  "run_id": "20261007_152959_0275a107",
+  "units": [
+    {
+      "name": "spot_venue_field_study",
+      "at_start": {
+        "seq": 1,
+        "venue_order_count": 0,
+        "venue_balances": {
+          "XETH": 1.0,
+          "ZUSD": 100.0
+        },
+        "venue_position_count": null,
+        "unread_parts": []
+      },
+      "at_end": {
+        "seq": 131,
+        "venue_order_count": 0,
+        "venue_balances": {
+          "XETH": 1.0,
+          "ZUSD": 100.0
+        },
+        "venue_position_count": null,
+        "unread_parts": []
+      },
+      "reconcile_lines": 0,
+      "divergent_lines": 0,
+      "last_reconcile_state": null,
+      "last_divergence": null,
+      "reconciliation": null
+    }
+  ],
+  "key": [
+    "name"
+  ]
+}

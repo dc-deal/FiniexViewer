@@ -17,8 +17,11 @@ const FOCUS = 'EURGBP_refusals_01'
 
 /**
  * The scenario in focus is said ONCE, in the menu bar (viewer#42), and in a narrow window it is the
- * one thing there that gives way: its name shortens, its mark and *Show all* stay whole, and nothing
+ * first thing there that gives way: its name shortens, its mark and *Show all* stay whole, and nothing
  * of the frame — the machine's load, the account, the application menu — is pushed out of the window.
+ * Since the Layouts menu (viewer#37) the app's name goes below 900 px — the browser's tab names it —
+ * and the account's name and the server's shorten after the narrowing, the server's never below a
+ * few letters, and nothing is drawn over its neighbour.
  */
 test('the narrowing in the menu bar shortens its name before anything beside it moves', async ({ page }) => {
   await page.setViewportSize({ width: 760, height: 800 })
@@ -36,9 +39,38 @@ test('the narrowing in the menu bar shortens its name before anything beside it 
   const menu = (await page.locator('.menu-bar .menu-trigger').boundingBox())!
   expect(menu.x + menu.width).toBeLessThanOrEqual(bar.x + bar.width + 0.5)
   // the Panels trigger keeps its one line: it shared the shortfall once and wrapped its ▾
-  const title = (await page.locator('.menu-bar-title').boundingBox())!
+  const line = button.height
   const panels = (await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).boundingBox())!
-  expect(panels.height).toBeLessThan(title.height * 1.5 + 12)
+  expect(panels.height).toBeLessThan(line * 1.5 + 12)
+  const layouts = (await page.locator('.menu-bar-trigger', { hasText: 'Layouts' }).boundingBox())!
+  expect(layouts.height).toBeLessThan(line * 1.5 + 12)
+  // the app's name goes first; the server's stays readable, shortened at most
+  await expect(page.locator('.menu-bar-title')).toBeHidden()
+  expect(await page.locator('.menu-bar .server-name').evaluate(node => node.getBoundingClientRect().width)).toBeGreaterThan(30)
+  // the server's name shortens inside its switch rather than over the machine's load beside it
+  const server = (await page.locator('.menu-bar .server-trigger').boundingBox())!
+  const machine = (await page.locator('.menu-bar .machine-status').boundingBox())!
+  expect(server.x + server.width).toBeLessThanOrEqual(machine.x + 0.5)
+})
+
+/**
+ * At 600 px — the width the shipped Mobile layouts were laid out at — the menu bar keeps to the
+ * window: until 2026-11-05 the account and the application menu stood past its right edge and the
+ * page scrolled sideways. Below 700 px the machine's figures wear a glyph for their words, which a
+ * screen reader still reads.
+ */
+test('the menu bar keeps to a window 600 px wide, the machine figures by their glyphs', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 800 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await page.locator('.menu-bar .menu-trigger').waitFor()
+
+  const bar = (await page.locator('.menu-bar').boundingBox())!
+  const menu = (await page.locator('.menu-bar .menu-trigger').boundingBox())!
+  expect(menu.x + menu.width).toBeLessThanOrEqual(bar.x + bar.width + 0.5)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(600)
+  await expect(page.locator('.machine-status .machine-glyph').first()).toBeVisible()
+  // the words stay in the page for a screen reader, out of sight
+  await expect(page.locator('.machine-status')).toContainText('CPU')
 })
 
 /**

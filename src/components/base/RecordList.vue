@@ -971,10 +971,11 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   line-height: 1.1;
 }
 
+/* with a length of its own: long words would squeeze it away, and with it the second channel */
 .record-lead::before,
 .record-lead::after {
   content: '';
-  flex: 1;
+  flex: 1 0 var(--space-md);
   border-top: 1px dashed var(--color-annotation);
 }
 

@@ -21,7 +21,7 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
 
   await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
   const layers = page.locator('[data-panel-kind="layers"]')
-  await expect(layers.locator('[data-layer]')).toHaveCount(5)
+  await expect(layers.locator('[data-layer="trades"]')).toBeVisible()
 
   // beside, not over: the chart it arranges stays on show, the panel to its right
   await expect(chart).toBeVisible()
@@ -41,6 +41,12 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
   const settled = (await chartPanel.boundingBox())!
   expect(Math.abs(settled.x - (await group.boundingBox())!.x)).toBeLessThanOrEqual(1)
   expect(await group.evaluate(element => element.scrollLeft)).toBe(0)
+
+  // in that short header the unit gives way with …, and the timeframe stays whole: both were cut
+  // mid-letter, `EURU` and `M1(` (operator, 2026-10-29)
+  const selects = page.locator('[data-quick-bar="run-chart"] select')
+  await expect(selects.first()).toHaveCSS('text-overflow', 'ellipsis')
+  await expect(selects.nth(1)).toHaveCSS('flex-shrink', '0')
 
   // the trades switched off: the chart draws none of them — and rescales nothing, so the price axis
   // reads the same (operator, on screen 2026-10-27: without the marks the candles stretched)
@@ -75,16 +81,16 @@ test('a layer is dragged in front of another by its grip, and never past the fix
   const layers = page.locator('[data-panel-kind="layers"]')
   const order = (): Promise<string> => layers.locator('[data-layer]')
     .evaluateAll(rows => rows.map(row => row.getAttribute('data-layer')).join(','))
-  await expect.poll(order).toBe('trades,entry-exit,levels,candles,volume')
+  await expect.poll(order).toBe('trades,entry-exit,levels,state-frame,candles,volume')
 
   await layers.locator('[data-layer="levels"] .layer-grip')
     .dragTo(layers.locator('[data-layer="trades"] .layer-row'), { targetPosition: { x: 20, y: 2 } })
-  await expect.poll(order).toBe('levels,trades,entry-exit,candles,volume')
+  await expect.poll(order).toBe('levels,trades,entry-exit,state-frame,candles,volume')
 
   await layers.locator('[data-layer="trades"] .layer-grip')
     .dragTo(layers.locator('[data-layer="volume"] .layer-row'), { targetPosition: { x: 20, y: 20 } })
   await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done()))))
-  expect(await order()).toBe('levels,trades,entry-exit,candles,volume')
+  expect(await order()).toBe('levels,trades,entry-exit,state-frame,candles,volume')
 })
 
 /**
