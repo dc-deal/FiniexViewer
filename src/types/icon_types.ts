@@ -12,6 +12,8 @@ export type IconName =
   | 'status-account'
   | 'status-server'
   | 'status-connecting'
+  | 'status-cpu'
+  | 'status-memory'
   | 'action-close'
   | 'action-open-panel'
   | 'action-back-into-column'

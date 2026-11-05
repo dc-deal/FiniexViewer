@@ -55,7 +55,13 @@ before that. `MachineStatus` draws it in the menu bar, before the account:
 CPU  15% · Memory  17%                         ok: the two shares, nothing else
 ⚠ warn · CPU  63% · Memory  84%                the backend's grade, where it is not ok
 CPU  15% · Memory  17% · ⚠ as of 14:37:22      the readings have stopped arriving
+⌗  15% · ▤  17%                                below 700 px: a glyph for each word
 ```
+
+**Below 700 px the two words give way to their glyphs** (`status-cpu`, `status-memory`, 2026-11-05),
+so the menu bar keeps to a window 600 px wide — the width the shipped Mobile layouts are laid out at,
+where the account and the application menu had stood past the edge. The words stay in the page,
+out of sight, for a screen reader; the card says both in full.
 
 - **The two shares stand there always; the grade speaks only where it is not `ok`**, as a mark and
   the backend's own word, and a grade this version does not know shows as itself. `pressure_level`

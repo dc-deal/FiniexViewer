@@ -54,6 +54,26 @@ test('the narrowing in the menu bar shortens its name before anything beside it 
 })
 
 /**
+ * At 600 px — the width the shipped Mobile layouts were laid out at — the menu bar keeps to the
+ * window: until 2026-11-05 the account and the application menu stood past its right edge and the
+ * page scrolled sideways. Below 700 px the machine's figures wear a glyph for their words, which a
+ * screen reader still reads.
+ */
+test('the menu bar keeps to a window 600 px wide, the machine figures by their glyphs', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 800 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await page.locator('.menu-bar .menu-trigger').waitFor()
+
+  const bar = (await page.locator('.menu-bar').boundingBox())!
+  const menu = (await page.locator('.menu-bar .menu-trigger').boundingBox())!
+  expect(menu.x + menu.width).toBeLessThanOrEqual(bar.x + bar.width + 0.5)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(600)
+  await expect(page.locator('.machine-status .machine-glyph').first()).toBeVisible()
+  // the words stay in the page for a screen reader, out of sight
+  await expect(page.locator('.machine-status')).toContainText('CPU')
+})
+
+/**
  * The run list's facet bar is ONE line wherever it fits: in a narrow panel it took three and four
  * lines before a single run showed. The facets that do not fit wait behind `+N`; at the narrowest the
  * right-hand group — clear, the count, the sort — takes a second line, and never more. Each width
