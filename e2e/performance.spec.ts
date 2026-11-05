@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import type { Page } from '@playwright/test'
-import { fixture, mockApi, revealFixtureRun, FIXTURE_DEPLOYMENT, FIXTURE_RUN, STATE_FRAME_RUNS } from './api_mock'
+import { fixture, mockApi, revealFixtureRun, FIXTURE_DEPLOYMENT, FIXTURE_RUN, LIVE_RUN, STATE_FRAME_RUNS } from './api_mock'
 import { openWith, showPanel, FIXTURES_SHOWN } from './arrangement_seed'
 
 /**
@@ -264,6 +264,36 @@ test('a sweep of 500 combinations is ranked on screen quickly', async ({ page })
       { polling: 'raf' },
     )
   })
+  expect(ms).toBeLessThan(3000)
+})
+
+/**
+ * A live session's venue account (viewer#54): from the run chosen until its section draws the
+ * venue's table — the section's answer and the venue's reads from the whole order-event stream.
+ * Chosen through the context store, as a pick in the run list does: the session sits folded in its
+ * family there, and unfolding it is not what is measured.
+ */
+test('a live session draws its venue account quickly', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { ...FIXTURES_SHOWN, run: FIXTURE_RUN })
+  await page.locator('[data-panel-kind="run"] [data-panel]').first().waitFor()
+  const ms = await page.evaluate(async run => {
+    const app = (document.querySelector('#app') as unknown as {
+      __vue_app__: { config: { globalProperties: { $pinia: { _s: Map<string, { selectRun?: (id: string) => void }> } } } }
+    }).__vue_app__
+    const started = performance.now()
+    app.config.globalProperties.$pinia._s.get('context')!.selectRun!(run)
+    await new Promise<void>(resolve => {
+      const look = (): void => {
+        const table = document.querySelector('[data-panel="venue-account"] .venue-table')
+        if (table?.textContent?.includes('XETH')) resolve()
+        else requestAnimationFrame(look)
+      }
+      look()
+    })
+    return performance.now() - started
+  }, LIVE_RUN)
+  timings.push({ label: 'live session to its venue account', ms: Math.round(ms) })
   expect(ms).toBeLessThan(3000)
 })
 

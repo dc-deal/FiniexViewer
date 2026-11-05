@@ -225,6 +225,8 @@ route serves them — from, to and a limit — the mean of twenty. The same step
 player, whose line moves with each one (viewer#51). And bars loaded as the view moves
 (viewer#9): from M1 chosen on a unit widened over both captured EURGBP stretches until both are
 drawn — the first batch, the pieces across the three-week gap, the earlier bars merged in front.
+A named layout laid out from the click to the second frame after it (viewer#37), and a live session
+chosen until its venue account draws the venue's table (viewer#54), read inside the page.
 
 **`readme_pictures.spec.ts` takes the README's pictures**, so they stay current (operator,
 2026-10-29): at every release, and whenever a view they show changes visibly. Against the LIVE API
