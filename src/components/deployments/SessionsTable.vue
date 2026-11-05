@@ -248,7 +248,12 @@ function gap(session: DeploymentSessionRow): string {
       </span>
       <span v-else :data-rank="3" class="figure-cell">{{ orDash(session.ran_hours, duration) }}</span>
       <span :data-rank="3" class="figure-cell">{{ gap(session) }}</span>
-      <span :data-rank="1" class="figure-cell" :class="signClass(session.net_pnl)">
+      <!-- a session that failed before it measured anything says so where its result would stand
+           (`booking_state`, contract 50): a dash there reads like one not booked yet, which still will -->
+      <span v-if="session.booking_state === 'failed'" :data-rank="1" class="figure-cell session-failed">
+        ✖ {{ t('failed') }}
+      </span>
+      <span v-else :data-rank="1" class="figure-cell" :class="signClass(session.net_pnl)">
         {{ bookedAmount(session.net_pnl, session.currency) }}
       </span>
       <span :data-rank="2" class="figure-cell">{{ drawdownFigure(session.max_drawdown, null, session.currency) }}</span>
@@ -262,6 +267,11 @@ function gap(session: DeploymentSessionRow): string {
    `e2e/list_ranks.spec.ts` — no unit test can see it. */
 .sessions-list :deep(.figure-cell) {
   text-align: right;
+}
+
+/* the error role, with its glyph and its word: the run is wrong, not its figure */
+.sessions-list :deep(.session-failed) {
+  color: var(--color-error);
 }
 
 /* only what the shared list does not own: it carries the tracks, the headings, the read-only rows

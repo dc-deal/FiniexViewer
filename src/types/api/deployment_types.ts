@@ -14,7 +14,7 @@ export interface DeploymentRow {
    * improves that; `deployment_id` is minted per deployment and a deliberate restart mints a
    * fresh one. Two deployments sharing a bot_id are one bot restarted with --new-deployment,
    * which is the only join that answers "is this the same bot as the row above". Empty on a
-   * profile that declares none, and on the row of sessions that have booked nothing yet.
+   * profile that declares none, and on the row of sessions without booked figures.
    */
   bot_id: string
   sessions: number
@@ -32,7 +32,7 @@ export interface DeploymentRow {
    * their MAXIMUM and never a sum, because each session carries the running decline against the
    * peak the deployment has reached so far. Adding the column counts one decline once per session
    * that was still inside it. Both arrive already reduced — nothing here is re-aggregated. Null on
-   * the row that has booked nothing yet (contract 49).
+   * the row of the sessions without booked figures (contract 49), a failed one among them (contract 50).
    */
   net_pnl: number | null
   // null where no drawdown was measured (contract 40)
@@ -122,12 +122,18 @@ export interface DeploymentSessionRow {
    */
   ended: string | null
   ran_hours: number | null
-  // null, with `currency`, on a session that has booked no trading day yet (contract 49)
+  // null, with `currency`, on a session without booked figures, and `booking_state` says why (contract 50)
   net_pnl: number | null
   // null where no drawdown was measured (contract 40)
   max_drawdown: number | null
   max_drawdown_pct: number | null
   currency: string | null
+  /**
+   * Whether its figures exist (contract 50), their vocabulary: `booked`; `failed`, it failed before it
+   * measured anything, so a zero would read like a session that traded and broke even; `not_booked_yet`,
+   * its first seal has not come. The two without figures follow the booked sessions as one series.
+   */
+  booking_state: string
   bot: string
   bot_id: string
   /**

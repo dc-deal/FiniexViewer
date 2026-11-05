@@ -398,21 +398,29 @@ describe('AdvisoryNotice', () => {
 })
 
 /** No deployment route states what is running, so the verdict arrives beside the sessions. */
-describe('a session that has booked nothing yet', () => {
+describe('a session without booked figures', () => {
   /** Contract 49: no currency and no figure, which is no zero. The list row states it the same way. */
   const notBooked = { currency: null, net_pnl: null, max_drawdown: null, max_drawdown_pct: null, bot_id: '' }
 
   it('heads its block in their word, with no figure and no `null`', () => {
     const header = mount(DeploymentHeader, { props: { row: { ...BASE_ROW, ...notBooked } as DeploymentRow } })
-    expect(header.text()).toContain('booked nothing yet')
+    expect(header.text()).toContain('without booked figures')
     expect(header.text()).not.toContain('null')
     expect(header.text()).not.toContain('0.00')
   })
 
   it('shows dashes on its session row, never a zero', () => {
-    const row = mountSessions([session({ ...notBooked, ended: null, ran_hours: null })])
+    const row = mountSessions([session({ ...notBooked, ended: null, ran_hours: null, booking_state: 'not_booked_yet' })])
     expect(row.text()).toContain('—')
     expect(row.text()).not.toContain('null')
+    expect(row.text()).not.toContain('0.00')
+    expect(row.text()).not.toContain('failed')
+  })
+
+  /** Contract 50: one that failed before it measured anything says so where its result would stand. */
+  it('marks a session that failed before it measured anything, where its result would stand', () => {
+    const row = mountSessions([session({ ...notBooked, booking_state: 'failed' })])
+    expect(row.find('.session-failed').text()).toBe('✖ failed')
     expect(row.text()).not.toContain('0.00')
   })
 })

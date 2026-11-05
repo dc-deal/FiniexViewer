@@ -86,20 +86,23 @@ export interface SweepCombination {
   expectancy: number | null
   avg_win_r: number | null
   avg_loss_r: number | null
-  r_trade_count: number
+  // nullable in the schema since contract 50, with the six marked below: a run that failed before it
+  // measured anything serves no figure. A RANKED combination never carries null there — such a run is
+  // left out of the ranking — so a null is drawn as a dash and never ranked
+  r_trade_count: number | null
   r_win_count: number
   r_loss_count: number
-  net_pnl: number
+  net_pnl: number | null
   // null where the combination had no losing trade: the ratio is undefined, not zero
   profit_factor: number | null
-  win_rate: number
-  total_trades: number
-  winning_trades: number
-  losing_trades: number
+  win_rate: number | null
+  total_trades: number | null
+  winning_trades: number | null
+  losing_trades: number | null
   // null on rows written before the column existed
   gross_profit: number | null
   gross_loss: number | null
-  total_fees: number
+  total_fees: number | null
   // null where no drawdown was measured (contract 40)
   account_max_drawdown: number | null
   account_max_drawdown_pct: number | null

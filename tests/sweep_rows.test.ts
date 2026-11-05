@@ -226,6 +226,21 @@ describe('sweep_rows', () => {
     expect(combinationCard(row!).details.find(pair => pair.label === 'Expectancy')?.value).toBe('n/a')
   })
 
+  /**
+   * Contract 50 makes a combination's figures nullable: a run that failed before it measured anything.
+   * A ranked one never carries null, but where one does it is a dash, never a zero or `null`.
+   */
+  it('draws a figure a combination does not state as a dash in its card', () => {
+    const [row] = combinations({
+      combinations: [combination({
+        net_pnl: null, win_rate: null, total_trades: null, winning_trades: null, losing_trades: null,
+        total_fees: null, r_trade_count: null,
+      })],
+    })
+    const card = Object.fromEntries(combinationCard(row!).details.map(pair => [pair.label, pair.value]))
+    for (const label of ['Net P&L', 'Trades', 'Win rate', 'Fees', 'R trades', 'Expectancy']) expect(card[label]).toBe('—')
+  })
+
   /** Two rows of one run are one combination, wherever a notice counts combinations. */
   it('counts a run in two account currencies once', () => {
     const pruned = '2026-10-19T08:00:00+00:00'

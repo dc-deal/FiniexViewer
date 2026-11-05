@@ -36,7 +36,10 @@ and direction the sweep declared — or, where it declared neither, by the one i
 - two currencies are two rankings under one heading, each numbered from 1.
 
 **Error combinations never rank**, so the route leaves them out while the sweep's own `error_count`
-still counts them — said on the sweep's heading where it is not zero.
+still counts them — said on the sweep's heading where it is not zero. Since contract 50 a
+combination's `net_pnl`, `win_rate`, `total_fees` and trade counts are nullable in the schema, for a
+run that failed before it measured anything; a ranked one never carries null there, and where one
+did it would read a dash, never a zero.
 
 ## What makes a ranking comparable
 

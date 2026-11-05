@@ -21,8 +21,10 @@ defineProps<{
 
 <template>
   <p class="deployment-header">
-    <!-- their word for it (contract 49): no currency yet and no figure, so no two dashes to puzzle over -->
-    <span v-if="row.currency === null" class="figure">{{ t('booked nothing yet') }}</span>
+    <!-- their word for it (contract 50): no currency and no figure, so no two dashes to puzzle over. It
+         holds the sessions whose first seal has not come AND the ones that failed before they measured
+         anything, which never will — so not *booked nothing yet* -->
+    <span v-if="row.currency === null" class="figure">{{ t('without booked figures') }}</span>
     <template v-else>
       <!-- the amount carries its currency, which is what tells two currency lines apart -->
       <span class="figure" :class="signClass(row.net_pnl)">

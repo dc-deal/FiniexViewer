@@ -126,7 +126,7 @@ const sorts: SortDefinition<DeploymentRow>[] = [
 /** One row per deployment and currency: the sessions that booked nothing stand beside a booked row. */
 const listed = computed(() => listedRows(deployments.value))
 
-/** The row of this deployment's sessions that have booked nothing yet, beside its booked row. */
+/** The row of this deployment's sessions without booked figures, beside its booked row. */
 function unbooked(row: DeploymentRow): DeploymentRow | null {
   return unbookedOf(row, deployments.value)
 }
@@ -157,11 +157,11 @@ function recordingSession(row: DeploymentRow): string | null {
 function cardOf(row: DeploymentRow) {
   const card = deploymentCard(row)
   const details = [...card.details]
-  // the sessions that booked nothing yet, in their own row's words: its count and the span of its starts
+  // the sessions without booked figures, in their own row's words: its count and the span of its starts
   const nothing = row.currency === null ? row : unbooked(row)
   if (nothing) {
     details.push({
-      label: t('Booked nothing yet'),
+      label: t('Without booked figures'),
       value: `${plural(nothing.sessions, t('session'), t('sessions'))} · ${utcSpan(nothing.first_started, nothing.last_started)}`,
     })
   }
@@ -249,9 +249,10 @@ function pick(row: DeploymentRow): void {
           <span :data-rank="3" class="deployment-marks">
             <!-- `changed` says only that one of the two moved; the reason is read from these -->
             <span v-if="recordingSession(row)" class="deployment-recording" @click.stop="openRecording(row)">{{ recordingOf('current').word }}</span>
-            <!-- the sessions that booked nothing yet: beside the booked figures, or the reason none stands -->
-            <span v-if="row.currency === null" class="deployment-unbooked">{{ t('booked nothing yet') }}</span>
-            <span v-else-if="unbooked(row)" class="deployment-unbooked">+{{ unbooked(row)!.sessions }} {{ t('booked nothing yet') }}</span>
+            <!-- the sessions without booked figures — not booked yet, or failed before they measured
+                 anything: beside the booked ones, or the reason none stands -->
+            <span v-if="row.currency === null" class="deployment-unbooked">{{ t('without booked figures') }}</span>
+            <span v-else-if="unbooked(row)" class="deployment-unbooked">+{{ unbooked(row)!.sessions }} {{ t('without booked figures') }}</span>
             <span v-if="row.configuration_changed" class="deployment-mark">{{ t('config') }}</span>
             <span v-if="row.code_summary" class="deployment-mark">{{ t('code') }}</span>
           </span>

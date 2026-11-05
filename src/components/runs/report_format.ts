@@ -164,13 +164,17 @@ export function percentFigure(value: number): string {
  * subset it was measured over wherever one exists: not every section sends null for an absent
  * value — an untraded portfolio unit arrives with 0.0, and 0.00 would claim a measurement.
  */
-export function numberOrNa(value: number | null, count?: number): string {
+export function numberOrNa(value: number | null, count?: number | null): string {
+  // a subset that was never measured — a run that failed before it measured anything (contract 50) —
+  // is the dash, not n/a: there is no subset to be empty
+  if (count === null) return '—'
   if (value === null || count === 0) return t('n/a')
   return value.toFixed(2)
 }
 
 /** Percentage of a 0..1 ratio, gated on the subset it was measured over — see numberOrNa. */
-export function percentOrNa(ratio: number, count: number): string {
+export function percentOrNa(ratio: number | null, count: number | null): string {
+  if (ratio === null || count === null) return '—'
   return count === 0 ? t('n/a') : percent(ratio)
 }
 
@@ -179,7 +183,8 @@ export function percentOrNa(ratio: number, count: number): string {
  * subset. A run can have R-defined trades with no winner among them, so r_trade_count alone
  * would still print a mean nobody measured.
  */
-export function rValue(value: number | null, count: number): string {
+export function rValue(value: number | null, count: number | null): string {
+  if (count === null) return '—'
   if (count === 0 || value === null) return t('n/a')
   const sign = value >= 0 ? '+' : ''
   return `${sign}${value.toFixed(2)}R`

@@ -2,14 +2,14 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-11-02T23:09:18.052652Z",
+  "served_at": "2026-11-05T08:41:46.518913Z",
   "units": [
     {
       "unit_name": "spot_venue_day_boundary",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
       "written_at": "2026-10-22T12:37:25.711505Z",
-      "age_s": 988312.341147,
+      "age_s": 1195460.807408,
       "recording": "stopped",
       "truncated_tail": false,
       "first_frame": {

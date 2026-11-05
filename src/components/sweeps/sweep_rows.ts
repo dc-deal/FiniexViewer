@@ -1,6 +1,6 @@
 import { rowKey } from '@/api/list_key'
 import {
-  amount, drawdownFigure, duration, figure, magnitude, numberOrNa, orDash, percentOrNa, rValue, shortHash, signClass, utcInstant,
+  bookedAmount, drawdownFigure, duration, figure, magnitude, numberOrNa, orDash, percentOrNa, rValue, shortHash, signClass, utcInstant,
 } from '@/components/runs/report_format'
 import type { SweepCombination, SweepDetail, SweepRow } from '@/types/api/sweep_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
@@ -98,7 +98,7 @@ export function sweepListRows(sweeps: SweepRow[], state: SweepRankings): SweepLi
 function figureOf(combination: SweepCombination, objective: string): string {
   switch (objective) {
     case 'expectancy': return rValue(combination.expectancy, combination.r_trade_count)
-    case 'net_pnl': return amount(combination.net_pnl, combination.currency)
+    case 'net_pnl': return bookedAmount(combination.net_pnl, combination.currency)
     case 'win_rate': return percentOrNa(combination.win_rate, combination.total_trades)
     case 'profit_factor': return numberOrNa(combination.profit_factor, combination.total_trades)
     case 'account_max_drawdown': return orDash(combination.account_max_drawdown, value => magnitude(value, combination.currency))
@@ -295,16 +295,16 @@ export function combinationCard(row: CombinationRow): FigureCard {
   const combination = row.combination
   const details: Figure[] = [
     ...Object.entries(combination.sweep_params).map(([key, value]) => ({ label: key, value: String(value) })),
-    { label: t('Net P&L'), value: amount(combination.net_pnl, combination.currency), tone: signClass(combination.net_pnl) },
+    { label: t('Net P&L'), value: bookedAmount(combination.net_pnl, combination.currency), tone: signClass(combination.net_pnl) },
     {
       label: t('Expectancy'),
       value: rValue(combination.expectancy, combination.r_trade_count),
       title: t('The mean R. Read it beside the trades it rests on: R is the result over the loss the stop of the trade would have taken'),
     },
-    { label: t('R trades'), value: `${combination.r_trade_count} (${combination.r_win_count}W/${combination.r_loss_count}L)` },
+    { label: t('R trades'), value: orDash(combination.r_trade_count, count => `${count} (${combination.r_win_count}W/${combination.r_loss_count}L)`) },
     { label: t('Avg win R'), value: rValue(combination.avg_win_r, combination.r_win_count) },
     { label: t('Avg loss R'), value: rValue(combination.avg_loss_r, combination.r_loss_count) },
-    { label: t('Trades'), value: `${combination.total_trades} (${combination.winning_trades}W/${combination.losing_trades}L)` },
+    { label: t('Trades'), value: orDash(combination.total_trades, count => `${count} (${orDash(combination.winning_trades, String)}W/${orDash(combination.losing_trades, String)}L)`) },
     { label: t('Win rate'), value: percentOrNa(combination.win_rate, combination.total_trades) },
     { label: t('Profit factor'), value: numberOrNa(combination.profit_factor, combination.total_trades) },
     {
@@ -312,7 +312,7 @@ export function combinationCard(row: CombinationRow): FigureCard {
       label: t('Deepest drawdown'),
       value: drawdownFigure(combination.account_max_drawdown, combination.account_max_drawdown_pct, combination.currency),
     },
-    { label: t('Fees'), value: amount(combination.total_fees, combination.currency) },
+    { label: t('Fees'), value: bookedAmount(combination.total_fees, combination.currency) },
     // they fold since contract 42, each period counting the orders it handled; null on an older row
     { label: t('Orders'), value: ordersText(combination) },
     {

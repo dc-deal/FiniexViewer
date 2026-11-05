@@ -6,7 +6,7 @@ import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
-import { amount, magnitude, numberOrNa, orDash, percentOrNa, signClass, sortInstant, startedAt } from '@/components/runs/report_format'
+import { bookedAmount, magnitude, numberOrNa, orDash, percentOrNa, signClass, sortInstant, startedAt } from '@/components/runs/report_format'
 import {
   combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
 } from '@/components/sweeps/sweep_rows'
@@ -204,10 +204,10 @@ function choose(row: SweepListRow): void {
           <span :data-rank="1">{{ parametersText(row.combination) }}</span>
           <span :data-rank="1" class="figure-cell objective">{{ objectiveFigure(row) }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.combination.net_pnl)">
-            {{ amount(row.combination.net_pnl, row.combination.currency) }}
+            {{ bookedAmount(row.combination.net_pnl, row.combination.currency) }}
           </span>
-          <span :data-rank="2" class="figure-cell">{{ row.combination.total_trades }}</span>
-          <span :data-rank="2" class="figure-cell">{{ row.combination.r_trade_count }}</span>
+          <span :data-rank="2" class="figure-cell">{{ orDash(row.combination.total_trades, String) }}</span>
+          <span :data-rank="2" class="figure-cell">{{ orDash(row.combination.r_trade_count, String) }}</span>
           <span :data-rank="3" class="figure-cell">{{ percentOrNa(row.combination.win_rate, row.combination.total_trades) }}</span>
           <span :data-rank="3" class="figure-cell">{{ numberOrNa(row.combination.profit_factor, row.combination.total_trades) }}</span>
           <span :data-rank="4" class="figure-cell">{{ orDash(row.combination.account_max_drawdown, value => magnitude(value, row.combination.currency)) }}</span>

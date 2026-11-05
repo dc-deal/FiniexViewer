@@ -329,7 +329,7 @@ describe('DeploymentPicker', () => {
 })
 
 /** The list's route does not state it: the row reads the run list, by the run's `parent_id`. */
-describe('DeploymentPicker, a deployment that has booked nothing yet', () => {
+describe('DeploymentPicker, a deployment without booked figures', () => {
   /** Contract 49: listed from its first session's start, with a row whose currency is null. */
   const notBooked = { currency: null, net_pnl: null, max_drawdown: null, max_drawdown_pct: null, bot_id: '' }
 
@@ -361,14 +361,14 @@ describe('DeploymentPicker, a deployment that has booked nothing yet', () => {
     const nothing = deployment({ ...notBooked, sessions: 2 })
     const wrapper = mountPicker([nothing, booked])
     expect(rows(wrapper)).toHaveLength(1)
-    expect(rows(wrapper)[0]!.text()).toContain('+2 booked nothing yet')
+    expect(rows(wrapper)[0]!.text()).toContain('+2 without booked figures')
     expect(rows(wrapper)[0]!.find('.figure-cell').text()).toBe(String(booked.sessions))
-    expect(cardRows(wrapper)['Booked nothing yet']).toContain('2 sessions')
+    expect(cardRows(wrapper)['Without booked figures']).toContain('2 sessions')
   })
 
   it('stays a row of its own where the deployment booked nothing at all', () => {
     const wrapper = mountPicker([deployment(notBooked)])
-    expect(rows(wrapper)[0]!.text()).toContain('booked nothing yet')
+    expect(rows(wrapper)[0]!.text()).toContain('without booked figures')
   })
 })
 

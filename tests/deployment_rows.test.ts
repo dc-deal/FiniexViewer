@@ -3,7 +3,7 @@ import { listedRows, unbookedOf } from '@/components/deployments/deployment_rows
 import listFixture from './fixtures/deployments_list.json'
 import type { DeploymentListResponse, DeploymentRow } from '@/types/api/deployment_types'
 
-/** The captured ledger (contract 49): several deployments carry a row of sessions that booked nothing yet. */
+/** The captured ledger (contract 49): several deployments carry a row of sessions without booked figures. */
 const ROWS = (listFixture as DeploymentListResponse).deployments
 
 describe('the deployment list rows', () => {

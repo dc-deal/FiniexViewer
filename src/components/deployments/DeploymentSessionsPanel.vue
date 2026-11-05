@@ -20,7 +20,7 @@ const props = defineProps<{
 
 /**
  * Sessions of one account currency — the rows are keyed by (run_id, currency), so they split. Null is
- * a block of its own: the sessions that have booked nothing yet, which the list row states the same way.
+ * a block of its own: the sessions without booked figures, which the list row states the same way.
  */
 function sessionsOf(currency: string | null): DeploymentSessionRow[] {
   return props.model.detail.sessions.filter(session => session.currency === currency)

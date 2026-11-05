@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  bookedAmount, bytes, drawdownFigure, largerFirst, modelledSpreadFigures, orDash, polarity, priceAt, priceDistance, shortHash, signClass, sortInstant,
-  spreadFigure, utcInstant, utcSpan,
+  bookedAmount, bytes, drawdownFigure, largerFirst, modelledSpreadFigures, numberOrNa, orDash, percentOrNa, polarity, priceAt,
+  priceDistance, rValue, shortHash, signClass, sortInstant, spreadFigure, utcInstant, utcSpan,
 } from '@/components/runs/report_format'
 
 /**
@@ -16,6 +16,19 @@ describe('bookedAmount', () => {
     expect(bookedAmount(null, null)).toBe('—')
     expect(bookedAmount(12.5, 'USD')).toBe('12.50 USD')
     expect(bookedAmount(0, 'USD')).toBe('0.00 USD')
+  })
+})
+
+/** Contract 50: a figure gated on a count that was never measured is the dash, not n/a — there is no subset. */
+describe('the gated figures', () => {
+  it('says a dash where the count was never measured, n/a where it is zero, and the figure otherwise', () => {
+    expect(rValue(0.5, null)).toBe('—')
+    expect(rValue(0.5, 0)).toBe('n/a')
+    expect(rValue(0.5, 3)).toBe('+0.50R')
+    expect(percentOrNa(null, null)).toBe('—')
+    expect(percentOrNa(0.25, 0)).toBe('n/a')
+    expect(numberOrNa(1.5, null)).toBe('—')
+    expect(numberOrNa(1.5, 4)).toBe('1.50')
   })
 })
 
