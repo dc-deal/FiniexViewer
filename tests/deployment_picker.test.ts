@@ -17,6 +17,8 @@ const BASE: DeploymentRow = {
   bot: 'demo_btcusd_bot',
   bot_id: 'demo-btc',
   sessions: 1,
+  sessions_without_figures: 0,
+  sessions_failed: 0,
   first_started: '2026-09-27T13:28:12.700239Z',
   last_started: '2026-09-27T13:28:12.700239Z',
   currency: 'USD',
@@ -330,7 +332,7 @@ describe('DeploymentPicker', () => {
 
 /** The list's route does not state it: the row reads the run list, by the run's `parent_id`. */
 describe('DeploymentPicker, a deployment without booked figures', () => {
-  /** Contract 49: listed from its first session's start, with a row whose currency is null. */
+  /** Contract 51: a deployment that has booked nothing is served one row, its currency null. */
   const notBooked = { currency: null, net_pnl: null, max_drawdown: null, max_drawdown_pct: null, bot_id: '' }
 
   beforeEach(() => {
@@ -353,22 +355,27 @@ describe('DeploymentPicker, a deployment without booked figures', () => {
   })
 
   /**
-   * Beside a booked row it is no second deployment (operator, 2026-11-03): one row, the booked
-   * figures as served and the sessions that booked nothing said beside them, never added up.
+   * Contract 51: a deployment that has booked counts its sessions without figures on its booked row,
+   * and the viewer prints them after the row as the backend's console does — no row of our own.
    */
-  it('folds into the deployment\'s booked row, said beside its figures', () => {
-    const booked = deployment()
-    const nothing = deployment({ ...notBooked, sessions: 2 })
-    const wrapper = mountPicker([nothing, booked])
+  it('counts the sessions without figures after the booked row, as the console prints them', () => {
+    const wrapper = mountPicker([deployment({ sessions: 3, sessions_without_figures: 2, sessions_failed: 1 })])
     expect(rows(wrapper)).toHaveLength(1)
-    expect(rows(wrapper)[0]!.text()).toContain('+2 without booked figures')
-    expect(rows(wrapper)[0]!.find('.figure-cell').text()).toBe(String(booked.sessions))
-    expect(cardRows(wrapper)['Without booked figures']).toContain('2 sessions')
+    expect(rows(wrapper)[0]!.text()).toContain('+2 without figures (1 failed)')
+    expect(rows(wrapper)[0]!.find('.figure-cell').text()).toBe('3')
+    expect(cardRows(wrapper)['Without figures']).toBe('2 sessions · 1 failed')
   })
 
-  it('stays a row of its own where the deployment booked nothing at all', () => {
-    const wrapper = mountPicker([deployment(notBooked)])
-    expect(rows(wrapper)[0]!.text()).toContain('without booked figures')
+  it('says nothing of them where there are none', () => {
+    const wrapper = mountPicker([deployment()])
+    expect(rows(wrapper)[0]!.text()).not.toContain('without figures')
+    expect(cardRows(wrapper)['Without figures']).toBeUndefined()
+  })
+
+  it('keeps the row of a deployment that booked nothing at all, its counts after it', () => {
+    const wrapper = mountPicker([deployment({ ...notBooked, sessions: 2, sessions_without_figures: 2 })])
+    expect(rows(wrapper)[0]!.text()).toContain('+2 without figures')
+    expect(rows(wrapper)[0]!.text()).not.toContain('failed')
   })
 })
 

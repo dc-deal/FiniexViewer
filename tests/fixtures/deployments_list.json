@@ -7,6 +7,8 @@
     {
       "deployment_id": "deploy_20261022_123713_aa33e0b5",
       "sessions": 1,
+      "sessions_without_figures": 1,
+      "sessions_failed": 0,
       "first_started": "2026-10-22T12:37:36.180770Z",
       "last_started": "2026-10-22T12:37:36.180770Z",
       "net_pnl": -0.10246623999999999,
@@ -24,27 +26,10 @@
       ]
     },
     {
-      "deployment_id": "deploy_20261022_123713_aa33e0b5",
-      "sessions": 1,
-      "first_started": "2026-10-22T12:37:13.510376Z",
-      "last_started": "2026-10-22T12:37:13.510376Z",
-      "net_pnl": null,
-      "max_drawdown": null,
-      "max_drawdown_pct": null,
-      "currency": null,
-      "bot": "spot_venue_day_boundary",
-      "bot_id": "",
-      "longest_gap_hours": null,
-      "changed": false,
-      "configuration_changed": false,
-      "code_summary": null,
-      "orders_to": [
-        "simulated"
-      ]
-    },
-    {
       "deployment_id": "deploy_20261012_205953",
       "sessions": 1,
+      "sessions_without_figures": 0,
+      "sessions_failed": 0,
       "first_started": "2026-10-12T20:59:53.158134Z",
       "last_started": "2026-10-12T20:59:53.158134Z",
       "net_pnl": 0.0,
@@ -64,6 +49,8 @@
     {
       "deployment_id": "deploy_20261012_205734",
       "sessions": 4,
+      "sessions_without_figures": 1,
+      "sessions_failed": 0,
       "first_started": "2026-10-12T20:57:34.995972Z",
       "last_started": "2026-10-12T20:59:06.565872Z",
       "net_pnl": 23.035074999999978,
@@ -81,27 +68,10 @@
       ]
     },
     {
-      "deployment_id": "deploy_20261012_205734",
-      "sessions": 1,
-      "first_started": "2026-10-12T20:59:38.244010Z",
-      "last_started": "2026-10-12T20:59:38.244010Z",
-      "net_pnl": null,
-      "max_drawdown": null,
-      "max_drawdown_pct": null,
-      "currency": null,
-      "bot": "demo_btcusd_bot",
-      "bot_id": "",
-      "longest_gap_hours": null,
-      "changed": true,
-      "configuration_changed": true,
-      "code_summary": null,
-      "orders_to": [
-        "simulated"
-      ]
-    },
-    {
       "deployment_id": "deploy_20261012_075342",
       "sessions": 1,
+      "sessions_without_figures": 0,
+      "sessions_failed": 0,
       "first_started": "2026-10-12T07:53:42.411948Z",
       "last_started": "2026-10-12T07:53:42.411948Z",
       "net_pnl": 0.0,
@@ -121,6 +91,8 @@
     {
       "deployment_id": "deploy_20261012_074850",
       "sessions": 4,
+      "sessions_without_figures": 1,
+      "sessions_failed": 0,
       "first_started": "2026-10-12T07:48:50.265811Z",
       "last_started": "2026-10-12T07:52:02.172885Z",
       "net_pnl": 23.035074999999978,
@@ -138,27 +110,10 @@
       ]
     },
     {
-      "deployment_id": "deploy_20261012_074850",
-      "sessions": 1,
-      "first_started": "2026-10-12T07:53:06.832432Z",
-      "last_started": "2026-10-12T07:53:06.832432Z",
-      "net_pnl": null,
-      "max_drawdown": null,
-      "max_drawdown_pct": null,
-      "currency": null,
-      "bot": "demo_btcusd_bot",
-      "bot_id": "",
-      "longest_gap_hours": null,
-      "changed": true,
-      "configuration_changed": true,
-      "code_summary": null,
-      "orders_to": [
-        "simulated"
-      ]
-    },
-    {
       "deployment_id": "deploy_20261011_171150",
       "sessions": 1,
+      "sessions_without_figures": 0,
+      "sessions_failed": 0,
       "first_started": "2026-10-11T17:11:50.514015Z",
       "last_started": "2026-10-11T17:11:50.514015Z",
       "net_pnl": 0.0,
@@ -178,6 +133,8 @@
     {
       "deployment_id": "deploy_20261011_170815",
       "sessions": 4,
+      "sessions_without_figures": 1,
+      "sessions_failed": 0,
       "first_started": "2026-10-11T17:08:15.507810Z",
       "last_started": "2026-10-11T17:10:36.055699Z",
       "net_pnl": 23.035074999999978,
@@ -195,27 +152,10 @@
       ]
     },
     {
-      "deployment_id": "deploy_20261011_170815",
-      "sessions": 1,
-      "first_started": "2026-10-11T17:11:21.907860Z",
-      "last_started": "2026-10-11T17:11:21.907860Z",
-      "net_pnl": null,
-      "max_drawdown": null,
-      "max_drawdown_pct": null,
-      "currency": null,
-      "bot": "demo_btcusd_bot",
-      "bot_id": "",
-      "longest_gap_hours": null,
-      "changed": true,
-      "configuration_changed": true,
-      "code_summary": null,
-      "orders_to": [
-        "simulated"
-      ]
-    },
-    {
       "deployment_id": "deploy_20261008_233012",
       "sessions": 1,
+      "sessions_without_figures": 0,
+      "sessions_failed": 0,
       "first_started": "2026-10-08T23:30:12.989739Z",
       "last_started": "2026-10-08T23:30:12.989739Z",
       "net_pnl": 0.0,
@@ -235,6 +175,8 @@
     {
       "deployment_id": "deploy_20261008_232700",
       "sessions": 4,
+      "sessions_without_figures": 1,
+      "sessions_failed": 0,
       "first_started": "2026-10-08T23:27:00.759194Z",
       "last_started": "2026-10-08T23:29:05.990944Z",
       "net_pnl": 23.035074999999978,
@@ -252,27 +194,10 @@
       ]
     },
     {
-      "deployment_id": "deploy_20261008_232700",
-      "sessions": 1,
-      "first_started": "2026-10-08T23:29:47.995834Z",
-      "last_started": "2026-10-08T23:29:47.995834Z",
-      "net_pnl": null,
-      "max_drawdown": null,
-      "max_drawdown_pct": null,
-      "currency": null,
-      "bot": "demo_btcusd_bot",
-      "bot_id": "",
-      "longest_gap_hours": null,
-      "changed": true,
-      "configuration_changed": true,
-      "code_summary": null,
-      "orders_to": [
-        "simulated"
-      ]
-    },
-    {
       "deployment_id": "deploy_20261008_222953",
       "sessions": 1,
+      "sessions_without_figures": 0,
+      "sessions_failed": 0,
       "first_started": "2026-10-08T22:29:53.865196Z",
       "last_started": "2026-10-08T22:29:53.865196Z",
       "net_pnl": 0.0,
@@ -292,6 +217,8 @@
     {
       "deployment_id": "deploy_20261008_222638",
       "sessions": 4,
+      "sessions_without_figures": 1,
+      "sessions_failed": 0,
       "first_started": "2026-10-08T22:26:38.879412Z",
       "last_started": "2026-10-08T22:28:46.770191Z",
       "net_pnl": 23.035074999999978,
@@ -309,27 +236,10 @@
       ]
     },
     {
-      "deployment_id": "deploy_20261008_222638",
-      "sessions": 1,
-      "first_started": "2026-10-08T22:29:28.501283Z",
-      "last_started": "2026-10-08T22:29:28.501283Z",
-      "net_pnl": null,
-      "max_drawdown": null,
-      "max_drawdown_pct": null,
-      "currency": null,
-      "bot": "demo_btcusd_bot",
-      "bot_id": "",
-      "longest_gap_hours": null,
-      "changed": true,
-      "configuration_changed": true,
-      "code_summary": null,
-      "orders_to": [
-        "simulated"
-      ]
-    },
-    {
       "deployment_id": "deploy_20261008_110623",
       "sessions": 1,
+      "sessions_without_figures": 0,
+      "sessions_failed": 0,
       "first_started": "2026-10-08T11:06:23.257396Z",
       "last_started": "2026-10-08T11:06:23.257396Z",
       "net_pnl": 0.0,
@@ -349,6 +259,8 @@
     {
       "deployment_id": "deploy_20261008_110304",
       "sessions": 4,
+      "sessions_without_figures": 1,
+      "sessions_failed": 0,
       "first_started": "2026-10-08T11:03:04.387032Z",
       "last_started": "2026-10-08T11:05:13.488148Z",
       "net_pnl": 23.035074999999978,
@@ -366,27 +278,10 @@
       ]
     },
     {
-      "deployment_id": "deploy_20261008_110304",
-      "sessions": 1,
-      "first_started": "2026-10-08T11:05:58.021844Z",
-      "last_started": "2026-10-08T11:05:58.021844Z",
-      "net_pnl": null,
-      "max_drawdown": null,
-      "max_drawdown_pct": null,
-      "currency": null,
-      "bot": "demo_btcusd_bot",
-      "bot_id": "",
-      "longest_gap_hours": null,
-      "changed": true,
-      "configuration_changed": true,
-      "code_summary": null,
-      "orders_to": [
-        "simulated"
-      ]
-    },
-    {
       "deployment_id": "deploy_20261007_150506",
       "sessions": 1,
+      "sessions_without_figures": 0,
+      "sessions_failed": 0,
       "first_started": "2026-10-07T15:05:06.877042Z",
       "last_started": "2026-10-07T15:05:06.877042Z",
       "net_pnl": 0.0,
@@ -404,5 +299,5 @@
       ]
     }
   ],
-  "count": 21
+  "count": 14
 }

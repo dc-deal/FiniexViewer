@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
 import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
 import { codeSummaryText } from '@/components/deployments/deployment_card'
 import HintLine from '@/components/base/HintLine.vue'
-import type { DeploymentSessionRow } from '@/types/api/deployment_types'
+import type { DeploymentRow, DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { DeploymentSessionsModel } from '@/types/deployment_bundle_types'
 import { plural, t } from '@/translate'
 
@@ -20,11 +21,25 @@ const props = defineProps<{
 
 /**
  * Sessions of one account currency — the rows are keyed by (run_id, currency), so they split. Null is
- * a block of its own: the sessions without booked figures, which the list row states the same way.
+ * a block of its own: the sessions without booked figures, the series the detail serves after the
+ * booked ones.
  */
 function sessionsOf(currency: string | null): DeploymentSessionRow[] {
   return props.model.detail.sessions.filter(session => session.currency === currency)
 }
+
+/**
+ * A block per ledger row, then the sessions without booked figures where the detail holds any. Since
+ * contract 51 a deployment that has booked serves no list row for them — it counts them on its booked
+ * rows — so their block stands on the detail's sessions with a heading alone; a deployment that has
+ * booked nothing still has its null row, and that row heads them.
+ */
+const blocks = computed(() => {
+  const listed: { currency: string | null, row: DeploymentRow | null }[] = props.model.rows.map(row => ({ currency: row.currency, row }))
+  const withoutFigures = props.model.detail.sessions.some(session => session.currency === null)
+  if (withoutFigures && !listed.some(block => block.currency === null)) listed.push({ currency: null, row: null })
+  return listed
+})
 </script>
 
 <template>
@@ -44,9 +59,9 @@ function sessionsOf(currency: string | null): DeploymentSessionRow[] {
       <AdvisoryNotice v-if="model.detail.advisory" :advisory="model.detail.advisory" />
     </p>
 
-    <section v-for="row in model.rows" :key="String(row.currency)" class="currency-block">
-      <DeploymentHeader :row="row" />
-      <SessionsTable :recordings="model.recordings" :sessions="sessionsOf(row.currency)" :key-fields="model.detail.key" />
+    <section v-for="block in blocks" :key="String(block.currency)" class="currency-block">
+      <DeploymentHeader :row="block.row" />
+      <SessionsTable :recordings="model.recordings" :sessions="sessionsOf(block.currency)" :key-fields="model.detail.key" />
     </section>
   </div>
 </template>

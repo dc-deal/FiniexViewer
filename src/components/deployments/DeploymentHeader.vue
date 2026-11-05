@@ -15,7 +15,12 @@ import { t } from '@/translate'
  * is the advisory's to say, above the table.
  */
 defineProps<{
-  row: DeploymentRow
+  /**
+   * The ledger row of this currency. Null for the sessions without booked figures of a deployment
+   * that has booked: since contract 51 the list counts them on its booked rows and serves no row of
+   * their own, so their block has a heading and nothing more.
+   */
+  row: DeploymentRow | null
 }>()
 </script>
 
@@ -24,7 +29,7 @@ defineProps<{
     <!-- their word for it (contract 50): no currency and no figure, so no two dashes to puzzle over. It
          holds the sessions whose first seal has not come AND the ones that failed before they measured
          anything, which never will — so not *booked nothing yet* -->
-    <span v-if="row.currency === null" class="figure">{{ t('without booked figures') }}</span>
+    <span v-if="!row || row.currency === null" class="figure">{{ t('without booked figures') }}</span>
     <template v-else>
       <!-- the amount carries its currency, which is what tells two currency lines apart -->
       <span class="figure" :class="signClass(row.net_pnl)">
@@ -37,10 +42,12 @@ defineProps<{
         </span>
       </span>
     </template>
-    <span>{{ utcSpan(row.first_started, row.last_started) }}</span>
-    <span v-if="row.longest_gap_hours !== null">
-      {{ t('longest idle') }} <span class="figure">{{ duration(row.longest_gap_hours) }}</span>
-    </span>
+    <template v-if="row">
+      <span>{{ utcSpan(row.first_started, row.last_started) }}</span>
+      <span v-if="row.longest_gap_hours !== null">
+        {{ t('longest idle') }} <span class="figure">{{ duration(row.longest_gap_hours) }}</span>
+      </span>
+    </template>
   </p>
 </template>
 

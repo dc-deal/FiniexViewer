@@ -73,6 +73,28 @@ describe('DeploymentSessionsPanel', () => {
       .toContain('3 code stands · last moved 5 days ago')
     expect(counts(null)).not.toContain('code stand')
   })
+
+  /**
+   * Contract 51: a deployment that has booked serves no list row for its sessions without figures —
+   * it counts them on its booked rows — so their block stands on the detail's sessions, its heading alone.
+   */
+  it('gives the sessions without booked figures a block of their own where no list row heads them', () => {
+    const detail = detailFixture as unknown as DeploymentDetail
+    const booked = detail.sessions.filter(row => row.currency !== null)
+    const unbooked = detail.sessions.filter(row => row.currency === null)
+    expect(booked.length).toBeGreaterThan(0)
+    expect(unbooked.length).toBeGreaterThan(0)
+
+    const wrapper = mount(DeploymentSessionsPanel, {
+      props: { model: { detail, rows: [BASE_ROW], recordings: {} } },
+      global: { plugins: [createPinia()] },
+    })
+    const blocks = wrapper.findAll('.currency-block')
+    expect(blocks).toHaveLength(2)
+    expect(blocks[1]!.find('.deployment-header').text()).toBe('without booked figures')
+    expect(blocks[1]!.text()).toContain(unbooked[0]!.run_id)
+    expect(blocks[0]!.text()).not.toContain(unbooked[0]!.run_id)
+  })
 })
 
 describe('SessionsTable', () => {

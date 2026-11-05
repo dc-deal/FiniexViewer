@@ -14,25 +14,33 @@ export interface DeploymentRow {
    * improves that; `deployment_id` is minted per deployment and a deliberate restart mints a
    * fresh one. Two deployments sharing a bot_id are one bot restarted with --new-deployment,
    * which is the only join that answers "is this the same bot as the row above". Empty on a
-   * profile that declares none, and on the row of sessions without booked figures.
+   * profile that declares none, and on the row of a deployment that has booked nothing.
    */
   bot_id: string
+  // the sessions this row stands for: on a booked row those in its currency, on the null row all of them
   sessions: number
+  /**
+   * The deployment's sessions without booked figures — failed before they measured anything, or not
+   * booked yet — and of those, the ones that failed (contract 51). They describe the DEPLOYMENT: on a
+   * deployment with two currency rows they repeat on each, and are never added across rows.
+   */
+  sessions_without_figures: number
+  sessions_failed: number
   first_started: string   // ISO-8601 UTC
   last_started: string    // ISO-8601 UTC
   /**
-   * Null on the row of the sessions that have booked no trading day yet (contract 49): a deployment is
-   * listed from its first session's start, and such sessions have no account currency until their
-   * first seal. That row stands after the deployment's other rows, and the null keeps it apart in
-   * the key. Its figures are null too, never zero, because nothing was measured.
+   * Null on the one row of a deployment that has booked nothing at all (contract 51): such sessions
+   * have no account currency. A deployment that has booked counts its sessions without figures on its
+   * booked rows instead and serves no null row. Its figures are null too, never zero, because nothing
+   * was measured.
    */
   currency: string | null
   /**
    * A SUM over the sessions. Its neighbour below is not, and that is the trap: `max_drawdown` is
    * their MAXIMUM and never a sum, because each session carries the running decline against the
    * peak the deployment has reached so far. Adding the column counts one decline once per session
-   * that was still inside it. Both arrive already reduced — nothing here is re-aggregated. Null on
-   * the row of the sessions without booked figures (contract 49), a failed one among them (contract 50).
+   * that was still inside it. Both arrive already reduced — nothing here is re-aggregated. On a
+   * booked row it sums the booked sessions only; null on the row of a deployment that has booked nothing.
    */
   net_pnl: number | null
   // null where no drawdown was measured (contract 40)

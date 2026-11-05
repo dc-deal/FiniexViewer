@@ -113,20 +113,23 @@ misreports something:
   now among them. Each of them also stands in `sessions`, its *Ran* a dash until its close is booked
   — the two counts overlap and are never added. A bare session count is a number the reader has no
   reason to doubt.
-- **A session without booked figures** (contracts 49 and 50). A deployment is listed from its first
-  session's start, and until its first sealed day such a session has no account currency: the ledger
-  serves it in a row of its own with `currency: null`, after the deployment's other rows. A session
-  that **failed before it measured anything** — refused at its start, say — stands in that row too,
-  with the same nulls, and never leaves it. **The list folds that row into the deployment's booked
-  one** (operator, 2026-11-03: drawn as served it read as the same deployment twice),
-  `deployment_rows.ts`: the booked figures as served and *+1 without booked figures* beside them, the
-  two session counts never added up; a deployment that booked nothing at all keeps that row, saying
-  *without booked figures* where its figures would stand — their phrase since contract 50, where
-  *booked nothing yet* would promise a failed session a booking it never makes. The sessions show a
-  block under the same heading, and each session's `booking_state` tells the two apart: one
-  `not_booked_yet` shows dashes, one `failed` shows *✖ failed* in the error role where its result
-  would stand. Null is never a zero, and at the first seal a session not booked yet moves into its
-  currency's row. Until then its booking periods are an empty list and `sessions_without_periods`
+- **A session without booked figures** (contracts 49 to 51). A deployment is listed from its first
+  session's start, and until its first sealed day such a session has no account currency; a session
+  that **failed before it measured anything** — refused at its start, say — has none either, and
+  never will. **The list counts them on the deployment's booked rows** (contract 51):
+  `sessions_without_figures`, and of those `sessions_failed`. The viewer prints them after the row as
+  the backend's console does, *+2 without figures (1 failed)*, and the row's card says them in full.
+  The counts describe the deployment: a second currency row repeats them, as served, and they are
+  never added up. Only a deployment that has booked nothing at all is served a row with
+  `currency: null`, its figures dashes and its counts after it. Until contract 51 the viewer folded
+  that row into the booked one itself (operator, 2026-11-03); the rule is now the backend's, so the
+  console and the viewer show the list alike.
+  In the sessions, each `booking_state` tells the two apart: one `not_booked_yet` shows dashes, one
+  `failed` shows *✖ failed* in the error role where its result would stand. They stand in a block of
+  their own under *without booked figures* — the series the detail serves after the booked ones —
+  built from the detail's sessions, since a deployment that has booked serves no list row to head
+  them. Null is never a zero, and at the first seal a session not booked yet moves into its
+  currency's block. Until then its booking periods are an empty list and `sessions_without_periods`
   counts it.
 - What the run ids, *before · after* and the unfinished count mean is said by the
   `deployment-sessions` hint above the sessions, never on a browser tooltip (operator, 2026-10-28).
