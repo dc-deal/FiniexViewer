@@ -1,9 +1,9 @@
 # FiniexViewer
 
-> **Version:** v0.5.0 Pre-Alpha Showcase
-> **Status:** v0.5.0 — a deployment as a bundle the way a run is, a session's recorded frames played
-> over time, and the run chart's layers: volume, candles in four forms, the levels and entry–exit
-> lines of a position, arranged by dragging. 1510 unit tests and a browser suite.
+> **Version:** v0.6.0 Pre-Alpha Showcase
+> **Status:** v0.6.0 — named layouts in three sizes, offered by the run you pick; several servers, one
+> per window; what the venue itself held beside a live session's books; prices at the instrument's
+> tick size, and bars loaded as the chart moves. 1772 unit tests and a browser suite.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
@@ -52,6 +52,14 @@ objective it declared, and one click makes a combination the run on show.
 
 ### And more
 
+- **Layouts** — the placement of the panels saved under a name: *Backtests* and *Deploys* ship with
+  the app, each in a Full, a Medium and a Mobile size, and picking a run offers the one it fits.
+- **Several servers** — a switch in the menu bar, each window showing one, and a run host reached
+  through an SSH tunnel the dev server keeps.
+- **What the venue itself held** — a live session's balances and open orders as the venue reported
+  them, at its start and its end, beside the books the session kept.
+- **Prices at their tick size** — every price printed as the instrument quotes it, and the chart
+  loading earlier bars as it is moved.
 - **Find a run by what it did** — a facet bar on one line narrows the run list by pipeline, outcome,
   set or time; a sweep's combinations and a deployment's sessions fold under one heading.
 - **What runs on the machine** — the Activities panel lists what FiniexTestingIDE is running, each
