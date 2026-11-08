@@ -83,7 +83,7 @@ function refuseFixed(event: { related: HTMLElement }): boolean {
  */
 function emptyWord(row: LayerState): string {
   if (row.id === 'state-frame') return t('no frame on show')
-  if (row.id === 'trades' || row.option) return t('none in view')
+  if (row.id === 'trades' || row.id === 'periods' || row.id === 'refusals' || row.option) return t('none in view')
   return runChart.focus ? t('none for this position') : t('pick a position')
 }
 

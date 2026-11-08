@@ -137,6 +137,18 @@ const HINTS: HintDefinition[] = [
     text: t('The frame on show in the Latest state frame section stands here as a dashed line, where a session records its frames.'),
   },
   {
+    id: 'layer-periods',
+    text: t('The booking periods of the unit on show, in a strip along the bottom of the chart: each from the bar it opened in to the bar it closed in, quiet in the colour of its result, its sign inside where it fits. Rest the pointer on one for its card; its bounds then run through the candles.'),
+  },
+  {
+    id: 'layer-empty-periods',
+    text: t('The unit on show has no booking period on the bars loaded: a run books a period when it seals one, and a period of another unit is drawn on that unit.'),
+  },
+  {
+    id: 'layer-refusals',
+    text: t('Orders of the unit on show that were refused — denied before anything was sent, rejected by the venue, or any other refusal the Orders panel marks — as a cross, and orders that ran out without filling as a ring, in a row above the booking periods. They have no price, so they stand at the time they ended. Several close together are drawn as one with a count; zoom in to draw them apart.'),
+  },
+  {
     id: 'chart-marks',
     text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },

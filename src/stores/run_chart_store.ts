@@ -5,6 +5,7 @@ import { findCoverage } from '@/api/api_client'
 import {
   autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
 } from '@/components/runs/run_chart'
+import { periodSpans, refusalMarks } from '@/components/runs/run_chart_lane'
 import { entryExitLines, frameMoment, positionLevels } from '@/components/runs/run_chart_levels'
 import {
   barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
@@ -232,6 +233,14 @@ export const useRunChartStore = defineStore('runChart', () => {
     // without their signs the marks keep their shapes and the signs' room, so the switch rescales
     // nothing; a gathered mark's card still counts it
     trades: computed(() => optionOf('trades') === false ? marks.value.map(mark => ({ ...mark, textHidden: true })) : marks.value),
+    // the time lane: the unit's booking periods, and its orders refused or expired, gathered as the
+    // trades' marks are where they would cover each other
+    periods: computed(() => unit.value
+      ? periodSpans(reports.bookingPeriods?.periods ?? [], unit.value.name, barTimes.value, cutAt.value)
+      : []),
+    refusals: computed(() => unit.value
+      ? refusalMarks(reports.orderHistory?.orders ?? [], unit.value.name, barTimes.value, cutAt.value, perMark.value)
+      : []),
     // the player of the unit on show and of the run on show: its name is the unit's in `data_windows`
     'state-frame': computed(() => {
       const player = unit.value ? framePlayers.playerOf(unit.value.name) : null

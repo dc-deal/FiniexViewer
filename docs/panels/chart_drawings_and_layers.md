@@ -31,7 +31,9 @@ candles' own drawing and could take no place in an order of layers, and no marke
 than 12 px, so on a long window they covered their neighbours. Drawn here, a mark is as wide as its
 bar, between 5 and 12 px, and the mark of the position looked at half as large again.
 
-The layers by default, from back to front: `levels` · `entry-exit` · `trades`.
+The run chart's layers stand back to front as the register orders them (`chartLayers` in
+`layer_registry.ts`): the volume and the candles behind, the time lane, then the state frame, the
+levels, the line and the trades in front.
 
 ## Drawings — in testingide#379's vocabulary
 
@@ -44,8 +46,10 @@ and the card it shows there; a time is the open of a bar drawn.
 | `segment { from, to, price }` | a level held from one bar to another — `to` null: to the window's edge; `from` equal to `to`: known at that bar alone, a short stroke ending there | `run_chart_levels.ts` |
 | `line { from, to }` | two points joined: where a trade entered and where it left | `run_chart_levels.ts` |
 | `time { time }` | a moment over the whole height, dashed: the state frame on show. Ours until testingide#379 names one | `run_chart_levels.ts` |
+| `span { from, to, endsAtOpen }` | a stretch of time in the lane's strip: a booking period | `run_chart_lane.ts` |
+| `lane-mark { time, shape }` | a moment with no price, in the lane's row: an order refused (cross) or expired (ring), single or gathered `×N` | `run_chart_lane.ts` |
 
-A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry` · `annotation`), read from the
+A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry` · `annotation` · `warning`), read from the
 theme tokens by the chart and handed to the host — a canvas cannot read CSS. The shape and the word
 come first: a level carries `SL` or `TP`, a mark its sign or its count, so the colour only reinforces.
 
@@ -187,13 +191,56 @@ card says which frame it is and when.
   moves them several times a second. The card under the pointer stays through a step while its drawing
   stands, and says what it says now.
 
+## The time lane — booking periods and orders refused (2026-11-08)
+
+What has a time and no price stands in a lane along the bottom of the pane (viewer#41, section D),
+read from what the run's reports already hold — `booking-periods` and `order-history`, for the unit
+on show (`run_chart_lane.ts`).
+
+```
+│   candles …                                                     │
+│     ×3        ✕                    ○                            │  ← orders refused ✕ · expired ○
+│ ▐████ + ████▌  ▐█ − █▌     ▐██████████ + ██████████▌            │  ← booking periods
+└─────────────────────────────────────────────────────────────────┘
+```
+
+- **Only the rows something is drawn in** (`laneBox`): the strip, 12 px at the bottom, and the marks'
+  row above it. The price scale leaves the lane free (`autoscaleInfo`), counted from every layer's
+  drawings, hidden ones too, so a lever switches nothing in the candles' height.
+- **The volume stands above the lane.** Its scale is its own, which the room asked of the candles'
+  does not reach, so the host tells the chart the lane's share of the pane whenever it changes
+  (`onLaneShare`) and the volume's fifth is lifted by it — the strip and the crosses were drawn over
+  its bars (on screen 2026-11-08). Only the host knows the pane's height in time: after a resize the
+  library lays the pane out at its next frame.
+- **A period** runs from the left edge of the bar it opened in to the right edge of the bar it closed
+  in — to that bar's left edge where it closed at its open (`endsAtOpen`), so a period that ended on
+  the hour does not reach into the next one. Its fill is quiet, in the polarity of its `net_pnl`,
+  its sign inside in plain ink where it fits; its card is the one the period table shows (`periodCard`). Under the
+  pointer its bounds run through the candles as dashed lines, so its stretch can be read against them.
+- **An order refused** — the statuses the Orders panel marks as refusals, read from one place
+  (`ORDER_REFUSALS`) — is a cross in the `warning` role; an `expired` one a ring, quiet. Each stands
+  at the bar its `event_time` falls in. Several within a mark's width are gathered into one with a
+  count, the way the trades' marks gather, and split as the reader zooms in; the card of a gathered
+  mark lists the first eight, each under its status, then how many more. The lane is ONE row, so
+  crosses and rings gather together — a group with a refusal among it is a cross — and a group with
+  a count reaches three marks wide, the count's room beside it (on screen 2026-11-08: the next cross
+  covered it).
+- **Before the first bar and past the bars loaded** nothing is drawn; a period that opened before
+  the first bar starts at it.
+- **An empty layer**: the periods say *none in view* and why below the list; the refusals say *none
+  in view* and give no hint box, since a unit nothing was refused to is where everything is fine.
+- **Not drawn yet:** the orders RESTING at a price over time — the limit or stop of a pending order —
+  which needs the order events placed by time and a word from FiniexTestingIDE on how a pending order
+  is spanned; and the kinds testingide#379 will name.
+
 ## The volume — a layer the library draws (2026-10-27)
 
 To the reader the volume is a layer like the others — shown, hidden, fainter — but the chart library
 draws it, as a `HistogramSeries` of its own built BEFORE the candles, so it stands behind them. Its
 place is fixed (`fixed` in the register): it opens nothing, is never moved, and no other layer passes
 it. It sits in the lowest fifth of the pane on a price scale nothing shows — the way established
-charts draw it — and so leaves the candles' scale alone: switching it moves no candle.
+charts draw it — and so leaves the candles' scale alone: switching it moves no candle. Where the
+time lane is drawn, that fifth stands above it (see *The time lane*).
 
 - **Which count**, from the bars' own answer (their `market-data` document): `v` is the traded
   volume, `0.0` on every bar of a feed that carries none, and then `tc` is the measure of how busy the
@@ -233,7 +280,9 @@ line · area** (`forms` in the register, kept under `forms` only where it is not
 - `chart_drawing_host.test.ts` — the host against the few library calls it makes, and its painting
   against a canvas context that records what it was told to draw (jsdom has no canvas).
 - `run_chart_levels.test.ts` — the levels and the line from served fields.
+- `run_chart_lane.test.ts` — the periods' spans and the refusals' marks from the run's reports, gathered and cut.
 - `candle_chart.test.ts` — what the chart hands its host: the layers, every bar's range, the colours;
   and the volume's series, its scale and its colours, built only where a volume is handed.
 - `e2e/run_chart.spec.ts` — the levels painted on a real canvas, from a capture whose position the
-  mock hands a stop and a target (no trade of the fixture run set one).
+  mock hands a stop and a target (no trade of the fixture run set one); and the lane of the refusing
+  unit, its period's card found at the bottom of the pane.

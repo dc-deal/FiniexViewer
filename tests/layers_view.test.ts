@@ -41,7 +41,7 @@ describe('LayersView', () => {
 
   it('lists the chart\'s layers front first, the candles behind the drawings and the volume behind them, under the chart\'s name', () => {
     const wrapper = mountOn('run-chart')
-    expect(order(wrapper)).toEqual(['trades', 'entry-exit', 'levels', 'state-frame', 'candles', 'volume'])
+    expect(order(wrapper)).toEqual(['trades', 'entry-exit', 'levels', 'state-frame', 'refusals', 'periods', 'candles', 'volume'])
     expect(wrapper.find('.fixed').text()).toContain('Candles')
     expect(wrapper.find('.chart-name').text()).toBe('Run chart')
   })

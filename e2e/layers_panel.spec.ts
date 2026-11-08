@@ -81,16 +81,18 @@ test('a layer is dragged in front of another by its grip, and never past the fix
   const layers = page.locator('[data-panel-kind="layers"]')
   const order = (): Promise<string> => layers.locator('[data-layer]')
     .evaluateAll(rows => rows.map(row => row.getAttribute('data-layer')).join(','))
-  await expect.poll(order).toBe('trades,entry-exit,levels,state-frame,candles,volume')
+  // the front three and the two fixed at the back — what a drag moves, whatever stands between them
+  await expect.poll(order).toMatch(/^trades,entry-exit,levels,.*,candles,volume$/)
 
   await layers.locator('[data-layer="levels"] .layer-grip')
     .dragTo(layers.locator('[data-layer="trades"] .layer-row'), { targetPosition: { x: 20, y: 2 } })
-  await expect.poll(order).toBe('levels,trades,entry-exit,state-frame,candles,volume')
+  await expect.poll(order).toMatch(/^levels,trades,entry-exit,.*,candles,volume$/)
+  const dragged = await order()
 
   await layers.locator('[data-layer="trades"] .layer-grip')
     .dragTo(layers.locator('[data-layer="volume"] .layer-row'), { targetPosition: { x: 20, y: 20 } })
   await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done()))))
-  expect(await order()).toBe('levels,trades,entry-exit,state-frame,candles,volume')
+  expect(await order()).toBe(dragged)
 })
 
 /**

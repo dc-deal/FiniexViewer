@@ -270,7 +270,7 @@ describe('useRunChartStore', () => {
     chart.attach()
     await flushPromises()
     const layer = (id: string) => chart.layers.find(entry => entry.id === id)!.drawings
-    expect(chart.layers.map(entry => entry.id)).toEqual(['state-frame', 'levels', 'entry-exit', 'trades'])
+    expect(chart.layers.map(entry => entry.id)).toEqual(['periods', 'refusals', 'state-frame', 'levels', 'entry-exit', 'trades'])
     expect(layer('levels')).toEqual([])
     expect(layer('trades').length).toBeGreaterThan(0)
 
@@ -412,8 +412,11 @@ describe('useRunChartStore', () => {
     // back to front as moved, the fainter one at its share, the hidden one handed over marked so —
     // the chart paints nothing of it and keeps its marks' room
     expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1, entry.hidden ?? false]))
-      .toEqual([['state-frame', 1, false], ['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true]])
-    const [, trading, levels] = chart.layers
+      .toEqual([
+        ['periods', 1, false], ['refusals', 1, false], ['state-frame', 1, false],
+        ['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true],
+      ])
+    const [, , , trading, levels] = chart.layers
     expect(trading!.drawings.length).toBeGreaterThan(0)
     // the signs switched off keep their room and paint no text, so the switch rescales nothing
     expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.textHidden === true)).toBe(true)

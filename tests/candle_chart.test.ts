@@ -42,9 +42,15 @@ const lw = vi.hoisted(() => {
    * What the chart hands its drawing host, call by call. The host itself paints on a canvas and is
    * tested on its own; here it is the chart's part that is under test — what it hands over, when.
    */
-  const drawn: { layers: { id: string, drawings: { id: string }[] }[], bars: Map<number, unknown>, colours: { roles: Record<string, string>, surface: string } }[] = []
+  const drawn: { layers: { id: string, drawings: { id: string }[] }[], bars: Map<number, unknown>, colours: { roles: Record<string, string>, surface: string, ink: string } }[] = []
+  /** What the chart told its host lies under the pointer, call by call. */
+  const hovered: (string | null)[] = []
+  /** Where the chart asked to be told the lane's share of the pane — held so a test can tell it. */
+  const lane: { share: ((share: number) => void) | null } = { share: null }
   class DrawingHostProbe {
     setDrawings(layers: never, bars: never, colours: never): void { drawn.push({ layers, bars, colours }) }
+    setHovered(id: string | null): void { hovered.push(id) }
+    onLaneShare(callback: (share: number) => void): void { lane.share = callback }
   }
   /** What the library calls as the pointer moves — held so a test can move it. */
   const pointer: { move: ((param: Record<string, unknown>) => void) | null } = { move: null }
@@ -70,7 +76,7 @@ const lw = vi.hoisted(() => {
   )
   return {
     chart, series, pointer, zoom, setData, setVisibleLogicalRange, fitContent, createChart, CandlestickSeries,
-    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, priceScaleOptions, drawn, DrawingHostProbe,
+    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, priceScaleOptions, drawn, hovered, lane, DrawingHostProbe,
   }
 })
 
@@ -131,7 +137,7 @@ function tradesLayer(marks: ChartMark[]): ChartLayer[] {
 }
 
 /** The ids the chart last handed its drawing host, layer by layer. */
-function lastDrawn(): { layers: { id: string, drawings: { id: string }[] }[], colours: { roles: Record<string, string>, surface: string } } {
+function lastDrawn(): { layers: { id: string, drawings: { id: string }[] }[], colours: { roles: Record<string, string>, surface: string, ink: string } } {
   return lw.drawn.at(-1)!
 }
 
@@ -315,6 +321,8 @@ describe('CandleChart', () => {
       await nextTick()
       expect(wrapper.find('.chart-card').text()).toContain('pos_1 · long 0.1')
       expect(wrapper.find('.chart-card').text()).toContain('-0.40 EUR')
+      // the host is told what lies under the pointer: a booking period draws its bounds while it does
+      expect(lw.hovered.at(-1)).toBe('exit|unit|pos_1|7')
 
       // a thing the register does not know, and no thing at all, both show nothing
       lw.pointer.move!({ hoveredInfo: { objectId: 'line|elsewhere' }, point: { x: 100, y: 80 } })
@@ -323,6 +331,7 @@ describe('CandleChart', () => {
       lw.pointer.move!({ point: { x: 300, y: 80 } })
       await nextTick()
       expect(wrapper.find('.chart-card').exists()).toBe(false)
+      expect(lw.hovered.at(-1)).toBeNull()
     })
 
     /** A frame played moves the layers several times a second: the card under the pointer stays, and says what it says now. */
@@ -473,6 +482,17 @@ describe('CandleChart', () => {
       expect(lw.volumeSeries.applyOptions).toHaveBeenLastCalledWith({ visible: false })
     })
 
+    /** Under the lane its strip and marks were drawn over the volume's bars (on screen 2026-11-08). */
+    it('lifts the volume above the time lane by the share of the pane the host says it takes, once the frame is drawn', async () => {
+      size = { width: 800, height: 400 }
+      mountChart(BARS, { volume: { basis: 'ticks', shown: true, opacity: 1, bars: [] } })
+      lw.priceScaleOptions.mockClear()
+      lw.lane.share!(0.1)
+      expect(lw.priceScaleOptions).not.toHaveBeenCalled()
+      await Promise.resolve()
+      expect(lw.priceScaleOptions).toHaveBeenLastCalledWith({ scaleMargins: { top: expect.closeTo(0.7), bottom: 0.1 } })
+    })
+
     /**
      * The candles are a layer (operator, 2026-10-27): another form builds the price series anew —
      * the drawing host goes with it — a line takes the close alone, and hidden the series stays,
@@ -545,6 +565,8 @@ describe('CandleChart', () => {
       const roles = (): string[] => ['entry', 'positive', 'negative', 'flat', 'mixed'].map(role => lastDrawn().colours.roles[role]!)
       expect(roles()).toEqual(['#000007', '#000005', '#000006', '#000002', '#000002'])
       expect(lastDrawn().colours.surface).toBe('#000001')
+      // a word inside a filled shape: plain ink, as an entry
+      expect(lastDrawn().colours.ink).toBe('#000007')
 
       document.documentElement.dataset.theme = 'light'
       await flushPromises()

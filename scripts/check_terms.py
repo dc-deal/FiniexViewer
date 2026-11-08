@@ -115,6 +115,8 @@ ONE_NAME_TWO_THINGS = {
                       "block; the run card shows the block, each field by run-header's own label",
     'rss_bytes': "the activity list's only memory figure; in the latest state it stands beside the "
                  "private bytes and is told apart as the resident half",
+    'status': "a scenario's state in the roster, an order's status on the run chart's card: two "
+              "objects, each with a field of that name and a vocabulary of its own",
 }
 
 CONSOLE_LABEL = re.compile(r'["\']\s*([A-Z][A-Za-z0-9 /&%().\'-]{1,30}?):\s*(?:\{|\s*["\'])')

@@ -110,7 +110,9 @@ by its tab, the way a reader does.
   each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
   the chart leaving the whole chart inside its panel; the levels of the position looked at painted
   on a real canvas, from a position the mock hands a stop and a target; an own level that fired drawn
-  from the row that names it, which no stored run carries yet; ONE
+  from the row that names it, which no stored run carries yet; the refusing unit's booking period
+  and its orders refused drawn in the time lane, counted on the element, and the period's card
+  found at the bottom of the pane; ONE
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
   in the chart narrows the lists to it; and bars loaded as the view moves (viewer#9) — a unit's first
   tick moved three weeks back over both stretches of the captured EURGBP bars, read in M1, has its

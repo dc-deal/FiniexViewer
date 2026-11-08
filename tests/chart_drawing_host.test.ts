@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { ChartDrawingHost, paintLayer, type DrawingColours } from '@/components/chart_drawing_host'
-import { placeLayer, type BarRange } from '@/components/chart_geometry'
+import { laneBox, placeLayer, type BarRange } from '@/components/chart_geometry'
 import type { ChartLayer } from '@/types/chart_drawing_types'
 import type { ChartMark } from '@/types/run_chart_types'
 
@@ -12,8 +12,9 @@ import type { ChartMark } from '@/types/run_chart_types'
  */
 
 const COLOURS: DrawingColours = {
-  roles: { positive: '#0a0', negative: '#a00', flat: '#888', mixed: '#888', entry: '#fff', annotation: '#f0f' },
+  roles: { positive: '#0a0', negative: '#a00', flat: '#888', mixed: '#888', entry: '#fff', annotation: '#f0f', warning: '#fa0' },
   surface: '#111',
+  ink: '#eee',
 }
 const BARS = new Map<number, BarRange>([[1, { high: 300, low: 200 }], [2, { high: 310, low: 210 }]])
 
@@ -40,7 +41,7 @@ const LAYERS: ChartLayer[] = [
   { id: 'trades', drawings: [mark({}), mark({ id: 'entry|a', shape: 'arrowUp', position: 'belowBar', role: 'entry', text: '' })] },
 ]
 
-/** A library that places bar `t` at x = 10·t and price `p` at y = 500 − p, ten bars in view on 800 px. */
+/** A library that places bar `t` at x = 10·t and price `p` at y = 500 − p, ten bars in view on 800 px, a pane 400 px tall. */
 function attachTo(host: ChartDrawingHost): { requestUpdate: ReturnType<typeof vi.fn> } {
   const requestUpdate = vi.fn()
   const timeScale = {
@@ -48,7 +49,9 @@ function attachTo(host: ChartDrawingHost): { requestUpdate: ReturnType<typeof vi
     getVisibleLogicalRange: () => ({ from: 0, to: 10 }),
     width: () => 800,
   }
-  const chart = { timeScale: () => timeScale, options: () => ({ layout: { fontFamily: 'Probe Sans' } }) }
+  const chart = {
+    timeScale: () => timeScale, options: () => ({ layout: { fontFamily: 'Probe Sans' } }), paneSize: () => ({ width: 800, height: 400 }),
+  }
   const series = { priceToCoordinate: (price: number) => 500 - price, priceFormatter: () => ({ format: (price: number) => price.toFixed(2) }) }
   host.attached({ chart, series, requestUpdate } as never)
   return { requestUpdate }
@@ -202,5 +205,92 @@ describe('ChartDrawingHost', () => {
     expect(calls).toContain('setLineDash(4,3)')
     expect(calls).toContain('moveTo(20,0)')
     expect(calls).toContain('lineTo(20,400)')
+  })
+  /**
+   * The time lane (viewer#41, section D): the price scale leaves the bottom of the pane free for it, a
+   * hidden layer's lane too, and a booking period under the pointer runs its bounds through the candles.
+   */
+  describe('the time lane', () => {
+    const PERIODS: ChartLayer = {
+      id: 'periods',
+      drawings: [{
+        kind: 'span', id: 'period|u|1', from: 1, to: 2, endsAtOpen: false, label: '+', role: 'positive',
+        card: { title: 'u · booking period 1', details: [] },
+      }],
+    }
+    const REFUSALS: ChartLayer = {
+      id: 'refusals',
+      drawings: [{
+        kind: 'lane-mark', id: 'order|u|1', time: 2, at: 2, shape: 'cross', text: '×3', role: 'warning',
+        card: { title: '3 orders refused', details: [] },
+      }],
+    }
+
+    it('leaves the lane free below the candles, for a hidden layer as well, and finds a period in it', () => {
+      const host = new ChartDrawingHost()
+      attachTo(host)
+      host.setDrawings([{ ...PERIODS, hidden: true }], BARS, COLOURS)
+      const lane = laneBox(400, { strip: true, marks: false })!
+      expect(host.autoscaleInfo()!.margins!.below).toBe(lane.height)
+      host.setDrawings([PERIODS, REFUSALS], BARS, COLOURS)
+      expect(host.autoscaleInfo()!.margins!.below).toBe(laneBox(400, { strip: true, marks: true })!.height)
+      expect(host.hitTest(15, lane.stripTop + 2)).toMatchObject({ externalId: 'period|u|1' })
+    })
+
+    /** The volume stands on a scale of its own, which the room asked of the candles' scale does not reach. */
+    it('tells the share of the pane the lane takes each time it changes, and only then', () => {
+      const host = new ChartDrawingHost()
+      const shares: number[] = []
+      host.onLaneShare(share => shares.push(share))
+      attachTo(host)
+      host.setDrawings([PERIODS], BARS, COLOURS)
+      host.updateAllViews()
+      host.setDrawings([PERIODS, REFUSALS], BARS, COLOURS)
+      host.setDrawings([], BARS, COLOURS)
+      expect(shares).toEqual([
+        laneBox(400, { strip: true, marks: false })!.height / 400,
+        laneBox(400, { strip: true, marks: true })!.height / 400,
+        0,
+      ])
+    })
+
+    it('draws the bounds of a hovered period dashed through the candles, and asks for a new drawing when the pointer moves', () => {
+      const host = new ChartDrawingHost()
+      const { requestUpdate } = attachTo(host)
+      host.setDrawings([PERIODS], BARS, COLOURS)
+      const draw = (): string[] => {
+        const { context, calls } = recordingContext()
+        context.measureText = (() => ({ width: 6 })) as never
+        const target = { useMediaCoordinateSpace: (paint: (scope: unknown) => void) => paint({ context, mediaSize: { width: 800, height: 400 } }) }
+        host.paneViews()[0]!.renderer()!.draw(target as never)
+        return calls
+      }
+      // ten bars on 800 px: a bar is 80 px wide, so the period runs from x −30 to 60
+      expect(draw()).not.toContain('moveTo(60,0)')
+      host.setHovered('period|u|1')
+      expect(requestUpdate).toHaveBeenCalledTimes(2)
+      host.setHovered('period|u|1')
+      expect(requestUpdate).toHaveBeenCalledTimes(2)
+      const hovered = draw()
+      expect(hovered).toContain('moveTo(-30,0)')
+      expect(hovered).toContain('moveTo(60,0)')
+    })
+
+    it('fills a period quiet in its role with its sign inside where it fits, and marks an order with its count beside it', () => {
+      const scale = { x: (time: number) => time * 10, y: (price: number) => 500 - price, spacing: 10, width: 800, lane: laneBox(400, { strip: true, marks: true }) }
+      const { context, calls } = recordingContext()
+      context.measureText = (() => ({ width: 6 })) as never
+      paintLayer(context, placeLayer(PERIODS, BARS, scale), COLOURS, '10px Probe Sans', 400)
+      paintLayer(context, placeLayer(REFUSALS, BARS, scale), COLOURS, '10px Probe Sans', 400)
+      expect(calls).toContain('fillStyle=#0a0')
+      expect(calls.some(call => call.startsWith('fillRect('))).toBe(true)
+      // the sign in plain ink, not in its role on its role's tint
+      const sign = calls.findIndex(call => call.startsWith('fillText(+,'))
+      expect(sign).toBeGreaterThan(-1)
+      expect(calls.slice(0, sign).filter(call => call.startsWith('fillStyle=')).at(-1)).toBe('fillStyle=#eee')
+      // the refusal: a cross in the warning role, its count to its right
+      expect(calls).toContain('strokeStyle=#fa0')
+      expect(calls.some(call => call.startsWith('fillText(×3,'))).toBe(true)
+    })
   })
 })

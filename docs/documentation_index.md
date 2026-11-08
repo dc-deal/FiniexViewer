@@ -29,7 +29,7 @@ starts with the first group.
 | [Sweeps Panel](panels/sweeps_panel.md) | A parameter search read as one: every sweep a heading that opens to its combinations in the order the backend ranked them by the sweep's own objective — the first marked, a word only where the ranking compares unlike, a combination chosen as a run |
 | [Candle Charts](panels/candle_charts.md) | The run chart with a unit's trades on its candles, and `CandleChart` over Lightweight Charts: first real size, theme repaint, and what the pointer is over |
 | [Activities Panel](panels/activities_panel.md) | What runs on the machine — FiniexTestingIDE's activity list as a panel: each activity beneath the one it runs inside, its memory as served, asked only while someone reads it |
-| [Chart Drawings and Layers](panels/chart_drawings_and_layers.md) | What a chart draws for itself — marks, levels, lines — through one drawing host, layer by layer: placed, painted and found under the pointer; and the Layers panel that shows, hides, dims and orders them |
+| [Chart Drawings and Layers](panels/chart_drawings_and_layers.md) | What a chart draws for itself — marks, levels, lines, the time lane of booking periods and orders refused — through one drawing host, layer by layer: placed, painted and found under the pointer; and the Layers panel that shows, hides, dims and orders them |
 
 ## Runs
 

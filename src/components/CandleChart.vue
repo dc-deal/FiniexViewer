@@ -86,6 +86,8 @@ const EDGE_BARS = 20
 const VOLUME_SCALE = 'volume'
 /** How strongly a volume bar is drawn at full opacity — behind the candles, it must not compete. */
 const VOLUME_ALPHA = 0.45
+/** Where the volume's scale begins: the lowest fifth of the pane is the volume's. */
+const VOLUME_TOP = 0.8
 
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
@@ -158,6 +160,8 @@ function onPointer(param: MouseEventParams): void {
   const id = param.hoveredInfo?.objectId
   const card = typeof id === 'string' ? cards.value.get(id) : undefined
   pointed.value = card && param.point ? { id: id as string, card, x: param.point.x, y: param.point.y } : null
+  // a booking period under the pointer draws its bounds through the candles
+  host?.setHovered(pointed.value?.id ?? null)
 }
 
 /** What the chart paints with — each one a token, in its role where `tokens.css` names one. */
@@ -171,6 +175,7 @@ interface ChartColours {
   mark: string
   quiet: string
   annotation: string
+  warning: string
 }
 
 /**
@@ -195,6 +200,8 @@ function readColours(): ChartColours {
     mark: token('--color-text-primary'),
     quiet: token('--color-text-secondary'),
     annotation: token('--color-annotation'),
+    // an order refused: something to weigh before trusting what is beside it
+    warning: token('--color-warning'),
   }
 }
 
@@ -212,8 +219,10 @@ function drawingColours(colours: ChartColours): DrawingColours {
       mixed: colours.quiet,
       entry: colours.mark,
       annotation: colours.annotation,
+      warning: colours.warning,
     },
     surface: colours.surface,
+    ink: colours.mark,
   }
 }
 
@@ -309,9 +318,11 @@ function initChart(size: { width: number, height: number }): void {
     volumeSeries = chart.addSeries(HistogramSeries, {
       priceScaleId: VOLUME_SCALE, priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false,
     })
-    chart.priceScale(VOLUME_SCALE).applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })
+    chart.priceScale(VOLUME_SCALE).applyOptions({ scaleMargins: { top: VOLUME_TOP, bottom: 0 } })
   }
   host = new ChartDrawingHost()
+  // told from inside the library's drawing of a frame: the scale is moved once that has finished
+  host.onLaneShare(share => queueMicrotask(() => fitVolume(share)))
   buildPriceSeries()
 }
 
@@ -423,6 +434,15 @@ function withAlpha(colour: string, alpha: number): string {
   return `rgba(${value >> 16}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`
 }
 
+/**
+ * The volume stands above the time lane, never under it: its fifth of the pane is lifted by the
+ * lane's share, so the lane's strip and marks are not drawn over its bars (on screen 2026-11-08).
+ */
+function fitVolume(share: number): void {
+  if (!chart || !volumeSeries) return
+  chart.priceScale(VOLUME_SCALE).applyOptions({ scaleMargins: { top: VOLUME_TOP - share, bottom: share } })
+}
+
 /** The volume bars, in the colour of their candle's direction, faint — or none, where hidden. */
 function showVolume(): void {
   if (!volumeSeries) return
@@ -497,6 +517,8 @@ onUnmounted(() => {
   resizeObserver?.disconnect()
   themeObserver?.disconnect()
   chart?.remove()
+  // a lane share told in the last frame arrives after this: nothing is left to fit
+  volumeSeries = null
 })
 
 // bars that arrive before the chart has a size wait for it: onResize hands them over at build time

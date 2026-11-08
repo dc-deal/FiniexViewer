@@ -185,6 +185,28 @@ test('the run chart draws the levels of the position looked at', async ({ page }
 })
 
 /**
+ * The time lane (viewer#41, section D): the unit's booking period as a strip along the bottom of the
+ * pane and its orders refused as crosses above it, counted on the chart's element since a canvas
+ * cannot be read back — and the period's card at the pointer, found where the strip stands.
+ */
+test('the run chart draws the booking periods and the orders refused in a lane along its bottom', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['EURGBP_refusals_01'] })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/periods:1/)
+  expect(await chart.getAttribute('data-drawings')).toMatch(/refusals:[1-9]/)
+
+  // the strip stands at the bottom of the pane, just above the time axis
+  const box = (await chart.boundingBox())!
+  const card = page.locator('.chart-card')
+  for (let lift = 26; lift <= 60 && !(await card.count()); lift += 2) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height - lift)
+    await page.waitForTimeout(60)
+  }
+  await expect(card).toContainText('booking period 1')
+})
+
+/**
  * An own level: the strategy kept it itself, so the row names it only in `exit_level` (contract 45).
  * It reaches the chart like any level, counted on the chart's element since a canvas cannot be read
  * back — no stored run carries one yet, so the mock hands one position the fields such a run serves.

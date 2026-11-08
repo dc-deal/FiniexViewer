@@ -11,11 +11,14 @@ import type { ChartMark } from '@/types/run_chart_types'
 
 /**
  * A set of drawings switched as one — a *drawing layer* in FiniexTestingIDE's glossary (contract
- * 35): the trades' marks, the levels of the position in focus, and the line from its entry to its exit.
+ * 35): the trades' marks, the levels of the position in focus, the line from its entry to its exit,
+ * and in the time lane along the bottom the booking periods and the orders refused or expired.
  * Ours, so a closed set — a name read back from storage is checked against it; `layer_registry.ts`
  * describes each and says which chart draws which.
  */
-export const CHART_LAYER_IDS = ['levels', 'entry-exit', 'trades', 'state-frame', 'volume', 'candles'] as const
+export const CHART_LAYER_IDS = [
+  'levels', 'entry-exit', 'trades', 'state-frame', 'periods', 'refusals', 'volume', 'candles',
+] as const
 export type ChartLayerId = typeof CHART_LAYER_IDS[number]
 
 /**
@@ -24,8 +27,11 @@ export type ChartLayerId = typeof CHART_LAYER_IDS[number]
  */
 export type DrawingLayerId = Exclude<ChartLayerId, 'volume' | 'candles'>
 
-/** What a drawing's colour says — a role, never a colour; the shape and the word say it first. */
-export type DrawingRole = Polarity | 'mixed' | 'entry' | 'annotation'
+/**
+ * What a drawing's colour says — a role, never a colour; the shape and the word say it first. `warning`
+ * is an order refused: something to weigh before trusting what is beside it.
+ */
+export type DrawingRole = Polarity | 'mixed' | 'entry' | 'annotation' | 'warning'
 
 /**
  * A price held from one bar to another — a stop loss, a target. `to` null: to the window's edge.
@@ -65,7 +71,47 @@ export interface TimeDrawing {
   card: FigureCard
 }
 
-export type ChartDrawing = ChartMark | SegmentDrawing | LineDrawing | TimeDrawing
+/**
+ * A stretch of time in the TIME LANE along the bottom of the pane, where no price is claimed — a
+ * booking period, from the bar it opened in to the bar it closed in. Ours, until testingide#379 names
+ * one. Its `label` is its sign, drawn where it fits; hovered, its two bounds run dashed through the
+ * candles.
+ */
+export interface SpanDrawing {
+  kind: 'span'
+  id: string
+  /** The open of the bar it starts in. */
+  from: number
+  /** The open of the bar it ends in. */
+  to: number
+  /** Whether it ends at that bar's open rather than inside the bar — where the next one starts. */
+  endsAtOpen: boolean
+  label: string
+  role: DrawingRole
+  card: FigureCard
+}
+
+/**
+ * A moment in the time lane — an order refused or expired, which has no price to stand at, so it is
+ * never drawn at an invented one (viewer#41). Gathered like the trades' marks where they would cover
+ * each other, its count beside it.
+ */
+export interface LaneMarkDrawing {
+  kind: 'lane-mark'
+  id: string
+  /** The open of the bar the order ended in. */
+  time: number
+  /** The instant it ended, in UTC seconds — of the first one, for a gathered mark. */
+  at: number
+  /** `cross` an order refused, `ring` one that ran out without filling. */
+  shape: 'cross' | 'ring'
+  /** Its count where it stands for several — `×3` — or empty. */
+  text: string
+  role: DrawingRole
+  card: FigureCard
+}
+
+export type ChartDrawing = ChartMark | SegmentDrawing | LineDrawing | TimeDrawing | SpanDrawing | LaneMarkDrawing
 
 /** One layer: its drawings, drawn in list order — a later layer stands in front of an earlier one. */
 export interface ChartLayer {

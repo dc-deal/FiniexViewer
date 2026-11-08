@@ -49,6 +49,16 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
     hintId: 'layer-state-frame',
     emptyHintId: 'layer-empty-state-frame',
   },
+  periods: {
+    title: t('Booking periods'),
+    hintId: 'layer-periods',
+    emptyHintId: 'layer-empty-periods',
+  },
+  // no hint where none was refused: that is everything going fine, and nothing is said for it
+  refusals: {
+    title: t('Refused and expired'),
+    hintId: 'layer-refusals',
+  },
 }
 
 /**
@@ -56,7 +66,7 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
  * draws only its candles, and the Layers panel has nothing to arrange for it: the free chart today.
  */
 const CHART_LAYERS: Record<string, readonly ChartLayerId[]> = {
-  'run-chart': ['volume', 'candles', 'state-frame', 'levels', 'entry-exit', 'trades'],
+  'run-chart': ['volume', 'candles', 'periods', 'refusals', 'state-frame', 'levels', 'entry-exit', 'trades'],
 }
 
 export function layerDefinition(id: ChartLayerId): LayerDefinition {

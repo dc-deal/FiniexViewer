@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { MARK_TEXT_PX, hitDrawing, markSize, placeLayer, type BarRange, type ChartScale } from '@/components/chart_geometry'
-import type { LineDrawing, SegmentDrawing } from '@/types/chart_drawing_types'
+import {
+  LANE_STRIP_PX, MARK_TEXT_PX, hitDrawing, laneBox, markSize, placeLayer, type BarRange, type ChartScale,
+} from '@/components/chart_geometry'
+import type { LaneMarkDrawing, LineDrawing, SegmentDrawing, SpanDrawing } from '@/types/chart_drawing_types'
 import type { ChartMark } from '@/types/run_chart_types'
 
 /**
@@ -130,6 +132,60 @@ describe('chart_geometry', () => {
 
     it('finds nothing where nothing is drawn', () => {
       expect(hitDrawing([levels, lines, trades], 700, 20)).toBeNull()
+    })
+  })
+
+  /**
+   * The time lane along the bottom of the pane (viewer#41, section D): the booking periods' strip at the
+   * bottom, the orders refused or expired in a row above it — only the rows something is drawn in.
+   */
+  describe('the time lane', () => {
+    const SPAN: SpanDrawing = {
+      kind: 'span', id: 'period|u|1', from: 1, to: 3, endsAtOpen: false, label: '+', role: 'positive',
+      card: { title: 'u · booking period 1', details: [] },
+    }
+    const REFUSED: LaneMarkDrawing = {
+      kind: 'lane-mark', id: 'order|u|1', time: 2, at: 2, shape: 'cross', text: '×3', role: 'warning',
+      card: { title: '3 orders refused', details: [] },
+    }
+
+    it('takes from the bottom only the rows something is drawn in', () => {
+      expect(laneBox(400, { strip: false, marks: false })).toBeNull()
+      const strip = laneBox(400, { strip: true, marks: false })!
+      expect(strip.stripTop + strip.stripHeight).toBeLessThan(400)
+      expect(strip.markY).toBeNull()
+      const both = laneBox(400, { strip: true, marks: true })!
+      // the marks' row stands above the strip, and the lane is taller by it
+      expect(both.markY!).toBeLessThan(both.stripTop)
+      expect(both.height).toBeGreaterThan(strip.height)
+      expect(laneBox(400, { strip: false, marks: true })!.stripHeight).toBe(0)
+    })
+
+    it('runs a period from the left edge of its first bar to the right edge of its last, or to the left edge where it closed at the open of that bar', () => {
+      const scale = { ...SCALE, lane: laneBox(400, { strip: true, marks: false }) }
+      const [placed] = placeLayer({ id: 'periods', drawings: [SPAN] }, BARS, scale).spans
+      expect([placed!.x1, placed!.x2]).toEqual([5, 35])
+      expect(placed!.height).toBe(LANE_STRIP_PX)
+      const [atOpen] = placeLayer({ id: 'periods', drawings: [{ ...SPAN, endsAtOpen: true }] }, BARS, scale).spans
+      expect(atOpen!.x2).toBe(25)
+    })
+
+    it('stands an order in the row of the marks at its bar, and nothing of the lane without one', () => {
+      const scale = { ...SCALE, lane: laneBox(400, { strip: true, marks: true }) }
+      const placed = placeLayer({ id: 'refusals', drawings: [REFUSED] }, BARS, scale)
+      expect(placed.laneMarks[0]).toMatchObject({ x: 20, y: scale.lane!.markY })
+      expect(placeLayer({ id: 'refusals', drawings: [REFUSED] }, BARS, SCALE).laneMarks).toEqual([])
+      expect(placeLayer({ id: 'periods', drawings: [SPAN] }, BARS, SCALE).spans).toEqual([])
+    })
+
+    it('finds an order as a point and a period anywhere in its strip', () => {
+      const scale = { ...SCALE, lane: laneBox(400, { strip: true, marks: true }) }
+      const periods = placeLayer({ id: 'periods', drawings: [SPAN] }, BARS, scale)
+      const refusals = placeLayer({ id: 'refusals', drawings: [REFUSED] }, BARS, scale)
+      const stripY = scale.lane!.stripTop + 2
+      expect(hitDrawing([periods, refusals], 12, stripY)).toMatchObject({ id: 'period|u|1', point: false })
+      expect(hitDrawing([periods, refusals], 20, scale.lane!.markY!)).toMatchObject({ id: 'order|u|1', point: true })
+      expect(hitDrawing([periods, refusals], 50, stripY)).toBeNull()
     })
   })
 })
