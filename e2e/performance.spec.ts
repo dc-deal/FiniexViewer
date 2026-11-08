@@ -193,6 +193,14 @@ test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) =>
     )
   })
 
+  const perStep = await zoomSteps(page, chart, 'run chart — a zoom step drawn (mean)')
+
+  expect(drawn).toBeLessThan(3000)
+  expect(perStep).toBeLessThan(500)
+})
+
+/** Ten zoom steps over the chart, in and out, each until the frame after it has painted: the mean. */
+async function zoomSteps(page: Page, chart: ReturnType<Page['locator']>, label: string): Promise<number> {
   const box = (await chart.boundingBox())!
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   const steps = 10
@@ -203,9 +211,23 @@ test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) =>
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   }
   const perStep = Math.round((Date.now() - started) / steps)
-  timings.push({ label: 'run chart — a zoom step drawn (mean)', ms: perStep })
+  timings.push({ label, ms: perStep })
+  return perStep
+}
 
-  expect(drawn).toBeLessThan(3000)
+/**
+ * The time lane (viewer#41, section D): the refusing unit draws its booking period and its orders
+ * refused along the bottom of the pane, and each zoom step gathers the refusals anew at the new width
+ * of a bar and moves the volume's scale with the lane — the lane's cost that comes with every move.
+ */
+test('a zoom step over the time lane is quick', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['EURGBP_refusals_01'] })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/periods:1/)
+  expect(await chart.getAttribute('data-drawings')).toMatch(/refusals:[1-9]/)
+
+  const perStep = await zoomSteps(page, chart, 'run chart — a zoom step, lane (mean)')
   expect(perStep).toBeLessThan(500)
 })
 
