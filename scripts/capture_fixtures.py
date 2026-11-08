@@ -102,7 +102,10 @@ DEPLOY = 'deploy_20261108_143439_214aa9fc'
 # right. The preflight below checks exactly that; any sweep it accepts can replace this one.
 # Re-pinned 2026-10-31 to the catalog's `sweep` entry, produced again on contract 46: a logic on own
 # levels, ranked by `net_pnl`, every row's `expectancy` null.
-SWEEP = 'sweep_20261031_100348_42d8ea0b'
+#
+# Re-pinned 2026-11-08 to the catalog produced again under contract 51, the id FiniexTestingIDE named:
+# the same production its golden sample freezes, which never changes what the runs recorded.
+SWEEP = 'sweep_20261108_143818_441afbf1'
 
 # The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
 # than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs

@@ -31,7 +31,7 @@ const SESSION = '20261022_123550_0bfde90e'
 const DEPLOYMENT = 'deploy_20261108_143439_214aa9fc'
 // a session of that deployment, so the panels beside it show the bot's run
 const DEPLOYMENT_SESSION = '20261108_143554_987d07e8'
-const SWEEP = 'sweep_20261031_100348_42d8ea0b'
+const SWEEP = 'sweep_20261108_143818_441afbf1'
 // the arrangement the pictures are taken in, stored with the size it was arranged at
 const ARRANGEMENT = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'readme_arrangement.json'), 'utf-8'))
 const HIDDEN = (process.env['PICTURES_HIDE'] ?? '').split(',').map(word => word.trim().toLowerCase()).filter(Boolean)

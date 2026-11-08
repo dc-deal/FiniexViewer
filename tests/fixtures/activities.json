@@ -2,11 +2,11 @@
   "key": [
     "activity_id"
   ],
-  "measured_at": "2026-11-08T16:23:33.765764+00:00",
+  "measured_at": "2026-11-08T17:19:46.216621+00:00",
   "machine_memory": {
     "limit_bytes": 32495558656,
-    "used_bytes": 4743430144,
-    "used_pct": 14.6,
+    "used_bytes": 4873965568,
+    "used_pct": 15.0,
     "limit_source": "machine",
     "warn_at_pct": 80.0,
     "critical_at_pct": 90.0
@@ -27,7 +27,7 @@
       "pid": 67758,
       "command_line": "python/cli/api_server_cli.py",
       "started_at": "2026-11-08T15:08:51.273482+00:00",
-      "uptime_s": 4482.9,
+      "uptime_s": 7855.5,
       "working_tree": ".",
       "git_commit": "2912dd3e",
       "origin_channel": "cli",
@@ -35,7 +35,7 @@
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
       "console_session": null,
-      "rss_bytes": 454524928,
+      "rss_bytes": 598421504,
       "process_count": 1
     }
   ]
