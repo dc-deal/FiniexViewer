@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { orderKeyOf } from '@/composables/use_order_steps'
 import { useTickSizes } from '@/composables/use_tick_sizes'
-import { priceAt, utcInstant } from '@/components/runs/report_format'
+import { ORDER_REFUSALS, priceAt, utcInstant } from '@/components/runs/report_format'
 import type { ListColumn } from '@/types/list_types'
 import type { OrderEvent } from '@/types/api/report_types'
 import { plural, t } from '@/translate'
@@ -127,7 +127,7 @@ function stepTone(step: OrderEvent): string {
   return ''
 }
 
-const REFUSED = new Set(['rejected', 'denied', 'undelivered', 'unaccounted', 'unresolved'])
+const REFUSED = new Set([...ORDER_REFUSALS, 'unresolved'])
 const DEFERRED = new Set(['expired', 'cancel_deferred'])
 </script>
 

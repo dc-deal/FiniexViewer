@@ -13,7 +13,7 @@ import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import type { PositionRef } from '@/types/context_types'
 import { useOrderSteps } from '@/composables/use_order_steps'
 import { useTickSizes } from '@/composables/use_tick_sizes'
-import { orDash, priceAt, quantity, utcInstant } from '@/components/runs/report_format'
+import { ORDER_REFUSALS, orDash, priceAt, quantity, utcInstant } from '@/components/runs/report_format'
 import { executedOpenings } from '@/components/runs/run_chart_marks'
 import type { ListColumn } from '@/types/list_types'
 import type {
@@ -360,25 +360,12 @@ function reasonOf(order: OrderHistoryRow): string {
   return message ?? reason ?? ''
 }
 
-/**
- * A status that went the wrong way is marked, and only where it did.
- *
- * **All FOUR refusals, not just the venue's.** Contract 23 split one status into two — `rejected`
- * narrowed to the venue's refusals and `denied` took the half refused before anything was sent `
- * and only the first kept the tone, so half the refusals on screen read like ordinary rows.
- * `undelivered` and `unaccounted` are listed with them deliberately: neither has a case in any
- * stored run, and leaving them out is how `denied` came to be missed in the first place.
- *
- * `cancelled` is NOT here. A cancel is something that was asked for — `initiator: strategy` on 32
- * of the 33 on the field study — so it is an ordinary ending rather than a refusal.
- */
+/** A status that went the wrong way is marked, and only where it did — the four refusals, and an expiry. */
 function statusTone(order: OrderHistoryRow): string {
-  if (REFUSED.has(order.status)) return 'negative'
+  if (ORDER_REFUSALS.has(order.status)) return 'negative'
   if (order.status === 'expired') return 'warned'
   return ''
 }
-
-const REFUSED = new Set(['rejected', 'denied', 'undelivered', 'unaccounted'])
 
 /** The scenarios the reader closed by hand — kept as the panel's own view for the run on show. */
 const closedGroups = useViewRows('groups-closed', () => props.model.history.run_id)
