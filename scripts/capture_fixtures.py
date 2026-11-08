@@ -68,7 +68,9 @@ BASE = 'http://localhost:5173/api/v1'
 #
 # Re-pinned 2026-10-22 to the same entry's production of 2026-10-18, the id FiniexTestingIDE named:
 # it lists seven warning rows where the earlier one listed five, an accepted move.
-RUN = '20261018_105012_fde28d5d'
+#
+# Re-pinned 2026-11-08 to the catalog produced again under contract 51, the id FiniexTestingIDE named.
+RUN = '20261108_143225_7d14f73f'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -90,7 +92,10 @@ LIVE_RUN = '20261007_152959_0275a107'
 #
 # Re-pinned 2026-10-13 to the catalog's `demo_deployment` entry, produced again with `RUN` above:
 # the main history, whose last session is again killed before its close.
-DEPLOY = 'deploy_20261012_205734'
+#
+# Re-pinned 2026-11-08 to the catalog produced again under contract 51: the main history, its last
+# session again killed before its close, so it shows what contracts 50 and 51 serve.
+DEPLOY = 'deploy_20261108_143439_214aa9fc'
 
 # The sweep the ranking fixtures come from: a stored search of several combinations, every one of
 # them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get

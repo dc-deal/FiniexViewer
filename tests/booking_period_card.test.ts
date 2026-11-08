@@ -82,10 +82,15 @@ describe('booking_period_card', () => {
       expect(pair(details, 'Unrealized')).toBeUndefined()
     })
 
-    /** A run recorded before contract 35 serves the four null on its own route: nothing is said. */
+    /**
+     * A run recorded before contract 35 serves the four null on its own route: nothing is said. Built
+     * rather than read: the captured run is produced under a newer contract and carries them.
+     */
     it('says nothing it carries where the record does not hold it', () => {
-      const labels = periodCard(PERIOD).details.map(figure => figure.label)
-      expect(PERIOD.account_max_drawdown).toBeNull()
+      const older: BookingPeriodRow = {
+        ...PERIOD, account_max_drawdown: null, account_max_dd_pct: null, open_position_count: null, unrealized_pnl: null,
+      }
+      const labels = periodCard(older).details.map(figure => figure.label)
       expect(labels).not.toContain('Deepest drawdown')
       expect(labels).not.toContain('Still open')
     })

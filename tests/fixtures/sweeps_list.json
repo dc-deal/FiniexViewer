@@ -4,6 +4,40 @@
   ],
   "sweeps": [
     {
+      "sweep_id": "sweep_20261108_143818_441afbf1",
+      "started": "2026-11-08T14:38:23.603889Z",
+      "duration_s": 465.429472,
+      "run_count": 9,
+      "ok_count": 9,
+      "error_count": 0,
+      "decision_logic_type": "CORE/trend_channel_reference",
+      "decision_version": "1.6.0",
+      "base_config": "trend_channel_reference_sweep_base",
+      "symbols": [
+        "EURUSD"
+      ],
+      "objective": "net_pnl",
+      "maximize": true,
+      "features_beyond_venue": ""
+    },
+    {
+      "sweep_id": "sweep_20261105_142740_11ae7e03",
+      "started": "2026-11-05T14:27:46.298533Z",
+      "duration_s": 626.285111,
+      "run_count": 9,
+      "ok_count": 9,
+      "error_count": 0,
+      "decision_logic_type": "CORE/trend_channel_reference",
+      "decision_version": "1.6.0",
+      "base_config": "trend_channel_reference_sweep_base",
+      "symbols": [
+        "EURUSD"
+      ],
+      "objective": "net_pnl",
+      "maximize": true,
+      "features_beyond_venue": ""
+    },
+    {
       "sweep_id": "sweep_20261031_100348_42d8ea0b",
       "started": "2026-10-31T10:03:55.154811Z",
       "duration_s": 452.873518,
@@ -123,5 +157,5 @@
       "features_beyond_venue": ""
     }
   ],
-  "count": 7
+  "count": 9
 }

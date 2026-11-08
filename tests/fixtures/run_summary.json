@@ -1,5 +1,5 @@
 {
-  "run_id": "20261018_105012_fde28d5d",
+  "run_id": "20261108_143225_7d14f73f",
   "currencies": [
     {
       "currency": "EUR",
@@ -23,13 +23,13 @@
       "total_initial_balance": 40000.0,
       "unit_count": 4,
       "open_position_count": 3,
-      "expectancy": 0.0,
+      "expectancy": null,
       "avg_win_r": null,
       "avg_loss_r": null,
       "r_trade_count": 0,
       "r_win_count": 0,
       "r_loss_count": 0,
-      "avg_mae_winners": -1.8484635410217194,
+      "avg_mae_winners": -1.867414671660211,
       "avg_mae_losers": -0.44341612329267566,
       "avg_mfe_losers": 0.2727970219656116,
       "largest_mae": 2.8415548988415944,
@@ -60,7 +60,7 @@
       "total_initial_balance": 2000.0,
       "unit_count": 1,
       "open_position_count": 1,
-      "expectancy": 0.0,
+      "expectancy": null,
       "avg_win_r": null,
       "avg_loss_r": null,
       "r_trade_count": 0,
