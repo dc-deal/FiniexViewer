@@ -1,4 +1,5 @@
 import { onMounted, onUnmounted, watch } from 'vue'
+import { useDockStore } from '@/stores/dock_store'
 import { useNamedLayoutsStore } from '@/stores/named_layouts_store'
 import { useSettingsStore } from '@/stores/settings_store'
 import type { LayoutSize } from '@/types/named_layout_types'
@@ -14,15 +15,18 @@ export function sizeForWidth(width: number, mediumFrom: number, fullFrom: number
 }
 
 /**
- * The window's width chooses the size of the loaded layout (viewer#37), where the reader switched
- * that on in Settings › Layouts. The size changes when the window, at rest after a resize, stands
- * across a bound from where it stood before — so a size picked by hand in the submenu holds until
- * the window next crosses one, and opening the app keeps the size it was left in. Switching the
- * setting on applies it at once: that is the reader's own command. Called ONCE, at the app root.
+ * The window's width chooses the size of the loaded layout (viewer#37), on by default and switched
+ * off in Settings › Layouts. The size changes when the window, at rest after a resize, stands across
+ * a bound from where it stood before, and when the app opens — so a size picked by hand in the
+ * submenu holds until the window next crosses one or the app is opened again (operator, 2026-11-10:
+ * it kept the size it was left in until then, and a narrow window opened onto Full squeezed into it).
+ * Switching the setting on applies it at once: that is the reader's own command. Called ONCE, at the
+ * app root.
  */
 export function useLayoutSizeByWindow(): void {
   const settingsStore = useSettingsStore()
   const layouts = useNamedLayoutsStore()
+  const dock = useDockStore()
   /** The size the window's width stood for when it last rested. */
   let band: LayoutSize | null = null
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -54,6 +58,15 @@ export function useLayoutSizeByWindow(): void {
   watch(() => settingsStore.settings.sizeByWindow, on => {
     if (on) follow(measured())
   })
+
+  // on opening, once the dock has laid out what was stored: `attach` lays it out in the same step
+  // that makes the dock ready, and a watcher runs after that step — a layout cannot be laid before
+  let opened = false
+  watch(() => dock.api, api => {
+    if (!api || opened) return
+    opened = true
+    follow(measured())
+  }, { immediate: true })
 
   onMounted(() => {
     band = measured()

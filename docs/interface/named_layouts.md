@@ -102,9 +102,10 @@ and what it changes goes into that size alone; back in another size, that one st
   for a reader who would rather not be steered (operator). Switched on, the window's width chooses
   the size: Mobile below *Medium from* (900 px), Medium below *Full from*
   (1500 px), Full from there, in CSS pixels as the window reads them (`use_layout_size_by_window.ts`).
-  The size changes once the window rests after crossing a width, so a size chosen by hand holds until
-  the next crossing, and opening the app keeps the size it was left in; switching it on applies it at
-  once. The two widths are refused where Medium's would stand at or above Full's.
+  The size changes once the window rests after crossing a width, and when the app opens, once the
+  dock has laid out what was stored — so a size chosen by hand holds until the next crossing or the
+  next opening (operator, 2026-11-10: the app had kept the size it was left in, and a narrow window
+  opened onto Full squeezed into it); switching it on applies it at once. The two widths are refused where Medium's would stand at or above Full's.
 
 *Mobile* is the arrangement for a narrow window, one column of the bundles, which are built for
 little width. A phone below about 500 px would need more than an arrangement — a menu bar for it and

@@ -97,6 +97,36 @@ describe('useLayoutSizeByWindow', () => {
     expect(layouts.loaded).toBeNull()
   })
 
+  /**
+   * On opening the window chooses as well, once the dock is ready (operator, 2026-11-10): a layout left
+   * in Full and opened in a narrow window had stood squeezed into it until the window was resized.
+   */
+  it('takes the window size when the app opens, once the dock is ready, and never while it is off', async () => {
+    const layouts = useNamedLayoutsStore()
+    layouts.load('deploys', 'full')
+    Object.defineProperty(window, 'innerWidth', { value: 700, configurable: true })
+    mountBinding()
+    await nextTick()
+    // the dock not ready yet: nothing can be laid out
+    expect(useArrangementStore().layoutSize).toBe('full')
+    useDockStore().api = {} as never
+    await nextTick()
+    expect(useArrangementStore().layoutSize).toBe('mobile')
+
+    mounted?.unmount()
+    setActivePinia(createPinia())
+    vi.spyOn(useDockStore(), 'restore').mockImplementation((_layout, prepare) => {
+      prepare?.()
+      return true
+    })
+    useSettingsStore().setSizeByWindow(false)
+    useNamedLayoutsStore().load('deploys', 'full')
+    mountBinding()
+    useDockStore().api = {} as never
+    await nextTick()
+    expect(useArrangementStore().layoutSize).toBe('full')
+  })
+
   /** Switching it on is the reader's own command, so it applies at once. */
   it('takes the window size at once when it is switched on', async () => {
     useSettingsStore().setSizeByWindow(false)
