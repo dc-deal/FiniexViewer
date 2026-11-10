@@ -194,6 +194,9 @@ describe('ScenarioRosterPanel', () => {
     expect(notice.exists()).toBe(true)
     expect(notice.text()).toContain('1')
     expect(notice.text()).toContain('4')
+    // the counts served beside the rows (contract 52), never the rows counted here
+    const served = mountPanel({ ...MIXED, scenario_count: 9, failed_scenario_count: 2 }).find('.roster-notice')
+    expect(served.text()).toContain('2 of 9')
   })
 
   it('stays silent where every scenario ran', () => {

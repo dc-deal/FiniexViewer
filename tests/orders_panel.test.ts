@@ -230,6 +230,8 @@ describe('OrdersPanel', () => {
       })]))
       expect(heading(resting)).toContain('resting at data end 1')
       expect(heading(mountPanel(model([order()])))).not.toContain('resting at data end')
+      // the count served beside the lists (contract 52), never the lists counted here
+      expect(heading(mountPanel(model([order()], [unit({ active_order_count: 3 })])))).toContain('resting at data end 3')
     })
 
     /** Nothing timed is an absence; `0 ms` there would claim a measurement. */

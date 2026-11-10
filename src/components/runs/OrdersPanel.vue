@@ -245,7 +245,8 @@ function funnelOf(scenario: string): PendingOrderUnit | null {
  * scenario that no single row states.
  */
 function restingAtEnd(unit: PendingOrderUnit): number {
-  return unit.active_limit_orders.length + unit.active_stop_orders.length
+  // served since contract 52, the two lists counted together
+  return unit.active_order_count
 }
 
 /**

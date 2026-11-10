@@ -385,7 +385,8 @@ const shown = computed(() => sortRows(
   sort.value
 ))
 
-const failed = computed(() => roster.value.units.filter(row => row.status === 'failed').length)
+// served since contract 52: the scenarios whose status is other than `success`, of every row
+const failed = computed(() => roster.value.failed_scenario_count)
 
 /**
  * The roster is where a scenario is CHOSEN — it is the only complete list, so it is the only place
@@ -406,7 +407,7 @@ function isPicked(name: string): boolean {
          narrowed list would otherwise hide the very rows a reader most needs to see -->
     <p v-if="failed" class="roster-notice">
       <span class="mark">⚠</span>
-      {{ failed }} {{ t('of') }} {{ roster.units.length }}
+      {{ failed }} {{ t('of') }} {{ roster.scenario_count }}
       {{ t('scenarios produced nothing — their reason is on the row') }}
     </p>
 
