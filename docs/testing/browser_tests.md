@@ -52,7 +52,7 @@ by its tab, the way a reader does.
   on purpose.
 - `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per
   tab, and to a frame that stays inside a small window with its content scrolling, and the account
-  standing in the menu bar with no tab for it in the settings.
+  standing in the status bar with no tab for it in the settings.
 - `font_size.spec.ts` holds every text to ONE size: each that the dock and the two bars draw for a
   backtest, a live session, an ended one and a deployment, every section of their bundles opened,
   and each on every tab of the settings dialog, measured as the browser computed it against the

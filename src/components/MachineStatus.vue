@@ -10,7 +10,7 @@ import type { IconName } from '@/types/icon_types'
 import { t } from '@/translate'
 
 /**
- * How full the machine is, in the menu bar beside the account — the machine the server, the
+ * How full the machine is, at the right end of the status bar — the machine the server, the
  * backtests and the live sessions share. The two figures stand there always: on a large host many
  * scenarios run in parallel and fill it, and nothing else on screen says so. The backend's GRADE
  * speaks only where it is not `ok`, as a mark and its word; everything else is on hover — and
@@ -180,7 +180,7 @@ const details = computed<Figure[]>(() => {
 
 <style scoped>
 /* no control: a click opening the Activities panel was tried on 2026-10-19 and taken back — as a
-   button the status wore the link colour and a frame on hover, too loud for the menu bar's quiet
+   button the status wore the link colour and a frame on hover, too loud for the frame's quiet
    figures (operator, on screen). The card names the panel instead. */
 .machine-status {
   display: flex;

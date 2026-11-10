@@ -3,7 +3,7 @@
 What runs on the machine right now — every backtest, sweep, live session, import, FiniexTestingIDE's
 test suite and its API server — as a panel of its own (viewer#49). Read this before you change
 `ActivitiesView.vue` or the activity half of `machine_store.ts`. How full the machine is, and the
-card in the menu bar that names what runs in one line, is in [Menu Bar Status](../interface/menu_bar_status.md).
+card in the status bar that names what runs in one line, is in [Menu Bar Status](../interface/menu_bar_status.md).
 
 ## Where it comes from
 

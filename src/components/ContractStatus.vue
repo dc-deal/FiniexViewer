@@ -9,7 +9,7 @@ import type { Figure } from '@/types/figure_types'
 import { t } from '@/translate'
 
 /**
- * Which API contract the server serves, in the menu bar — drawn only where it is not the one this
+ * Which API contract the server serves, in the status bar — drawn only where it is not the one this
  * viewer mirrors. Where the two agree nothing is drawn; before any answer nothing is either, and
  * the account beside it already says when the server does not answer.
  */

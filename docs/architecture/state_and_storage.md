@@ -148,11 +148,11 @@ does not allow (see [API Token](container_topology.md#api-token--the-dev-proxy-h
 - **`src/components/SettingsDialog.vue`** — two tabs: **Display** (the preferences) and **Layout**
   (the way back to the suggested order of the docked panels, and the export and import of the
   order of the sections in the run bundle). Every open starts on Display.
-- **`src/components/AccountStatus.vue`** — the identity below, in the menu bar beside the
-  application menu. Who the viewer works as is a fact to see at a glance rather than a setting to
+- **`src/components/AccountStatus.vue`** — the identity below, in the status bar beside the
+  server. Who the viewer works as is a fact to see at a glance rather than a setting to
   open, so it left the settings' Account tab on 2026-10-13.
-- **`src/components/MachineStatus.vue`** — how full the machine is, in the menu bar before the
-  account (see [How full the machine is](../interface/menu_bar_status.md#how-full-the-machine-is--get-apiv1machine-resources)).
+- **`src/components/MachineStatus.vue`** — how full the machine is, at the right end of the
+  status bar (see [How full the machine is](../interface/menu_bar_status.md#how-full-the-machine-is--get-apiv1machine-resources)).
 - **`src/components/base/AppDialog.vue`** — every dialog's frame: what is set or read and then
   closed — the settings, About — rather than kept open beside the work, which is a panel. One
   frame, so no dialog re-invents the overlay or the close: 80 % of the window caps both sides, the

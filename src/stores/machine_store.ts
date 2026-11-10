@@ -14,7 +14,7 @@ const STALE_MS = 3 * POLL_MS
 /**
  * How full the machine is, read again every few seconds while the page is in view — and what runs
  * on it, read on the same beat only while someone reads THAT: the Activities panel while it is on
- * show, the menu bar's card while it is open (viewer#49). Both answers are the `machine` surface's.
+ * show, the status bar's card while it is open (viewer#49). Both answers are the `machine` surface's.
  *
  * The LAST reading is held through a failure: it is still the best statement there is, and its age
  * says how good. The backend asks for exactly that, so a reading that has stopped arriving is

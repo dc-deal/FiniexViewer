@@ -54,7 +54,7 @@ objective it declared, and one click makes a combination the run on show.
 
 - **Layouts** — the placement of the panels saved under a name: *Backtests* and *Deploys* ship with
   the app, each in a Full, a Medium and a Mobile size, and picking a run offers the one it fits.
-- **Several servers** — a switch in the menu bar, each window showing one, and a run host reached
+- **Several servers** — a switch in the status bar, each window showing one, and a run host reached
   through an SSH tunnel the dev server keeps.
 - **What the venue itself held** — a live session's balances and open orders as the venue reported
   them, at its start and its end, beside the books the session kept.
