@@ -42,7 +42,10 @@ by its tab, the way a reader does.
   what left a panel behind a tab reaching past the bottom; and a panel dropped at the dock's
   outermost edge spanning that whole edge — along the bottom, where the first arrangement's
   columns tell it apart from a drop on one group; and a pick in the run list that leaves a closed
-  run report closed while the run is chosen all the same.
+  run report closed while the run is chosen all the same. And every column stretching with the
+  window: made narrow enough that the columns meet their least width, each gives up its share, and
+  grown again and reloaded the arrangement stands as it was — seen red without
+  `proportional-layout`.
 - `run_selection.spec.ts` also holds the rule that a selection never moves the layout — choosing a
   scenario leaves the executive panel's box and the row under the pointer exactly where they were —
   and a section still on its way keeping its panel standing with a loading line, the route held back
@@ -230,7 +233,8 @@ drawn — the first batch, the pieces across the three-week gap, the earlier bar
 A named layout laid out from the click to the second frame after it (viewer#37), and a live session
 chosen until its venue account draws the venue's table (viewer#54), read inside the page. And the
 zoom step again over the refusing unit, whose time lane gathers its refusals anew at each width of
-a bar (viewer#41, section D).
+a bar (viewer#41, section D). And a window resized between two widths, each step until the second
+frame after it: since the dock lays out in proportion, every panel on show is laid out again.
 
 **`readme_pictures.spec.ts` takes the README's pictures**, so they stay current (operator,
 2026-10-29): at every release, and whenever a view they show changes visibly. Against the LIVE API

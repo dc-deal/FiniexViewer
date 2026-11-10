@@ -95,6 +95,12 @@ it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the o
   panel of a kind this version does not know is dropped from its group, an emptied group from the
   grid, and floating and popout groups go. Where nothing usable is left — or dockview refuses what
   was stored — the suggested order is laid out instead, never an empty screen.
+- **Every column stretches with the window**, as VS Code's do: the dock lays out in proportion
+  (`proportional-layout` on `DockviewVue`), so a window made small and wide again stands as it
+  was, and so does the arrangement stored on the way. dockview does so by default, but the Vue
+  binding declares the prop a Boolean and an absent one is false — until 2026-11-10 every change of
+  the window went to the last column alone, and a window grown back left the others at their
+  least width. A step costs no more than before (`performance.spec.ts`, *window resized*).
 - **The dock is the window, and it CLIPS.** dockview draws every panel into an overlay of its own
   and sizes it from script, but only while the panel is on show: one behind another tab keeps the
   size it had. Made smaller, the window left such an overlay reaching past its bottom, unseen, and

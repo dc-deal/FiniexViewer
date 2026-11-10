@@ -130,6 +130,26 @@ test('narrowing to a scenario is immediate', async ({ page }) => {
 })
 
 /**
+ * The window resized (2026-11-10): every column stretches with it since the dock lays out in
+ * proportion, so a step lays out every panel on show, the run chart's canvas among them. Ten steps
+ * between two widths, each until the second frame after it has painted: the mean.
+ */
+test('a window resized lays the dock out quickly', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await page.locator('[data-panel-kind="run-chart"] .candle-chart').waitFor({ state: 'visible' })
+  const steps = 10
+  const started = Date.now()
+  for (let step = 0; step < steps; step++) {
+    await page.setViewportSize({ width: step % 2 ? 1800 : 1200, height: 900 })
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  }
+  const perStep = Math.round((Date.now() - started) / steps)
+  timings.push({ label: 'window resized — the dock laid out (mean)', ms: perStep })
+  expect(perStep).toBeLessThan(500)
+})
+
+/**
  * A named layout laid out (viewer#37). The panels both layouts hold are moved rather than rebuilt,
  * so the switch is measured inside the page, from the click to the second frame after it: a round
  * trip of the test runner would be most of the number. Measured 2026-11-03 from the first
