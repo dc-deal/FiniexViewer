@@ -110,7 +110,7 @@ contract while a tab stays open. A field that moved between the two then reads w
 and no panel can show it. So `ContractStatus` says it, before the machine:
 
 ```
-⚠ API contract 43 · viewer 42        hover: which side has to move, both numbers, where the steps are
+⚠ API contract 43 · viewer 42        hover: Server contract 43 · This viewer contract 42
 ```
 
 - **Where the two agree, nothing is drawn**, and nothing before the first answer either — the
@@ -119,9 +119,9 @@ and no panel can show it. So `ContractStatus` says it, before the machine:
   `api_client`), so a restart under another contract shows on the next request rather than on a
   reload; `server_contract_store` holds the latest stamp, and `ContractStatus` compares it beside
   the number it shows — a store kept its verdict across a hot reload and once read *43 · viewer
-  43*. `GET /api/v1/contract` adds only what moved into the server's own version — the steps
-  between two versions are in their contract log (`/api/v1/docs/contract-log`), which the card
-  names.
-- **Which way they differ says who moves**: a newer server waits for the viewer to follow, an older
-  one serves fields this viewer reads without them. The card says which, in a sentence.
+  43*.
+- **The card holds the two numbers and nothing else** (operator, 2026-11-10): a hover card is
+  information, never a help text. It once said in a sentence which side had to move and pointed at
+  the server's contract log, a document the reader of this frontend cannot open. Which side is
+  older reads off the numbers.
 

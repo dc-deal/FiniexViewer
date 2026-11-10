@@ -23,16 +23,15 @@ describe('ContractStatus', () => {
     expect(mountServing(null).find('.contract-status').exists()).toBe(false)
   })
 
-  it('names both contracts where they differ, and says which side has to move', () => {
+  /** A hover card holds information only: no sentence of help, no document the reader cannot open. */
+  it('names both contracts where they differ, in a card of the two numbers and nothing else', () => {
     const newer = mountServing(EXPECTED_CONTRACT + 1)
     expect(newer.find('.contract-status').text()).toBe(`API contract ${EXPECTED_CONTRACT + 1} · viewer ${EXPECTED_CONTRACT}`)
     const card = newer.findComponent(HoverCard)
-    expect(card.props('title')).toContain('newer contract')
-    const details = card.props('details') as Figure[]
-    expect(details.map(row => row.value)).toContain(`contract ${EXPECTED_CONTRACT}`)
-    expect(details.map(row => row.value).join(' ')).toContain('contract-log')
-
-    const older = mountServing(EXPECTED_CONTRACT - 1)
-    expect(older.findComponent(HoverCard).props('title')).toContain('older contract')
+    expect(card.props('title')).toBeUndefined()
+    expect(card.props('details') as Figure[]).toEqual([
+      { label: 'Server', value: `contract ${EXPECTED_CONTRACT + 1}` },
+      { label: 'This viewer', value: `contract ${EXPECTED_CONTRACT}` },
+    ])
   })
 })

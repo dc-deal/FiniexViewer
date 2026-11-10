@@ -201,7 +201,6 @@
   "State": {"field": ["status", "activity_state"], "doc": "order-events", "their": null, "ours": null, "note": ""},
   "Status": {"field": ["status", "initiator"], "doc": "order-events", "their": "Status", "ours": null, "note": "the cell carries WHO ended the order beside the word, because two orders both cancelled are not the same event - a strategy taking its limit back against the framework releasing a protective order. Added 2026-10-08 after the list drew the two identically"},
   "Step": {"field": "volume_step", "doc": "broker", "their": null, "ours": null, "note": ""},
-  "Steps between": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/ContractStatus.vue"},
   "Still open": {"field": ["open_position_count", "lots"], "doc": "booking-periods", "their": "Still open", "ours": null, "note": ""},
   "Stop loss": {"field": "stop_loss", "doc": "pending-orders", "their": null, "ours": null, "note": ""},
   "Stop out": {"field": "stopout_level", "doc": "broker", "their": null, "ours": null, "note": ""},
