@@ -6,6 +6,7 @@ import {
   DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
 } from 'reka-ui'
 import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import { useNamedLayoutsStore } from '@/stores/named_layouts_store'
 import { LAYOUT_SIZES } from '@/types/named_layout_types'
@@ -45,7 +46,9 @@ function loadAsItStands(id: string): void {
 
 <template>
   <DropdownMenuRoot v-model:open="menuOpen">
-    <DropdownMenuTrigger class="menu-bar-trigger layouts-trigger">{{ t('Layouts') }} ▾</DropdownMenuTrigger>
+    <DropdownMenuTrigger class="menu-bar-trigger layouts-trigger" data-rank="3">
+      <AppIcon name="action-layouts" class="bar-icon" /><span class="bar-word">{{ t('Layouts') }}</span> ▾
+    </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent class="menu-content layouts-menu" :side-offset="4" align="start">
         <DropdownMenuSub v-for="layout in layouts" :key="layout.id">
@@ -85,16 +88,18 @@ function loadAsItStands(id: string): void {
     </DropdownMenuPortal>
   </DropdownMenuRoot>
 
-  <!-- the layout the chosen run maps to, one click away where another is loaded -->
+  <!-- the layout the chosen run maps to, one click away where another is loaded; short of room the
+       ⇄ stands alone, its name kept for a screen reader -->
   <AppButton
     v-if="offered"
     class="layout-offer"
     size="compact"
     data-action="layout-offer"
+    data-rank="2"
     :data-layout="offered.id"
     @click="store.load(offered.id)"
   >
-    ⇄ {{ offered.name }}
+    ⇄ <span class="bar-word">{{ offered.name }}</span>
   </AppButton>
 
   <SettingsDialog v-model:open="settingsOpen" tab="layouts" />

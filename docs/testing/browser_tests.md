@@ -53,12 +53,12 @@ by its tab, the way a reader does.
 - `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per
   tab, and to a frame that stays inside a small window with its content scrolling, and the account
   standing in the menu bar with no tab for it in the settings.
-- `font_size.spec.ts` holds every text to ONE size: each that the dock and the menu bar draw for a
+- `font_size.spec.ts` holds every text to ONE size: each that the dock and the two bars draw for a
   backtest, a live session, an ended one and a deployment, every section of their bundles opened,
   and each on every tab of the settings dialog, measured as the browser computed it against the
   body's. A failure names every text at another size, so a component that forgot to set none and
   inherited a larger one is found by name.
-- `machine_status.spec.ts` holds the machine's state in the menu bar — both shares from the captured
+- `machine_status.spec.ts` holds the machine's state in the status bar — both shares from the captured
   reading, on one line, its card naming where the limit was read — and that a new reading moves
   nothing beside it: the account keeps its place while a share goes from 100 to 9.
 - `activities.spec.ts` holds what runs on the machine: the menu bar's card saying it in one line, the
@@ -86,13 +86,18 @@ by its tab, the way a reader does.
   and a jump from the orders landing in the trade history opened as a panel — or, with the run
   bundle closed and the orders standing apart, opening the trade history beside them.
 - `narrow_panels.spec.ts` holds what narrow room does to what stands beside it: the narrowing in the
-  menu bar shortening its name before anything beside it moves, its button still whole and inside
-  the bar, the Panels trigger on one line — at 760 px, where the bar fits its mark and button and
-  not its whole text — and no figure of the executive summary breaking onto a second line or cut
-  short, at the width where they broke; the menu bar inside a window 600 px wide, the machine's
-  figures by their glyphs and the page never wider than the window; and the run list's facet bar on one line at 1400 and 700 px
+  menu bar shortening its name once the words beside it with an icon have given way, its button
+  still whole and inside the bar, the Panels and Layouts triggers on one line and the server's name
+  below readable and over nothing — at 420 px — and no figure of the executive summary breaking onto
+  a second line or cut short, at the width where they broke; both bars inside a window 600 px wide
+  and the page never wider than the window; and the run list's facet bar on one line at 1400 and 700 px
   and on two at most at 420 px, measured against the height of one chip. All of them were red
   against the code before them.
+- `status_bar.spec.ts` holds the frame's two bars: the menu bar choosing and the status bar stating,
+  every word on show at 1800 px and the status bar at the bottom of the window; at 760, 420 and
+  340 px the entries short lowest rank first, both bars inside the window and the page never wider,
+  and what a short form keeps — *Show all*, the application menu, the server's name; every word
+  back at 1800 px; and a menu and a card of the status bar opening above it, inside the window.
 - `show_in_list.spec.ts` holds the way back from the run bundle to the chosen run's row: the run
   list brought forward with the row in view and marked a moment, the row found again once the list
   was scrolled away with only the list scrolled and never its view, and the way not offered while

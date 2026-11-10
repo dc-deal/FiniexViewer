@@ -37,7 +37,7 @@ const name = computed(() => (current.value ? serverName(current.value) : t('Serv
     <DropdownMenuRoot>
       <DropdownMenuTrigger class="menu-bar-trigger server-trigger">
         <AppIcon name="status-server" />
-        <span class="server-name">{{ name }}</span> ▾
+        <span class="server-name" data-shortens>{{ name }}</span> ▾
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="menu-content" :side-offset="4" align="end">

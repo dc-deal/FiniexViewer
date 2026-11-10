@@ -16,6 +16,8 @@ import {
   IconDots,
   IconFileText,
   IconHourglass,
+  IconLayoutBoard,
+  IconLayoutGrid,
   IconLayoutSidebarRightCollapse,
   IconLayoutSidebarRightExpand,
   IconList,
@@ -58,6 +60,9 @@ export const ICONS = {
   'action-back-into-column': IconLayoutSidebarRightCollapse,
   'action-search': IconSearch,
   'action-more': IconDots,
+  // the Panels and Layouts menus in their short form, where the menu bar is short of room
+  'action-panels': IconLayoutGrid,
+  'action-layouts': IconLayoutBoard,
   'kind-executive': IconChartBar,
   'kind-broker': IconBuildingBank,
   'kind-scenario-roster': IconStack2,

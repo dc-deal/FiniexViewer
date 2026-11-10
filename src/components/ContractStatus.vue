@@ -37,7 +37,7 @@ const details = computed<Figure[]>(() => [
   <HoverCard v-if="differs" :details="details">
     <span class="contract-status" tabindex="0">
       <AppIcon name="status-warning" />
-      <span>{{ t('API contract') }} {{ served }} · {{ t('viewer') }} {{ EXPECTED_CONTRACT }}</span>
+      <span class="bar-word">{{ t('API contract') }} {{ served }} · {{ t('viewer') }} {{ EXPECTED_CONTRACT }}</span>
     </span>
   </HoverCard>
 </template>
@@ -47,7 +47,8 @@ const details = computed<Figure[]>(() => [
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
+  /* nothing above and below: the status bar is 1.5 rem high */
+  padding: 0 var(--space-sm);
   border-radius: 4px;
   font-family: monospace;
   font-size: var(--font-size-sm);

@@ -15,6 +15,7 @@ import { useLayoutSizeByWindow } from '@/composables/use_layout_size_by_window'
 import { useRunReportsLoading } from '@/composables/use_run_reports_loading'
 import AppMenuBar from '@/components/AppMenuBar.vue'
 import PanelDock from '@/components/dock/PanelDock.vue'
+import StatusBar from '@/components/StatusBar.vue'
 import { openInDock } from '@/components/dock/open_in_dock'
 
 const { settings } = storeToRefs(useSettingsStore())
@@ -79,6 +80,7 @@ onUnmounted(() => {
   <div class="app">
     <AppMenuBar />
     <PanelDock class="app-dock" />
+    <StatusBar />
   </div>
 </template>
 

@@ -83,7 +83,7 @@ const details = computed<Figure[]>(() => {
   <HoverCard :title="view.sentence" :details="details">
     <span class="account-status" :class="view.role" tabindex="0" :data-state="state">
       <AppIcon :name="view.icon" class="account-mark" />
-      <span class="account-word">{{ view.word }}</span>
+      <span class="account-word bar-word">{{ view.word }}</span>
     </span>
   </HoverCard>
 </template>
@@ -93,7 +93,8 @@ const details = computed<Figure[]>(() => {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
+  /* nothing above and below: the status bar is 1.5 rem high */
+  padding: 0 var(--space-sm);
   border-radius: 4px;
   font-family: monospace;
   font-size: var(--font-size-sm);

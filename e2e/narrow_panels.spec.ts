@@ -16,15 +16,15 @@ test.beforeEach(async ({ page }) => {
 const FOCUS = 'EURGBP_refusals_01'
 
 /**
- * The scenario in focus is said ONCE, in the menu bar (viewer#42), and in a narrow window it is the
- * first thing there that gives way: its name shortens, its mark and *Show all* stay whole, and nothing
- * of the frame — the machine's load, the account, the application menu — is pushed out of the window.
- * Since the Layouts menu (viewer#37) the app's name goes below 900 px — the browser's tab names it —
- * and the account's name and the server's shorten after the narrowing, the server's never below a
- * few letters, and nothing is drawn over its neighbour.
+ * The scenario in focus is said ONCE, in the menu bar (viewer#42), and in a narrow window its name
+ * shortens — its mark and *Show all* stay whole, and the application menu stays in the window. Since
+ * the status bar took the server, the account and the machine below the dock (2026-11-10), the name
+ * shortens only once the words beside it that have an icon have given way, the app's name first;
+ * the Panels and Layouts triggers keep one line each, and below, the server's name stays readable,
+ * shortened at most, and is drawn over nothing beside it.
  */
-test('the narrowing in the menu bar shortens its name before anything beside it moves', async ({ page }) => {
-  await page.setViewportSize({ width: 760, height: 800 })
+test('the narrowing in the menu bar shortens its name once the words beside it have given way', async ({ page }) => {
+  await page.setViewportSize({ width: 420, height: 800 })
   await openWith(page, '/', { run: FIXTURE_RUN, units: [FOCUS] })
 
   const text = page.locator('.menu-bar .narrowed-text')
@@ -32,34 +32,33 @@ test('the narrowing in the menu bar shortens its name before anything beside it 
   await expect(page.locator('.narrowed-head')).toHaveCount(1)
 
   // shortened, not gone: the name gave up room, and what it cannot lose is still whole
-  expect(await text.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true)
+  await expect.poll(async () => text.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true)
   const bar = (await page.locator('.menu-bar').boundingBox())!
   const button = (await page.locator('.menu-bar .narrowed-head button', { hasText: 'Show all' }).boundingBox())!
   expect(button.x + button.width).toBeLessThanOrEqual(bar.x + bar.width)
   const menu = (await page.locator('.menu-bar .menu-trigger').boundingBox())!
   expect(menu.x + menu.width).toBeLessThanOrEqual(bar.x + bar.width + 0.5)
-  // the Panels trigger keeps its one line: it shared the shortfall once and wrapped its ▾
+  // the words with an icon went first, the app's name before them; each trigger keeps its one line
+  await expect(page.locator('.menu-bar-title')).toBeHidden()
+  await expect(page.locator('.menu-bar-trigger', { hasText: 'Panels' }).locator('.bar-icon')).toBeVisible()
   const line = button.height
   const panels = (await page.locator('.menu-bar-trigger', { hasText: 'Panels' }).boundingBox())!
   expect(panels.height).toBeLessThan(line * 1.5 + 12)
   const layouts = (await page.locator('.menu-bar-trigger', { hasText: 'Layouts' }).boundingBox())!
   expect(layouts.height).toBeLessThan(line * 1.5 + 12)
-  // the app's name goes first; the server's stays readable, shortened at most
-  await expect(page.locator('.menu-bar-title')).toBeHidden()
-  expect(await page.locator('.menu-bar .server-name').evaluate(node => node.getBoundingClientRect().width)).toBeGreaterThan(30)
-  // the server's name shortens inside its switch rather than over the machine's load beside it
-  const server = (await page.locator('.menu-bar .server-trigger').boundingBox())!
-  const machine = (await page.locator('.menu-bar .machine-status').boundingBox())!
-  expect(server.x + server.width).toBeLessThanOrEqual(machine.x + 0.5)
+  // below the dock the server's name stays readable, inside its switch rather than over the account
+  expect(await page.locator('.status-bar .server-name').evaluate(node => node.getBoundingClientRect().width)).toBeGreaterThan(30)
+  const server = (await page.locator('.status-bar .server-trigger').boundingBox())!
+  const account = (await page.locator('.status-bar .account-status').boundingBox())!
+  expect(server.x + server.width).toBeLessThanOrEqual(account.x + 0.5)
 })
 
 /**
- * At 600 px — the width the shipped Mobile layouts were laid out at — the menu bar keeps to the
- * window: until 2026-11-05 the account and the application menu stood past its right edge and the
- * page scrolled sideways. Below 700 px the machine's figures wear a glyph for their words, which a
- * screen reader still reads.
+ * At 600 px — the width the shipped Mobile layouts were laid out at — both bars keep to the window:
+ * until 2026-11-05 the account and the application menu stood past the right edge and the page
+ * scrolled sideways. The machine's words stay in the page for a screen reader whatever form they take.
  */
-test('the menu bar keeps to a window 600 px wide, the machine figures by their glyphs', async ({ page }) => {
+test('both bars keep to a window 600 px wide', async ({ page }) => {
   await page.setViewportSize({ width: 600, height: 800 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   await page.locator('.menu-bar .menu-trigger').waitFor()
@@ -67,9 +66,10 @@ test('the menu bar keeps to a window 600 px wide, the machine figures by their g
   const bar = (await page.locator('.menu-bar').boundingBox())!
   const menu = (await page.locator('.menu-bar .menu-trigger').boundingBox())!
   expect(menu.x + menu.width).toBeLessThanOrEqual(bar.x + bar.width + 0.5)
+  const status = (await page.locator('.status-bar').boundingBox())!
+  const machine = (await page.locator('.status-bar .machine-status').boundingBox())!
+  expect(machine.x + machine.width).toBeLessThanOrEqual(status.x + status.width + 0.5)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(600)
-  await expect(page.locator('.machine-status .machine-glyph').first()).toBeVisible()
-  // the words stay in the page for a screen reader, out of sight
   await expect(page.locator('.machine-status')).toContainText('CPU')
 })
 
