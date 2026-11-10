@@ -71,7 +71,8 @@ describe('reconcile', () => {
     })
     expect(reconcile(saved({ mediumFrom: 1600, fullFrom: 1300 }))).toMatchObject({ mediumFrom: 900, fullFrom: 1500 })
     expect(reconcile(saved({ mediumFrom: 700, fullFrom: 'wide' }))).toMatchObject({ mediumFrom: 900, fullFrom: 1500 })
-    expect(reconcile(saved({ sizeByWindow: 'yes' })).sizeByWindow).toBe(false)
+    // a value that is no boolean is the default, which is on (operator, 2026-11-10)
+    expect(reconcile(saved({ sizeByWindow: 'yes' })).sizeByWindow).toBe(true)
   })
 
   /** What picking a run does to the layout (viewer#37): a mode it knows, and a layout id by shape. */

@@ -18,7 +18,7 @@ Settings › Layouts
 │ [⬇️ Export all …] [⬆️ Import …]                                     │
 ├─────────────────────────┴──────────────────────────────────────────┤
 │ Choose the layout by the run [Offer it ▾]  Backtest [Backtests ▾]  Session [Deploys ▾]
-│ (○) Choose the size by the window   Medium from [900] Full from [1500]
+│ (●) Choose the size by the window   Medium from [900] Full from [1500]
 │ Panels  [Back to the suggested order]                              │
 └────────────────────────────────────────────────────────────────────┘
 ```
@@ -97,8 +97,10 @@ and what it changes goes into that size alone; back in another size, that one st
   size — *Backtests* where none was loaded. A layout stored before sizes existed holds Full alone;
   its narrower sizes start from the shipped layout's, *Backtests* for a reader's own.
 - **Reset to shipped** brings every size back as shipped.
-- **Choose the size by the window**, in Settings › Layouts, is off by default. Switched on, the
-  window's width chooses the size: Mobile below *Medium from* (900 px), Medium below *Full from*
+- **Choose the size by the window**, in Settings › Layouts, is on by default since 2026-11-10, so a
+  narrow window takes Mobile by itself; switched off, the size is the one chosen in the submenu,
+  for a reader who would rather not be steered (operator). Switched on, the window's width chooses
+  the size: Mobile below *Medium from* (900 px), Medium below *Full from*
   (1500 px), Full from there, in CSS pixels as the window reads them (`use_layout_size_by_window.ts`).
   The size changes once the window rests after crossing a width, so a size chosen by hand holds until
   the next crossing, and opening the app keeps the size it was left in; switching it on applies it at

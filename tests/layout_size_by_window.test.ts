@@ -83,6 +83,8 @@ describe('useLayoutSizeByWindow', () => {
   })
 
   it('changes nothing while it is off, nor where no layout is loaded', () => {
+    // on by default since 2026-11-10: the reader who would rather not be steered switches it off
+    useSettingsStore().setSizeByWindow(false)
     const layouts = useNamedLayoutsStore()
     layouts.load('backtests', 'full')
     mountBinding()
@@ -97,6 +99,7 @@ describe('useLayoutSizeByWindow', () => {
 
   /** Switching it on is the reader's own command, so it applies at once. */
   it('takes the window size at once when it is switched on', async () => {
+    useSettingsStore().setSizeByWindow(false)
     const layouts = useNamedLayoutsStore()
     layouts.load('deploys', 'full')
     Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true })

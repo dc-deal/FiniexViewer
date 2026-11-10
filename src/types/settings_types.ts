@@ -41,8 +41,9 @@ export type LayoutByRun = 'off' | 'offer' | 'switch'
 export interface Settings extends DisplaySettings {
   theme: ThemeName
   /**
-   * Whether the window's width chooses the size of the loaded layout (viewer#37) — off by default,
-   * the size then being the one chosen in its submenu.
+   * Whether the window's width chooses the size of the loaded layout (viewer#37) — on by default
+   * since 2026-11-10, so a narrow window takes Mobile by itself (operator); switched off, the size
+   * is the one chosen in its submenu, for a reader who would rather not be steered.
    */
   sizeByWindow: boolean
   /** From this window width on, in CSS pixels, a layout takes Medium; below it, Mobile. */
@@ -69,7 +70,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scenarioThreshold: 6,
   laneOrder: 'time',
   tradeRowCap: 500,
-  sizeByWindow: false,
+  sizeByWindow: true,
   mediumFrom: 900,
   fullFrom: 1500,
   layoutByRun: 'offer',

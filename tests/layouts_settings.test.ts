@@ -166,13 +166,16 @@ describe('LayoutsSettings', () => {
     }
   })
 
-  /** The window's width choosing the size is off until switched on; a width across the other is refused and shown back. */
-  it('switches the size by the window on, and keeps its two widths apart', async () => {
+  /**
+   * The window's width choosing the size is on for a new reader (operator, 2026-11-10) and switched
+   * off at its lever; a width across the other is refused and shown back.
+   */
+  it('starts with the size by the window on, switches it off, and keeps its two widths apart', async () => {
     const wrapper = await settings()
     const settingsStore = useSettingsStore()
-    expect(settingsStore.settings.sizeByWindow).toBe(false)
-    await wrapper.find('[data-setting="size-by-window"]').trigger('click')
     expect(settingsStore.settings.sizeByWindow).toBe(true)
+    await wrapper.find('[data-setting="size-by-window"]').trigger('click')
+    expect(settingsStore.settings.sizeByWindow).toBe(false)
 
     const medium = wrapper.find<HTMLInputElement>('input[name="medium-from"]')
     await medium.setValue('1600')
