@@ -37,9 +37,10 @@ import { plural, t } from '@/translate'
  * which both sides write from the same run unit.
  *
  * A row is a LIFECYCLE RECORD, not an order: one order appears as several rows, and nothing on a
- * row says WHICH order ` the history carries no `seq`, `submitted_seq` or `client_order_id`, which
- * is testingide#557 and still open. So the third level does not hang off a row. It hangs off the
- * POSITION, and the ORDERS inside it come from the stream, which identifies them itself.
+ * row says WHICH order — the history carries no `submitted_seq` or `client_order_id`, and contract
+ * 52 settled testingide#557 by declaring an empty key for its rows. So the third level does not hang
+ * off a row. It hangs off the POSITION, and the ORDERS inside it come from the stream, which
+ * identifies them itself.
  *
  * **The funnel's arithmetic, and contract 23 made it simpler than it was:**
  * `submitted = accepted + rejected + never_confirmed + expired`, measured 2026-10-08 on **all 230
@@ -270,7 +271,7 @@ function inFlightSpread(unit: PendingOrderUnit): string {
  * A drawing POSITION, not an identity. `order_id` is a per-unit position counter — 167 rows under
  * one id on a measured run — and the backend asked us not to adopt the content key that happens to
  * be unique, because two partial closes on one tick would collide. A row's identity is its place in
- * the scenario's append order, and the field for it is planned in testingide#557.
+ * the list — the route declares `keys.orders: []` (contract 52).
  */
 function rowKey(order: OrderHistoryRow, index: number): string {
   return `${order.scenario_name}-${index}`

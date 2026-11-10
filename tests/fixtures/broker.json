@@ -1,5 +1,5 @@
 {
-  "run_id": "20261108_143225_7d14f73f",
+  "run_id": "20261109_170555_45585755",
   "units": [
     {
       "broker_type": "mt5",
@@ -35,7 +35,8 @@
         }
       ],
       "fee_report": "not_reported",
-      "venue_fee_expected": false
+      "venue_fee_expected": false,
+      "scenario_count": 4
     },
     {
       "broker_type": "kraken_spot",
@@ -68,7 +69,8 @@
         }
       ],
       "fee_report": "status_answer",
-      "venue_fee_expected": false
+      "venue_fee_expected": false,
+      "scenario_count": 1
     }
   ],
   "key": [

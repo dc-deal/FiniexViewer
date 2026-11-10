@@ -62,12 +62,11 @@ one more per partial close. Measured 2026-10-02 over 40 runs and 4,660 rows, the
 `open/rejected` 548 · `open/expired` 3. So the list is two levels and not three: an order cannot be
 a group with its lifecycle beneath it, because no field identifies one.
 
-**`order_id` is not an identity and the route declares no key** — that is the backend's answer
-rather than an omission. It is a per-unit position counter: 167 rows carried one id on a measured
-run. They asked us not to adopt the content key that happens to be unique either, because two
-partial closes on one tick would collide. A row is keyed by its POSITION within its scenario, in
-append order; the ordinal field is planned in testingide#557, and a contract test asserts the
-absence so the day it arrives is loud.
+**`order_id` is not an identity and the route declares an empty key** — `keys.orders: []` since
+contract 52, which is the backend's answer rather than an omission. It is a per-unit position
+counter: 167 rows carried one id on a measured run. They asked us not to adopt the content key that
+happens to be unique either, because two partial closes on one tick would collide. A row is keyed by
+its POSITION in the list, an event rather than a thing, and a contract test asserts the empty key.
 
 **A POSITION reads as one thing, because a reader should not have to ask.** Within a scenario the
 rows of one position are tied together: the row that OPENS a position carries the id and a rule
@@ -124,9 +123,9 @@ stream, which identifies its own.
 
 Confirmed by testingide on 2026-10-08, asked directly: *"the intended granularity for the join is the
 position: narrow `/order-events` by (`scenario_name`, `order_id`) and group by `submitted_seq`. Your
-position-level expansion is the correct build, not a workaround."* The row-level field is planned in
-testingide#557 and ships with a contract raise; clicking ONE history row becomes possible then, and
-not before.
+position-level expansion is the correct build, not a workaround."* Contract 52 settled
+testingide#557 without a row-level field: a row's identity stays its place in the list, so clicking
+ONE history row is not built.
 
 **`order_id` must never be the group key.** It is the POSITION and repeats across a position's open
 and its closes — one id covers two orders on the field study and four on the capture's partial close.

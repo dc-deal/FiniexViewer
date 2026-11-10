@@ -1,5 +1,5 @@
 {
-  "run_id": "20261108_143225_7d14f73f",
+  "run_id": "20261109_170555_45585755",
   "warnings": [
     {
       "tier": "major",
@@ -39,7 +39,7 @@
     {
       "tier": "major",
       "scope": "run",
-      "message": "BROKER SPEC OLD — kraken_spot ETHUSD: the specification this run read was fetched 2026-10-31 (8 days ago) — 1 of 6 scenario(s)\n  → the venue may have moved a minimum or a step since; run `python python/cli/broker_config_cli.py sync --force` before a comparison backtest",
+      "message": "BROKER SPEC OLD — kraken_spot ETHUSD: the specification this run read was fetched 2026-10-31 (9 days ago) — 1 of 6 scenario(s)\n  → the venue may have moved a minimum or a step since; run `python python/cli/broker_config_cli.py sync --force` before a comparison backtest",
       "check": "broker_spec_stale",
       "domain": "broker"
     },
@@ -69,7 +69,9 @@
         "No tick data found for scenario 'EURGBP_before_the_archive' (available: ['EURGBP_refusals_01', 'EURGBP_refusals_02', 'EURGBP_left_open', 'EURGBP_partial_close', 'ETHUSD_spot_two_balances'])"
       ],
       "logged_errors": [],
-      "traceback": ""
+      "traceback": "",
+      "validation_error_count": 2,
+      "logged_error_count": 0
     }
   ],
   "outcome": {
@@ -87,12 +89,22 @@
     "refused_at_first_tick": false,
     "error_count": 0,
     "warning_count": 7,
-    "log_warning_count": 39
+    "log_warning_count": 39,
+    "succeeded_count": 5,
+    "success_rate_pct": 83.33333333333334,
+    "batch_status": "partial",
+    "first_failure_messages": [
+      "1. start_date 2024-01-10 10:00:00 UTC is BEFORE available data range (earliest: 2025-09-21 21:00:00 UTC). No ticks exist for this period! Adjust start_date to >= 2025-09-21.",
+      "1. No tick data found for scenario 'EURGBP_before_the_archive' (available: ['EURGBP_refusals_01', 'EURGBP_refusals_02', 'EURGBP_left_open', 'EURGBP_partial_close', 'ETHUSD_spot_two_balances'])"
+    ],
+    "first_failure_more_messages": 1,
+    "other_failed_count": 0
   },
   "keys": {
     "errors": [
       "name"
     ],
     "warnings": []
-  }
+  },
+  "error_unit_count": 1
 }

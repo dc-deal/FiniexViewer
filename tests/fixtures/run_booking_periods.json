@@ -1,5 +1,5 @@
 {
-  "run_id": "20261108_143225_7d14f73f",
+  "run_id": "20261109_170555_45585755",
   "keys": {
     "periods": [
       "unit_name",
@@ -233,5 +233,8 @@
   "run_total_trades": 8,
   "reconciles": true,
   "deepest_period_drawdown": 10.224164992467195,
-  "total_final_equity": 39996.55657882732
+  "total_final_equity": 39996.55657882732,
+  "period_count": 4,
+  "period_unit_count": 4,
+  "reconciliation_difference": 0.0
 }

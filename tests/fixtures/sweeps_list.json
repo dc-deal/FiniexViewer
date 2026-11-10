@@ -4,6 +4,57 @@
   ],
   "sweeps": [
     {
+      "sweep_id": "sweep_20261109_171217_85abfeab",
+      "started": "2026-11-09T17:12:22.265035Z",
+      "duration_s": 535.048659,
+      "run_count": 9,
+      "ok_count": 9,
+      "error_count": 0,
+      "decision_logic_type": "CORE/trend_channel_reference",
+      "decision_version": "1.6.0",
+      "base_config": "trend_channel_reference_sweep_base",
+      "symbols": [
+        "EURUSD"
+      ],
+      "objective": "net_pnl",
+      "maximize": true,
+      "features_beyond_venue": ""
+    },
+    {
+      "sweep_id": "sweep_20261109_150539_3bfe3982",
+      "started": "2026-11-09T15:05:45.558555Z",
+      "duration_s": 520.972354,
+      "run_count": 9,
+      "ok_count": 9,
+      "error_count": 0,
+      "decision_logic_type": "CORE/trend_channel_reference",
+      "decision_version": "1.6.0",
+      "base_config": "trend_channel_reference_sweep_base",
+      "symbols": [
+        "EURUSD"
+      ],
+      "objective": "net_pnl",
+      "maximize": true,
+      "features_beyond_venue": ""
+    },
+    {
+      "sweep_id": "sweep_20261109_143059_9fcc4db8",
+      "started": "2026-11-09T14:31:06.715683Z",
+      "duration_s": 611.46674,
+      "run_count": 9,
+      "ok_count": 9,
+      "error_count": 0,
+      "decision_logic_type": "CORE/trend_channel_reference",
+      "decision_version": "1.6.0",
+      "base_config": "trend_channel_reference_sweep_base",
+      "symbols": [
+        "EURUSD"
+      ],
+      "objective": "net_pnl",
+      "maximize": true,
+      "features_beyond_venue": ""
+    },
+    {
       "sweep_id": "sweep_20261108_143818_441afbf1",
       "started": "2026-11-08T14:38:23.603889Z",
       "duration_s": 465.429472,
@@ -157,5 +208,5 @@
       "features_beyond_venue": ""
     }
   ],
-  "count": 9
+  "count": 12
 }

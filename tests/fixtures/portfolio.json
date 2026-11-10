@@ -1,5 +1,5 @@
 {
-  "run_id": "20261108_143225_7d14f73f",
+  "run_id": "20261109_170555_45585755",
   "units": [
     {
       "name": "EURGBP_refusals_01",
@@ -17,7 +17,7 @@
       "account_max_dd_pct": 0.02954985836859133,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-11-08T14:32:34.420664+00:00",
+      "drawdown_started_at": "2026-11-09T17:06:02.324050+00:00",
       "total_fees": 0.0,
       "fees_charged": 0.0,
       "data_broker_type": "mt5",
@@ -78,7 +78,8 @@
       "unrealized_pnl": -0.9093854259627266,
       "final_equity": 9999.88635977601,
       "final_equity_valued": true,
-      "session_end_policy": ""
+      "session_end_policy": "",
+      "open_position_count": 1
     },
     {
       "name": "EURGBP_refusals_02",
@@ -96,7 +97,7 @@
       "account_max_dd_pct": 0.10220991459606912,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-11-08T14:32:34.419690+00:00",
+      "drawdown_started_at": "2026-11-09T17:06:02.326018+00:00",
       "total_fees": 0.0,
       "fees_charged": 0.0,
       "data_broker_type": "mt5",
@@ -157,7 +158,8 @@
       "unrealized_pnl": -6.894768594329569,
       "final_equity": 9996.095174010623,
       "final_equity_valued": true,
-      "session_end_policy": ""
+      "session_end_policy": "",
+      "open_position_count": 1
     },
     {
       "name": "ETHUSD_spot_two_balances",
@@ -175,7 +177,7 @@
       "account_max_dd_pct": 1.4383483062659392,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-11-08T14:32:34.548265+00:00",
+      "drawdown_started_at": "2026-11-09T17:06:02.428182+00:00",
       "total_fees": 32.28105240345308,
       "fees_charged": 33.89466365191294,
       "data_broker_type": "kraken_spot",
@@ -238,7 +240,8 @@
       "unrealized_pnl": -2.5563493395158448,
       "final_equity": 2978.0352057156733,
       "final_equity_valued": true,
-      "session_end_policy": ""
+      "session_end_policy": "",
+      "open_position_count": 1
     },
     {
       "name": "EURGBP_left_open",
@@ -256,7 +259,7 @@
       "account_max_dd_pct": 0.004370443794814537,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-11-08T14:32:34.458770+00:00",
+      "drawdown_started_at": "2026-11-09T17:06:02.351818+00:00",
       "total_fees": 0.0,
       "fees_charged": 0.0,
       "data_broker_type": "mt5",
@@ -317,7 +320,8 @@
       "unrealized_pnl": 0.6205291734895974,
       "final_equity": 10000.62052917349,
       "final_equity_valued": true,
-      "session_end_policy": ""
+      "session_end_policy": "",
+      "open_position_count": 1
     },
     {
       "name": "EURGBP_partial_close",
@@ -335,7 +339,7 @@
       "account_max_dd_pct": 0.004660618492758503,
       "drawdown_carried_from": "",
       "drawdown_restarts": 0,
-      "drawdown_started_at": "2026-11-08T14:32:34.457285+00:00",
+      "drawdown_started_at": "2026-11-09T17:06:02.352576+00:00",
       "total_fees": 0.0,
       "fees_charged": 0.0,
       "data_broker_type": "mt5",
@@ -383,7 +387,8 @@
       "unrealized_pnl": 0.0,
       "final_equity": 9999.954515867197,
       "final_equity_valued": true,
-      "session_end_policy": ""
+      "session_end_policy": "",
+      "open_position_count": 0
     }
   ],
   "aggregates": [

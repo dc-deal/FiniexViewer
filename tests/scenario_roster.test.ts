@@ -40,6 +40,10 @@ const BASE: ScenarioRow = {
   sell_signals: 0,
   flat_signals: 0,
   trades_requested: 2,
+  // per tick processed, in percent
+  non_flat_signals: 1,
+  non_flat_signal_pct: 100 / 4200,
+  trades_requested_pct: 200 / 4200,
   worker_count: 3,
   error_type: '',
   error_message: '',
@@ -61,6 +65,9 @@ function report(units: ScenarioRow[]): ScenarioDetailsReport {
       price_bases: 'order_driven',
     }],
     keys: { units: ['name'], data_brokers: ['data_broker_type'] },
+    scenario_count: units.length,
+    completed_scenario_count: units.filter(unit => unit.status === 'success').length,
+    failed_scenario_count: units.filter(unit => unit.status !== 'success').length,
   }
 }
 
@@ -637,6 +644,7 @@ describe('ScenarioRosterPanel', () => {
         run_id: 'r',
         keys: { errors: ['name'], warnings: [] },
         errors: [],
+        error_unit_count: 0,
         warnings: [
           { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' },
           { tier: 'minor', scope: 'winner', message: 'thin warmup', check: '', domain: '' },
@@ -647,6 +655,8 @@ describe('ScenarioRosterPanel', () => {
           first_failure_name: '', first_failure_error: '', emergency_reason: '',
           shutdown_mode: '', operator_interrupted: false, refused_at_first_tick: false,
           error_count: null, warning_count: null, log_warning_count: null,
+          succeeded_count: 3, success_rate_pct: 100, batch_status: 'success',
+          first_failure_messages: [], first_failure_more_messages: 0, other_failed_count: 0,
         },
       }
       const wrapper = mountPanel(view(ROSTER, EARNED, warnings))

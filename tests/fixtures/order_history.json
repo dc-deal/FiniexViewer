@@ -1,5 +1,5 @@
 {
-  "run_id": "20261108_143225_7d14f73f",
+  "run_id": "20261109_170555_45585755",
   "orders": [
     {
       "order_id": "pos_eurgbp_1",
@@ -2658,5 +2658,38 @@
   "symbols": [
     "ETHUSD",
     "EURGBP"
-  ]
+  ],
+  "failed_listed": 35,
+  "failed_by_unit": [
+    {
+      "scenario_name": "EURGBP_refusals_01",
+      "listed": 13
+    },
+    {
+      "scenario_name": "EURGBP_refusals_02",
+      "listed": 22
+    }
+  ],
+  "failed_by_reason": [
+    {
+      "status": "denied",
+      "reason": "rejection_cooldown",
+      "count": 26
+    },
+    {
+      "status": "rejected",
+      "reason": "broker_error",
+      "count": 9
+    }
+  ],
+  "keys": {
+    "orders": [],
+    "failed_by_unit": [
+      "scenario_name"
+    ],
+    "failed_by_reason": [
+      "status",
+      "reason"
+    ]
+  }
 }

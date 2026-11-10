@@ -2,14 +2,14 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-11-08T17:18:53.035221Z",
+  "served_at": "2026-11-10T08:27:55.793957Z",
   "units": [
     {
       "unit_name": "state_frames_test",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
       "written_at": "2026-10-22T12:35:57.805860Z",
-      "age_s": 1485775.229361,
+      "age_s": 1626717.988097,
       "recording": "ended",
       "truncated_tail": false,
       "first_frame": {
@@ -32,7 +32,13 @@
         "refused_at_first_tick": false,
         "error_count": 0,
         "warning_count": 0,
-        "log_warning_count": 0
+        "log_warning_count": 0,
+        "succeeded_count": 1,
+        "success_rate_pct": 100.0,
+        "batch_status": "success",
+        "first_failure_messages": [],
+        "first_failure_more_messages": 0,
+        "other_failed_count": 0
       },
       "frame": {
         "record_kind": "frame",

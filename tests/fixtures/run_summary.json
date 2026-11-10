@@ -1,5 +1,5 @@
 {
-  "run_id": "20261108_143225_7d14f73f",
+  "run_id": "20261109_170555_45585755",
   "currencies": [
     {
       "currency": "EUR",
@@ -114,5 +114,6 @@
     "units_absent": [
       "name"
     ]
-  }
+  },
+  "execution_rate_pct": 80.85106382978722
 }

@@ -70,7 +70,9 @@ BASE = 'http://localhost:5173/api/v1'
 # it lists seven warning rows where the earlier one listed five, an accepted move.
 #
 # Re-pinned 2026-11-08 to the catalog produced again under contract 51, the id FiniexTestingIDE named.
-RUN = '20261108_143225_7d14f73f'
+#
+# Re-pinned 2026-11-10 to the catalog produced again under contract 52, the id FiniexTestingIDE named.
+RUN = '20261109_170555_45585755'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -95,7 +97,9 @@ LIVE_RUN = '20261007_152959_0275a107'
 #
 # Re-pinned 2026-11-08 to the catalog produced again under contract 51: the main history, its last
 # session again killed before its close, so it shows what contracts 50 and 51 serve.
-DEPLOY = 'deploy_20261108_143439_214aa9fc'
+#
+# Re-pinned 2026-11-10 to the catalog produced again under contract 52: the main history, as before.
+DEPLOY = 'deploy_20261109_170634_ee56285c'
 
 # The sweep the ranking fixtures come from: a stored search of several combinations, every one of
 # them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get
@@ -105,7 +109,9 @@ DEPLOY = 'deploy_20261108_143439_214aa9fc'
 #
 # Re-pinned 2026-11-08 to the catalog produced again under contract 51, the id FiniexTestingIDE named:
 # the same production its golden sample freezes, which never changes what the runs recorded.
-SWEEP = 'sweep_20261108_143818_441afbf1'
+#
+# Re-pinned 2026-11-10 to the catalog produced again under contract 52, the id FiniexTestingIDE named.
+SWEEP = 'sweep_20261109_171217_85abfeab'
 
 # The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
 # than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs
