@@ -9,7 +9,8 @@ body {
   color: var(--color-text-primary);
   font-family: monospace;
   font-size: var(--font-size-sm);
-  line-height: 1.5;
+  /* 1.5 until the size came down to 12 px (2026-11-10): compact, and still a line apart */
+  line-height: 1.4;
 }
 
 /*

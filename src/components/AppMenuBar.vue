@@ -219,7 +219,7 @@ function stayOpen(event: Event): void {
   align-items: center;
   gap: var(--space-md);
   padding: 0 var(--space-lg);
-  height: 2.5rem;
+  height: 2.25rem;
   background-color: var(--color-bg-surface);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;

@@ -46,6 +46,11 @@ run header's list, the latest state's status, the venue account's table — and 
 any of them. A component that set no size inherited the body's, which was the larger one. The
 browser's own heading sizes are switched off in `base.css` for the same reason.
 
+**The one size is 12 px, at a line height of 1.4** (2026-11-10), after the content size of Kraken
+Pro, the operator's measure of a compact trading view. It was 13.6 px at 1.5. Measured at 1800 ×
+900 against the fixtures: a run list row 25 px for 27, fourteen runs on show for eleven, the menu
+bar 36 px for 40.
+
 A heading is told by its FORM instead, in one of two:
 
 - **an uppercase label** in the muted ink, as every `FigureBlock` wears its title — *RESULT*,
