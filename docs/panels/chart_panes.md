@@ -78,18 +78,49 @@ and no other layer passes it.
 - **The seam reads as a seam**: in the rule colour at rest, and under the pointer the accent, faint,
   over its 9 px handle — the colour of what can be acted on (`chartColours`).
 
+## The legend — each pane's figures at its top left (2026-11-12)
+
+```
+│ O 0.87972  H 0.87975  L 0.87970  C 0.87973                    ▦ … M1 │  ← the legend · a notice
+│   candles …                                                           │
+├───────────────────────────────────────────────────────────────────────┤
+│ Ticks 36                                                              │  ← the volume's legend
+```
+
+- **The bar under the pointer, the last bar off the bars** — its open, high, low and close on the
+  instrument's price step once the broker report is there (`priceAt`), and the volume's value as
+  served (`quantity`). Nothing is computed: no change from the bar before, no time, which the time
+  axis already says. The labels stand quiet, the values in plain ink, in the one text size.
+- **The volume says what it counts**: *Volume* where the bars carry the traded volume, *Ticks* where
+  the venue prints no trade. In its own pane it has a legend of its own; in the pane of the candles
+  its value stands behind the close. Hidden in its own pane, its word stays there without a value, as
+  TradingView keeps a study it hid; in the pane of the candles it says nothing.
+- **At the top of its own pane, whatever the seam does.** The library says nothing when a pane changes
+  size, so each pane's element is watched (`track`, `boxes` in `use_chart_panes`) and the legend
+  stands by what was measured.
+- **It takes no pointer** — the chart under it keeps every move — and it takes the plot's width before
+  it wraps: at 60 % of the chart beside the report, the close went to a line of its own.
+- **The notices moved to the top right**, beside the price scale (`ChartNotices.vue`): the top left is
+  the legend's, as in TradingView and Kraken Pro. The chart states the plot's width as
+  `--chart-plot-width`, from the library's own report of it (`subscribeSizeChange`), so a notice keeps
+  clear of a price scale that widens.
+- **The free chart has it too** — the same `CandleChart`, its candles only.
+
 ## Where it lives
 
 - `src/types/chart_pane_types.ts` — the panes we stack, by name (`CHART_PANE_IDS`), and `PaneWeights`.
-- `src/composables/use_chart_panes.ts` — the weights applied, and read back once a drag is let go.
+- `src/composables/use_chart_panes.ts` — the weights applied, and read back once a drag is let go;
+  where each pane stands in the frame, measured whenever one changes size.
+- `src/components/chart_legend.ts` — what each legend says, from one bar and the volume (`paneLegends`).
+- `src/components/ChartPaneLegend.vue` — the legend itself, shown where it is placed.
 - `CandleChart.placeVolume` — which pane the volume stands in, on which scale, and the count of panes
   on the element (`data-panes`), since a canvas cannot be read back.
 - `run_chart_store` — `volume.ownPane` from the layer's option, `paneWeights` and `setPaneWeights`.
 
 ## Not built yet
 
-- **A legend in each pane** — the values of the bar under the pointer, the last bar's otherwise —
-  and **controls on a pane** under the pointer: hide it, make it the whole height. Both next (viewer#57).
+- **Controls on a pane** under the pointer: hide it, make it the whole height and back, and a double
+  click on the seam for the first heights (viewer#57) — next.
 - **A worker's own pane** — an oscillator on a scale of its own, the way TradingView draws an RSI —
   once FiniexTestingIDE serves a worker's outputs with the pane they belong in (testingide#379). A pane
   joins `CHART_PANE_IDS` by name. The shape is agreed with them as a direction (2026-11-12), recorded
@@ -102,13 +133,18 @@ and no other layer passes it.
 ## How it is tested
 
 - `use_chart_panes.test.ts` — the weights laid out, kept or default; told once a release finds one
-  moved and never for a click that moved nothing or a chart of one pane; no longer heard once unmounted.
+  moved and never for a click that moved nothing or a chart of one pane; no longer heard once
+  unmounted; each pane's place measured from its element, and again when it changes size.
+- `chart_legend.test.ts` — the figures of a bar as served, at the tick size; the volume's word, its
+  own legend or behind the close, and a hidden one's word alone.
 - `candle_chart.test.ts` — the volume in its own pane at a fifth, or in the pane of the candles; moved
   between them as its option switches, never built anew, and kept in its pane while hidden; the kept
-  weights laid out and the dragged ones told; the new price series built before the old one goes.
+  weights laid out and the dragged ones told; the new price series built before the old one goes;
+  the legends at the top of their panes, following the bar under the pointer, and the plot's width.
 - `arrangement_store.test.ts`, `named_layouts_store.test.ts`, `run_chart_store.test.ts` — the weights
   read field by field, kept beside the layers, saved with a layout and laid out by it.
 - `e2e/chart_panes.spec.ts` — in a real browser, the panes read off the library's table
   (`e2e/pane_rows.ts`): the volume at a fifth with the lane in the pane of the candles; a seam dragged
   and kept through another window height, another unit, a chart built anew and a reload; the volume
-  hidden moving nothing, and its option off giving the candles the whole height and back.
+  hidden moving nothing, and its option off giving the candles the whole height and back; each legend
+  at the top of its pane on one line, following a seam, and the bar under a real pointer.

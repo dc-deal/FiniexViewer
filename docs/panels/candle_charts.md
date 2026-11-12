@@ -113,7 +113,8 @@ it says so and draws nothing.
   alignment, so no bar is computed. Measured 2026-10-19: in 72 of 137 such candles the exits share
   one instant, and no timeframe parts those. Taken, the chart draws in it centred on the first such
   candle, until the reader chooses a timeframe or a position again.
-- **Notices stand inside the plot, in its top-left corner** (`ChartNotices.vue`) — the offer. A
+- **Notices stand inside the plot, in its top-right corner** beside the price scale (`ChartNotices.vue`;
+  the top left is the panes' legend, [Chart Panes](chart_panes.md)) — the offer. A
   line above the chart moved it each time one appeared, and a selection
   never moves the layout. A hint above it explains the shapes once, and the chart takes the room it
   leaves rather than overflowing the panel by it, which clipped its time axis.

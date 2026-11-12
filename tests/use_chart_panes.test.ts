@@ -1,30 +1,59 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, type Ref } from 'vue'
 import type { IChartApi } from 'lightweight-charts'
 import { useChartPanes, DEFAULT_PANE_WEIGHTS } from '@/composables/use_chart_panes'
-import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
+import type { ChartPaneId, PaneBox, PaneWeights } from '@/types/chart_pane_types'
 
-/** The library's panes as far as weights go: each keeps the one set on it, and a drag changes them. */
-function fakeChart(weights: number[]): IChartApi {
+/** An element that says where it stands — jsdom lays nothing out. */
+function placed(top: number, height: number): HTMLElement {
+  const element = document.createElement('div')
+  element.getBoundingClientRect = () => ({ top, height } as DOMRect)
+  return element
+}
+
+/**
+ * The library's panes as far as weights and places go: each keeps the weight set on it, a drag
+ * changes them, and each stands where `rows` says, top and height.
+ */
+function fakeChart(weights: number[], rows: { top: number, height: number }[] = []): IChartApi {
+  const elements = rows.map(row => placed(row.top, row.height))
   const panes = () => weights.map((_, index) => ({
     getStretchFactor: () => weights[index]!,
     setStretchFactor: (weight: number) => { weights[index] = weight },
+    getHTMLElement: () => elements[index] ?? null,
   }))
   return { panes } as unknown as IChartApi
+}
+
+/** What the observer of the panes' elements was given, and its callback — fired by a test. */
+const observed: { elements: Element[], fire: () => void } = { elements: [], fire: () => {} }
+
+class PaneObserverProbe {
+  constructor(callback: ResizeObserverCallback) {
+    observed.fire = () => callback([], this as unknown as ResizeObserver)
+  }
+
+  observe(element: Element): void { observed.elements.push(element) }
+  unobserve(): void {}
+  disconnect(): void { observed.elements = [] }
 }
 
 /** A host that lays its panes out on mount, as the chart does once it is built. */
 function hosted(
   chart: IChartApi, ids: ChartPaneId[], kept: PaneWeights | null, told: (weights: PaneWeights) => void,
-): VueWrapper {
-  return mount(defineComponent({
+  frame: HTMLElement | null = null,
+): VueWrapper & { boxes: Readonly<Ref<PaneBox[]>>, track: () => void } {
+  let exposed: { boxes: Readonly<Ref<PaneBox[]>>, track: () => void } | null = null
+  const wrapper = mount(defineComponent({
     setup() {
-      const panes = useChartPanes({ chart: () => chart, ids: () => ids, weights: () => kept, onWeights: told })
+      const panes = useChartPanes({ chart: () => chart, ids: () => ids, weights: () => kept, onWeights: told, frame: () => frame })
       panes.applyWeights()
+      exposed = panes
       return () => h('div')
     },
   }))
+  return Object.assign(wrapper, exposed!)
 }
 
 function release(): void {
@@ -32,6 +61,35 @@ function release(): void {
 }
 
 describe('use_chart_panes', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  /** The legends stand by these: each pane's top inside the chart's frame, measured from its element. */
+  it('measures where each pane stands in the frame, and again when one changes size', () => {
+    vi.stubGlobal('ResizeObserver', PaneObserverProbe)
+    const rows = [{ top: 110, height: 400 }, { top: 511, height: 100 }]
+    const wrapper = hosted(fakeChart([2, 0.5], rows), ['price', 'volume'], null, () => {}, placed(100, 520))
+    wrapper.track()
+    expect(wrapper.boxes.value).toEqual([{ id: 'price', top: 10, height: 400 }, { id: 'volume', top: 411, height: 100 }])
+    expect(observed.elements).toHaveLength(2)
+    // a seam dragged: the rows move, the library says nothing, the observer does
+    observed.elements[0]!.getBoundingClientRect = () => ({ top: 110, height: 300 } as DOMRect)
+    observed.elements[1]!.getBoundingClientRect = () => ({ top: 411, height: 200 } as DOMRect)
+    observed.fire()
+    expect(wrapper.boxes.value).toEqual([{ id: 'price', top: 10, height: 300 }, { id: 'volume', top: 311, height: 200 }])
+    wrapper.unmount()
+    expect(observed.elements).toHaveLength(0)
+  })
+
+  it('measures nothing without a frame to measure from', () => {
+    vi.stubGlobal('ResizeObserver', PaneObserverProbe)
+    const wrapper = hosted(fakeChart([2], [{ top: 0, height: 300 }]), ['price'], null, () => {})
+    wrapper.track()
+    expect(wrapper.boxes.value).toEqual([])
+    wrapper.unmount()
+  })
+
   it('lays each pane out at the weight kept for it, a pane never dragged at its default', () => {
     const weights = [1, 1]
     hosted(fakeChart(weights), ['price', 'volume'], { volume: 0.8 }, () => {}).unmount()

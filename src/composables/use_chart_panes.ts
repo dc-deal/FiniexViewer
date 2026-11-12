@@ -1,6 +1,7 @@
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, shallowRef } from 'vue'
+import type { Ref } from 'vue'
 import type { IChartApi } from 'lightweight-charts'
-import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
+import type { ChartPaneId, PaneBox, PaneWeights } from '@/types/chart_pane_types'
 
 /**
  * The weight a pane stands at where the reader never dragged it. The price pane takes the library's
@@ -20,11 +21,17 @@ interface ChartPanesOptions {
   weights: () => PaneWeights | null | undefined
   /** Told the weights of every pane once a drag of a separator changed one. */
   onWeights: (weights: PaneWeights) => void
+  /** The element the panes are placed in — what a pane's box is measured from. */
+  frame: () => HTMLElement | null
 }
 
 interface ChartPanes {
   /** Lays the panes out at their kept weights, a pane never dragged at its default. */
   applyWeights: () => void
+  /** Where each pane stands in the frame, top to bottom — measured again whenever one changes size. */
+  boxes: Readonly<Ref<PaneBox[]>>
+  /** Follows the panes the chart stacks now: called once they were built or their number changed. */
+  track: () => void
 }
 
 /**
@@ -64,8 +71,44 @@ export function useChartPanes(options: ChartPanesOptions): ChartPanes {
     if (moved) options.onWeights(read)
   }
 
-  onMounted(() => window.addEventListener('pointerup', onRelease, { capture: true }))
-  onUnmounted(() => window.removeEventListener('pointerup', onRelease, { capture: true }))
+  const boxes = shallowRef<PaneBox[]>([])
+  let observer: ResizeObserver | null = null
 
-  return { applyWeights }
+  function measure(): void {
+    const frame = options.frame()
+    if (!frame) return
+    const origin = frame.getBoundingClientRect().top
+    const ids = options.ids()
+    const next: PaneBox[] = []
+    options.chart()?.panes().forEach((pane, index) => {
+      const id = ids[index]
+      const element = pane.getHTMLElement()
+      if (!id || !element) return
+      const box = element.getBoundingClientRect()
+      next.push({ id, top: box.top - origin, height: box.height })
+    })
+    if (JSON.stringify(next) !== JSON.stringify(boxes.value)) boxes.value = next
+  }
+
+  /**
+   * The library says nothing when a pane changes size either — a seam dragged, the window resized —
+   * so each pane's element is watched: the legends follow the pane they belong to.
+   */
+  function track(): void {
+    observer?.disconnect()
+    observer = new ResizeObserver(measure)
+    for (const pane of options.chart()?.panes() ?? []) {
+      const element = pane.getHTMLElement()
+      if (element) observer.observe(element)
+    }
+    measure()
+  }
+
+  onMounted(() => window.addEventListener('pointerup', onRelease, { capture: true }))
+  onUnmounted(() => {
+    window.removeEventListener('pointerup', onRelease, { capture: true })
+    observer?.disconnect()
+  })
+
+  return { applyWeights, boxes, track }
 }

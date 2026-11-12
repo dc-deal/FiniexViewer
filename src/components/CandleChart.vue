@@ -9,8 +9,10 @@ import type {
 import AppIcon from '@/components/base/AppIcon.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import ChartCard from '@/components/base/ChartCard.vue'
+import ChartPaneLegend from '@/components/ChartPaneLegend.vue'
 import { ChartDrawingHost, type DrawingColours } from '@/components/chart_drawing_host'
 import type { BarRange } from '@/components/chart_geometry'
+import { paneLegends } from '@/components/chart_legend'
 import type { BarEdge } from '@/composables/use_bar_loader'
 import { useChartPanes } from '@/composables/use_chart_panes'
 import type { ChartBar } from '@/types/api/bar_types'
@@ -126,7 +128,39 @@ const panes = useChartPanes({
   ids: () => volumeOwnPane.value ? ['price', 'volume'] as ChartPaneId[] : ['price'],
   weights: () => props.paneWeights,
   onWeights: weights => emit('paneWeights', weights),
+  frame: () => container.value,
 })
+
+/** The time of the bar under the pointer — null off the bars, where the legends say the last one. */
+const pointerTime = ref<number | null>(null)
+/** Each bar's place by its time, so the bar under the pointer is found at once on every move. */
+const barIndex = computed(() => new Map(props.data.map((bar, index) => [bar.time, index])))
+/** The volume's value of each bar, by its time. */
+const volumeByTime = computed(() => new Map((props.volume?.bars ?? []).map(bar => [bar.time, bar.value])))
+
+/** What each pane's legend says (viewer#57): the bar under the pointer, else the last one drawn. */
+const legends = computed(() => {
+  const index = pointerTime.value === null ? undefined : barIndex.value.get(pointerTime.value)
+  const bar = props.data[index ?? props.data.length - 1] ?? null
+  return paneLegends({
+    bar,
+    volumeValue: bar ? volumeByTime.value.get(bar.time) ?? null : null,
+    volume: props.volume ?? null,
+    tickSize: props.priceFormat?.minMove ?? null,
+  })
+})
+
+/** Where a pane's legend stands: the top of its pane, the first pane's before any was measured. */
+function legendTop(pane: ChartPaneId): number | null {
+  const box = panes.boxes.value.find(entry => entry.id === pane)
+  return box ? box.top : pane === 'price' ? 0 : null
+}
+
+/**
+ * The plot's width, beside the price scale — the notices stand at its right edge, the top left being
+ * the legend's. The library tells it whenever the scale's labels widen or narrow it.
+ */
+const plotWidth = ref(0)
 
 /** The bars the series was last handed — what a new set is compared with, to keep the view where it is. */
 let shown: ChartBar[] = []
@@ -182,6 +216,7 @@ const edgeStates = computed(() => (['left', 'right'] as const).flatMap(edge => {
 const pointed = shallowRef<{ id: string, card: FigureCard, x: number, y: number } | null>(null)
 
 function onPointer(param: MouseEventParams): void {
+  pointerTime.value = typeof param.time === 'number' ? param.time : null
   const id = param.hoveredInfo?.objectId
   const card = typeof id === 'string' ? cards.value.get(id) : undefined
   pointed.value = card && param.point ? { id: id as string, card, x: param.point.x, y: param.point.y } : null
@@ -343,6 +378,7 @@ function initChart(size: { width: number, height: number }): void {
   chart.applyOptions(chartColours(colours))
   chart.subscribeCrosshairMove(onPointer)
   chart.timeScale().subscribeVisibleLogicalRangeChange(onRange)
+  chart.timeScale().subscribeSizeChange(width => { plotWidth.value = width })
   frameSize.value = size
 
   // built before the candles, so it is drawn behind them where it shares their pane
@@ -356,6 +392,7 @@ function initChart(size: { width: number, height: number }): void {
   // told from inside the library's drawing of a frame: the scale is moved once that has finished
   host.onLaneShare(share => queueMicrotask(() => fitVolume(share)))
   buildPriceSeries()
+  panes.track()
 }
 
 /** The candles as handed, or candles at full strength where none were — the free chart. */
@@ -507,6 +544,7 @@ function placeVolume(): void {
   }
   panes.applyWeights()
   paneCount.value = chart.panes().length
+  panes.track()
 }
 
 /** The volume bars, in the colour of their candle's direction, faint — or none, where hidden. */
@@ -626,13 +664,18 @@ watch(() => props.priceFormat, () => series?.applyOptions(
     :data-bars="data.length"
     :data-time-at="timeAt"
     :data-visible-from="visibleFrom ?? undefined"
+    :style="plotWidth ? { '--chart-plot-width': `${plotWidth}px` } : undefined"
   >
     <!-- what is drawn, counted on the element above: the canvas cannot be read back. `data-events`
          counts what the marks stand for, a gathered one for each of its members; `data-bars` the
          bars handed, which grows as more are loaded at an edge -->
     <div ref="container" class="candle-canvas" />
-    <!-- notices stand INSIDE the frame, over the plot: a line above it would move the chart each
-         time one appeared, and a selection never moves the layout -->
+    <!-- each pane's legend at its top left, where TradingView and Kraken Pro set it -->
+    <template v-for="legend in legends" :key="legend.pane">
+      <ChartPaneLegend v-if="legendTop(legend.pane) !== null" :legend="legend" :top="legendTop(legend.pane)!" />
+    </template>
+    <!-- notices stand INSIDE the frame, over the plot, at its top right beside the price scale: a line
+         above it would move the chart each time one appeared, and a selection never moves the layout -->
     <slot />
     <!-- a batch at an edge: a quiet sign at that edge while it is on its way, its failure said
          there — never a block over the plot -->

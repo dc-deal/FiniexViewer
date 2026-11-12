@@ -13,3 +13,24 @@ export type ChartPaneId = typeof CHART_PANE_IDS[number]
  * reader dragged is kept; a pane not named takes its default.
  */
 export type PaneWeights = Partial<Record<ChartPaneId, number>>
+
+/** Where a pane stands inside the chart's frame, in pixels — what its legend is placed by. */
+export interface PaneBox {
+  id: ChartPaneId
+  top: number
+  height: number
+}
+
+/** One figure of a legend: its label, and its value as printed — none where nothing is drawn. */
+export interface PaneLegendEntry {
+  label: string
+  value: string | null
+}
+
+/** The line at a pane's top left: the figures of the bar under the pointer, the last bar's otherwise. */
+export interface PaneLegend {
+  pane: ChartPaneId
+  entries: PaneLegendEntry[]
+  /** The pane's layer is hidden: its name stands without a value, as a hidden layer's row is grey alone. */
+  quiet: boolean
+}

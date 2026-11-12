@@ -68,6 +68,34 @@ test('the volume stands in a pane of its own below the candles, and the time lan
   await expect(card).toHaveCount(0)
 })
 
+test('each pane says its figures at its top left: the bar under the pointer, the last one off the bars', async ({ page }) => {
+  const chart = await openChart(page)
+  await painted(page)
+  const priceLegend = chart.locator('[data-legend="price"]')
+  const volumeLegend = chart.locator('[data-legend="volume"]')
+  await expect(priceLegend).toContainText('C')
+  await expect(volumeLegend).toBeVisible()
+  // at the top of its own pane, and following it when the seam moves it
+  const atTop = async (legend: typeof priceLegend, pane: number): Promise<number> =>
+    Math.abs((await legend.boundingBox())!.y - (await paneRows(chart).nth(pane).boundingBox())!.y)
+  expect(await atTop(priceLegend, 0)).toBeLessThanOrEqual(4)
+  expect(await atTop(volumeLegend, 1)).toBeLessThanOrEqual(4)
+  // one line, in the chart beside the report: at 60 % of it the close went to a line of its own
+  expect((await priceLegend.boundingBox())!.height).toBeLessThan(24)
+  await dragSeam(page, chart, -80)
+  await painted(page)
+  expect(await atTop(volumeLegend, 1)).toBeLessThanOrEqual(4)
+
+  // the last bar while the pointer is off the chart, another one under it, the last again once it leaves
+  await page.mouse.move(1, 1)
+  const last = await priceLegend.textContent()
+  const price = (await paneRows(chart).first().boundingBox())!
+  await page.mouse.move(price.x + 40, price.y + price.height / 2)
+  await expect(priceLegend).not.toHaveText(last!)
+  await page.mouse.move(1, 1)
+  await expect(priceLegend).toHaveText(last!)
+})
+
 test('a seam dragged is kept — through a window of another height, another unit and timeframe, and a reload', async ({ page }) => {
   const chart = await openChart(page)
   await painted(page)

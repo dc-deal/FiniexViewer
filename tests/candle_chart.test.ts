@@ -16,8 +16,11 @@ const lw = vi.hoisted(() => {
   const setData = vi.fn<(data: unknown[]) => void>()
   const setVisibleLogicalRange = vi.fn<(range: { from: number, to: number }) => void>()
   /** The bars in view and the plot's width, as the library reports them — set by a test to zoom. */
-  const zoom: { change: (() => void) | null, range: { from: number, to: number } | null, width: number } = {
-    change: null, range: { from: 0, to: 100 }, width: 600,
+  const zoom: {
+    change: (() => void) | null, range: { from: number, to: number } | null, width: number,
+    size: ((width: number) => void) | null,
+  } = {
+    change: null, range: { from: 0, to: 100 }, width: 600, size: null,
   }
   const series = {
     setData,
@@ -46,9 +49,18 @@ const lw = vi.hoisted(() => {
   }
   /** Each pane's weight as the library keeps it, set by the chart and read back after a drag. */
   const weights: number[] = [2, 1]
+  /** Where each pane's row stands, top and height — jsdom lays nothing out, so a test says it. */
+  const paneRows: { top: number, height: number }[] = []
   const panes = () => Array.from({ length: volumePane.index + 1 }, (_, index) => ({
     getStretchFactor: () => weights[index]!,
     setStretchFactor: (weight: number) => { weights[index] = weight },
+    getHTMLElement: () => {
+      const row = paneRows[index]
+      if (!row) return null
+      const element = document.createElement('tr')
+      element.getBoundingClientRect = () => ({ top: row.top, height: row.height } as DOMRect)
+      return element
+    },
   }))
   const priceScaleOptions = vi.fn<(options: Record<string, unknown>) => void>()
   /**
@@ -85,6 +97,7 @@ const lw = vi.hoisted(() => {
       subscribeVisibleLogicalRangeChange: (handler: () => void) => { zoom.change = handler },
       getVisibleLogicalRange: () => zoom.range,
       width: () => zoom.width,
+      subscribeSizeChange: (handler: (width: number) => void) => { zoom.size = handler },
     })),
     resize: vi.fn<(width: number, height: number) => void>(),
     remove: vi.fn(),
@@ -94,7 +107,7 @@ const lw = vi.hoisted(() => {
   )
   return {
     chart, series, pointer, zoom, setData, setVisibleLogicalRange, fitContent, createChart, CandlestickSeries,
-    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, volumePane, volumeScaleOptions, weights,
+    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, volumePane, volumeScaleOptions, weights, paneRows,
     priceScaleOptions, drawn, hovered, lane, DrawingHostProbe,
   }
 })
@@ -113,13 +126,18 @@ vi.mock('lightweight-charts', () => ({
 
 /**
  * A ResizeObserver the test can fire. The global stub in `tests/setup.ts` never calls back, which is
- * right for components that only need the API to exist — this one is ABOUT the callback.
+ * right for components that only need the API to exist — this one is ABOUT the callback. Every
+ * observer made is fired: the container's, and the one that follows the panes' sizes.
  */
-let fireResize: () => void = () => {}
+let observers: (() => void)[] = []
+
+function fireResize(): void {
+  for (const fire of observers) fire()
+}
 
 class ResizeObserverProbe {
   constructor(callback: ResizeObserverCallback) {
-    fireResize = () => callback([], this as unknown as ResizeObserver)
+    observers.push(() => callback([], this as unknown as ResizeObserver))
   }
 
   observe(): void {}
@@ -177,8 +195,10 @@ const LONG: ChartBar[] = Array.from({ length: 200 }, (_, index) => ({
 describe('CandleChart', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    observers = []
     lw.volumePane.index = 0
     lw.weights.splice(0, lw.weights.length, 2, 1)
+    lw.paneRows.splice(0, lw.paneRows.length)
     size = { width: 0, height: 0 }
     vi.stubGlobal('ResizeObserver', ResizeObserverProbe)
     vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => size.width)
@@ -800,6 +820,73 @@ describe('CandleChart', () => {
    * last bar it holds, keeps the view on the bars it showed as more arrive, and says in that corner
    * that a batch is on its way or failed.
    */
+  describe('the legend of each pane', () => {
+    /** A legend's figures as they read: label, then value. */
+    function legendOf(wrapper: VueWrapper, pane: string): string[] {
+      return wrapper.findAll(`[data-legend="${pane}"] .legend-entry`).map(entry =>
+        [entry.find('.legend-label').text(), entry.find('.legend-value').exists() ? entry.find('.legend-value').text() : '']
+          .filter(Boolean).join(' '))
+    }
+
+    /** At the top left of the pane of the candles, as TradingView and Kraken Pro set it. */
+    it('says the open, high, low and close of the last bar, and of the bar under the pointer while it is on one', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart()
+      await nextTick()
+      expect(legendOf(wrapper, 'price')).toEqual(['O 1.15', 'H 1.25', 'L 1.1', 'C 1.2'])
+      expect(wrapper.find('[data-legend="price"]').attributes('style')).toContain('top: 0px')
+
+      lw.pointer.move!({ time: BARS[0]!.time, point: { x: 10, y: 10 } })
+      await nextTick()
+      expect(legendOf(wrapper, 'price')).toEqual(['O 1.1', 'H 1.2', 'L 1', 'C 1.15'])
+      // off the bars: the last one again
+      lw.pointer.move!({})
+      await nextTick()
+      expect(legendOf(wrapper, 'price')).toEqual(['O 1.15', 'H 1.25', 'L 1.1', 'C 1.2'])
+    })
+
+    /** The volume's legend stands where its pane begins, and follows it when a seam moves it. */
+    it('gives the volume in its own pane a legend at the top of that pane, its word alone while hidden', async () => {
+      size = { width: 800, height: 400 }
+      lw.paneRows.push({ top: 0, height: 300 }, { top: 301, height: 99 })
+      const volume: ChartVolume = {
+        basis: 'ticks', shown: true, ownPane: true, opacity: 1,
+        bars: [{ time: BARS[0]!.time, value: 11, rising: true }, { time: BARS[1]!.time, value: 4, rising: false }],
+      }
+      const wrapper = mountChart(BARS, { volume })
+      await nextTick()
+      expect(legendOf(wrapper, 'volume')).toEqual(['Ticks 4'])
+      expect(wrapper.find('[data-legend="volume"]').attributes('style')).toContain('top: 301px')
+
+      // a seam dragged: the rows move, and the observer of the panes says so
+      lw.paneRows.splice(0, 2, { top: 0, height: 250 }, { top: 251, height: 149 })
+      fireResize()
+      await nextTick()
+      expect(wrapper.find('[data-legend="volume"]').attributes('style')).toContain('top: 251px')
+
+      await mounted!.setProps({ volume: { ...volume, shown: false } })
+      expect(legendOf(wrapper, 'volume')).toEqual(['Ticks'])
+      expect(wrapper.find('[data-legend="volume"]').classes()).toContain('quiet')
+    })
+
+    it('puts the volume behind the close where it shares the pane of the candles', async () => {
+      size = { width: 800, height: 400 }
+      mountChart(BARS, { volume: { basis: 'traded', shown: true, ownPane: false, opacity: 1, bars: [{ time: BARS[1]!.time, value: 2.5, rising: true }] } })
+      await nextTick()
+      expect(legendOf(mounted!, 'price').at(-1)).toBe('Volume 2.5')
+      expect(mounted!.find('[data-legend="volume"]').exists()).toBe(false)
+    })
+
+    /** The notices stand at the plot's top right, beside the price scale, by the width the library tells. */
+    it('states the width of the plot, for the notices at its right edge', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart()
+      lw.zoom.size!(731)
+      await nextTick()
+      expect(wrapper.attributes('style')).toContain('--chart-plot-width: 731px')
+    })
+  })
+
   describe('bars loaded at an edge', () => {
     /** A bar a minute; the one before it, fifty more. */
     const SPAN: ChartBar[] = Array.from({ length: 200 }, (_, index) => ({

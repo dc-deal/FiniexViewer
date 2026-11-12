@@ -139,7 +139,9 @@ by its tab, the way a reader does.
   a booking period's card found at the bottom of the pane of the candles and nothing of the lane over
   the volume's; a seam dragged and kept — through a window of another height, another unit, a chart
   built anew at another timeframe and a real reload; the volume hidden moving no pane, its option off
-  giving the candles the whole height, and on again its height as it stood.
+  giving the candles the whole height, and on again its height as it stood; and each pane's legend at
+  the top of its pane on one line, following a seam, saying the bar under a real pointer and the last
+  bar once it leaves.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
   browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read
   from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its
