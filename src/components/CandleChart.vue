@@ -105,8 +105,12 @@ const VOLUME_SCALE = 'volume'
 const VOLUME_ALPHA = 0.45
 /** Where the volume's scale begins: the lowest fifth of the pane is the volume's. */
 const VOLUME_TOP = 0.8
-/** In a pane of its own, the volume's scale leaves a tenth of the pane above its tallest bar. */
-const OWN_PANE_MARGINS = { top: 0.1, bottom: 0 }
+/**
+ * In a pane of its own, the volume's scale leaves a fifth of the pane above its tallest bar: the
+ * line its legend and its controls stand on. At a tenth they stood over the tallest bars (operator,
+ * 2026-11-12).
+ */
+const OWN_PANE_MARGINS = { top: 0.2, bottom: 0 }
 
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null

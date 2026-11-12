@@ -26,8 +26,9 @@ it shares their pane. Its place in the Layers panel is fixed (`fixed` in the reg
 and no other layer passes it.
 
 - **In a pane of its own by default** — its option *own pane*, on (viewer#57). There it stands on
-  that pane's right scale, which says what a bar counts; the candles' scale never sees it. A tenth
-  of the pane stays free above the tallest bar.
+  that pane's right scale, which says what a bar counts; the candles' scale never sees it. A fifth
+  of the pane stays free above the tallest bar — the line its legend and its controls stand on; at a
+  tenth they stood over the tallest bars (operator, 2026-11-12).
 - **Hidden, it gives its pane up** and the candles take the whole height (operator, on screen
   2026-11-12: an empty pane was room taken for nothing). Shown again, its pane comes back at the
   height kept. It comes back from the Layers panel — the eye on its pane goes with the pane.

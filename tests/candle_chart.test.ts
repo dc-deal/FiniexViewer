@@ -548,7 +548,8 @@ describe('CandleChart', () => {
       const wrapper = mountChart(BARS, { volume: { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] } })
       expect(lw.chart.addSeries.mock.calls[0]![2]).toBe(1)
       expect(lw.volumeSeries.applyOptions).toHaveBeenCalledWith({ priceScaleId: 'right' })
-      expect(lw.volumeScaleOptions).toHaveBeenCalledWith({ scaleMargins: { top: 0.1, bottom: 0 } })
+      // a fifth above the tallest bar: the line its legend and its controls stand on
+      expect(lw.volumeScaleOptions).toHaveBeenCalledWith({ scaleMargins: { top: 0.2, bottom: 0 } })
       expect(lw.weights).toEqual([2, 0.5])
       await nextTick()
       expect(wrapper.attributes('data-panes')).toBe('2')
