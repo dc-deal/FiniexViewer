@@ -137,9 +137,10 @@ Run chart · ETHUSD_aug_sep
   editor's panels do: what the layer draws and what its option does is the layer's hint
   (`layer-trades`, `layer-levels` …, named on each layer as `hintId`), and a reader who knows it
   dismisses it. The option is its switch alone (the trades' signs; the levels, or the lines, of
-  every position rather than of the one looked at); the candles add their forms. A row opens only
-  onto something: the volume has no option and no forms, so once its hint is put away it shows no
-  marker and a click opens nothing (operator, on screen 2026-10-29).
+  every position rather than of the one looked at; the volume's own pane); the candles add their
+  forms. A row opens only onto something: a layer with no option and no forms — the booking periods
+  — shows no marker once its hint is put away, and a click opens nothing (operator, on screen
+  2026-10-29).
 - **The closed row's words say only what the screen cannot**: what an empty layer waits for —
   *pick a position* for the levels and the line, which draw for the position looked at alone, *none
   for this position* where one is looked at, *none in view* for the trades or where every position
@@ -207,9 +208,10 @@ on show (`run_chart_lane.ts`).
 - **Only the rows something is drawn in** (`laneBox`): the strip, 12 px at the bottom, and the marks'
   row above it. The price scale leaves the lane free (`autoscaleInfo`), counted from every layer's
   drawings, hidden ones too, so a lever switches nothing in the candles' height.
-- **The volume stands above the lane.** Its scale is its own, which the room asked of the candles'
-  does not reach, so the host tells the chart the lane's share of the pane whenever it changes
-  (`onLaneShare`) and the volume's fifth is lifted by it — the strip and the crosses were drawn over
+- **The volume stands above the lane** where it shares the pane of the candles — in its own pane,
+  the default since viewer#57, the two never meet ([Chart Panes](chart_panes.md)). Its scale is its
+  own, which the room asked of the candles' does not reach, so the host tells the chart the lane's
+  share of the pane whenever it changes (`onLaneShare`) and the volume's fifth is lifted by it — the strip and the crosses were drawn over
   its bars (on screen 2026-11-08). Only the host knows the pane's height in time: after a resize the
   library lays the pane out at its next frame. With every layer of the lane switched off the volume
   sinks into the lane's room, while the candles' scale keeps it free, so nothing of the candles moves
@@ -238,21 +240,9 @@ on show (`run_chart_lane.ts`).
 
 ## The volume — a layer the library draws (2026-10-27)
 
-To the reader the volume is a layer like the others — shown, hidden, fainter — but the chart library
-draws it, as a `HistogramSeries` of its own built BEFORE the candles, so it stands behind them. Its
-place is fixed (`fixed` in the register): it opens nothing, is never moved, and no other layer passes
-it. It sits in the lowest fifth of the pane on a price scale nothing shows — the way established
-charts draw it — and so leaves the candles' scale alone: switching it moves no candle. Where the
-time lane is drawn, that fifth stands above it (see *The time lane*).
-
-- **Which count**, from the bars' own answer (their `market-data` document): `v` is the traded
-  volume, `0.0` on every bar of a feed that carries none, and then `tc` is the measure of how busy the
-  market was. `X-Bar-Price-Basis: order_driven` names a venue that prints trades. So the traded
-  volume there, the ticks otherwise (`volumeBasis` in `run_chart_store`), and the row says which —
-  *traded volume* or *ticks per bar*. That reading of two sentences is put to FiniexTestingIDE.
-- **Each bar faint in its candle's direction** — the polarity roles at 45 % of the layer's opacity.
-- **The run chart only.** `CandleChart` builds the series only where it is handed a `volume`; the
-  free chart, which draws no layers, builds none.
+A layer like the others to the reader, drawn by the chart library as a series of its own — in a pane
+of its own below the candles since viewer#57, or with its option off in the lowest fifth of theirs.
+What it counts, where it stands and how tall: [Chart Panes](chart_panes.md).
 
 ## The candles — a layer too (2026-10-27)
 
@@ -285,7 +275,8 @@ line · area** (`forms` in the register, kept under `forms` only where it is not
 - `run_chart_levels.test.ts` — the levels and the line from served fields.
 - `run_chart_lane.test.ts` — the periods' spans and the refusals' marks from the run's reports, gathered and cut.
 - `candle_chart.test.ts` — what the chart hands its host: the layers, every bar's range, the colours;
-  and the volume's series, its scale and its colours, built only where a volume is handed.
+  and the volume's series, its scale and its colours, built only where a volume is handed — its pane
+  in [Chart Panes](chart_panes.md).
 - `e2e/run_chart.spec.ts` — the levels painted on a real canvas, from a capture whose position the
   mock hands a stop and a target (no trade of the fixture run set one); and the lane of the refusing
   unit, its period's card found at the bottom of the pane.

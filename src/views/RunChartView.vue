@@ -21,7 +21,7 @@ import { t } from '@/translate'
 const chart = useRunChartStore()
 const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, loading, error, layers, offer, focusAt,
-  priceFormat, volume, candles, loadingEdges, edgeError,
+  priceFormat, volume, candles, loadingEdges, edgeError, paneWeights,
 } = storeToRefs(chart)
 const { selectedRunId, selectedRun, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
@@ -86,8 +86,10 @@ onUnmounted(() => chart.detach())
       :price-format="priceFormat"
       :loading-edges="loadingEdges"
       :edge-error="edgeError"
+      :pane-weights="paneWeights"
       @spacing="chart.setSpacing"
       @edge="chart.extendBars"
+      @pane-weights="chart.setPaneWeights"
     >
       <ChartNotices :offer="offer" @accept="chart.acceptOffer" />
     </CandleChart>

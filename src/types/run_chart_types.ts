@@ -95,6 +95,8 @@ export type VolumeBasis = 'traded' | 'ticks'
 export interface ChartVolume {
   basis: VolumeBasis
   shown: boolean
+  /** In a pane of its own below the candles, with its own scale — else at the bottom of the candles' pane. */
+  ownPane: boolean
   /** The share of its strength it is drawn at, 0–1 — set in the Layers panel. */
   opacity: number
   bars: { time: number, value: number, rising: boolean }[]

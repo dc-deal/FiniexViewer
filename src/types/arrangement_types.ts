@@ -1,4 +1,5 @@
 import type { ChartLayerId } from '@/types/chart_drawing_types'
+import type { PaneWeights } from '@/types/chart_pane_types'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext } from '@/types/context_types'
 import type { LayerOptionId } from '@/types/layer_types'
@@ -109,6 +110,8 @@ export interface StoredPanelView {
   rows?: StoredRows
   /** A chart's drawing layers, bound to no run — the Layers panel writes them under the chart's id. */
   layers?: StoredLayers
+  /** A chart's panes as tall as the reader dragged them, bound to no run (viewer#57). */
+  panes?: PaneWeights
 }
 
 /** Everything stored under the one versioned key. */

@@ -1,6 +1,7 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_RUN } from './api_mock'
 import { openWith } from './arrangement_seed'
+import { paneRows } from './pane_rows'
 
 /**
  * The Layers panel, in a real browser: opened from the run chart's quick bar BESIDE the chart it
@@ -50,8 +51,9 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
 
   // the trades switched off: the chart draws none of them — and rescales nothing, so the price axis
   // reads the same (operator, on screen 2026-10-27: without the marks the candles stretched)
-  const box = (await chart.boundingBox())!
-  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height - 40 }
+  // the price axis is the one of the pane of the candles: the volume's own pane has an axis of its own
+  const box = (await paneRows(chart).first().boundingBox())!
+  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height }
   const painted = (): Promise<void> => page.evaluate(() => new Promise<void>(done =>
     requestAnimationFrame(() => requestAnimationFrame(() => done()))))
   await painted()
@@ -60,7 +62,7 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
   await expect.poll(async () => await chart.getAttribute('data-drawings')).not.toMatch(/trades:/)
   await painted()
   expect((await page.screenshot({ clip: axis })).equals(before)).toBe(true)
-  // the volume stands on a scale of its own: switching it off moves no candle either
+  // the volume stands in a pane of its own: switching it off moves no candle either
   await layers.locator('[data-layer="volume"] [data-action="show"]').click()
   await expect(layers.locator('[data-layer="volume"]')).toHaveAttribute('data-shown', 'false')
   await painted()
@@ -108,8 +110,9 @@ test('switching the signs off moves nothing on the price axis', async ({ page })
   const layers = page.locator('[data-panel-kind="layers"]')
   await layers.locator('[data-layer="trades"] [data-action="open"]').click()
 
-  const box = (await chart.boundingBox())!
-  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height - 40 }
+  // the price axis is the one of the pane of the candles: the volume's own pane has an axis of its own
+  const box = (await paneRows(chart).first().boundingBox())!
+  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height }
   const painted = (): Promise<void> => page.evaluate(() => new Promise<void>(done =>
     requestAnimationFrame(() => requestAnimationFrame(() => done()))))
   await painted()

@@ -33,10 +33,23 @@ const lw = vi.hoisted(() => {
   const AreaSeries = { type: 'Area' }
   /** The volume's series, a second one — built only where the chart is handed a volume. */
   const HistogramSeries = { type: 'Histogram' }
+  /** The pane the volume stands in, by index, and the scale of its own pane — moved, never built anew. */
+  const volumePane = { index: 0 }
+  const volumeScaleOptions = vi.fn<(options: Record<string, unknown>) => void>()
   const volumeSeries = {
     setData: vi.fn<(data: { time: number, value: number, color: string }[]) => void>(),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
+    getPane: () => ({ paneIndex: () => volumePane.index }),
+    moveToPane: vi.fn((index: number) => { volumePane.index = index }),
+    setSeriesOrder: vi.fn<(order: number) => void>(),
+    priceScale: () => ({ applyOptions: volumeScaleOptions }),
   }
+  /** Each pane's weight as the library keeps it, set by the chart and read back after a drag. */
+  const weights: number[] = [2, 1]
+  const panes = () => Array.from({ length: volumePane.index + 1 }, (_, index) => ({
+    getStretchFactor: () => weights[index]!,
+    setStretchFactor: (weight: number) => { weights[index] = weight },
+  }))
   const priceScaleOptions = vi.fn<(options: Record<string, unknown>) => void>()
   /**
    * What the chart hands its drawing host, call by call. The host itself paints on a canvas and is
@@ -56,8 +69,13 @@ const lw = vi.hoisted(() => {
   const pointer: { move: ((param: Record<string, unknown>) => void) | null } = { move: null }
   const chart = {
     subscribeCrosshairMove: vi.fn((handler: (param: Record<string, unknown>) => void) => { pointer.move = handler }),
-    addSeries: vi.fn<(definition: { type: string }, options: Record<string, unknown>) => unknown>(
-      definition => definition === HistogramSeries ? volumeSeries : series),
+    addSeries: vi.fn<(definition: { type: string }, options: Record<string, unknown>, paneIndex?: number) => unknown>(
+      (definition, _options, paneIndex) => {
+        if (definition !== HistogramSeries) return series
+        volumePane.index = paneIndex ?? 0
+        return volumeSeries
+      }),
+    panes,
     priceScale: vi.fn((id: string) => ({ id, applyOptions: priceScaleOptions })),
     removeSeries: vi.fn<(series: unknown) => void>(),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
@@ -76,7 +94,8 @@ const lw = vi.hoisted(() => {
   )
   return {
     chart, series, pointer, zoom, setData, setVisibleLogicalRange, fitContent, createChart, CandlestickSeries,
-    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, priceScaleOptions, drawn, hovered, lane, DrawingHostProbe,
+    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, volumePane, volumeScaleOptions, weights,
+    priceScaleOptions, drawn, hovered, lane, DrawingHostProbe,
   }
 })
 
@@ -158,6 +177,8 @@ const LONG: ChartBar[] = Array.from({ length: 200 }, (_, index) => ({
 describe('CandleChart', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    lw.volumePane.index = 0
+    lw.weights.splice(0, lw.weights.length, 2, 1)
     size = { width: 0, height: 0 }
     vi.stubGlobal('ResizeObserver', ResizeObserverProbe)
     vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => size.width)
@@ -464,14 +485,15 @@ describe('CandleChart', () => {
     it('draws the volume behind the candles on its own scale, faint in the colour of each candle', async () => {
       size = { width: 800, height: 400 }
       const volume: ChartVolume = {
-        basis: 'ticks', shown: true, opacity: 1,
+        basis: 'ticks', shown: true, ownPane: false, opacity: 1,
         bars: [{ time: BARS[0]!.time, value: 11, rising: true }, { time: BARS[1]!.time, value: 4, rising: false }],
       }
       mountChart(BARS, { volume })
       expect(lw.chart.addSeries.mock.calls.map(call => call[0])).toEqual([lw.HistogramSeries, lw.CandlestickSeries])
-      expect(lw.chart.addSeries.mock.calls[0]![1]).toMatchObject({
-        priceScaleId: 'volume', lastValueVisible: false, priceLineVisible: false,
-      })
+      expect(lw.chart.addSeries.mock.calls[0]![1]).toMatchObject({ lastValueVisible: false, priceLineVisible: false })
+      expect(lw.chart.addSeries.mock.calls[0]![2]).toBe(0)
+      expect(lw.volumeSeries.applyOptions).toHaveBeenCalledWith({ priceScaleId: 'volume' })
+      expect(lw.volumeSeries.setSeriesOrder).toHaveBeenCalledWith(0)
       expect(lw.priceScaleOptions).toHaveBeenCalledWith({ scaleMargins: { top: 0.8, bottom: 0 } })
       expect(lw.volumeSeries.applyOptions).toHaveBeenLastCalledWith({ visible: true })
       expect(lw.volumeSeries.setData.mock.calls.at(-1)![0]).toEqual([
@@ -480,17 +502,119 @@ describe('CandleChart', () => {
       ])
       await mounted!.setProps({ volume: { ...volume, shown: false } })
       expect(lw.volumeSeries.applyOptions).toHaveBeenLastCalledWith({ visible: false })
+      // hidden, it holds no bars: a hidden series still gives its scale the range it had
+      expect(lw.volumeSeries.setData).toHaveBeenLastCalledWith([])
     })
 
     /** Under the lane its strip and marks were drawn over the volume's bars (on screen 2026-11-08). */
     it('lifts the volume above the time lane by the share of the pane the host says it takes, once the frame is drawn', async () => {
       size = { width: 800, height: 400 }
-      mountChart(BARS, { volume: { basis: 'ticks', shown: true, opacity: 1, bars: [] } })
+      mountChart(BARS, { volume: { basis: 'ticks', shown: true, ownPane: false, opacity: 1, bars: [] } })
       lw.priceScaleOptions.mockClear()
       lw.lane.share!(0.1)
       expect(lw.priceScaleOptions).not.toHaveBeenCalled()
       await Promise.resolve()
       expect(lw.priceScaleOptions).toHaveBeenLastCalledWith({ scaleMargins: { top: expect.closeTo(0.7), bottom: 0.1 } })
+    })
+
+    /**
+     * Its option on, the volume stands in a pane of its own below the candles (viewer#57), on that
+     * pane's own scale, a fifth of the height — the lane stays with the candles, so nothing lifts it.
+     */
+    it('stands the volume in a pane of its own below the candles, a fifth of the height', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(BARS, { volume: { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] } })
+      expect(lw.chart.addSeries.mock.calls[0]![2]).toBe(1)
+      expect(lw.volumeSeries.applyOptions).toHaveBeenCalledWith({ priceScaleId: 'right' })
+      expect(lw.volumeScaleOptions).toHaveBeenCalledWith({ scaleMargins: { top: 0.1, bottom: 0 } })
+      expect(lw.weights).toEqual([2, 0.5])
+      await nextTick()
+      expect(wrapper.attributes('data-panes')).toBe('2')
+      lw.priceScaleOptions.mockClear()
+      lw.lane.share!(0.1)
+      await Promise.resolve()
+      expect(lw.priceScaleOptions).not.toHaveBeenCalled()
+    })
+
+    /** The option switched while the chart stands: the same series moves, it is never built anew. */
+    it('moves the volume between the panes as its option is switched, and hidden it keeps its pane', async () => {
+      size = { width: 800, height: 400 }
+      const volume: ChartVolume = { basis: 'ticks', shown: true, ownPane: false, opacity: 1, bars: [] }
+      const wrapper = mountChart(BARS, { volume })
+      expect(wrapper.attributes('data-panes')).toBe('1')
+
+      await mounted!.setProps({ volume: { ...volume, ownPane: true } })
+      expect(lw.volumeSeries.moveToPane).toHaveBeenLastCalledWith(1)
+      expect(wrapper.attributes('data-panes')).toBe('2')
+
+      // hidden, it stays where it stood: the candles keep their height, and its pane holds nothing —
+      // a scale of bars no longer drawn would read like a measurement
+      await mounted!.setProps({ volume: { ...volume, ownPane: true, shown: false } })
+      expect(lw.volumeSeries.moveToPane).toHaveBeenCalledTimes(1)
+      expect(lw.volumeSeries.setData).toHaveBeenLastCalledWith([])
+      expect(wrapper.attributes('data-panes')).toBe('2')
+
+      await mounted!.setProps({ volume: { ...volume, ownPane: false } })
+      expect(lw.volumeSeries.moveToPane).toHaveBeenLastCalledWith(0)
+      expect(lw.volumeSeries.setSeriesOrder).toHaveBeenLastCalledWith(0)
+      expect(lw.volumeSeries.applyOptions).toHaveBeenCalledWith({ priceScaleId: 'volume' })
+      expect(wrapper.attributes('data-panes')).toBe('1')
+      expect(lw.chart.addSeries.mock.calls.filter(call => call[0] === lw.HistogramSeries)).toHaveLength(1)
+    })
+
+    /**
+     * Placed once for each change of pane: laid out again on every change of the volume — bars loaded
+     * at an edge, a layer switched — the weights undid a drag the reader still held, and the drag was
+     * lost once let go without another move.
+     */
+    it('leaves the panes as they stand while the volume changes in its pane', async () => {
+      size = { width: 800, height: 400 }
+      const volume: ChartVolume = { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] }
+      mountChart(BARS, { volume })
+      expect(lw.weights).toEqual([2, 0.5])
+      // the library mid-drag: the seam held where the reader took it
+      lw.weights.splice(0, 2, 1.6, 0.9)
+      lw.volumeScaleOptions.mockClear()
+      await mounted!.setProps({ volume: { ...volume, opacity: 0.5, bars: [{ time: BARS[0]!.time, value: 3, rising: true }] } })
+      expect(lw.volumeScaleOptions).not.toHaveBeenCalled()
+      // hidden, its pane stands empty: margins set anew make the library drop the marks of bars gone
+      await mounted!.setProps({ volume: { ...volume, shown: false } })
+      expect(lw.volumeSeries.setData).toHaveBeenLastCalledWith([])
+      expect(lw.volumeScaleOptions).toHaveBeenLastCalledWith({ scaleMargins: { top: 0.1, bottom: 0 } })
+      expect(lw.weights).toEqual([1.6, 0.9])
+      expect(lw.volumeSeries.moveToPane).not.toHaveBeenCalled()
+    })
+
+    /**
+     * The heights the reader dragged: laid out as kept, and told once a separator was let go. The
+     * library says nothing while it drags, so the weights are read when the pointer is released.
+     */
+    it('lays the panes out at the kept weights, and tells the weights once a drag moved one', async () => {
+      size = { width: 800, height: 400 }
+      const volume: ChartVolume = { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] }
+      mounted = mount(CandleChart, { props: { data: BARS, volume, paneWeights: { volume: 1.2 } } })
+      expect(lw.weights).toEqual([2, 1.2])
+
+      // a click that dragged nothing tells nothing
+      window.dispatchEvent(new Event('pointerup'))
+      expect(mounted.emitted('paneWeights')).toBeUndefined()
+
+      lw.weights.splice(0, 2, 1.7, 1.5)
+      window.dispatchEvent(new Event('pointerup'))
+      expect(mounted.emitted('paneWeights')).toEqual([[{ price: 1.7, volume: 1.5 }]])
+
+      // a layout loaded holds other weights: the panes take them
+      await mounted.setProps({ paneWeights: { price: 3, volume: 1 } })
+      expect(lw.weights).toEqual([3, 1])
+    })
+
+    /** One pane is never dragged: a release over a chart without a second pane tells nothing. */
+    it('tells no weights while the volume shares the pane of the candles', () => {
+      size = { width: 800, height: 400 }
+      mountChart(BARS, { volume: { basis: 'ticks', shown: true, ownPane: false, opacity: 1, bars: [] } })
+      lw.weights.splice(0, 1, 5)
+      window.dispatchEvent(new Event('pointerup'))
+      expect(mounted!.emitted('paneWeights')).toBeUndefined()
     })
 
     /**
@@ -506,6 +630,8 @@ describe('CandleChart', () => {
 
       await mounted!.setProps({ candles: { ...candles, form: 'line' } })
       expect(lw.chart.removeSeries).toHaveBeenCalledTimes(1)
+      // the new one stands before the old one goes: a pane left empty is removed by the library
+      expect(lw.chart.addSeries.mock.invocationCallOrder.at(-1)!).toBeLessThan(lw.chart.removeSeries.mock.invocationCallOrder[0]!)
       expect(lw.series.detachPrimitive).toHaveBeenCalledTimes(1)
       expect(lw.chart.addSeries).toHaveBeenLastCalledWith(lw.LineSeries, expect.objectContaining({ color: '#000007' }))
       expect(lw.series.attachPrimitive).toHaveBeenCalledTimes(2)
@@ -532,7 +658,11 @@ describe('CandleChart', () => {
       mountChart()
 
       expect(lw.chart.applyOptions).toHaveBeenCalledWith({
-        layout: { background: { type: 'solid', color: '#000001' }, textColor: '#000002' },
+        layout: {
+          background: { type: 'solid', color: '#000001' }, textColor: '#000002',
+          // the seam between two panes: a rule at rest, the accent faint under the pointer
+          panes: { separatorColor: '#000003', separatorHoverColor: 'rgba(0, 0, 4, 0.3)' },
+        },
         grid: { vertLines: { color: '#000003' }, horzLines: { color: '#000003' } },
         crosshair: { vertLine: { color: '#000004' }, horzLine: { color: '#000004' } },
         rightPriceScale: { borderColor: '#000003' },

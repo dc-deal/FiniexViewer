@@ -1,0 +1,114 @@
+# Chart Panes
+
+The run chart stacks PANES, one above the other on one time axis, the way TradingView and Kraken
+Pro do (viewer#57): the pane of the candles on top, and below it the volume in a pane of its own,
+with its own scale. A seam between two panes is dragged to make one taller, and the chart keeps the
+heights the reader gave them. *Pane* is testingide#379's word for such a band of a chart — never the
+docked *panel*, which holds the whole chart.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│   ╷ ┃╷  ┃      ↑                                       0.8760 │
+│   ┃ ┃┃ ╷┃╷   ┃┃     candles, the drawings, the marks   0.8740 │  ← the pane of the candles,
+│     ╵  ┃ ╵   ╵                                        0.8720 │    on the price scale
+│ ▐████ + ████▌   ✕                                           │  ← the time lane, at its bottom
+├──────────────────────── seam: drag it ───────────────────────┤
+│ ▂▅▃▇▂▁▃▅▂▁▃▆▂                                            1.2K │  ← the volume's own pane, a fifth
+└──────────────────────────────────────────────────────────────┘
+  10:00          11:00          12:00                               ← one time axis for every pane
+```
+
+## The volume — a layer the library draws (2026-10-27)
+
+To the reader the volume is a layer like the others — shown, hidden, fainter — but the chart library
+draws it, as a `HistogramSeries` of its own built BEFORE the candles, so it stands behind them where
+it shares their pane. Its place in the Layers panel is fixed (`fixed` in the register): never moved,
+and no other layer passes it.
+
+- **In a pane of its own by default** — its option *own pane*, on (viewer#57). There it stands on
+  that pane's right scale, which says what a bar counts; the candles' scale never sees it, so
+  switching it moves no candle. A tenth of the pane stays free above the tallest bar.
+- **Its option off, in the pane of the candles**: in the lowest fifth, behind them, on a price scale
+  nothing shows. Where the time lane is drawn, that fifth stands above the lane, lifted by the share
+  of the pane the lane takes ([The time lane](chart_drawings_and_layers.md#the-time-lane--booking-periods-and-orders-refused-2026-11-08)).
+- **Which count**, from the bars' own answer (their `market-data` document): `v` is the traded
+  volume, `0.0` on every bar of a feed that carries none, and then `tc` is the measure of how busy the
+  market was. `X-Bar-Price-Basis: order_driven` names a venue that prints trades. So the traded
+  volume there, the ticks otherwise (`volumeBasis` in `run_chart_store`), and the row says which —
+  *traded volume* or *ticks per bar*. That reading of two sentences is put to FiniexTestingIDE.
+- **Each bar faint in its candle's direction** — the polarity roles at 45 % of the layer's opacity.
+- **The run chart only.** `CandleChart` builds the series only where it is handed a `volume`; the
+  free chart, which draws no layers, builds none and stacks one pane.
+
+## The heights — a weight, kept
+
+- **A pane's height is a WEIGHT against the others', never pixels** — the library's stretch factor
+  (`IPaneApi.setStretchFactor`). A window of another height, a dock seam dragged or a size of another
+  layout keeps the proportion. The candles stand at 2, the library's own weight for its first pane,
+  and the volume at 0.5 — a fifth of the height, where Kraken Pro stands it
+  (`DEFAULT_PANE_WEIGHTS`).
+- **A drag of the seam is read when the pointer is let go.** The library drags a seam by changing
+  the weights of the two panes beside it and says nothing while it does, so `use_chart_panes` reads
+  every pane's weight on the window's `pointerup` and tells the chart's store only where one moved: a
+  click that dragged nothing, or a drag elsewhere on the page, writes nothing.
+- **Kept with the chart's own view**, `panelViews['run-chart'].panes` — only a pane the reader
+  dragged, read field by field: a pane this build does not know, or a weight that is no positive
+  number, is never copied ([State and storage](../architecture/state_and_storage.md)). Bound to no
+  run, so another unit, timeframe or run keeps them.
+- **Part of a named layout, as the layers are**, and of each size of it: loading *Backtests* lays
+  the panes out as that layout holds them, and a layout that holds none stands them at their
+  defaults ([Named layouts](../interface/named_layouts.md)).
+- **Applied when the panes change**: the chart built, the option switched, a layout loaded. The
+  library makes a new pane at its own weight, so every pane is set to the kept weight or its default
+  each time (`applyWeights`) — and only then: laid out again on every change of the volume, bars
+  loaded at an edge or a layer switched, the weights undid a drag the reader still held.
+
+## What moves nothing
+
+- **The volume hidden keeps its pane, and the pane holds nothing.** The candles keep their height
+  and the eye its place; *own pane* switched off is the way to give the room back. Hidden, the series
+  is handed no bars: a hidden series still gives its scale the range it had, and the scale of a pane
+  of its own is drawn — labels and a grid of bars no longer shown read like a measurement.
+- **A change of the candles' form builds the new price series before the old one goes.** The library
+  removes a pane left empty, and for that moment the pane of the candles was: the volume's pane moved
+  up and took the candles (found while building, 2026-11-12).
+- **The lane, the marks and their cards stay in the pane of the candles.** The drawing host is
+  attached to the price series, so it draws and hit-tests in that pane alone; over the volume's pane
+  the pointer finds nothing of them.
+- **The seam reads as a seam**: in the rule colour at rest, and under the pointer the accent, faint,
+  over its 9 px handle — the colour of what can be acted on (`chartColours`).
+
+## Where it lives
+
+- `src/types/chart_pane_types.ts` — the panes we stack, by name (`CHART_PANE_IDS`), and `PaneWeights`.
+- `src/composables/use_chart_panes.ts` — the weights applied, and read back once a drag is let go.
+- `CandleChart.placeVolume` — which pane the volume stands in, on which scale, and the count of panes
+  on the element (`data-panes`), since a canvas cannot be read back.
+- `run_chart_store` — `volume.ownPane` from the layer's option, `paneWeights` and `setPaneWeights`.
+
+## Not built yet
+
+- **A legend in each pane** — the values of the bar under the pointer, the last bar's otherwise —
+  and **controls on a pane** under the pointer: hide it, make it the whole height. Both next (viewer#57).
+- **A worker's own pane** — an oscillator on a scale of its own, the way TradingView draws an RSI —
+  once FiniexTestingIDE serves a worker's outputs with the pane they belong in (testingide#379). A pane
+  joins `CHART_PANE_IDS` by name. The shape is agreed with them as a direction (2026-11-12), recorded
+  in #379 as *Indicator series — one value per bar*, and becomes a contract once #379's types are
+  fixed: one entry per worker instance with its `pane` (`"price"` on the candles), `plots` (Line,
+  Histogram, Area, Baseline), `price_lines`, `filled_areas` between two plots or two price lines, and
+  `times` beside `data`, one value per bar and `null` for a gap — read for a run as a stream through
+  testingide#580, and for the free chart computed on request over a window of bars.
+
+## How it is tested
+
+- `use_chart_panes.test.ts` — the weights laid out, kept or default; told once a release finds one
+  moved and never for a click that moved nothing or a chart of one pane; no longer heard once unmounted.
+- `candle_chart.test.ts` — the volume in its own pane at a fifth, or in the pane of the candles; moved
+  between them as its option switches, never built anew, and kept in its pane while hidden; the kept
+  weights laid out and the dragged ones told; the new price series built before the old one goes.
+- `arrangement_store.test.ts`, `named_layouts_store.test.ts`, `run_chart_store.test.ts` — the weights
+  read field by field, kept beside the layers, saved with a layout and laid out by it.
+- `e2e/chart_panes.spec.ts` — in a real browser, the panes read off the library's table
+  (`e2e/pane_rows.ts`): the volume at a fifth with the lane in the pane of the candles; a seam dragged
+  and kept through another window height, another unit, a chart built anew and a reload; the volume
+  hidden moving nothing, and its option off giving the candles the whole height and back.

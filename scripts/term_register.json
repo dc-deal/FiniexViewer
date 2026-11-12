@@ -274,6 +274,7 @@
   "order": {"field": "submitted_seq", "doc": "order-events", "their": null, "ours": null, "note": "names ONE order inside a position, which is what submitted_seq identifies - their sentence: order_id repeats because a position open and its market closes share it. An order that was never submitted carries none and is named that instead"},
   "out": {"field": "exit_slippage", "doc": "trade-history", "their": null, "ours": null, "note": ""},
   "over": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved a CONNECTOR like of: the shape is <avg> ms over <n> resolutions, in the Orders funnel. The reading behind it was latency_count, which contract 23 removed anyway - so the real finding there is the funnel, not this word"},
+  "own pane": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/layer_registry.ts"},
   "period": {"field": "period_no", "doc": "booking-periods", "their": null, "ours": null, "note": "", "same_as": "booking period"},
   "price": {"field": "price", "doc": "trade-history", "their": null, "ours": null, "note": ""},
   "private": {"field": "private_bytes", "doc": "state-frames", "their": null, "ours": null, "note": ""},

@@ -32,7 +32,7 @@ describe('layer_registry', () => {
 
   it('arranges a chart nobody touched in its own order, every layer shown at full strength, each option at its default', () => {
     expect(arrangeLayers('run-chart', undefined)).toEqual([
-      { id: 'volume', shown: true, opacity: 100, option: null, form: null },
+      { id: 'volume', shown: true, opacity: 100, option: true, form: null },
       { id: 'candles', shown: true, opacity: 100, option: null, form: 'candles' },
       { id: 'periods', shown: true, opacity: 100, option: null, form: null },
       { id: 'refusals', shown: true, opacity: 100, option: null, form: null },
@@ -50,7 +50,7 @@ describe('layer_registry', () => {
     })
     expect(arranged).toEqual([
       // the volume and the candles, not in that older order, stand at the back where their fixed places are
-      { id: 'volume', shown: true, opacity: 100, option: null, form: null },
+      { id: 'volume', shown: true, opacity: 100, option: true, form: null },
       { id: 'candles', shown: true, opacity: 100, option: null, form: 'candles' },
       // kept before they existed: they stand where the chart's own order puts them
       { id: 'periods', shown: true, opacity: 100, option: null, form: null },

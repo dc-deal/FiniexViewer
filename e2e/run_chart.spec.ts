@@ -2,6 +2,7 @@ import { test, expect } from './cdp_fixture'
 import type { Page } from '@playwright/test'
 import { mockApi, FIXTURE_RUN } from './api_mock'
 import { openWith, storedLink } from './arrangement_seed'
+import { paneRows } from './pane_rows'
 
 /**
  * The run-bound chart, in a real browser: the dock places it, the library draws it on a canvas, and
@@ -196,10 +197,10 @@ test('the run chart draws the booking periods and the orders refused in a lane a
   await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/periods:1/)
   expect(await chart.getAttribute('data-drawings')).toMatch(/refusals:[1-9]/)
 
-  // the strip stands at the bottom of the pane, just above the time axis
-  const box = (await chart.boundingBox())!
+  // the strip stands at the bottom of the pane of the candles — above the volume's own pane
+  const box = (await paneRows(chart).first().boundingBox())!
   const card = page.locator('.chart-card')
-  for (let lift = 26; lift <= 60 && !(await card.count()); lift += 2) {
+  for (let lift = 4; lift <= 40 && !(await card.count()); lift += 2) {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height - lift)
     await page.waitForTimeout(60)
   }

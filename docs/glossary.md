@@ -54,6 +54,13 @@ units show only it, or mark it, and the *run-bound chart* draws it. Stated once,
 that section's rows. Not the *subscription narrowing* of a worker in FiniexTestingIDE, and the
 frame is not their recorded state *frame*.
 
+**pane** — A band of a chart, stacked with the others on its one time axis and with a scale of its
+own: the run chart's pane of the candles on top, the volume's own pane below (viewer#57), a seam
+between two that the reader drags. FiniexTestingIDE's word from testingide#379, where a `pane` is a
+name and `price` the price chart (decided there 2026-10-16); not in its glossary or consumer
+documents, checked 2026-11-12. On screen as the volume's option *own pane*. Never the docked
+*panel*, which holds the whole chart. See [Chart Panes](panels/chart_panes.md).
+
 **panel** — Everything the reader keeps open beside the work: a list, a report section opened on its
 own, a chart. It has a form, a link and a tab, and it is docked — it never floats over another. The
 same idea as the panels of FiniexTestingIDE's AutoTrader console, which these mirror. Never
@@ -80,7 +87,7 @@ Both bars give room by rank. Not in FiniexTestingIDE's glossary or consumer docu
 **tab** — A panel's handle in the dock: its form, its title, and one status that prints only when
 it has something to say.
 
-**time lane** — The band along the bottom of the run chart's pane for what has a time and no price:
+**time lane** — The band along the bottom of the run chart's pane of the candles for what has a time and no price:
 the booking periods as a strip, the orders refused or expired as marks above it (viewer#41). Not in
 FiniexTestingIDE's glossary or consumer documents, checked 2026-11-12, and not their *data window*:
 the lane holds marks, never a span of data. See [Chart Drawings and

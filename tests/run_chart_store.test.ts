@@ -368,6 +368,26 @@ describe('useRunChartStore', () => {
     expect(chart.volume!.bars.map(bar => bar.value)).toEqual([12, 4])
   })
 
+  /** A pane of its own by default, as TradingView and Kraken Pro draw it; its option off, in the pane of the candles (viewer#57). */
+  it('hands the volume its own pane unless the Layers panel took it into the pane of the candles', () => {
+    const chart = useRunChartStore()
+    expect(chart.volume?.ownPane).toBe(true)
+    useArrangementStore().setPanelView('run-chart', { layers: { options: { 'own-pane': false } } })
+    expect(chart.volume?.ownPane).toBe(false)
+  })
+
+  /** The panes as tall as the reader dragged them, kept beside the layers and bound to no run. */
+  it('keeps the weights of the panes beside the arrangement of the layers', () => {
+    const chart = useRunChartStore()
+    expect(chart.paneWeights).toBeNull()
+    useArrangementStore().setPanelView('run-chart', { layers: { hidden: ['levels'] } })
+    chart.setPaneWeights({ price: 1.5, volume: 0.9 })
+    expect(chart.paneWeights).toEqual({ price: 1.5, volume: 0.9 })
+    expect(useArrangementStore().panelViews['run-chart']).toEqual({
+      layers: { hidden: ['levels'] }, panes: { price: 1.5, volume: 0.9 },
+    })
+  })
+
   it('draws the line of every position of the unit where the Layers panel asks for it', async () => {
     chooseFixtureRun()
     vi.mocked(apiClient.getBars).mockResolvedValue({

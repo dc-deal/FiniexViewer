@@ -32,8 +32,9 @@ or carries a layout stands there, as a list with a detail, never in the menu.
 
 ```
 HOLDS   the dock: the open panels, their splits and tab stacks · every panel's last place, a
-        hidden one's included · what each panel shows expanded · a chart's layers · the bundles'
-        columns: their sections in order, folded, pinned, locked or hidden
+        hidden one's included · what each panel shows expanded · a chart's layers and the heights
+        of its panes · the bundles' columns: their sections in order, folded, pinned, locked or
+        hidden
 NEVER   the run, the deployment, the sweep, a narrowing, a marked position, the rows a panel keeps
         for one run, the server
 ```

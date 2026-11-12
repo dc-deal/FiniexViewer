@@ -139,7 +139,10 @@ started again (`docker restart finiex-viewer`).
 - **Recharts / Chart.js** — not optimised for candlestick OHLCV; significant custom work needed.
 - **Custom WebGL/Canvas** — full control but months of work with no financial primitives.
 
-Lightweight Charts becomes limiting if we need complex multi-pane indicator layouts or a professional trading UI. For v0.1–v0.2 scope (read-only candle display), it is the right choice.
+Version 5 stacks panes of its own on one time axis, which carries the volume's own pane and, once
+served, a worker's ([Chart Panes](chart_panes.md)). It becomes limiting where a professional trading
+UI needs drawing tools — not asked for (operator, 2026-11-12). For a chart that reads what a run
+did, it is the right choice.
 
 **A window is fitted whole, however narrow the chart** (`CandleChart.vue`). The library's least bar
 width is 0.5 px, and fitting stops there: 2,000 bars then need 1,000 px, and on a narrower chart the

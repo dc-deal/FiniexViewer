@@ -120,7 +120,7 @@ by its tab, the way a reader does.
   on a real canvas, from a position the mock hands a stop and a target; an own level that fired drawn
   from the row that names it, which no stored run carries yet; the refusing unit's booking period
   and its orders refused drawn in the time lane, counted on the element, and the period's card
-  found at the bottom of the pane; ONE
+  found at the bottom of the pane of the candles; ONE
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
   in the chart narrows the lists to it; and bars loaded as the view moves (viewer#9) — a unit's first
   tick moved three weeks back over both stretches of the captured EURGBP bars, read in M1, has its
@@ -130,10 +130,16 @@ by its tab, the way a reader does.
   chart it arranges, the chart still on show and, ten frames later, still inside its own group, its
   group scrolled by nothing — it once stood 171 px left of it, over the report; a layer switched off at its lever and no longer drawn
   (`data-drawings`), the price axis the same pixel for pixel before and after — switching the trades
-  off once stretched the candles — and again after the volume is switched off, which stands on a
-  scale of its own; and both still off after a real reload, in the panel and on the chart. And a
+  off once stretched the candles — and again after the volume is switched off, which stands in a
+  pane of its own; and both still off after a real reload, in the panel and on the chart. And a
   layer dragged in front of another by its grip, a drag past the candles and the volume refused; and
   the signs switched off leaving the price axis the same pixel for pixel.
+- `chart_panes.spec.ts` holds the run chart's panes (viewer#57), read off the rows of the library's
+  table since a canvas cannot be read back: the volume in a pane of its own at a fifth of the height,
+  a booking period's card found at the bottom of the pane of the candles and nothing of the lane over
+  the volume's; a seam dragged and kept — through a window of another height, another unit, a chart
+  built anew at another timeframe and a real reload; the volume hidden moving no pane, its option off
+  giving the candles the whole height, and on again its height as it stood.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
   browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read
   from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its
@@ -270,4 +276,6 @@ same config.
 because it drifted.** `expectHeadingsReadable` was copied into two specs. When a column first
 declared a `hint`, one copy was relaxed from *the title equals the label* to *the title begins with
 it* and the other was not — and the stale copy failed months later, the moment a second column
-declared one. The fix had to be made twice, which is the signal: one assertion, one home.
+declared one. The fix had to be made twice, which is the signal: one assertion, one home. The
+chart's panes, read off the rows of the library's table, live in `e2e/pane_rows.ts` for the same
+reason: three specs find the pane of the candles.

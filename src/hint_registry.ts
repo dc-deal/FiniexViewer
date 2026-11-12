@@ -113,7 +113,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layer-volume',
-    text: t('What traded in each bar — or how many ticks it held, where the venue prints no trades — in the lowest fifth of the chart, behind the candles.'),
+    text: t('What traded in each bar — or how many ticks it held, where the venue prints no trades. In a pane of its own below the candles, on its own scale: drag the line between them to share the height differently, and the chart keeps it. Its option off, it stands in the lowest fifth of the pane of the candles, behind them.'),
   },
   // why a layer that is shown draws nothing — shown below the Layers list only while it does
   {

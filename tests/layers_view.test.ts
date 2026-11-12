@@ -48,7 +48,7 @@ describe('LayersView', () => {
 
   /**
    * The volume is drawn by the chart library behind the candles: it is shown, hidden and made fainter
-   * like the others, opens to what it draws, is never moved, and says what it counts.
+   * like the others, opens to what it draws and to its own pane, is never moved, and says what it counts.
    */
   it('offers the volume its lever and its opacity, and no place to move it to', async () => {
     const wrapper = mountOn('run-chart')
@@ -60,8 +60,25 @@ describe('LayersView', () => {
     await volume.find('[data-action="open"]').trigger('click')
     expect(row(wrapper, 'volume').find('.hint-line').text()).toContain('What traded in each bar')
     expect(row(wrapper, 'volume').find('[data-action="forms"]').exists()).toBe(false)
+    // its own pane by default: switched off, it is kept, and the volume goes into the pane of the candles
+    await row(wrapper, 'volume').find('[data-action="option"]').trigger('click')
+    expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ options: { 'own-pane': false } })
     await row(wrapper, 'volume').find('[data-action="show"]').trigger('click')
-    expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ hidden: ['volume'] })
+    expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ hidden: ['volume'], options: { 'own-pane': false } })
+  })
+
+  /** The heights of the chart's panes stand beside its layers: a change here leaves the ones dragged alone. */
+  it('keeps the heights the reader dragged through every change of a layer', async () => {
+    const panes = { price: 1.4, volume: 1.1 }
+    useArrangementStore().setPanelView('run-chart', { panes })
+    const wrapper = mountOn('run-chart')
+    await row(wrapper, 'volume').find('[data-action="open"]').trigger('click')
+    await row(wrapper, 'volume').find('[data-action="option"]').trigger('click')
+    await row(wrapper, 'volume').find('[data-action="show"]').trigger('click')
+    await row(wrapper, 'trades').find('[data-action="show"]').trigger('click')
+    expect(useArrangementStore().panelViews['run-chart']).toEqual({
+      layers: { hidden: ['volume', 'trades'], options: { 'own-pane': false } }, panes,
+    })
   })
 
   /**
@@ -157,18 +174,18 @@ describe('LayersView', () => {
   })
 
   /**
-   * A row opens only onto something (operator, on screen 2026-10-29): the volume has no option and no
-   * forms, so once its hint is put away it shows no marker and a click opens nothing. A layer with an
-   * option still opens onto it.
+   * A row opens only onto something (operator, on screen 2026-10-29): the booking periods have no
+   * option and no forms, so once their hint is put away they show no marker and a click opens
+   * nothing. A layer with an option still opens onto it.
    */
   it('opens a row with nothing left to show onto nothing at all', async () => {
-    useHintsStore().ban('layer-volume')
+    useHintsStore().ban('layer-periods')
     useHintsStore().ban('layer-trades')
     const wrapper = mountOn('run-chart')
-    expect(row(wrapper, 'volume').find('.layer-marker').text()).toBe('')
-    expect(row(wrapper, 'volume').find('[data-action="open"]').attributes('aria-expanded')).toBeUndefined()
-    await row(wrapper, 'volume').find('[data-action="open"]').trigger('click')
-    expect(row(wrapper, 'volume').find('.layer-options').exists()).toBe(false)
+    expect(row(wrapper, 'periods').find('.layer-marker').text()).toBe('')
+    expect(row(wrapper, 'periods').find('[data-action="open"]').attributes('aria-expanded')).toBeUndefined()
+    await row(wrapper, 'periods').find('[data-action="open"]').trigger('click')
+    expect(row(wrapper, 'periods').find('.layer-options').exists()).toBe(false)
     await row(wrapper, 'trades').find('[data-action="open"]').trigger('click')
     expect(row(wrapper, 'trades').find('[data-action="option"]').exists()).toBe(true)
   })

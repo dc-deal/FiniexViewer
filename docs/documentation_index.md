@@ -30,6 +30,7 @@ starts with the first group.
 | [Candle Charts](panels/candle_charts.md) | The run chart with a unit's trades on its candles, and `CandleChart` over Lightweight Charts: first real size, theme repaint, and what the pointer is over |
 | [Activities Panel](panels/activities_panel.md) | What runs on the machine — FiniexTestingIDE's activity list as a panel: each activity beneath the one it runs inside, its memory as served, asked only while someone reads it |
 | [Chart Drawings and Layers](panels/chart_drawings_and_layers.md) | What a chart draws for itself — marks, levels, lines, the time lane of booking periods and orders refused — through one drawing host, layer by layer: placed, painted and found under the pointer; and the Layers panel that shows, hides, dims and orders them |
+| [Chart Panes](panels/chart_panes.md) | The run chart's panes stacked on one time axis: the volume in a pane of its own below the candles or in theirs, the heights the reader drags kept as weights — with the chart's view and in a named layout — and what moves nothing |
 
 ## Runs
 

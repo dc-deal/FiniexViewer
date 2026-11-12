@@ -278,5 +278,26 @@ describe('useArrangementStore', () => {
       await nextTick()
       expect(stored()['panelViews']).toEqual({ 'run-chart': { layers: { opacity: { levels: 50 } } } })
     })
+
+    /** A chart's panes as tall as the reader dragged them (viewer#57): a weight, kept beside the layers. */
+    it('keeps the weights of a chart\'s panes, and drops what is no pane or no weight', async () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: {
+          'run-chart': { panes: { price: 1.6, volume: 0.8, 'no-such-pane': 1 } },
+          // a weight of nothing, below it or not a number is none — the pane stands at its default
+          'chart': { panes: { price: 0, volume: -1 } },
+          'run-chart-2': { panes: { price: 'tall', volume: Number.POSITIVE_INFINITY } },
+        },
+      })
+      const arrangement = useArrangementStore()
+      expect(arrangement.panelViews).toEqual({ 'run-chart': { panes: { price: 1.6, volume: 0.8 } } })
+
+      arrangement.setPanelView('run-chart', { panes: { price: 1.6, volume: 0.8 }, layers: { hidden: ['levels'] } })
+      await nextTick()
+      expect(stored()['panelViews']).toEqual({
+        'run-chart': { layers: { hidden: ['levels'] }, panes: { price: 1.6, volume: 0.8 } },
+      })
+    })
   })
 })

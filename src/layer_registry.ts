@@ -26,6 +26,9 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
     title: t('Volume'),
     hintId: 'layer-volume',
     fixed: true,
+    // a pane of its own below the candles, as TradingView and Kraken Pro draw it (operator, 2026-11-12);
+    // off, at the bottom of the candles' pane as before
+    option: { id: 'own-pane', label: t('own pane'), fallback: true },
   },
   candles: {
     title: t('Candles'),

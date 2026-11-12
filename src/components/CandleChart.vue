@@ -12,8 +12,10 @@ import ChartCard from '@/components/base/ChartCard.vue'
 import { ChartDrawingHost, type DrawingColours } from '@/components/chart_drawing_host'
 import type { BarRange } from '@/components/chart_geometry'
 import type { BarEdge } from '@/composables/use_bar_loader'
+import { useChartPanes } from '@/composables/use_chart_panes'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { ChartLayer } from '@/types/chart_drawing_types'
+import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
 import type { FigureCard } from '@/types/figure_types'
 import type { ChartCandles, ChartVolume, PriceForm } from '@/types/run_chart_types'
 import { t } from '@/translate'
@@ -47,6 +49,8 @@ const props = defineProps<{
   loadingEdges?: BarEdge[]
   /** A batch at an edge that failed: said in that corner — the bars loaded stay. */
   edgeError?: { edge: BarEdge, message: string } | null
+  /** The panes as tall as the reader dragged them; a pane not named stands at its default (viewer#57). */
+  paneWeights?: PaneWeights | null
 }>()
 
 const emit = defineEmits<{
@@ -61,6 +65,8 @@ const emit = defineEmits<{
    * the caller's to prevent.
    */
   edge: [side: BarEdge]
+  /** The weights of every pane, once the reader dragged a separator between two of them. */
+  paneWeights: [weights: PaneWeights]
 }>()
 
 /** How many bars are on show around a focus, where the whole window would make them too narrow to read. */
@@ -88,6 +94,8 @@ const VOLUME_SCALE = 'volume'
 const VOLUME_ALPHA = 0.45
 /** Where the volume's scale begins: the lowest fifth of the pane is the volume's. */
 const VOLUME_TOP = 0.8
+/** In a pane of its own, the volume's scale leaves a tenth of the pane above its tallest bar. */
+const OWN_PANE_MARGINS = { top: 0.1, bottom: 0 }
 
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
@@ -102,6 +110,23 @@ let themeObserver: MutationObserver | null = null
 
 /** The size the chart was last drawn at — the frame a card has to stay inside. */
 const frameSize = ref({ width: 0, height: 0 })
+
+/** Whether the volume stands in a pane of its own — what the panes are laid out by. */
+const volumeOwnPane = ref(false)
+/** Where the volume was last placed, in a pane of its own or not — null before the chart placed it. */
+let placedOwn: boolean | null = null
+/** How many panes the chart stacks, on the element: a canvas cannot be read back by an assertion. */
+const paneCount = ref(1)
+/** The share of the price pane the time lane takes, as the host last told it. */
+let laneShare = 0
+
+/** The panes the chart stacks, top to bottom, at the heights the reader kept (viewer#57). */
+const panes = useChartPanes({
+  chart: () => chart,
+  ids: () => volumeOwnPane.value ? ['price', 'volume'] as ChartPaneId[] : ['price'],
+  weights: () => props.paneWeights,
+  onWeights: weights => emit('paneWeights', weights),
+})
 
 /** The bars the series was last handed — what a new set is compared with, to keep the view where it is. */
 let shown: ChartBar[] = []
@@ -252,6 +277,8 @@ function chartColours(colours: ChartColours): DeepPartial<ChartOptions> {
     layout: {
       background: { type: ColorType.Solid, color: colours.surface },
       textColor: colours.text,
+      // the separator between two panes is a seam to drag: a rule at rest, interactive under the pointer
+      panes: { separatorColor: colours.rule, separatorHoverColor: withAlpha(colours.focus, 0.3) },
     },
     grid: {
       vertLines: { color: colours.rule },
@@ -313,12 +340,12 @@ function initChart(size: { width: number, height: number }): void {
   chart.timeScale().subscribeVisibleLogicalRangeChange(onRange)
   frameSize.value = size
 
-  // built before the candles, so it is drawn behind them
+  // built before the candles, so it is drawn behind them where it shares their pane
   if (props.volume !== undefined) {
     volumeSeries = chart.addSeries(HistogramSeries, {
-      priceScaleId: VOLUME_SCALE, priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false,
-    })
-    chart.priceScale(VOLUME_SCALE).applyOptions({ scaleMargins: { top: VOLUME_TOP, bottom: 0 } })
+      priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false,
+    }, props.volume?.ownPane ? 1 : 0)
+    placeVolume()
   }
   host = new ChartDrawingHost()
   // told from inside the library's drawing of a frame: the scale is moved once that has finished
@@ -339,10 +366,7 @@ function candlesLayer(): ChartCandles {
  */
 function buildPriceSeries(): void {
   if (!chart || !host) return
-  if (series) {
-    series.detachPrimitive(host)
-    chart.removeSeries(series)
-  }
+  const previous = series
   const form = candlesLayer().form
   const options = { ...priceColours(readColours()), ...seriesFormat() }
   series = form === 'bars' ? chart.addSeries(BarSeries, options)
@@ -350,6 +374,12 @@ function buildPriceSeries(): void {
       : form === 'area' ? chart.addSeries(AreaSeries, options)
         : chart.addSeries(CandlestickSeries, { borderVisible: false, ...options })
   builtForm = form
+  // the old series goes only once the new one stands: the library removes a pane left empty, and the
+  // volume's own pane would then move up and take the candles (viewer#57)
+  if (previous) {
+    previous.detachPrimitive(host)
+    chart.removeSeries(previous)
+  }
   series.attachPrimitive(host)
 }
 
@@ -437,19 +467,58 @@ function withAlpha(colour: string, alpha: number): string {
 /**
  * The volume stands above the time lane, never under it: its fifth of the pane is lifted by the
  * lane's share, so the lane's strip and marks are not drawn over its bars (on screen 2026-11-08).
+ * In a pane of its own it is clear of the lane already; the share is kept for when it comes back.
  */
 function fitVolume(share: number): void {
-  if (!chart || !volumeSeries) return
+  laneShare = share
+  if (!chart || !volumeSeries || volumeOwnPane.value) return
   chart.priceScale(VOLUME_SCALE).applyOptions({ scaleMargins: { top: VOLUME_TOP - share, bottom: share } })
+}
+
+/**
+ * Where the volume stands (viewer#57): in a pane of its own below the candles, on that pane's own
+ * scale, or behind the candles in the lowest fifth of their pane, on a scale nothing shows. Moved,
+ * never built anew; back in the candles' pane it is put first there, so they are drawn over it.
+ */
+function placeVolume(): void {
+  if (!chart || !volumeSeries) return
+  const own = props.volume?.ownPane ?? false
+  // placed once for each change of pane: placed on every change of the volume — bars loaded at an
+  // edge, a layer switched — the weights laid out again undid a drag the reader still held
+  if (own === placedOwn) return
+  placedOwn = own
+  const index = own ? 1 : 0
+  if (volumeSeries.getPane().paneIndex() !== index) volumeSeries.moveToPane(index)
+  volumeOwnPane.value = own
+  if (own) {
+    volumeSeries.applyOptions({ priceScaleId: 'right' })
+    // the library keeps a right scale's options as its default for a pane made later as well
+    // (lightweight-charts 5.2.1): a pane of another kind sets its own margins
+    volumeSeries.priceScale().applyOptions({ scaleMargins: OWN_PANE_MARGINS })
+  } else {
+    volumeSeries.applyOptions({ priceScaleId: VOLUME_SCALE })
+    volumeSeries.setSeriesOrder(0)
+    fitVolume(laneShare)
+  }
+  panes.applyWeights()
+  paneCount.value = chart.panes().length
 }
 
 /** The volume bars, in the colour of their candle's direction, faint — or none, where hidden. */
 function showVolume(): void {
   if (!volumeSeries) return
+  placeVolume()
   const volume = props.volume
   volumeSeries.applyOptions({ visible: volume?.shown ?? false })
-  if (!volume) {
+  // hidden, its pane stands empty: a hidden series still gives its scale the range it had, and the
+  // scale of a pane of its own is drawn — labels and a grid of bars no longer shown. Emptied, the
+  // library keeps the scale's marks all the same, by its own choice (lightweight-charts 5.2.1, beside
+  // `PriceScale._internal_marks`), until something drops them; margins set anew do, so the marks are
+  // made again from no bars at all
+  if (!volume?.shown) {
+    settle()
     volumeSeries.setData([])
+    if (volumeOwnPane.value) volumeSeries.priceScale().applyOptions({ scaleMargins: OWN_PANE_MARGINS })
     return
   }
   const colours = readColours()
@@ -534,6 +603,8 @@ watch(() => props.layers, () => {
 watch(() => props.focus, () => frame())
 watch(() => props.volume, () => showVolume())
 watch(() => props.candles, () => showCandles())
+// a layout loaded: the panes take the weights it holds
+watch(() => props.paneWeights, () => panes.applyWeights())
 // a format taken away goes back to the library's own (lightweight-charts 5.2.1: two decimals, a
 // least move of 0.01) — applying nothing would keep the previous instrument's decimals
 watch(() => props.priceFormat, () => series?.applyOptions(
@@ -546,6 +617,7 @@ watch(() => props.priceFormat, () => series?.applyOptions(
     :data-marks="markCount"
     :data-events="events"
     :data-drawings="drawingCounts"
+    :data-panes="paneCount"
     :data-bars="data.length"
     :data-time-at="timeAt"
     :data-visible-from="visibleFrom ?? undefined"

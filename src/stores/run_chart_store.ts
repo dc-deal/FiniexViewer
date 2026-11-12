@@ -22,6 +22,7 @@ import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
+import type { PaneWeights } from '@/types/chart_pane_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
 
@@ -288,6 +289,8 @@ export const useRunChartStore = defineStore('runChart', () => {
     return {
       basis: volumeBasis.value,
       shown: state.shown,
+      // the layer's option, its default the register's: on
+      ownPane: state.option === true,
       opacity: state.opacity / 100,
       bars: served.value.map(bar => ({ time: bar.t, value: traded ? bar.v : bar.tc, rising: bar.c >= bar.o })),
     }
@@ -420,6 +423,14 @@ export const useRunChartStore = defineStore('runChart', () => {
     spacing.value = next
   }
 
+  /** The panes as tall as the reader dragged them, kept with the chart's own view (viewer#57). */
+  const paneWeights = computed<PaneWeights | null>(() => arrangement.panelViews[RUN_CHART]?.panes ?? null)
+
+  /** Keeps the panes' weights the chart reports after a drag of a separator. */
+  function setPaneWeights(weights: PaneWeights): void {
+    arrangement.setPanelView(RUN_CHART, { ...arrangement.panelViews[RUN_CHART], panes: weights })
+  }
+
   /**
    * Points the chart at a position: its unit, and the position marked — which it centres on. Where a
    * scenario is in focus the focus moves with it, or the focus would keep the chart on another unit;
@@ -447,7 +458,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
-    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach, extendBars,
+    paneWeights, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
+    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, showPosition, canShow, attach, detach, extendBars,
   }
 })

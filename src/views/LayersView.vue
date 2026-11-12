@@ -106,8 +106,8 @@ const hints = useHintsStore()
 
 /**
  * Whether a row has anything to open onto: an option, the candles' forms, or its hint not yet put
- * away. The volume has neither of the first two, and once its hint was dismissed it opened onto
- * nothing (operator, on screen 2026-10-29) — then it shows no marker, and a click opens nothing.
+ * away. A layer with neither of the first two — the booking periods — opened onto nothing once its
+ * hint was dismissed (operator, on screen 2026-10-29) — then it shows no marker, and a click opens nothing.
  */
 function openable(row: LayerState): boolean {
   const definition = layerDefinition(row.id)
