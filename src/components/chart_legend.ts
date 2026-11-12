@@ -1,4 +1,4 @@
-import { priceAt, quantity } from '@/components/runs/report_format'
+import { priceAt } from '@/components/runs/report_format'
 import { t } from '@/translate'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { PaneLegend, PaneLegendEntry } from '@/types/chart_pane_types'
@@ -14,6 +14,11 @@ export interface LegendSource {
   volume: Pick<ChartVolume, 'basis' | 'shown' | 'ownPane'> | null
   /** The instrument's price step, where its broker report is there. */
   tickSize: number | null
+  /**
+   * The volume as its own scale prints it — `669.42`, `1.23K` — so the legend and the scale beside
+   * it read alike (operator, 2026-11-12): the library's own format, never a second one of ours.
+   */
+  formatVolume: (value: number) => string
 }
 
 /**
@@ -37,7 +42,7 @@ export function paneLegends(source: LegendSource): PaneLegend[] {
   if (!volume) return legends
   // the word says what the volume counts: what traded, or the ticks where the venue prints no trade
   const label = volume.basis === 'traded' ? t('Volume') : t('Ticks')
-  const value = volume.shown && source.volumeValue !== null ? quantity(source.volumeValue) : null
+  const value = volume.shown && source.volumeValue !== null ? source.formatVolume(source.volumeValue) : null
   if (volume.ownPane) legends.push({ pane: 'volume', entries: [{ label, value }], quiet: !volume.shown })
   else if (value !== null) candles.push({ label, value })
   return legends

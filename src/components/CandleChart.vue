@@ -117,6 +117,12 @@ const frameSize = ref({ width: 0, height: 0 })
 const volumeOwnPane = ref(false)
 /** Where the volume was last placed, in a pane of its own or not — null before the chart placed it. */
 let placedOwn: boolean | null = null
+/**
+ * The volume's own scale format, once its series stands: a ref, so the legends worked out before the
+ * chart was built print the value again in that form — a series held in a plain variable left them
+ * with the value as served until the pointer moved.
+ */
+const volumeFormat = shallowRef<((value: number) => string) | null>(null)
 /** How many panes the chart stacks, on the element: a canvas cannot be read back by an assertion. */
 const paneCount = ref(1)
 /** The share of the price pane the time lane takes, as the host last told it. */
@@ -147,6 +153,7 @@ const legends = computed(() => {
     volumeValue: bar ? volumeByTime.value.get(bar.time) ?? null : null,
     volume: props.volume ?? null,
     tickSize: props.priceFormat?.minMove ?? null,
+    formatVolume: value => volumeFormat.value?.(value) ?? String(value),
   })
 })
 
@@ -383,9 +390,11 @@ function initChart(size: { width: number, height: number }): void {
 
   // built before the candles, so it is drawn behind them where it shares their pane
   if (props.volume !== undefined) {
-    volumeSeries = chart.addSeries(HistogramSeries, {
+    const built = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false,
     }, props.volume?.ownPane ? 1 : 0)
+    volumeSeries = built
+    volumeFormat.value = value => built.priceFormatter().format(value)
     placeVolume()
   }
   host = new ChartDrawingHost()

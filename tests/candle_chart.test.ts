@@ -46,6 +46,8 @@ const lw = vi.hoisted(() => {
     moveToPane: vi.fn((index: number) => { volumePane.index = index }),
     setSeriesOrder: vi.fn<(order: number) => void>(),
     priceScale: () => ({ applyOptions: volumeScaleOptions }),
+    /** The volume's own scale format, as the library prints it: two decimals at most, K from a thousand. */
+    priceFormatter: () => ({ format: (value: number) => value < 995 ? String(Math.round(value * 100) / 100) : `${Math.round(value / 10) / 100}K` }),
   }
   /** Each pane's weight as the library keeps it, set by the chart and read back after a drag. */
   const weights: number[] = [2, 1]
@@ -871,9 +873,10 @@ describe('CandleChart', () => {
 
     it('puts the volume behind the close where it shares the pane of the candles', async () => {
       size = { width: 800, height: 400 }
-      mountChart(BARS, { volume: { basis: 'traded', shown: true, ownPane: false, opacity: 1, bars: [{ time: BARS[1]!.time, value: 2.5, rising: true }] } })
+      mountChart(BARS, { volume: { basis: 'traded', shown: true, ownPane: false, opacity: 1, bars: [{ time: BARS[1]!.time, value: 669.41895978, rising: true }] } })
       await nextTick()
-      expect(legendOf(mounted!, 'price').at(-1)).toBe('Volume 2.5')
+      // in the form of the volume's own scale: the library's format, two decimals
+      expect(legendOf(mounted!, 'price').at(-1)).toBe('Volume 669.42')
       expect(mounted!.find('[data-legend="volume"]').exists()).toBe(false)
     })
 

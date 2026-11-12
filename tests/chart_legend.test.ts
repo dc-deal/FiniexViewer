@@ -5,7 +5,8 @@ import type { PaneLegend } from '@/types/chart_pane_types'
 const BAR = { time: 1_760_000_000, open: 0.87412, high: 0.8743, low: 0.87401, close: 0.8742 }
 
 function source(fields: Partial<LegendSource> = {}): LegendSource {
-  return { bar: BAR, volumeValue: 1234.5, volume: null, tickSize: null, ...fields }
+  // a format no number would print by itself, so a value read through it shows that it was
+  return { bar: BAR, volumeValue: 1234.5, volume: null, tickSize: null, formatVolume: value => `${value / 1000}K`, ...fields }
 }
 
 /** A legend as label and value pairs, the way it reads. */
@@ -33,10 +34,11 @@ describe('paneLegends', () => {
   it('gives the volume in its own pane a legend of its own, its word saying what it counts', () => {
     const traded = paneLegends(source({ volume: { basis: 'traded', shown: true, ownPane: true } }))
     expect(traded.map(legend => legend.pane)).toEqual(['price', 'volume'])
-    expect(read(traded[1])).toEqual(['Volume 1,234.5'])
+    // in the form of the volume's own scale, which the chart hands in
+    expect(read(traded[1])).toEqual(['Volume 1.2345K'])
     expect(traded[1]!.quiet).toBe(false)
     const ticks = paneLegends(source({ volumeValue: 12, volume: { basis: 'ticks', shown: true, ownPane: true } }))
-    expect(read(ticks[1])).toEqual(['Ticks 12'])
+    expect(read(ticks[1])).toEqual(['Ticks 0.012K'])
   })
 
   /** As TradingView keeps a study it hid: its name stands in its pane, without a value. */
@@ -49,7 +51,7 @@ describe('paneLegends', () => {
   it('puts the volume behind the close where it shares the pane of the candles, and nothing while hidden', () => {
     const shared = paneLegends(source({ volumeValue: 12, volume: { basis: 'ticks', shown: true, ownPane: false } }))
     expect(shared.map(legend => legend.pane)).toEqual(['price'])
-    expect(read(shared[0]).at(-1)).toBe('Ticks 12')
+    expect(read(shared[0]).at(-1)).toBe('Ticks 0.012K')
     const hidden = paneLegends(source({ volume: { basis: 'ticks', shown: false, ownPane: false } }))
     expect(read(hidden[0])).toHaveLength(4)
   })

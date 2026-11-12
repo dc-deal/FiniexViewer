@@ -88,9 +88,11 @@ and no other layer passes it.
 ```
 
 - **The bar under the pointer, the last bar off the bars** — its open, high, low and close on the
-  instrument's price step once the broker report is there (`priceAt`), and the volume's value as
-  served (`quantity`). Nothing is computed: no change from the bar before, no time, which the time
-  axis already says. The labels stand quiet, the values in plain ink, in the one text size.
+  instrument's price step once the broker report is there (`priceAt`), and the volume's value in the
+  form its own scale prints — `669.42`, `1.23K` — through the library's own format
+  (`priceFormatter`), so legend and scale read alike: `669.41895978` as served stood beside `20K`
+  (operator, 2026-11-12). Nothing is computed: no change from the bar before, no time, which the
+  time axis already says. The labels stand quiet, the values in plain ink, in the one text size.
 - **The volume says what it counts**: *Volume* where the bars carry the traded volume, *Ticks* where
   the venue prints no trade. In its own pane it has a legend of its own; in the pane of the candles
   its value stands behind the close. Hidden in its own pane, its word stays there without a value, as
