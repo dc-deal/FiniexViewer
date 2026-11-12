@@ -252,6 +252,36 @@ test('a zoom step over the time lane is quick', async ({ page }) => {
 })
 
 /**
+ * The legends of the panes (viewer#57): the bar under the pointer is found and its figures written
+ * at every move — a cost that comes with every move of the pointer over the chart. Twenty moves
+ * across the busiest unit, each until the legend says another bar and the frame after has painted:
+ * the mean.
+ */
+test('the legends follow the pointer quickly', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['ETHUSD_spot_two_balances'] })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-events'))).toBe(21)
+  const legend = chart.locator('[data-legend="price"]')
+  await expect(legend).toBeVisible()
+  const box = (await chart.boundingBox())!
+  const steps = 20
+  let moved = 0
+  const started = Date.now()
+  for (let step = 0; step < steps; step++) {
+    const before = await legend.textContent()
+    await page.mouse.move(box.x + 30 + step * ((box.width - 120) / steps), box.y + box.height * 0.4)
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    if ((await legend.textContent()) !== before) moved++
+  }
+  const perMove = Math.round((Date.now() - started) / steps)
+  timings.push({ label: 'run chart — the legends at a pointer move (mean)', ms: perMove })
+  // the pointer crossed bars: most moves land on another one
+  expect(moved).toBeGreaterThan(steps / 2)
+  expect(perMove).toBeLessThan(500)
+})
+
+/**
  * Bars loaded as the view moves (viewer#9): a unit's window widened over both stretches of the
  * captured EURGBP bars, three weeks apart, read in M1. Timed from the timeframe chosen until both
  * stretches are drawn: the first batch, the pieces across the gap, and the earlier bars merged in
