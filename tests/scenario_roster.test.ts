@@ -3,6 +3,7 @@ import HoverCard from '@/components/base/HoverCard.vue'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
+import { provideFillsPanel } from '@/composables/use_fills_panel'
 import { setActivePinia, createPinia } from 'pinia'
 import { provideTestSelection } from './scenario_selection_harness'
 import { searchFor, sortBy } from './facet_harness'
@@ -104,6 +105,18 @@ function asView(model: ScenarioDetailsReport | ScenarioRosterView): ScenarioRost
 }
 
 
+/** The section shown as a panel of its own: its host says so, as the dock's panel host does. */
+function mountAsPanel(model: ScenarioDetailsReport | ScenarioRosterView = MIXED) {
+  const Host = defineComponent({
+    setup() {
+      provideFillsPanel()
+      return () => h(ScenarioRosterPanel, { model: asView(model) })
+    },
+  })
+  mounted = mount(Host, { attachTo: document.body, global: { plugins: [createPinia()] } })
+  return mounted
+}
+
 function mountPanel(model: ScenarioDetailsReport | ScenarioRosterView = MIXED) {
   mounted = mount(ScenarioRosterPanel, {
     props: { model: asView(model) },
@@ -197,6 +210,13 @@ describe('ScenarioRosterPanel', () => {
     // the counts served beside the rows (contract 52), never the rows counted here
     const served = mountPanel({ ...MIXED, scenario_count: 9, failed_scenario_count: 2 }).find('.roster-notice')
     expect(served.text()).toContain('2 of 9')
+  })
+
+  /** In the bundle's column the list keeps its cap; as a panel of its own it takes what is left. */
+  it('lets the list fill a panel of its own, and keeps its cap in the column', () => {
+    expect(mountPanel().find('.scenario-roster').classes()).not.toContain('filling')
+    mounted?.unmount()
+    expect(mountAsPanel().find('.scenario-roster').classes()).toContain('filling')
   })
 
   it('stays silent where every scenario ran', () => {

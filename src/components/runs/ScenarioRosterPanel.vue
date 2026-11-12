@@ -5,6 +5,7 @@ import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
+import { useFillsPanel } from '@/composables/use_fills_panel'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import {
   SPREAD_NOT_RECORDED, amount, figure, magnitude, marketSpan, modelledSpreadFigures, numberOrNa, percentFigure,
@@ -397,13 +398,16 @@ const failed = computed(() => roster.value.failed_scenario_count)
 const narrowing = useScenarioSelection()
 const picked = computed(() => narrowing.units.value)
 
+/** A panel of its own: the list takes the height that is left — in the bundle's column it keeps its cap. */
+const fillsPanel = useFillsPanel()
+
 function isPicked(name: string): boolean {
   return picked.value.includes(name)
 }
 </script>
 
 <template>
-  <div class="scenario-roster">
+  <div class="scenario-roster" :class="{ filling: fillsPanel }">
     <!-- the count of what never ran belongs above the filter: it is a property of the RUN, and a
          narrowed list would otherwise hide the very rows a reader most needs to see -->
     <p v-if="failed" class="roster-notice">
@@ -530,6 +534,25 @@ function isPicked(name: string): boolean {
   /* of the view that holds the panel, not of the browser window */
   max-height: 60cqh;
   overflow-y: auto;
+}
+
+/* as a panel of its own the list reaches the bottom of it: at its cap, the rest of the panel stood
+   empty below a list that already scrolled (operator, on screen 2026-11-12) — as the booking
+   periods' table did until 2026-10-19 */
+.scenario-roster.filling {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.scenario-roster.filling > * {
+  flex-shrink: 0;
+}
+
+.scenario-roster.filling > .roster-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
 }
 
 /* the interactive role, because the name IS the control — a row that looks like running text is a

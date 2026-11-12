@@ -84,7 +84,8 @@ by its tab, the way a reader does.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel — or, with the run
-  bundle closed and the orders standing apart, opening the trade history beside them.
+  bundle closed and the orders standing apart, opening the trade history beside them. And the
+  scenario list, opened as a panel of its own with forty scenarios, reaching the bottom of it.
 - `narrow_panels.spec.ts` holds what narrow room does to what stands beside it: the narrowing in the
   menu bar shortening its name once the words beside it with an icon have given way, its button
   still whole and inside the bar, the Panels and Layouts triggers on one line and the server's name

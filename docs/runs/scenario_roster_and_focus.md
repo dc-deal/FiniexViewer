@@ -11,6 +11,10 @@ all. Why a scenario produced nothing is not repeated on its row: the backend ser
 in Warnings & errors, and the notice above the list points there — on the row it took a screenful of
 the list for one failed scenario (operator, 2026-11-12). The row is marked ✖ failed.
 
+As a panel of its own the list reaches the bottom of it (`useFillsPanel`, as the booking periods'
+table does); in the bundle's column it keeps its cap of 60 % of the view. At that cap, the rest of
+the panel stood empty below a list that already scrolled (on screen 2026-11-12).
+
 Two of them declare a FLOOR rather than a share: the scenario name and the state. Everything
 here compresses rather than scrolls at a narrow width, which is the right trade for a panel whose
 width the reader sets — but measured at 900 px the state read `f…` and `s…`, and whether a scenario
