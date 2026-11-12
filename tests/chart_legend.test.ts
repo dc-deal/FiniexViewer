@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { paneLegends, type LegendSource } from '@/components/chart_legend'
+import { LEGEND_LINE, legendTops, paneLegends, type LegendSource } from '@/components/chart_legend'
 import type { PaneLegend } from '@/types/chart_pane_types'
 
 const BAR = { time: 1_760_000_000, open: 0.87412, high: 0.8743, low: 0.87401, close: 0.8742 }
@@ -36,16 +36,14 @@ describe('paneLegends', () => {
     expect(traded.map(legend => legend.pane)).toEqual(['price', 'volume'])
     // in the form of the volume's own scale, which the chart hands in
     expect(read(traded[1])).toEqual(['Volume 1.2345K'])
-    expect(traded[1]!.quiet).toBe(false)
     const ticks = paneLegends(source({ volumeValue: 12, volume: { basis: 'ticks', shown: true, ownPane: true } }))
     expect(read(ticks[1])).toEqual(['Ticks 0.012K'])
   })
 
-  /** As TradingView keeps a study it hid: its name stands in its pane, without a value. */
-  it('keeps a hidden volume\'s name in its own pane, quiet and without a value', () => {
+  /** Hidden, the volume gives its pane up (operator, 2026-11-12): nothing of it is said. */
+  it('says nothing of a hidden volume, which has no pane to stand in', () => {
     const legends = paneLegends(source({ volume: { basis: 'ticks', shown: false, ownPane: true } }))
-    expect(read(legends[1])).toEqual(['Ticks'])
-    expect(legends[1]!.quiet).toBe(true)
+    expect(legends.map(legend => legend.pane)).toEqual(['price'])
   })
 
   it('puts the volume behind the close where it shares the pane of the candles, and nothing while hidden', () => {
@@ -59,5 +57,31 @@ describe('paneLegends', () => {
   it('leaves the value out where the volume has none on that bar', () => {
     const legends = paneLegends(source({ volumeValue: null, volume: { basis: 'traded', shown: true, ownPane: true } }))
     expect(read(legends[1])).toEqual(['Volume'])
+  })
+})
+
+describe('legendTops', () => {
+  const PRICE = { id: 'price' as const, top: 0, height: 300 }
+  const VOLUME = { id: 'volume' as const, top: 301, height: 99 }
+
+  it('stands each legend at the top of its pane', () => {
+    expect([...legendTops([PRICE, VOLUME], null)]).toEqual([['price', 0], ['volume', 301]])
+  })
+
+  /** A folded pane keeps 2 px the library draws nothing in: its legend is a line of the whole-height pane. */
+  it('stands a folded pane above the whole-height one as its first line, and pushes its legend down', () => {
+    const tops = legendTops([{ ...PRICE, height: 2 }, { ...VOLUME, top: 3, height: 397 }], 'volume')
+    expect(tops.get('price')).toBe(3)
+    expect(tops.get('volume')).toBe(3 + LEGEND_LINE)
+  })
+
+  it('stands a folded pane below the whole-height one just over its seam', () => {
+    const tops = legendTops([{ ...PRICE, height: 397 }, { ...VOLUME, top: 398, height: 2 }], 'price')
+    expect(tops.get('price')).toBe(0)
+    expect(tops.get('volume')).toBe(397 - LEGEND_LINE)
+  })
+
+  it('places by the panes alone where the pane named is not among them', () => {
+    expect([...legendTops([PRICE], 'volume')]).toEqual([['price', 0]])
   })
 })

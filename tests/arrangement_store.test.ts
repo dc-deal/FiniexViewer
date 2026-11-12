@@ -299,5 +299,18 @@ describe('useArrangementStore', () => {
         'run-chart': { layers: { hidden: ['levels'] }, panes: { price: 1.6, volume: 0.8 } },
       })
     })
+
+    /** The pane given the whole height is kept like the heights — and only a pane this build has. */
+    it('keeps the pane given the whole height, and drops one that is no pane', async () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: { 'run-chart': { maximized: 'volume' }, 'chart': { maximized: 'rsi' } },
+      })
+      const arrangement = useArrangementStore()
+      expect(arrangement.panelViews).toEqual({ 'run-chart': { maximized: 'volume' } })
+      arrangement.setPanelView('run-chart', { maximized: 'price', panes: { volume: 1 } })
+      await nextTick()
+      expect(stored()['panelViews']).toEqual({ 'run-chart': { panes: { volume: 1 }, maximized: 'price' } })
+    })
   })
 })

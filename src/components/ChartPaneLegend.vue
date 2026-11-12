@@ -15,7 +15,6 @@ defineProps<{ legend: PaneLegend, top: number }>()
 <template>
   <div
     class="pane-legend"
-    :class="{ quiet: legend.quiet }"
     :style="{ top: `${top}px` }"
     :data-legend="legend.pane"
   >

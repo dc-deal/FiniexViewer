@@ -6,9 +6,12 @@ import AppIcon from '@/components/base/AppIcon.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import ChartNotices from '@/components/runs/ChartNotices.vue'
+import { useChartLayers } from '@/composables/use_chart_layers'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { t } from '@/translate'
+import { PANE_LAYERS } from '@/types/chart_pane_types'
+import type { ChartPaneId } from '@/types/chart_pane_types'
 
 /**
  * The run-bound chart: one unit of the chosen run on its candles, its positions marked where they
@@ -21,8 +24,14 @@ import { t } from '@/translate'
 const chart = useRunChartStore()
 const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, loading, error, layers, offer, focusAt,
-  priceFormat, volume, candles, loadingEdges, edgeError, paneWeights,
+  priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane,
 } = storeToRefs(chart)
+
+/** The lever on a pane is its layer's own: the Layers panel and the chart show one state. */
+const chartLayers = useChartLayers(() => 'run-chart')
+function showPane(pane: ChartPaneId, shown: boolean): void {
+  chartLayers.show(PANE_LAYERS[pane], shown)
+}
 const { selectedRunId, selectedRun, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
 // the archive is asked only while a run chart is on show
@@ -34,6 +43,7 @@ onUnmounted(() => chart.detach())
   <div class="run-chart-view">
     <!-- what the shapes mean, once: above the states, so it pushes the chart at mount and never again -->
     <HintLine id="chart-marks" />
+    <HintLine id="chart-panes" />
     <div v-if="!selectedRunId" class="state-overlay">
       <span class="hint">{{ t('Choose a run to see its trades on the candles') }}</span>
     </div>
@@ -87,9 +97,13 @@ onUnmounted(() => chart.detach())
       :loading-edges="loadingEdges"
       :edge-error="edgeError"
       :pane-weights="paneWeights"
+      :maximized-pane="maximizedPane"
       @spacing="chart.setSpacing"
       @edge="chart.extendBars"
       @pane-weights="chart.setPaneWeights"
+      @pane-shown="showPane"
+      @maximize="chart.setMaximizedPane"
+      @reset-panes="chart.resetPanes"
     >
       <ChartNotices :offer="offer" @accept="chart.acceptOffer" />
     </CandleChart>

@@ -41,11 +41,12 @@ const emit = defineEmits<{
 
 <style scoped>
 /* the chart's own level: over its canvas, under every card and menu that floats over the page —
-   at the plot's top right, beside the price scale, since the top left is the legend's (viewer#57).
-   The chart states the plot's width; before it has, the notices keep clear of the scale's room */
+   at the plot's top right, beside the price scale, since the top left is the legend's (viewer#57),
+   one row down: the row above is the controls' of the pane. The chart states the plot's width;
+   before it has, the notices keep clear of the scale's room */
 .chart-notices {
   position: absolute;
-  top: var(--space-xs);
+  top: calc(var(--space-xs) + 1.5rem);
   right: calc(100% - var(--chart-plot-width, calc(100% - 5rem)) + var(--space-xs));
   z-index: var(--z-chart);
   display: flex;

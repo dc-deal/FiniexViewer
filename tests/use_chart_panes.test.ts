@@ -42,12 +42,15 @@ class PaneObserverProbe {
 /** A host that lays its panes out on mount, as the chart does once it is built. */
 function hosted(
   chart: IChartApi, ids: ChartPaneId[], kept: PaneWeights | null, told: (weights: PaneWeights) => void,
-  frame: HTMLElement | null = null,
+  frame: HTMLElement | null = null, maximized: ChartPaneId | null = null,
 ): VueWrapper & { boxes: Readonly<Ref<PaneBox[]>>, track: () => void } {
   let exposed: { boxes: Readonly<Ref<PaneBox[]>>, track: () => void } | null = null
   const wrapper = mount(defineComponent({
     setup() {
-      const panes = useChartPanes({ chart: () => chart, ids: () => ids, weights: () => kept, onWeights: told, frame: () => frame })
+      const panes = useChartPanes({
+        chart: () => chart, ids: () => ids, weights: () => kept, onWeights: told, frame: () => frame,
+        maximized: () => maximized,
+      })
       panes.applyWeights()
       exposed = panes
       return () => h('div')
@@ -87,6 +90,30 @@ describe('use_chart_panes', () => {
     const wrapper = hosted(fakeChart([2], [{ top: 0, height: 300 }]), ['price'], null, () => {})
     wrapper.track()
     expect(wrapper.boxes.value).toEqual([])
+    wrapper.unmount()
+  })
+
+  /** Folded to nothing — the library keeps 2 px of a pane, too little to draw in. */
+  it('gives one pane the whole height, the others folded', () => {
+    const weights = [1, 1]
+    const told = vi.fn<(weights: PaneWeights) => void>()
+    const wrapper = hosted(fakeChart(weights), ['price', 'volume'], null, told, null, 'volume')
+    expect(weights).toEqual([0, 1])
+    // a click that dragged nothing is no drag, though the weights are not the ones kept
+    release()
+    expect(told).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  /** A release is compared with what was laid out: a drag is told once, not again at the next click. */
+  it('tells a drag once, and nothing at the clicks after it', () => {
+    const weights = [1, 1]
+    const told = vi.fn<(weights: PaneWeights) => void>()
+    const wrapper = hosted(fakeChart(weights), ['price', 'volume'], null, told)
+    weights.splice(0, 2, 1.8, 0.7)
+    release()
+    release()
+    expect(told).toHaveBeenCalledTimes(1)
     wrapper.unmount()
   })
 

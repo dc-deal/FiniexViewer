@@ -1,5 +1,5 @@
 import type { ChartLayerId } from '@/types/chart_drawing_types'
-import type { PaneWeights } from '@/types/chart_pane_types'
+import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext } from '@/types/context_types'
 import type { LayerOptionId } from '@/types/layer_types'
@@ -112,6 +112,8 @@ export interface StoredPanelView {
   layers?: StoredLayers
   /** A chart's panes as tall as the reader dragged them, bound to no run (viewer#57). */
   panes?: PaneWeights
+  /** The pane of a chart given the whole height, the others folded to their legend (viewer#57). */
+  maximized?: ChartPaneId
 }
 
 /** Everything stored under the one versioned key. */

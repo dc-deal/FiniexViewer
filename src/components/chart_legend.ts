@@ -1,7 +1,7 @@
 import { priceAt } from '@/components/runs/report_format'
 import { t } from '@/translate'
 import type { ChartBar } from '@/types/api/bar_types'
-import type { PaneLegend, PaneLegendEntry } from '@/types/chart_pane_types'
+import type { ChartPaneId, PaneBox, PaneLegend, PaneLegendEntry } from '@/types/chart_pane_types'
 import type { ChartVolume } from '@/types/run_chart_types'
 
 /** What a chart's legends are read from: one bar, and how the volume stands. */
@@ -25,8 +25,7 @@ export interface LegendSource {
  * The legend of each pane, top to bottom (viewer#57): the open, high, low and close of the bar, and
  * the volume's value in its own pane — or behind the close where it shares the pane of the candles.
  * Only what the bars serve, printed; no change from the bar before is computed here. A hidden volume
- * in its own pane keeps its name there, quiet and without a value, as TradingView keeps a study it
- * hid; in the pane of the candles it says nothing.
+ * says nothing: it gives its pane up (operator, 2026-11-12).
  */
 export function paneLegends(source: LegendSource): PaneLegend[] {
   const { bar, volume } = source
@@ -38,12 +37,33 @@ export function paneLegends(source: LegendSource): PaneLegend[] {
     { label: t('L'), value: price(bar.low) },
     { label: t('C'), value: price(bar.close) },
   ]
-  const legends: PaneLegend[] = [{ pane: 'price', entries: candles, quiet: false }]
-  if (!volume) return legends
+  const legends: PaneLegend[] = [{ pane: 'price', entries: candles }]
+  if (!volume?.shown) return legends
   // the word says what the volume counts: what traded, or the ticks where the venue prints no trade
   const label = volume.basis === 'traded' ? t('Volume') : t('Ticks')
-  const value = volume.shown && source.volumeValue !== null ? source.formatVolume(source.volumeValue) : null
-  if (volume.ownPane) legends.push({ pane: 'volume', entries: [{ label, value }], quiet: !volume.shown })
+  const value = source.volumeValue !== null ? source.formatVolume(source.volumeValue) : null
+  if (volume.ownPane) legends.push({ pane: 'volume', entries: [{ label, value }] })
   else if (value !== null) candles.push({ label, value })
   return legends
+}
+
+/** How tall a line of a legend stands — where the folded panes' lines are stacked. */
+export const LEGEND_LINE = 20
+
+/**
+ * Where each pane's legend stands, in pixels from the frame's top: at the top of its pane — and
+ * where one pane has the whole height, the folded panes, which keep no room the library draws in,
+ * stand as lines in it: one folded above it at its top, pushing its own legend down a line, one
+ * folded below it just over the seam at its bottom.
+ */
+export function legendTops(boxes: PaneBox[], maximized: ChartPaneId | null): Map<ChartPaneId, number> {
+  const whole = boxes.find(box => box.id === maximized)
+  if (!whole || boxes.length < 2) return new Map(boxes.map(box => [box.id, box.top]))
+  const above = boxes.filter(box => box.top < whole.top)
+  const below = boxes.filter(box => box.top > whole.top)
+  const tops = new Map<ChartPaneId, number>()
+  above.forEach((box, index) => tops.set(box.id, whole.top + index * LEGEND_LINE))
+  tops.set(whole.id, whole.top + above.length * LEGEND_LINE)
+  below.forEach((box, index) => tops.set(box.id, whole.top + whole.height - (below.length - index) * LEGEND_LINE))
+  return tops
 }

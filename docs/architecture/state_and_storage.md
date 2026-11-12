@@ -65,9 +65,9 @@ none — and reconciled against the layers the chart draws whenever it is used. 
 
 **So are the heights of its panes** (viewer#57): `panes` under the chart's dock id, the weight of
 each pane the reader dragged — the library's stretch factor, never pixels, so another window height
-keeps the proportion. Read field by field: a pane this build does not know, or a weight that is no
-positive number, is never copied. Bound to no run, and carried by a named layout as the layers are
-([Chart Panes](../panels/chart_panes.md)).
+keeps the proportion — and `maximized`, the pane given the whole height. Read field by field: a pane
+this build does not know, or a weight that is no positive number, is never copied. Bound to no run,
+and carried by a named layout as the layers are ([Chart Panes](../panels/chart_panes.md)).
 
 **`rows` keeps row keys of ONE run** — in Trade History the trades whose fills are open and the units
 opened or closed by hand, in Orders the scenarios closed by hand — under `scope`, the run the panel's

@@ -153,6 +153,10 @@ const HINTS: HintDefinition[] = [
     text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },
   {
+    id: 'chart-panes',
+    text: t('Drag the line between two panes to share the height, and double-click it for the first heights. Over a pane, the eye behind its figures shows or hides what it draws, and the arrows give it the whole height, the others folded to their line of figures — and the heights back.'),
+  },
+  {
     id: 'trade-slippage',
     text: t("A trade's card gives its slippage: how far the fills landed from the mid when the order was sent — half the spread for a market fill — or, marked vs SL/TP level, from the level that closed it."),
   },

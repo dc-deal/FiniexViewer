@@ -62,11 +62,11 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
   await expect.poll(async () => await chart.getAttribute('data-drawings')).not.toMatch(/trades:/)
   await painted()
   expect((await page.screenshot({ clip: axis })).equals(before)).toBe(true)
-  // the volume stands in a pane of its own: switching it off moves no candle either
+  // the volume switched off gives its pane up: the candles take the whole height (operator, on
+  // screen 2026-11-12) — in the pane of the candles it moves none, which chart_panes.spec holds
   await layers.locator('[data-layer="volume"] [data-action="show"]').click()
   await expect(layers.locator('[data-layer="volume"]')).toHaveAttribute('data-shown', 'false')
-  await painted()
-  expect((await page.screenshot({ clip: axis })).equals(before)).toBe(true)
+  await expect(chart).toHaveAttribute('data-panes', '1')
 
   await page.reload()
   await expect(page.locator('[data-panel-kind="layers"] [data-layer="trades"]')).toHaveAttribute('data-shown', 'false')

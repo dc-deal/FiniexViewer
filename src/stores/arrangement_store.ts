@@ -12,7 +12,7 @@ import type {
 } from '@/types/arrangement_types'
 import { CHART_LAYER_IDS } from '@/types/chart_drawing_types'
 import { CHART_PANE_IDS } from '@/types/chart_pane_types'
-import type { PaneWeights } from '@/types/chart_pane_types'
+import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import { LAYER_OPACITY_MIN, LAYER_OPTION_IDS } from '@/types/layer_types'
 import { LAYOUT_SIZES } from '@/types/named_layout_types'
@@ -178,6 +178,8 @@ export function readPanelViews(value: unknown): Record<string, StoredPanelView> 
     if (layers) view.layers = layers
     const panes = readPaneWeights(record(stored)['panes'])
     if (panes) view.panes = panes
+    const maximized = record(stored)['maximized']
+    if (CHART_PANE_IDS.includes(maximized as ChartPaneId)) view.maximized = maximized as ChartPaneId
     if (Object.keys(view).length) views[id] = view
   }
   return views
@@ -363,6 +365,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       if (view.expanded && Object.keys(view.expanded).length) kept.expanded = view.expanded
       if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
       if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
+      if (view.maximized) kept.maximized = view.maximized
       if (Object.keys(kept).length) next[id] = kept
     }
     if (JSON.stringify(next) !== JSON.stringify(panelViews.value)) panelViews.value = next
@@ -378,6 +381,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
     if (view.rows && Object.keys(view.rows.keys).length) kept.rows = view.rows
     if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
     if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
+    if (view.maximized) kept.maximized = view.maximized
     const next = { ...panelViews.value }
     if (Object.keys(kept).length) next[panel] = kept
     else delete next[panel]

@@ -388,6 +388,29 @@ describe('useRunChartStore', () => {
     })
   })
 
+  /** The whole height for one pane, kept like the heights; a drag ends it, a reset takes both. */
+  it('gives a pane the whole height, ends it at a drag, and resets the panes to their first heights', () => {
+    const chart = useRunChartStore()
+    const arrangement = useArrangementStore()
+    arrangement.setPanelView('run-chart', { layers: { hidden: ['levels'] }, panes: { price: 1.5, volume: 0.9 } })
+    expect(chart.maximizedPane).toBeNull()
+    chart.setMaximizedPane('volume')
+    expect(chart.maximizedPane).toBe('volume')
+    expect(chart.paneWeights).toEqual({ price: 1.5, volume: 0.9 })
+    chart.setMaximizedPane(null)
+    expect(arrangement.panelViews['run-chart']).toEqual({ layers: { hidden: ['levels'] }, panes: { price: 1.5, volume: 0.9 } })
+
+    // a drag while one pane has the whole height: the heights drawn are the reader's from then on
+    chart.setMaximizedPane('price')
+    chart.setPaneWeights({ price: 2.2, volume: 0.3 })
+    expect(chart.maximizedPane).toBeNull()
+    expect(chart.paneWeights).toEqual({ price: 2.2, volume: 0.3 })
+
+    chart.setMaximizedPane('volume')
+    chart.resetPanes()
+    expect(arrangement.panelViews['run-chart']).toEqual({ layers: { hidden: ['levels'] } })
+  })
+
   it('draws the line of every position of the unit where the Layers panel asks for it', async () => {
     chooseFixtureRun()
     vi.mocked(apiClient.getBars).mockResolvedValue({

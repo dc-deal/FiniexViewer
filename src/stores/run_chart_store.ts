@@ -21,8 +21,9 @@ import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
+import type { StoredPanelView } from '@/types/arrangement_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
-import type { PaneWeights } from '@/types/chart_pane_types'
+import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
 
@@ -426,9 +427,33 @@ export const useRunChartStore = defineStore('runChart', () => {
   /** The panes as tall as the reader dragged them, kept with the chart's own view (viewer#57). */
   const paneWeights = computed<PaneWeights | null>(() => arrangement.panelViews[RUN_CHART]?.panes ?? null)
 
-  /** Keeps the panes' weights the chart reports after a drag of a separator. */
+  /**
+   * Keeps the panes' weights the chart reports after a drag of a separator. A drag ends a pane's
+   * whole height: the heights the reader drew are theirs from then on.
+   */
   function setPaneWeights(weights: PaneWeights): void {
-    arrangement.setPanelView(RUN_CHART, { ...arrangement.panelViews[RUN_CHART], panes: weights })
+    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('maximized'), panes: weights })
+  }
+
+  /** The chart's own view as kept, without the fields named. */
+  function chartViewWithout(...fields: (keyof StoredPanelView)[]): StoredPanelView {
+    const view = { ...arrangement.panelViews[RUN_CHART] }
+    for (const field of fields) delete view[field]
+    return view
+  }
+
+  /** The pane given the whole height, kept like the heights: with the chart's view, in a layout. */
+  const maximizedPane = computed<ChartPaneId | null>(() => arrangement.panelViews[RUN_CHART]?.maximized ?? null)
+
+  /** Gives one pane the whole height, or none — the heights kept stand again. */
+  function setMaximizedPane(pane: ChartPaneId | null): void {
+    const view = chartViewWithout('maximized')
+    arrangement.setPanelView(RUN_CHART, pane ? { ...view, maximized: pane } : view)
+  }
+
+  /** The panes back at their first heights, none of them given the whole height. */
+  function resetPanes(): void {
+    arrangement.setPanelView(RUN_CHART, chartViewWithout('panes', 'maximized'))
   }
 
   /**
@@ -458,7 +483,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    paneWeights, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
-    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, showPosition, canShow, attach, detach, extendBars,
+    paneWeights, maximizedPane, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
+    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }
 })

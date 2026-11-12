@@ -13,6 +13,7 @@ export const DEFAULT_PANE_WEIGHTS: Record<ChartPaneId, number> = { price: 2, vol
 /** Two weights this close are one: the library keeps them as floats, and a drag that moved nothing is no change. */
 const SAME_WEIGHT = 1e-6
 
+
 interface ChartPanesOptions {
   chart: () => IChartApi | null
   /** Which pane stands at each index, top to bottom. */
@@ -23,10 +24,15 @@ interface ChartPanesOptions {
   onWeights: (weights: PaneWeights) => void
   /** The element the panes are placed in — what a pane's box is measured from. */
   frame: () => HTMLElement | null
+  /** The pane given the whole height, or none. */
+  maximized: () => ChartPaneId | null
 }
 
 interface ChartPanes {
-  /** Lays the panes out at their kept weights, a pane never dragged at its default. */
+  /**
+   * Lays the panes out at their kept weights, a pane never dragged at its default — or one pane at the
+   * whole height and the others folded, where one is given it.
+   */
   applyWeights: () => void
   /** Where each pane stands in the frame, top to bottom — measured again whenever one changes size. */
   boxes: Readonly<Ref<PaneBox[]>>
@@ -42,23 +48,33 @@ interface ChartPanes {
  * the pointer is let go, and nothing on the page can keep the release from the chart.
  */
 export function useChartPanes(options: ChartPanesOptions): ChartPanes {
-  /** The weight a pane should stand at: the kept one, else its default. */
-  function wanted(id: ChartPaneId): number {
-    return options.weights()?.[id] ?? DEFAULT_PANE_WEIGHTS[id]
-  }
+  /**
+   * The weights last laid out, pane by pane — what a release is compared with. Worked out again
+   * instead, a pane folded beside a whole-height one would differ after the window changed size, and
+   * a click would read as a drag.
+   */
+  let applied: number[] = []
 
   function applyWeights(): void {
     const panes = options.chart()?.panes() ?? []
     const ids = options.ids()
-    panes.forEach((pane, index) => {
+    const maximized = options.maximized()
+    // a pane at the whole height: the others fold to nothing — the library keeps 2 px of each, too
+    // little to draw in; at 22 px the candles, the lane and the legend stood on each other (operator,
+    // on screen 2026-11-12). Their legends stand as lines in the pane at the whole height
+    const whole = maximized !== null && ids.includes(maximized) && panes.length > 1
+    applied = panes.map((pane, index) => {
       const id = ids[index]
-      if (id) pane.setStretchFactor(wanted(id))
+      if (!id) return pane.getStretchFactor()
+      const weight = whole ? (id === maximized ? 1 : 0) : options.weights()?.[id] ?? DEFAULT_PANE_WEIGHTS[id]
+      pane.setStretchFactor(weight)
+      return weight
     })
   }
 
   function onRelease(): void {
     const panes = options.chart()?.panes() ?? []
-    if (panes.length < 2) return
+    if (panes.length < 2 || panes.length !== applied.length) return
     const ids = options.ids()
     const read: PaneWeights = {}
     let moved = false
@@ -66,9 +82,12 @@ export function useChartPanes(options: ChartPanesOptions): ChartPanes {
       const id = ids[index]
       if (!id) return
       read[id] = pane.getStretchFactor()
-      if (Math.abs(read[id] - wanted(id)) > SAME_WEIGHT) moved = true
+      if (Math.abs(read[id] - applied[index]!) > SAME_WEIGHT) moved = true
     })
-    if (moved) options.onWeights(read)
+    if (!moved) return
+    // the drag is what stands now: told once, not again at the next click
+    applied = panes.map(pane => pane.getStretchFactor())
+    options.onWeights(read)
   }
 
   const boxes = shallowRef<PaneBox[]>([])

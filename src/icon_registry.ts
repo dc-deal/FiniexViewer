@@ -4,6 +4,8 @@ import {
   IconAdjustmentsHorizontal,
   IconAlertCircle,
   IconAlertTriangle,
+  IconArrowsMaximize,
+  IconArrowsMinimize,
   IconBook,
   IconBroadcast,
   IconBuildingBank,
@@ -14,6 +16,8 @@ import {
   IconCircleX,
   IconCpu,
   IconDots,
+  IconEye,
+  IconEyeOff,
   IconFileText,
   IconHourglass,
   IconLayoutBoard,
@@ -63,6 +67,12 @@ export const ICONS = {
   // the Panels and Layouts menus in their short form, where the menu bar is short of room
   'action-panels': IconLayoutGrid,
   'action-layouts': IconLayoutBoard,
+  // a chart's pane: the whole height, and the heights back
+  'action-maximize': IconArrowsMaximize,
+  'action-restore': IconArrowsMinimize,
+  // what a pane draws, shown or hidden — the lever of its layer
+  'status-shown': IconEye,
+  'status-hidden': IconEyeOff,
   'kind-executive': IconChartBar,
   'kind-broker': IconBuildingBank,
   'kind-scenario-roster': IconStack2,

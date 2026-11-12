@@ -37,6 +37,7 @@ function placedViews(views: Record<string, StoredPanelView>): Placement['views']
     if (view.expanded && Object.keys(view.expanded).length) kept.expanded = view.expanded
     if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
     if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
+    if (view.maximized) kept.maximized = view.maximized
     if (Object.keys(kept).length) placed[id] = kept
   }
   return placed

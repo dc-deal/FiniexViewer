@@ -133,7 +133,7 @@ test('a seam dragged is kept — through a window of another height, another uni
   expect(await lowestShare(chart)).toBeCloseTo(dragged, 1)
 })
 
-test('the volume hidden moves nothing and leaves its pane empty; its option off gives the candles the whole height, and on again the height dragged', async ({ page }) => {
+test('the volume hidden gives its pane up and comes back at the height dragged; in the pane of the candles it moves no candle', async ({ page }) => {
   const chart = await openChart(page)
   await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
   const layers = page.locator('[data-panel-kind="layers"]')
@@ -149,17 +149,20 @@ test('the volume hidden moves nothing and leaves its pane empty; its option off 
   expect(before[1]! / (before[0]! + before[1]!)).toBeGreaterThan(0.28)
   expect(await axisInk(chart, 1)).toBeGreaterThan(0)
 
-  // hidden, it keeps its pane and the candles do not grow into it — and the pane says nothing: a
-  // scale of bars no longer drawn read like a measurement (2026-11-12)
+  // hidden, it takes no room: its pane goes and the candles take the whole height (operator, on
+  // screen 2026-11-12: an empty pane was room taken for nothing)
   await volume.locator('[data-action="show"]').click()
   await expect(volume).toHaveAttribute('data-shown', 'false')
+  await expect(chart).toHaveAttribute('data-panes', '1')
   await painted(page)
-  expect(await paneHeights(chart)).toEqual(before)
-  expect(await axisInk(chart, 1)).toBe(0)
-  await volume.locator('[data-action="show"]').click()
-  await painted(page)
-  expect(await axisInk(chart, 1)).toBeGreaterThan(0)
+  expect((await paneHeights(chart))[0]!).toBeGreaterThan(before[0]! + before[1]! - 4)
   expect(await storedPanes(page)).toEqual(kept)
+  // shown again, its pane comes back at the height dragged, its scale with it
+  await volume.locator('[data-action="show"]').click()
+  await expect(chart).toHaveAttribute('data-panes', '2')
+  await painted(page)
+  expect(Math.abs((await paneHeights(chart))[1]! - before[1]!)).toBeLessThanOrEqual(2)
+  expect(await axisInk(chart, 1)).toBeGreaterThan(0)
 
   // in the pane of the candles: one pane, the whole height
   await volume.locator('[data-action="open"]').click()
@@ -188,4 +191,57 @@ test('the volume hidden moves nothing and leaves its pane empty; its option off 
   const again = await paneHeights(chart)
   expect(Math.abs(again[1]! - before[1]!)).toBeLessThanOrEqual(2)
   expect(await storedPanes(page)).toEqual(kept)
+})
+
+/** The controls stand at the right edge of the plot, where no figure of the legend moves them. */
+test('the controls at the top right of a pane hide what it draws and give it the whole height, kept across a reload', async ({ page }) => {
+  const chart = await openChart(page)
+  await painted(page)
+  const box = (await paneRows(chart).last().boundingBox())!
+  const controls = chart.locator('.pane-controls[data-pane="volume"]')
+  await expect(controls).toHaveCSS('opacity', '0')
+  await page.mouse.move(box.x + 60, box.y + box.height / 2)
+  await expect(controls).toHaveCSS('opacity', '1')
+  // at the right edge, far from the figures at the left — whatever their width
+  expect((await controls.boundingBox())!.x).toBeGreaterThan(box.x + box.width / 2)
+
+  // the arrows: the volume the whole height, the candles folded to their line of figures
+  await controls.locator('[data-action="pane-whole"]').click()
+  await expect(chart).toHaveAttribute('data-maximized', 'volume')
+  await painted(page)
+  expect((await paneHeights(chart))[0]!).toBeLessThan(30)
+  await expect(chart.locator('[data-legend="price"]')).toBeVisible()
+  // kept, as the heights are
+  await page.reload()
+  await expect(chart).toHaveAttribute('data-maximized', 'volume')
+  await painted(page)
+  expect((await paneHeights(chart))[0]!).toBeLessThan(30)
+  // and the heights back
+  const tall = (await paneRows(chart).last().boundingBox())!
+  await page.mouse.move(tall.x + 60, tall.y + tall.height / 2)
+  await controls.locator('[data-action="pane-whole"]').click()
+  await expect(chart).not.toHaveAttribute('data-maximized')
+  await painted(page)
+  expect(await lowestShare(chart)).toBeCloseTo(0.2, 1)
+
+  // the eye: the volume hidden as its row in the Layers panel would hide it, its pane gone
+  const again = (await paneRows(chart).last().boundingBox())!
+  await page.mouse.move(again.x + 60, again.y + again.height / 2)
+  await controls.locator('[data-action="pane-shown"]').click()
+  await expect(chart).toHaveAttribute('data-panes', '1')
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').panelViews?.['run-chart']?.layers?.hidden))
+    .toEqual(['volume'])
+})
+
+/** As VS Code's sashes do: a double click on the seam brings the first heights back. */
+test('a double click on the seam brings the first heights back', async ({ page }) => {
+  const chart = await openChart(page)
+  await painted(page)
+  await dragSeam(page, chart, -100)
+  await expect.poll(() => storedPanes(page)).toBeDefined()
+  const seam = (await paneSeam(chart).boundingBox())!
+  await page.mouse.dblclick(seam.x + seam.width / 2, seam.y + seam.height / 2)
+  await expect.poll(() => storedPanes(page)).toBeUndefined()
+  await painted(page)
+  expect(await lowestShare(chart)).toBeCloseTo(0.2, 1)
 })

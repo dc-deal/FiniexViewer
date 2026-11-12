@@ -1,3 +1,5 @@
+import type { ChartLayerId } from '@/types/chart_drawing_types'
+
 /**
  * The panes a chart stacks, top to bottom — ours, so a closed set. The price pane holds the candles
  * and everything drawn on them; the volume may stand in a pane of its own below them, the way
@@ -6,6 +8,9 @@
  */
 export const CHART_PANE_IDS = ['price', 'volume'] as const
 export type ChartPaneId = typeof CHART_PANE_IDS[number]
+
+/** The layer each pane draws first — the one its lever on the chart shows and hides. */
+export const PANE_LAYERS: Record<ChartPaneId, ChartLayerId> = { price: 'candles', volume: 'volume' }
 
 /**
  * How tall each pane stands against the others: the weight the chart library keeps for it (its
@@ -31,6 +36,4 @@ export interface PaneLegendEntry {
 export interface PaneLegend {
   pane: ChartPaneId
   entries: PaneLegendEntry[]
-  /** The pane's layer is hidden: its name stands without a value, as a hidden layer's row is grey alone. */
-  quiet: boolean
 }

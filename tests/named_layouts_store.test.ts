@@ -78,17 +78,23 @@ describe('useNamedLayoutsStore', () => {
   it('keeps the heights of a chart\'s panes in the layout, and lays them out with it', () => {
     placed()
     const arrangement = useArrangementStore()
-    arrangement.setPanelView('run-chart', { layers: { hidden: ['levels'] }, panes: { price: 1.4, volume: 1.1 } })
+    arrangement.setPanelView('run-chart', {
+      layers: { hidden: ['levels'] }, panes: { price: 1.4, volume: 1.1 }, maximized: 'volume',
+    })
     const store = useNamedLayoutsStore()
     expect(store.saveAs('Wide volume')).toBe(true)
     const own = stored().layouts.find(layout => layout.name === 'Wide volume')!
-    expect(own.placement.views['run-chart']).toEqual({ layers: { hidden: ['levels'] }, panes: { price: 1.4, volume: 1.1 } })
+    expect(own.placement.views['run-chart']).toEqual({
+      layers: { hidden: ['levels'] }, panes: { price: 1.4, volume: 1.1 }, maximized: 'volume',
+    })
 
     layOut()
     expect(store.load('backtests')).toBe(true)
     expect(arrangement.panelViews['run-chart']?.panes).toBeUndefined()
+    expect(arrangement.panelViews['run-chart']?.maximized).toBeUndefined()
     expect(store.load(own.id)).toBe(true)
     expect(arrangement.panelViews['run-chart']?.panes).toEqual({ price: 1.4, volume: 1.1 })
+    expect(arrangement.panelViews['run-chart']?.maximized).toBe('volume')
   })
 
   it('refuses a name that is empty or taken, whatever its case', () => {

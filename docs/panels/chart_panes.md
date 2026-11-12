@@ -26,8 +26,11 @@ it shares their pane. Its place in the Layers panel is fixed (`fixed` in the reg
 and no other layer passes it.
 
 - **In a pane of its own by default** — its option *own pane*, on (viewer#57). There it stands on
-  that pane's right scale, which says what a bar counts; the candles' scale never sees it, so
-  switching it moves no candle. A tenth of the pane stays free above the tallest bar.
+  that pane's right scale, which says what a bar counts; the candles' scale never sees it. A tenth
+  of the pane stays free above the tallest bar.
+- **Hidden, it gives its pane up** and the candles take the whole height (operator, on screen
+  2026-11-12: an empty pane was room taken for nothing). Shown again, its pane comes back at the
+  height kept. It comes back from the Layers panel — the eye on its pane goes with the pane.
 - **Its option off, in the pane of the candles**: in the lowest fifth, behind them, on a price scale
   nothing shows. Where the time lane is drawn, that fifth stands above the lane, lifted by the share
   of the pane the lane takes ([The time lane](chart_drawings_and_layers.md#the-time-lane--booking-periods-and-orders-refused-2026-11-08)).
@@ -65,10 +68,7 @@ and no other layer passes it.
 
 ## What moves nothing
 
-- **The volume hidden keeps its pane, and the pane holds nothing.** The candles keep their height
-  and the eye its place; *own pane* switched off is the way to give the room back. Hidden, the series
-  is handed no bars: a hidden series still gives its scale the range it had, and the scale of a pane
-  of its own is drawn — labels and a grid of bars no longer shown read like a measurement.
+- **The volume hidden in the pane of the candles moves no candle**: its scale is one nothing shows.
 - **A change of the candles' form builds the new price series before the old one goes.** The library
   removes a pane left empty, and for that moment the pane of the candles was: the volume's pane moved
   up and took the candles (found while building, 2026-11-12).
@@ -95,8 +95,7 @@ and no other layer passes it.
   time axis already says. The labels stand quiet, the values in plain ink, in the one text size.
 - **The volume says what it counts**: *Volume* where the bars carry the traded volume, *Ticks* where
   the venue prints no trade. In its own pane it has a legend of its own; in the pane of the candles
-  its value stands behind the close. Hidden in its own pane, its word stays there without a value, as
-  TradingView keeps a study it hid; in the pane of the candles it says nothing.
+  its value stands behind the close. Hidden, it says nothing — it has given its pane up.
 - **At the top of its own pane, whatever the seam does.** The library says nothing when a pane changes
   size, so each pane's element is watched (`track`, `boxes` in `use_chart_panes`) and the legend
   stands by what was measured.
@@ -108,21 +107,55 @@ and no other layer passes it.
   clear of a price scale that widens.
 - **The free chart has it too** — the same `CandleChart`, its candles only.
 
+## The controls — on the pane under the pointer (2026-11-12)
+
+```
+│ O 0.87972  H 0.87975  L 0.87970  C 0.87973                        ◉ ⤢ │0.8797
+├────────────────────────────────────────────────────────────────────────┤  ← double click: first heights
+│ Ticks 36                                                          ◉ ⤢ │60
+```
+
+- **At the top right of the pane's plot, beside the price scale** (`ChartPaneControls.vue`), never
+  behind the legend: its figures change width with every bar, and the controls jumped with them
+  (operator, on screen 2026-11-12). They show while the pointer is over the pane and take the
+  pointer only then; a keyboard reaches them all the while, and one focused shows. The notices stand
+  a row below them.
+- **The eye is the layer's own lever** — the candles on the pane of the candles, the volume on its own
+  (`PANE_LAYERS`): the Layers panel and the chart always show one state.
+- **The arrows give a pane the whole height**, the others folded to nothing — the library keeps
+  2 px of a pane, too little to draw in. At 22 px the candles, the lane and the legend stood on each
+  other (operator, on screen 2026-11-12). A folded pane's legend stands as a line in the pane at the
+  whole height — at its top for a pane folded above it, which pushes its own legend down a line, just
+  over the seam at its bottom for one folded below (`legendTops`) — and keeps no controls: the arrows
+  of the pane at the whole height give the heights back. Only where there are two panes.
+- **Kept like the heights** (operator, 2026-11-12: TradingView keeps them, however odd): the pane
+  given the whole height stands with the chart's view (`maximized`) and in a named layout, each
+  size of it on its own — Mobile may give the volume the whole height while Full does not. A drag of
+  the seam ends it: the heights drawn are the reader's from then on.
+- **A double click on the seam brings the first heights back**, as VS Code's sashes do — what the
+  reader arranges is resettable. A release is compared with the weights last laid out, so neither the
+  double click nor a click beside a folded pane reads as a drag.
+- **One hint says it all** (`chart-panes`), above the chart beside the one for the marks, until put away.
+
 ## Where it lives
 
 - `src/types/chart_pane_types.ts` — the panes we stack, by name (`CHART_PANE_IDS`), and `PaneWeights`.
 - `src/composables/use_chart_panes.ts` — the weights applied, and read back once a drag is let go;
   where each pane stands in the frame, measured whenever one changes size.
-- `src/components/chart_legend.ts` — what each legend says, from one bar and the volume (`paneLegends`).
+- `src/components/chart_legend.ts` — what each legend says, from one bar and the volume (`paneLegends`),
+  and where each stands (`legendTops`).
 - `src/components/ChartPaneLegend.vue` — the legend itself, shown where it is placed.
+- `src/components/ChartPaneControls.vue` — the eye and the arrows at the pane's top right.
+- `PANE_LAYERS` in `chart_pane_types.ts` — the layer each pane's eye switches.
 - `CandleChart.placeVolume` — which pane the volume stands in, on which scale, and the count of panes
   on the element (`data-panes`), since a canvas cannot be read back.
-- `run_chart_store` — `volume.ownPane` from the layer's option, `paneWeights` and `setPaneWeights`.
+- `run_chart_store` — `volume.ownPane` from the layer's option, `paneWeights` and `setPaneWeights`,
+  `maximizedPane` and `setMaximizedPane`, `resetPanes`.
 
 ## Not built yet
 
-- **Controls on a pane** under the pointer: hide it, make it the whole height and back, and a double
-  click on the seam for the first heights (viewer#57) — next.
+- **The Layers panel grouped by pane** (operator, 2026-11-12), the way TradingView's object tree
+  is: a fold for each pane with its layers beneath, a layer dragged only within its pane — next.
 - **A worker's own pane** — an oscillator on a scale of its own, the way TradingView draws an RSI —
   once FiniexTestingIDE serves a worker's outputs with the pane they belong in (testingide#379). A pane
   joins `CHART_PANE_IDS` by name. The shape is agreed with them as a direction (2026-11-12), recorded
@@ -134,19 +167,26 @@ and no other layer passes it.
 
 ## How it is tested
 
-- `use_chart_panes.test.ts` — the weights laid out, kept or default; told once a release finds one
-  moved and never for a click that moved nothing or a chart of one pane; no longer heard once
-  unmounted; each pane's place measured from its element, and again when it changes size.
-- `chart_legend.test.ts` — the figures of a bar as served, at the tick size; the volume's word, its
-  own legend or behind the close, and a hidden one's word alone.
+- `use_chart_panes.test.ts` — the weights laid out, kept or default, or one pane at the whole height
+  and the other folded to a line; a drag told once, never for a click that moved nothing or a chart of
+  one pane; no longer heard once unmounted; each pane's place measured, and again when it changes size.
+- `chart_legend.test.ts` — the figures of a bar as served, at the tick size; the volume's word and its
+  value in the format handed in, its own legend or behind the close, and nothing while hidden; each
+  legend at the top of its pane, a folded pane's as a line in the pane at the whole height.
 - `candle_chart.test.ts` — the volume in its own pane at a fifth, or in the pane of the candles; moved
-  between them as its option switches, never built anew, and kept in its pane while hidden; the kept
+  between them as its option switches, never built anew, and its pane given up while hidden; the kept
   weights laid out and the dragged ones told; the new price series built before the old one goes;
-  the legends at the top of their panes, following the bar under the pointer, and the plot's width.
+  the legends at the top of their panes, following the bar under the pointer, and the plot's width;
+  the controls of the pane under the pointer, the eye, the whole height and back, and a double click
+  on the seam asking for the first heights.
 - `arrangement_store.test.ts`, `named_layouts_store.test.ts`, `run_chart_store.test.ts` — the weights
-  read field by field, kept beside the layers, saved with a layout and laid out by it.
+  and the pane at the whole height read field by field, kept beside the layers, saved with a layout
+  and laid out by it; a drag ending the whole height, a reset taking both.
+- `run_chart_view.test.ts` — the eye handed to the layer's lever, the arrows and the reset to the store.
 - `e2e/chart_panes.spec.ts` — in a real browser, the panes read off the library's table
   (`e2e/pane_rows.ts`): the volume at a fifth with the lane in the pane of the candles; a seam dragged
   and kept through another window height, another unit, a chart built anew and a reload; the volume
-  hidden moving nothing, and its option off giving the candles the whole height and back; each legend
-  at the top of its pane on one line, following a seam, and the bar under a real pointer.
+  hidden giving its pane up and coming back at the height dragged, and in the pane of the candles
+  moving no candle; each legend at the top of its pane on one line, following a seam, and the bar
+  under a real pointer; the controls at the pane's top right, the whole height kept across a reload
+  and given back, the eye hiding the volume; a double click on the seam for the first heights.

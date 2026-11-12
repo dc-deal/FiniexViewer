@@ -25,7 +25,7 @@ export interface Placement {
   /** Where each panel stood last, a hidden one's included — what brings it back to its place. */
   places: Record<string, DockPlace>
   /** Each panel's view, the halves bound to no run: what it shows expanded, a chart's layers and its panes. */
-  views: Record<string, Pick<StoredPanelView, 'expanded' | 'layers' | 'panes'>>
+  views: Record<string, Pick<StoredPanelView, 'expanded' | 'layers' | 'panes' | 'maximized'>>
   /** The bundles' columns: their sections in order, which are folded, pinned, locked or hidden. */
   bundles: WorkspaceState['bundles']
 }
