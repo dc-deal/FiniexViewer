@@ -41,6 +41,8 @@ const HINTS = [
   'layer-volume', 'layer-state-frame', 'layer-empty-levels', 'layer-empty-entry-exit', 'layer-empty-trades',
   'layer-empty-state-frame', 'chart-marks',
   'trade-slippage', 'position-link', 'beyond-the-venue', 'first-start', 'run-membership',
+  'chart-panes', 'layer-periods', 'layer-empty-periods', 'layer-refusals', 'venue-account', 'bundle-places',
+  'servers', 'layouts', 'layout-by-run', 'size-by-window', 'suggested-order',
 ]
 
 async function prepare(page: Page): Promise<void> {
