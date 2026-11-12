@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import LayersView from '@/views/LayersView.vue'
+import { providePanelView } from '@/composables/use_panel_view'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
@@ -44,6 +46,41 @@ describe('LayersView', () => {
     expect(order(wrapper)).toEqual(['trades', 'entry-exit', 'levels', 'state-frame', 'refusals', 'periods', 'candles', 'volume'])
     expect(wrapper.find('.fixed').text()).toContain('Candles')
     expect(wrapper.find('.chart-name').text()).toBe('Run chart')
+  })
+
+  /** Grouped by the pane each is drawn in, the way TradingView's object tree is (operator, 2026-11-12). */
+  it('groups the layers by the pane they are drawn in, the volume in its own while its option says so', async () => {
+    const wrapper = mountOn('run-chart')
+    const groups = (): (string | undefined)[] => wrapper.findAll('[data-pane-group]').map(group => group.attributes('data-pane-group'))
+    expect(groups()).toEqual(['price', 'volume'])
+    expect(wrapper.find('[data-pane-group="price"] .pane-heading').text()).toContain('Price pane')
+    expect(wrapper.find('[data-pane-group="price"] [data-layer="candles"]').exists()).toBe(true)
+    expect(wrapper.find('[data-pane-group="volume"] [data-layer="volume"]').exists()).toBe(true)
+
+    // its option off, the volume stands in the pane of the candles, behind them
+    await row(wrapper, 'volume').find('[data-action="open"]').trigger('click')
+    await row(wrapper, 'volume').find('[data-action="option"]').trigger('click')
+    expect(groups()).toEqual(['price'])
+    expect(order(wrapper).slice(-2)).toEqual(['candles', 'volume'])
+  })
+
+  /** A pane's layers fold away together, and the fold is kept with the panel's view, as a list's is. */
+  it('folds the layers of a pane away, and keeps the fold with the view of the panel', async () => {
+    useDockStore().lastChart = 'run-chart'
+    const Host = defineComponent({
+      setup() {
+        providePanelView('layers')
+        return () => h(LayersView)
+      },
+    })
+    mounted = mount(Host)
+    const heading = mounted.find('[data-pane-group="price"] [data-action="fold-pane"]')
+    expect(heading.attributes('aria-expanded')).toBe('true')
+    await heading.trigger('click')
+    expect(mounted.find('[data-layer="trades"]').exists()).toBe(false)
+    expect(mounted.find('[data-pane-group="price"] [data-action="fold-pane"]').attributes('aria-expanded')).toBe('false')
+    expect(mounted.find('[data-layer="volume"]').exists()).toBe(true)
+    expect(useArrangementStore().panelViews['layers']?.expanded).toEqual({ 'layers-pane-price': false })
   })
 
   /**

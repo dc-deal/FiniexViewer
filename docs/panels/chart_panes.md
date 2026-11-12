@@ -154,8 +154,10 @@ and no other layer passes it.
 
 ## Not built yet
 
-- **The Layers panel grouped by pane** (operator, 2026-11-12), the way TradingView's object tree
-  is: a fold for each pane with its layers beneath, a layer dragged only within its pane — next.
+- **A group for each source below a pane** in the Layers panel — ours, the algo's, a worker
+  instance's — and the algo's several layers, named by the algo: asked of FiniexTestingIDE on
+  2026-11-12 (the Layers panel groups by pane since then:
+  [Chart Drawings and Layers](chart_drawings_and_layers.md)).
 - **A worker's own pane** — an oscillator on a scale of its own, the way TradingView draws an RSI —
   once FiniexTestingIDE serves a worker's outputs with the pane they belong in (testingide#379). A pane
   joins `CHART_PANE_IDS` by name. The shape is agreed with them as a direction (2026-11-12), recorded

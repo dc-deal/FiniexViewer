@@ -75,6 +75,22 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
     .toMatch(/levels:\d+ entry-exit:\d+$/)
 })
 
+/** Grouped by pane, the way TradingView's object tree is; a folded group stays folded after a reload. */
+test('the layers stand in a group for each pane, folded and kept so across a reload', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['EURGBP_refusals_01'] })
+  await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
+  const layers = page.locator('[data-panel-kind="layers"]')
+  await expect(layers.locator('[data-pane-group="price"] [data-layer="candles"]')).toBeVisible()
+  await expect(layers.locator('[data-pane-group="volume"] [data-layer="volume"]')).toBeVisible()
+  await layers.locator('[data-pane-group="price"] [data-action="fold-pane"]').click()
+  await expect(layers.locator('[data-layer="trades"]')).toHaveCount(0)
+  await page.reload()
+  const again = page.locator('[data-panel-kind="layers"]')
+  await expect(again.locator('[data-pane-group="price"] [data-action="fold-pane"]')).toHaveAttribute('aria-expanded', 'false')
+  await expect(again.locator('[data-layer="volume"]')).toBeVisible()
+})
+
 /** Dragged by its grip (operator, 2026-10-28), and never behind the candles and the volume. */
 test('a layer is dragged in front of another by its grip, and never past the fixed ones', async ({ page }) => {
   await page.setViewportSize({ width: 2400, height: 900 })

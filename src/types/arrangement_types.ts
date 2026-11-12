@@ -56,7 +56,7 @@ export interface DockPlace {
  * fails the type-check, and a stored name is checked against it. A name joins with the component
  * that reads it.
  */
-export const VIEW_FOLDS = ['periods-table'] as const
+export const VIEW_FOLDS = ['periods-table', 'layers-pane-price', 'layers-pane-volume'] as const
 export type ViewFold = typeof VIEW_FOLDS[number]
 
 /**

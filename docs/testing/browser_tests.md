@@ -133,7 +133,8 @@ by its tab, the way a reader does.
   (`data-drawings`), the price axis the same pixel for pixel before and after — switching the trades
   off once stretched the candles — and the volume switched off giving its pane up; and both still off after a real reload, in the panel and on the chart. And a
   layer dragged in front of another by its grip, a drag past the candles and the volume refused; and
-  the signs switched off leaving the price axis the same pixel for pixel.
+  the signs switched off leaving the price axis the same pixel for pixel. And the layers in a group
+  for each pane, the group of the candles folded and still folded after a real reload.
 - `chart_panes.spec.ts` holds the run chart's panes (viewer#57), read off the rows of the library's
   table since a canvas cannot be read back: the volume in a pane of its own at a fifth of the height,
   a booking period's card found at the bottom of the pane of the candles and nothing of the lane over

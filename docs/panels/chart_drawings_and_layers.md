@@ -119,17 +119,27 @@ layer* in their glossary.
 
 ```
 Run chart · ETHUSD_aug_sep
+▾ PRICE PANE                                       ← a pane's group, folded or open
 ⠿ (━●) ▸ Trades                                ◐
 ⠿ (━●) ▾ Entry–exit line     pick a position   ◐ 40%
            💡 what it draws and what its option does      ← a hint, dismissible
            (━●) every position                            ← the option, plain
 ⠿ (●━) ▸ Levels                                ◐   ← switched off: the row grey
   (━●) ▸ Candles                               ◐   ← fixed: no grip, never moved
+▾ VOLUME PANE
   (━●) ▸ Volume                  ticks per bar ◐
 ```
 
 - **The register** is `src/layer_registry.ts`: each layer's title, its hint and its one option, and
   which chart draws which layers, back to front (`chartLayers`). The free chart draws none today.
+- **Grouped by the pane each layer is drawn in** (operator, 2026-11-12), the way TradingView's
+  object tree is: the pane of the candles, and the volume's own while its option *own pane* is on —
+  off, the volume stands in the group of the candles, behind them. A group's heading is an uppercase
+  label that folds it away; the fold is kept with the panel's view (`layers-pane-price`,
+  `layers-pane-volume`). Each group is a list of its own, so a layer is dragged within its pane only.
+  Below the pane, a group for each source of a layer — ours from the record routes, an algo's, a
+  worker instance's — waits for testingide#379's layers; asked of FiniexTestingIDE on 2026-11-12, with
+  how an algo names several layers of its own.
 - **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
   the row opens its options.
