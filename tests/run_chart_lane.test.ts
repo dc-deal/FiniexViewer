@@ -43,6 +43,8 @@ describe('run_chart_lane', () => {
       const inside = periodSpans([period({ closed_at: iso(T0 + 3 * HOUR + 60), opened_at: iso(T0) })], 'u', hours(6), null)[0]!
       expect(inside.endsAtOpen).toBe(false)
       expect(periodSpans([period({ net_pnl: -1 })], 'u', hours(48), null)[0]).toMatchObject({ label: '−', role: 'negative' })
+      // a period that booked nothing says nothing: its quiet colour claims no result
+      expect(periodSpans([period({ net_pnl: 0 })], 'u', hours(48), null)[0]).toMatchObject({ label: '', role: 'flat' })
     })
 
     it('starts a period that opened before the first bar at it, and draws none that closed before it or opened past the bars loaded', () => {

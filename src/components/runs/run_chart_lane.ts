@@ -13,8 +13,12 @@ import { plural, t } from '@/translate'
  * order history; nothing here fetches, and nothing is computed that the rows do not state.
  */
 
-/** A period's result as a word inside its strip, beside its colour — a colour never travels alone. */
-const SIGN_WORD: Record<Polarity, string> = { positive: '+', negative: '−', flat: '0' }
+/**
+ * A period's result as a word inside its strip, beside its colour — a colour never travels alone. A
+ * period that booked nothing says nothing: its quiet colour claims no result, and a row of `0` along
+ * the lane only filled it (operator, on screen 2026-11-12).
+ */
+const SIGN_WORD: Record<Polarity, string> = { positive: '+', negative: '−', flat: '' }
 
 /** The order endings the lane shows: the refusals, read together, and the expiry (their `order-history`). */
 const ENDINGS = new Set([...ORDER_REFUSALS, 'expired'])

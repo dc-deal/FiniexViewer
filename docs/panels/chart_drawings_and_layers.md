@@ -215,7 +215,8 @@ on show (`run_chart_lane.ts`).
 - **A period** runs from the left edge of the bar it opened in to the right edge of the bar it closed
   in — to that bar's left edge where it closed at its open (`endsAtOpen`), so a period that ended on
   the hour does not reach into the next one. Its fill is quiet, in the polarity of its `net_pnl`,
-  its sign inside in plain ink where it fits; its card is the one the period table shows (`periodCard`). Under the
+  its sign (`+` or `−`) inside in plain ink where it fits, and none on a period that booked nothing —
+  a row of `0` only filled the lane (operator, on screen 2026-11-12); its card is the one the period table shows (`periodCard`). Under the
   pointer its bounds run through the candles as dashed lines, so its stretch can be read against them.
 - **An order refused** — the statuses the Orders panel marks as refusals, read from one place
   (`ORDER_REFUSALS`) — is a cross in the `warning` role; an `expired` one a ring, quiet. Each stands
