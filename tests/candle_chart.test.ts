@@ -209,6 +209,8 @@ describe('CandleChart', () => {
 
     expect(lw.createChart).toHaveBeenCalledTimes(1)
     expect(lw.createChart.mock.calls[0]![1]).toMatchObject({ width: 800, height: 400 })
+    // no logo over the lowest pane: the licence's notice is in NOTICE, its link in the About dialog
+    expect(lw.createChart.mock.calls[0]![1]).toMatchObject({ layout: { attributionLogo: false } })
     expect(lw.setData).toHaveBeenCalledTimes(1)
     expect(lw.setData.mock.calls[0]![0]).toHaveLength(2)
     expect(lw.fitContent).toHaveBeenCalledTimes(1)

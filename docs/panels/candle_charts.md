@@ -78,8 +78,8 @@ it says so and draws nothing.
   at once, twice as long, up to the route's 10,000. Bars that arrive before the ones on show move
   the view by as many, so the reader sees the same bars (`data-visible-from` on the element says
   which, `data-bars` how many are held). A small spinner stands halfway up that edge while a batch is on its way, and a batch that
-  failed is said there, the bars loaded staying drawn — clear of the library's logo at the bottom
-  left, its attribution, which a sign placed low covered. The free chart loads the same way: the last
+  failed is said there, the bars loaded staying drawn — clear of the lane and the lowest pane at the
+  bottom, where a sign placed low once covered the library's logo. The free chart loads the same way: the last
   300 periods first, earlier ones as the reader pans left, down to the start of the coverage.
 - **What it centres on is the link's marked position.** The chart mark on a row marks the position
   (`context.mark`), sets the chart's unit and opens the panel (`use_chart_link.ts`, provided at
@@ -143,6 +143,13 @@ Version 5 stacks panes of its own on one time axis, which carries the volume's o
 served, a worker's ([Chart Panes](chart_panes.md)). It becomes limiting where a professional trading
 UI needs drawing tools — not asked for (operator, 2026-11-12). For a chart that reads what a run
 did, it is the right choice.
+
+**No logo on the chart** (operator, 2026-11-12). The library draws TradingView's logo at the bottom
+left of the lowest pane — over the volume's first bars once the volume had a pane of its own — and
+its licence lets it go where its two asks are met otherwise (`attributionLogo`): the library's
+attribution notice in the code, and a link to https://www.tradingview.com/ on a page the reader can
+open. The notice stands in `NOTICE` at the repository's root, word for word as published with
+5.2.1; the link is the library's name in the About dialog.
 
 **A window is fitted whole, however narrow the chart** (`CandleChart.vue`). The library's least bar
 width is 0.5 px, and fitting stops there: 2,000 bars then need 1,000 px, and on a narrower chart the

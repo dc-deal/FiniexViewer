@@ -334,6 +334,11 @@ function initChart(size: { width: number, height: number }): void {
     width: size.width,
     height: size.height,
     timeScale: { timeVisible: true, minBarSpacing: MIN_BAR_SPACING },
+    // the library's licence asks for its notice in the code and a link to tradingview.com on a page
+    // the reader can open; the logo is one way to meet the link, and may go where both are met
+    // otherwise (`attributionLogo`, lightweight-charts 5.2.1): the notice is in NOTICE, the link in
+    // the About dialog. The logo stood over the lowest pane's first bars
+    layout: { attributionLogo: false },
   })
   chart.applyOptions(chartColours(colours))
   chart.subscribeCrosshairMove(onPointer)
@@ -666,8 +671,8 @@ watch(() => props.priceFormat, () => series?.applyOptions(
 }
 
 /* the edge a batch is on its way to, halfway up it: clear of the notices at the top left, of the
-   library's logo at the bottom left — its attribution, which stays visible — and of the price scale
-   at the right (on screen 2026-10-29: low at the left it covered the logo) */
+   time lane and the lowest pane at the bottom, and of the price scale at the right (on screen
+   2026-10-29: low at the left it covered the library's logo, which the chart no longer draws) */
 .edge-state {
   position: absolute;
   top: 50%;

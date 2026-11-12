@@ -209,7 +209,7 @@ screen is drawn from: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). The third-party notices the app carries are in [NOTICE](NOTICE).
 
 ## Disclaimer
 

@@ -28,7 +28,13 @@ const emit = defineEmits<{ 'update:open': [boolean] }>()
       <p>{{ t('Read-only: every figure is a field the API served. Nothing is traded from here.') }}</p>
     </div>
     <div class="about-meta">
-      <span>{{ t('Charts: TradingView Lightweight Charts (Apache 2.0)') }}</span>
+      <!-- the chart library's licence asks for a link to tradingview.com on a page the reader can
+           open: here, in place of the logo it would otherwise draw on every chart -->
+      <span>
+        {{ t('Charts:') }}
+        <a class="about-link" href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">TradingView Lightweight Charts</a>
+        (Apache 2.0)
+      </span>
       <span>{{ t('Docked panels: dockview (MIT)') }}</span>
       <span>{{ t('Icons: Tabler Icons (MIT)') }}</span>
       <span>{{ t('License:') }} {{ pkg.license }}</span>
@@ -68,5 +74,22 @@ const emit = defineEmits<{ 'update:open': [boolean] }>()
   font-family: monospace;
   font-size: var(--font-size-sm);
   color: var(--color-tree-connector);
+}
+
+/* a link wears the accent, as the app's link-shaped buttons do: underlined under the pointer and
+   for a keyboard, with the ring every control shows */
+.about-link {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.about-link:hover,
+.about-link:focus-visible {
+  text-decoration: underline;
+}
+
+.about-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 </style>
