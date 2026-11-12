@@ -111,24 +111,33 @@ function flash(row: HTMLElement): void {
  */
 export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
   const context = useContextStore()
-  const dock = useDockStore()
-  const layoutStore = useLayoutStore()
+  const bringForward = useSectionInFront()
   return (sectionId, ref) => {
     context.mark(ref)
+    void scrollToMark(sectionId, bringForward(sectionId))
+  }
+}
+
+/**
+ * Puts a run section in front of the reader, a position marked or none: wherever it stands, it is
+ * made reachable and brought to the front. Says the panel it stands in.
+ */
+function useSectionInFront(): (sectionId: string) => string {
+  const dock = useDockStore()
+  const layoutStore = useLayoutStore()
+  return sectionId => {
     const ownPanel = reportKindId(sectionId)
     if (dock.openIds.includes(ownPanel)) {
       // open as a panel of its own: that panel comes to the front, wherever it stands
       dock.reveal(ownPanel, 'command')
-      void scrollToMark(sectionId, ownPanel)
-      return
+      return ownPanel
     }
     // the bundle closed, its members read apart: the target joins them as a panel of its own rather
     // than reopening the bundle (operator, 2026-10-28)
     if (dock.standsApart(RUN_BUNDLE)) {
       layoutStore.show(sectionId)
       dock.openSection(sectionId)
-      void scrollToMark(sectionId, ownPanel)
-      return
+      return ownPanel
     }
     // in the column: the run report comes to the front — the jump may start in another panel — and
     // a hidden section is not in the column at all, and a folded one draws nothing, so the jump
@@ -136,8 +145,14 @@ export function usePanelJump(): (sectionId: string, ref: PositionRef) => void {
     dock.reveal(RUN_BUNDLE, 'command')
     layoutStore.show(sectionId)
     layoutStore.setOpen(sectionId, true)
-    void scrollToMark(sectionId, RUN_BUNDLE)
+    return RUN_BUNDLE
   }
+}
+
+/** A section brought in front of the reader with no position marked — a pointer to it from another. */
+export function useSectionShow(): (sectionId: string) => void {
+  const bringForward = useSectionInFront()
+  return sectionId => { bringForward(sectionId) }
 }
 
 /**

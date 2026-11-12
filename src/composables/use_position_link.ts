@@ -16,6 +16,8 @@ export interface PositionLink {
   marked: Ref<PositionRef | null> | ComputedRef<PositionRef | null>
   /** Put the reader in front of this position in that panel: make it visible, open it, scroll. */
   jumpTo: (panelId: string, ref: PositionRef) => void
+  /** Put the reader in front of that panel, no position marked — a pointer to it from another. */
+  showSection: (panelId: string) => void
   /**
    * Does that panel have a model at all? A jump to a section this run does not carry would show a
    * panel the column drops again and scroll to nothing, so the affordance is not drawn at all.
@@ -35,6 +37,7 @@ export function providePositionLink(link: PositionLink): void {
 const NOWHERE: PositionLink = {
   marked: computed(() => null),
   jumpTo: () => {},
+  showSection: () => {},
   canJumpTo: () => false,
 }
 

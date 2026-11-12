@@ -159,7 +159,8 @@ by its tab, the way a reader does.
   on them stayed green with the scroll removed (2026-10-12). The fixtures make the trap concrete —
   `pos_ethusd_1` appears in five scenarios of the order history and two of them produced a trade, so
   the link is drawn twice and the mark lands in one scenario rather than in every row carrying that
-  id.
+  id. And the count of scenarios that produced nothing, above the scenario list, opening the folded
+  Warnings & errors at a click.
 - `open_in_context.spec.ts` holds the way from one VIEW into another — a deployment's session into
   its run, a run into the deployment it was a session of, and a session's run shown in the sections
   standing apart while the run bundle stays closed — because a unit test records where a panel

@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
 import { useFillsPanel } from '@/composables/use_fills_panel'
+import { usePositionLink } from '@/composables/use_position_link'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import {
   SPREAD_NOT_RECORDED, amount, figure, magnitude, marketSpan, modelledSpreadFigures, numberOrNa, percentFigure,
@@ -401,6 +403,10 @@ const picked = computed(() => narrowing.units.value)
 /** A panel of its own: the list takes the height that is left — in the bundle's column it keeps its cap. */
 const fillsPanel = useFillsPanel()
 
+/** Where the reason for a scenario that produced nothing stands, and the way there. */
+const WARNINGS = 'warnings-errors'
+const link = usePositionLink()
+
 function isPicked(name: string): boolean {
   return picked.value.includes(name)
 }
@@ -409,11 +415,16 @@ function isPicked(name: string): boolean {
 <template>
   <div class="scenario-roster" :class="{ filling: fillsPanel }">
     <!-- the count of what never ran belongs above the filter: it is a property of the RUN, and a
-         narrowed list would otherwise hide the very rows a reader most needs to see -->
+         narrowed list would otherwise hide the very rows a reader most needs to see. One quiet line:
+         a bordered box pointing elsewhere outweighed what it said (operator, 2026-11-12) -->
     <p v-if="failed" class="roster-notice">
       <span class="mark">⚠</span>
-      {{ failed }} {{ t('of') }} {{ roster.scenario_count }}
-      {{ t('scenarios produced nothing — their reason is in Warnings & errors') }}
+      <span>{{ failed }} {{ t('of') }} {{ roster.scenario_count }} {{ t('produced nothing') }} ·</span>
+      <span>{{ t('why:') }}</span>
+      <JumpLink v-if="link.canJumpTo(WARNINGS)" data-action="to-warnings" @click="link.showSection(WARNINGS)">
+        {{ t('Warnings & errors') }}
+      </JumpLink>
+      <span v-else>{{ t('Warnings & errors') }}</span>
     </p>
 
     <!-- What a click does, and it STAYS once something is picked: swapping it for a line that
@@ -518,15 +529,18 @@ function isPicked(name: string): boolean {
 <style scoped>
 .roster-notice {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   gap: var(--space-xs);
   margin: 0 0 var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-warning);
-  border-radius: 4px;
-  color: var(--color-warning);
+  color: var(--color-text-secondary);
   font-family: monospace;
   font-size: var(--font-size-sm);
+}
+
+/* the glyph carries the warning role, the words stay plain: a status colour never travels alone */
+.roster-notice .mark {
+  color: var(--color-warning);
 }
 
 /* only what the shared list does NOT own: it carries the tracks, the row states and the picked edge */

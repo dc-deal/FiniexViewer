@@ -8,8 +8,11 @@ Rendered through `base/RecordList.vue`, one column per field: scenario · symbol
 broker · tick timespan · ticks · took · trades · win rate · net P&L · PF · max DD · fees · state. It was a name line over a
 prose figures line, which reads as a sentence per scenario and compares across forty of them not at
 all. Why a scenario produced nothing is not repeated on its row: the backend serves the same sentence
-in Warnings & errors, and the notice above the list points there — on the row it took a screenful of
-the list for one failed scenario (operator, 2026-11-12). The row is marked ✖ failed.
+in Warnings & errors — on the row it took a screenful of the list for one failed scenario (operator,
+2026-11-12). The row is marked ✖ failed, and above the filter one quiet line counts them and links
+there: `⚠ 1 of 12 produced nothing · why: Warnings & errors`, the link putting that section in front
+(`showSection` on the position link, `useSectionShow`). It was a bordered warning box until the reason
+left the row; pointing elsewhere, the box outweighed what it said.
 
 As a panel of its own the list reaches the bottom of it (`useFillsPanel`, as the booking periods'
 table does); in the bundle's column it keeps its cap of 60 % of the view. At that cap, the rest of

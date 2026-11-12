@@ -4,6 +4,7 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
 import { provideFillsPanel } from '@/composables/use_fills_panel'
+import { provideTestPositionLink, type TestPositionLink } from './position_link_harness'
 import { setActivePinia, createPinia } from 'pinia'
 import { provideTestSelection } from './scenario_selection_harness'
 import { searchFor, sortBy } from './facet_harness'
@@ -219,6 +220,28 @@ describe('ScenarioRosterPanel', () => {
     expect(mountAsPanel().find('.scenario-roster').classes()).toContain('filling')
   })
 
+  /**
+   * One quiet line, its pointer a link (operator, 2026-11-12): the reason is the backend's sentence in
+   * Warnings & errors, and the link puts that section in front — where the run carries it at all.
+   */
+  it('points at Warnings & errors with a link that shows the section, and in words where there is none', async () => {
+    let state: TestPositionLink | null = null
+    const Host = defineComponent({
+      setup() {
+        state = provideTestPositionLink(null, ['warnings-errors'])
+        return () => h(ScenarioRosterPanel, { model: asView(MIXED) })
+      },
+    })
+    mounted = mount(Host, { attachTo: document.body, global: { plugins: [createPinia()] } })
+    await mounted.find('.roster-notice [data-action="to-warnings"]').trigger('click')
+    expect(state!.shown).toEqual(['warnings-errors'])
+    mounted.unmount()
+
+    // a host that cannot reach the section: the words stand, no link
+    expect(mountPanel().find('.roster-notice [data-action="to-warnings"]').exists()).toBe(false)
+    expect(mounted!.find('.roster-notice').text()).toContain('Warnings & errors')
+  })
+
   it('stays silent where every scenario ran', () => {
     const wrapper = mountPanel(report([row(), row({ name: 'other' })]))
     expect(wrapper.find('.roster-notice').exists()).toBe(false)
@@ -233,7 +256,8 @@ describe('ScenarioRosterPanel', () => {
     expect(wrapper.find('.record-detail').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('Warmup for M30')
     expect(wrapper.findAll('.record-row')).toHaveLength(4)
-    expect(wrapper.find('.roster-notice').text()).toContain('their reason is in Warnings & errors')
+    expect(wrapper.find('.roster-notice').text()).toContain('produced nothing')
+    expect(wrapper.find('.roster-notice').text()).toContain('Warnings & errors')
     expect(wrapper.find('.roster-state.failed').exists()).toBe(true)
   })
 
