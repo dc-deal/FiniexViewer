@@ -421,8 +421,9 @@ export async function getLatestStateFrames(runId: string): Promise<StateFramesLa
 /**
  * A unit's timeline (contract 43): every stream it records over time, with its count and the time of
  * its first and latest record — made to be asked every second or two while a session runs. Its 404s
- * are absences: `streams_not_recorded` (a backtest, an older session, or one with it switched off),
- * `unit_not_found`, `state_frame_not_written_yet`; its 409 a stream that cannot be read.
+ * are absences: `streams_not_recorded` (a backtest, an older session, or one recording neither state
+ * frames nor an indicator series), `unit_not_found`, `state_frame_not_written_yet` (none of the unit's
+ * streams has written its header yet); its 409 a stream that cannot be read.
  */
 export async function getRecordedStreams(runId: string, unit: string): Promise<RecordedStreams | SectionAbsence> {
   try {

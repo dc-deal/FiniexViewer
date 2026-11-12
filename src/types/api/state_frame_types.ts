@@ -1,3 +1,4 @@
+import type { IndicatorSeriesEntry } from '@/types/api/indicator_series_types'
 import type { OpenPosition, PendingOrderRow, WarningsErrorsOutcome } from '@/types/api/report_types'
 
 /**
@@ -111,17 +112,22 @@ export interface RecordedStateFrame extends StateFrame {
   record_no: number
 }
 
-/** One stream a unit records over time — today only its state frames. */
+/** One stream a unit records over time — its state frames, and one per drawing worker. */
 export interface RecordedStream {
-  /** `state_frames` today; drawings and algo events join as rows of their own (testingide#379). */
+  /**
+   * `state_frames`, or `indicator_series` for a drawing worker (contract 55), named in
+   * `stream_name` for its worker instance; the algo's own drawings and events join as rows of their
+   * own (testingide#379).
+   */
   stream_kind: string
   stream_name: string
-  /** The field a record's time is read from — `frame_time`, the session's own clock. */
+  /** The field a record's time is read from — `frame_time` for a frame, `bar_time` for a series. */
   record_time_field: string
   record_count: number
   /** Null while the stream holds no frame. */
   first_record_time: string | null
   last_record_time: string | null
+  /** For an indicator series, the finest timeframe its worker draws on. */
   cadence_timeframe: string
   cadence_s: number
   truncated_tail: boolean
@@ -132,7 +138,7 @@ export interface RecordedStreams {
   run_id: string
   unit_name: string
   served_at: string
-  /** The same verdict as on `state-frames/latest`, from the same function. */
+  /** The same verdict as on `state-frames/latest`, from the same function; null for a unit recording no frames. */
   recording: string | null
   /** `["stream_kind", "stream_name"]` */
   key: string[]
@@ -140,9 +146,11 @@ export interface RecordedStreams {
 }
 
 /**
- * `GET …/recorded-streams/window` — a unit's frames whose `frame_time` lies in [from, to), oldest
- * first, at most `limit` of them. A page never ends inside a millisecond, so `returned` can exceed
- * `limit` where a replay's clock stood still.
+ * `GET …/recorded-streams/window` — a unit's records whose time lies in [from, to), oldest first,
+ * at most `limit` of them. Since contract 55 the window merges every stream of the unit by time, so
+ * `limit`, `matched`, `returned` and `next_from` count the state frames and the series' bars
+ * together, and a page ends before the first record any stream left out. A page never ends inside
+ * a millisecond, so `returned` can exceed `limit` where a replay's clock stood still.
  */
 export interface RecordedWindow {
   run_id: string
@@ -156,7 +164,9 @@ export interface RecordedWindow {
   truncated: boolean
   /** Set only where the page left frames out: the next page starts here, with the same `to`. */
   next_from: string | null
-  /** `{ state_frames: ["record_no"] }` */
+  /** `{ state_frames: ["record_no"], indicator_series: ["layer"] }` */
   keys: Record<string, string[]>
   state_frames: RecordedStateFrame[]
+  /** One entry per series of every drawing worker, with the page's bars of its own timeframe (contract 55). */
+  indicator_series: IndicatorSeriesEntry[]
 }

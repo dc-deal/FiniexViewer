@@ -1,7 +1,7 @@
 {
   "run_id": "20261022_123550_0bfde90e",
   "unit_name": "state_frames_test",
-  "served_at": "2026-11-12T20:05:04.871233Z",
+  "served_at": "2026-11-12T22:20:37.285090Z",
   "window": {
     "from": "2026-01-25T02:19:57.550000Z",
     "to": "2026-01-25T08:00:00.321000Z"
@@ -14,6 +14,9 @@
   "keys": {
     "state_frames": [
       "record_no"
+    ],
+    "indicator_series": [
+      "layer"
     ]
   },
   "state_frames": [
@@ -211,5 +214,6 @@
       "process_memory": null,
       "record_no": 3
     }
-  ]
+  ],
+  "indicator_series": []
 }

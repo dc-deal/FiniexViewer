@@ -107,6 +107,8 @@ const EXPECTED_KEYS = {
   recordedStreams: ['stream_kind', 'stream_name'],
   // a frame's place in its stream — two frames can share an instant
   recordedFrames: ['record_no'],
+  // a drawing worker's series, one per layer of a unit (contract 55)
+  indicatorSeries: ['layer'],
   // one row per live session that asked its venue anything
   venueAccountUnits: ['name'],
 }
@@ -169,6 +171,7 @@ describe('api contract', () => {
     const page: RecordedWindow = recordedWindow
     expect(timeline.key).toEqual(EXPECTED_KEYS.recordedStreams)
     expect(page.keys['state_frames']).toEqual(EXPECTED_KEYS.recordedFrames)
+    expect(page.keys['indicator_series']).toEqual(EXPECTED_KEYS.indicatorSeries)
     expect(timeline.recording).toBe('ended')
     const stream = timeline.streams.find(row => row.stream_kind === 'state_frames')!
     expect(page.matched).toBe(stream.record_count)

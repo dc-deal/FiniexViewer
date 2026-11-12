@@ -81,7 +81,10 @@ frame on show as a dashed line ([Chart Drawings and Layers](../panels/chart_draw
 - **Two routes per unit.** `…/units/{unit}/recorded-streams` is the timeline: how many frames, the
   first and the latest by time. `…/recorded-streams/window` serves the frames of `[from, to)`, oldest
   first, a page at a time, and says with `next_from` where a page was cut. Frames are told apart by
-  `record_no`, the key the route declares, since two can share an instant.
+  `record_no`, the key the route declares, since two can share an instant. Since contract 55 the
+  window also serves a drawing worker's indicator series, merged with the frames by time, so its
+  `limit` and `next_from` count both: where a unit draws, a page holds fewer frames, and the player
+  follows `next_from` as before. Nothing draws the series yet.
 - **Never the whole stream.** A thirty-day session at a minute's cadence holds some 43,000 frames,
   about 60 MB. `frame_player_store` reads a page of 1,000 around the frame on show and holds at most
   two pages. A step past the held stretch reads the next one in, and a jump reads the stretch around
