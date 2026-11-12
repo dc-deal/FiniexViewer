@@ -68,7 +68,14 @@ BASE = 'http://localhost:5173/api/v1'
 #
 # Re-pinned 2026-10-22 to the same entry's production of 2026-10-18, the id FiniexTestingIDE named:
 # it lists seven warning rows where the earlier one listed five, an accepted move.
-RUN = '20261018_105012_fde28d5d'
+#
+# Re-pinned 2026-11-08 to the catalog produced again under contract 51, the id FiniexTestingIDE named.
+#
+# Re-pinned 2026-11-10 to the catalog produced again under contract 52, the id FiniexTestingIDE named.
+#
+# Re-pinned 2026-11-12 to the catalog produced again after three changes to the backtest's realism
+# (still contract 53), the id FiniexTestingIDE named; no money figure and no count moved.
+RUN = '20261110_143247_618a9984'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -90,14 +97,30 @@ LIVE_RUN = '20261007_152959_0275a107'
 #
 # Re-pinned 2026-10-13 to the catalog's `demo_deployment` entry, produced again with `RUN` above:
 # the main history, whose last session is again killed before its close.
-DEPLOY = 'deploy_20261012_205734'
+#
+# Re-pinned 2026-11-08 to the catalog produced again under contract 51: the main history, its last
+# session again killed before its close, so it shows what contracts 50 and 51 serve.
+#
+# Re-pinned 2026-11-10 to the catalog produced again under contract 52: the main history, as before.
+#
+# Re-pinned 2026-11-12 to the next production: the main history, as before. Its first session carries
+# an empty `config_id`, a fault FiniexTestingIDE named on their side; nothing here keys on it.
+DEPLOY = 'deploy_20261110_145808_6b55f50f'
 
 # The sweep the ranking fixtures come from: a stored search of several combinations, every one of
 # them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get
 # right. The preflight below checks exactly that; any sweep it accepts can replace this one.
 # Re-pinned 2026-10-31 to the catalog's `sweep` entry, produced again on contract 46: a logic on own
 # levels, ranked by `net_pnl`, every row's `expectancy` null.
-SWEEP = 'sweep_20261031_100348_42d8ea0b'
+#
+# Re-pinned 2026-11-08 to the catalog produced again under contract 51, the id FiniexTestingIDE named:
+# the same production its golden sample freezes, which never changes what the runs recorded.
+#
+# Re-pinned 2026-11-10 to the catalog produced again under contract 52, the id FiniexTestingIDE named.
+#
+# Re-pinned 2026-11-12 to the next production, the id FiniexTestingIDE named: no figure moved, its
+# strategy runs as version 1.7.0 and its runs carry a new `rendered_config_id`.
+SWEEP = 'sweep_20261110_143917_09b2f3f1'
 
 # The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
 # than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs

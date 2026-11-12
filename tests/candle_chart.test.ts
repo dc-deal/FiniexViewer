@@ -16,8 +16,11 @@ const lw = vi.hoisted(() => {
   const setData = vi.fn<(data: unknown[]) => void>()
   const setVisibleLogicalRange = vi.fn<(range: { from: number, to: number }) => void>()
   /** The bars in view and the plot's width, as the library reports them — set by a test to zoom. */
-  const zoom: { change: (() => void) | null, range: { from: number, to: number } | null, width: number } = {
-    change: null, range: { from: 0, to: 100 }, width: 600,
+  const zoom: {
+    change: (() => void) | null, range: { from: number, to: number } | null, width: number,
+    size: ((width: number) => void) | null,
+  } = {
+    change: null, range: { from: 0, to: 100 }, width: 600, size: null,
   }
   const series = {
     setData,
@@ -33,25 +36,60 @@ const lw = vi.hoisted(() => {
   const AreaSeries = { type: 'Area' }
   /** The volume's series, a second one — built only where the chart is handed a volume. */
   const HistogramSeries = { type: 'Histogram' }
+  /** The pane the volume stands in, by index, and the scale of its own pane — moved, never built anew. */
+  const volumePane = { index: 0 }
+  const volumeScaleOptions = vi.fn<(options: Record<string, unknown>) => void>()
   const volumeSeries = {
     setData: vi.fn<(data: { time: number, value: number, color: string }[]) => void>(),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
+    getPane: () => ({ paneIndex: () => volumePane.index }),
+    moveToPane: vi.fn((index: number) => { volumePane.index = index }),
+    setSeriesOrder: vi.fn<(order: number) => void>(),
+    priceScale: () => ({ applyOptions: volumeScaleOptions }),
+    /** The volume's own scale format, as the library prints it: two decimals at most, K from a thousand. */
+    priceFormatter: () => ({ format: (value: number) => value < 995 ? String(Math.round(value * 100) / 100) : `${Math.round(value / 10) / 100}K` }),
   }
+  /** Each pane's weight as the library keeps it, set by the chart and read back after a drag. */
+  const weights: number[] = [2, 1]
+  /** Where each pane's row stands, top and height — jsdom lays nothing out, so a test says it. */
+  const paneRows: { top: number, height: number }[] = []
+  const panes = () => Array.from({ length: volumePane.index + 1 }, (_, index) => ({
+    getStretchFactor: () => weights[index]!,
+    setStretchFactor: (weight: number) => { weights[index] = weight },
+    getHTMLElement: () => {
+      const row = paneRows[index]
+      if (!row) return null
+      const element = document.createElement('tr')
+      element.getBoundingClientRect = () => ({ top: row.top, height: row.height } as DOMRect)
+      return element
+    },
+  }))
   const priceScaleOptions = vi.fn<(options: Record<string, unknown>) => void>()
   /**
    * What the chart hands its drawing host, call by call. The host itself paints on a canvas and is
    * tested on its own; here it is the chart's part that is under test — what it hands over, when.
    */
-  const drawn: { layers: { id: string, drawings: { id: string }[] }[], bars: Map<number, unknown>, colours: { roles: Record<string, string>, surface: string } }[] = []
+  const drawn: { layers: { id: string, drawings: { id: string }[] }[], bars: Map<number, unknown>, colours: { roles: Record<string, string>, surface: string, ink: string } }[] = []
+  /** What the chart told its host lies under the pointer, call by call. */
+  const hovered: (string | null)[] = []
+  /** Where the chart asked to be told the lane's share of the pane — held so a test can tell it. */
+  const lane: { share: ((share: number) => void) | null } = { share: null }
   class DrawingHostProbe {
     setDrawings(layers: never, bars: never, colours: never): void { drawn.push({ layers, bars, colours }) }
+    setHovered(id: string | null): void { hovered.push(id) }
+    onLaneShare(callback: (share: number) => void): void { lane.share = callback }
   }
   /** What the library calls as the pointer moves — held so a test can move it. */
   const pointer: { move: ((param: Record<string, unknown>) => void) | null } = { move: null }
   const chart = {
     subscribeCrosshairMove: vi.fn((handler: (param: Record<string, unknown>) => void) => { pointer.move = handler }),
-    addSeries: vi.fn<(definition: { type: string }, options: Record<string, unknown>) => unknown>(
-      definition => definition === HistogramSeries ? volumeSeries : series),
+    addSeries: vi.fn<(definition: { type: string }, options: Record<string, unknown>, paneIndex?: number) => unknown>(
+      (definition, _options, paneIndex) => {
+        if (definition !== HistogramSeries) return series
+        volumePane.index = paneIndex ?? 0
+        return volumeSeries
+      }),
+    panes,
     priceScale: vi.fn((id: string) => ({ id, applyOptions: priceScaleOptions })),
     removeSeries: vi.fn<(series: unknown) => void>(),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
@@ -61,6 +99,7 @@ const lw = vi.hoisted(() => {
       subscribeVisibleLogicalRangeChange: (handler: () => void) => { zoom.change = handler },
       getVisibleLogicalRange: () => zoom.range,
       width: () => zoom.width,
+      subscribeSizeChange: (handler: (width: number) => void) => { zoom.size = handler },
     })),
     resize: vi.fn<(width: number, height: number) => void>(),
     remove: vi.fn(),
@@ -70,7 +109,8 @@ const lw = vi.hoisted(() => {
   )
   return {
     chart, series, pointer, zoom, setData, setVisibleLogicalRange, fitContent, createChart, CandlestickSeries,
-    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, priceScaleOptions, drawn, DrawingHostProbe,
+    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, volumePane, volumeScaleOptions, weights, paneRows,
+    priceScaleOptions, drawn, hovered, lane, DrawingHostProbe,
   }
 })
 
@@ -88,13 +128,18 @@ vi.mock('lightweight-charts', () => ({
 
 /**
  * A ResizeObserver the test can fire. The global stub in `tests/setup.ts` never calls back, which is
- * right for components that only need the API to exist — this one is ABOUT the callback.
+ * right for components that only need the API to exist — this one is ABOUT the callback. Every
+ * observer made is fired: the container's, and the one that follows the panes' sizes.
  */
-let fireResize: () => void = () => {}
+let observers: (() => void)[] = []
+
+function fireResize(): void {
+  for (const fire of observers) fire()
+}
 
 class ResizeObserverProbe {
   constructor(callback: ResizeObserverCallback) {
-    fireResize = () => callback([], this as unknown as ResizeObserver)
+    observers.push(() => callback([], this as unknown as ResizeObserver))
   }
 
   observe(): void {}
@@ -131,7 +176,7 @@ function tradesLayer(marks: ChartMark[]): ChartLayer[] {
 }
 
 /** The ids the chart last handed its drawing host, layer by layer. */
-function lastDrawn(): { layers: { id: string, drawings: { id: string }[] }[], colours: { roles: Record<string, string>, surface: string } } {
+function lastDrawn(): { layers: { id: string, drawings: { id: string }[] }[], colours: { roles: Record<string, string>, surface: string, ink: string } } {
   return lw.drawn.at(-1)!
 }
 
@@ -152,6 +197,10 @@ const LONG: ChartBar[] = Array.from({ length: 200 }, (_, index) => ({
 describe('CandleChart', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    observers = []
+    lw.volumePane.index = 0
+    lw.weights.splice(0, lw.weights.length, 2, 1)
+    lw.paneRows.splice(0, lw.paneRows.length)
     size = { width: 0, height: 0 }
     vi.stubGlobal('ResizeObserver', ResizeObserverProbe)
     vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => size.width)
@@ -182,6 +231,8 @@ describe('CandleChart', () => {
 
     expect(lw.createChart).toHaveBeenCalledTimes(1)
     expect(lw.createChart.mock.calls[0]![1]).toMatchObject({ width: 800, height: 400 })
+    // no logo over the lowest pane: the licence's notice is in NOTICE, its link in the About dialog
+    expect(lw.createChart.mock.calls[0]![1]).toMatchObject({ layout: { attributionLogo: false } })
     expect(lw.setData).toHaveBeenCalledTimes(1)
     expect(lw.setData.mock.calls[0]![0]).toHaveLength(2)
     expect(lw.fitContent).toHaveBeenCalledTimes(1)
@@ -315,6 +366,8 @@ describe('CandleChart', () => {
       await nextTick()
       expect(wrapper.find('.chart-card').text()).toContain('pos_1 · long 0.1')
       expect(wrapper.find('.chart-card').text()).toContain('-0.40 EUR')
+      // the host is told what lies under the pointer: a booking period draws its bounds while it does
+      expect(lw.hovered.at(-1)).toBe('exit|unit|pos_1|7')
 
       // a thing the register does not know, and no thing at all, both show nothing
       lw.pointer.move!({ hoveredInfo: { objectId: 'line|elsewhere' }, point: { x: 100, y: 80 } })
@@ -323,6 +376,7 @@ describe('CandleChart', () => {
       lw.pointer.move!({ point: { x: 300, y: 80 } })
       await nextTick()
       expect(wrapper.find('.chart-card').exists()).toBe(false)
+      expect(lw.hovered.at(-1)).toBeNull()
     })
 
     /** A frame played moves the layers several times a second: the card under the pointer stays, and says what it says now. */
@@ -455,14 +509,15 @@ describe('CandleChart', () => {
     it('draws the volume behind the candles on its own scale, faint in the colour of each candle', async () => {
       size = { width: 800, height: 400 }
       const volume: ChartVolume = {
-        basis: 'ticks', shown: true, opacity: 1,
+        basis: 'ticks', shown: true, ownPane: false, opacity: 1,
         bars: [{ time: BARS[0]!.time, value: 11, rising: true }, { time: BARS[1]!.time, value: 4, rising: false }],
       }
       mountChart(BARS, { volume })
       expect(lw.chart.addSeries.mock.calls.map(call => call[0])).toEqual([lw.HistogramSeries, lw.CandlestickSeries])
-      expect(lw.chart.addSeries.mock.calls[0]![1]).toMatchObject({
-        priceScaleId: 'volume', lastValueVisible: false, priceLineVisible: false,
-      })
+      expect(lw.chart.addSeries.mock.calls[0]![1]).toMatchObject({ lastValueVisible: false, priceLineVisible: false })
+      expect(lw.chart.addSeries.mock.calls[0]![2]).toBe(0)
+      expect(lw.volumeSeries.applyOptions).toHaveBeenCalledWith({ priceScaleId: 'volume' })
+      expect(lw.volumeSeries.setSeriesOrder).toHaveBeenCalledWith(0)
       expect(lw.priceScaleOptions).toHaveBeenCalledWith({ scaleMargins: { top: 0.8, bottom: 0 } })
       expect(lw.volumeSeries.applyOptions).toHaveBeenLastCalledWith({ visible: true })
       expect(lw.volumeSeries.setData.mock.calls.at(-1)![0]).toEqual([
@@ -471,6 +526,118 @@ describe('CandleChart', () => {
       ])
       await mounted!.setProps({ volume: { ...volume, shown: false } })
       expect(lw.volumeSeries.applyOptions).toHaveBeenLastCalledWith({ visible: false })
+    })
+
+    /** Under the lane its strip and marks were drawn over the volume's bars (on screen 2026-11-08). */
+    it('lifts the volume above the time lane by the share of the pane the host says it takes, once the frame is drawn', async () => {
+      size = { width: 800, height: 400 }
+      mountChart(BARS, { volume: { basis: 'ticks', shown: true, ownPane: false, opacity: 1, bars: [] } })
+      lw.priceScaleOptions.mockClear()
+      lw.lane.share!(0.1)
+      expect(lw.priceScaleOptions).not.toHaveBeenCalled()
+      await Promise.resolve()
+      expect(lw.priceScaleOptions).toHaveBeenLastCalledWith({ scaleMargins: { top: expect.closeTo(0.7), bottom: 0.1 } })
+    })
+
+    /**
+     * Its option on, the volume stands in a pane of its own below the candles (viewer#57), on that
+     * pane's own scale, a fifth of the height — the lane stays with the candles, so nothing lifts it.
+     */
+    it('stands the volume in a pane of its own below the candles, a fifth of the height', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart(BARS, { volume: { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] } })
+      expect(lw.chart.addSeries.mock.calls[0]![2]).toBe(1)
+      expect(lw.volumeSeries.applyOptions).toHaveBeenCalledWith({ priceScaleId: 'right' })
+      // a fifth above the tallest bar: the line its legend and its controls stand on
+      expect(lw.volumeScaleOptions).toHaveBeenCalledWith({ scaleMargins: { top: 0.2, bottom: 0 } })
+      expect(lw.weights).toEqual([2, 0.5])
+      await nextTick()
+      expect(wrapper.attributes('data-panes')).toBe('2')
+      lw.priceScaleOptions.mockClear()
+      lw.lane.share!(0.1)
+      await Promise.resolve()
+      expect(lw.priceScaleOptions).not.toHaveBeenCalled()
+    })
+
+    /** The option switched while the chart stands: the same series moves, it is never built anew. */
+    it('moves the volume between the panes as its option is switched, and gives its pane up while hidden', async () => {
+      size = { width: 800, height: 400 }
+      const volume: ChartVolume = { basis: 'ticks', shown: true, ownPane: false, opacity: 1, bars: [] }
+      const wrapper = mountChart(BARS, { volume })
+      expect(wrapper.attributes('data-panes')).toBe('1')
+
+      await mounted!.setProps({ volume: { ...volume, ownPane: true } })
+      expect(lw.volumeSeries.moveToPane).toHaveBeenLastCalledWith(1)
+      expect(wrapper.attributes('data-panes')).toBe('2')
+
+      // hidden, it takes no room: its pane goes and the candles take the whole height (operator,
+      // on screen 2026-11-12) — and shown again, its pane comes back at the height kept
+      lw.weights.splice(0, 2, 2, 0.5)
+      await mounted!.setProps({ volume: { ...volume, ownPane: true, shown: false } })
+      expect(lw.volumeSeries.moveToPane).toHaveBeenLastCalledWith(0)
+      expect(wrapper.attributes('data-panes')).toBe('1')
+      await mounted!.setProps({ volume: { ...volume, ownPane: true } })
+      expect(lw.volumeSeries.moveToPane).toHaveBeenLastCalledWith(1)
+      expect(wrapper.attributes('data-panes')).toBe('2')
+
+      await mounted!.setProps({ volume: { ...volume, ownPane: false } })
+      expect(lw.volumeSeries.moveToPane).toHaveBeenLastCalledWith(0)
+      expect(lw.volumeSeries.setSeriesOrder).toHaveBeenLastCalledWith(0)
+      expect(lw.volumeSeries.applyOptions).toHaveBeenCalledWith({ priceScaleId: 'volume' })
+      expect(wrapper.attributes('data-panes')).toBe('1')
+      expect(lw.chart.addSeries.mock.calls.filter(call => call[0] === lw.HistogramSeries)).toHaveLength(1)
+    })
+
+    /**
+     * Placed once for each change of pane: laid out again on every change of the volume — bars loaded
+     * at an edge, a layer switched — the weights undid a drag the reader still held, and the drag was
+     * lost once let go without another move.
+     */
+    it('leaves the panes as they stand while the volume changes in its pane', async () => {
+      size = { width: 800, height: 400 }
+      const volume: ChartVolume = { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] }
+      mountChart(BARS, { volume })
+      expect(lw.weights).toEqual([2, 0.5])
+      // the library mid-drag: the seam held where the reader took it
+      lw.weights.splice(0, 2, 1.6, 0.9)
+      lw.volumeScaleOptions.mockClear()
+      await mounted!.setProps({ volume: { ...volume, opacity: 0.5, bars: [{ time: BARS[0]!.time, value: 3, rising: true }] } })
+      await mounted!.setProps({ volume: { ...volume, basis: 'traded' } })
+      expect(lw.volumeScaleOptions).not.toHaveBeenCalled()
+      expect(lw.weights).toEqual([1.6, 0.9])
+      expect(lw.volumeSeries.moveToPane).not.toHaveBeenCalled()
+    })
+
+    /**
+     * The heights the reader dragged: laid out as kept, and told once a separator was let go. The
+     * library says nothing while it drags, so the weights are read when the pointer is released.
+     */
+    it('lays the panes out at the kept weights, and tells the weights once a drag moved one', async () => {
+      size = { width: 800, height: 400 }
+      const volume: ChartVolume = { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] }
+      mounted = mount(CandleChart, { props: { data: BARS, volume, paneWeights: { volume: 1.2 } } })
+      expect(lw.weights).toEqual([2, 1.2])
+
+      // a click that dragged nothing tells nothing
+      window.dispatchEvent(new Event('pointerup'))
+      expect(mounted.emitted('paneWeights')).toBeUndefined()
+
+      lw.weights.splice(0, 2, 1.7, 1.5)
+      window.dispatchEvent(new Event('pointerup'))
+      expect(mounted.emitted('paneWeights')).toEqual([[{ price: 1.7, volume: 1.5 }]])
+
+      // a layout loaded holds other weights: the panes take them
+      await mounted.setProps({ paneWeights: { price: 3, volume: 1 } })
+      expect(lw.weights).toEqual([3, 1])
+    })
+
+    /** One pane is never dragged: a release over a chart without a second pane tells nothing. */
+    it('tells no weights while the volume shares the pane of the candles', () => {
+      size = { width: 800, height: 400 }
+      mountChart(BARS, { volume: { basis: 'ticks', shown: true, ownPane: false, opacity: 1, bars: [] } })
+      lw.weights.splice(0, 1, 5)
+      window.dispatchEvent(new Event('pointerup'))
+      expect(mounted!.emitted('paneWeights')).toBeUndefined()
     })
 
     /**
@@ -486,6 +653,8 @@ describe('CandleChart', () => {
 
       await mounted!.setProps({ candles: { ...candles, form: 'line' } })
       expect(lw.chart.removeSeries).toHaveBeenCalledTimes(1)
+      // the new one stands before the old one goes: a pane left empty is removed by the library
+      expect(lw.chart.addSeries.mock.invocationCallOrder.at(-1)!).toBeLessThan(lw.chart.removeSeries.mock.invocationCallOrder[0]!)
       expect(lw.series.detachPrimitive).toHaveBeenCalledTimes(1)
       expect(lw.chart.addSeries).toHaveBeenLastCalledWith(lw.LineSeries, expect.objectContaining({ color: '#000007' }))
       expect(lw.series.attachPrimitive).toHaveBeenCalledTimes(2)
@@ -512,7 +681,11 @@ describe('CandleChart', () => {
       mountChart()
 
       expect(lw.chart.applyOptions).toHaveBeenCalledWith({
-        layout: { background: { type: 'solid', color: '#000001' }, textColor: '#000002' },
+        layout: {
+          background: { type: 'solid', color: '#000001' }, textColor: '#000002',
+          // the seam between two panes: a rule at rest, the accent faint under the pointer
+          panes: { separatorColor: '#000003', separatorHoverColor: 'rgba(0, 0, 4, 0.3)' },
+        },
         grid: { vertLines: { color: '#000003' }, horzLines: { color: '#000003' } },
         crosshair: { vertLine: { color: '#000004' }, horzLine: { color: '#000004' } },
         rightPriceScale: { borderColor: '#000003' },
@@ -545,6 +718,8 @@ describe('CandleChart', () => {
       const roles = (): string[] => ['entry', 'positive', 'negative', 'flat', 'mixed'].map(role => lastDrawn().colours.roles[role]!)
       expect(roles()).toEqual(['#000007', '#000005', '#000006', '#000002', '#000002'])
       expect(lastDrawn().colours.surface).toBe('#000001')
+      // a word inside a filled shape: plain ink, as an entry
+      expect(lastDrawn().colours.ink).toBe('#000007')
 
       document.documentElement.dataset.theme = 'light'
       await flushPromises()
@@ -646,6 +821,163 @@ describe('CandleChart', () => {
    * last bar it holds, keeps the view on the bars it showed as more arrive, and says in that corner
    * that a batch is on its way or failed.
    */
+  describe('the legend of each pane', () => {
+    /** A legend's figures as they read: label, then value. */
+    function legendOf(wrapper: VueWrapper, pane: string): string[] {
+      return wrapper.findAll(`[data-legend="${pane}"] .legend-entry`).map(entry =>
+        [entry.find('.legend-label').text(), entry.find('.legend-value').exists() ? entry.find('.legend-value').text() : '']
+          .filter(Boolean).join(' '))
+    }
+
+    /** At the top left of the pane of the candles, as TradingView and Kraken Pro set it. */
+    it('says the open, high, low and close of the last bar, and of the bar under the pointer while it is on one', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart()
+      await nextTick()
+      expect(legendOf(wrapper, 'price')).toEqual(['O 1.15', 'H 1.25', 'L 1.1', 'C 1.2'])
+      expect(wrapper.find('[data-legend="price"]').attributes('style')).toContain('top: 0px')
+
+      lw.pointer.move!({ time: BARS[0]!.time, point: { x: 10, y: 10 } })
+      await nextTick()
+      expect(legendOf(wrapper, 'price')).toEqual(['O 1.1', 'H 1.2', 'L 1', 'C 1.15'])
+      // off the bars: the last one again
+      lw.pointer.move!({})
+      await nextTick()
+      expect(legendOf(wrapper, 'price')).toEqual(['O 1.15', 'H 1.25', 'L 1.1', 'C 1.2'])
+    })
+
+    /** The volume's legend stands where its pane begins, and follows it when a seam moves it. */
+    it('gives the volume in its own pane a legend at the top of that pane, and none once hidden', async () => {
+      size = { width: 800, height: 400 }
+      lw.paneRows.push({ top: 0, height: 300 }, { top: 301, height: 99 })
+      const volume: ChartVolume = {
+        basis: 'ticks', shown: true, ownPane: true, opacity: 1,
+        bars: [{ time: BARS[0]!.time, value: 11, rising: true }, { time: BARS[1]!.time, value: 4, rising: false }],
+      }
+      const wrapper = mountChart(BARS, { volume })
+      await nextTick()
+      expect(legendOf(wrapper, 'volume')).toEqual(['Ticks 4'])
+      expect(wrapper.find('[data-legend="volume"]').attributes('style')).toContain('top: 301px')
+
+      // a seam dragged: the rows move, and the observer of the panes says so
+      lw.paneRows.splice(0, 2, { top: 0, height: 250 }, { top: 251, height: 149 })
+      fireResize()
+      await nextTick()
+      expect(wrapper.find('[data-legend="volume"]').attributes('style')).toContain('top: 251px')
+
+      // hidden, it gives its pane up, and its legend goes with it
+      await mounted!.setProps({ volume: { ...volume, shown: false } })
+      expect(wrapper.find('[data-legend="volume"]').exists()).toBe(false)
+    })
+
+    it('puts the volume behind the close where it shares the pane of the candles', async () => {
+      size = { width: 800, height: 400 }
+      mountChart(BARS, { volume: { basis: 'traded', shown: true, ownPane: false, opacity: 1, bars: [{ time: BARS[1]!.time, value: 669.41895978, rising: true }] } })
+      await nextTick()
+      // in the form of the volume's own scale: the library's format, two decimals
+      expect(legendOf(mounted!, 'price').at(-1)).toBe('Volume 669.42')
+      expect(mounted!.find('[data-legend="volume"]').exists()).toBe(false)
+    })
+
+    /** The notices stand at the plot's top right, beside the price scale, by the width the library tells. */
+    it('states the width of the plot, for the notices at its right edge', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart()
+      lw.zoom.size!(731)
+      await nextTick()
+      expect(wrapper.attributes('style')).toContain('--chart-plot-width: 731px')
+    })
+  })
+
+  describe('the controls of each pane', () => {
+    const VOLUME: ChartVolume = {
+      basis: 'ticks', shown: true, ownPane: true, opacity: 1,
+      bars: [{ time: BARS[0]!.time, value: 11, rising: true }, { time: BARS[1]!.time, value: 4, rising: false }],
+    }
+    const CANDLES: ChartCandles = { form: 'candles', shown: true, opacity: 1 }
+
+    /** The run chart: candles and the volume in its own pane, its rows where a test says. */
+    async function mountPanes(maximizedPane: 'price' | 'volume' | null = null): Promise<VueWrapper> {
+      size = { width: 800, height: 400 }
+      lw.paneRows.push({ top: 0, height: 300 }, { top: 301, height: 99 })
+      mounted = mount(CandleChart, { props: { data: BARS, volume: VOLUME, candles: CANDLES, maximizedPane } })
+      await nextTick()
+      return mounted
+    }
+
+    /** A pointer event at a height in the frame — jsdom has no PointerEvent, and the handler reads clientY alone. */
+    async function at(wrapper: VueWrapper, type: string, clientY: number): Promise<void> {
+      wrapper.element.dispatchEvent(new MouseEvent(type, { clientY, bubbles: true }))
+      await nextTick()
+    }
+
+    it('shows the controls of the pane under the pointer at the top right of its plot, and none once it leaves', async () => {
+      const wrapper = await mountPanes()
+      expect(wrapper.findAll('.pane-controls')).toHaveLength(2)
+      expect(wrapper.findAll('.pane-controls.visible')).toHaveLength(0)
+      await at(wrapper, 'pointermove', 350)
+      expect(wrapper.find('.pane-controls[data-pane="volume"]').classes()).toContain('visible')
+      expect(wrapper.find('.pane-controls[data-pane="price"]').classes()).not.toContain('visible')
+      await at(wrapper, 'pointermove', 120)
+      expect(wrapper.find('.pane-controls[data-pane="price"]').classes()).toContain('visible')
+      wrapper.element.dispatchEvent(new MouseEvent('pointerleave'))
+      await nextTick()
+      expect(wrapper.findAll('.pane-controls.visible')).toHaveLength(0)
+    })
+
+    /** The lever of the layer the pane draws first: the candles above, the volume below. */
+    it('asks for what a pane draws to be hidden or shown at its eye', async () => {
+      const wrapper = await mountPanes()
+      await wrapper.find('[data-pane="volume"] [data-action="pane-shown"]').trigger('click')
+      await wrapper.find('[data-pane="price"] [data-action="pane-shown"]').trigger('click')
+      expect(wrapper.emitted('paneShown')).toEqual([['volume', false], ['price', false]])
+      await wrapper.setProps({ candles: { ...CANDLES, shown: false } })
+      expect(wrapper.find('[data-pane="price"] [data-action="pane-shown"]').attributes('aria-label')).toBe('Show what this pane draws')
+      // the controls stand by the pane's top, not behind its figures, whose width changes bar by bar
+      expect(wrapper.find('.pane-controls[data-pane="volume"]').attributes('style')).toContain('top: 301px')
+    })
+
+    /** The folded pane keeps its legend as a line in the whole-height pane, and no controls of its own. */
+    it('asks for the whole height of a pane, lays it out once given, and asks the heights back', async () => {
+      const wrapper = await mountPanes()
+      await wrapper.find('[data-pane="volume"] [data-action="pane-whole"]').trigger('click')
+      expect(wrapper.emitted('maximize')).toEqual([['volume']])
+
+      await wrapper.setProps({ maximizedPane: 'volume' })
+      expect(lw.weights).toEqual([0, 1])
+      expect(wrapper.attributes('data-maximized')).toBe('volume')
+      // the library keeps 2 px of the folded pane: its legend stands as the first line of the other
+      lw.paneRows.splice(0, 2, { top: 0, height: 2 }, { top: 3, height: 397 })
+      fireResize()
+      await nextTick()
+      expect(wrapper.find('[data-legend="price"]').attributes('style')).toContain('top: 3px')
+      expect(wrapper.find('[data-legend="volume"]').attributes('style')).toContain('top: 23px')
+      expect(wrapper.find('.pane-controls[data-pane="price"]').exists()).toBe(false)
+      // the arrows on the pane at the whole height give the heights back
+      await wrapper.find('[data-pane="volume"] [data-action="pane-whole"]').trigger('click')
+      expect(wrapper.emitted('maximize')).toEqual([['volume'], [null]])
+
+      await wrapper.setProps({ maximizedPane: null })
+      expect(lw.weights).toEqual([2, 0.5])
+    })
+
+    it('asks for the first heights at a double click on the seam, and at no other', async () => {
+      const wrapper = await mountPanes()
+      await at(wrapper, 'dblclick', 150)
+      expect(wrapper.emitted('resetPanes')).toBeUndefined()
+      await at(wrapper, 'dblclick', 299)
+      expect(wrapper.emitted('resetPanes')).toHaveLength(1)
+    })
+
+    /** The free chart: one pane, and no layer to switch — nothing to offer. */
+    it('offers no controls on a chart of one pane with no lever', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountChart()
+      await nextTick()
+      expect(wrapper.find('.pane-controls').exists()).toBe(false)
+    })
+  })
+
   describe('bars loaded at an edge', () => {
     /** A bar a minute; the one before it, fifty more. */
     const SPAN: ChartBar[] = Array.from({ length: 200 }, (_, index) => ({

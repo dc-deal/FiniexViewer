@@ -29,7 +29,8 @@ starts with the first group.
 | [Sweeps Panel](panels/sweeps_panel.md) | A parameter search read as one: every sweep a heading that opens to its combinations in the order the backend ranked them by the sweep's own objective — the first marked, a word only where the ranking compares unlike, a combination chosen as a run |
 | [Candle Charts](panels/candle_charts.md) | The run chart with a unit's trades on its candles, and `CandleChart` over Lightweight Charts: first real size, theme repaint, and what the pointer is over |
 | [Activities Panel](panels/activities_panel.md) | What runs on the machine — FiniexTestingIDE's activity list as a panel: each activity beneath the one it runs inside, its memory as served, asked only while someone reads it |
-| [Chart Drawings and Layers](panels/chart_drawings_and_layers.md) | What a chart draws for itself — marks, levels, lines — through one drawing host, layer by layer: placed, painted and found under the pointer; and the Layers panel that shows, hides, dims and orders them |
+| [Chart Drawings and Layers](panels/chart_drawings_and_layers.md) | What a chart draws for itself — marks, levels, lines, the time lane of booking periods and orders refused — through one drawing host, layer by layer: placed, painted and found under the pointer; and the Layers panel that shows, hides, dims and orders them |
+| [Chart Panes](panels/chart_panes.md) | The run chart's panes stacked on one time axis: the volume in a pane of its own below the candles or in theirs, the heights the reader drags kept as weights — with the chart's view and in a named layout — and what moves nothing |
 
 ## Runs
 
@@ -52,7 +53,7 @@ starts with the first group.
 | [UI Building Blocks](interface/ui_building_blocks.md) | Every building block the screens are drawn from, one line each with where it lives and where it is described, and the rule: only these, and how a new one is added |
 | [Theme, Buttons and Icons](interface/theme_buttons_and_icons.md) | Colour tokens and roles for both themes, `AppButton` and `JumpLink` with each state on two channels, `AppSwitch` and `AppSlider` — the one on/off and the one scale for the whole app — a change of state that moves nothing, and the registry that names an icon by its meaning |
 | [Figures and Words on Screen](interface/figures_and_words_on_screen.md) | Units and `n/a` for what was never measured, why no figure is computed here, FiniexTestingIDE's vocabulary, the `t()` marker with `plural()`, and the hint registry |
-| [Menu Bar Status](interface/menu_bar_status.md) | What the menu bar always states: the identity from `GET /api/v1/caller`, the machine's load from `GET /api/v1/machine-resources`, and the scenario in focus |
+| [Menu Bar Status](interface/menu_bar_status.md) | The frame's two bars — the menu bar above the dock chooses, the status bar below it states — and how both give room by rank; the identity from `GET /api/v1/caller`, the machine's load from `GET /api/v1/machine-resources`, the contract served, and the scenario in focus |
 | [Servers](interface/servers.md) | Which server a window shows, what stays across a switch, the settings page, and what no connection says. |
 | [Named Layouts](interface/named_layouts.md) | The placement of the panels saved under a name and loaded at once: what a layout holds and never holds, panels moved rather than rebuilt, the loaded layout following the reader, the shipped ones, and storage shared by every window |
 

@@ -1,9 +1,10 @@
 # FiniexViewer
 
-> **Version:** v0.6.0 Pre-Alpha Showcase
-> **Status:** v0.6.0 — named layouts in three sizes, offered by the run you pick; several servers, one
-> per window; what the venue itself held beside a live session's books; prices at the instrument's
-> tick size, and bars loaded as the chart moves. 1772 unit tests and a browser suite.
+> **Version:** v0.7.0 Pre-Alpha Showcase
+> **Status:** v0.7.0 — the run chart stacks panes: the volume in a pane of its own, a legend and
+> controls in each pane, the heights kept with the layout; a time lane of booking periods and refused
+> orders; a status bar below the panels, both bars giving room by rank. 1845 unit tests and a browser
+> suite.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
@@ -24,8 +25,9 @@ kept across a reload.
 The run report is a bundle whose sections open as panels of their own — here every one stands apart,
 arranged in three columns. One scenario in focus narrows every list, and the run chart draws that
 scenario's trades where they opened and closed, the stop loss, the take profit and the entry–exit
-line of the position looked at, and the volume behind the candles. The Layers panel shows, fades and
-orders what the chart draws — by dragging.
+line of the position looked at, its booking periods and refused orders in a lane along the bottom, and
+the volume in a pane of its own below — each pane with its legend, as tall as you drag it. The Layers
+panel shows, fades and orders what the chart draws, grouped by pane.
 
 ### A live bot across its restarts
 
@@ -52,9 +54,11 @@ objective it declared, and one click makes a combination the run on show.
 
 ### And more
 
+- **Two bars** — the menu bar above the panels chooses, a status bar below them states the server,
+  the account, the contract and the machine; in a narrow window both shorten their entries by rank.
 - **Layouts** — the placement of the panels saved under a name: *Backtests* and *Deploys* ship with
   the app, each in a Full, a Medium and a Mobile size, and picking a run offers the one it fits.
-- **Several servers** — a switch in the menu bar, each window showing one, and a run host reached
+- **Several servers** — a switch in the status bar, each window showing one, and a run host reached
   through an SSH tunnel the dev server keeps.
 - **What the venue itself held** — a live session's balances and open orders as the venue reported
   them, at its start and its end, beside the books the session kept.
@@ -209,7 +213,7 @@ screen is drawn from: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). The third-party notices the app carries are in [NOTICE](NOTICE).
 
 ## Disclaimer
 

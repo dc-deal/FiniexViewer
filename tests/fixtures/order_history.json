@@ -1,5 +1,5 @@
 {
-  "run_id": "20261018_105012_fde28d5d",
+  "run_id": "20261110_143247_618a9984",
   "orders": [
     {
       "order_id": "pos_eurgbp_1",
@@ -47,11 +47,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 3,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.879505,
+      "slippage": 6.499999999998174e-05,
+      "slippage_pct": 0.007390520804313988
     },
     {
       "order_id": "pos_eurgbp_1",
@@ -73,11 +73,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 6,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.87971,
+      "slippage": 7.999999999996898e-05,
+      "slippage_pct": 0.009093905946274225
     },
     {
       "order_id": "pos_eurgbp_2",
@@ -125,7 +125,7 @@
       "rejection_message": "[STRESS TEST] Seeded rejection #1 (probability: 70%)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 8,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -177,11 +177,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 11,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.87969,
+      "slippage": 7.00000000000145e-05,
+      "slippage_pct": 0.007957348611444315
     },
     {
       "order_id": "pos_eurgbp_3",
@@ -203,11 +203,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 14,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.879545,
+      "slippage": 6.499999999998174e-05,
+      "slippage_pct": 0.007390184697767793
     },
     {
       "order_id": "pos_eurgbp_4",
@@ -255,7 +255,7 @@
       "rejection_message": "[STRESS TEST] Seeded rejection #2 (probability: 70%)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 16,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -307,7 +307,7 @@
       "rejection_message": "[STRESS TEST] Seeded rejection #3 (probability: 70%)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 18,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -333,7 +333,7 @@
       "rejection_message": "LONG blocked by rejection cooldown (57.5s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 19,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -359,7 +359,7 @@
       "rejection_message": "LONG blocked by rejection cooldown (55.4s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 20,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -385,7 +385,7 @@
       "rejection_message": "LONG blocked by rejection cooldown (52.6s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 21,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -411,7 +411,7 @@
       "rejection_message": "LONG blocked by rejection cooldown (47.8s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 22,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -437,7 +437,7 @@
       "rejection_message": "LONG blocked by rejection cooldown (46.4s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 23,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -463,7 +463,7 @@
       "rejection_message": "LONG blocked by rejection cooldown (33.1s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 24,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -489,7 +489,7 @@
       "rejection_message": "LONG blocked by rejection cooldown (27.4s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 25,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -515,7 +515,7 @@
       "rejection_message": "LONG blocked by rejection cooldown (14.9s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 26,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -541,7 +541,7 @@
       "rejection_message": "LONG blocked by rejection cooldown (14.5s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 27,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -593,7 +593,7 @@
       "rejection_message": "[STRESS TEST] Seeded rejection #4 (probability: 70%)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 29,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -645,11 +645,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 32,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.879765,
+      "slippage": 7.500000000004725e-05,
+      "slippage_pct": 0.008525003836257098
     },
     {
       "order_id": "pos_eurgbp_1",
@@ -697,11 +697,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 3,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.8696550000000001,
+      "slippage": 4.500000000007276e-05,
+      "slippage_pct": 0.005174465736421082
     },
     {
       "order_id": "pos_eurgbp_1",
@@ -723,11 +723,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 6,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.8694649999999999,
+      "slippage": 4.500000000007276e-05,
+      "slippage_pct": 0.0051755964875035525
     },
     {
       "order_id": "pos_eurgbp_2",
@@ -775,7 +775,7 @@
       "rejection_message": "[STRESS TEST] Seeded rejection #1 (probability: 70%)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 8,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -827,11 +827,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 11,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.869455,
+      "slippage": 7.500000000004725e-05,
+      "slippage_pct": 0.008626093357338476
     },
     {
       "order_id": "pos_eurgbp_3",
@@ -853,11 +853,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 14,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.869675,
+      "slippage": 6.499999999998174e-05,
+      "slippage_pct": 0.0074740564003773526
     },
     {
       "order_id": "pos_eurgbp_4",
@@ -905,7 +905,7 @@
       "rejection_message": "[STRESS TEST] Seeded rejection #2 (probability: 70%)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 16,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -957,7 +957,7 @@
       "rejection_message": "[STRESS TEST] Seeded rejection #3 (probability: 70%)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 18,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -983,7 +983,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (58.9s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 19,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1035,7 +1035,7 @@
       "rejection_message": "[STRESS TEST] Seeded rejection #4 (probability: 70%)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 21,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1087,11 +1087,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 24,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.8694599999999999,
+      "slippage": 7.000000000012552e-05,
+      "slippage_pct": 0.008050974167888749
     },
     {
       "order_id": "pos_eurgbp_7",
@@ -1113,11 +1113,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 27,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.86968,
+      "slippage": 7.00000000000145e-05,
+      "slippage_pct": 0.008048937540246354
     },
     {
       "order_id": "pos_eurgbp_8",
@@ -1165,7 +1165,7 @@
       "rejection_message": "[STRESS TEST] Seeded rejection #5 (probability: 70%)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 29,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1191,7 +1191,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (58.6s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 30,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1217,7 +1217,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (49.5s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 31,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1243,7 +1243,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (48.8s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 32,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1269,7 +1269,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (47.0s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 33,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1295,7 +1295,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (33.1s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 34,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1321,7 +1321,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (18.1s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 35,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1347,7 +1347,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (16.4s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 36,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1373,7 +1373,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (14.3s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 37,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1399,7 +1399,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (13.3s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 38,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1425,7 +1425,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (12.6s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 39,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1451,7 +1451,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (10.5s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 40,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1477,7 +1477,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (8.0s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 41,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1503,7 +1503,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (6.3s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 42,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1529,7 +1529,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (5.6s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 43,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1555,7 +1555,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (4.6s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 44,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1581,7 +1581,7 @@
       "rejection_message": "SHORT blocked by rejection cooldown (1.4s remaining)",
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
+      "order_event_seq": 45,
       "slippage_measured_against": null,
       "slippage_reference_price": null,
       "slippage": null,
@@ -1633,11 +1633,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 48,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.8697250000000001,
+      "slippage": 4.500000000007276e-05,
+      "slippage_pct": 0.005174049268455288
     },
     {
       "order_id": "pos_ethusd_1",
@@ -1685,11 +1685,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 3,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2009.1,
+      "slippage": -0.08032482425687704,
+      "slippage_pct": -0.003998050084957296
     },
     {
       "order_id": "pos_ethusd_1",
@@ -1711,11 +1711,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 6,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2016.42,
+      "slippage": 0.1803531480215952,
+      "slippage_pct": 0.008944225311274197
     },
     {
       "order_id": "pos_ethusd_2",
@@ -1763,11 +1763,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 9,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2016.42,
+      "slippage": 0.3703361539935486,
+      "slippage_pct": 0.01836602265369063
     },
     {
       "order_id": "pos_ethusd_2",
@@ -1789,11 +1789,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 12,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2009.35,
+      "slippage": -0.040298886003256484,
+      "slippage_pct": -0.0020055682685075514
     },
     {
       "order_id": "pos_ethusd_3",
@@ -1841,11 +1841,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 15,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2009.13,
+      "slippage": 0.5297324187849881,
+      "slippage_pct": 0.026366258967064755
     },
     {
       "order_id": "pos_ethusd_3",
@@ -1867,11 +1867,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 18,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2014.85,
+      "slippage": 0.20021093483933328,
+      "slippage_pct": 0.009936766252541543
     },
     {
       "order_id": "pos_ethusd_4",
@@ -1919,11 +1919,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 21,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2014.83,
+      "slippage": 0.020225245599704067,
+      "slippage_pct": 0.001003818962379162
     },
     {
       "order_id": "pos_ethusd_4",
@@ -1945,11 +1945,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 24,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2005.69,
+      "slippage": -0.5106682825089592,
+      "slippage_pct": -0.02546097764405064
     },
     {
       "order_id": "pos_ethusd_5",
@@ -1997,11 +1997,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 27,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2005.0,
+      "slippage": 0.27934066171633276,
+      "slippage_pct": 0.013932202579368218
     },
     {
       "order_id": "pos_ethusd_5",
@@ -2023,11 +2023,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 30,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2033.02,
+      "slippage": 0.19183699500081275,
+      "slippage_pct": 0.009436060392952984
     },
     {
       "order_id": "pos_ethusd_6",
@@ -2075,11 +2075,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 33,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2033.01,
+      "slippage": -0.038143327703437535,
+      "slippage_pct": -0.0018761997089752403
     },
     {
       "order_id": "pos_ethusd_6",
@@ -2101,11 +2101,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 36,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2019.3,
+      "slippage": 0.3806286301612545,
+      "slippage_pct": 0.018849533509694177
     },
     {
       "order_id": "pos_ethusd_7",
@@ -2153,11 +2153,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 39,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2018.85,
+      "slippage": 0.8806331022740324,
+      "slippage_pct": 0.04362053160334014
     },
     {
       "order_id": "pos_ethusd_7",
@@ -2179,11 +2179,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 42,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2016.37,
+      "slippage": -0.8395600929929969,
+      "slippage_pct": -0.041637204133814575
     },
     {
       "order_id": "pos_ethusd_8",
@@ -2231,11 +2231,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 45,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2017.39,
+      "slippage": -0.4095073220632912,
+      "slippage_pct": -0.02029886745068089
     },
     {
       "order_id": "pos_ethusd_8",
@@ -2257,11 +2257,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 48,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2018.4,
+      "slippage": 0.12418340571412045,
+      "slippage_pct": 0.006152566672320672
     },
     {
       "order_id": "pos_ethusd_9",
@@ -2309,11 +2309,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 51,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2018.36,
+      "slippage": -0.4658678416080875,
+      "slippage_pct": -0.023081503874833403
     },
     {
       "order_id": "pos_ethusd_9",
@@ -2335,11 +2335,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 54,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2028.94,
+      "slippage": 0.16504403535054735,
+      "slippage_pct": 0.008134495615964363
     },
     {
       "order_id": "pos_ethusd_10",
@@ -2387,11 +2387,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 57,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2028.94,
+      "slippage": -0.21492505356604852,
+      "slippage_pct": -0.010592972368135504
     },
     {
       "order_id": "pos_ethusd_10",
@@ -2413,11 +2413,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 60,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2016.52,
+      "slippage": -0.04598335144578414,
+      "slippage_pct": -0.002280332029723689
     },
     {
       "order_id": "pos_ethusd_11",
@@ -2465,11 +2465,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 63,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 2016.31,
+      "slippage": 0.7040605748304642,
+      "slippage_pct": 0.0349182702476536
     },
     {
       "order_id": "pos_eurgbp_1",
@@ -2517,11 +2517,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 3,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.86957,
+      "slippage": 6.0000000000060005e-05,
+      "slippage_pct": 0.006899962050215624
     },
     {
       "order_id": "pos_eurgbp_1",
@@ -2569,11 +2569,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 3,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.87955,
+      "slippage": 4.999999999999449e-05,
+      "slippage_pct": 0.005684725143538683
     },
     {
       "order_id": "pos_eurgbp_1",
@@ -2595,11 +2595,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 6,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.8797200000000001,
+      "slippage": 6.0000000000060005e-05,
+      "slippage_pct": 0.006820351930166417
     },
     {
       "order_id": "pos_eurgbp_1",
@@ -2621,11 +2621,11 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 9,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.87965,
+      "slippage": 9.00000000000345e-05,
+      "slippage_pct": 0.010231342011031035
     },
     {
       "order_id": "pos_eurgbp_1",
@@ -2647,16 +2647,49 @@
       "rejection_message": null,
       "initiator": null,
       "end_reason": null,
-      "order_event_seq": null,
-      "slippage_measured_against": null,
-      "slippage_reference_price": null,
-      "slippage": null,
-      "slippage_pct": null
+      "order_event_seq": 12,
+      "slippage_measured_against": "submission_mid",
+      "slippage_reference_price": 0.8795850000000001,
+      "slippage": 4.500000000007276e-05,
+      "slippage_pct": 0.005116049045865124
     }
   ],
   "count": 102,
   "symbols": [
     "ETHUSD",
     "EURGBP"
-  ]
+  ],
+  "failed_listed": 35,
+  "failed_by_unit": [
+    {
+      "scenario_name": "EURGBP_refusals_01",
+      "listed": 13
+    },
+    {
+      "scenario_name": "EURGBP_refusals_02",
+      "listed": 22
+    }
+  ],
+  "failed_by_reason": [
+    {
+      "status": "denied",
+      "reason": "rejection_cooldown",
+      "count": 26
+    },
+    {
+      "status": "rejected",
+      "reason": "broker_error",
+      "count": 9
+    }
+  ],
+  "keys": {
+    "orders": [],
+    "failed_by_unit": [
+      "scenario_name"
+    ],
+    "failed_by_reason": [
+      "status",
+      "reason"
+    ]
+  }
 }

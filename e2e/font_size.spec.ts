@@ -73,7 +73,7 @@ for (const [label, seed] of [
     await expandAll(page)
     await page.waitForTimeout(1000)
 
-    const sizes = await textSizes(page, '.panel-dock, .menu-bar')
+    const sizes = await textSizes(page, '.panel-dock, .menu-bar, .status-bar')
     expect(sizes.texts).toBeGreaterThan(0)
     expect(sizes.others, `texts not at the body's ${sizes.body}`).toEqual([])
   })

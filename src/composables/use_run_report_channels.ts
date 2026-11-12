@@ -6,7 +6,7 @@ import { provideConfigComparison } from '@/composables/use_config_comparison'
 import { provideDisplaySettings } from '@/composables/use_display_settings'
 import { provideFramePlayer } from '@/composables/use_frame_player'
 import { provideOrderSteps } from '@/composables/use_order_steps'
-import { usePanelJump } from '@/composables/use_panel_jump'
+import { usePanelJump, useSectionShow } from '@/composables/use_panel_jump'
 import { providePositionLink } from '@/composables/use_position_link'
 import { provideScenarioSelection } from '@/composables/use_scenario_selection'
 import { provideTickSizes } from '@/composables/use_tick_sizes'
@@ -109,6 +109,7 @@ export function provideRunReportChannels(): void {
   providePositionLink({
     marked: computed(() => context.main.run.position),
     jumpTo: usePanelJump(),
+    showSection: useSectionShow(),
     canJumpTo: (panelId: string) => {
       const descriptor = panelById(panelId)
       if (!descriptor) return false

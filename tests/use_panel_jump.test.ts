@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
-import { usePanelJump, useShowInList } from '@/composables/use_panel_jump'
+import { useSectionShow, usePanelJump, useShowInList } from '@/composables/use_panel_jump'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
@@ -133,6 +133,28 @@ describe('usePanelJump', () => {
     dock.reveal = (id: string) => { brought.push(id); return true }
     usePanelJump()('trade-history', MARK)
     expect(brought).toEqual(['run'])
+  })
+})
+
+describe('useSectionShow', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
+  /** A pointer from one section to another: the target made reachable and brought forward, no mark. */
+  it('brings a section to the front and makes it reachable, marking no position', () => {
+    const dock = useDockStore()
+    const brought: string[] = []
+    dock.reveal = (id: string) => { brought.push(id); return true }
+    const layout = useLayoutStore()
+    layout.hide('warnings-errors')
+    useSectionShow()('warnings-errors')
+    expect(brought).toEqual(['run'])
+    const state = layout.arrangedOf().find(panel => panel.id === 'warnings-errors')!
+    expect(state.hidden).toBe(false)
+    expect(state.open).toBe(true)
+    expect(useContextStore().main.run.position).toBeNull()
   })
 })
 

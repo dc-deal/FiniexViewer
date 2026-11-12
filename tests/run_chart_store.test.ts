@@ -270,7 +270,7 @@ describe('useRunChartStore', () => {
     chart.attach()
     await flushPromises()
     const layer = (id: string) => chart.layers.find(entry => entry.id === id)!.drawings
-    expect(chart.layers.map(entry => entry.id)).toEqual(['state-frame', 'levels', 'entry-exit', 'trades'])
+    expect(chart.layers.map(entry => entry.id)).toEqual(['periods', 'refusals', 'state-frame', 'levels', 'entry-exit', 'trades'])
     expect(layer('levels')).toEqual([])
     expect(layer('trades').length).toBeGreaterThan(0)
 
@@ -368,6 +368,49 @@ describe('useRunChartStore', () => {
     expect(chart.volume!.bars.map(bar => bar.value)).toEqual([12, 4])
   })
 
+  /** A pane of its own by default, as TradingView and Kraken Pro draw it; its option off, in the pane of the candles (viewer#57). */
+  it('hands the volume its own pane unless the Layers panel took it into the pane of the candles', () => {
+    const chart = useRunChartStore()
+    expect(chart.volume?.ownPane).toBe(true)
+    useArrangementStore().setPanelView('run-chart', { layers: { options: { 'own-pane': false } } })
+    expect(chart.volume?.ownPane).toBe(false)
+  })
+
+  /** The panes as tall as the reader dragged them, kept beside the layers and bound to no run. */
+  it('keeps the weights of the panes beside the arrangement of the layers', () => {
+    const chart = useRunChartStore()
+    expect(chart.paneWeights).toBeNull()
+    useArrangementStore().setPanelView('run-chart', { layers: { hidden: ['levels'] } })
+    chart.setPaneWeights({ price: 1.5, volume: 0.9 })
+    expect(chart.paneWeights).toEqual({ price: 1.5, volume: 0.9 })
+    expect(useArrangementStore().panelViews['run-chart']).toEqual({
+      layers: { hidden: ['levels'] }, panes: { price: 1.5, volume: 0.9 },
+    })
+  })
+
+  /** The whole height for one pane, kept like the heights; a drag ends it, a reset takes both. */
+  it('gives a pane the whole height, ends it at a drag, and resets the panes to their first heights', () => {
+    const chart = useRunChartStore()
+    const arrangement = useArrangementStore()
+    arrangement.setPanelView('run-chart', { layers: { hidden: ['levels'] }, panes: { price: 1.5, volume: 0.9 } })
+    expect(chart.maximizedPane).toBeNull()
+    chart.setMaximizedPane('volume')
+    expect(chart.maximizedPane).toBe('volume')
+    expect(chart.paneWeights).toEqual({ price: 1.5, volume: 0.9 })
+    chart.setMaximizedPane(null)
+    expect(arrangement.panelViews['run-chart']).toEqual({ layers: { hidden: ['levels'] }, panes: { price: 1.5, volume: 0.9 } })
+
+    // a drag while one pane has the whole height: the heights drawn are the reader's from then on
+    chart.setMaximizedPane('price')
+    chart.setPaneWeights({ price: 2.2, volume: 0.3 })
+    expect(chart.maximizedPane).toBeNull()
+    expect(chart.paneWeights).toEqual({ price: 2.2, volume: 0.3 })
+
+    chart.setMaximizedPane('volume')
+    chart.resetPanes()
+    expect(arrangement.panelViews['run-chart']).toEqual({ layers: { hidden: ['levels'] } })
+  })
+
   it('draws the line of every position of the unit where the Layers panel asks for it', async () => {
     chooseFixtureRun()
     vi.mocked(apiClient.getBars).mockResolvedValue({
@@ -412,8 +455,11 @@ describe('useRunChartStore', () => {
     // back to front as moved, the fainter one at its share, the hidden one handed over marked so —
     // the chart paints nothing of it and keeps its marks' room
     expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1, entry.hidden ?? false]))
-      .toEqual([['state-frame', 1, false], ['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true]])
-    const [, trading, levels] = chart.layers
+      .toEqual([
+        ['periods', 1, false], ['refusals', 1, false], ['state-frame', 1, false],
+        ['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true],
+      ])
+    const [, , , trading, levels] = chart.layers
     expect(trading!.drawings.length).toBeGreaterThan(0)
     // the signs switched off keep their room and paint no text, so the switch rescales nothing
     expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.textHidden === true)).toBe(true)

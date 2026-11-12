@@ -31,7 +31,7 @@ export const useCallerStore = defineStore('caller', () => {
    */
   async function load(): Promise<void> {
     // only the FIRST read is shown as one: a re-read on every return to the tab would otherwise
-    // turn the menu bar's account into "connecting" and back each time
+    // turn the status bar's account into "connecting" and back each time
     if (state.value === 'idle') state.value = 'loading'
     try {
       const answer = await getCaller()

@@ -5,6 +5,7 @@ import { findCoverage } from '@/api/api_client'
 import {
   autoTimeframe, chartPriceFormat, chartUnits, defaultUnit, unitTickSize,
 } from '@/components/runs/run_chart'
+import { periodSpans, refusalMarks } from '@/components/runs/run_chart_lane'
 import { entryExitLines, frameMoment, positionLevels } from '@/components/runs/run_chart_levels'
 import {
   barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
@@ -20,7 +21,9 @@ import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
+import type { StoredPanelView } from '@/types/arrangement_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
+import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
 
@@ -232,6 +235,14 @@ export const useRunChartStore = defineStore('runChart', () => {
     // without their signs the marks keep their shapes and the signs' room, so the switch rescales
     // nothing; a gathered mark's card still counts it
     trades: computed(() => optionOf('trades') === false ? marks.value.map(mark => ({ ...mark, textHidden: true })) : marks.value),
+    // the time lane: the unit's booking periods, and its orders refused or expired, gathered as the
+    // trades' marks are where they would cover each other
+    periods: computed(() => unit.value
+      ? periodSpans(reports.bookingPeriods?.periods ?? [], unit.value.name, barTimes.value, cutAt.value)
+      : []),
+    refusals: computed(() => unit.value
+      ? refusalMarks(reports.orderHistory?.orders ?? [], unit.value.name, barTimes.value, cutAt.value, perMark.value)
+      : []),
     // the player of the unit on show and of the run on show: its name is the unit's in `data_windows`
     'state-frame': computed(() => {
       const player = unit.value ? framePlayers.playerOf(unit.value.name) : null
@@ -279,6 +290,8 @@ export const useRunChartStore = defineStore('runChart', () => {
     return {
       basis: volumeBasis.value,
       shown: state.shown,
+      // the layer's option, its default the register's: on
+      ownPane: state.option === true,
       opacity: state.opacity / 100,
       bars: served.value.map(bar => ({ time: bar.t, value: traded ? bar.v : bar.tc, rising: bar.c >= bar.o })),
     }
@@ -411,6 +424,38 @@ export const useRunChartStore = defineStore('runChart', () => {
     spacing.value = next
   }
 
+  /** The panes as tall as the reader dragged them, kept with the chart's own view (viewer#57). */
+  const paneWeights = computed<PaneWeights | null>(() => arrangement.panelViews[RUN_CHART]?.panes ?? null)
+
+  /**
+   * Keeps the panes' weights the chart reports after a drag of a separator. A drag ends a pane's
+   * whole height: the heights the reader drew are theirs from then on.
+   */
+  function setPaneWeights(weights: PaneWeights): void {
+    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('maximized'), panes: weights })
+  }
+
+  /** The chart's own view as kept, without the fields named. */
+  function chartViewWithout(...fields: (keyof StoredPanelView)[]): StoredPanelView {
+    const view = { ...arrangement.panelViews[RUN_CHART] }
+    for (const field of fields) delete view[field]
+    return view
+  }
+
+  /** The pane given the whole height, kept like the heights: with the chart's view, in a layout. */
+  const maximizedPane = computed<ChartPaneId | null>(() => arrangement.panelViews[RUN_CHART]?.maximized ?? null)
+
+  /** Gives one pane the whole height, or none — the heights kept stand again. */
+  function setMaximizedPane(pane: ChartPaneId | null): void {
+    const view = chartViewWithout('maximized')
+    arrangement.setPanelView(RUN_CHART, pane ? { ...view, maximized: pane } : view)
+  }
+
+  /** The panes back at their first heights, none of them given the whole height. */
+  function resetPanes(): void {
+    arrangement.setPanelView(RUN_CHART, chartViewWithout('panes', 'maximized'))
+  }
+
   /**
    * Points the chart at a position: its unit, and the position marked — which it centres on. Where a
    * scenario is in focus the focus moves with it, or the focus would keep the chart on another unit;
@@ -438,7 +483,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
-    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, showPosition, canShow, attach, detach, extendBars,
+    paneWeights, maximizedPane, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
+    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }
 })

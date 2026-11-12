@@ -1,6 +1,7 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, FIXTURE_RUN } from './api_mock'
 import { openWith } from './arrangement_seed'
+import { paneRows } from './pane_rows'
 
 /**
  * The Layers panel, in a real browser: opened from the run chart's quick bar BESIDE the chart it
@@ -50,8 +51,9 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
 
   // the trades switched off: the chart draws none of them — and rescales nothing, so the price axis
   // reads the same (operator, on screen 2026-10-27: without the marks the candles stretched)
-  const box = (await chart.boundingBox())!
-  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height - 40 }
+  // the price axis is the one of the pane of the candles: the volume's own pane has an axis of its own
+  const box = (await paneRows(chart).first().boundingBox())!
+  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height }
   const painted = (): Promise<void> => page.evaluate(() => new Promise<void>(done =>
     requestAnimationFrame(() => requestAnimationFrame(() => done()))))
   await painted()
@@ -60,17 +62,33 @@ test('the Layers panel opens beside the chart from its quick bar, and a layer it
   await expect.poll(async () => await chart.getAttribute('data-drawings')).not.toMatch(/trades:/)
   await painted()
   expect((await page.screenshot({ clip: axis })).equals(before)).toBe(true)
-  // the volume stands on a scale of its own: switching it off moves no candle either
+  // the volume switched off gives its pane up: the candles take the whole height (operator, on
+  // screen 2026-11-12) — in the pane of the candles it moves none, which chart_panes.spec holds
   await layers.locator('[data-layer="volume"] [data-action="show"]').click()
   await expect(layers.locator('[data-layer="volume"]')).toHaveAttribute('data-shown', 'false')
-  await painted()
-  expect((await page.screenshot({ clip: axis })).equals(before)).toBe(true)
+  await expect(chart).toHaveAttribute('data-panes', '1')
 
   await page.reload()
   await expect(page.locator('[data-panel-kind="layers"] [data-layer="trades"]')).toHaveAttribute('data-shown', 'false')
   await expect(page.locator('[data-panel-kind="layers"] [data-layer="volume"]')).toHaveAttribute('data-shown', 'false')
   await expect.poll(async () => await page.locator('[data-panel-kind="run-chart"] .candle-chart').getAttribute('data-drawings'))
     .toMatch(/levels:\d+ entry-exit:\d+$/)
+})
+
+/** Grouped by pane, the way TradingView's object tree is; a folded group stays folded after a reload. */
+test('the layers stand in a group for each pane, folded and kept so across a reload', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['EURGBP_refusals_01'] })
+  await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
+  const layers = page.locator('[data-panel-kind="layers"]')
+  await expect(layers.locator('[data-pane-group="price"] [data-layer="candles"]')).toBeVisible()
+  await expect(layers.locator('[data-pane-group="volume"] [data-layer="volume"]')).toBeVisible()
+  await layers.locator('[data-pane-group="price"] [data-action="fold-pane"]').click()
+  await expect(layers.locator('[data-layer="trades"]')).toHaveCount(0)
+  await page.reload()
+  const again = page.locator('[data-panel-kind="layers"]')
+  await expect(again.locator('[data-pane-group="price"] [data-action="fold-pane"]')).toHaveAttribute('aria-expanded', 'false')
+  await expect(again.locator('[data-layer="volume"]')).toBeVisible()
 })
 
 /** Dragged by its grip (operator, 2026-10-28), and never behind the candles and the volume. */
@@ -81,16 +99,18 @@ test('a layer is dragged in front of another by its grip, and never past the fix
   const layers = page.locator('[data-panel-kind="layers"]')
   const order = (): Promise<string> => layers.locator('[data-layer]')
     .evaluateAll(rows => rows.map(row => row.getAttribute('data-layer')).join(','))
-  await expect.poll(order).toBe('trades,entry-exit,levels,state-frame,candles,volume')
+  // the front three and the two fixed at the back — what a drag moves, whatever stands between them
+  await expect.poll(order).toMatch(/^trades,entry-exit,levels,.*,candles,volume$/)
 
   await layers.locator('[data-layer="levels"] .layer-grip')
     .dragTo(layers.locator('[data-layer="trades"] .layer-row'), { targetPosition: { x: 20, y: 2 } })
-  await expect.poll(order).toBe('levels,trades,entry-exit,state-frame,candles,volume')
+  await expect.poll(order).toMatch(/^levels,trades,entry-exit,.*,candles,volume$/)
+  const dragged = await order()
 
   await layers.locator('[data-layer="trades"] .layer-grip')
     .dragTo(layers.locator('[data-layer="volume"] .layer-row'), { targetPosition: { x: 20, y: 20 } })
   await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done()))))
-  expect(await order()).toBe('levels,trades,entry-exit,state-frame,candles,volume')
+  expect(await order()).toBe(dragged)
 })
 
 /**
@@ -106,8 +126,9 @@ test('switching the signs off moves nothing on the price axis', async ({ page })
   const layers = page.locator('[data-panel-kind="layers"]')
   await layers.locator('[data-layer="trades"] [data-action="open"]').click()
 
-  const box = (await chart.boundingBox())!
-  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height - 40 }
+  // the price axis is the one of the pane of the candles: the volume's own pane has an axis of its own
+  const box = (await paneRows(chart).first().boundingBox())!
+  const axis = { x: box.x + box.width - 50, y: box.y, width: 50, height: box.height }
   const painted = (): Promise<void> => page.evaluate(() => new Promise<void>(done =>
     requestAnimationFrame(() => requestAnimationFrame(() => done()))))
   await painted()

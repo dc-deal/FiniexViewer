@@ -1,6 +1,32 @@
 # Menu Bar Status
 
-The menu bar carries the readings that apply to every panel at once: who the server takes this viewer to be, how full the shared machine is, which scenario is in focus, and — only where it is not ours — which contract the server serves. Read this document before you change `AccountStatus`, `MachineStatus`, `NarrowingStatement`, `ContractStatus` or the stores behind them, or to know how current each reading is.
+The frame carries the readings that apply to every panel at once: who the server takes this viewer to be, how full the shared machine is, which scenario is in focus, and — only where it is not ours — which contract the server serves. Read this document before you change `AppMenuBar`, `StatusBar`, `AccountStatus`, `MachineStatus`, `NarrowingStatement`, `ContractStatus` or the stores behind them, or to know how current each reading is.
+
+## Two bars — the menu bar chooses, the status bar states (2026-11-10)
+
+```
+FiniexViewer  Panels ▾  Layouts ▾  ⇄ Deploys  ⌖ Only EURUSD_blocks_09 · Show all              ☰   the menu bar
+…the dock…
+⛁ finiex-bot ▾  👤 Viewer-Operator  ⚠ API contract 49 · viewer 53          CPU 3% · Memory 39%   the status bar
+```
+
+- **Above the dock, what the reader chooses**: the panels, the layouts and the one the run offers,
+  the scenario in focus, the application menu (`AppMenuBar`). **Below it, what the window works
+  against**: the server, whose access, under which contract, and how full the machine is
+  (`StatusBar`) — the split of VS Code's and JetBrains' bars, chosen by the operator over one bar
+  that held both and ran past a window 640 px wide.
+- **Room by RANK, measured on the bar itself** (`use_ranked_bar`), never at fixed widths: a long
+  server name, a long scenario name or a warning that appears count as they are. Short of room an
+  entry with the lowest rank takes its short form first, its word giving way to its icon and kept
+  in the page for a screen reader (`.bar-word`, `.bar-icon` in `bar.css`).
+
+  | Bar | short first … | … last | only shortens, never goes |
+  |---|---|---|---|
+  | menu bar | the name (goes) · the offered layout → ⇄ · Layouts → its icon | Panels → its icon | the scenario's name; *Show all* stays whole |
+  | status bar | the account → its mark · the contract → ⚠ | the machine → its glyphs | the server's name: which server this window shows is the one word that must stay |
+
+  Short of room means the bar's content is wider than the bar, or a name marked `data-shortens`
+  is cut — so a word with an icon gives way before such a name loses a letter.
 
 ## Identity — `GET /api/v1/caller`, and the two rules that bound it
 
@@ -49,19 +75,18 @@ nothing, so a stale one costs a line of text.
 Contract 31, behind the `machine` grant since contract 35 — without it the route answers 403 and the
 reading is marked as stopped. The machine is the one the server, the backtests and the live sessions share, and memory
 that runs out is the moment a process is ended by the operating system — nothing refuses politely
-before that. `MachineStatus` draws it in the menu bar, before the account:
+before that. `MachineStatus` draws it at the right end of the status bar:
 
 ```
 CPU  15% · Memory  17%                         ok: the two shares, nothing else
 ⚠ warn · CPU  63% · Memory  84%                the backend's grade, where it is not ok
 CPU  15% · Memory  17% · ⚠ as of 14:37:22      the readings have stopped arriving
-⌗  15% · ▤  17%                                below 700 px: a glyph for each word
+⌗  15% · ▤  17%                                short of room: a glyph for each word
 ```
 
-**Below 700 px the two words give way to their glyphs** (`status-cpu`, `status-memory`, 2026-11-05),
-so the menu bar keeps to a window 600 px wide — the width the shipped Mobile layouts are laid out at,
-where the account and the application menu had stood past the edge. The words stay in the page,
-out of sight, for a screen reader; the card says both in full.
+**Short of room the two words give way to their glyphs** (`status-cpu`, `status-memory`), the
+status bar's last rank; until 2026-11-10 this happened below 700 px, at a fixed width. The words
+stay in the page, out of sight, for a screen reader; the card says both in full.
 
 - **The two shares stand there always; the grade speaks only where it is not `ok`**, as a mark and
   the backend's own word, and a grade this version does not know shows as itself. `pressure_level`
@@ -77,7 +102,7 @@ out of sight, for a screen reader; the card says both in full.
   nothing new it is shown with its time (`as of …`, warning role). The backend asks for exactly
   that, so a reading that stopped arriving is visibly old rather than silently current.
 - **The polling starts at the app root**, like the caller, so the store holds one reading for
-  whoever shows it: the menu bar now, a System panel later (viewer#31, S6).
+  whoever shows it: the status bar now, a System panel later (viewer#31, S6).
 - **The card also says what runs on the machine** (viewer#49), in one line under *Running*:
   `5 · sweep my_sweep · test_suite test suite · +3 more` — the server's own row left out, it is the
   one answering; every other counted, and the two that hold the most memory and run on their own
@@ -89,7 +114,7 @@ out of sight, for a screen reader; the card says both in full.
   them all ([Activities Panel](../panels/activities_panel.md)).
 - **The figures are no control.** A click that opened the Activities panel was tried on 2026-10-19
   and taken back: as a button the status wore the link colour and a frame on hover, too loud for the
-  menu bar's quiet figures. The card names the panel instead.
+  frame's quiet figures. The card names the panel instead.
 - The processors' `used_pct` and `window_s` are both null on the first reading after a restart of
   the server: the bar shows `—`, and the card says there is no window yet.
 
@@ -98,8 +123,9 @@ quick bar of the run bundle and of each section panel, so a bundle split into th
 three times, and a narrow group lost its tabs to it. It names the scenario in focus, the whole line
 in its title where the bar is too narrow to show it, and says where the run lacks that name. The
 line is a grid whose text track is `minmax(0, max-content)`, so its least width is its mark and its
-button alone, and it shrinks before the machine status beside it moves (`e2e/narrow_panels.spec.ts`,
-at 760 px). The *Panels* trigger never gives way: it shared the shortfall once and wrapped its ▾.
+button alone (`e2e/narrow_panels.spec.ts`, at 760 px). Its name is marked `data-shortens`: before it
+loses a letter the bar's words with an icon give way. The *Panels* trigger never wraps: it shared the
+shortfall once and put its ▾ on a second line.
 
 ## Which contract the server serves — `X-Api-Contract`, on every answer
 
@@ -107,10 +133,10 @@ The viewer mirrors ONE contract, `EXPECTED_CONTRACT` in `src/api/expected_contra
 server stamps the one it serves on every response, a refusal included. Two installations can
 differ: a server left on a release while the viewer moves on, or a backend restarted under a newer
 contract while a tab stays open. A field that moved between the two then reads wrong or not at all,
-and no panel can show it. So `ContractStatus` says it, before the machine:
+and no panel can show it. So `ContractStatus` says it, in the status bar after the account:
 
 ```
-⚠ API contract 43 · viewer 42        hover: which side has to move, both numbers, where the steps are
+⚠ API contract 43 · viewer 42        hover: Server contract 43 · This viewer contract 42
 ```
 
 - **Where the two agree, nothing is drawn**, and nothing before the first answer either — the
@@ -119,9 +145,9 @@ and no panel can show it. So `ContractStatus` says it, before the machine:
   `api_client`), so a restart under another contract shows on the next request rather than on a
   reload; `server_contract_store` holds the latest stamp, and `ContractStatus` compares it beside
   the number it shows — a store kept its verdict across a hot reload and once read *43 · viewer
-  43*. `GET /api/v1/contract` adds only what moved into the server's own version — the steps
-  between two versions are in their contract log (`/api/v1/docs/contract-log`), which the card
-  names.
-- **Which way they differ says who moves**: a newer server waits for the viewer to follow, an older
-  one serves fields this viewer reads without them. The card says which, in a sentence.
+  43*.
+- **The card holds the two numbers and nothing else** (operator, 2026-11-10): a hover card is
+  information, never a help text. It once said in a sentence which side had to move and pointed at
+  the server's contract log, a document the reader of this frontend cannot open. Which side is
+  older reads off the numbers.
 

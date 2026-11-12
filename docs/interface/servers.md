@@ -6,8 +6,8 @@ The API can stand on more than one installation, and each browser window shows o
 
 ## The switch
 
-`ServerSwitch.vue` stands in the menu bar, always visible, because which server is on screen must never
-be a guess. Its menu lists the servers and leads to the settings.
+`ServerSwitch.vue` stands in the status bar below the dock, always visible, because which server is on screen
+must never be a guess; its name shortens there and never goes. Its menu lists the servers and leads to the settings.
 
 - **One server per window.** The choice is kept per browser tab (`src/active_server.ts`, on
   `tab_storage.ts`), so a second window is how two servers are compared. A new window starts on the last

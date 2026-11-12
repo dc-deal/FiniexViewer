@@ -129,7 +129,7 @@ function conditions(unit: BrokerUnit): Figure[] {
     // the word, and a label of "2 Scenarios" beside a value of "2" says it twice
     {
       label: t('Scenarios'),
-      value: String(unit.scenarios.length),
+      value: String(unit.scenario_count),
       title: unit.scenarios.join(', '),
     },
   )

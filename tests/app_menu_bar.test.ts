@@ -208,9 +208,13 @@ describe('AppMenuBar', () => {
     expect(entries.every(entry => entry.getAttribute('role') === 'menuitemcheckbox')).toBe(true)
   })
 
-  /** Whose access the viewer works under is part of the frame, beside the application menu. */
-  it('carries the account status in the frame', () => {
-    expect(mounted!.find('.account-status').exists()).toBe(true)
+  /**
+   * Whose access the viewer works under is part of the frame — below the dock since 2026-11-10, in the
+   * status bar, beside the server; this bar chooses, and keeps the application menu.
+   */
+  it('leaves the account to the status bar, and keeps the application menu', () => {
+    expect(mounted!.find('.account-status').exists()).toBe(false)
+    expect(mounted!.find('.menu-trigger').exists()).toBe(true)
   })
 
   /**

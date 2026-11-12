@@ -69,6 +69,7 @@ function summaryWith(row: RunSummaryCurrency, overrides: Partial<RunSummary> = {
     orders_executed: 1,
     orders_rejected: 0,
     sl_tp_triggered: 0,
+    execution_rate_pct: 100,
     unit_count: 1,
     // null on an artifact written before contract 6 — not a zero
     units_declared: null,
@@ -381,7 +382,7 @@ describe('ExecutivePanel', () => {
 })
 
 function report(overrides: Partial<WarningsErrorsReport> = {}): WarningsErrorsReport {
-  return {
+  const built = {
     run_id: '20260615_130000',
     warnings: [],
     errors: [],
@@ -400,9 +401,17 @@ function report(overrides: Partial<WarningsErrorsReport> = {}): WarningsErrorsRe
       shutdown_mode: 'normal',
       operator_interrupted: false,
       refused_at_first_tick: false,
+      succeeded_count: 3,
+      success_rate_pct: 100,
+      batch_status: 'success',
+      first_failure_messages: [],
+      first_failure_more_messages: 0,
+      other_failed_count: 0,
     },
     ...overrides,
   }
+  // the count served beside the list (contract 52), unless a test sets it itself
+  return { error_unit_count: built.errors.length, ...built }
 }
 
 describe('WarningsErrorsPanel — narrowed to a scenario', () => {
@@ -415,6 +424,8 @@ describe('WarningsErrorsPanel — narrowed to a scenario', () => {
       validation_errors: [],
       logged_errors: [],
       traceback: '',
+      validation_error_count: 0,
+      logged_error_count: 0,
     }
   }
 
@@ -539,6 +550,8 @@ describe('WarningsErrorsPanel', () => {
         validation_errors: [],
         logged_errors: [],
         traceback: '',
+        validation_error_count: 0,
+        logged_error_count: 0,
       }],
     })
     model.outcome.run_outcome = 'failed'
@@ -560,6 +573,7 @@ describe('WarningsErrorsPanel', () => {
       errors: [{
         name: 'unit', symbol: '', error_type: 'ValueError', error_message: 'boom',
         validation_errors: ['bad config'], logged_errors: [], traceback: 'Traceback …',
+        validation_error_count: 1, logged_error_count: 0,
       }],
     })
     const wrapper = mount(WarningsErrorsPanel, { props: { model } })
@@ -593,6 +607,8 @@ describe('WarningsErrorsPanel', () => {
           },
         ],
         traceback: '',
+        validation_error_count: 0,
+        logged_error_count: 2,
       }],
     })
     const wrapper = mount(WarningsErrorsPanel, { props: { model } })

@@ -10,7 +10,7 @@ import type { IconName } from '@/types/icon_types'
 import { t } from '@/translate'
 
 /**
- * How full the machine is, in the menu bar beside the account — the machine the server, the
+ * How full the machine is, at the right end of the status bar — the machine the server, the
  * backtests and the live sessions share. The two figures stand there always: on a large host many
  * scenarios run in parallel and fill it, and nothing else on screen says so. The backend's GRADE
  * speaks only where it is not `ok`, as a mark and its word; everything else is on hover — and
@@ -160,13 +160,13 @@ const details = computed<Figure[]>(() => {
       <!-- below 700 px the word gives way to its glyph and stays for a screen reader, so the menu
            bar keeps to one line in the window; the card says both in full -->
       <span class="machine-figure">
-        <AppIcon name="status-cpu" class="machine-glyph" />
-        <span class="machine-word">{{ t('CPU') }}</span> <span class="machine-value">{{ slot(reading?.cpu.used_pct) }}</span>%
+        <AppIcon name="status-cpu" class="machine-glyph bar-icon" />
+        <span class="machine-word bar-word">{{ t('CPU') }}</span> <span class="machine-value">{{ slot(reading?.cpu.used_pct) }}</span>%
       </span>
       <span class="machine-separator" aria-hidden="true">·</span>
       <span class="machine-figure">
-        <AppIcon name="status-memory" class="machine-glyph" />
-        <span class="machine-word">{{ t('Memory') }}</span> <span class="machine-value">{{ slot(reading?.memory.used_pct) }}</span>%
+        <AppIcon name="status-memory" class="machine-glyph bar-icon" />
+        <span class="machine-word bar-word">{{ t('Memory') }}</span> <span class="machine-value">{{ slot(reading?.memory.used_pct) }}</span>%
       </span>
       <template v-if="age">
         <span class="machine-separator" aria-hidden="true">·</span>
@@ -180,13 +180,14 @@ const details = computed<Figure[]>(() => {
 
 <style scoped>
 /* no control: a click opening the Activities panel was tried on 2026-10-19 and taken back — as a
-   button the status wore the link colour and a frame on hover, too loud for the menu bar's quiet
+   button the status wore the link colour and a frame on hover, too loud for the frame's quiet
    figures (operator, on screen). The card names the panel instead. */
 .machine-status {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
+  /* nothing above and below: the status bar is 1.5 rem high */
+  padding: 0 var(--space-sm);
   border-radius: 4px;
   font-family: monospace;
   font-size: var(--font-size-sm);
@@ -215,25 +216,8 @@ const details = computed<Figure[]>(() => {
   gap: 2px;
 }
 
-.machine-glyph {
-  display: none;
-}
-
-/* the menu bar in one line at 600 px: the glyph stands for the word, which a screen reader still reads */
-@media (max-width: 700px) {
-  .machine-glyph {
-    display: inline-flex;
-  }
-
-  .machine-word {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
+/* short of room the glyph stands for the word, which a screen reader still reads: the status bar's
+   last rank (`.bar-icon`, `.bar-word` in `bar.css`); below 700 px until 2026-11-10 */
 
 .machine-mark {
   display: inline-flex;

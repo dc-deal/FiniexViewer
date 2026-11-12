@@ -66,7 +66,7 @@ function order(overrides: Partial<OrderHistoryRow> = {}): OrderHistoryRow {
 }
 
 function unit(overrides: Partial<PendingOrderUnit> = {}): PendingOrderUnit {
-  return {
+  const built = {
     name: SCENARIO,
     symbol: 'ETHUSD',
     total_submitted: 1,
@@ -82,6 +82,13 @@ function unit(overrides: Partial<PendingOrderUnit> = {}): PendingOrderUnit {
     active_limit_orders: [],
     active_stop_orders: [],
     ...overrides,
+  }
+  // the counts served beside the two lists (contract 52), unless a test sets them itself
+  return {
+    active_limit_count: built.active_limit_orders.length,
+    active_stop_count: built.active_stop_orders.length,
+    active_order_count: built.active_limit_orders.length + built.active_stop_orders.length,
+    ...built,
   }
 }
 
@@ -111,6 +118,11 @@ function model(
       orders,
       count: orders.length,
       symbols: ['ETHUSD'],
+      // no test here reads the failed rows' counts, so none are claimed
+      failed_listed: 0,
+      failed_by_unit: [],
+      failed_by_reason: [],
+      keys: { orders: [], failed_by_unit: ['scenario_name'], failed_by_reason: ['status', 'reason'] },
     } satisfies OrderHistoryReport,
     trades,
   }
@@ -218,6 +230,8 @@ describe('OrdersPanel', () => {
       })]))
       expect(heading(resting)).toContain('resting at data end 1')
       expect(heading(mountPanel(model([order()])))).not.toContain('resting at data end')
+      // the count served beside the lists (contract 52), never the lists counted here
+      expect(heading(mountPanel(model([order()], [unit({ active_order_count: 3 })])))).toContain('resting at data end 3')
     })
 
     /** Nothing timed is an absence; `0 ms` there would claim a measurement. */

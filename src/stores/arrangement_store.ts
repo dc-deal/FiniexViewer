@@ -11,6 +11,8 @@ import type {
   ViewFold, ViewRowList,
 } from '@/types/arrangement_types'
 import { CHART_LAYER_IDS } from '@/types/chart_drawing_types'
+import { CHART_PANE_IDS } from '@/types/chart_pane_types'
+import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import { LAYER_OPACITY_MIN, LAYER_OPTION_IDS } from '@/types/layer_types'
 import { LAYOUT_SIZES } from '@/types/named_layout_types'
@@ -152,6 +154,17 @@ function readLayers(value: unknown): StoredLayers | undefined {
   return Object.keys(layers).length ? layers : undefined
 }
 
+/** A chart's pane weights: a pane this build does not know, or a weight that is no positive number, is none. */
+function readPaneWeights(value: unknown): PaneWeights | undefined {
+  const stored = record(value)
+  const weights: PaneWeights = {}
+  for (const id of CHART_PANE_IDS) {
+    const weight = stored[id]
+    if (typeof weight === 'number' && Number.isFinite(weight) && weight > 0) weights[id] = weight
+  }
+  return Object.keys(weights).length ? weights : undefined
+}
+
 /** Each panel's view, field by field: a name this build does not know is never copied, an empty entry is none. */
 export function readPanelViews(value: unknown): Record<string, StoredPanelView> {
   const views: Record<string, StoredPanelView> = {}
@@ -163,6 +176,10 @@ export function readPanelViews(value: unknown): Record<string, StoredPanelView> 
     if (rows) view.rows = rows
     const layers = readLayers(record(stored)['layers'])
     if (layers) view.layers = layers
+    const panes = readPaneWeights(record(stored)['panes'])
+    if (panes) view.panes = panes
+    const maximized = record(stored)['maximized']
+    if (CHART_PANE_IDS.includes(maximized as ChartPaneId)) view.maximized = maximized as ChartPaneId
     if (Object.keys(view).length) views[id] = view
   }
   return views
@@ -334,8 +351,9 @@ export const useArrangementStore = defineStore('arrangement', () => {
   }
 
   /**
-   * A named layout's views: what each panel shows expanded and a chart's layers, as the layout holds
-   * them. The rows this tab keeps for the run it shows are no part of a layout and stay as they are.
+   * A named layout's views: what each panel shows expanded, a chart's layers and the heights of its
+   * panes, as the layout holds them. The rows this tab keeps for the run it shows are no part of a
+   * layout and stay as they are.
    */
   function setPlacedViews(views: Record<string, StoredPanelView>): void {
     const next: Record<string, StoredPanelView> = {}
@@ -346,6 +364,8 @@ export const useArrangementStore = defineStore('arrangement', () => {
       const kept: StoredPanelView = { ...next[id] }
       if (view.expanded && Object.keys(view.expanded).length) kept.expanded = view.expanded
       if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
+      if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
+      if (view.maximized) kept.maximized = view.maximized
       if (Object.keys(kept).length) next[id] = kept
     }
     if (JSON.stringify(next) !== JSON.stringify(panelViews.value)) panelViews.value = next
@@ -360,6 +380,8 @@ export const useArrangementStore = defineStore('arrangement', () => {
     if (Object.keys(view.expanded ?? {}).length) kept.expanded = view.expanded
     if (view.rows && Object.keys(view.rows.keys).length) kept.rows = view.rows
     if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
+    if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
+    if (view.maximized) kept.maximized = view.maximized
     const next = { ...panelViews.value }
     if (Object.keys(kept).length) next[panel] = kept
     else delete next[panel]

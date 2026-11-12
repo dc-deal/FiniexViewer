@@ -182,6 +182,47 @@ test('the page does not scroll, also once the window is made smaller', async ({ 
   expect(box.y + box.height).toBeLessThanOrEqual(700)
 })
 
+/** Every group's width, top to bottom and left to right, as `kind:width`. */
+async function groupWidths(page: import('@playwright/test').Page): Promise<string[]> {
+  return page.evaluate(() => [...document.querySelectorAll('.dv-groupview')]
+    .map(group => {
+      const box = group.getBoundingClientRect()
+      const kind = group.querySelector('.panel-tab')?.getAttribute('data-kind') ?? '?'
+      return { kind, x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width) }
+    })
+    .sort((a, b) => a.y - b.y || a.x - b.x)
+    .map(group => `${group.kind}:${group.width}`))
+}
+
+/**
+ * Every column stretches with the window, as VS Code's do (operator, 2026-11-10). The Vue binding
+ * declares dockview's `proportionalLayout` a Boolean, so an absent one was false: a window made
+ * smaller took everything from the last columns, and grown again gave everything to the last one —
+ * on screen at 2000 px, two columns at 124 and 95 px and the Layers panel the rest. Narrow enough
+ * that the columns meet their least width, and back, and after a reload, the arrangement stands as
+ * it was.
+ */
+test('every column stretches with the window, and one made small and wide again stands as it was', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await expect(page.locator('[data-panel-kind="run-chart"] .candle-chart')).toBeVisible()
+  const wide = await groupWidths(page)
+  const widthOf = (entry: string): number => Number(entry.split(':')[1])
+
+  await page.setViewportSize({ width: 420, height: 900 })
+  await expect.poll(async () => (await groupWidths(page)).map(widthOf).reduce((sum, width) => sum + width, 0))
+    .toBeLessThan(500)
+  // each column gave up its share, the first one too
+  const narrow = await groupWidths(page)
+  narrow.forEach((entry, index) => expect(widthOf(entry)).toBeLessThan(widthOf(wide[index]!)))
+
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await expect.poll(async () => groupWidths(page)).toEqual(wide)
+  await page.reload()
+  await expect(page.locator('[data-panel-kind="run-chart"] .candle-chart')).toBeVisible()
+  await expect.poll(async () => groupWidths(page)).toEqual(wide)
+})
+
 /**
  * A panel dragged to the very edge of the dock docks along the WHOLE edge (operator, 2026-10-16):
  * a column over the full height, a row over the full width. The bottom shows the difference in

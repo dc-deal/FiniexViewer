@@ -23,7 +23,7 @@ test('the machine state stands in the menu bar, its card saying where the limit 
   await expect(status).toContainText('CPU')
   await expect(status.locator('.machine-value').nth(1))
     .toHaveText(String(Math.round(captured.memory.used_pct)))
-  const bar = page.locator('.menu-bar')
+  const bar = page.locator('.status-bar')
   expect((await status.boundingBox())!.height).toBeLessThanOrEqual((await bar.boundingBox())!.height)
   await status.hover()
   await expect(page.locator('.hover-card')).toContainText(captured.memory.limit_source)

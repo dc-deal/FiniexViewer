@@ -1,5 +1,5 @@
 {
-  "run_id": "20261018_105012_fde28d5d",
+  "run_id": "20261110_143247_618a9984",
   "keys": {
     "periods": [
       "unit_name",
@@ -18,7 +18,7 @@
       "reason": "session_end",
       "currency": "EUR",
       "trade_count": 0,
-      "tick_count": null,
+      "tick_count": 2445,
       "net_pnl": 0.0,
       "total_fees": 0.0,
       "commission_cost": 0.0,
@@ -32,10 +32,10 @@
       "min_equity": 9999.654930468489,
       "max_equity": 10000.93049971281,
       "max_drawdown": 0.43704839936617645,
-      "account_max_drawdown": null,
-      "account_max_dd_pct": null,
-      "unrealized_pnl": null,
-      "open_position_count": null
+      "account_max_drawdown": 0.43704839936617645,
+      "account_max_dd_pct": 0.004370443794814537,
+      "unrealized_pnl": 0.6205291734895974,
+      "open_position_count": 1
     },
     {
       "unit_name": "EURGBP_partial_close",
@@ -45,7 +45,7 @@
       "reason": "session_end",
       "currency": "EUR",
       "trade_count": 3,
-      "tick_count": null,
+      "tick_count": 1883,
       "net_pnl": -0.045484132802388555,
       "total_fees": 0.0,
       "commission_cost": 0.0,
@@ -59,10 +59,10 @@
       "min_equity": 9999.556583876707,
       "max_equity": 10000.34099976599,
       "max_drawdown": 0.4660777419740043,
-      "account_max_drawdown": null,
-      "account_max_dd_pct": null,
-      "unrealized_pnl": null,
-      "open_position_count": null
+      "account_max_drawdown": 0.4660777419740043,
+      "account_max_dd_pct": 0.004660618492758503,
+      "unrealized_pnl": 0.0,
+      "open_position_count": 0
     },
     {
       "unit_name": "EURGBP_refusals_01",
@@ -72,7 +72,7 @@
       "reason": "session_end",
       "currency": "EUR",
       "trade_count": 2,
-      "tick_count": null,
+      "tick_count": 1883,
       "net_pnl": 0.7957452019729174,
       "total_fees": 0.0,
       "commission_cost": 0.0,
@@ -86,10 +86,10 @@
       "min_equity": 9997.840495800261,
       "max_equity": 10000.795745848298,
       "max_drawdown": 2.9552209700377716,
-      "account_max_drawdown": null,
-      "account_max_dd_pct": null,
-      "unrealized_pnl": null,
-      "open_position_count": null
+      "account_max_drawdown": 2.9552209700377716,
+      "account_max_dd_pct": 0.02954985836859133,
+      "unrealized_pnl": -0.9093854259627266,
+      "open_position_count": 1
     },
     {
       "unit_name": "EURGBP_refusals_02",
@@ -99,7 +99,7 @@
       "reason": "session_end",
       "currency": "EUR",
       "trade_count": 3,
-      "tick_count": null,
+      "tick_count": 2445,
       "net_pnl": 2.989942604952009,
       "total_fees": 0.0,
       "commission_cost": 0.0,
@@ -113,10 +113,10 @@
       "min_equity": 9992.88075185716,
       "max_equity": 10003.104916849627,
       "max_drawdown": 10.224164992467195,
-      "account_max_drawdown": null,
-      "account_max_dd_pct": null,
-      "unrealized_pnl": null,
-      "open_position_count": null
+      "account_max_drawdown": 10.224164992467195,
+      "account_max_dd_pct": 0.10220991459606912,
+      "unrealized_pnl": -6.894768594329569,
+      "open_position_count": 1
     }
   ],
   "unit_totals": [
@@ -233,5 +233,8 @@
   "run_total_trades": 8,
   "reconciles": true,
   "deepest_period_drawdown": 10.224164992467195,
-  "total_final_equity": 39996.55657882732
+  "total_final_equity": 39996.55657882732,
+  "period_count": 4,
+  "period_unit_count": 4,
+  "reconciliation_difference": 0.0
 }

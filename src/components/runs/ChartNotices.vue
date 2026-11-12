@@ -4,8 +4,9 @@ import type { TimeframeOffer } from '@/types/run_chart_types'
 import { t } from '@/translate'
 
 /**
- * What the run chart has to say about what it draws, in the top-left corner of the plot: a finer
- * timeframe where one draws apart the marks some candles hold together.
+ * What the run chart has to say about what it draws, in the top-right corner of the plot, beside the
+ * price scale — the top left is the legend's: a finer timeframe where one draws apart the marks some
+ * candles hold together.
  *
  * Over the plot rather than above it: a line above moved the chart each time one appeared, and a
  * selection never moves the layout. Where there is nothing to say, nothing stands here.
@@ -40,17 +41,19 @@ const emit = defineEmits<{
 
 <style scoped>
 /* the chart's own level: over its canvas, under every card and menu that floats over the page —
-   and clear of the price scale on the right */
+   at the plot's top right, beside the price scale, since the top left is the legend's (viewer#57),
+   one row down: the row above is the controls' of the pane. The chart states the plot's width;
+   before it has, the notices keep clear of the scale's room */
 .chart-notices {
   position: absolute;
-  top: var(--space-xs);
-  left: var(--space-xs);
+  top: calc(var(--space-xs) + 1.5rem);
+  right: calc(100% - var(--chart-plot-width, calc(100% - 5rem)) + var(--space-xs));
   z-index: var(--z-chart);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: var(--space-xs);
-  max-width: calc(100% - 5rem);
+  max-width: 55%;
   /* the plot keeps its pointer everywhere but on a notice */
   pointer-events: none;
 }

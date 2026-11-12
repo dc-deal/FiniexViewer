@@ -1,0 +1,62 @@
+/*
+ * The frame's two bars — the menu bar above the dock and the status bar below it — and what their
+ * entries share: the trigger of a menu, and the SHORT form an entry takes when its bar is short of
+ * room (`use_ranked_bar`). Global, because an entry is a component of its own inside either bar.
+ */
+
+/* a control in the link ink, with the two-channel states every control here carries. It never
+   gives way: it shared the bar's shortfall with the narrowing and wrapped its ▾ onto a second line */
+.menu-bar-trigger {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  white-space: nowrap;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.menu-bar-trigger:hover,
+.menu-bar-trigger[data-state='open'] {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-border);
+}
+
+.menu-bar-trigger:active {
+  background-color: var(--color-bg-active);
+  transform: translateY(1px);
+}
+
+.menu-bar-trigger:focus-visible {
+  outline: 1px solid var(--color-accent);
+}
+
+/* the status bar is lower: its triggers keep their frame and give up their room above and below */
+.status-bar .menu-bar-trigger {
+  padding-block: 0;
+}
+
+/* the short form: an icon drawn only then, and the word it stands for kept in the page, out of
+   sight, for a screen reader — the way the machine's figures did it below 700 px until 2026-11-10 */
+.bar-icon {
+  display: none;
+}
+
+[data-short] .bar-icon {
+  display: inline-flex;
+}
+
+[data-short] .bar-word {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

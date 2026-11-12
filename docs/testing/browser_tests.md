@@ -42,20 +42,23 @@ by its tab, the way a reader does.
   what left a panel behind a tab reaching past the bottom; and a panel dropped at the dock's
   outermost edge spanning that whole edge — along the bottom, where the first arrangement's
   columns tell it apart from a drop on one group; and a pick in the run list that leaves a closed
-  run report closed while the run is chosen all the same.
+  run report closed while the run is chosen all the same. And every column stretching with the
+  window: made narrow enough that the columns meet their least width, each gives up its share, and
+  grown again and reloaded the arrangement stands as it was — seen red without
+  `proportional-layout`.
 - `run_selection.spec.ts` also holds the rule that a selection never moves the layout — choosing a
   scenario leaves the executive panel's box and the row under the pointer exactly where they were —
   and a section still on its way keeping its panel standing with a loading line, the route held back
   on purpose.
 - `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per
   tab, and to a frame that stays inside a small window with its content scrolling, and the account
-  standing in the menu bar with no tab for it in the settings.
-- `font_size.spec.ts` holds every text to ONE size: each that the dock and the menu bar draw for a
+  standing in the status bar with no tab for it in the settings.
+- `font_size.spec.ts` holds every text to ONE size: each that the dock and the two bars draw for a
   backtest, a live session, an ended one and a deployment, every section of their bundles opened,
   and each on every tab of the settings dialog, measured as the browser computed it against the
   body's. A failure names every text at another size, so a component that forgot to set none and
   inherited a larger one is found by name.
-- `machine_status.spec.ts` holds the machine's state in the menu bar — both shares from the captured
+- `machine_status.spec.ts` holds the machine's state in the status bar — both shares from the captured
   reading, on one line, its card naming where the limit was read — and that a new reading moves
   nothing beside it: the account keeps its place while a share goes from 100 to 9.
 - `activities.spec.ts` holds what runs on the machine: the menu bar's card saying it in one line, the
@@ -81,15 +84,21 @@ by its tab, the way a reader does.
 - `open_as_panel.spec.ts` holds a section opened as a panel of its own: docked beside the column
   rather than over it, gone from the column, put back by ⇲ on its tab, still opened after a reload,
   and a jump from the orders landing in the trade history opened as a panel — or, with the run
-  bundle closed and the orders standing apart, opening the trade history beside them.
+  bundle closed and the orders standing apart, opening the trade history beside them. And the
+  scenario list, opened as a panel of its own with forty scenarios, reaching the bottom of it.
 - `narrow_panels.spec.ts` holds what narrow room does to what stands beside it: the narrowing in the
-  menu bar shortening its name before anything beside it moves, its button still whole and inside
-  the bar, the Panels trigger on one line — at 760 px, where the bar fits its mark and button and
-  not its whole text — and no figure of the executive summary breaking onto a second line or cut
-  short, at the width where they broke; the menu bar inside a window 600 px wide, the machine's
-  figures by their glyphs and the page never wider than the window; and the run list's facet bar on one line at 1400 and 700 px
+  menu bar shortening its name once the words beside it with an icon have given way, its button
+  still whole and inside the bar, the Panels and Layouts triggers on one line and the server's name
+  below readable and over nothing — at 420 px — and no figure of the executive summary breaking onto
+  a second line or cut short, at the width where they broke; both bars inside a window 600 px wide
+  and the page never wider than the window; and the run list's facet bar on one line at 1400 and 700 px
   and on two at most at 420 px, measured against the height of one chip. All of them were red
   against the code before them.
+- `status_bar.spec.ts` holds the frame's two bars: the menu bar choosing and the status bar stating,
+  every word on show at 1800 px and the status bar at the bottom of the window; at 760, 420 and
+  340 px the entries short lowest rank first, both bars inside the window and the page never wider,
+  and what a short form keeps — *Show all*, the application menu, the server's name; every word
+  back at 1800 px; and a menu and a card of the status bar opening above it, inside the window.
 - `show_in_list.spec.ts` holds the way back from the run bundle to the chosen run's row: the run
   list brought forward with the row in view and marked a moment, the row found again once the list
   was scrolled away with only the list scrolled and never its view, and the way not offered while
@@ -110,7 +119,9 @@ by its tab, the way a reader does.
   each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
   the chart leaving the whole chart inside its panel; the levels of the position looked at painted
   on a real canvas, from a position the mock hands a stop and a target; an own level that fired drawn
-  from the row that names it, which no stored run carries yet; ONE
+  from the row that names it, which no stored run carries yet; the refusing unit's booking period
+  and its orders refused drawn in the time lane, counted on the element, and the period's card
+  found at the bottom of the pane of the candles; ONE
   focus, from both sides — a scenario chosen in the list is the one the chart draws, a unit chosen
   in the chart narrows the lists to it; and bars loaded as the view moves (viewer#9) — a unit's first
   tick moved three weeks back over both stretches of the captured EURGBP bars, read in M1, has its
@@ -120,10 +131,19 @@ by its tab, the way a reader does.
   chart it arranges, the chart still on show and, ten frames later, still inside its own group, its
   group scrolled by nothing — it once stood 171 px left of it, over the report; a layer switched off at its lever and no longer drawn
   (`data-drawings`), the price axis the same pixel for pixel before and after — switching the trades
-  off once stretched the candles — and again after the volume is switched off, which stands on a
-  scale of its own; and both still off after a real reload, in the panel and on the chart. And a
+  off once stretched the candles — and the volume switched off giving its pane up; and both still off after a real reload, in the panel and on the chart. And a
   layer dragged in front of another by its grip, a drag past the candles and the volume refused; and
-  the signs switched off leaving the price axis the same pixel for pixel.
+  the signs switched off leaving the price axis the same pixel for pixel. And the layers in a group
+  for each pane, the group of the candles folded and still folded after a real reload.
+- `chart_panes.spec.ts` holds the run chart's panes (viewer#57), read off the rows of the library's
+  table since a canvas cannot be read back: the volume in a pane of its own at a fifth of the height,
+  a booking period's card found at the bottom of the pane of the candles and nothing of the lane over
+  the volume's; a seam dragged and kept — through a window of another height, another unit, a chart
+  built anew at another timeframe and a real reload; the volume hidden giving its pane up and coming
+  back at the height dragged, and in the pane of the candles moving no candle; and each pane's legend at
+  the top of its pane on one line, following a seam, saying the bar under a real pointer and the last
+  bar once it leaves; the controls at the top right of a pane, the whole height kept across a reload
+  and given back, the eye hiding the volume; and a double click on the seam for the first heights.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
   browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read
   from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its
@@ -140,7 +160,8 @@ by its tab, the way a reader does.
   on them stayed green with the scroll removed (2026-10-12). The fixtures make the trap concrete —
   `pos_ethusd_1` appears in five scenarios of the order history and two of them produced a trade, so
   the link is drawn twice and the mark lands in one scenario rather than in every row carrying that
-  id.
+  id. And the count of scenarios that produced nothing, above the scenario list, opening the folded
+  Warnings & errors at a click.
 - `open_in_context.spec.ts` holds the way from one VIEW into another — a deployment's session into
   its run, a run into the deployment it was a session of, and a session's run shown in the sections
   standing apart while the run bundle stays closed — because a unit test records where a panel
@@ -226,7 +247,10 @@ player, whose line moves with each one (viewer#51). And bars loaded as the view 
 (viewer#9): from M1 chosen on a unit widened over both captured EURGBP stretches until both are
 drawn — the first batch, the pieces across the three-week gap, the earlier bars merged in front.
 A named layout laid out from the click to the second frame after it (viewer#37), and a live session
-chosen until its venue account draws the venue's table (viewer#54), read inside the page.
+chosen until its venue account draws the venue's table (viewer#54), read inside the page. And the
+zoom step again over the refusing unit, whose time lane gathers its refusals anew at each width of
+a bar (viewer#41, section D). And a window resized between two widths, each step until the second
+frame after it: since the dock lays out in proportion, every panel on show is laid out again.
 
 **`readme_pictures.spec.ts` takes the README's pictures**, so they stay current (operator,
 2026-10-29): at every release, and whenever a view they show changes visibly. Against the LIVE API
@@ -257,4 +281,6 @@ same config.
 because it drifted.** `expectHeadingsReadable` was copied into two specs. When a column first
 declared a `hint`, one copy was relaxed from *the title equals the label* to *the title begins with
 it* and the other was not — and the stale copy failed months later, the moment a second column
-declared one. The fix had to be made twice, which is the signal: one assertion, one home.
+declared one. The fix had to be made twice, which is the signal: one assertion, one home. The
+chart's panes, read off the rows of the library's table, live in `e2e/pane_rows.ts` for the same
+reason: three specs find the pane of the candles.

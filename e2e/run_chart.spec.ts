@@ -2,6 +2,7 @@ import { test, expect } from './cdp_fixture'
 import type { Page } from '@playwright/test'
 import { mockApi, FIXTURE_RUN } from './api_mock'
 import { openWith, storedLink } from './arrangement_seed'
+import { paneRows } from './pane_rows'
 
 /**
  * The run-bound chart, in a real browser: the dock places it, the library draws it on a canvas, and
@@ -182,6 +183,28 @@ test('the run chart draws the levels of the position looked at', async ({ page }
   const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
   await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/levels:2/)
   await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
+})
+
+/**
+ * The time lane (viewer#41, section D): the unit's booking period as a strip along the bottom of the
+ * pane and its orders refused as crosses above it, counted on the chart's element since a canvas
+ * cannot be read back — and the period's card at the pointer, found where the strip stands.
+ */
+test('the run chart draws the booking periods and the orders refused in a lane along its bottom', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['EURGBP_refusals_01'] })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/periods:1/)
+  expect(await chart.getAttribute('data-drawings')).toMatch(/refusals:[1-9]/)
+
+  // the strip stands at the bottom of the pane of the candles — above the volume's own pane
+  const box = (await paneRows(chart).first().boundingBox())!
+  const card = page.locator('.chart-card')
+  for (let lift = 4; lift <= 40 && !(await card.count()); lift += 2) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height - lift)
+    await page.waitForTimeout(60)
+  }
+  await expect(card).toContainText('booking period 1')
 })
 
 /**

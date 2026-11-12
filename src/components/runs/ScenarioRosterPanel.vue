@@ -2,9 +2,12 @@
 import { computed } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
+import { useFillsPanel } from '@/composables/use_fills_panel'
+import { usePositionLink } from '@/composables/use_position_link'
 import { useScenarioSelection } from '@/composables/use_scenario_selection'
 import {
   SPREAD_NOT_RECORDED, amount, figure, magnitude, marketSpan, modelledSpreadFigures, numberOrNa, percentFigure,
@@ -18,7 +21,8 @@ import type { PortfolioUnitRow } from '@/types/api/report_types'
 import { t } from '@/translate'
 
 /**
- * Every scenario the run declared — the ones that produced nothing included, each with its reason.
+ * Every scenario the run declared — the ones that produced nothing included, each marked failed;
+ * the reason stands once, in Warnings & errors, where the backend serves the same sentence.
  *
  * This is the only complete list: `portfolio`, `broker` and `run-summary` each answer a narrower
  * question, and comparing them is how a reader would otherwise discover that two scenarios are
@@ -314,16 +318,14 @@ function card(row: ScenarioRow): FigureCard | null {
     details.push({ label: t('Maker / taker'), value: `${money(unit.maker_fee)} / ${money(unit.taker_fee)}` })
   }
   // when the drawdown curve began, and whether it was inherited — a drawdown carried in from an
-  // earlier session is not one this scenario produced. The start is on the WALL CLOCK, the time at
-  // which measuring began (their portfolio document): in a backtest when the scenario valued its
-  // first tick, never an instant of the data. Labelled "Drawdown began" it read as when a decline
-  // set in (2026-10-20).
+  // earlier session is not one this scenario produced. The start is an instant on the run's own
+  // clock since contract 54 (their portfolio document): the replayed time in a backtest, the
+  // market's time in a session — the clock of everything else in this card, so it names none. A
+  // run recorded earlier keeps the wall-clock instant it was written with, and nothing in the
+  // response tells the two apart. Labelled "Drawdown began" it read as when a decline set in
+  // (2026-10-20).
   if (unit.drawdown_started_at) {
-    details.push({
-      label: t('Drawdown curve began'),
-      value: `${utcInstant(unit.drawdown_started_at)} · ${t('wall clock')}`,
-      title: t("When measuring began, on the machine's clock — in a backtest when the scenario valued its first tick, never an instant of the data."),
-    })
+    details.push({ label: t('Drawdown curve began'), value: utcInstant(unit.drawdown_started_at) })
   }
   if (unit.drawdown_carried_from) {
     details.push({ label: t('Carried from'), value: unit.drawdown_carried_from })
@@ -385,7 +387,8 @@ const shown = computed(() => sortRows(
   sort.value
 ))
 
-const failed = computed(() => roster.value.units.filter(row => row.status === 'failed').length)
+// served since contract 52: the scenarios whose status is other than `success`, of every row
+const failed = computed(() => roster.value.failed_scenario_count)
 
 /**
  * The roster is where a scenario is CHOSEN — it is the only complete list, so it is the only place
@@ -395,19 +398,31 @@ const failed = computed(() => roster.value.units.filter(row => row.status === 'f
 const narrowing = useScenarioSelection()
 const picked = computed(() => narrowing.units.value)
 
+/** A panel of its own: the list takes the height that is left — in the bundle's column it keeps its cap. */
+const fillsPanel = useFillsPanel()
+
+/** Where the reason for a scenario that produced nothing stands, and the way there. */
+const WARNINGS = 'warnings-errors'
+const link = usePositionLink()
+
 function isPicked(name: string): boolean {
   return picked.value.includes(name)
 }
 </script>
 
 <template>
-  <div class="scenario-roster">
+  <div class="scenario-roster" :class="{ filling: fillsPanel }">
     <!-- the count of what never ran belongs above the filter: it is a property of the RUN, and a
-         narrowed list would otherwise hide the very rows a reader most needs to see -->
+         narrowed list would otherwise hide the very rows a reader most needs to see. One quiet line:
+         a bordered box pointing elsewhere outweighed what it said (operator, 2026-11-12) -->
     <p v-if="failed" class="roster-notice">
       <span class="mark">⚠</span>
-      {{ failed }} {{ t('of') }} {{ roster.units.length }}
-      {{ t('scenarios produced nothing — their reason is on the row') }}
+      <span>{{ failed }} {{ t('of') }} {{ roster.scenario_count }} {{ t('produced nothing') }} ·</span>
+      <span>{{ t('why:') }}</span>
+      <JumpLink v-if="link.canJumpTo(WARNINGS)" data-action="to-warnings" @click="link.showSection(WARNINGS)">
+        {{ t('Warnings & errors') }}
+      </JumpLink>
+      <span v-else>{{ t('Warnings & errors') }}</span>
     </p>
 
     <!-- What a click does, and it STAYS once something is picked: swapping it for a line that
@@ -443,7 +458,6 @@ function isPicked(name: string): boolean {
       :columns="columns"
       :row-key="row => row.name"
       :is-picked="row => isPicked(row.name)"
-      :has-detail="row => Boolean(row.error_message)"
       :row-card="card"
       @pick="row => narrowing.toggle(row.name)"
     >
@@ -506,9 +520,6 @@ function isPicked(name: string): boolean {
         </span>
       </template>
 
-      <!-- the reason a scenario produced nothing is prose and spans every track: squeezed into a
-           column it would make that column as wide as the longest sentence in the run -->
-      <template #detail="{ row }">{{ row.error_message }}</template>
     </RecordList>
   </div>
 </template>
@@ -516,23 +527,44 @@ function isPicked(name: string): boolean {
 <style scoped>
 .roster-notice {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   gap: var(--space-xs);
   margin: 0 0 var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-warning);
-  border-radius: 4px;
-  color: var(--color-warning);
+  color: var(--color-text-secondary);
   font-family: monospace;
   font-size: var(--font-size-sm);
 }
 
-/* only what the shared list does NOT own: it carries the tracks, the row states, the picked edge
-   and the spanning reason line */
+/* the glyph carries the warning role, the words stay plain: a status colour never travels alone */
+.roster-notice .mark {
+  color: var(--color-warning);
+}
+
+/* only what the shared list does NOT own: it carries the tracks, the row states and the picked edge */
 .roster-list {
   /* of the view that holds the panel, not of the browser window */
   max-height: 60cqh;
   overflow-y: auto;
+}
+
+/* as a panel of its own the list reaches the bottom of it: at its cap, the rest of the panel stood
+   empty below a list that already scrolled (operator, on screen 2026-11-12) — as the booking
+   periods' table did until 2026-10-19 */
+.scenario-roster.filling {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.scenario-roster.filling > * {
+  flex-shrink: 0;
+}
+
+.scenario-roster.filling > .roster-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
 }
 
 /* the interactive role, because the name IS the control — a row that looks like running text is a
@@ -597,12 +629,6 @@ function isPicked(name: string): boolean {
 
 .positive { color: var(--color-positive); }
 .negative { color: var(--color-negative); }
-
-/* the reason a scenario produced nothing is prose, and the list gives it every track — it only
-   needs its line breaks kept */
-.roster-list :deep(.record-detail) {
-  white-space: pre-wrap;
-}
 
 .hint {
   color: var(--color-text-secondary);

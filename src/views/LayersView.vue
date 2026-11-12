@@ -7,12 +7,15 @@ import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import { useChartLayers } from '@/composables/use_chart_layers'
+import { useViewExpanded } from '@/composables/use_panel_view'
 import { layerDefinition } from '@/layer_registry'
 import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
+import { CHART_PANE_IDS, PANE_LAYERS } from '@/types/chart_pane_types'
+import type { ChartPaneId } from '@/types/chart_pane_types'
 import { LAYER_OPACITY_MIN } from '@/types/layer_types'
 import type { LayerState } from '@/types/layer_types'
 import { t } from '@/translate'
@@ -60,16 +63,44 @@ const empty = computed(() => {
 const emptyHints = computed(() => rows.value.flatMap(row =>
   empty.value.has(row.id) ? layerDefinition(row.id).emptyHintId ?? [] : []))
 
+/** Each pane's name in the list, as a heading above its layers. */
+const PANE_TITLES: Record<ChartPaneId, string> = { price: t('Price pane'), volume: t('Volume pane') }
+
 /**
- * The list as a drag sees it: every row, and what it leaves behind written back as the movable
- * layers' order — the one way to move a layer (operator, 2026-10-28), through the package the run
- * bundle's column already sorts its sections with. The fixed ones, the candles and the volume, are
- * shown, hidden and fainter like the rest, and never moved.
+ * The pane a layer is drawn in: a layer that may have a pane of its own — the volume — stands in it
+ * while its option says so, every other in the pane of the candles.
  */
-const ordered = computed({
-  get: () => rows.value,
-  set: (next: LayerState[]) => reorder(next.filter(row => !layerDefinition(row.id).fixed).map(row => row.id)),
-})
+function paneOf(row: LayerState): ChartPaneId {
+  if (layerDefinition(row.id).option?.id !== 'own-pane' || row.option !== true) return 'price'
+  return CHART_PANE_IDS.find(pane => PANE_LAYERS[pane] === row.id) ?? 'price'
+}
+
+/**
+ * The layers grouped by the pane they are drawn in, top to bottom (operator, 2026-11-12), the way
+ * TradingView's object tree is: the list grows, and a pane's layers fold away together. A pane with
+ * no layer of the list draws no group.
+ */
+const groups = computed(() => CHART_PANE_IDS
+  .map(pane => ({ pane, rows: rows.value.filter(row => paneOf(row) === pane) }))
+  .filter(group => group.rows.length))
+
+/** Whether each pane's group stands open — kept with this panel's view, open where nothing was kept. */
+const folds: Record<ChartPaneId, { value: boolean }> = {
+  price: useViewExpanded('layers-pane-price', true),
+  volume: useViewExpanded('layers-pane-volume', true),
+}
+
+/**
+ * What a drag leaves behind in one pane's group, written back as the movable layers' order — the one
+ * way to move a layer (operator, 2026-10-28), through the package the run bundle's column already
+ * sorts its sections with. Each group is a list of its own, so a layer is moved within its pane only.
+ * The fixed ones, the candles and the volume, are shown, hidden and fainter like the rest, and never
+ * moved.
+ */
+function reorderIn(pane: ChartPaneId, next: LayerState[]): void {
+  const all = groups.value.flatMap(group => group.pane === pane ? next : group.rows)
+  reorder(all.filter(row => !layerDefinition(row.id).fixed).map(row => row.id))
+}
 
 /** A drag never passes a fixed layer: the candles and the volume keep their places at the back. */
 function refuseFixed(event: { related: HTMLElement }): boolean {
@@ -83,7 +114,7 @@ function refuseFixed(event: { related: HTMLElement }): boolean {
  */
 function emptyWord(row: LayerState): string {
   if (row.id === 'state-frame') return t('no frame on show')
-  if (row.id === 'trades' || row.option) return t('none in view')
+  if (row.id === 'trades' || row.id === 'periods' || row.id === 'refusals' || row.option) return t('none in view')
   return runChart.focus ? t('none for this position') : t('pick a position')
 }
 
@@ -106,8 +137,8 @@ const hints = useHintsStore()
 
 /**
  * Whether a row has anything to open onto: an option, the candles' forms, or its hint not yet put
- * away. The volume has neither of the first two, and once its hint was dismissed it opened onto
- * nothing (operator, on screen 2026-10-29) — then it shows no marker, and a click opens nothing.
+ * away. A layer with neither of the first two — the booking periods — opened onto nothing once its
+ * hint was dismissed (operator, on screen 2026-10-29) — then it shows no marker, and a click opens nothing.
  */
 function openable(row: LayerState): boolean {
   const definition = layerDefinition(row.id)
@@ -128,19 +159,33 @@ function toggle(row: LayerState): void {
     <p v-if="!chartName" class="hint">{{ t('Open the run chart to arrange what it draws') }}</p>
     <template v-else>
       <p class="chart-name" :data-chart="lastChart">{{ chartName }}</p>
-      <VueDraggable
-        v-model="ordered"
-        tag="ul"
-        class="layer-list"
-        handle=".layer-grip"
-        :animation="120"
-        :on-move="refuseFixed"
-      >
+      <section v-for="group in groups" :key="group.pane" class="pane-group" :data-pane-group="group.pane">
+        <!-- a heading told by its form, an uppercase label, as the figure blocks have it -->
+        <button
+          type="button"
+          class="pane-heading"
+          :aria-expanded="folds[group.pane].value"
+          data-action="fold-pane"
+          @click="folds[group.pane].value = !folds[group.pane].value"
+        >
+          <span class="layer-marker" aria-hidden="true">{{ folds[group.pane].value ? '▾' : '▸' }}</span>
+          <span>{{ PANE_TITLES[group.pane] }}</span>
+        </button>
+        <VueDraggable
+          v-if="folds[group.pane].value"
+          :model-value="group.rows"
+          tag="ul"
+          class="layer-list"
+          handle=".layer-grip"
+          :animation="120"
+          :on-move="refuseFixed"
+          @update:model-value="(next: LayerState[]) => reorderIn(group.pane, next)"
+        >
         <!-- one row a layer, front first, the fixed ones last — the candles, then the volume behind
              them. What a control does is the hint's above; what a layer draws stands in its opened
              row: neither is a browser tooltip (operator, 2026-10-27) -->
         <li
-          v-for="row in ordered"
+          v-for="row in group.rows"
           :key="row.id"
           class="layer"
           :class="{ off: !row.shown, fixed: layerDefinition(row.id).fixed }"
@@ -208,7 +253,8 @@ function toggle(row: LayerState): void {
             </div>
           </div>
         </li>
-      </VueDraggable>
+        </VueDraggable>
+      </section>
       <HintLine v-if="emptyHints.length" :id="emptyHints" />
     </template>
   </div>
@@ -242,6 +288,32 @@ function toggle(row: LayerState): void {
   padding: 0;
   list-style: none;
   border-top: 1px solid var(--color-border);
+}
+
+/* a pane's heading: its fold, told by its form — an uppercase label in the ink of structure */
+.pane-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  padding: var(--space-xs);
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pane-heading:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.pane-heading:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 
 /* a row of the app's lists: the same rule below, the same padding, the surface under the pointer */

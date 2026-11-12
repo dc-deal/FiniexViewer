@@ -7,8 +7,16 @@ A run can hold many scenarios, and the roster is the one list that names all of 
 Rendered through `base/RecordList.vue`, one column per field: scenario · symbol · market · currency ·
 broker · tick timespan · ticks · took · trades · win rate · net P&L · PF · max DD · fees · state. It was a name line over a
 prose figures line, which reads as a sentence per scenario and compares across forty of them not at
-all. The reason a scenario produced nothing is the list's spanning detail line, so prose never sets
-a column's width.
+all. Why a scenario produced nothing is not repeated on its row: the backend serves the same sentence
+in Warnings & errors — on the row it took a screenful of the list for one failed scenario (operator,
+2026-11-12). The row is marked ✖ failed, and above the filter one quiet line counts them and links
+there: `⚠ 1 of 12 produced nothing · why: Warnings & errors`, the link putting that section in front
+(`showSection` on the position link, `useSectionShow`). It was a bordered warning box until the reason
+left the row; pointing elsewhere, the box outweighed what it said.
+
+As a panel of its own the list reaches the bottom of it (`useFillsPanel`, as the booking periods'
+table does); in the bundle's column it keeps its cap of 60 % of the view. At that cap, the rest of
+the panel stood empty below a list that already scrolled (on screen 2026-11-12).
 
 Two of them declare a FLOOR rather than a share: the scenario name and the state. Everything
 here compresses rather than scrolls at a narrow width, which is the right trade for a panel whose
@@ -18,7 +26,7 @@ step and is not taken: which columns go is a judgement about what the list is FO
 
 `GET …/scenario-details` is the authority for *which scenarios does this run have* (settled with the
 backend 2026-09-25): it is built from the batch ITSELF rather than from results, so a scenario that
-produced nothing is still a row carrying its reason. Every other per-unit response is shorter
+produced nothing is still a row, marked failed. Every other per-unit response is shorter
 because each answers a different question — **declared · attempted · produced · counted**.
 
 It is **backtests only by construction** — an AutoTrader session has no scenario grid, a session IS one unit —

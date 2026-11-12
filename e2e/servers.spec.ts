@@ -63,7 +63,7 @@ test('a server with no connection says so, as no connection, and nothing about w
   })
   await page.goto('/')
   await expect(page.locator('.server-name')).toHaveText('Second')
-  await expect(page.locator('.menu-bar')).toContainText('no connection')
+  await expect(page.locator('.status-bar')).toContainText('no connection')
   await expect(page.getByText('No connection to this server: tunnel or host').first()).toBeVisible()
   await expect(page.locator('body')).not.toContainText('status code 502')
 })

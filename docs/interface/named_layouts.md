@@ -18,7 +18,7 @@ Settings › Layouts
 │ [⬇️ Export all …] [⬆️ Import …]                                     │
 ├─────────────────────────┴──────────────────────────────────────────┤
 │ Choose the layout by the run [Offer it ▾]  Backtest [Backtests ▾]  Session [Deploys ▾]
-│ (○) Choose the size by the window   Medium from [900] Full from [1500]
+│ (●) Choose the size by the window   Medium from [900] Full from [1500]
 │ Panels  [Back to the suggested order]                              │
 └────────────────────────────────────────────────────────────────────┘
 ```
@@ -32,8 +32,9 @@ or carries a layout stands there, as a list with a detail, never in the menu.
 
 ```
 HOLDS   the dock: the open panels, their splits and tab stacks · every panel's last place, a
-        hidden one's included · what each panel shows expanded · a chart's layers · the bundles'
-        columns: their sections in order, folded, pinned, locked or hidden
+        hidden one's included · what each panel shows expanded · a chart's layers, the heights of
+        its panes and the one given the whole height · the bundles' columns: their sections in
+        order, folded, pinned, locked or hidden
 NEVER   the run, the deployment, the sweep, a narrowing, a marked position, the rows a panel keeps
         for one run, the server
 ```
@@ -97,12 +98,15 @@ and what it changes goes into that size alone; back in another size, that one st
   size — *Backtests* where none was loaded. A layout stored before sizes existed holds Full alone;
   its narrower sizes start from the shipped layout's, *Backtests* for a reader's own.
 - **Reset to shipped** brings every size back as shipped.
-- **Choose the size by the window**, in Settings › Layouts, is off by default. Switched on, the
-  window's width chooses the size: Mobile below *Medium from* (900 px), Medium below *Full from*
+- **Choose the size by the window**, in Settings › Layouts, is on by default since 2026-11-10, so a
+  narrow window takes Mobile by itself; switched off, the size is the one chosen in the submenu,
+  for a reader who would rather not be steered (operator). Switched on, the window's width chooses
+  the size: Mobile below *Medium from* (900 px), Medium below *Full from*
   (1500 px), Full from there, in CSS pixels as the window reads them (`use_layout_size_by_window.ts`).
-  The size changes once the window rests after crossing a width, so a size chosen by hand holds until
-  the next crossing, and opening the app keeps the size it was left in; switching it on applies it at
-  once. The two widths are refused where Medium's would stand at or above Full's.
+  The size changes once the window rests after crossing a width, and when the app opens, once the
+  dock has laid out what was stored — so a size chosen by hand holds until the next crossing or the
+  next opening (operator, 2026-11-10: the app had kept the size it was left in, and a narrow window
+  opened onto Full squeezed into it); switching it on applies it at once. The two widths are refused where Medium's would stand at or above Full's.
 
 *Mobile* is the arrangement for a narrow window, one column of the bundles, which are built for
 little width. A phone below about 500 px would need more than an arrangement — a menu bar for it and

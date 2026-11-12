@@ -8,6 +8,8 @@ export interface TestPositionLink {
   marked: Ref<PositionRef | null>
   /** Every jump a panel asked for, in order: the panel it named and the position it named. */
   jumps: { panelId: string, ref: PositionRef }[]
+  /** Every section a panel asked to be shown, with no position. */
+  shown: string[]
 }
 
 /**
@@ -25,10 +27,11 @@ export function provideTestPositionLink(
   marked: PositionRef | null = null,
   reachable: string[] | 'all' = 'all'
 ): TestPositionLink {
-  const state: TestPositionLink = { marked: ref(marked), jumps: [] }
+  const state: TestPositionLink = { marked: ref(marked), jumps: [], shown: [] }
   providePositionLink({
     marked: state.marked,
     jumpTo: (panelId: string, ref: PositionRef) => { state.jumps.push({ panelId, ref }) },
+    showSection: (panelId: string) => { state.shown.push(panelId) },
     canJumpTo: (panelId: string) => reachable === 'all' || reachable.includes(panelId),
   })
   return state

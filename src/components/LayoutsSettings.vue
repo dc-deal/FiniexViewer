@@ -223,7 +223,7 @@ function suggestedOrder(): void {
       <HintLine id="layout-by-run" />
     </div>
 
-    <!-- the window's width choosing the loaded layout's size: off unless the reader wants it -->
+    <!-- the window's width choosing the loaded layout's size: on unless the reader switches it off -->
     <div class="setting size-by-window">
       <AppSwitch
         :model-value="settings.sizeByWindow"

@@ -54,11 +54,16 @@ onBeforeUnmount(() => {
     <!-- dockview's own edge targets are switched off, and said so: they see no drag over a panel
          kept in the page, and the dock draws its own (`DockEdges`). Left unset, the Vue binding
          passes `false` anyway — `dndEdges` is a Boolean prop there, and an absent one is false -->
+    <!-- `proportional-layout` for the same reason: dockview stretches every group with the window,
+         as VS Code does, by default, but the Vue binding declares the prop a Boolean, so an absent
+         one is false and every change of the window went to the last column alone (on screen
+         2026-11-10: grown back to 2000 px, two columns stayed at 124 and 95 px) -->
     <DockviewVue
       class="panel-dock-view"
       :theme="theme"
       disable-floating-groups
       :dnd-edges="false"
+      proportional-layout
       @ready="onReady"
     >
       <template #panel-host="{ params, api }">

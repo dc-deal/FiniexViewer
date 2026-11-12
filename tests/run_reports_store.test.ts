@@ -57,7 +57,14 @@ const REPORT: WarningsErrorsReport = {
   error_count: null,
   warning_count: null,
   log_warning_count: null,
+    succeeded_count: 3,
+    success_rate_pct: 100,
+    batch_status: 'success',
+    first_failure_messages: [],
+    first_failure_more_messages: 0,
+    other_failed_count: 0,
   },
+  error_unit_count: 0,
 }
 
 const PORTFOLIO: PortfolioReport = {

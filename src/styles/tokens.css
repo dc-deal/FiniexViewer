@@ -100,8 +100,9 @@
   /* rem, not em: an em size compounds inside an element already at it, and tab titles and the
      section toggles came out at 11.56 px under 13.6 px panel text (until 2026-10-14).
      ONE size for every text, set on the body: a larger one read as a defect beside the panels'
-     text, and a heading is told by its form instead (2026-11-04) */
-  --font-size-sm: 0.85rem;
+     text, and a heading is told by its form instead (2026-11-04). 12 px since 2026-11-10, after
+     Kraken Pro's content size: it was 13.6 px, and the panels carried less than such a view does */
+  --font-size-sm: 0.75rem;
 
   /**
    * Stacking order, as a named scale rather than six numbers chosen one at a time.

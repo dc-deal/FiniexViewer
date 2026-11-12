@@ -3,6 +3,8 @@ import HoverCard from '@/components/base/HoverCard.vue'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import ScenarioRosterPanel from '@/components/runs/ScenarioRosterPanel.vue'
+import { provideFillsPanel } from '@/composables/use_fills_panel'
+import { provideTestPositionLink, type TestPositionLink } from './position_link_harness'
 import { setActivePinia, createPinia } from 'pinia'
 import { provideTestSelection } from './scenario_selection_harness'
 import { searchFor, sortBy } from './facet_harness'
@@ -40,6 +42,10 @@ const BASE: ScenarioRow = {
   sell_signals: 0,
   flat_signals: 0,
   trades_requested: 2,
+  // per tick processed, in percent
+  non_flat_signals: 1,
+  non_flat_signal_pct: 100 / 4200,
+  trades_requested_pct: 200 / 4200,
   worker_count: 3,
   error_type: '',
   error_message: '',
@@ -61,6 +67,9 @@ function report(units: ScenarioRow[]): ScenarioDetailsReport {
       price_bases: 'order_driven',
     }],
     keys: { units: ['name'], data_brokers: ['data_broker_type'] },
+    scenario_count: units.length,
+    completed_scenario_count: units.filter(unit => unit.status === 'success').length,
+    failed_scenario_count: units.filter(unit => unit.status !== 'success').length,
   }
 }
 
@@ -96,6 +105,18 @@ function asView(model: ScenarioDetailsReport | ScenarioRosterView): ScenarioRost
   return 'scenarios' in model ? model : view(model)
 }
 
+
+/** The section shown as a panel of its own: its host says so, as the dock's panel host does. */
+function mountAsPanel(model: ScenarioDetailsReport | ScenarioRosterView = MIXED) {
+  const Host = defineComponent({
+    setup() {
+      provideFillsPanel()
+      return () => h(ScenarioRosterPanel, { model: asView(model) })
+    },
+  })
+  mounted = mount(Host, { attachTo: document.body, global: { plugins: [createPinia()] } })
+  return mounted
+}
 
 function mountPanel(model: ScenarioDetailsReport | ScenarioRosterView = MIXED) {
   mounted = mount(ScenarioRosterPanel, {
@@ -187,6 +208,38 @@ describe('ScenarioRosterPanel', () => {
     expect(notice.exists()).toBe(true)
     expect(notice.text()).toContain('1')
     expect(notice.text()).toContain('4')
+    // the counts served beside the rows (contract 52), never the rows counted here
+    const served = mountPanel({ ...MIXED, scenario_count: 9, failed_scenario_count: 2 }).find('.roster-notice')
+    expect(served.text()).toContain('2 of 9')
+  })
+
+  /** In the bundle's column the list keeps its cap; as a panel of its own it takes what is left. */
+  it('lets the list fill a panel of its own, and keeps its cap in the column', () => {
+    expect(mountPanel().find('.scenario-roster').classes()).not.toContain('filling')
+    mounted?.unmount()
+    expect(mountAsPanel().find('.scenario-roster').classes()).toContain('filling')
+  })
+
+  /**
+   * One quiet line, its pointer a link (operator, 2026-11-12): the reason is the backend's sentence in
+   * Warnings & errors, and the link puts that section in front — where the run carries it at all.
+   */
+  it('points at Warnings & errors with a link that shows the section, and in words where there is none', async () => {
+    let state: TestPositionLink | null = null
+    const Host = defineComponent({
+      setup() {
+        state = provideTestPositionLink(null, ['warnings-errors'])
+        return () => h(ScenarioRosterPanel, { model: asView(MIXED) })
+      },
+    })
+    mounted = mount(Host, { attachTo: document.body, global: { plugins: [createPinia()] } })
+    await mounted.find('.roster-notice [data-action="to-warnings"]').trigger('click')
+    expect(state!.shown).toEqual(['warnings-errors'])
+    mounted.unmount()
+
+    // a host that cannot reach the section: the words stand, no link
+    expect(mountPanel().find('.roster-notice [data-action="to-warnings"]').exists()).toBe(false)
+    expect(mounted!.find('.roster-notice').text()).toContain('Warnings & errors')
   })
 
   it('stays silent where every scenario ran', () => {
@@ -194,12 +247,18 @@ describe('ScenarioRosterPanel', () => {
     expect(wrapper.find('.roster-notice').exists()).toBe(false)
   })
 
-  it('puts the reason on the row that failed, and only there', () => {
+  /**
+   * The reason is the backend's sentence, served again in Warnings & errors: printed on the row as
+   * well, it took a screenful of the list for one failed scenario (operator, 2026-11-12).
+   */
+  it('leaves the reason to Warnings & errors and says so, the failed row marked', () => {
     const wrapper = mountPanel()
-    expect(wrapper.find('.record-detail').text()).toContain('Warmup for M30')
-    // one reason among four rows: the other three produced something and carry figures instead
-    expect(wrapper.findAll('.record-detail')).toHaveLength(1)
+    expect(wrapper.find('.record-detail').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Warmup for M30')
     expect(wrapper.findAll('.record-row')).toHaveLength(4)
+    expect(wrapper.find('.roster-notice').text()).toContain('produced nothing')
+    expect(wrapper.find('.roster-notice').text()).toContain('Warnings & errors')
+    expect(wrapper.find('.roster-state.failed').exists()).toBe(true)
   })
 
   describe('the facet bar over it', () => {
@@ -509,17 +568,23 @@ describe('ScenarioRosterPanel', () => {
     })
 
     /**
-     * `drawdown_started_at` is on the wall clock — when measuring began, in a backtest when the scenario
-     * valued its first tick — never an instant of the data. Labelled as when a drawdown began, it read
-     * as a market moment.
+     * `drawdown_started_at` is an instant on the run's own clock since contract 54 — the replayed time
+     * in a backtest — the clock of everything else in the card, so it names none and explains nothing.
+     * Labelled as when a drawdown began, it read as when a decline set in.
      */
-    it('says on which clock the drawdown curve began', () => {
-      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { drawdown_started_at: '2026-10-07T14:41:24+00:00' })])))
+    it('says when the drawdown curve began, as an instant of the run', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { drawdown_started_at: '2025-09-01T00:00:03+00:00' })])))
       const details = wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]
       const began = details.find(pair => pair.label === 'Drawdown curve began')!
-      expect(began.value).toBe('2026-10-07 14:41:24Z · wall clock')
-      expect(began.title).toContain('never an instant of the data')
+      expect(began.value).toBe('2025-09-01 00:00:03Z')
+      expect(began.title).toBeUndefined()
       expect(details.map(pair => pair.label)).not.toContain('Drawdown began')
+    })
+
+    it('says nothing of the drawdown start where a session ended before its first pass', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { drawdown_started_at: '' })])))
+      const labels = (wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]).map(pair => pair.label)
+      expect(labels).not.toContain('Drawdown curve began')
     })
 
     it('says nothing of modelled quotes where the unit read recorded ones', () => {
@@ -637,6 +702,7 @@ describe('ScenarioRosterPanel', () => {
         run_id: 'r',
         keys: { errors: ['name'], warnings: [] },
         errors: [],
+        error_unit_count: 0,
         warnings: [
           { tier: 'major', scope: 'run', message: 'STRESS TEST ACTIVE', check: 'stress_test', domain: 'setup' },
           { tier: 'minor', scope: 'winner', message: 'thin warmup', check: '', domain: '' },
@@ -647,6 +713,8 @@ describe('ScenarioRosterPanel', () => {
           first_failure_name: '', first_failure_error: '', emergency_reason: '',
           shutdown_mode: '', operator_interrupted: false, refused_at_first_tick: false,
           error_count: null, warning_count: null, log_warning_count: null,
+          succeeded_count: 3, success_rate_pct: 100, batch_status: 'success',
+          first_failure_messages: [], first_failure_more_messages: 0, other_failed_count: 0,
         },
       }
       const wrapper = mountPanel(view(ROSTER, EARNED, warnings))

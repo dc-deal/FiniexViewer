@@ -1,4 +1,5 @@
 import type { ChartLayerId } from '@/types/chart_drawing_types'
+import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext } from '@/types/context_types'
 import type { LayerOptionId } from '@/types/layer_types'
@@ -55,7 +56,7 @@ export interface DockPlace {
  * fails the type-check, and a stored name is checked against it. A name joins with the component
  * that reads it.
  */
-export const VIEW_FOLDS = ['periods-table'] as const
+export const VIEW_FOLDS = ['periods-table', 'layers-pane-price', 'layers-pane-volume'] as const
 export type ViewFold = typeof VIEW_FOLDS[number]
 
 /**
@@ -109,6 +110,10 @@ export interface StoredPanelView {
   rows?: StoredRows
   /** A chart's drawing layers, bound to no run — the Layers panel writes them under the chart's id. */
   layers?: StoredLayers
+  /** A chart's panes as tall as the reader dragged them, bound to no run (viewer#57). */
+  panes?: PaneWeights
+  /** The pane of a chart given the whole height, the others folded to their legend (viewer#57). */
+  maximized?: ChartPaneId
 }
 
 /** Everything stored under the one versioned key. */

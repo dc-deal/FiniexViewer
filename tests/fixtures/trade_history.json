@@ -1,5 +1,5 @@
 {
-  "run_id": "20261018_105012_fde28d5d",
+  "run_id": "20261110_143247_618a9984",
   "trades": [
     {
       "position_id": "pos_eurgbp_1",
@@ -20,11 +20,11 @@
       "commission_cost": 0.0,
       "spread_cost": 1.477923857710165,
       "modelled_spread_cost": 0.0,
-      "mae_price": 0.87946,
+      "mae_price": 0.87945,
       "mfe_price": 0.87964,
-      "mae_pnl": -1.250689300352393,
+      "mae_pnl": -1.3643960841833407,
       "mfe_pnl": 0.795716770299468,
-      "mae_distance": 1.0999999999994348,
+      "mae_distance": 1.2000000000000899,
       "mfe_distance": 0.700000000000145,
       "price_unit": "pip",
       "r_multiple": null,
@@ -66,11 +66,12 @@
       "exit_slippage": 7.999999999996898e-05,
       "entry_slippage_pct": 0.007390520804313988,
       "exit_slippage_pct": 0.009093905946274225,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 364
     },
     {
       "position_id": "pos_eurgbp_3",
@@ -137,11 +138,12 @@
       "exit_slippage": 6.499999999998174e-05,
       "entry_slippage_pct": 0.007957348611444315,
       "exit_slippage_pct": 0.007390184697767793,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 1181
     },
     {
       "position_id": "pos_eurgbp_1",
@@ -208,11 +210,12 @@
       "exit_slippage": 4.500000000007276e-05,
       "entry_slippage_pct": 0.005174465736421082,
       "exit_slippage_pct": 0.0051755964875035525,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 504
     },
     {
       "position_id": "pos_eurgbp_3",
@@ -279,11 +282,12 @@
       "exit_slippage": 6.499999999998174e-05,
       "entry_slippage_pct": 0.008626093357338476,
       "exit_slippage_pct": 0.0074740564003773526,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 52
     },
     {
       "position_id": "pos_eurgbp_7",
@@ -350,11 +354,12 @@
       "exit_slippage": 7.00000000000145e-05,
       "entry_slippage_pct": 0.008050974167888749,
       "exit_slippage_pct": 0.008048937540246354,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 407
     },
     {
       "position_id": "pos_ethusd_1",
@@ -421,11 +426,12 @@
       "exit_slippage": 0.1803531480215952,
       "entry_slippage_pct": -0.003998050084957296,
       "exit_slippage_pct": 0.008944225311274197,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 151
     },
     {
       "position_id": "pos_ethusd_2",
@@ -492,11 +498,12 @@
       "exit_slippage": -0.040298886003256484,
       "entry_slippage_pct": 0.01836602265369063,
       "exit_slippage_pct": -0.0020055682685075514,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 118
     },
     {
       "position_id": "pos_ethusd_3",
@@ -563,11 +570,12 @@
       "exit_slippage": 0.20021093483933328,
       "entry_slippage_pct": 0.026366258967064755,
       "exit_slippage_pct": 0.009936766252541543,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 1876
     },
     {
       "position_id": "pos_ethusd_4",
@@ -634,11 +642,12 @@
       "exit_slippage": -0.5106682825089592,
       "entry_slippage_pct": 0.001003818962379162,
       "exit_slippage_pct": -0.02546097764405064,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 2014
     },
     {
       "position_id": "pos_ethusd_5",
@@ -705,11 +714,12 @@
       "exit_slippage": 0.19183699500081275,
       "entry_slippage_pct": 0.013932202579368218,
       "exit_slippage_pct": 0.009436060392952984,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 3204
     },
     {
       "position_id": "pos_ethusd_6",
@@ -776,11 +786,12 @@
       "exit_slippage": 0.3806286301612545,
       "entry_slippage_pct": -0.0018761997089752403,
       "exit_slippage_pct": 0.018849533509694177,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 3741
     },
     {
       "position_id": "pos_ethusd_7",
@@ -847,11 +858,12 @@
       "exit_slippage": -0.8395600929929969,
       "entry_slippage_pct": 0.04362053160334014,
       "exit_slippage_pct": -0.041637204133814575,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 4828
     },
     {
       "position_id": "pos_ethusd_8",
@@ -918,11 +930,12 @@
       "exit_slippage": 0.12418340571412045,
       "entry_slippage_pct": -0.02029886745068089,
       "exit_slippage_pct": 0.006152566672320672,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 1573
     },
     {
       "position_id": "pos_ethusd_9",
@@ -989,11 +1002,12 @@
       "exit_slippage": 0.16504403535054735,
       "entry_slippage_pct": -0.023081503874833403,
       "exit_slippage_pct": 0.008134495615964363,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 380
     },
     {
       "position_id": "pos_ethusd_10",
@@ -1060,11 +1074,12 @@
       "exit_slippage": -0.04598335144578414,
       "entry_slippage_pct": -0.010592972368135504,
       "exit_slippage_pct": -0.002280332029723689,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 1,
-      "entry_lots": 0.1
+      "entry_lots": 0.1,
+      "duration_ticks": 380
     },
     {
       "position_id": "pos_eurgbp_1",
@@ -1131,11 +1146,12 @@
       "exit_slippage": 6.0000000000060005e-05,
       "entry_slippage_pct": 0.005684725143538683,
       "exit_slippage_pct": 0.006820351930166417,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "partial",
       "position_closes": 3,
-      "entry_lots": 0.03
+      "entry_lots": 0.03,
+      "duration_ticks": 500
     },
     {
       "position_id": "pos_eurgbp_1",
@@ -1202,11 +1218,12 @@
       "exit_slippage": 9.00000000000345e-05,
       "entry_slippage_pct": 0.005684725143538683,
       "exit_slippage_pct": 0.010231342011031035,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "partial",
       "position_closes": 3,
-      "entry_lots": 0.03
+      "entry_lots": 0.03,
+      "duration_ticks": 1000
     },
     {
       "position_id": "pos_eurgbp_1",
@@ -1273,11 +1290,12 @@
       "exit_slippage": 4.500000000007276e-05,
       "entry_slippage_pct": 0.005684725143538683,
       "exit_slippage_pct": 0.005116049045865124,
-      "exit_slippage_measured_against": null,
+      "exit_slippage_measured_against": "submission_mid",
       "exit_level": null,
       "close_type": "full",
       "position_closes": 3,
-      "entry_lots": 0.03
+      "entry_lots": 0.03,
+      "duration_ticks": 1500
     }
   ],
   "count": 18,
@@ -1295,7 +1313,7 @@
       "r_trade_count": 0,
       "r_win_count": 0,
       "r_loss_count": 0,
-      "avg_mae_winners": -1.8484635410217194,
+      "avg_mae_winners": -1.867414671660211,
       "avg_mae_losers": -0.44341612329267566,
       "avg_mfe_losers": 0.2727970219656116,
       "gross_pnl": 3.740203674122538,
@@ -1304,6 +1322,20 @@
       "largest_mae": 2.8415548988415944,
       "largest_mfe": 1.1501590094829344,
       "avg_trade_duration_s": 1225.8375,
+      "avg_trade_duration_ticks": 688.5,
+      "min_trade_duration_ticks": 52,
+      "max_trade_duration_ticks": 1500,
+      "long_trades": 6,
+      "short_trades": 2,
+      "winning_trades": 6,
+      "losing_trades": 2,
+      "sl_closes": 0,
+      "tp_closes": 0,
+      "scenario_end_closes": 0,
+      "manual_closes": 8,
+      "avg_gross_pnl": 0.46752545926531724,
+      "avg_fees": 0.0,
+      "avg_net_pnl": 0.46752545926531724,
       "max_consecutive_wins": 3,
       "max_consecutive_losses": 2
     },
@@ -1325,6 +1357,20 @@
       "largest_mae": 2.4689090074529534,
       "largest_mfe": 2.8108772255621037,
       "avg_trade_duration_s": 5624.8409,
+      "avg_trade_duration_ticks": 1826.5,
+      "min_trade_duration_ticks": 118,
+      "max_trade_duration_ticks": 4828,
+      "long_trades": 5,
+      "short_trades": 5,
+      "winning_trades": 0,
+      "losing_trades": 10,
+      "sl_closes": 0,
+      "tp_closes": 0,
+      "scenario_end_closes": 0,
+      "manual_closes": 10,
+      "avg_gross_pnl": 0.8981275425069271,
+      "avg_fees": 3.2281052403453083,
+      "avg_net_pnl": -2.3299776978383813,
       "max_consecutive_wins": 0,
       "max_consecutive_losses": 10
     }

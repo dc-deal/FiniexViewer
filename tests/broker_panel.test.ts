@@ -38,6 +38,7 @@ const MARGIN: BrokerUnit = {
   hedging_allowed: true,
   config_hash: 'd42aab69',
   scenarios: ['GBPUSD_window_01', 'USDJPY_window_04'],
+  scenario_count: 2,
   fee_report: null,
   venue_fee_expected: null,
   symbols: [{
@@ -119,6 +120,10 @@ describe('BrokerPanel', () => {
     const scenarios = figures.find(figure => figure.label === 'Scenarios')
     expect(scenarios?.value).toBe('2')
     expect(scenarios?.title).toContain('USDJPY_window_04')
+    // the count served beside the list (contract 52), never the list counted here
+    const served = mountPanel(report([{ ...MARGIN, scenario_count: 7 }])).findAllComponents(FigureBlock)[0]
+      ?.props('figures') ?? []
+    expect(served.find(figure => figure.label === 'Scenarios')?.value).toBe('7')
   })
 
   /** The hash digests less than the block shows: two equal hashes do not mean equal leverage. */

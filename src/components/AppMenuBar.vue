@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { computed, type ComputedRef } from 'vue'
+import { computed, ref, type ComputedRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
   DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot,
   DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
 } from 'reka-ui'
-import AccountStatus from '@/components/AccountStatus.vue'
-import ContractStatus from '@/components/ContractStatus.vue'
-import MachineStatus from '@/components/MachineStatus.vue'
-import ServerSwitch from '@/components/ServerSwitch.vue'
 import NarrowingStatement from '@/components/NarrowingStatement.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import LayoutsMenu from '@/components/LayoutsMenu.vue'
 import TopMenu from '@/components/TopMenu.vue'
+import { useRankedBar } from '@/composables/use_ranked_bar'
 import { useSectionStates, type SectionState } from '@/composables/use_section_states'
 import { PANEL_KINDS } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
@@ -22,10 +19,12 @@ import type { BundleId, PanelKind } from '@/types/panel_types'
 import { t } from '@/translate'
 
 /**
- * The frame above the dock: the name, the way to every panel the reader works in, whose access the
- * viewer works under, and the application menu. Frame rather than panel — it is never closed or
- * moved. The way back to the suggested order sits in the settings, beside everything else about
- * arrangement.
+ * The frame above the dock: the name, the way to every panel the reader works in, the layouts, the
+ * scenario in focus, and the application menu. It CHOOSES; what the window works against stands in
+ * the status bar below the dock (operator, 2026-11-10). Frame rather than panel — it is never closed
+ * or moved. The way back to the suggested order sits in the settings, beside everything else about
+ * arrangement. Short of room its entries take their short forms by rank — the name first, the
+ * Panels menu last — before the scenario's name loses a letter (`useRankedBar`).
  *
  * **The Panels menu shows and hides every panel, the same way** (viewer#31, 2026-10-14): a tick is
  * a panel on show, a click hides it or shows it again where it last stood. Kinds that share an
@@ -123,14 +122,19 @@ function placeWord(state: SectionState, bundle: BundleId): string {
 function stayOpen(event: Event): void {
   event.preventDefault()
 }
+
+const bar = ref<HTMLElement | null>(null)
+useRankedBar(bar)
 </script>
 
 <template>
-  <header class="menu-bar">
-    <span class="menu-bar-title">FiniexViewer</span>
+  <header ref="bar" class="menu-bar">
+    <span class="menu-bar-title" data-rank="1">FiniexViewer</span>
 
     <DropdownMenuRoot>
-      <DropdownMenuTrigger class="menu-bar-trigger">{{ t('Panels') }} ▾</DropdownMenuTrigger>
+      <DropdownMenuTrigger class="menu-bar-trigger" data-rank="4">
+        <AppIcon name="action-panels" class="bar-icon" /><span class="bar-word">{{ t('Panels') }}</span> ▾
+      </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="menu-content" :side-offset="4" align="start">
           <template v-for="entry in entries" :key="entry.type === 'kind' ? entry.kind.id : entry.id">
@@ -205,10 +209,6 @@ function stayOpen(event: Event): void {
          beside it moves -->
     <NarrowingStatement class="menu-bar-narrowing" />
     <div class="menu-bar-spacer" />
-    <ServerSwitch />
-    <ContractStatus />
-    <MachineStatus />
-    <AccountStatus />
     <TopMenu />
   </header>
 </template>
@@ -219,7 +219,7 @@ function stayOpen(event: Event): void {
   align-items: center;
   gap: var(--space-md);
   padding: 0 var(--space-lg);
-  height: 2.5rem;
+  height: 2.25rem;
   background-color: var(--color-bg-surface);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
@@ -237,12 +237,10 @@ function stayOpen(event: Event): void {
   flex: 1;
 }
 
-/* in a narrow window the app's name is the first part of the frame to go: the browser's tab names it,
-   and the room it frees keeps the server's name and the application menu in the window */
-@media (max-width: 900px) {
-  .menu-bar-title {
-    display: none;
-  }
+/* short of room the app's name is the first part of the frame to go: the browser's tab names it, and
+   the room it frees keeps the menus' words in the window. It went below 900 px until 2026-11-10 */
+.menu-bar-title[data-short] {
+  display: none;
 }
 
 /* the statement shortens its name and nothing more: its least width is the grid's own — the mark
@@ -251,35 +249,7 @@ function stayOpen(event: Event): void {
   flex: 0 1 auto;
 }
 
-/* a control in the link ink, with the two-channel states every control here carries. It never
-   gives way: it shared the bar's shortfall with the narrowing and wrapped its ▾ onto a second line */
-.menu-bar :deep(.menu-bar-trigger) {
-  flex-shrink: 0;
-  white-space: nowrap;
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: none;
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  color: var(--color-accent);
-  cursor: pointer;
-}
-
-.menu-bar :deep(.menu-bar-trigger:hover),
-.menu-bar :deep(.menu-bar-trigger[data-state='open']) {
-  background-color: var(--color-bg-hover);
-  border-color: var(--color-border);
-}
-
-.menu-bar :deep(.menu-bar-trigger:active) {
-  background-color: var(--color-bg-active);
-  transform: translateY(1px);
-}
-
-.menu-bar :deep(.menu-bar-trigger:focus-visible) {
-  outline: 1px solid var(--color-accent);
-}
+/* the trigger of a bar's menu is both bars' own, in `bar.css` */
 
 /* the entries' grid — tick, icon, word — is every menu's, beside `.menu-item` in TopMenu.vue */
 

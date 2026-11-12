@@ -9,7 +9,7 @@ import type { Figure } from '@/types/figure_types'
 import { t } from '@/translate'
 
 /**
- * Which API contract the server serves, in the menu bar — drawn only where it is not the one this
+ * Which API contract the server serves, in the status bar — drawn only where it is not the one this
  * viewer mirrors. Where the two agree nothing is drawn; before any answer nothing is either, and
  * the account beside it already says when the server does not answer.
  */
@@ -23,26 +23,21 @@ const { served } = storeToRefs(useServerContractStore())
 const differs = computed(() => served.value !== null && served.value !== EXPECTED_CONTRACT)
 
 /**
- * Which way they differ says who has to move: a newer server waits for the viewer to follow, an
- * older one serves fields this viewer reads without them.
+ * The two numbers, and nothing else: a hover card holds information, never a help text, and the
+ * contract log it once pointed at is a document the reader of this frontend cannot open
+ * (operator, 2026-11-10). Which side is older reads off the numbers.
  */
-const sentence = computed(() => (served.value ?? 0) > EXPECTED_CONTRACT
-  ? t('This server serves a newer contract than this viewer was built for — a field that moved since may read wrong or be missing until the viewer follows')
-  : t('This server serves an older contract than this viewer was built for — a field added since is missing, and a panel may show less'))
-
 const details = computed<Figure[]>(() => [
   { label: t('Server'), value: `${t('contract')} ${served.value}` },
   { label: t('This viewer'), value: `${t('contract')} ${EXPECTED_CONTRACT}` },
-  // the server says only what moved into ITS version; every step between is in their log
-  { label: t('Steps between'), value: t("the server's contract log · /api/v1/docs/contract-log") },
 ])
 </script>
 
 <template>
-  <HoverCard v-if="differs" :title="sentence" :details="details">
+  <HoverCard v-if="differs" :details="details">
     <span class="contract-status" tabindex="0">
       <AppIcon name="status-warning" />
-      <span>{{ t('API contract') }} {{ served }} · {{ t('viewer') }} {{ EXPECTED_CONTRACT }}</span>
+      <span class="bar-word">{{ t('API contract') }} {{ served }} · {{ t('viewer') }} {{ EXPECTED_CONTRACT }}</span>
     </span>
   </HoverCard>
 </template>
@@ -52,7 +47,8 @@ const details = computed<Figure[]>(() => [
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
+  /* nothing above and below: the status bar is 1.5 rem high */
+  padding: 0 var(--space-sm);
   border-radius: 4px;
   font-family: monospace;
   font-size: var(--font-size-sm);

@@ -44,7 +44,7 @@ const statement = computed(() =>
 <template>
   <p v-if="focused" class="narrowed-head">
     <span class="mark" aria-hidden="true">⌖</span>
-    <span class="narrowed-text" :title="statement">{{ statement }}</span>
+    <span class="narrowed-text" :title="statement" data-shortens>{{ statement }}</span>
     <AppButton variant="quiet" @click="runsStore.clearUnits()">
       {{ t('Show all') }}
     </AppButton>

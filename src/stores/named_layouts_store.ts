@@ -29,13 +29,15 @@ function object(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null
 }
 
-/** The halves of a view no run is bound to: what a panel shows expanded, and a chart's layers. */
+/** The halves of a view no run is bound to: what a panel shows expanded, a chart's layers and its panes. */
 function placedViews(views: Record<string, StoredPanelView>): Placement['views'] {
   const placed: Placement['views'] = {}
   for (const [id, view] of Object.entries(views)) {
     const kept: Placement['views'][string] = {}
     if (view.expanded && Object.keys(view.expanded).length) kept.expanded = view.expanded
     if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
+    if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
+    if (view.maximized) kept.maximized = view.maximized
     if (Object.keys(kept).length) placed[id] = kept
   }
   return placed
@@ -178,9 +180,9 @@ function copied<T>(value: T): T {
  * Named layouts (viewer#37): the placement of the panels saved under a name, loaded with one click.
  *
  * **A layout says WHERE, never WHAT.** It holds the dock, every hidden panel's last place, what each
- * panel shows expanded, a chart's layers and the bundles' columns; never the run, the deployment, a
- * narrowing or the rows a panel keeps for one run. Loading one moves the panels and leaves the
- * selection alone, so one layout fits every run.
+ * panel shows expanded, a chart's layers and the heights of its panes, and the bundles' columns;
+ * never the run, the deployment, a narrowing or the rows a panel keeps for one run. Loading one moves
+ * the panels and leaves the selection alone, so one layout fits every run.
  *
  * **The loaded layout follows the reader** (operator, 2026-11-03): whatever this tab changes about its
  * placement is written into the layout it loaded, the way MetaTrader keeps a profile — back in it, it

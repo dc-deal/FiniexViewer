@@ -64,9 +64,9 @@ test('the account card stays narrow however long the token note is', async ({ pa
   expect((await card.boundingBox())!.width).toBeLessThanOrEqual(28 * 16 + 1)
 })
 
-test('the account stands in the menu bar, and the settings carry no tab for it', async ({ page }) => {
+test('the account stands in the status bar, and the settings carry no tab for it', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('.menu-bar .account-status')).toContainText('no sign-in')
+  await expect(page.locator('.status-bar .account-status')).toContainText('no sign-in')
 
   await page.locator('.menu-trigger').click()
   await expect(page.locator('.menu-item', { hasText: 'Account' })).toHaveCount(0)

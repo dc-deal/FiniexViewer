@@ -296,6 +296,20 @@ export function signClass(value: number | null): string {
 }
 
 /**
+ * The order statuses that are a refusal (their `order-history`), wherever an order is marked as one.
+ *
+ * **All FOUR refusals, not just the venue's.** Contract 23 split one status into two — `rejected`
+ * narrowed to the venue's refusals and `denied` took the half refused before anything was sent —
+ * and only the first kept the tone, so half the refusals on screen read like ordinary rows.
+ * `undelivered` and `unaccounted` are listed with them deliberately: neither has a case in any
+ * stored run, and leaving them out is how `denied` came to be missed in the first place.
+ *
+ * `cancelled` is NOT here. A cancel is something that was asked for — `initiator: strategy` on 32
+ * of the 33 on the field study — so it is an ordinary ending rather than a refusal.
+ */
+export const ORDER_REFUSALS: ReadonlySet<string> = new Set(['rejected', 'denied', 'undelivered', 'unaccounted'])
+
+/**
  * A quantity that has only ONE direction by definition — a drawdown, an adverse excursion —
  * rendered as a magnitude whatever sign arrived.
  *

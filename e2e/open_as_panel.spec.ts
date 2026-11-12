@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import type { Page } from '@playwright/test'
-import { mockApi, FIXTURE_RUN } from './api_mock'
+import { mockApi, fixture, FIXTURE_RUN } from './api_mock'
 import { openSectionMenu, openWith } from './arrangement_seed'
 
 /**
@@ -170,4 +170,36 @@ test('a section in a closed bundle has no tick, says so, and opens as a panel at
   await page.keyboard.press('Escape')
   await expect(page.locator(`${ownPanel('executive')} [data-panel="executive"]`)).toBeVisible()
   await expect(page.locator('.panel-column')).toHaveCount(0)
+})
+
+/**
+ * As a panel of its own the scenario list reaches the bottom of it. Its cap was 60 % of the view
+ * whatever stood around it, so the rest stood empty below a list that already scrolled (on screen
+ * 2026-11-12) — the booking periods' table had the same until 2026-10-19. Forty scenarios, so the
+ * list scrolls and a short one cannot end early for the right reason.
+ */
+test('as a panel of its own the scenario list reaches the bottom of its panel', async ({ page }) => {
+  const details = fixture('scenario_details.json') as { units: Record<string, unknown>[] }
+  const units = Array.from({ length: 40 }, (_, index) => ({
+    ...details.units[index % details.units.length], name: `scenario_${String(index).padStart(2, '0')}`,
+  }))
+  await page.route('**/api/v1/reports/runs/*/scenario-details', route =>
+    route.fulfill({ json: { ...details, units, scenario_count: 40, failed_scenario_count: 0, completed_scenario_count: 40 } }))
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const header = page.locator('.panel-column .panel-header', { hasText: 'Scenarios' })
+  await header.hover()
+  await header.locator('[data-action="open-as-panel"]').click()
+
+  const section = page.locator('[data-panel-kind="report-scenario-roster"] .report-section')
+  const list = section.locator('.roster-list')
+  await expect(list.locator('.record-row').first()).toBeVisible()
+  expect(await list.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
+  const inset = await section.evaluate(element => {
+    const style = getComputedStyle(element)
+    return parseFloat(style.paddingBottom) + parseFloat(style.borderBottomWidth)
+  })
+  const listBox = (await list.boundingBox())!
+  const sectionBox = (await section.boundingBox())!
+  expect(sectionBox.y + sectionBox.height - inset - (listBox.y + listBox.height)).toBeLessThanOrEqual(1)
 })

@@ -13,7 +13,7 @@ import { marksPosition, usePositionLink } from '@/composables/use_position_link'
 import type { PositionRef } from '@/types/context_types'
 import { useOrderSteps } from '@/composables/use_order_steps'
 import { useTickSizes } from '@/composables/use_tick_sizes'
-import { orDash, priceAt, quantity, utcInstant } from '@/components/runs/report_format'
+import { ORDER_REFUSALS, orDash, priceAt, quantity, utcInstant } from '@/components/runs/report_format'
 import { executedOpenings } from '@/components/runs/run_chart_marks'
 import type { ListColumn } from '@/types/list_types'
 import type {
@@ -37,9 +37,10 @@ import { plural, t } from '@/translate'
  * which both sides write from the same run unit.
  *
  * A row is a LIFECYCLE RECORD, not an order: one order appears as several rows, and nothing on a
- * row says WHICH order ` the history carries no `seq`, `submitted_seq` or `client_order_id`, which
- * is testingide#557 and still open. So the third level does not hang off a row. It hangs off the
- * POSITION, and the ORDERS inside it come from the stream, which identifies them itself.
+ * row says WHICH order — the history carries no `submitted_seq` or `client_order_id`, and contract
+ * 52 settled testingide#557 by declaring an empty key for its rows. So the third level does not hang
+ * off a row. It hangs off the POSITION, and the ORDERS inside it come from the stream, which
+ * identifies them itself.
  *
  * **The funnel's arithmetic, and contract 23 made it simpler than it was:**
  * `submitted = accepted + rejected + never_confirmed + expired`, measured 2026-10-08 on **all 230
@@ -244,7 +245,8 @@ function funnelOf(scenario: string): PendingOrderUnit | null {
  * scenario that no single row states.
  */
 function restingAtEnd(unit: PendingOrderUnit): number {
-  return unit.active_limit_orders.length + unit.active_stop_orders.length
+  // served since contract 52, the two lists counted together
+  return unit.active_order_count
 }
 
 /**
@@ -270,7 +272,7 @@ function inFlightSpread(unit: PendingOrderUnit): string {
  * A drawing POSITION, not an identity. `order_id` is a per-unit position counter — 167 rows under
  * one id on a measured run — and the backend asked us not to adopt the content key that happens to
  * be unique, because two partial closes on one tick would collide. A row's identity is its place in
- * the scenario's append order, and the field for it is planned in testingide#557.
+ * the list — the route declares `keys.orders: []` (contract 52).
  */
 function rowKey(order: OrderHistoryRow, index: number): string {
   return `${order.scenario_name}-${index}`
@@ -360,25 +362,12 @@ function reasonOf(order: OrderHistoryRow): string {
   return message ?? reason ?? ''
 }
 
-/**
- * A status that went the wrong way is marked, and only where it did.
- *
- * **All FOUR refusals, not just the venue's.** Contract 23 split one status into two — `rejected`
- * narrowed to the venue's refusals and `denied` took the half refused before anything was sent `
- * and only the first kept the tone, so half the refusals on screen read like ordinary rows.
- * `undelivered` and `unaccounted` are listed with them deliberately: neither has a case in any
- * stored run, and leaving them out is how `denied` came to be missed in the first place.
- *
- * `cancelled` is NOT here. A cancel is something that was asked for — `initiator: strategy` on 32
- * of the 33 on the field study — so it is an ordinary ending rather than a refusal.
- */
+/** A status that went the wrong way is marked, and only where it did — the four refusals, and an expiry. */
 function statusTone(order: OrderHistoryRow): string {
-  if (REFUSED.has(order.status)) return 'negative'
+  if (ORDER_REFUSALS.has(order.status)) return 'negative'
   if (order.status === 'expired') return 'warned'
   return ''
 }
-
-const REFUSED = new Set(['rejected', 'denied', 'undelivered', 'unaccounted'])
 
 /** The scenarios the reader closed by hand — kept as the panel's own view for the run on show. */
 const closedGroups = useViewRows('groups-closed', () => props.model.history.run_id)

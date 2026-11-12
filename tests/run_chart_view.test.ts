@@ -2,8 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RunChartView from '@/views/RunChartView.vue'
+import CandleChart from '@/components/CandleChart.vue'
 import RunChartQuickBar from '@/components/RunChartQuickBar.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
+import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
@@ -93,6 +95,24 @@ describe('RunChartView', () => {
     chooseFixtureRun()
     const wrapper = await mountView()
     expect(wrapper.text()).toContain('↑↓ a position opened')
+  })
+
+  /**
+   * The controls on a pane are the chart's own for its heights, and the layer's own lever for what it
+   * draws: the eye on the volume's pane hides the volume layer, as its row in the Layers panel does.
+   */
+  it('hands the controls of a pane to the layers and the panes of the chart, and explains them', async () => {
+    chooseFixtureRun()
+    const wrapper = await mountView()
+    expect(wrapper.text()).toContain('Drag the line between two panes')
+    const chart = wrapper.findComponent(CandleChart)
+    chart.vm.$emit('paneShown', 'volume', false)
+    chart.vm.$emit('paneShown', 'price', false)
+    expect(useArrangementStore().panelViews['run-chart']?.layers?.hidden).toEqual(['volume', 'candles'])
+    chart.vm.$emit('maximize', 'volume')
+    expect(useRunChartStore().maximizedPane).toBe('volume')
+    chart.vm.$emit('resetPanes')
+    expect(useRunChartStore().maximizedPane).toBeNull()
   })
 
   /** A batch at an edge that failed is said in that corner, and the bars loaded stay drawn (viewer#9). */

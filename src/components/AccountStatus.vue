@@ -9,9 +9,9 @@ import type { IconName } from '@/types/icon_types'
 import { t } from '@/translate'
 
 /**
- * Whose access this viewer works under, in the frame's right-hand corner. Who you are is a fact to
- * see at a glance rather than a setting to open, so it left the settings' Account tab for the
- * menu bar. A mark and a word in every state, never a colour alone; the details are on hover.
+ * Whose access this viewer works under, in the status bar beside the server. Who you are is a fact
+ * to see at a glance rather than a setting to open, so it left the settings' Account tab for the
+ * frame. A mark and a word in every state, never a colour alone; the details are on hover.
  */
 const caller = useCallerStore()
 const { identity, state, readAt, displayName } = storeToRefs(caller)
@@ -83,7 +83,7 @@ const details = computed<Figure[]>(() => {
   <HoverCard :title="view.sentence" :details="details">
     <span class="account-status" :class="view.role" tabindex="0" :data-state="state">
       <AppIcon :name="view.icon" class="account-mark" />
-      <span class="account-word">{{ view.word }}</span>
+      <span class="account-word bar-word">{{ view.word }}</span>
     </span>
   </HoverCard>
 </template>
@@ -93,7 +93,8 @@ const details = computed<Figure[]>(() => {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
+  /* nothing above and below: the status bar is 1.5 rem high */
+  padding: 0 var(--space-sm);
   border-radius: 4px;
   font-family: monospace;
   font-size: var(--font-size-sm);

@@ -1,4 +1,6 @@
-import type { ChartLayer, ChartLayerId, LineDrawing, SegmentDrawing, TimeDrawing } from '@/types/chart_drawing_types'
+import type {
+  ChartLayer, ChartLayerId, LaneMarkDrawing, LineDrawing, SegmentDrawing, SpanDrawing, TimeDrawing,
+} from '@/types/chart_drawing_types'
 import type { ChartMark } from '@/types/run_chart_types'
 
 /**
@@ -15,6 +17,40 @@ export interface ChartScale {
   spacing: number
   /** The pane's width — where a segment open to the right ends. */
   width: number
+  /** Where the time lane's rows stand — absent where nothing is drawn in it. */
+  lane?: LaneBox | null
+}
+
+/** The room between the time lane and the pane's edge, and between its rows. */
+const LANE_PAD_PX = 2
+const LANE_GAP_PX = 3
+/** The booking periods' strip: tall enough for a sign written inside it. */
+export const LANE_STRIP_PX = 12
+/** The largest an order's mark is drawn in the lane. */
+const LANE_MARK_PX = 9
+
+/**
+ * The time lane along the bottom of the pane, where TradingView puts its event marks (viewer#41,
+ * decided 2026-11-08): the booking periods' strip at the bottom, the orders refused or expired in a
+ * row above it. Only the rows something is drawn in take room.
+ */
+export interface LaneBox {
+  /** The strip's top edge — the pane's height where no strip is drawn. */
+  stripTop: number
+  stripHeight: number
+  /** The middle of the marks' row — null where no mark is drawn. */
+  markY: number | null
+  /** How much of the pane the lane takes from the bottom: what the price scale leaves free. */
+  height: number
+}
+
+/** The time lane in a pane `height` px tall, with the rows drawn in — null where neither is. */
+export function laneBox(height: number, rows: { strip: boolean, marks: boolean }): LaneBox | null {
+  if (!rows.strip && !rows.marks) return null
+  const stripTop = rows.strip ? height - LANE_PAD_PX - LANE_STRIP_PX : height
+  const markY = rows.marks ? (rows.strip ? stripTop - LANE_GAP_PX : height - LANE_PAD_PX) - LANE_MARK_PX / 2 : null
+  const top = markY !== null ? markY - LANE_MARK_PX / 2 - LANE_PAD_PX : stripTop - LANE_PAD_PX
+  return { stripTop, stripHeight: rows.strip ? LANE_STRIP_PX : 0, markY, height: height - top }
 }
 
 /** A bar's range: its marks stand away from it, above its high or below its low. */
@@ -78,6 +114,21 @@ export interface PlacedTime {
   x: number
 }
 
+export interface PlacedSpan {
+  span: SpanDrawing
+  x1: number
+  x2: number
+  y: number
+  height: number
+}
+
+export interface PlacedLaneMark {
+  mark: LaneMarkDrawing
+  x: number
+  y: number
+  size: number
+}
+
 export interface PlacedLayer {
   id: ChartLayerId
   /** The share of its strength it is painted at, 0–1. */
@@ -88,6 +139,8 @@ export interface PlacedLayer {
   segments: PlacedSegment[]
   lines: PlacedLine[]
   times: PlacedTime[]
+  spans: PlacedSpan[]
+  laneMarks: PlacedLaneMark[]
   /** How far the marks reach beyond their bars, above and below — room the price scale has to leave. */
   reach: { above: number, below: number }
 }
@@ -100,8 +153,9 @@ export interface PlacedLayer {
 export function placeLayer(layer: ChartLayer, bars: ReadonlyMap<number, BarRange>, scale: ChartScale): PlacedLayer {
   const placed: PlacedLayer = {
     id: layer.id, opacity: layer.opacity ?? 1, hidden: layer.hidden ?? false,
-    marks: [], segments: [], lines: [], times: [], reach: { above: 0, below: 0 },
+    marks: [], segments: [], lines: [], times: [], spans: [], laneMarks: [], reach: { above: 0, below: 0 },
   }
+  const lane = scale.lane ?? null
   const taken = new Map<string, number>()
   for (const drawing of layer.drawings) {
     if (drawing.kind === 'marker') {
@@ -132,6 +186,20 @@ export function placeLayer(layer: ChartLayer, bars: ReadonlyMap<number, BarRange
     } else if (drawing.kind === 'time') {
       const x = scale.x(drawing.time)
       if (x !== null) placed.times.push({ time: drawing, x })
+    } else if (drawing.kind === 'span') {
+      // from the left edge of the bar it opened in to the right edge of the one it closed in — or to
+      // that bar's left edge where it closed at its open, which is where the next period starts
+      const from = scale.x(drawing.from)
+      const to = scale.x(drawing.to)
+      if (!lane || !lane.stripHeight || from === null || to === null) continue
+      const half = scale.spacing / 2
+      placed.spans.push({
+        span: drawing, x1: from - half, x2: drawing.endsAtOpen ? to - half : to + half, y: lane.stripTop, height: lane.stripHeight,
+      })
+    } else if (drawing.kind === 'lane-mark') {
+      const x = scale.x(drawing.time)
+      if (!lane || lane.markY === null || x === null) continue
+      placed.laneMarks.push({ mark: drawing, x, y: lane.markY, size: Math.min(LANE_MARK_PX, markSize(scale.spacing)) })
     } else {
       const x1 = scale.x(drawing.from.time)
       const y1 = scale.y(drawing.from.price)
@@ -177,6 +245,17 @@ export function hitDrawing(layers: readonly PlacedLayer[], x: number, y: number)
       if (!onShape && !onText) continue
       const distance = Math.hypot(x - placed.x, y - placed.y)
       if (!best || distance < best.distance) best = { id: placed.mark.id, distance, point: true }
+    }
+    for (const placed of layer.laneMarks) {
+      const half = placed.size / 2 + 2
+      if (Math.abs(x - placed.x) > half || Math.abs(y - placed.y) > half) continue
+      const distance = Math.hypot(x - placed.x, y - placed.y)
+      if (!best || distance < best.distance) best = { id: placed.mark.id, distance, point: true }
+    }
+    if (best) return best
+    for (const placed of layer.spans) {
+      if (x < placed.x1 || x > placed.x2 || y < placed.y || y > placed.y + placed.height) continue
+      best = { id: placed.span.id, distance: 0, point: false }
     }
     if (best) return best
     for (const placed of layer.lines) {

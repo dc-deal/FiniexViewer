@@ -79,6 +79,14 @@ export interface ScenarioRow {
   sell_signals: number | null
   flat_signals: number | null
   trades_requested: number | null
+  /**
+   * The decisions that asked to buy or sell, the buy and the sell signals together, and it and
+   * `trades_requested` per tick processed, in percent (contract 52): 0.0 over no tick, null where the
+   * decisions were not counted — null exactly where the four counters above are.
+   */
+  non_flat_signals: number | null
+  non_flat_signal_pct: number | null
+  trades_requested_pct: number | null
   /** How many workers the scenario DECLARES — read from its configuration, so a refused one has it too. */
   worker_count: number
   /** Both empty on a scenario that ran; both set on one that did not. */
@@ -129,4 +137,12 @@ export interface ScenarioDetailsReport {
   units: ScenarioRow[]
   data_brokers: ScenarioDataBroker[]
   keys: ScenarioDetailsKeys
+  /**
+   * The rows counted (contract 52): every scenario that ran, a failed one included — unlike the run
+   * summary's `unit_count`, which counts the units that produced figures — and those whose status is
+   * other than `success`.
+   */
+  scenario_count: number
+  completed_scenario_count: number
+  failed_scenario_count: number
 }

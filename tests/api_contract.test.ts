@@ -558,8 +558,9 @@ describe('api contract', () => {
     expect(typed.orders.length).toBeGreaterThan(0)
     expect(typed.count).toBe(typed.orders.length)
 
+    // a row of `orders` is identified by its place in the list: an empty key, declared (contract 52)
     expect('key' in typed).toBe(false)
-    expect('keys' in typed).toBe(false)
+    expect(typed.keys.orders).toEqual([])
 
     const units = new Set((pending as PendingOrdersReport).units.map(unit => unit.name))
     const orphans = typed.orders

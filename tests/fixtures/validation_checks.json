@@ -94,6 +94,11 @@
       "description": "The decision logic or a worker reads the system clock instead of the run's own clock, which makes a backtest impossible to reproduce."
     },
     {
+      "check": "algo_preflight_skipped",
+      "title": "A check of the algorithm could not run",
+      "description": "A pre-flight that checks the decision logic or a worker could not find one of the files it names, so the check did not run; the run itself may still find and use the file."
+    },
+    {
       "check": "market_fit",
       "title": "Algorithm not recommended for this market",
       "description": "The decision logic names the markets or instruments it is meant for, and this one is not among them."
@@ -102,6 +107,16 @@
       "check": "broker_config_unavailable",
       "title": "Broker configuration unavailable",
       "description": "The broker's configuration could not be fetched or loaded."
+    },
+    {
+      "check": "broker_config_document_unavailable",
+      "title": "Recorded broker configuration unavailable",
+      "description": "A backtest of a session's window names the broker configuration the session froze at its start, and no configuration can be built from the document the loader read."
+    },
+    {
+      "check": "broker_config_sources_differ",
+      "title": "One broker configured from two sources",
+      "description": "One scenario set configures a broker from a recorded document and another scenario configures it differently; a run trades one configuration per broker."
     },
     {
       "check": "symbol_unknown",
@@ -297,6 +312,11 @@
       "check": "order_event_stream_incomplete",
       "title": "Order-event stream lacks submissions",
       "description": "The order-event stream holds fewer submissions than the executor counted — a record was lost, most likely to a failed write — so the counters derived from it are too low."
+    },
+    {
+      "check": "usable_funds_negative",
+      "title": "Funds below zero after own orders",
+      "description": "A unit's funds in a currency fall below zero once its own unfilled orders are counted — the balance moved past a claim the bot still holds, so the order cannot be filled in full from what the account holds."
     },
     {
       "check": "time_divergence",

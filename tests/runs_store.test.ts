@@ -95,6 +95,8 @@ const SUMMARY: RunSummary = {
   orders_executed: 21,
   orders_rejected: 4,
   sl_tp_triggered: 6,
+  // 21 executed of 25 submitted
+  execution_rate_pct: 84,
   unit_count: 1,
   // null on an artifact written before contract 6 — not a zero
   units_declared: null,

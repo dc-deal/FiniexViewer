@@ -463,6 +463,8 @@ export interface RunSummary {
   orders_undelivered: number
   orders_unaccounted: number
   sl_tp_triggered: number
+  // executed over submitted and adopted, in percent — 0.0 when no order was submitted (contract 52)
+  execution_rate_pct: number
   unit_count: number              // backtest: N scenarios | AutoTrader session: 1
   /**
    * What the run was ASKED to do, beside what it produced — the difference between `unit_count`
@@ -542,6 +544,9 @@ export interface UnitErrorRow {
   validation_errors: string[]
   logged_errors: LogEntryRow[]
   traceback: string           // '' when there is none
+  // how many each of the two lists above holds (contract 52) — served, so nothing counts them here
+  validation_error_count: number
+  logged_error_count: number
 }
 
 /** Run-level outcome, stamped once by the pipeline — no consumer re-derives a verdict from counts. */
@@ -580,6 +585,19 @@ export interface WarningsErrorsOutcome {
   error_count: number | null
   warning_count: number | null
   log_warning_count: number | null
+  /**
+   * Read off the counts above (contract 52): the units that succeeded and their share of all, 0.0
+   * over none; `batch_status` — `success`, `partial` or `failed` as none, some or all units failed —
+   * a description of those counts and NOT a grading, which stays `run_outcome`'s; the first
+   * failure's message line by line, without the line that only names the scenario as failed, with
+   * how many lines lie beyond the first; and the failed units besides the first one named.
+   */
+  succeeded_count: number
+  success_rate_pct: number
+  batch_status: string        // 'success' | 'partial' | 'failed'
+  first_failure_messages: string[]
+  first_failure_more_messages: number
+  other_failed_count: number
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/warnings-errors */
@@ -605,6 +623,8 @@ export interface WarningsErrorsReport {
   errors: UnitErrorRow[]
   outcome: WarningsErrorsOutcome
   keys: WarningsErrorsKeys
+  // the units `errors` lists (contract 52)
+  error_unit_count: number
 }
 
 /**
@@ -633,6 +653,9 @@ export interface PortfolioUnitRow {
    * the figure is not about this run alone: `drawdown_restarts` counts how many sessions it has
    * survived, and the two stamps say which stretch it spans.
    */
+  // An instant on the run's own clock since contract 54 — the replayed time in a backtest, the
+  // market's in a session — and '' where a session ended before its first pass. A run recorded
+  // earlier keeps the wall-clock instant it was written with.
   drawdown_started_at: string
   drawdown_carried_from: string
   drawdown_restarts: number
@@ -712,6 +735,8 @@ export interface PortfolioUnitRow {
    * (their portfolio document). Read by the run chart's opening card.
    */
   open_positions: OpenPosition[]
+  // how many `open_positions` holds (contract 52)
+  open_position_count: number
 }
 
 /**
@@ -960,6 +985,12 @@ export interface BookingPeriodsReport {
    * A missing check renders as loudly as a failed one; a tick would claim evidence that is absent.
    */
   reconciles: boolean | null
+  // the periods' net P&L less the run's (contract 52), null where the run reports no figure — so
+  // null with `reconciles` null, and the difference a failed check is about where it is false
+  reconciliation_difference: number | null
+  // the periods listed and the units that booked them (contract 52)
+  period_count: number
+  period_unit_count: number
   // null where no period could value the account (contract 40)
   deepest_period_drawdown: number | null
   /**
@@ -1086,8 +1117,17 @@ export interface TradeRow {
   // multiple of. A stop moved to the entry price leaves it null too (their trade-history document)
   r_multiple: number | null
   scenario_name: string
-  entry_tick_index: number
+  /**
+   * Null on a trade whose position a session restored at boot (contract 53): it opened in another
+   * session, and the closing session counts its ticks from zero again, so no tick of its own is the
+   * entry. `duration_ticks` is null with it, while `duration_s` still answers. A run recorded before
+   * keeps the index it was written with, and its `duration_ticks` is null only where the exit lies
+   * before it.
+   */
+  entry_tick_index: number | null
   exit_tick_index: number
+  // the holding time in the unit's ticks (contract 52) — null as `entry_tick_index` above
+  duration_ticks: number | null
   entry_type: string
   /**
    * `partial` or `full` — WHICH part of a position's chain this row ended, new in contract 23.
@@ -1157,6 +1197,25 @@ export interface TradeAnalytics {
   avg_trade_duration_s: number
   max_consecutive_wins: number
   max_consecutive_losses: number
+  /**
+   * What a console printed and a reader once had to count (contract 52): the trades by direction and
+   * by result, the closes by reason, the sums above per trade, and the holding time in the unit's
+   * ticks from each row's `duration_ticks` — 0 over no trade.
+   */
+  long_trades: number
+  short_trades: number
+  winning_trades: number
+  losing_trades: number
+  sl_closes: number
+  tp_closes: number
+  scenario_end_closes: number
+  manual_closes: number
+  avg_gross_pnl: number
+  avg_fees: number
+  avg_net_pnl: number
+  avg_trade_duration_ticks: number
+  min_trade_duration_ticks: number
+  max_trade_duration_ticks: number
 }
 
 /** Per-scenario totals — the same trades grouped by the unit that produced them. */
@@ -1275,6 +1334,8 @@ export interface BrokerUnit {
   // which scenarios of the run traded through this broker, by the unit name every other section
   // keys on
   scenarios: string[]
+  // how many `scenarios` names (contract 52)
+  scenario_count: number
   symbols: BrokerSymbol[]
   // where the venue reports a fill's fee, as its adapter declares (contract 44): `status_answer` ·
   // `executions` · `not_reported`. Null on an older record
@@ -1431,6 +1492,16 @@ export interface AggregatedCombined {
   spot_total_est_current: number
   spot_total_est_initial: number
   spot_has_base_holdings: boolean
+  // the estimate's move over the run, and that move in percent of where it started (contract 52) —
+  // null where no unit held a base asset it could value, or the estimate started at nothing
+  spot_total_est_pnl: number | null
+  spot_total_est_pnl_pct: number | null
+  /**
+   * Every cost category added up — the spread, the modelled spread, commission, swap, maker and
+   * taker (contract 52). The spread is in it, so it is NOT a fee total and never stands as one; an
+   * unmeasured spread (`total_spread_cost` null) is left out of it.
+   */
+  total_costs: number
 }
 
 /**
@@ -1546,6 +1617,10 @@ export interface PendingOrderUnit {
   never_confirmed_orders: PendingOrderRow[]
   active_limit_orders: PendingOrderRow[]
   active_stop_orders: PendingOrderRow[]
+  // how many each of the two lists above holds, and the two together (contract 52)
+  active_limit_count: number
+  active_stop_count: number
+  active_order_count: number
 }
 
 /**
@@ -1559,10 +1634,9 @@ export interface PendingOrderUnit {
  * archive does not hold is `close/rejected` — a partial close below the symbol minimum.
  *
  * `order_id` is NOT an identity: it is a per-unit position counter (`pos_<symbol>_<n>`), and 167
- * rows carried one id on a single measured run. The route declares no key; a row is identified by
- * its POSITION within its scenario, in append order, and a field for it is planned in
- * testingide#557. Their words: *please do not adopt the content key* — two partial closes on one
- * tick would collide.
+ * rows carried one id on a single measured run. The route declares `[]` for `orders` (contract 52):
+ * a row is identified by its POSITION in the list, an event rather than a thing. Their words:
+ * *please do not adopt the content key* — two partial closes on one tick would collide.
  */
 export interface OrderHistoryRow {
   // the per-unit position counter, shown as data and never as identity
@@ -1635,7 +1709,8 @@ export interface OrderHistoryRow {
 /**
  * Response type for GET /api/v1/reports/runs/{run_id}/order-history
  *
- * No declared key, and that IS the answer rather than an omission — see `OrderHistoryRow`.
+ * An EMPTY key for `orders` (contract 52), and that IS the answer rather than an omission — see
+ * `OrderHistoryRow`.
  *
  * The `symbol` query parameter exists and is safe since contract 20; before it, a rejected row had
  * an empty symbol and the filter silently dropped every rejection. This app filters by SCENARIO
@@ -1646,6 +1721,33 @@ export interface OrderHistoryReport {
   orders: OrderHistoryRow[]
   count: number
   symbols: string[]
+  /**
+   * The failed rows the list HOLDS, counted (contract 52) — what is listed, so on a long session,
+   * whose history keeps only its newest rows, fewer than execution-stats' `orders_failed`. A filter
+   * counts them again over the rows it kept.
+   */
+  failed_listed: number
+  failed_by_unit: OrderFailedByUnit[]
+  // the most frequent first
+  failed_by_reason: OrderFailedByReason[]
+  // `[]` for `orders`, whose rows are events identified by their place in the list (contract 52)
+  keys: { orders: string[], failed_by_unit: string[], failed_by_reason: string[] }
+}
+
+/** A unit's failed rows in the order history, keyed by `scenario_name` (contract 52). */
+export interface OrderFailedByUnit {
+  scenario_name: string
+  listed: number
+}
+
+/**
+ * The failed rows of one status and reason, keyed by both (contract 52). `reason` is the reason a
+ * row names: its `rejection_reason`, else its `end_reason`, else its status.
+ */
+export interface OrderFailedByReason {
+  status: string
+  reason: string
+  count: number
 }
 
 /**

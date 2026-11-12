@@ -63,7 +63,8 @@ test('the run list reaches the bottom of its panel once the hint is dismissed', 
   await page.addInitScript(() => {
     window.localStorage.setItem('hints.v1', JSON.stringify({ version: 1, banned: ['facet-bar'] }))
   })
-  await page.setViewportSize({ width: 1300, height: 800 })
+  // 640 px, not 800: at the 12 px text of 2026-11-10 the whole list fit in 800 and no longer scrolled
+  await page.setViewportSize({ width: 1300, height: 640 })
   await mockApi(page)
   await page.goto('/')
   const list = page.locator('.run-list')

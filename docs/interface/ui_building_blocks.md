@@ -22,6 +22,9 @@ states of a control on two channels, form before word before colour — is the s
   with a detail beside it. *Manage servers…* and *Manage layouts…* are the two.
 - **One text size for every building block**, and a heading told by its form — an uppercase label
   or a `RuleHeading` — never by a larger size ([style guide](theme_buttons_and_icons.md#one-text-size--a-heading-told-by-its-form)).
+- **A bar gives room by rank, never at fixed widths** (2026-11-10). Its entries carry `data-rank`,
+  and short of room the lowest rank takes its short form first: its word, a `.bar-word`, gives way
+  to its icon, a `.bar-icon`, and stays in the page for a screen reader ([Menu Bar Status](menu_bar_status.md)).
 - **Underneath are Reka UI's headless primitives and Lightweight Charts.** A new building block
   builds on them rather than on a hand-rolled overlay, focus trap or positioning.
 
@@ -83,4 +86,6 @@ Everything in `src/components/base/` unless the third column names another place
 | Building block | What it is for | Lives in | Described in |
 |---|---|---|---|
 | the dock | every panel, its tab and the quick bar beside the tabs | `src/components/dock/` | [Panel Dock](../panels/panel_dock.md) |
+| `AppMenuBar`, `StatusBar` | the frame's two bars: above the dock what the reader chooses, below it what the window works against | `src/components/` | [Menu Bar Status](menu_bar_status.md) |
+| `useRankedBar` | room by rank in a bar, measured on the bar itself: `data-rank` on an entry, `data-short` set on it, `.bar-word` and `.bar-icon` inside it (`bar.css`) | `src/composables/` | [Menu Bar Status](menu_bar_status.md) |
 | `AccordionPanel` | a section of the run bundle: its header, its fold, its own-panel button | `src/components/panels/` | [Run Bundle](../runs/run_bundle.md) |

@@ -9,11 +9,16 @@ import type {
 import AppIcon from '@/components/base/AppIcon.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import ChartCard from '@/components/base/ChartCard.vue'
+import ChartPaneControls from '@/components/ChartPaneControls.vue'
+import ChartPaneLegend from '@/components/ChartPaneLegend.vue'
 import { ChartDrawingHost, type DrawingColours } from '@/components/chart_drawing_host'
 import type { BarRange } from '@/components/chart_geometry'
+import { legendTops, paneLegends } from '@/components/chart_legend'
 import type { BarEdge } from '@/composables/use_bar_loader'
+import { useChartPanes } from '@/composables/use_chart_panes'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { ChartLayer } from '@/types/chart_drawing_types'
+import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
 import type { FigureCard } from '@/types/figure_types'
 import type { ChartCandles, ChartVolume, PriceForm } from '@/types/run_chart_types'
 import { t } from '@/translate'
@@ -47,6 +52,10 @@ const props = defineProps<{
   loadingEdges?: BarEdge[]
   /** A batch at an edge that failed: said in that corner — the bars loaded stay. */
   edgeError?: { edge: BarEdge, message: string } | null
+  /** The panes as tall as the reader dragged them; a pane not named stands at its default (viewer#57). */
+  paneWeights?: PaneWeights | null
+  /** The pane given the whole height, the others folded to their legend's line. */
+  maximizedPane?: ChartPaneId | null
 }>()
 
 const emit = defineEmits<{
@@ -61,6 +70,14 @@ const emit = defineEmits<{
    * the caller's to prevent.
    */
   edge: [side: BarEdge]
+  /** The weights of every pane, once the reader dragged a separator between two of them. */
+  paneWeights: [weights: PaneWeights]
+  /** What a pane draws first, shown or hidden at its lever on the chart. */
+  paneShown: [pane: ChartPaneId, shown: boolean]
+  /** One pane given the whole height, or none. */
+  maximize: [pane: ChartPaneId | null]
+  /** The panes asked back at their first heights — a double click on a seam. */
+  resetPanes: []
 }>()
 
 /** How many bars are on show around a focus, where the whole window would make them too narrow to read. */
@@ -86,6 +103,14 @@ const EDGE_BARS = 20
 const VOLUME_SCALE = 'volume'
 /** How strongly a volume bar is drawn at full opacity — behind the candles, it must not compete. */
 const VOLUME_ALPHA = 0.45
+/** Where the volume's scale begins: the lowest fifth of the pane is the volume's. */
+const VOLUME_TOP = 0.8
+/**
+ * In a pane of its own, the volume's scale leaves a fifth of the pane above its tallest bar: the
+ * line its legend and its controls stand on. At a tenth they stood over the tallest bars (operator,
+ * 2026-11-12).
+ */
+const OWN_PANE_MARGINS = { top: 0.2, bottom: 0 }
 
 const container = ref<HTMLElement | null>(null)
 let chart: IChartApi | null = null
@@ -100,6 +125,105 @@ let themeObserver: MutationObserver | null = null
 
 /** The size the chart was last drawn at — the frame a card has to stay inside. */
 const frameSize = ref({ width: 0, height: 0 })
+
+/** Whether the volume stands in a pane of its own — what the panes are laid out by. */
+const volumeOwnPane = ref(false)
+/** Where the volume was last placed, in a pane of its own or not — null before the chart placed it. */
+let placedOwn: boolean | null = null
+/**
+ * The volume's own scale format, once its series stands: a ref, so the legends worked out before the
+ * chart was built print the value again in that form — a series held in a plain variable left them
+ * with the value as served until the pointer moved.
+ */
+const volumeFormat = shallowRef<((value: number) => string) | null>(null)
+/** How many panes the chart stacks, on the element: a canvas cannot be read back by an assertion. */
+const paneCount = ref(1)
+/** The share of the price pane the time lane takes, as the host last told it. */
+let laneShare = 0
+
+/** The panes the chart stacks, top to bottom, at the heights the reader kept (viewer#57). */
+const panes = useChartPanes({
+  chart: () => chart,
+  ids: () => volumeOwnPane.value ? ['price', 'volume'] as ChartPaneId[] : ['price'],
+  weights: () => props.paneWeights,
+  onWeights: weights => emit('paneWeights', weights),
+  frame: () => container.value,
+  maximized: () => props.maximizedPane ?? null,
+})
+
+/** Where each pane stands in the frame — the legends and the controls are placed by it. */
+const paneBoxes = panes.boxes
+/** The pane the pointer is over — its controls show at the top right of its plot. */
+const hoveredPane = ref<ChartPaneId | null>(null)
+/** How far above and below a seam a double click still lands on it — the library's handle is 9 px. */
+const SEAM_REACH = 5
+
+/** Where the pointer stands inside the frame, from the top. */
+function frameY(event: MouseEvent): number {
+  return event.clientY - (container.value?.getBoundingClientRect().top ?? 0)
+}
+
+/** The pane under the pointer, by where each was measured — the chart says it only over its plot. */
+function onFramePointer(event: PointerEvent): void {
+  const y = frameY(event)
+  hoveredPane.value = panes.boxes.value.find(box => y >= box.top && y < box.top + box.height)?.id ?? null
+}
+
+/** A double click on a seam asks for the first heights, as VS Code's sashes do. */
+function onFrameDoubleClick(event: MouseEvent): void {
+  const y = frameY(event)
+  if (panes.boxes.value.slice(1).some(box => Math.abs(y - box.top) <= SEAM_REACH)) emit('resetPanes')
+}
+
+/** Whether what a pane draws first is on show — null where the chart is handed no lever for it. */
+function paneShown(pane: ChartPaneId): boolean | null {
+  if (pane === 'price') return props.candles ? props.candles.shown : null
+  return props.volume ? props.volume.shown : null
+}
+
+/** The whole height for a pane, or — where one has it — the heights back. */
+function toggleWhole(pane: ChartPaneId): void {
+  emit('maximize', props.maximizedPane ? null : pane)
+}
+
+/** The time of the bar under the pointer — null off the bars, where the legends say the last one. */
+const pointerTime = ref<number | null>(null)
+/** Each bar's place by its time, so the bar under the pointer is found at once on every move. */
+const barIndex = computed(() => new Map(props.data.map((bar, index) => [bar.time, index])))
+/** The volume's value of each bar, by its time. */
+const volumeByTime = computed(() => new Map((props.volume?.bars ?? []).map(bar => [bar.time, bar.value])))
+
+/** What each pane's legend says (viewer#57): the bar under the pointer, else the last one drawn. */
+const legends = computed(() => {
+  const index = pointerTime.value === null ? undefined : barIndex.value.get(pointerTime.value)
+  const bar = props.data[index ?? props.data.length - 1] ?? null
+  return paneLegends({
+    bar,
+    volumeValue: bar ? volumeByTime.value.get(bar.time) ?? null : null,
+    volume: props.volume ?? null,
+    tickSize: props.priceFormat?.minMove ?? null,
+    formatVolume: value => volumeFormat.value?.(value) ?? String(value),
+  })
+})
+
+/** Where each pane's legend stands — the folded panes' as lines in the one given the whole height. */
+const tops = computed(() => legendTops(panes.boxes.value, props.maximizedPane ?? null))
+
+/** Where a pane's legend stands: by its pane, the first pane's before any was measured. */
+function legendTop(pane: ChartPaneId): number | null {
+  return tops.value.get(pane) ?? (pane === 'price' ? 0 : null)
+}
+
+/** A pane folded beside one given the whole height: it keeps its legend's line and no controls. */
+function folded(pane: ChartPaneId): boolean {
+  return Boolean(props.maximizedPane) && props.maximizedPane !== pane && paneCount.value > 1
+}
+
+/**
+ * The plot's width, beside the price scale — the notices stand at its right edge, the top left being
+ * the legend's. The library tells it whenever the scale's labels widen or narrow it.
+ */
+const plotWidth = ref(0)
 
 /** The bars the series was last handed — what a new set is compared with, to keep the view where it is. */
 let shown: ChartBar[] = []
@@ -155,9 +279,12 @@ const edgeStates = computed(() => (['left', 'right'] as const).flatMap(edge => {
 const pointed = shallowRef<{ id: string, card: FigureCard, x: number, y: number } | null>(null)
 
 function onPointer(param: MouseEventParams): void {
+  pointerTime.value = typeof param.time === 'number' ? param.time : null
   const id = param.hoveredInfo?.objectId
   const card = typeof id === 'string' ? cards.value.get(id) : undefined
   pointed.value = card && param.point ? { id: id as string, card, x: param.point.x, y: param.point.y } : null
+  // a booking period under the pointer draws its bounds through the candles
+  host?.setHovered(pointed.value?.id ?? null)
 }
 
 /** What the chart paints with — each one a token, in its role where `tokens.css` names one. */
@@ -171,6 +298,7 @@ interface ChartColours {
   mark: string
   quiet: string
   annotation: string
+  warning: string
 }
 
 /**
@@ -195,6 +323,8 @@ function readColours(): ChartColours {
     mark: token('--color-text-primary'),
     quiet: token('--color-text-secondary'),
     annotation: token('--color-annotation'),
+    // an order refused: something to weigh before trusting what is beside it
+    warning: token('--color-warning'),
   }
 }
 
@@ -212,8 +342,10 @@ function drawingColours(colours: ChartColours): DrawingColours {
       mixed: colours.quiet,
       entry: colours.mark,
       annotation: colours.annotation,
+      warning: colours.warning,
     },
     surface: colours.surface,
+    ink: colours.mark,
   }
 }
 
@@ -243,6 +375,8 @@ function chartColours(colours: ChartColours): DeepPartial<ChartOptions> {
     layout: {
       background: { type: ColorType.Solid, color: colours.surface },
       textColor: colours.text,
+      // the separator between two panes is a seam to drag: a rule at rest, interactive under the pointer
+      panes: { separatorColor: colours.rule, separatorHoverColor: withAlpha(colours.focus, 0.3) },
     },
     grid: {
       vertLines: { color: colours.rule },
@@ -298,21 +432,32 @@ function initChart(size: { width: number, height: number }): void {
     width: size.width,
     height: size.height,
     timeScale: { timeVisible: true, minBarSpacing: MIN_BAR_SPACING },
+    // the library's licence asks for its notice in the code and a link to tradingview.com on a page
+    // the reader can open; the logo is one way to meet the link, and may go where both are met
+    // otherwise (`attributionLogo`, lightweight-charts 5.2.1): the notice is in NOTICE, the link in
+    // the About dialog. The logo stood over the lowest pane's first bars
+    layout: { attributionLogo: false },
   })
   chart.applyOptions(chartColours(colours))
   chart.subscribeCrosshairMove(onPointer)
   chart.timeScale().subscribeVisibleLogicalRangeChange(onRange)
+  chart.timeScale().subscribeSizeChange(width => { plotWidth.value = width })
   frameSize.value = size
 
-  // built before the candles, so it is drawn behind them
+  // built before the candles, so it is drawn behind them where it shares their pane
   if (props.volume !== undefined) {
-    volumeSeries = chart.addSeries(HistogramSeries, {
-      priceScaleId: VOLUME_SCALE, priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false,
-    })
-    chart.priceScale(VOLUME_SCALE).applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } })
+    const built = chart.addSeries(HistogramSeries, {
+      priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false,
+    }, volumeInOwnPane() ? 1 : 0)
+    volumeSeries = built
+    volumeFormat.value = value => built.priceFormatter().format(value)
+    placeVolume()
   }
   host = new ChartDrawingHost()
+  // told from inside the library's drawing of a frame: the scale is moved once that has finished
+  host.onLaneShare(share => queueMicrotask(() => fitVolume(share)))
   buildPriceSeries()
+  panes.track()
 }
 
 /** The candles as handed, or candles at full strength where none were — the free chart. */
@@ -328,10 +473,7 @@ function candlesLayer(): ChartCandles {
  */
 function buildPriceSeries(): void {
   if (!chart || !host) return
-  if (series) {
-    series.detachPrimitive(host)
-    chart.removeSeries(series)
-  }
+  const previous = series
   const form = candlesLayer().form
   const options = { ...priceColours(readColours()), ...seriesFormat() }
   series = form === 'bars' ? chart.addSeries(BarSeries, options)
@@ -339,6 +481,12 @@ function buildPriceSeries(): void {
       : form === 'area' ? chart.addSeries(AreaSeries, options)
         : chart.addSeries(CandlestickSeries, { borderVisible: false, ...options })
   builtForm = form
+  // the old series goes only once the new one stands: the library removes a pane left empty, and the
+  // volume's own pane would then move up and take the candles (viewer#57)
+  if (previous) {
+    previous.detachPrimitive(host)
+    chart.removeSeries(previous)
+  }
   series.attachPrimitive(host)
 }
 
@@ -423,9 +571,58 @@ function withAlpha(colour: string, alpha: number): string {
   return `rgba(${value >> 16}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`
 }
 
+/**
+ * The volume stands above the time lane, never under it: its fifth of the pane is lifted by the
+ * lane's share, so the lane's strip and marks are not drawn over its bars (on screen 2026-11-08).
+ * In a pane of its own it is clear of the lane already; the share is kept for when it comes back.
+ */
+function fitVolume(share: number): void {
+  laneShare = share
+  if (!chart || !volumeSeries || volumeOwnPane.value) return
+  chart.priceScale(VOLUME_SCALE).applyOptions({ scaleMargins: { top: VOLUME_TOP - share, bottom: share } })
+}
+
+/** Whether the volume stands in a pane of its own: its option on, and shown — hidden, it takes no room. */
+function volumeInOwnPane(): boolean {
+  return (props.volume?.ownPane ?? false) && (props.volume?.shown ?? false)
+}
+
+/**
+ * Where the volume stands (viewer#57): in a pane of its own below the candles, on that pane's own
+ * scale, or behind the candles in the lowest fifth of their pane, on a scale nothing shows. Hidden it
+ * gives its pane up and the candles take the whole height (operator, on screen 2026-11-12: an empty
+ * pane is room taken for nothing); shown again, its pane comes back at the height kept. Moved, never
+ * built anew; back in the candles' pane it is put first there, so they are drawn over it.
+ */
+function placeVolume(): void {
+  if (!chart || !volumeSeries) return
+  const own = volumeInOwnPane()
+  // placed once for each change of pane: placed on every change of the volume — bars loaded at an
+  // edge, a layer switched — the weights laid out again undid a drag the reader still held
+  if (own === placedOwn) return
+  placedOwn = own
+  const index = own ? 1 : 0
+  if (volumeSeries.getPane().paneIndex() !== index) volumeSeries.moveToPane(index)
+  volumeOwnPane.value = own
+  if (own) {
+    volumeSeries.applyOptions({ priceScaleId: 'right' })
+    // the library keeps a right scale's options as its default for a pane made later as well
+    // (lightweight-charts 5.2.1): a pane of another kind sets its own margins
+    volumeSeries.priceScale().applyOptions({ scaleMargins: OWN_PANE_MARGINS })
+  } else {
+    volumeSeries.applyOptions({ priceScaleId: VOLUME_SCALE })
+    volumeSeries.setSeriesOrder(0)
+    fitVolume(laneShare)
+  }
+  panes.applyWeights()
+  paneCount.value = chart.panes().length
+  panes.track()
+}
+
 /** The volume bars, in the colour of their candle's direction, faint — or none, where hidden. */
 function showVolume(): void {
   if (!volumeSeries) return
+  placeVolume()
   const volume = props.volume
   volumeSeries.applyOptions({ visible: volume?.shown ?? false })
   if (!volume) {
@@ -497,6 +694,8 @@ onUnmounted(() => {
   resizeObserver?.disconnect()
   themeObserver?.disconnect()
   chart?.remove()
+  // a lane share told in the last frame arrives after this: nothing is left to fit
+  volumeSeries = null
 })
 
 // bars that arrive before the chart has a size wait for it: onResize hands them over at build time
@@ -512,6 +711,9 @@ watch(() => props.layers, () => {
 watch(() => props.focus, () => frame())
 watch(() => props.volume, () => showVolume())
 watch(() => props.candles, () => showCandles())
+// a layout loaded: the panes take the weights it holds
+watch(() => props.paneWeights, () => panes.applyWeights())
+watch(() => props.maximizedPane, () => panes.applyWeights())
 // a format taken away goes back to the library's own (lightweight-charts 5.2.1: two decimals, a
 // least move of 0.01) — applying nothing would keep the previous instrument's decimals
 watch(() => props.priceFormat, () => series?.applyOptions(
@@ -524,16 +726,40 @@ watch(() => props.priceFormat, () => series?.applyOptions(
     :data-marks="markCount"
     :data-events="events"
     :data-drawings="drawingCounts"
+    :data-panes="paneCount"
     :data-bars="data.length"
     :data-time-at="timeAt"
     :data-visible-from="visibleFrom ?? undefined"
+    :style="plotWidth ? { '--chart-plot-width': `${plotWidth}px` } : undefined"
+    :data-maximized="maximizedPane ?? undefined"
+    @pointermove="onFramePointer"
+    @pointerleave="hoveredPane = null"
+    @dblclick="onFrameDoubleClick"
   >
     <!-- what is drawn, counted on the element above: the canvas cannot be read back. `data-events`
          counts what the marks stand for, a gathered one for each of its members; `data-bars` the
          bars handed, which grows as more are loaded at an edge -->
     <div ref="container" class="candle-canvas" />
-    <!-- notices stand INSIDE the frame, over the plot: a line above it would move the chart each
-         time one appeared, and a selection never moves the layout -->
+    <!-- each pane's legend at its top left, where TradingView and Kraken Pro set it -->
+    <template v-for="legend in legends" :key="legend.pane">
+      <ChartPaneLegend v-if="legendTop(legend.pane) !== null" :legend="legend" :top="legendTop(legend.pane)!" />
+    </template>
+    <!-- each pane's controls at the top right of its plot, where no figure of the legend can move them -->
+    <template v-for="box in paneBoxes" :key="`controls-${box.id}`">
+      <ChartPaneControls
+        v-if="!folded(box.id) && (paneShown(box.id) !== null || paneCount > 1)"
+        :shown="paneShown(box.id)"
+        :whole="Boolean(maximizedPane)"
+        :can-maximize="paneCount > 1"
+        :visible="hoveredPane === box.id"
+        :top="legendTop(box.id) ?? box.top"
+        :data-pane="box.id"
+        @toggle-shown="emit('paneShown', box.id, !paneShown(box.id))"
+        @toggle-whole="toggleWhole(box.id)"
+      />
+    </template>
+    <!-- notices stand INSIDE the frame, over the plot, at its top right beside the price scale: a line
+         above it would move the chart each time one appeared, and a selection never moves the layout -->
     <slot />
     <!-- a batch at an edge: a quiet sign at that edge while it is on its way, its failure said
          there — never a block over the plot -->
@@ -572,8 +798,8 @@ watch(() => props.priceFormat, () => series?.applyOptions(
 }
 
 /* the edge a batch is on its way to, halfway up it: clear of the notices at the top left, of the
-   library's logo at the bottom left — its attribution, which stays visible — and of the price scale
-   at the right (on screen 2026-10-29: low at the left it covered the logo) */
+   time lane and the lowest pane at the bottom, and of the price scale at the right (on screen
+   2026-10-29: low at the left it covered the library's logo, which the chart no longer draws) */
 .edge-state {
   position: absolute;
   top: 50%;

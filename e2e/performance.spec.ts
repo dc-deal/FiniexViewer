@@ -130,6 +130,26 @@ test('narrowing to a scenario is immediate', async ({ page }) => {
 })
 
 /**
+ * The window resized (2026-11-10): every column stretches with it since the dock lays out in
+ * proportion, so a step lays out every panel on show, the run chart's canvas among them. Ten steps
+ * between two widths, each until the second frame after it has painted: the mean.
+ */
+test('a window resized lays the dock out quickly', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await page.locator('[data-panel-kind="run-chart"] .candle-chart').waitFor({ state: 'visible' })
+  const steps = 10
+  const started = Date.now()
+  for (let step = 0; step < steps; step++) {
+    await page.setViewportSize({ width: step % 2 ? 1800 : 1200, height: 900 })
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  }
+  const perStep = Math.round((Date.now() - started) / steps)
+  timings.push({ label: 'window resized — the dock laid out (mean)', ms: perStep })
+  expect(perStep).toBeLessThan(500)
+})
+
+/**
  * A named layout laid out (viewer#37). The panels both layouts hold are moved rather than rebuilt,
  * so the switch is measured inside the page, from the click to the second frame after it: a round
  * trip of the test runner would be most of the number. Measured 2026-11-03 from the first
@@ -193,6 +213,14 @@ test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) =>
     )
   })
 
+  const perStep = await zoomSteps(page, chart, 'run chart — a zoom step drawn (mean)')
+
+  expect(drawn).toBeLessThan(3000)
+  expect(perStep).toBeLessThan(500)
+})
+
+/** Ten zoom steps over the chart, in and out, each until the frame after it has painted: the mean. */
+async function zoomSteps(page: Page, chart: ReturnType<Page['locator']>, label: string): Promise<number> {
   const box = (await chart.boundingBox())!
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   const steps = 10
@@ -203,10 +231,54 @@ test('the run chart draws a unit, and a zoom step, quickly', async ({ page }) =>
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   }
   const perStep = Math.round((Date.now() - started) / steps)
-  timings.push({ label: 'run chart — a zoom step drawn (mean)', ms: perStep })
+  timings.push({ label, ms: perStep })
+  return perStep
+}
 
-  expect(drawn).toBeLessThan(3000)
+/**
+ * The time lane (viewer#41, section D): the refusing unit draws its booking period and its orders
+ * refused along the bottom of the pane, and each zoom step gathers the refusals anew at the new width
+ * of a bar and moves the volume's scale with the lane — the lane's cost that comes with every move.
+ */
+test('a zoom step over the time lane is quick', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['EURGBP_refusals_01'] })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/periods:1/)
+  expect(await chart.getAttribute('data-drawings')).toMatch(/refusals:[1-9]/)
+
+  const perStep = await zoomSteps(page, chart, 'run chart — a zoom step, lane (mean)')
   expect(perStep).toBeLessThan(500)
+})
+
+/**
+ * The legends of the panes (viewer#57): the bar under the pointer is found and its figures written
+ * at every move — a cost that comes with every move of the pointer over the chart. Twenty moves
+ * across the busiest unit, each until the legend says another bar and the frame after has painted:
+ * the mean.
+ */
+test('the legends follow the pointer quickly', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN, units: ['ETHUSD_spot_two_balances'] })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-events'))).toBe(21)
+  const legend = chart.locator('[data-legend="price"]')
+  await expect(legend).toBeVisible()
+  const box = (await chart.boundingBox())!
+  const steps = 20
+  let moved = 0
+  const started = Date.now()
+  for (let step = 0; step < steps; step++) {
+    const before = await legend.textContent()
+    await page.mouse.move(box.x + 30 + step * ((box.width - 120) / steps), box.y + box.height * 0.4)
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    if ((await legend.textContent()) !== before) moved++
+  }
+  const perMove = Math.round((Date.now() - started) / steps)
+  timings.push({ label: 'run chart — the legends at a pointer move (mean)', ms: perMove })
+  // the pointer crossed bars: most moves land on another one
+  expect(moved).toBeGreaterThan(steps / 2)
+  expect(perMove).toBeLessThan(500)
 })
 
 /**

@@ -181,3 +181,23 @@ test('the way back from a trade reaches the orders of its position', async ({ pa
   expect(await marked.count()).toBeGreaterThan(0)
   await expect(page.locator('.order-list .record-row.marked').first()).toBeVisible()
 })
+
+/**
+ * The count above the scenario list points at the reason, which stands in Warnings & errors as the
+ * backend wrote it: the link opens that section, folded or not (operator, 2026-11-12).
+ */
+test('the count of scenarios that produced nothing opens Warnings & errors at a click', async ({ page }) => {
+  await mockApi(page)
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const warnings = page.locator('.panel-trigger', { hasText: 'Warnings & errors' })
+  if ((await warnings.getAttribute('aria-expanded')) === 'true') await warnings.click()
+  await expect(warnings).toHaveAttribute('aria-expanded', 'false')
+
+  const scenarios = page.locator('.panel-trigger', { hasText: 'Scenarios' })
+  if ((await scenarios.getAttribute('aria-expanded')) !== 'true') await scenarios.click()
+  const notice = page.locator('.roster-notice')
+  await expect(notice).toContainText('produced nothing')
+  await notice.locator('[data-action="to-warnings"]').click()
+  await expect(warnings).toHaveAttribute('aria-expanded', 'true')
+})

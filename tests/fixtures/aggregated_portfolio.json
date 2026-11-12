@@ -1,5 +1,5 @@
 {
-  "run_id": "20261018_105012_fde28d5d",
+  "run_id": "20261110_143247_618a9984",
   "currencies": [
     {
       "currency": "EUR",
@@ -89,7 +89,10 @@
         "spot_scenarios": [],
         "spot_total_est_current": 0.0,
         "spot_total_est_initial": 0.0,
-        "spot_has_base_holdings": false
+        "spot_has_base_holdings": false,
+        "total_costs": 7.817793777229296,
+        "spot_total_est_pnl": null,
+        "spot_total_est_pnl_pct": null
       },
       "margin": null,
       "spot": null
@@ -193,7 +196,10 @@
         ],
         "spot_total_est_current": 2978.0352057156733,
         "spot_total_est_initial": 3003.875,
-        "spot_has_base_holdings": true
+        "spot_has_base_holdings": true,
+        "total_costs": 34.24738822684371,
+        "spot_total_est_pnl": -25.839794284326672,
+        "spot_total_est_pnl_pct": -0.8602153646315733
       },
       "margin": null,
       "spot": null
