@@ -1,5 +1,5 @@
 {
-  "run_id": "20261109_170555_45585755",
+  "run_id": "20261110_143247_618a9984",
   "warnings": [
     {
       "tier": "major",
@@ -39,7 +39,7 @@
     {
       "tier": "major",
       "scope": "run",
-      "message": "BROKER SPEC OLD — kraken_spot ETHUSD: the specification this run read was fetched 2026-10-31 (9 days ago) — 1 of 6 scenario(s)\n  → the venue may have moved a minimum or a step since; run `python python/cli/broker_config_cli.py sync --force` before a comparison backtest",
+      "message": "BROKER SPEC OLD — kraken_spot ETHUSD: the specification this run read was fetched 2026-10-31 (10 days ago) — 1 of 6 scenario(s)\n  → the venue may have moved a minimum or a step since; run `python python/cli/broker_config_cli.py sync --force` before a comparison backtest",
       "check": "broker_spec_stale",
       "domain": "broker"
     },
