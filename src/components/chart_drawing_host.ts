@@ -170,7 +170,12 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
       strip: drawings.some(drawing => drawing.kind === 'span'),
       marks: drawings.some(drawing => drawing.kind === 'lane-mark'),
     })
-    const share = this._lane && height > 0 ? this._lane.height / height : 0
+    // the volume stands above the lane while something of it is shown; with all of it switched off it
+    // sinks into the lane's room, which the candles' scale keeps free, so nothing of the candles moves
+    // (operator, on screen 2026-11-12: it floated over an empty band)
+    const shown = this._layers.some(layer => !layer.hidden
+      && layer.drawings.some(drawing => drawing.kind === 'span' || drawing.kind === 'lane-mark'))
+    const share = this._lane && height > 0 && shown ? this._lane.height / height : 0
     if (share !== this._laneShare) {
       this._laneShare = share
       this._onLaneShare?.(share)

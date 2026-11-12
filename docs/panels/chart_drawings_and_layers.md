@@ -211,7 +211,9 @@ on show (`run_chart_lane.ts`).
   does not reach, so the host tells the chart the lane's share of the pane whenever it changes
   (`onLaneShare`) and the volume's fifth is lifted by it — the strip and the crosses were drawn over
   its bars (on screen 2026-11-08). Only the host knows the pane's height in time: after a resize the
-  library lays the pane out at its next frame.
+  library lays the pane out at its next frame. With every layer of the lane switched off the volume
+  sinks into the lane's room, while the candles' scale keeps it free, so nothing of the candles moves
+  (on screen 2026-11-12: it floated over an empty band).
 - **A period** runs from the left edge of the bar it opened in to the right edge of the bar it closed
   in — to that bar's left edge where it closed at its open (`endsAtOpen`), so a period that ended on
   the hour does not reach into the next one. Its fill is quiet, in the polarity of its `net_pnl`,

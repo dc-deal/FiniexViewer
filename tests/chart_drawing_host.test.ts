@@ -254,6 +254,21 @@ describe('ChartDrawingHost', () => {
       ])
     })
 
+    /** The volume sank into the empty lane, and the candles' scale kept its room (operator, 2026-11-12). */
+    it('tells no share once every layer of the lane is switched off, while the candles keep its room', () => {
+      const host = new ChartDrawingHost()
+      const shares: number[] = []
+      host.onLaneShare(share => shares.push(share))
+      attachTo(host)
+      host.setDrawings([PERIODS, REFUSALS], BARS, COLOURS)
+      const room = host.autoscaleInfo()!.margins!.below
+      host.setDrawings([{ ...PERIODS, hidden: true }, REFUSALS], BARS, COLOURS)
+      expect(shares.at(-1)).toBeGreaterThan(0)
+      host.setDrawings([{ ...PERIODS, hidden: true }, { ...REFUSALS, hidden: true }], BARS, COLOURS)
+      expect(shares.at(-1)).toBe(0)
+      expect(host.autoscaleInfo()!.margins!.below).toBe(room)
+    })
+
     it('draws the bounds of a hovered period dashed through the candles, and asks for a new drawing when the pointer moves', () => {
       const host = new ChartDrawingHost()
       const { requestUpdate } = attachTo(host)
