@@ -2,40 +2,40 @@
   "key": [
     "activity_id"
   ],
-  "measured_at": "2026-11-12T08:22:22.795200+00:00",
+  "measured_at": "2026-11-12T20:04:40.692663+00:00",
   "machine_memory": {
     "limit_bytes": 32495558656,
-    "used_bytes": 4393615360,
-    "used_pct": 13.5,
+    "used_bytes": 5662183424,
+    "used_pct": 17.4,
     "limit_source": "machine",
     "warn_at_pct": 80.0,
     "critical_at_pct": 90.0
   },
   "pressure_level": "ok",
   "pressure_reasons": [],
-  "server_activity_id": "act_20261112_080421_f62b9be5",
+  "server_activity_id": "act_20261112_193053_b6b81ba8",
   "unreadable_activity_ids": [],
   "activities": [
     {
-      "activity_id": "act_20261112_080421_f62b9be5",
+      "activity_id": "act_20261112_193053_b6b81ba8",
       "activity_kind": "api_server",
       "activity_state": "running",
       "activity_label": "port 8000",
       "run_id": null,
       "sweep_id": null,
       "parent_activity_id": null,
-      "pid": 912,
+      "pid": 1176,
       "command_line": "python/cli/api_server_cli.py",
-      "started_at": "2026-11-12T08:04:21.857179+00:00",
-      "uptime_s": 1081.0,
+      "started_at": "2026-11-12T19:30:53.938097+00:00",
+      "uptime_s": 2026.9,
       "working_tree": ".",
-      "git_commit": "75102ea1",
+      "git_commit": "d80c5253",
       "origin_channel": "cli",
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
       "console_session": null,
-      "rss_bytes": 501325824,
+      "rss_bytes": 494956544,
       "process_count": 1
     }
   ]

@@ -653,6 +653,9 @@ export interface PortfolioUnitRow {
    * the figure is not about this run alone: `drawdown_restarts` counts how many sessions it has
    * survived, and the two stamps say which stretch it spans.
    */
+  // An instant on the run's own clock since contract 54 — the replayed time in a backtest, the
+  // market's in a session — and '' where a session ended before its first pass. A run recorded
+  // earlier keeps the wall-clock instant it was written with.
   drawdown_started_at: string
   drawdown_carried_from: string
   drawdown_restarts: number

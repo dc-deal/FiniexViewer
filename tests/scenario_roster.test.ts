@@ -568,17 +568,23 @@ describe('ScenarioRosterPanel', () => {
     })
 
     /**
-     * `drawdown_started_at` is on the wall clock — when measuring began, in a backtest when the scenario
-     * valued its first tick — never an instant of the data. Labelled as when a drawdown began, it read
-     * as a market moment.
+     * `drawdown_started_at` is an instant on the run's own clock since contract 54 — the replayed time
+     * in a backtest — the clock of everything else in the card, so it names none and explains nothing.
+     * Labelled as when a drawdown began, it read as when a decline set in.
      */
-    it('says on which clock the drawdown curve began', () => {
-      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { drawdown_started_at: '2026-10-07T14:41:24+00:00' })])))
+    it('says when the drawdown curve began, as an instant of the run', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { drawdown_started_at: '2025-09-01T00:00:03+00:00' })])))
       const details = wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]
       const began = details.find(pair => pair.label === 'Drawdown curve began')!
-      expect(began.value).toBe('2026-10-07 14:41:24Z · wall clock')
-      expect(began.title).toContain('never an instant of the data')
+      expect(began.value).toBe('2025-09-01 00:00:03Z')
+      expect(began.title).toBeUndefined()
       expect(details.map(pair => pair.label)).not.toContain('Drawdown began')
+    })
+
+    it('says nothing of the drawdown start where a session ended before its first pass', () => {
+      const wrapper = mountPanel(view(ROSTER, portfolio([earning('winner', { drawdown_started_at: '' })])))
+      const labels = (wrapper.findAllComponents(HoverCard)[0]!.props('details') as Figure[]).map(pair => pair.label)
+      expect(labels).not.toContain('Drawdown curve began')
     })
 
     it('says nothing of modelled quotes where the unit read recorded ones', () => {
