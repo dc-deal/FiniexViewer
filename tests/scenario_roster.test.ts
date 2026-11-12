@@ -204,12 +204,17 @@ describe('ScenarioRosterPanel', () => {
     expect(wrapper.find('.roster-notice').exists()).toBe(false)
   })
 
-  it('puts the reason on the row that failed, and only there', () => {
+  /**
+   * The reason is the backend's sentence, served again in Warnings & errors: printed on the row as
+   * well, it took a screenful of the list for one failed scenario (operator, 2026-11-12).
+   */
+  it('leaves the reason to Warnings & errors and says so, the failed row marked', () => {
     const wrapper = mountPanel()
-    expect(wrapper.find('.record-detail').text()).toContain('Warmup for M30')
-    // one reason among four rows: the other three produced something and carry figures instead
-    expect(wrapper.findAll('.record-detail')).toHaveLength(1)
+    expect(wrapper.find('.record-detail').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Warmup for M30')
     expect(wrapper.findAll('.record-row')).toHaveLength(4)
+    expect(wrapper.find('.roster-notice').text()).toContain('their reason is in Warnings & errors')
+    expect(wrapper.find('.roster-state.failed').exists()).toBe(true)
   })
 
   describe('the facet bar over it', () => {

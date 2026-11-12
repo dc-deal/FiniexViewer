@@ -18,7 +18,8 @@ import type { PortfolioUnitRow } from '@/types/api/report_types'
 import { t } from '@/translate'
 
 /**
- * Every scenario the run declared — the ones that produced nothing included, each with its reason.
+ * Every scenario the run declared — the ones that produced nothing included, each marked failed;
+ * the reason stands once, in Warnings & errors, where the backend serves the same sentence.
  *
  * This is the only complete list: `portfolio`, `broker` and `run-summary` each answer a narrower
  * question, and comparing them is how a reader would otherwise discover that two scenarios are
@@ -408,7 +409,7 @@ function isPicked(name: string): boolean {
     <p v-if="failed" class="roster-notice">
       <span class="mark">⚠</span>
       {{ failed }} {{ t('of') }} {{ roster.scenario_count }}
-      {{ t('scenarios produced nothing — their reason is on the row') }}
+      {{ t('scenarios produced nothing — their reason is in Warnings & errors') }}
     </p>
 
     <!-- What a click does, and it STAYS once something is picked: swapping it for a line that
@@ -444,7 +445,6 @@ function isPicked(name: string): boolean {
       :columns="columns"
       :row-key="row => row.name"
       :is-picked="row => isPicked(row.name)"
-      :has-detail="row => Boolean(row.error_message)"
       :row-card="card"
       @pick="row => narrowing.toggle(row.name)"
     >
@@ -507,9 +507,6 @@ function isPicked(name: string): boolean {
         </span>
       </template>
 
-      <!-- the reason a scenario produced nothing is prose and spans every track: squeezed into a
-           column it would make that column as wide as the longest sentence in the run -->
-      <template #detail="{ row }">{{ row.error_message }}</template>
     </RecordList>
   </div>
 </template>
@@ -528,8 +525,7 @@ function isPicked(name: string): boolean {
   font-size: var(--font-size-sm);
 }
 
-/* only what the shared list does NOT own: it carries the tracks, the row states, the picked edge
-   and the spanning reason line */
+/* only what the shared list does NOT own: it carries the tracks, the row states and the picked edge */
 .roster-list {
   /* of the view that holds the panel, not of the browser window */
   max-height: 60cqh;
@@ -598,12 +594,6 @@ function isPicked(name: string): boolean {
 
 .positive { color: var(--color-positive); }
 .negative { color: var(--color-negative); }
-
-/* the reason a scenario produced nothing is prose, and the list gives it every track — it only
-   needs its line breaks kept */
-.roster-list :deep(.record-detail) {
-  white-space: pre-wrap;
-}
 
 .hint {
   color: var(--color-text-secondary);
