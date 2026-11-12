@@ -137,9 +137,15 @@ Run chart · ETHUSD_aug_sep
   off, the volume stands in the group of the candles, behind them. A group's heading is an uppercase
   label that folds it away; the fold is kept with the panel's view (`layers-pane-price`,
   `layers-pane-volume`). Each group is a list of its own, so a layer is dragged within its pane only.
-  Below the pane, a group for each source of a layer — ours from the record routes, an algo's, a
-  worker instance's — waits for testingide#379's layers; asked of FiniexTestingIDE on 2026-11-12, with
-  how an algo names several layers of its own.
+  Below the pane, a group for each source of a layer waits for testingide#379's layers. The tree is
+  agreed with FiniexTestingIDE as a direction (2026-11-12, #379's section *Grouping the layers*):
+  pane, then source — *framework* (ours, from the record routes), the algo, a worker instance — then
+  layer; a source's heading only where a pane holds layers of more than one. A layer is one string:
+  `algo` for the algo's default layer, `algo:<name>` for every further one, `worker:<instance>` and
+  `worker:<instance>:<name>` alike — the name a constant in the algo's code, so a reader's on/off,
+  order and opacity are kept by it; no `:` in a name, a `title` beside it for the words on screen. One
+  level of names for now: a `/` is kept for a group level later (`entries/long`). An *Indicator series*
+  entry is one layer, its plots switched together.
 - **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
   the row opens its options.
