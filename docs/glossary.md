@@ -44,8 +44,9 @@ deployments. Never a member of a bundle.
 **member** — A panel inside a bundle: a report section in the run bundle. It opens as a panel of its
 own and goes back. Not the *member* of an archive FiniexTestingIDE re-imports, a file inside a zip.
 
-**menu bar** — The frame above the panels: the app's name, the Panels menu, the *narrowing* while
-one is set, the machine's load, the account and the application menu. It is never closed or moved.
+**menu bar** — The frame above the panels, which chooses: the app's name, the Panels and Layouts
+menus, the *narrowing* while one is set, and the application menu. It is never closed or moved. See
+*status bar*.
 
 **narrowing** — Putting one of a run's units in focus, so that the report sections which map over
 units show only it, or mark it, and the *run-bound chart* draws it. Stated once, in the menu bar, and drawn as a dashed border — the
@@ -69,7 +70,18 @@ chart's broker, symbol and timeframe, the run chart's unit and timeframe.
 *Run chart*, opened beside the run report from the Panels menu or by the chart mark on a trade or
 an order. It shows the unit in focus (see *narrowing*), else its own choice. See *free chart*.
 
+**status bar** — The frame below the panels, which states what the window works against: the
+server, the account, the contract where it is not the viewer's, and the machine's load (2026-11-10).
+Both bars give room by rank. Not in FiniexTestingIDE's glossary or consumer documents, checked
+2026-11-12; the word of VS Code's and JetBrains' bars of the same kind.
+
 **server** — One installation of the API as this viewer reaches it: an address and a token that come as a pair. Each browser window shows one. FiniexTestingIDE's word, in its document `server`, and agreed with it for this label on 2026-11-01. Not *host*, which is the machine's identity there (`origin.host`), and not *connection*, which there is an external call with its give-up rule; *installation* stays its word for what stands behind a server. See [Servers](interface/servers.md).
 
 **tab** — A panel's handle in the dock: its form, its title, and one status that prints only when
 it has something to say.
+
+**time lane** — The band along the bottom of the run chart's pane for what has a time and no price:
+the booking periods as a strip, the orders refused or expired as marks above it (viewer#41). Not in
+FiniexTestingIDE's glossary or consumer documents, checked 2026-11-12, and not their *data window*:
+the lane holds marks, never a span of data. See [Chart Drawings and
+Layers](panels/chart_drawings_and_layers.md).
