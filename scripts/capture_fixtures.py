@@ -135,8 +135,15 @@ DIRTY_RUN = '20261012_205715_c3b41fff'
 # position open in its last frame. STOPPED: a dry run on the live feed killed mid-run, whose last
 # frame is the one its strategy wrote when it sent an order - not reproducible, a live market cannot
 # be replayed, so it stays as it is. A running session cannot be pinned: it ends.
-STATE_ENDED_RUN = '20261022_123550_0bfde90e'
+# Re-pinned 2026-11-12 to `state_frames_session` produced again under contract 55, the id
+# FiniexTestingIDE named; the same session, 344 frames, no indicator series.
+STATE_ENDED_RUN = '20261112_221825_c7364106'
 STATE_STOPPED_RUN = '20261022_123713_e059d354'
+
+# What a drawing worker records over time (contract 55): the fixture catalog's
+# `indicator_series_session`, a mock session whose workers draw every kind of indicator pane - on
+# the candles and in panes of their own, one worker on two timeframes - beside its state frames.
+SERIES_RUN = '20261112_222914_f2285ca5'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),
@@ -479,6 +486,42 @@ if recorded_unit:
         bodies[name] = body
         served.add(contract)
         TARGETS.append((name, path))
+
+# The same two routes of the session that draws: its timeline, one row per drawing worker, and a
+# window forty records long - since contract 55 a page counts the frames and every series' bars
+# together, so forty hold a stretch of each series beside sixteen frames, about 33 KB.
+series_unit = None
+try:
+    latest, _ = fetch(f'reports/runs/{SERIES_RUN}/state-frames/latest')
+    series_unit = ((latest or {}).get('units') or [{}])[0].get('unit_name')
+except Exception as error:                                       # noqa: BLE001 - report, never mask
+    failures.append(('the unit of SERIES_RUN', f'reports/runs/{SERIES_RUN}/state-frames/latest', error))
+if series_unit:
+    base = f'reports/runs/{SERIES_RUN}/units/{urllib.parse.quote(series_unit)}/recorded-streams'
+    for name, path in (('recorded_streams_series.json', base),
+                       ('recorded_window_series.json', f'{base}/window?limit=40')):
+        try:
+            body, contract = fetch(path)
+        except Exception as error:                               # noqa: BLE001 - report, never mask
+            failures.append((name, path, error))
+            continue
+        bodies[name] = body
+        served.add(contract)
+        TARGETS.append((name, path))
+
+drawing = [row for row in (bodies.get('recorded_streams_series.json') or {}).get('streams') or []
+           if row.get('stream_kind') == 'indicator_series']
+entries = (bodies.get('recorded_window_series.json') or {}).get('indicator_series') or []
+if 'recorded_window_series.json' in bodies and not (
+        drawing and entries
+        and any(entry.get('pane') == 'price' for entry in entries)
+        and any(entry.get('pane') != 'price' for entry in entries)
+        and len({entry.get('timeframe') for entry in entries}) > 1
+        and all(len(values) == len(entry.get('times') or [])
+                for entry in entries for values in (entry.get('data') or {}).values())):
+    sys.exit(f'NOTHING WRITTEN - pinned SERIES_RUN {SERIES_RUN} no longer QUALIFIES: a drawing worker in '
+             f'its timeline, series on the candles and in a pane of their own, on two timeframes, '
+             f'each plot one value per bar.')
 
 timeline = (bodies.get('recorded_streams.json') or {}).get('streams') or []
 page = bodies.get('recorded_window.json') or {}

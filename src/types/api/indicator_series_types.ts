@@ -50,8 +50,12 @@ export interface IndicatorPriceLine {
 
 /** An area between two edges: `plot:<id>` twice or `price_line:<price>` twice, never one of each. */
 export interface IndicatorFilledArea {
-  /** A price edge is its shortest exact decimal — `70`, `70.5` — never in exponent form, never `70.0`. */
-  between: [string, string]
+  /**
+   * Always two edges (the schema's `minItems` and `maxItems`), typed as a list because a captured
+   * answer reads as one. A price edge is its shortest exact decimal — `70`, `70.5` — never in
+   * exponent form, never `70.0`.
+   */
+  between: string[]
   style: DrawingStyle
 }
 
@@ -79,8 +83,11 @@ export interface IndicatorSeriesEntry {
   pane: string
   /** The legend: the title, then the values of `inputs` — `RSI 14`. */
   title: string
-  /** The worker's period on its timeframe as `period`, then its plain parameters in the order it declares them. */
-  inputs: Record<string, boolean | number | string>
+  /**
+   * The worker's period on its timeframe as `period`, then its plain parameters in the order it
+   * declares them. Which keys stand differs from worker to worker, so a key read may be absent.
+   */
+  inputs: Partial<Record<string, boolean | number | string>>
   /** The series' own timeframe, which need not be the chart's; a worker on two timeframes serves an entry for each. */
   timeframe: string
   /** Null means the symbol's own price format. */
@@ -95,7 +102,8 @@ export interface IndicatorSeriesEntry {
   times: string[]
   /**
    * Per plot id, one value per entry of `times`, belonging to the bar's close. Null where the worker
-   * had no value for that bar — a gap to draw, never filled and never left out.
+   * had no value for that bar — a gap to draw, never filled and never left out. Its keys are the
+   * plots' ids, so a key read beside them may be absent.
    */
-  data: Record<string, (number | null)[]>
+  data: Partial<Record<string, (number | null)[]>>
 }

@@ -31,6 +31,8 @@ import stateFramesStopped from './fixtures/state_frames_stopped.json'
 import validationChecks from './fixtures/validation_checks.json'
 import recordedStreams from './fixtures/recorded_streams.json'
 import recordedWindow from './fixtures/recorded_window.json'
+import recordedStreamsSeries from './fixtures/recorded_streams_series.json'
+import recordedWindowSeries from './fixtures/recorded_window_series.json'
 import venueAccount from './fixtures/venue_account.json'
 import { EXPECTED_CONTRACT } from '@/api/expected_contract'
 import type { ValidationCheckList } from '@/types/api/validation_check_types'
@@ -179,6 +181,28 @@ describe('api contract', () => {
     expect(page.state_frames[0]!.frame_time).toBe(stream.first_record_time)
     expect(page.truncated).toBe(true)
     expect(Date.parse(page.next_from!)).toBeGreaterThan(Date.parse(page.state_frames.at(-1)!.frame_time))
+  })
+
+  /**
+   * What a drawing worker records (contract 55), of the session whose workers draw every kind of
+   * pane: a row per worker in the timeline, its time read from the bar, and in the window one entry
+   * per series keyed by its layer, each plot one value per bar of the series' own timeframe — a
+   * gap is a null, never a shorter list. The type-checker holds the entry's shape.
+   */
+  it('an indicator series gives each plot one value per bar of its own timeframe', () => {
+    const timeline: RecordedStreams = recordedStreamsSeries
+    const page: RecordedWindow = recordedWindowSeries
+    const drawing = timeline.streams.filter(row => row.stream_kind === 'indicator_series')
+    expect(drawing.length).toBeGreaterThan(0)
+    expect(drawing.every(row => row.record_time_field === 'bar_time')).toBe(true)
+    expect(page.keys['indicator_series']).toEqual(EXPECTED_KEYS.indicatorSeries)
+    const layers = page.indicator_series.map(entry => entry.layer)
+    expect(layers.length).toBeGreaterThan(0)
+    expect(new Set(layers).size).toBe(layers.length)
+    for (const entry of page.indicator_series) {
+      expect(entry.plots.length).toBeGreaterThan(0)
+      for (const plot of entry.plots) expect(entry.data[plot.id]).toHaveLength(entry.times.length)
+    }
   })
 
   // Each assignment is a STRUCTURAL check performed by the type-checker, not by the assertion

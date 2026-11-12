@@ -1,0 +1,89 @@
+{
+  "run_id": "20261112_222914_f2285ca5",
+  "unit_name": "indicator_series_session",
+  "served_at": "2026-11-12T22:37:39.537121Z",
+  "recording": "ended",
+  "key": [
+    "stream_kind",
+    "stream_name"
+  ],
+  "streams": [
+    {
+      "stream_kind": "state_frames",
+      "stream_name": "state_frames",
+      "record_time_field": "frame_time",
+      "record_count": 344,
+      "first_record_time": "2026-01-25T02:19:57.550000Z",
+      "last_record_time": "2026-01-25T08:00:00.320000Z",
+      "cadence_timeframe": "M1",
+      "cadence_s": 60.0,
+      "truncated_tail": false
+    },
+    {
+      "stream_kind": "indicator_series",
+      "stream_name": "bollinger_main",
+      "record_time_field": "bar_time",
+      "record_count": 12,
+      "first_record_time": "2026-01-25T02:00:00Z",
+      "last_record_time": "2026-01-25T07:30:00Z",
+      "cadence_timeframe": "M30",
+      "cadence_s": 1800.0,
+      "truncated_tail": false
+    },
+    {
+      "stream_kind": "indicator_series",
+      "stream_name": "macd_main",
+      "record_time_field": "bar_time",
+      "record_count": 69,
+      "first_record_time": "2026-01-25T02:15:00Z",
+      "last_record_time": "2026-01-25T07:55:00Z",
+      "cadence_timeframe": "M5",
+      "cadence_s": 300.0,
+      "truncated_tail": false
+    },
+    {
+      "stream_kind": "indicator_series",
+      "stream_name": "obv_volume",
+      "record_time_field": "bar_time",
+      "record_count": 69,
+      "first_record_time": "2026-01-25T02:15:00Z",
+      "last_record_time": "2026-01-25T07:55:00Z",
+      "cadence_timeframe": "M5",
+      "cadence_s": 300.0,
+      "truncated_tail": false
+    },
+    {
+      "stream_kind": "indicator_series",
+      "stream_name": "rsi_fast",
+      "record_time_field": "bar_time",
+      "record_count": 69,
+      "first_record_time": "2026-01-25T02:15:00Z",
+      "last_record_time": "2026-01-25T07:55:00Z",
+      "cadence_timeframe": "M5",
+      "cadence_s": 300.0,
+      "truncated_tail": false
+    },
+    {
+      "stream_kind": "indicator_series",
+      "stream_name": "tide_wave",
+      "record_time_field": "bar_time",
+      "record_count": 81,
+      "first_record_time": "2026-01-25T02:15:00Z",
+      "last_record_time": "2026-01-25T07:30:00Z",
+      "cadence_timeframe": "M5",
+      "cadence_s": 300.0,
+      "truncated_tail": false
+    },
+    {
+      "stream_kind": "indicator_series",
+      "stream_name": "trend_ema",
+      "record_time_field": "bar_time",
+      "record_count": 12,
+      "first_record_time": "2026-01-25T02:00:00Z",
+      "last_record_time": "2026-01-25T07:30:00Z",
+      "cadence_timeframe": "M30",
+      "cadence_s": 1800.0,
+      "truncated_tail": false
+    }
+  ]
+}

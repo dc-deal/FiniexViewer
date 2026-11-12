@@ -2,11 +2,11 @@
   "key": [
     "activity_id"
   ],
-  "measured_at": "2026-11-12T22:20:12.245114+00:00",
+  "measured_at": "2026-11-12T22:37:09.524043+00:00",
   "machine_memory": {
     "limit_bytes": 32495558656,
-    "used_bytes": 5968306176,
-    "used_pct": 18.4,
+    "used_bytes": 5326315520,
+    "used_pct": 16.4,
     "limit_source": "machine",
     "warn_at_pct": 80.0,
     "critical_at_pct": 90.0
@@ -17,17 +17,17 @@
   "unreadable_activity_ids": [],
   "activities": [
     {
-      "activity_id": "act_20261112_221735_5fdb0ea1",
+      "activity_id": "act_20261112_223709_a5d667bb",
       "activity_kind": "test_suite",
       "activity_state": "running",
-      "activity_label": "autotrader/integration (6/87)",
+      "activity_label": "simulation/margin_validation (73/87)",
       "run_id": null,
       "sweep_id": null,
       "parent_activity_id": "act_20261112_221705_a5c03c78",
       "pid": 80742,
       "command_line": "python/cli/test_runner_cli.py",
-      "started_at": "2026-11-12T22:17:35.789849+00:00",
-      "uptime_s": 156.7,
+      "started_at": "2026-11-12T22:37:09.292937+00:00",
+      "uptime_s": 0.5,
       "working_tree": "line-1-loop",
       "git_commit": "616e0aa7",
       "origin_channel": "cli",
@@ -49,7 +49,7 @@
       "pid": 80742,
       "command_line": "python/cli/test_runner_cli.py",
       "started_at": "2026-11-12T22:17:05.451099+00:00",
-      "uptime_s": 187.1,
+      "uptime_s": 1204.4,
       "working_tree": "line-1-loop",
       "git_commit": "616e0aa7",
       "origin_channel": "cli",
@@ -57,7 +57,7 @@
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
       "console_session": null,
-      "rss_bytes": 908046336,
+      "rss_bytes": 193994752,
       "process_count": 2
     },
     {
@@ -71,7 +71,7 @@
       "pid": 33817,
       "command_line": "python/cli/api_server_cli.py",
       "started_at": "2026-11-12T22:12:09.920587+00:00",
-      "uptime_s": 482.6,
+      "uptime_s": 1500.0,
       "working_tree": ".",
       "git_commit": "27cc14dd",
       "origin_channel": "cli",
@@ -79,7 +79,7 @@
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
       "console_session": null,
-      "rss_bytes": 652976128,
+      "rss_bytes": 696770560,
       "process_count": 1
     }
   ]
