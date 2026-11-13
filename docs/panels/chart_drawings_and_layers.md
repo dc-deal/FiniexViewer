@@ -14,6 +14,9 @@ on top is what is found.
 
 ```
 CandleChart :layers ──► ChartDrawingHost (series primitive, stage `top`, in front of every series of its pane)
+
+A worker's series are layers too, served rather than ours: [Indicator Series](indicator_series.md)
+says how they are drawn and how the Layers panel lists them.
                           ├─ updateAllViews   placeLayer() per layer, on every move of the view
                           ├─ paneViews        one renderer: paintLayer() per layer, in order
                           ├─ hitTest          hitDrawing() → its id → hoveredInfo.objectId → the card

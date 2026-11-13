@@ -6,16 +6,19 @@ import AppButton from '@/components/base/AppButton.vue'
 import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import { seriesLabel } from '@/components/indicator_drawing'
 import { useChartLayers } from '@/composables/use_chart_layers'
-import { useViewExpanded } from '@/composables/use_panel_view'
+import { useViewExpanded, useViewRows } from '@/composables/use_panel_view'
 import { layerDefinition } from '@/layer_registry'
 import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
+import { useRunsStore } from '@/stores/runs_store'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import { CHART_PANE_IDS, PANE_LAYERS } from '@/types/chart_pane_types'
 import type { ChartPaneId } from '@/types/chart_pane_types'
+import type { IndicatorLayer, ServedLayerId } from '@/types/indicator_drawing_types'
 import { LAYER_OPACITY_MIN } from '@/types/layer_types'
 import type { LayerState } from '@/types/layer_types'
 import { t } from '@/translate'
@@ -30,7 +33,9 @@ import { t } from '@/translate'
  * chart.
  */
 const { lastChart } = storeToRefs(useDockStore())
-const { rows, show, setOpacity, setOption, setForm, reorder } = useChartLayers(() => lastChart.value)
+const {
+  rows, show, setOpacity, setOption, setForm, reorder, showServed, setServedOpacity,
+} = useChartLayers(() => lastChart.value)
 
 /** The chart arranged, as its tab names it: `Run chart · ETHUSD_aug_sep`. */
 const chartName = computed(() => {
@@ -60,11 +65,42 @@ const empty = computed(() => {
  * nothing"), and a line under a row would push the rows below it the moment a position is chosen.
  * Hints, so a reader who knows it dismisses or bans them like any other (operator, 2026-10-27).
  */
-const emptyHints = computed(() => rows.value.flatMap(row =>
-  empty.value.has(row.id) ? layerDefinition(row.id).emptyHintId ?? [] : []))
+const emptyHints = computed(() => [
+  ...rows.value.flatMap(row => empty.value.has(row.id) ? layerDefinition(row.id).emptyHintId ?? [] : []),
+  ...(served.value.some(layer => layer.shown && !layer.drawable) ? ['layer-empty-indicator'] : []),
+])
 
 /** Each pane's name in the list, as a heading above its layers. */
 const PANE_TITLES: Record<ChartPaneId, string> = { price: t('Price pane'), volume: t('Volume pane') }
+
+/**
+ * The workers' layers of the unit on the run chart (contract 55), drawn or not — the run chart's,
+ * the one chart that draws them.
+ */
+const served = computed<IndicatorLayer[]>(() => lastChart.value === 'run-chart' ? runChart.indicatorLayers : [])
+
+/** The worker instance a layer belongs to, by the form their document gives it: `worker:<instance>[:<name>]`. */
+function workerOf(layer: IndicatorLayer): string {
+  return layer.entry.layer.split(':')[1] ?? layer.entry.layer
+}
+
+/** One source of a pane's layers: the framework's own, or one worker instance's (agreed with FiniexTestingIDE). */
+interface PaneSource {
+  worker: string
+  layers: IndicatorLayer[]
+}
+
+/** A pane's workers, each with its layers, in the order served. */
+function workersIn(layers: IndicatorLayer[]): PaneSource[] {
+  const sources: PaneSource[] = []
+  for (const layer of layers) {
+    const worker = workerOf(layer)
+    const known = sources.find(source => source.worker === worker)
+    if (known) known.layers.push(layer)
+    else sources.push({ worker, layers: [layer] })
+  }
+  return sources
+}
 
 /**
  * The pane a layer is drawn in: a layer that may have a pane of its own — the volume — stands in it
@@ -80,14 +116,43 @@ function paneOf(row: LayerState): ChartPaneId {
  * TradingView's object tree is: the list grows, and a pane's layers fold away together. A pane with
  * no layer of the list draws no group.
  */
-const groups = computed(() => CHART_PANE_IDS
-  .map(pane => ({ pane, rows: rows.value.filter(row => paneOf(row) === pane) }))
-  .filter(group => group.rows.length))
+const groups = computed(() => {
+  const ours = CHART_PANE_IDS.map(pane => ({
+    pane: pane as string,
+    title: PANE_TITLES[pane],
+    rows: rows.value.filter(row => paneOf(row) === pane),
+    workers: workersIn(served.value.filter(layer => layer.entry.pane === pane)),
+  }))
+  // a worker's own panes below ours, in the order served, each named by its first series
+  const names = [...new Set(served.value.map(layer => layer.entry.pane))]
+    .filter(pane => !(CHART_PANE_IDS as readonly string[]).includes(pane))
+  const theirs = names.map(pane => {
+    const layers = served.value.filter(layer => layer.entry.pane === pane)
+    return { pane, title: `${layers[0]!.entry.title} ${t('pane')}`, rows: [] as LayerState[], workers: workersIn(layers) }
+  })
+  return [...ours, ...theirs]
+    .filter(group => group.rows.length || group.workers.length)
+    // a source is named only where a pane holds two: the framework's and a worker's, or two workers'
+    .map(group => ({ ...group, named: (group.rows.length ? 1 : 0) + group.workers.length > 1 }))
+})
 
-/** Whether each pane's group stands open — kept with this panel's view, open where nothing was kept. */
+/** Whether each of our panes' groups stands open — kept with this panel's view, open where nothing was kept. */
 const folds: Record<ChartPaneId, { value: boolean }> = {
   price: useViewExpanded('layers-pane-price', true),
   volume: useViewExpanded('layers-pane-volume', true),
+}
+
+/** A worker's panes folded, kept for the run they belong to: another run names other panes. */
+const runs = useRunsStore()
+const foldedPanes = useViewRows('panes-folded', () => runs.selectedRunId)
+
+function isOpen(pane: string): boolean {
+  return pane in folds ? folds[pane as ChartPaneId].value : !foldedPanes.has(pane)
+}
+
+function toggleFold(pane: string): void {
+  if (pane in folds) folds[pane as ChartPaneId].value = !folds[pane as ChartPaneId].value
+  else foldedPanes.toggle(pane)
 }
 
 /**
@@ -97,7 +162,7 @@ const folds: Record<ChartPaneId, { value: boolean }> = {
  * The fixed ones, the candles and the volume, are shown, hidden and fainter like the rest, and never
  * moved.
  */
-function reorderIn(pane: ChartPaneId, next: LayerState[]): void {
+function reorderIn(pane: string, next: LayerState[]): void {
   const all = groups.value.flatMap(group => group.pane === pane ? next : group.rows)
   reorder(all.filter(row => !layerDefinition(row.id).fixed).map(row => row.id))
 }
@@ -133,6 +198,24 @@ function summary(row: LayerState): string {
 /** The rows opened — this mount's own, the way a list's folds are until it keeps them. */
 const opened = ref(new Set<ChartLayerId>())
 
+/**
+ * A worker's closed row says what the screen cannot: where the chart's timeframe cannot draw it, the
+ * timeframes that can — its own and every finer one.
+ */
+function servedSummary(layer: IndicatorLayer): string {
+  return layer.drawable ? '' : `${layer.entry.timeframe} ${t('and finer')}`
+}
+
+/** A worker's rows opened, by layer — onto the hint that says what a worker's series is, while it is not put away. */
+const openedServed = ref(new Set<string>())
+
+function toggleServed(layer: IndicatorLayer): void {
+  if (!hints.isVisible('layer-indicator')) return
+  const next = new Set(openedServed.value)
+  if (!next.delete(layer.entry.layer)) next.add(layer.entry.layer)
+  openedServed.value = next
+}
+
 const hints = useHintsStore()
 
 /**
@@ -164,15 +247,19 @@ function toggle(row: LayerState): void {
         <button
           type="button"
           class="pane-heading"
-          :aria-expanded="folds[group.pane].value"
+          :aria-expanded="isOpen(group.pane)"
           data-action="fold-pane"
-          @click="folds[group.pane].value = !folds[group.pane].value"
+          @click="toggleFold(group.pane)"
         >
-          <span class="layer-marker" aria-hidden="true">{{ folds[group.pane].value ? '▾' : '▸' }}</span>
-          <span>{{ PANE_TITLES[group.pane] }}</span>
+          <span class="layer-marker" aria-hidden="true">{{ isOpen(group.pane) ? '▾' : '▸' }}</span>
+          <span>{{ group.title }}</span>
         </button>
+        <!-- the framework's own layers, named as a source only where a worker's stand beside them -->
+        <p v-if="isOpen(group.pane) && group.named && group.rows.length" class="source-heading" data-source="framework">
+          {{ t('Framework') }}
+        </p>
         <VueDraggable
-          v-if="folds[group.pane].value"
+          v-if="isOpen(group.pane) && group.rows.length"
           :model-value="group.rows"
           tag="ul"
           class="layer-list"
@@ -254,6 +341,60 @@ function toggle(row: LayerState): void {
           </div>
         </li>
         </VueDraggable>
+        <!-- a worker's layers: shown, hidden and fainter like ours, never moved — they stand where the
+             run recorded them, in the order served (contract 55) -->
+        <template v-for="source in isOpen(group.pane) ? group.workers : []" :key="source.worker">
+          <p v-if="group.named" class="source-heading" :data-source="source.worker">{{ source.worker }}</p>
+          <ul class="layer-list">
+            <li
+              v-for="layer in source.layers"
+              :key="layer.entry.layer"
+              class="layer served"
+              :class="{ off: !layer.shown }"
+              :data-layer="layer.entry.layer"
+              :data-shown="layer.shown"
+              :data-opacity="layer.opacity"
+              :data-drawable="layer.drawable"
+            >
+              <div class="layer-row">
+                <span class="layer-grip" aria-hidden="true" />
+                <AppSwitch
+                  compact
+                  :model-value="layer.shown"
+                  :aria-label="t('Shown')"
+                  data-action="show"
+                  @update:model-value="on => showServed(layer.entry.layer as ServedLayerId, on)"
+                />
+                <button
+                  type="button"
+                  class="layer-head"
+                  :class="{ inert: !hints.isVisible('layer-indicator') }"
+                  :aria-expanded="hints.isVisible('layer-indicator') ? openedServed.has(layer.entry.layer) : undefined"
+                  data-action="open"
+                  @click="toggleServed(layer)"
+                >
+                  <span class="layer-marker" aria-hidden="true">
+                    {{ hints.isVisible('layer-indicator') ? openedServed.has(layer.entry.layer) ? '▾' : '▸' : '' }}
+                  </span>
+                  <span class="layer-title">{{ seriesLabel(layer.entry) }}</span>
+                  <span class="layer-summary">{{ servedSummary(layer) }}</span>
+                </button>
+                <AppSlider
+                  :model-value="layer.opacity"
+                  :min="LAYER_OPACITY_MIN"
+                  :max="100"
+                  :step="10"
+                  :label="t('Opacity')"
+                  data-action="opacity"
+                  @update:model-value="value => setServedOpacity(layer.entry.layer as ServedLayerId, value)"
+                />
+              </div>
+              <div v-if="hints.isVisible('layer-indicator') && openedServed.has(layer.entry.layer)" class="layer-options">
+                <HintLine id="layer-indicator" />
+              </div>
+            </li>
+          </ul>
+        </template>
       </section>
       <HintLine v-if="emptyHints.length" :id="emptyHints" />
     </template>
@@ -314,6 +455,16 @@ function toggle(row: LayerState): void {
 .pane-heading:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;
+}
+
+/* a source within a pane — the framework's, a worker's — told by its form like the pane's heading,
+   set in under it */
+.source-heading {
+  margin: 0;
+  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* a row of the app's lists: the same rule below, the same padding, the surface under the pointer */

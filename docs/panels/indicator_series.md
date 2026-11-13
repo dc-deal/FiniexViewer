@@ -94,6 +94,35 @@ series: one entry per layer, the pages merged, the frames left behind
 - **What the reader set** — a worker's layer hidden or fainter — is kept with the chart's view by the
   layer's id (`layers.served`), bound to no run: the same worker instance stands hidden in every run
   that draws it.
+- **A pane at the whole height that goes** — a worker's on a timeframe that cannot draw it, the volume
+  hidden — folds nothing while it is gone: every pane keeps its controls. The choice is kept and holds
+  again once the pane is back (on the way to this page 2026-11-13: every pane lost its controls).
+
+## In the Layers panel
+
+```
+▾ PRICE PANE
+   FRAMEWORK
+     ⠿ ● Trades · Entry-exit line · Levels · … · Candles
+   BOLLINGER_MAIN
+       ● Bollinger 20 2 sma · M30
+   TREND_EMA
+       ● MA 20 ema 0.05 · M30
+▾ VOLUME PANE
+       ● Volume
+▾ RSI PANE
+       ● RSI 14 · M5                         M5 and finer   ← where the chart's timeframe is coarser
+```
+
+- **Pane, source, layer** — the tree agreed with FiniexTestingIDE: a worker's own pane is a group
+  like ours, named by its first series; a source is named only where a pane holds two — the
+  framework's layers and a worker's, or two workers' — the framework by our word, a worker by its
+  instance as served.
+- **A worker's row** shows, hides and fades its layer like ours and is never moved: it stands where
+  the run recorded it. It opens onto the hint that says what a worker's series is. Where the chart's
+  timeframe cannot draw it, its row says which can, and a hint below the list says why.
+- **A worker's pane folds** like ours; the fold is kept with the panel's view for the run, since
+  another run names other panes (`panes-folded`).
 
 ## What a series holds
 
@@ -116,7 +145,9 @@ series: one entry per layer, the pages merged, the frames left behind
   layer's values print.
 - `src/components/indicator_fill.ts` — a series' filled areas: their shapes in the pane's pixels
   (`fillShapes`, pure), and the primitive that paints them.
-- `run_chart_store.indicators` — the series drawn: shown, at their opacity, on the timeframe on show.
+- `run_chart_store.indicators` — the series drawn: shown, at their opacity, on the timeframe on show;
+  `indicatorLayers` every worker's layer of the unit, drawn or not, for the Layers panel.
+- `src/views/LayersView.vue` — the workers' panes, sources and rows beside ours.
 
 ## How it is tested
 
@@ -131,7 +162,14 @@ series: one entry per layer, the pages merged, the frames left behind
 - `chart_legend.test.ts`, `use_chart_layers.test.ts`, `arrangement_store.test.ts`,
   `run_chart_store.test.ts` — the lines a legend takes and how the folded ones stack, the workers'
   layers kept beside the chart's own, read back by their form, and the series a timeframe draws.
+- `layers_view.test.ts` — the workers' layers in the pane each names, a source named only where a pane
+  holds two; shown, hidden and faded by id; the timeframes that can draw one; the opening onto the
+  hint; a worker's pane folded for the run.
 - `e2e/indicator_series.spec.ts` — in a real browser on the captured session: every series in the
   pane it names with its legend line; a pane's lever giving its room up, kept across a reload; a
-  coarser timeframe drawing only its own; a seam above a worker's pane kept by the pane's name; and a
-  worker's pane at the whole height stacking the folded legends without one standing on another.
+  coarser timeframe drawing only its own; a seam above a worker's pane kept by the pane's name; a
+  worker's pane at the whole height stacking the folded legends without one standing on another;
+  the Layers panel's rows in their panes, a switch hiding one; a pane at the whole height that goes
+  leaving every pane its controls; the volume moved into the candles' pane and back with the
+  workers' panes below it in order; a worker's pane dragged small and large, hidden at its lever and
+  shown from the Layers panel, back at the height dragged.

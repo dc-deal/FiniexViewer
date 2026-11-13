@@ -171,14 +171,26 @@ const indicatorSeries = useIndicatorSeries({
   symbolFormat: () => props.priceFormat ? { type: 'price', ...props.priceFormat } : null,
 })
 
+/** The panes the chart stacks now, top to bottom, by name. */
+const paneIds = computed(() => ['price', ...(volumeOwnPane.value ? ['volume'] : []), ...indicatorSeries.panes.value])
+
+/**
+ * The pane at the whole height — only while it stands. A pane given it can go: the volume hidden, a
+ * worker's series on a timeframe that cannot draw it. The choice is kept and holds again once the
+ * pane is back; meanwhile no pane is folded, or every one would lose its controls with nothing at the
+ * whole height to fold beside.
+ */
+const wholePane = computed(() =>
+  props.maximizedPane && paneIds.value.includes(props.maximizedPane) ? props.maximizedPane : null)
+
 /** The panes the chart stacks, top to bottom, at the heights the reader kept (viewer#57). */
 const panes = useChartPanes({
   chart: () => chart,
-  ids: () => ['price', ...(volumeOwnPane.value ? ['volume'] : []), ...indicatorSeries.panes.value],
+  ids: () => paneIds.value,
   weights: () => props.paneWeights,
   onWeights: weights => emit('paneWeights', weights),
   frame: () => container.value,
-  maximized: () => props.maximizedPane ?? null,
+  maximized: () => wholePane.value,
 })
 
 /** Where each pane stands in the frame — the legends and the controls are placed by it. */
@@ -217,7 +229,7 @@ function paneShown(pane: string): boolean | null {
 
 /** The whole height for a pane, or — where one has it — the heights back. */
 function toggleWhole(pane: string): void {
-  emit('maximize', props.maximizedPane ? null : pane)
+  emit('maximize', wholePane.value ? null : pane)
 }
 
 /** The time of the bar under the pointer — null off the bars, where the legends say the last one. */
@@ -248,7 +260,7 @@ const legends = computed(() => {
 /** Where each pane's legend stands — the folded panes' as their lines in the one given the whole height. */
 const tops = computed(() => {
   const lines = new Map(legends.value.map(legend => [legend.pane, legendLines(legend)]))
-  return legendTops(panes.boxes.value, props.maximizedPane ?? null, pane => lines.get(pane) ?? 1)
+  return legendTops(panes.boxes.value, wholePane.value, pane => lines.get(pane) ?? 1)
 })
 
 /** Where a pane's legend stands: by its pane, the first pane's before any was measured. */
@@ -258,7 +270,7 @@ function legendTop(pane: string): number | null {
 
 /** A pane folded beside one given the whole height: it keeps its legend's lines and no controls. */
 function folded(pane: string): boolean {
-  return Boolean(props.maximizedPane) && props.maximizedPane !== pane && paneCount.value > 1
+  return wholePane.value !== null && wholePane.value !== pane && paneCount.value > 1
 }
 
 /**
@@ -785,7 +797,7 @@ watch(() => props.candles, () => showCandles())
 watch(() => props.indicators, () => layoutIndicators())
 // a layout loaded: the panes take the weights it holds
 watch(() => props.paneWeights, () => panes.applyWeights())
-watch(() => props.maximizedPane, () => panes.applyWeights())
+watch(wholePane, () => panes.applyWeights())
 // a format taken away goes back to the library's own (lightweight-charts 5.2.1: two decimals, a
 // least move of 0.01) — applying nothing would keep the previous instrument's decimals
 watch(() => props.priceFormat, () => series?.applyOptions(
@@ -804,7 +816,7 @@ watch(() => props.priceFormat, () => series?.applyOptions(
     :data-time-at="timeAt"
     :data-visible-from="visibleFrom ?? undefined"
     :style="plotWidth ? { '--chart-plot-width': `${plotWidth}px` } : undefined"
-    :data-maximized="maximizedPane ?? undefined"
+    :data-maximized="wholePane ?? undefined"
     @pointermove="onFramePointer"
     @pointerleave="hoveredPane = null"
     @dblclick="onFrameDoubleClick"
@@ -827,7 +839,7 @@ watch(() => props.priceFormat, () => series?.applyOptions(
       <ChartPaneControls
         v-if="!folded(box.id) && (paneShown(box.id) !== null || paneCount > 1)"
         :shown="paneShown(box.id)"
-        :whole="Boolean(maximizedPane)"
+        :whole="wholePane !== null"
         :can-maximize="paneCount > 1"
         :visible="hoveredPane === box.id"
         :top="legendTop(box.id) ?? box.top"

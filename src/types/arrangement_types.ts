@@ -72,6 +72,8 @@ export const VIEW_ROW_CAPS = {
   'groups-opened': 100,
   /** Trade History and Orders: scenario groups closed by hand. */
   'groups-closed': 100,
+  /** Layers: a worker's panes folded, by the name the backend gave the pane (contract 55). */
+  'panes-folded': 20,
 } as const
 export type ViewRowList = keyof typeof VIEW_ROW_CAPS
 

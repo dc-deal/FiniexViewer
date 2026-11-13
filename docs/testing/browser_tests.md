@@ -140,8 +140,12 @@ by its tab, the way a reader does.
   bars captured: every series in the pane it names, below the volume's own in the order served, with
   its line in that pane's legend; a pane's lever giving its room up and kept across a real reload; a
   coarser timeframe drawing only its own series; a seam above a worker's pane kept by the pane's
-  name through a reload; and a worker's pane at the whole height stacking the folded legends, a line
-  each, without one standing on another.
+  name through a reload; a worker's pane at the whole height stacking the folded legends, a line
+  each, without one standing on another; the Layers panel's rows of the workers in their panes, a
+  switch hiding one on the chart; a pane at the whole height that goes — a timeframe that cannot draw
+  it, the volume hidden — leaving every pane its controls; the volume moved into the candles' pane and
+  back with the workers' panes below it in order; and a worker's pane dragged small and large, hidden
+  at its lever and shown from the Layers panel, back at the height dragged.
 - `chart_panes.spec.ts` holds the run chart's panes (viewer#57), read off the rows of the library's
   table since a canvas cannot be read back: the volume in a pane of its own at a fifth of the height,
   a booking period's card found at the bottom of the pane of the candles and nothing of the lane over

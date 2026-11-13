@@ -26,7 +26,7 @@ import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
 import type { StoredPanelView } from '@/types/arrangement_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
 import type { PaneWeights } from '@/types/chart_pane_types'
-import type { DrawnSeries, ServedLayerId } from '@/types/indicator_drawing_types'
+import type { DrawnSeries, IndicatorLayer, ServedLayerId } from '@/types/indicator_drawing_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
 
@@ -445,14 +445,23 @@ export const useRunChartStore = defineStore('runChart', () => {
    * The workers' series the chart draws (contract 55): each one the reader left shown, at its layer's
    * opacity, on the timeframe on show where it can be drawn there — its own and every finer one.
    */
-  const indicators = computed<DrawnSeries[]>(() => {
+  const indicators = computed<DrawnSeries[]>(() => indicatorLayers.value
+    .filter(layer => layer.shown && layer.drawable)
+    .map(layer => ({ entry: layer.entry, opacity: layer.opacity / 100 })))
+
+  /**
+   * Every worker's layer of the unit on show, in the order served, as the reader set it — drawn or
+   * not: the Layers panel lists them all, and says where one cannot be drawn on the timeframe on show.
+   */
+  const indicatorLayers = computed<IndicatorLayer[]>(() => {
     const tf = timeframe.value
-    if (!tf) return []
     const kept = arrangement.panelViews[RUN_CHART]?.layers?.served
-    return indicatorSeries.series
-      .filter(entry => !kept?.hidden?.includes(entry.layer as ServedLayerId))
-      .filter(entry => drawsOn(entry.timeframe, tf, timeframeStore.minutesFor))
-      .map(entry => ({ entry, opacity: (kept?.opacity?.[entry.layer as ServedLayerId] ?? 100) / 100 }))
+    return indicatorSeries.series.map(entry => ({
+      entry,
+      shown: !kept?.hidden?.includes(entry.layer as ServedLayerId),
+      opacity: kept?.opacity?.[entry.layer as ServedLayerId] ?? 100,
+      drawable: tf !== null && drawsOn(entry.timeframe, tf, timeframeStore.minutesFor),
+    }))
   })
 
   /** The panes as tall as the reader dragged them, kept with the chart's own view (viewer#57). */
@@ -514,7 +523,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    paneWeights, maximizedPane, indicators, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
+    paneWeights, maximizedPane, indicators, indicatorLayers, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }
 })

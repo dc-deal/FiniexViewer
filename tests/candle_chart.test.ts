@@ -947,6 +947,25 @@ describe('CandleChart', () => {
       expect(lw.built.every(made => made.fills.length === 0)).toBe(true)
     })
 
+    /**
+     * A pane given the whole height can go — a worker's on a timeframe that cannot draw it, the volume
+     * hidden. The choice stands, but folds nothing while its pane is gone: every pane keeps its controls.
+     */
+    it('folds nothing beside a pane at the whole height that is not drawn, and holds again once it is', async () => {
+      size = { width: 800, height: 400 }
+      lw.paneRows.push({ top: 0, height: 250 }, { top: 251, height: 70 }, { top: 322, height: 78 })
+      mounted = mount(CandleChart, { props: { data: BARS, volume: OWN_VOLUME, indicators: [], maximizedPane: 'rsi_fast' } })
+      const wrapper = mounted
+      await nextTick()
+      expect(wrapper.attributes('data-maximized')).toBeUndefined()
+      expect(wrapper.find('.pane-controls[data-pane="price"]').exists()).toBe(true)
+      expect(wrapper.find('[data-legend="price"]').classes()).not.toContain('folded')
+      await wrapper.setProps({ indicators: drawn('worker:rsi_fast') })
+      await nextTick()
+      expect(wrapper.attributes('data-maximized')).toBe('rsi_fast')
+      expect(wrapper.find('.pane-controls[data-pane="price"]').exists()).toBe(false)
+    })
+
     it('takes every series down, and its panes with them, once none is handed', async () => {
       size = { width: 800, height: 400 }
       const wrapper = mountWith(drawn('worker:rsi_fast', 'worker:obv_volume'))
