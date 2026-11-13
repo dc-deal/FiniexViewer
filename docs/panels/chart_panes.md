@@ -142,6 +142,27 @@ A drag reads the panes on screen, and a pane not on it keeps the height it had �
 a worker's pane of another run or timeframe — up to the newest twenty-four panes kept. Before, a
 drag kept only the panes it read, and a hidden volume came back at its default.
 
+## Frame and background — a pane set apart (2026-11-13)
+
+```
+▾ VOLUME PANE
+     ● Volume                       ◐        ├──────────────────────────────┤
+       ◉ Own pane                            │░ Ticks 238 ░░░░░░░░░░░░░░░░░░│  background: the raised
+       ◉ Frame                               │░▂▅▃▇▂▁▃▅░░░░░░░░░░░░░░░░░░░░░│  surface, frame: a rule
+       ○ Background                          └──────────────────────────────┘  along its edges
+```
+
+- **Two switches, in the options of the pane's first row** (operator, 2026-11-13): the candles' row
+  for the pane of the candles, the volume's while it stands in a pane of its own, a worker's first
+  series for its own pane. A later row of the same pane sets nothing — the trades' row stands first
+  in the list of the candles' pane and is not the pane's.
+- **Off for every pane by default.** Only what is on is kept, by the pane's name, with the chart's
+  view and in a named layout, like the heights.
+- **One pane primitive each**, in the library's `bottom` stage: the background is the surface a panel
+  stands on (`--color-bg-surface`), the frame a device pixel of the overlay's rule
+  (`--color-border-overlay`). The library takes a pane's primitives down with the pane, so they are
+  painted anew after every layout of the panes, taken off before it while each pane still stands.
+
 ## Where it lives
 
 - `src/types/chart_pane_types.ts` — the panes we stack of our own (`CHART_PANE_IDS`); a pane in
@@ -157,7 +178,8 @@ drag kept only the panes it read, and a hidden volume came back at its default.
   on the element (`data-panes`), since a canvas cannot be read back. A worker's panes stand below it:
   taken down before the volume moves and built again after, see [Indicator Series](indicator_series.md).
 - `run_chart_store` — `volume.ownPane` from the layer's option, `paneWeights` and `setPaneWeights`,
-  `maximizedPane` and `setMaximizedPane`, `resetPanes`.
+  `maximizedPane` and `setMaximizedPane`, `paneLooks` and `setPaneLook`, `resetPanes`.
+- `src/components/pane_look.ts` — the primitive that paints a pane's background and frame.
 
 ## Not built yet
 

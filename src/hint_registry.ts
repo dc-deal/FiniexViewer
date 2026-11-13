@@ -109,11 +109,11 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layer-candles',
-    text: t('The price of each bar, behind the drawings — as candles, OHLC bars, a line or an area of the close.'),
+    text: t('The price of each bar, behind the drawings — as candles, OHLC bars, a line or an area of the close. Frame and Background set the pane of the candles apart from the panes below it.'),
   },
   {
     id: 'layer-volume',
-    text: t('What traded in each bar — or how many ticks it held, where the venue prints no trades. In a pane of its own below the candles, on its own scale: drag the line between them to share the height differently, and the chart keeps it. Its option off, it stands in the lowest fifth of the pane of the candles, behind them.'),
+    text: t('What traded in each bar — or how many ticks it held, where the venue prints no trades. In a pane of its own below the candles, on its own scale: drag the line between them to share the height differently, and the chart keeps it. Frame and Background set its pane apart. Its option off, it stands in the lowest fifth of the pane of the candles, behind them.'),
   },
   // why a layer that is shown draws nothing — shown below the Layers list only while it does
   {
@@ -154,7 +154,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layer-indicator',
-    text: t('What a worker of the strategy computed, one value per bar of its own timeframe — on the candles or in a pane of its own. Drawn as the run recorded it when it started, and on its own timeframe and every finer one.'),
+    text: t('What a worker of the strategy computed, one value per bar of its own timeframe — on the candles or in a pane of its own. Drawn as the run recorded it when it started, and on its own timeframe and every finer one. In a pane of its own, the first of its series sets the pane apart with a frame and a background.'),
   },
   {
     id: 'layer-empty-indicator',

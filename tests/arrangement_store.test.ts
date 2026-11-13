@@ -318,6 +318,17 @@ describe('useArrangementStore', () => {
       })
     })
 
+    /** A pane set apart by a frame or a background, by its name: only what is on, of a pane's form, is kept. */
+    it('keeps the looks of a chart\u2019s panes, and drops what is not on or no pane', () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: {
+          'run-chart': { looks: { price: { frame: true, background: false }, rsi_fast: { background: true }, volume: { frame: 'yes' }, 'no pane': { frame: true } } },
+        },
+      })
+      expect(useArrangementStore().panelViews).toEqual({ 'run-chart': { looks: { price: { frame: true }, rsi_fast: { background: true } } } })
+    })
+
     /**
      * A worker's layers by the backend's ids (contract 55), bound to no run: hidden, and fainter. An id
      * of another form, an opacity out of range, and what is whole are none.

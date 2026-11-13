@@ -227,3 +227,43 @@ test('a worker’s pane dragged small and big, hidden and shown, comes back at t
   expect((await chart.boundingBox())!.height).toBeCloseTo(frame.height, 0)
   await expect.poll(async () => Math.abs((await paneHeights(chart))[2]! - large)).toBeLessThanOrEqual(3)
 })
+
+/**
+ * A pane set apart (operator, 2026-11-13: the switches in the options of the pane's first row): the
+ * candles' pane from the candles' row, the volume's from its own, a worker's from its first series —
+ * kept by the pane's name, across a reload.
+ */
+test('a pane is set apart by a frame and a background from its first row, kept across a reload', async ({ page }) => {
+  const chart = await openSession(page)
+  await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
+  const layers = page.locator('[data-panel-kind="layers"]')
+  async function look(layer: string, part: 'pane-frame' | 'pane-background'): Promise<void> {
+    const row = layers.locator(`[data-layer="${layer}"]`)
+    if (!(await row.locator(`[data-action="${part}"]`).isVisible())) await row.locator('[data-action="open"]').click()
+    await row.locator(`[data-action="${part}"]`).click()
+  }
+  const pane = OWN_PANES[0]!
+  const first = SERIES.find(entry => entry.pane === pane)!.layer
+  await look('candles', 'pane-frame')
+  await look('volume', 'pane-background')
+  await look(first, 'pane-frame')
+  await look(first, 'pane-background')
+  const stored = (): Promise<unknown> => page.evaluate(() =>
+    JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').panelViews?.['run-chart']?.looks)
+  await expect.poll(stored).toEqual({ price: { frame: true }, volume: { background: true }, [pane]: { frame: true, background: true } })
+  // a later series of the same pane sets nothing: the pane's first row does
+  const second = SERIES.filter(entry => entry.pane === 'price')
+  expect(second.length).toBeGreaterThan(0)
+  await layers.locator(`[data-layer="${second[0]!.layer}"] [data-action="open"]`).click()
+  await expect(layers.locator(`[data-layer="${second[0]!.layer}"] [data-action="pane-frame"]`)).toHaveCount(0)
+
+  await page.reload()
+  await expect(chart).toHaveAttribute('data-indicators', String(SERIES.length))
+  await expect.poll(stored).toEqual({ price: { frame: true }, volume: { background: true }, [pane]: { frame: true, background: true } })
+  // taken off again from the same switch, nothing is kept
+  await look('candles', 'pane-frame')
+  await look('volume', 'pane-background')
+  await look(first, 'pane-frame')
+  await look(first, 'pane-background')
+  await expect.poll(stored).toBeUndefined()
+})

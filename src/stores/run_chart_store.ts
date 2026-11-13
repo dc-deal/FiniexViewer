@@ -25,7 +25,7 @@ import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
 import type { StoredPanelView } from '@/types/arrangement_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
-import type { PaneWeights } from '@/types/chart_pane_types'
+import type { PaneLook, PaneLooks, PaneWeights } from '@/types/chart_pane_types'
 import type { DrawnSeries, IndicatorLayer, ServedLayerId } from '@/types/indicator_drawing_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
@@ -522,6 +522,20 @@ export const useRunChartStore = defineStore('runChart', () => {
     arrangement.setPanelView(RUN_CHART, pane ? { ...view, maximized: pane } : view)
   }
 
+  /** Each pane's frame and background, kept like the heights: with the chart's view, in a layout (viewer#57). */
+  const paneLooks = computed<PaneLooks | null>(() => arrangement.panelViews[RUN_CHART]?.looks ?? null)
+
+  /** A pane's frame or background on or off — only what is on is kept. */
+  function setPaneLook(pane: string, part: keyof PaneLook, on: boolean): void {
+    const looks: PaneLooks = { ...arrangement.panelViews[RUN_CHART]?.looks }
+    const look: PaneLook = { ...looks[pane] }
+    if (on) look[part] = true
+    else delete look[part]
+    if (Object.keys(look).length) looks[pane] = look
+    else delete looks[pane]
+    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('looks'), ...(Object.keys(looks).length ? { looks } : {}) })
+  }
+
   /** The panes back at their first heights, none of them given the whole height. */
   function resetPanes(): void {
     arrangement.setPanelView(RUN_CHART, chartViewWithout('panes', 'maximized'))
@@ -554,7 +568,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    paneWeights, maximizedPane, indicators, indicatorLayers, seriesOffer, seriesCutAt, seriesError,
+    paneWeights, maximizedPane, paneLooks, setPaneLook, indicators, indicatorLayers, seriesOffer, seriesCutAt, seriesError,
     loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }

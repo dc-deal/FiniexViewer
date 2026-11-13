@@ -206,11 +206,39 @@ function servedSummary(layer: IndicatorLayer): string {
   return layer.drawable ? '' : `${layer.entry.timeframe} ${t('and finer')}`
 }
 
-/** A worker's rows opened, by layer — onto the hint that says what a worker's series is, while it is not put away. */
+/** A worker's rows opened, by layer — onto the hint that says what a worker's series is, and its pane's look. */
 const openedServed = ref(new Set<string>())
 
+/**
+ * The pane whose frame and background a row sets (operator, 2026-11-13: in the options of the
+ * pane's first row) — the candles' for the pane of the candles, the volume's while it stands in a
+ * pane of its own, a worker's first series for its own pane. None for every other row.
+ */
+function lookPane(row: LayerState): string | null {
+  if (row.id === 'candles') return 'price'
+  return row.id === 'volume' && paneOf(row) === 'volume' ? 'volume' : null
+}
+
+/** The worker's pane a served row sets the look of: its pane's first series, in a pane of its own. */
+function servedLookPane(layer: IndicatorLayer): string | null {
+  if (layer.entry.pane === 'price') return null
+  const first = served.value.find(other => other.entry.pane === layer.entry.pane)
+  return first === layer ? layer.entry.pane : null
+}
+
+/** A pane's look as kept: both parts off where nothing is. */
+function lookOf(pane: string): { frame: boolean, background: boolean } {
+  const kept = runChart.paneLooks && Object.prototype.hasOwnProperty.call(runChart.paneLooks, pane) ? runChart.paneLooks[pane] : undefined
+  return { frame: kept?.frame === true, background: kept?.background === true }
+}
+
+/** Whether a worker's row opens onto anything: its hint while not put away, or its pane's look. */
+function openableServed(layer: IndicatorLayer): boolean {
+  return hints.isVisible('layer-indicator') || servedLookPane(layer) !== null
+}
+
 function toggleServed(layer: IndicatorLayer): void {
-  if (!hints.isVisible('layer-indicator')) return
+  if (!openableServed(layer)) return
   const next = new Set(openedServed.value)
   if (!next.delete(layer.entry.layer)) next.add(layer.entry.layer)
   openedServed.value = next
@@ -338,6 +366,23 @@ function toggle(row: LayerState): void {
                 {{ form.label }}
               </AppButton>
             </div>
+            <!-- the look of the pane this row stands first in: set apart by a frame, a background -->
+            <template v-if="lookPane(row)">
+              <AppSwitch
+                compact
+                :model-value="lookOf(lookPane(row)!).frame"
+                :label="t('Frame')"
+                data-action="pane-frame"
+                @update:model-value="on => runChart.setPaneLook(lookPane(row)!, 'frame', on)"
+              />
+              <AppSwitch
+                compact
+                :model-value="lookOf(lookPane(row)!).background"
+                :label="t('Background')"
+                data-action="pane-background"
+                @update:model-value="on => runChart.setPaneLook(lookPane(row)!, 'background', on)"
+              />
+            </template>
           </div>
         </li>
         </VueDraggable>
@@ -368,13 +413,13 @@ function toggle(row: LayerState): void {
                 <button
                   type="button"
                   class="layer-head"
-                  :class="{ inert: !hints.isVisible('layer-indicator') }"
-                  :aria-expanded="hints.isVisible('layer-indicator') ? openedServed.has(layer.entry.layer) : undefined"
+                  :class="{ inert: !openableServed(layer) }"
+                  :aria-expanded="openableServed(layer) ? openedServed.has(layer.entry.layer) : undefined"
                   data-action="open"
                   @click="toggleServed(layer)"
                 >
                   <span class="layer-marker" aria-hidden="true">
-                    {{ hints.isVisible('layer-indicator') ? openedServed.has(layer.entry.layer) ? '▾' : '▸' : '' }}
+                    {{ openableServed(layer) ? openedServed.has(layer.entry.layer) ? '▾' : '▸' : '' }}
                   </span>
                   <span class="layer-title">{{ seriesLabel(layer.entry) }}</span>
                   <span class="layer-summary">{{ servedSummary(layer) }}</span>
@@ -389,8 +434,24 @@ function toggle(row: LayerState): void {
                   @update:model-value="value => setServedOpacity(layer.entry.layer as ServedLayerId, value)"
                 />
               </div>
-              <div v-if="hints.isVisible('layer-indicator') && openedServed.has(layer.entry.layer)" class="layer-options">
+              <div v-if="openableServed(layer) && openedServed.has(layer.entry.layer)" class="layer-options">
                 <HintLine id="layer-indicator" />
+                <template v-if="servedLookPane(layer)">
+                  <AppSwitch
+                    compact
+                    :model-value="lookOf(servedLookPane(layer)!).frame"
+                    :label="t('Frame')"
+                    data-action="pane-frame"
+                    @update:model-value="on => runChart.setPaneLook(servedLookPane(layer)!, 'frame', on)"
+                  />
+                  <AppSwitch
+                    compact
+                    :model-value="lookOf(servedLookPane(layer)!).background"
+                    :label="t('Background')"
+                    data-action="pane-background"
+                    @update:model-value="on => runChart.setPaneLook(servedLookPane(layer)!, 'background', on)"
+                  />
+                </template>
               </div>
             </li>
           </ul>

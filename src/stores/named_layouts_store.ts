@@ -29,7 +29,7 @@ function object(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null
 }
 
-/** The halves of a view no run is bound to: what a panel shows expanded, a chart's layers and its panes. */
+/** The halves of a view no run is bound to: what a panel shows expanded, a chart's layers and its panes, their heights and looks. */
 function placedViews(views: Record<string, StoredPanelView>): Placement['views'] {
   const placed: Placement['views'] = {}
   for (const [id, view] of Object.entries(views)) {
@@ -38,6 +38,7 @@ function placedViews(views: Record<string, StoredPanelView>): Placement['views']
     if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
     if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
     if (view.maximized) kept.maximized = view.maximized
+    if (view.looks && Object.keys(view.looks).length) kept.looks = view.looks
     if (Object.keys(kept).length) placed[id] = kept
   }
   return placed

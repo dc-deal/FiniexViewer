@@ -301,14 +301,44 @@ describe('LayersView', () => {
       expect(wrapper.text()).toContain('A worker\'s series stands on its own timeframe and every finer one')
     })
 
+    /**
+     * A series on the candles opens onto its hint alone, and onto nothing once that is put away; the
+     * first series of a worker's own pane still opens, onto its pane's frame and background.
+     */
     it('opens a worker\'s row onto the hint that says what it is, and onto nothing once that is put away', async () => {
       const wrapper = mountWithSeries()
-      await row(wrapper, 'worker:rsi_fast').find('[data-action="open"]').trigger('click')
-      expect(row(wrapper, 'worker:rsi_fast').find('.layer-options').text()).toContain('What a worker of the strategy computed')
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      await row(wrapper, onCandles).find('[data-action="open"]').trigger('click')
+      expect(row(wrapper, onCandles).find('.layer-options').text()).toContain('What a worker of the strategy computed')
       useHintsStore().ban('layer-indicator')
       await wrapper.vm.$nextTick()
-      expect(row(wrapper, 'worker:rsi_fast').find('.layer-options').exists()).toBe(false)
-      expect(row(wrapper, 'worker:rsi_fast').find('.layer-marker').text()).toBe('')
+      expect(row(wrapper, onCandles).find('.layer-options').exists()).toBe(false)
+      expect(row(wrapper, onCandles).find('.layer-marker').text()).toBe('')
+      expect(row(wrapper, 'worker:rsi_fast').find('.layer-marker').text()).toBe('▸')
+    })
+
+    /**
+     * A pane is set apart from its first row (operator, 2026-11-13): the candles' pane from the
+     * candles', the volume's from its own, a worker's from its first series — a later one sets nothing.
+     */
+    it('sets a pane apart from its first row, and from no other', async () => {
+      const wrapper = mountWithSeries()
+      await row(wrapper, 'candles').find('[data-action="open"]').trigger('click')
+      await row(wrapper, 'candles').find('[data-action="pane-frame"]').trigger('click')
+      await row(wrapper, 'volume').find('[data-action="open"]').trigger('click')
+      await row(wrapper, 'volume').find('[data-action="pane-background"]').trigger('click')
+      await row(wrapper, 'worker:rsi_fast').find('[data-action="open"]').trigger('click')
+      await row(wrapper, 'worker:rsi_fast').find('[data-action="pane-frame"]').trigger('click')
+      expect(useArrangementStore().panelViews['run-chart']?.looks).toEqual({
+        price: { frame: true }, volume: { background: true }, rsi_fast: { frame: true },
+      })
+      // a series on the candles sets nothing: the candles' row does
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      await row(wrapper, onCandles).find('[data-action="open"]').trigger('click')
+      expect(row(wrapper, onCandles).find('[data-action="pane-frame"]').exists()).toBe(false)
+      // nor does the trades' row, which stands first in the list of the candles' pane
+      await row(wrapper, 'trades').find('[data-action="open"]').trigger('click')
+      expect(row(wrapper, 'trades').find('[data-action="pane-frame"]').exists()).toBe(false)
     })
 
     /** Another run names other panes, so a worker's pane folded is kept for its run alone. */

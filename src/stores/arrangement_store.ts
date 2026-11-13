@@ -12,7 +12,7 @@ import type {
   StoredServedLayers, ViewFold, ViewRowList,
 } from '@/types/arrangement_types'
 import { CHART_LAYER_IDS } from '@/types/chart_drawing_types'
-import type { PaneWeights } from '@/types/chart_pane_types'
+import type { PaneLook, PaneLooks, PaneWeights } from '@/types/chart_pane_types'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import type { ServedLayerId } from '@/types/indicator_drawing_types'
 import { LAYER_OPACITY_MIN, LAYER_OPTION_IDS } from '@/types/layer_types'
@@ -179,6 +179,19 @@ function isPaneName(value: unknown): value is string {
   return typeof value === 'string' && /^\S{1,120}$/.test(value)
 }
 
+/** A chart's panes' looks by name: a name of no pane's form, or a part that is not on, is none. */
+function readPaneLooks(value: unknown): PaneLooks | undefined {
+  const looks: PaneLooks = {}
+  for (const [pane, stored] of Object.entries(record(value))) {
+    if (!isPaneName(pane)) continue
+    const look: PaneLook = {}
+    if (record(stored)['frame'] === true) look.frame = true
+    if (record(stored)['background'] === true) look.background = true
+    if (Object.keys(look).length) looks[pane] = look
+  }
+  return Object.keys(looks).length ? looks : undefined
+}
+
 /** A chart's pane weights by the panes' names: a name of no pane's form, or a weight that is no positive number, is none. */
 function readPaneWeights(value: unknown): PaneWeights | undefined {
   const weights: PaneWeights = {}
@@ -203,6 +216,8 @@ export function readPanelViews(value: unknown): Record<string, StoredPanelView> 
     if (panes) view.panes = panes
     const maximized = record(stored)['maximized']
     if (isPaneName(maximized)) view.maximized = maximized
+    const looks = readPaneLooks(record(stored)['looks'])
+    if (looks) view.looks = looks
     if (Object.keys(view).length) views[id] = view
   }
   return views
@@ -389,6 +404,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
       if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
       if (view.maximized) kept.maximized = view.maximized
+      if (view.looks && Object.keys(view.looks).length) kept.looks = view.looks
       if (Object.keys(kept).length) next[id] = kept
     }
     if (JSON.stringify(next) !== JSON.stringify(panelViews.value)) panelViews.value = next
@@ -405,6 +421,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
     if (view.layers && Object.keys(view.layers).length) kept.layers = view.layers
     if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
     if (view.maximized) kept.maximized = view.maximized
+    if (view.looks && Object.keys(view.looks).length) kept.looks = view.looks
     const next = { ...panelViews.value }
     if (Object.keys(kept).length) next[panel] = kept
     else delete next[panel]

@@ -145,7 +145,9 @@ by its tab, the way a reader does.
   switch hiding one on the chart; a pane at the whole height that goes — a timeframe that cannot draw
   it, the volume hidden — leaving every pane its controls; the volume moved into the candles' pane and
   back with the workers' panes below it in order; and a worker's pane dragged small and large, hidden
-  at its lever and shown from the Layers panel, back at the height dragged.
+  at its lever and shown from the Layers panel, back at the height dragged; and a pane set apart by a
+  frame and a background from its first row, from no later one, kept across a real reload and taken
+  off again from the same switch.
 - `chart_panes.spec.ts` holds the run chart's panes (viewer#57), read off the rows of the library's
   table since a canvas cannot be read back: the volume in a pane of its own at a fifth of the height,
   a booking period's card found at the bottom of the pane of the candles and nothing of the lane over

@@ -16,12 +16,13 @@ import { ChartDrawingHost, type DrawingColours } from '@/components/chart_drawin
 import type { BarRange } from '@/components/chart_geometry'
 import { legendLines, legendTops, paneLegends } from '@/components/chart_legend'
 import { seriesLegend } from '@/components/indicator_drawing'
+import { PaneLookPrimitive } from '@/components/pane_look'
 import type { BarEdge } from '@/composables/use_bar_loader'
 import { useChartPanes } from '@/composables/use_chart_panes'
 import { useIndicatorSeries } from '@/composables/use_indicator_series'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { ChartLayer } from '@/types/chart_drawing_types'
-import type { PaneWeights } from '@/types/chart_pane_types'
+import type { PaneLooks, PaneWeights } from '@/types/chart_pane_types'
 import type { FigureCard } from '@/types/figure_types'
 import type { DrawnSeries, IndicatorInks } from '@/types/indicator_drawing_types'
 import type { ChartCandles, ChartVolume, PriceForm } from '@/types/run_chart_types'
@@ -65,6 +66,8 @@ const props = defineProps<{
    * pane of its own below the volume's, one per name the backend gives. Left out, none.
    */
   indicators?: DrawnSeries[] | null
+  /** Each pane's frame and background, by name; a pane not named stands plain (viewer#57). */
+  paneLooks?: PaneLooks | null
 }>()
 
 const emit = defineEmits<{
@@ -361,6 +364,9 @@ interface ChartColours {
   warning: string
   /** The inks of the workers' neutral series, one per series of a pane in turn. */
   indicators: string[]
+  /** A pane's background, a raised surface, and its frame's rule. */
+  paneSurface: string
+  paneFrame: string
 }
 
 /**
@@ -388,6 +394,9 @@ function readColours(): ChartColours {
     // an order refused: something to weigh before trusting what is beside it
     warning: token('--color-warning'),
     indicators: INDICATOR_INKS.map(token),
+    // a pane set apart stands on the surface a panel stands on, framed in the rule an overlay has
+    paneSurface: token('--color-bg-surface'),
+    paneFrame: token('--color-border-overlay'),
   }
 }
 
@@ -575,10 +584,41 @@ function buildPriceSeries(): void {
  */
 function layoutIndicators(): void {
   if (!chart || !series) return
+  // taken off while their panes stand: the build takes a worker's pane down with its series
+  clearLooks()
   indicatorSeries.build()
   panes.applyWeights()
   paneCount.value = chart.panes().length
   panes.track()
+  applyLooks()
+}
+
+/** The pane primitives that paint each pane's look, and the pane each is attached to. */
+let looks: { pane: ReturnType<IChartApi['panes']>[number], primitive: PaneLookPrimitive }[] = []
+
+/** Every pane's look taken off — before the panes are laid out anew, while each still stands. */
+function clearLooks(): void {
+  for (const { pane, primitive } of looks) pane.detachPrimitive(primitive)
+  looks = []
+}
+
+/**
+ * Each pane's frame and background, as set — painted anew after every layout of the panes, since a
+ * pane the library takes down takes its primitives with it, and a pane built again has none.
+ */
+function applyLooks(): void {
+  clearLooks()
+  if (!chart) return
+  const colours = readColours()
+  const ids = paneIds.value
+  chart.panes().forEach((pane, index) => {
+    const id = ids[index]
+    const look = id && props.paneLooks && Object.prototype.hasOwnProperty.call(props.paneLooks, id) ? props.paneLooks[id] : undefined
+    if (!look || (!look.frame && !look.background)) return
+    const primitive = new PaneLookPrimitive(look, { background: colours.paneSurface, frame: colours.paneFrame })
+    pane.attachPrimitive(primitive)
+    looks.push({ pane, primitive })
+  })
 }
 
 /** The bars as the series of the form drawn takes them: OHLC, or the close alone for a line or an area. */
@@ -684,7 +724,9 @@ function placeVolume(): void {
   // edge, a layer switched — the weights laid out again undid a drag the reader still held
   if (own === placedOwn) return
   placedOwn = own
-  // the workers' panes stand below the volume's: taken down first, the volume's own pane is pane 1
+  // the workers' panes stand below the volume's: taken down first, the volume's own pane is pane 1 —
+  // and the looks off them before, while they stand
+  clearLooks()
   indicatorSeries.remove()
   const index = own ? 1 : 0
   if (volumeSeries.getPane().paneIndex() !== index) volumeSeries.moveToPane(index)
@@ -810,6 +852,7 @@ const indicatorsDrawn = computed(() => (props.indicators ?? [])
   .map(({ entry, opacity }) => `${entry.layer}|${opacity}|${entry.times.length}|${entry.times[0]}|${entry.times.at(-1)}`)
   .join(' '))
 watch(indicatorsDrawn, () => layoutIndicators())
+watch(() => props.paneLooks, () => applyLooks())
 // a layout loaded: the panes take the weights it holds
 watch(() => props.paneWeights, () => panes.applyWeights())
 watch(wholePane, () => panes.applyWeights())

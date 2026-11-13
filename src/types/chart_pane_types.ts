@@ -20,6 +20,18 @@ export const PANE_LAYERS: Record<ChartPaneId, ChartLayerId> = { price: 'candles'
  */
 export type PaneWeights = Partial<Record<string, number>>
 
+/**
+ * A pane's frame and background, as the reader set them in the Layers panel (viewer#57): only what is
+ * on is kept, so a pane not named stands plain — the chart's default for every pane.
+ */
+export interface PaneLook {
+  frame?: boolean
+  background?: boolean
+}
+
+/** Each pane's look by its name, as the weights are kept. */
+export type PaneLooks = Partial<Record<string, PaneLook>>
+
 /** Where a pane stands inside the chart's frame, in pixels — what its legend is placed by. */
 export interface PaneBox {
   id: string

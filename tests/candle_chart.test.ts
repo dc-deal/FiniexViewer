@@ -82,7 +82,11 @@ const lw = vi.hoisted(() => {
   const weights: number[] = [2, 1]
   /** Where each pane's row stands, top and height — jsdom lays nothing out, so a test says it. */
   const paneRows: { top: number, height: number }[] = []
+  /** The primitives on each pane, by the pane's index — a pane's look (viewer#57). */
+  const panePrimitives = new Map<number, unknown[]>()
   const panes = () => Array.from({ length: Math.max(volumePane.index, ...built.filter(made => !made.removed).map(made => made.pane)) + 1 }, (_, index) => ({
+    attachPrimitive: (primitive: unknown) => { panePrimitives.set(index, [...panePrimitives.get(index) ?? [], primitive]) },
+    detachPrimitive: (primitive: unknown) => { panePrimitives.set(index, (panePrimitives.get(index) ?? []).filter(held => held !== primitive)) },
     getStretchFactor: () => weights[index]!,
     setStretchFactor: (weight: number) => { weights[index] = weight },
     getHTMLElement: () => {
@@ -146,7 +150,7 @@ const lw = vi.hoisted(() => {
   return {
     chart, series, pointer, zoom, setData, setVisibleLogicalRange, fitContent, createChart, CandlestickSeries,
     HistogramSeries, BarSeries, LineSeries, AreaSeries, BaselineSeries: { type: 'Baseline' }, volumeSeries, volumePane,
-    volumeScaleOptions, weights, paneRows, built,
+    volumeScaleOptions, weights, paneRows, built, panePrimitives,
     priceScaleOptions, drawn, hovered, lane, DrawingHostProbe,
   }
 })
@@ -240,6 +244,7 @@ describe('CandleChart', () => {
     lw.weights.splice(0, lw.weights.length, 2, 1)
     lw.paneRows.splice(0, lw.paneRows.length)
     lw.built.splice(0, lw.built.length)
+    lw.panePrimitives.clear()
     size = { width: 0, height: 0 }
     vi.stubGlobal('ResizeObserver', ResizeObserverProbe)
     vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => size.width)
@@ -1002,6 +1007,23 @@ describe('CandleChart', () => {
       expect(live()[0]!.options['priceFormat']).toBeUndefined()
       await wrapper.setProps({ priceFormat: { precision: 5, minMove: 0.00001 } })
       expect(live()[0]!.options['priceFormat']).toEqual({ type: 'price', precision: 5, minMove: 0.00001 })
+    })
+
+    /** A pane set apart by its name: the candles' pane, the volume's, a worker's — painted on that pane, anew after a rebuild. */
+    it('paints each pane\u2019s look on the pane of its name, and again after the panes are laid out anew', async () => {
+      size = { width: 800, height: 400 }
+      mounted = mount(CandleChart, {
+        props: { data: BARS, volume: OWN_VOLUME, indicators: drawn('worker:rsi_fast'), paneLooks: { price: { frame: true }, rsi_fast: { background: true } } },
+      })
+      const wrapper = mounted
+      await nextTick()
+      const held = (): number[] => [...lw.panePrimitives].filter(([, primitives]) => primitives.length).map(([index]) => index).sort()
+      expect(held()).toEqual([0, 2])
+      await wrapper.setProps({ volume: { ...OWN_VOLUME, ownPane: false } })
+      // the volume in the candles' pane: the worker's pane is pane 1 now, and its look went with it
+      expect(held()).toEqual([0, 1])
+      await wrapper.setProps({ paneLooks: null })
+      expect(held()).toEqual([])
     })
 
     it('takes every series down, and its panes with them, once none is handed', async () => {

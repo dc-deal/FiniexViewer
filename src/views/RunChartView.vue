@@ -26,7 +26,7 @@ const chart = useRunChartStore()
 const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, loading, error, layers, offer, focusAt,
   priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane, indicators, seriesOffer, seriesCutAt,
-  seriesError,
+  seriesError, paneLooks,
 } = storeToRefs(chart)
 
 /**
@@ -110,6 +110,7 @@ onUnmounted(() => chart.detach())
       :pane-weights="paneWeights"
       :maximized-pane="maximizedPane"
       :indicators="indicators"
+      :pane-looks="paneLooks"
       @spacing="chart.setSpacing"
       @edge="chart.extendBars"
       @pane-weights="chart.setPaneWeights"

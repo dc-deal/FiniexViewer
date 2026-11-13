@@ -787,6 +787,21 @@ describe('useRunChartStore', () => {
     expect(chart.indicators.find(drawn => drawn.entry.layer === faded!.entry.layer)!.opacity).toBe(0.4)
   })
 
+  /** A pane's frame and background: only what is on is kept, beside the heights. */
+  it('sets a pane apart by a frame and a background, and keeps only what is on', () => {
+    const arrangement = useArrangementStore()
+    arrangement.setPanelView('run-chart', { panes: { volume: 0.7 } })
+    const chart = useRunChartStore()
+    chart.setPaneLook('volume', 'frame', true)
+    chart.setPaneLook('rsi_fast', 'background', true)
+    expect(chart.paneLooks).toEqual({ volume: { frame: true }, rsi_fast: { background: true } })
+    expect(arrangement.panelViews['run-chart']!.panes).toEqual({ volume: 0.7 })
+    chart.setPaneLook('volume', 'frame', false)
+    chart.setPaneLook('rsi_fast', 'background', false)
+    expect(chart.paneLooks).toBeNull()
+    expect(arrangement.panelViews['run-chart']).toEqual({ panes: { volume: 0.7 } })
+  })
+
   /** A drag reads the panes on screen; a pane not on it now keeps the height it had. */
   it('keeps the height of a pane not on screen when a seam is dragged', () => {
     const arrangement = useArrangementStore()
