@@ -35,6 +35,8 @@ type CoverageEntry = CoverageResponse | 'none'
 
 /** The run chart's dock id — the drawing layers the reader arranged for it are kept under it. */
 const RUN_CHART = 'run-chart'
+/** How many panes' heights are kept, the newest: a worker's panes come and go with the runs shown. */
+const KEPT_PANES = 24
 
 function marketKey(unit: ChartUnit): string {
   return `${unit.broker}/${unit.symbol}`
@@ -447,7 +449,10 @@ export const useRunChartStore = defineStore('runChart', () => {
    */
   const indicators = computed<DrawnSeries[]>(() => indicatorLayers.value
     .filter(layer => layer.shown && layer.drawable)
-    .map(layer => ({ entry: layer.entry, opacity: layer.opacity / 100 })))
+    .map(layer => {
+      const minutes = timeframeStore.minutesFor(layer.entry.timeframe)
+      return { entry: layer.entry, opacity: layer.opacity / 100, span: minutes ? minutes * 60 : null }
+    }))
 
   /**
    * Every worker's layer of the unit on show, in the order served, as the reader set it — drawn or
@@ -470,13 +475,17 @@ export const useRunChartStore = defineStore('runChart', () => {
    * offered where the market is rendered in it. None where every shown series is drawn.
    */
   const seriesOffer = computed<{ timeframe: string, apart: number } | null>(() => {
-    const shown = indicatorLayers.value.filter(layer => layer.shown)
-    const undrawn = shown.filter(layer => !layer.drawable).length
+    // a timeframe whose length is not known draws only where it is the chart's own: none to offer for it
+    const known = indicatorLayers.value.filter(layer => layer.shown && timeframeStore.minutesFor(layer.entry.timeframe))
+    const undrawn = known.filter(layer => !layer.drawable).length
     if (!undrawn) return null
-    const finest = [...new Set(shown.map(layer => layer.entry.timeframe))]
-      .sort((a, b) => (timeframeStore.minutesFor(a) ?? Infinity) - (timeframeStore.minutesFor(b) ?? Infinity))[0]
-    return finest && coveredTimeframes.value.includes(finest) ? { timeframe: finest, apart: undrawn } : null
+    const finest = [...new Set(known.map(layer => layer.entry.timeframe))]
+      .sort((a, b) => timeframeStore.minutesFor(a)! - timeframeStore.minutesFor(b)!)[0]
+    return finest && finest !== timeframe.value && coveredTimeframes.value.includes(finest) ? { timeframe: finest, apart: undrawn } : null
   })
+
+  /** Why the series could not be read, in words; null once a read succeeds. */
+  const seriesError = computed(() => indicatorSeries.error)
 
   /** Where the series stop because a read took its pages, in UTC seconds — said on the chart. Null where none did. */
   const seriesCutAt = computed(() => indicatorSeries.cutAt === null ? null : Math.floor(indicatorSeries.cutAt / 1000))
@@ -489,7 +498,12 @@ export const useRunChartStore = defineStore('runChart', () => {
    * whole height: the heights the reader drew are theirs from then on.
    */
   function setPaneWeights(weights: PaneWeights): void {
-    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('maximized'), panes: weights })
+    // a drag reads the panes on screen; a pane not on it now — the volume hidden, a worker's pane of
+    // another run or timeframe — keeps the height it had. The newest last, the oldest let go past a cap
+    const kept = { ...arrangement.panelViews[RUN_CHART]?.panes }
+    for (const pane of Object.keys(weights)) delete kept[pane]
+    const panes = Object.fromEntries(Object.entries({ ...kept, ...weights }).slice(-KEPT_PANES))
+    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('maximized'), panes })
   }
 
   /** The chart's own view as kept, without the fields named. */
@@ -540,7 +554,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    paneWeights, maximizedPane, indicators, indicatorLayers, seriesOffer, seriesCutAt,
+    paneWeights, maximizedPane, indicators, indicatorLayers, seriesOffer, seriesCutAt, seriesError,
     loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }

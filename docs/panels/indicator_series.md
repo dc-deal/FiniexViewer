@@ -31,10 +31,13 @@ series: one entry per layer, the pages merged, the frames left behind
 - **The stretch whose bars are loaded, and no more.** The series follow the bar loader: when the
   reader moves toward an edge and earlier or later bars arrive, the series of that stretch are read
   as well — only the part not read yet.
-- **At most four pages a read, 8,000 records.** The window cannot be asked for the series alone: it
+- **At most four pages a follow, 8,000 records.** The window cannot be asked for the series alone: it
   merges every stream of the unit by time, so a page holds the unit's state frames beside the
   series' bars, and a thirty-day session at a minute's cadence holds some 43,000 frames, about
-  60 MB. Where a read stops at its pages, `cutAt` says the instant the series reach to.
+  60 MB. Only what a page covered counts as read: where the pages run out, `cutAt` says the instant
+  the series reach to, and the next follow reads on from there — never past a stretch it skipped.
+- **A read that fails is said, and asked again.** Its stretch stays unread, the chart says why
+  (`seriesError`), and the next follow reads it; the words go once a read succeeds.
 - **A page grows a series, never repeats it.** Each entry is keyed by its `layer`; a later page's
   bars join it in order of time, each instant once. What the series means — its title, its pane,
   its plots — is the run's recorded copy and the same on every page.
@@ -62,14 +65,21 @@ series: one entry per layer, the pages merged, the frames left behind
 - **One pane per name**, in the order the series are served, below the candles and the volume's own
   pane. `use_indicator_series` builds them whole and takes them down whole: when the volume moves
   into a pane of its own it takes pane 1, so the workers' panes go first and come back below it. A
-  series added later is drawn over the ones before, so they are built again over new candles too.
+  series added later is drawn over the ones before, so they are built again over new candles too —
+  and only where what they draw changed: a new list with the same series, which every panel's view
+  written anywhere hands down, builds nothing, so a pane the reader scaled by hand keeps its scale.
+- **A worker's own pane sets its own margins**, a tenth above and below: the library hands a pane
+  made later the margins last set on any pane's right scale, and the same RSI stood differently by
+  what the chart had shown before. A series in price units takes the symbol's format, also where it
+  arrives after the series were built.
 - **On its own timeframe and every finer one.** Their values belong to the bars of the series' own
   timeframe; on a finer chart each falls on a candle and the line joins them. On a coarser chart its
   times would stand between the candles and the library would part the candles to make room, so it
   is not drawn there (`drawsOn`).
 - **The legend** says the series' title, its inputs and its timeframe — `RSI 14 · M5` — then each
   plot's value on the bar under the pointer, the last bar's otherwise, as its own scale prints it. A
-  coarser series' bar spans several candles: the value of the bar the moment falls in. A plot is
+  coarser series' bar spans several candles: the value of the bar the moment falls in, and nothing
+  past the last bar's end — a series that stops says nothing over the candles after it. A plot is
   named only where the series has several; a gap says nothing. A series on the candles is a line of
   their legend; the others make their pane's legend.
 - **A reference line** is drawn on the series' scale in the quiet ink, its price on the scale. A

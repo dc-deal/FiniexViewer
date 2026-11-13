@@ -12,7 +12,8 @@ export const DEFAULT_PANE_WEIGHTS: Record<ChartPaneId, number> = { price: 2, vol
 
 /** The weight of a pane by its name, where the reader never dragged it. */
 export function defaultWeight(pane: string): number {
-  return DEFAULT_PANE_WEIGHTS[pane as ChartPaneId] ?? DEFAULT_PANE_WEIGHTS.volume
+  // a worker's pane is named by the backend: a name like `constructor` is no key of ours
+  return Object.prototype.hasOwnProperty.call(DEFAULT_PANE_WEIGHTS, pane) ? DEFAULT_PANE_WEIGHTS[pane as ChartPaneId] : DEFAULT_PANE_WEIGHTS.volume
 }
 
 /** Two weights this close are one: the library keeps them as floats, and a drag that moved nothing is no change. */
@@ -71,7 +72,8 @@ export function useChartPanes(options: ChartPanesOptions): ChartPanes {
     applied = panes.map((pane, index) => {
       const id = ids[index]
       if (!id) return pane.getStretchFactor()
-      const weight = whole ? (id === maximized ? 1 : 0) : options.weights()?.[id] ?? defaultWeight(id)
+      const kept = options.weights()
+      const weight = whole ? (id === maximized ? 1 : 0) : (kept && Object.prototype.hasOwnProperty.call(kept, id) ? kept[id] : undefined) ?? defaultWeight(id)
       pane.setStretchFactor(weight)
       return weight
     })

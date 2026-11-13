@@ -11,6 +11,9 @@ import { IndicatorFill } from '@/components/indicator_fill'
 import type { IndicatorSeriesEntry } from '@/types/api/indicator_series_types'
 import type { DrawnSeries, IndicatorInks } from '@/types/indicator_drawing_types'
 
+/** The margins of a worker's own pane: room above and below, so a fixed range's ends stand clear of the seams. */
+const OWN_PANE_MARGINS = { top: 0.1, bottom: 0.1 }
+
 /** The library's series by a plot's kind; an unknown kind is drawn as a line rather than not at all. */
 const KINDS = { line: LineSeries, histogram: HistogramSeries, area: AreaSeries, baseline: BaselineSeries }
 
@@ -97,6 +100,10 @@ export function useIndicatorSeries(options: IndicatorSeriesOptions): IndicatorSe
         first ??= series
       }
       if (!first) continue
+      // a pane of its own sets its margins: the library hands a pane made later the margins last
+      // set on any pane's right scale — the volume's own, a fifth at the top and none below — so the
+      // same RSI stood differently by what the chart had shown before
+      if (entry.pane !== PRICE_PANE) first.priceScale().applyOptions({ scaleMargins: OWN_PANE_MARGINS })
       for (const line of entry.price_lines) {
         // the scale prints the line's price already: a title that only repeats it is a second tag
         // beside the first (on screen 2026-11-13: `70` beside `70.00`), one that says more stays

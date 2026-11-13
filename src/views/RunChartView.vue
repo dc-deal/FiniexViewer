@@ -26,6 +26,7 @@ const chart = useRunChartStore()
 const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, loading, error, layers, offer, focusAt,
   priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane, indicators, seriesOffer, seriesCutAt,
+  seriesError,
 } = storeToRefs(chart)
 
 /**
@@ -34,7 +35,7 @@ const {
  */
 const chartLayers = useChartLayers(() => 'run-chart')
 function showPane(pane: string, shown: boolean): void {
-  if (pane in PANE_LAYERS) {
+  if (Object.prototype.hasOwnProperty.call(PANE_LAYERS, pane)) {
     chartLayers.show(PANE_LAYERS[pane as ChartPaneId], shown)
     return
   }
@@ -120,6 +121,7 @@ onUnmounted(() => chart.detach())
         :offer="offer"
         :series-offer="seriesOffer"
         :series-cut-at="seriesCutAt"
+        :series-error="seriesError"
         @accept="chart.acceptOffer"
         @accept-series="chart.chooseTimeframe"
       />

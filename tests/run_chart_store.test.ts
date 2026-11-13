@@ -775,6 +775,9 @@ describe('useRunChartStore', () => {
     expect(chart.seriesOffer).toBeNull()
     chart.chooseTimeframe('M30')
 
+    // each drawn series knows how long a bar of its own timeframe lasts
+    expect(chart.indicators.every(drawn => drawn.span === 30 * 60)).toBe(true)
+
     // a layer hidden is drawn no more, one faded at its opacity
     const [hidden, faded] = chart.indicators
     const layers = useChartLayers(() => 'run-chart')
@@ -782,6 +785,15 @@ describe('useRunChartStore', () => {
     layers.setServedOpacity(faded!.entry.layer as `worker:${string}`, 40)
     expect(chart.indicators.map(drawn => drawn.entry.layer)).not.toContain(hidden!.entry.layer)
     expect(chart.indicators.find(drawn => drawn.entry.layer === faded!.entry.layer)!.opacity).toBe(0.4)
+  })
+
+  /** A drag reads the panes on screen; a pane not on it now keeps the height it had. */
+  it('keeps the height of a pane not on screen when a seam is dragged', () => {
+    const arrangement = useArrangementStore()
+    arrangement.setPanelView('run-chart', { panes: { price: 2, volume: 0.7, rsi_fast: 0.9 } })
+    const chart = useRunChartStore()
+    chart.setPaneWeights({ price: 1.5, rsi_fast: 1.1 })
+    expect(arrangement.panelViews['run-chart']!.panes).toEqual({ volume: 0.7, price: 1.5, rsi_fast: 1.1 })
   })
 
   it('asks a backtest for no series', async () => {

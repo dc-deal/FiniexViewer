@@ -147,11 +147,11 @@ const runs = useRunsStore()
 const foldedPanes = useViewRows('panes-folded', () => runs.selectedRunId)
 
 function isOpen(pane: string): boolean {
-  return pane in folds ? folds[pane as ChartPaneId].value : !foldedPanes.has(pane)
+  return Object.prototype.hasOwnProperty.call(folds, pane) ? folds[pane as ChartPaneId].value : !foldedPanes.has(pane)
 }
 
 function toggleFold(pane: string): void {
-  if (pane in folds) folds[pane as ChartPaneId].value = !folds[pane as ChartPaneId].value
+  if (Object.prototype.hasOwnProperty.call(folds, pane)) folds[pane as ChartPaneId].value = !folds[pane as ChartPaneId].value
   else foldedPanes.toggle(pane)
 }
 

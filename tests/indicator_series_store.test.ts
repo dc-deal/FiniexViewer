@@ -140,6 +140,7 @@ describe('indicator series store', () => {
     expect(asked()).toHaveLength(2)
   })
 
+  /** A wider stretch asked for while the timeline was on its way is read whole, once. */
   it('reads the stretch that grew while the first read was on its way', async () => {
     const store = useIndicatorSeriesStore()
     const middle = Date.parse('2026-01-25T02:30:00Z')
@@ -147,7 +148,42 @@ describe('indicator series store', () => {
     void store.follow({ runId: RUN, unit: UNIT }, { from: FROM, to: TO })
     await first
     await flushPromises()
-    expect(asked()).toEqual([{ from: middle, to: TO }, { from: FROM, to: middle }])
+    expect(asked()).toEqual([{ from: FROM, to: TO }])
+  })
+
+  /**
+   * A read cut at its pages counts only what its pages covered: the next follow reads on from where
+   * it stopped, never past a stretch it did not read, and the notice stands until all is read.
+   */
+  it('reads on from where its pages ran out at the next follow, and says so until all is read', async () => {
+    pageSize = 3
+    const store = useIndicatorSeriesStore()
+    await store.follow({ runId: RUN, unit: UNIT }, { from: FROM, to: TO })
+    const cut = store.cutAt!
+    expect(cut).not.toBeNull()
+    vi.mocked(apiClient.getRecordedWindow).mockClear()
+    await store.follow({ runId: RUN, unit: UNIT }, { from: FROM, to: TO })
+    expect(asked()[0]!.from).toBe(cut)
+    for (let round = 0; round < 10 && store.cutAt !== null; round++) {
+      await store.follow({ runId: RUN, unit: UNIT }, { from: FROM, to: TO })
+    }
+    expect(store.cutAt).toBeNull()
+    for (const entry of store.series) {
+      const own = CAPTURED.indicator_series.find(captured => captured.layer === entry.layer)!
+      expect(entry.times).toEqual(own.times)
+    }
+  })
+
+  /** A stretch that failed is not counted as read: it is said, and read again at the next follow. */
+  it('says why a read failed, and reads the stretch again at the next follow', async () => {
+    const store = useIndicatorSeriesStore()
+    vi.mocked(apiClient.getRecordedWindow).mockRejectedValueOnce(new Error('network down'))
+    await store.follow({ runId: RUN, unit: UNIT }, { from: FROM, to: TO })
+    expect(store.error).toContain('The indicator series could not be read')
+    expect(store.series).toEqual([])
+    await store.follow({ runId: RUN, unit: UNIT }, { from: FROM, to: TO })
+    expect(store.error).toBeNull()
+    expect(store.series.map(entry => entry.layer)).toEqual(CAPTURED.indicator_series.map(entry => entry.layer))
   })
 
   it('forgets a unit the reader left, and drops what it answered late', async () => {

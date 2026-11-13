@@ -138,6 +138,10 @@ and no other layer passes it.
   double click nor a click beside a folded pane reads as a drag.
 - **One hint says it all** (`chart-panes`), above the chart beside the one for the marks, until put away.
 
+A drag reads the panes on screen, and a pane not on it keeps the height it had — the volume hidden,
+a worker's pane of another run or timeframe — up to the newest twenty-four panes kept. Before, a
+drag kept only the panes it read, and a hidden volume came back at its default.
+
 ## Where it lives
 
 - `src/types/chart_pane_types.ts` — the panes we stack of our own (`CHART_PANE_IDS`); a pane in

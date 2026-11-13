@@ -250,9 +250,9 @@ const legends = computed(() => {
     tickSize: props.priceFormat?.minMove ?? null,
     formatVolume: value => volumeFormat.value?.(value) ?? String(value),
     // a series' values print as its own scale prints them, the value as served until it is drawn
-    series: (props.indicators ?? []).map(({ entry }) => ({
+    series: (props.indicators ?? []).map(({ entry, span }) => ({
       pane: entry.pane,
-      line: seriesLegend(entry, pointerTime.value, indicatorSeries.formatOf(entry.layer) ?? String),
+      line: seriesLegend(entry, pointerTime.value, indicatorSeries.formatOf(entry.layer) ?? String, span),
     })),
   })
 })
@@ -800,14 +800,26 @@ watch(() => props.layers, () => {
 watch(() => props.focus, () => frame())
 watch(() => props.volume, () => showVolume())
 watch(() => props.candles, () => showCandles())
-watch(() => props.indicators, () => layoutIndicators())
+/**
+ * What the workers' series draw, as one word: their layers, their strength and the stretch each
+ * holds. The series are built again only where it changed — a new list handed with the same series
+ * (every panel's view written anywhere hands one) left a pane the reader had scaled by hand at its
+ * own scale again, and a held drag undone.
+ */
+const indicatorsDrawn = computed(() => (props.indicators ?? [])
+  .map(({ entry, opacity }) => `${entry.layer}|${opacity}|${entry.times.length}|${entry.times[0]}|${entry.times.at(-1)}`)
+  .join(' '))
+watch(indicatorsDrawn, () => layoutIndicators())
 // a layout loaded: the panes take the weights it holds
 watch(() => props.paneWeights, () => panes.applyWeights())
 watch(wholePane, () => panes.applyWeights())
 // a format taken away goes back to the library's own (lightweight-charts 5.2.1: two decimals, a
 // least move of 0.01) — applying nothing would keep the previous instrument's decimals
-watch(() => props.priceFormat, () => series?.applyOptions(
-  props.priceFormat ? seriesFormat() : { priceFormat: { type: 'price', precision: 2, minMove: 0.01 } }))
+watch(() => props.priceFormat, () => {
+  series?.applyOptions(props.priceFormat ? seriesFormat() : { priceFormat: { type: 'price', precision: 2, minMove: 0.01 } })
+  // a worker's series in price units takes the symbol's format: one built before it arrived takes it now
+  layoutIndicators()
+})
 </script>
 
 <template>

@@ -145,5 +145,9 @@ describe('indicator drawing', () => {
     // before the first bar there is none to say
     expect(seriesLegend(macd, Date.parse(macd.times[0]!) / 1000 - 60, String).entries.every(item => item.value === null)).toBe(true)
     expect(seriesLegend(entry('worker:rsi_fast'), null, String).entries.map(item => item.label)).toEqual([''])
+    // past the last bar's end, where its length is known, the series says nothing: it stopped there
+    const end = Date.parse(macd.times[last]!) / 1000 + 300
+    expect(seriesLegend(macd, end - 1, String, 300).entries[0]!.value).not.toBeNull()
+    expect(seriesLegend(macd, end, String, 300).entries.every(item => item.value === null)).toBe(true)
   })
 })

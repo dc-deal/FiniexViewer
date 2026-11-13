@@ -17,6 +17,8 @@ export interface IndicatorLayer {
 export interface DrawnSeries {
   entry: IndicatorSeriesEntry
   opacity: number
+  /** How long one bar of its timeframe lasts, in seconds; null where the timeframe's length is not known. */
+  span: number | null
 }
 
 /**

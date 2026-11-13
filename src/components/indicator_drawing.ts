@@ -134,9 +134,10 @@ export function plotPoints(entry: IndicatorSeriesEntry, plotId: string): { time:
 /**
  * The bar of a series a moment falls in: the last whose opening is not after it — on a finer chart
  * a coarser series' bar spans several candles. The last bar where no moment is pointed at, none
- * before the series' first.
+ * before the series' first, and none past the last one's end where its length is known: a series
+ * that stops — the session ended, the read not that far yet — says nothing over the candles after it.
  */
-function barAt(entry: IndicatorSeriesEntry, at: number | null): number | null {
+function barAt(entry: IndicatorSeriesEntry, at: number | null, span: number | null): number | null {
   const last = entry.times.length - 1
   if (last < 0) return null
   if (at === null) return last
@@ -152,6 +153,7 @@ function barAt(entry: IndicatorSeriesEntry, at: number | null): number | null {
       high = middle - 1
     }
   }
+  if (found === last && span !== null && at >= Date.parse(entry.times[last]!) / 1000 + span) return null
   return found
 }
 
@@ -161,9 +163,9 @@ function barAt(entry: IndicatorSeriesEntry, at: number | null): number | null {
  * the series has several: a lone RSI's value needs no `rsi_value` before it. A gap says nothing.
  */
 export function seriesLegend(
-  entry: IndicatorSeriesEntry, at: number | null, format: (value: number) => string,
+  entry: IndicatorSeriesEntry, at: number | null, format: (value: number) => string, span: number | null = null,
 ): SeriesLegendLine {
-  const bar = barAt(entry, at)
+  const bar = barAt(entry, at, span)
   const named = entry.plots.length > 1
   const entries: PaneLegendEntry[] = entry.plots.map(plot => {
     const value = bar === null ? null : entry.data[plot.id]?.[bar] ?? null

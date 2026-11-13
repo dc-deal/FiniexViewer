@@ -59,11 +59,12 @@ const lw = vi.hoisted(() => {
    */
   const built: {
     definition: { type: string }, options: Record<string, unknown>, pane: number, data: unknown[],
-    lines: Record<string, unknown>[], fills: unknown[], removed: boolean,
+    lines: Record<string, unknown>[], fills: unknown[], scales: Record<string, unknown>[], removed: boolean,
   }[] = []
   function indicatorSeriesOf(definition: { type: string }, options: Record<string, unknown>, pane: number) {
     const made = {
-      definition, options, pane, data: [] as unknown[], lines: [] as Record<string, unknown>[], fills: [] as unknown[], removed: false,
+      definition, options, pane, data: [] as unknown[], lines: [] as Record<string, unknown>[], fills: [] as unknown[],
+      scales: [] as Record<string, unknown>[], removed: false,
     }
     built.push(made)
     return {
@@ -71,6 +72,7 @@ const lw = vi.hoisted(() => {
       setData: (data: unknown[]) => { made.data = data },
       createPriceLine: (line: Record<string, unknown>) => { made.lines.push(line) },
       attachPrimitive: (primitive: unknown) => { made.fills.push(primitive) },
+      priceScale: () => ({ applyOptions: (scale: Record<string, unknown>) => { made.scales.push(scale) } }),
       detachPrimitive: (primitive: unknown) => { made.fills = made.fills.filter(held => held !== primitive) },
       /** A format no number prints by itself, so a legend read through it shows that it was. */
       priceFormatter: () => ({ format: (value: number) => `~${value}` }),
@@ -866,7 +868,7 @@ describe('CandleChart', () => {
   describe('the workers\u2019 series', () => {
     const SERIES = (seriesWindow as RecordedWindow).indicator_series
     const entry = (layer: string): IndicatorSeriesEntry => SERIES.find(item => item.layer === layer)!
-    const drawn = (...layers: string[]): DrawnSeries[] => layers.map(layer => ({ entry: entry(layer), opacity: 1 }))
+    const drawn = (...layers: string[]): DrawnSeries[] => layers.map(layer => ({ entry: entry(layer), opacity: 1, span: null }))
     const live = () => lw.built.filter(made => !made.removed)
     const OWN_VOLUME: ChartVolume = { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] }
 
@@ -908,7 +910,7 @@ describe('CandleChart', () => {
       size = { width: 800, height: 400 }
       const rsi = entry('worker:rsi_fast')
       const named = { ...rsi, price_lines: [...rsi.price_lines, { price: 50, line_style: 1, title: 'middle' }] }
-      mountWith([{ entry: named, opacity: 1 }])
+      mountWith([{ entry: named, opacity: 1, span: null }])
       await nextTick()
       const made = live()[0]!
       const provider = made.options['autoscaleInfoProvider'] as () => unknown
@@ -966,6 +968,40 @@ describe('CandleChart', () => {
       await nextTick()
       expect(wrapper.attributes('data-maximized')).toBe('rsi_fast')
       expect(wrapper.find('.pane-controls[data-pane="price"]').exists()).toBe(false)
+    })
+
+    /**
+     * A new list handed with the same series — every panel's view written anywhere hands one — builds
+     * nothing again: a pane the reader scaled by hand keeps its scale, a held drag its heights.
+     */
+    it('builds the series again only where what they draw changed', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountWith(drawn('worker:rsi_fast'))
+      await nextTick()
+      const built = lw.built.length
+      await wrapper.setProps({ indicators: drawn('worker:rsi_fast') })
+      expect(lw.built.length).toBe(built)
+      await wrapper.setProps({ indicators: [{ entry: entry('worker:rsi_fast'), opacity: 0.5, span: null }] })
+      expect(lw.built.length).toBeGreaterThan(built)
+    })
+
+    /** A worker's own pane sets its own margins: a pane made later took the volume's, by the chart's history. */
+    it('sets a worker\'s own pane its own margins, and none on the candles\' pane', async () => {
+      size = { width: 800, height: 400 }
+      mountWith(drawn('worker:rsi_fast', 'worker:bollinger_main'))
+      await nextTick()
+      expect(live().find(made => made.pane === 2)!.scales).toEqual([{ scaleMargins: { top: 0.1, bottom: 0.1 } }])
+      expect(live().filter(made => made.pane === 0).every(made => made.scales.length === 0)).toBe(true)
+    })
+
+    /** The symbol's format arriving after the series were built — the broker report loads apart — reaches them. */
+    it('gives a series in price units the symbol\'s format once it arrives', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountWith(drawn('worker:bollinger_main'))
+      await nextTick()
+      expect(live()[0]!.options['priceFormat']).toBeUndefined()
+      await wrapper.setProps({ priceFormat: { precision: 5, minMove: 0.00001 } })
+      expect(live()[0]!.options['priceFormat']).toEqual({ type: 'price', precision: 5, minMove: 0.00001 })
     })
 
     it('takes every series down, and its panes with them, once none is handed', async () => {
