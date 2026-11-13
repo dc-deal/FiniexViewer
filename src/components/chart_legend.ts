@@ -1,7 +1,7 @@
 import { priceAt } from '@/components/runs/report_format'
 import { t } from '@/translate'
 import type { ChartBar } from '@/types/api/bar_types'
-import type { ChartPaneId, PaneBox, PaneLegend, PaneLegendEntry } from '@/types/chart_pane_types'
+import type { PaneBox, PaneLegend, PaneLegendEntry, SeriesLegendLine } from '@/types/chart_pane_types'
 import type { ChartVolume } from '@/types/run_chart_types'
 
 /** What a chart's legends are read from: one bar, and how the volume stands. */
@@ -19,6 +19,11 @@ export interface LegendSource {
    * it read alike (operator, 2026-11-12): the library's own format, never a second one of ours.
    */
   formatVolume: (value: number) => string
+  /**
+   * The workers' series, each with the pane it is drawn in, in the order served (contract 55): those
+   * on the candles join the price pane's legend, the others make a legend of their own pane each.
+   */
+  series: { pane: string, line: SeriesLegendLine }[]
 }
 
 /**
@@ -37,14 +42,24 @@ export function paneLegends(source: LegendSource): PaneLegend[] {
     { label: t('L'), value: price(bar.low) },
     { label: t('C'), value: price(bar.close) },
   ]
-  const legends: PaneLegend[] = [{ pane: 'price', entries: candles }]
-  if (!volume?.shown) return legends
-  // the word says what the volume counts: what traded, or the ticks where the venue prints no trade
-  const label = volume.basis === 'traded' ? t('Volume') : t('Ticks')
-  const value = source.volumeValue !== null ? source.formatVolume(source.volumeValue) : null
-  if (volume.ownPane) legends.push({ pane: 'volume', entries: [{ label, value }] })
-  else if (value !== null) candles.push({ label, value })
+  const lines = (pane: string): SeriesLegendLine[] =>
+    source.series.filter(drawn => drawn.pane === pane).map(drawn => drawn.line)
+  const legends: PaneLegend[] = [{ pane: 'price', entries: candles, series: lines('price') }]
+  if (volume?.shown) {
+    // the word says what the volume counts: what traded, or the ticks where the venue prints no trade
+    const label = volume.basis === 'traded' ? t('Volume') : t('Ticks')
+    const value = source.volumeValue !== null ? source.formatVolume(source.volumeValue) : null
+    if (volume.ownPane) legends.push({ pane: 'volume', entries: [{ label, value }], series: [] })
+    else if (value !== null) candles.push({ label, value })
+  }
+  const own = [...new Set(source.series.map(drawn => drawn.pane).filter(pane => pane !== 'price'))]
+  for (const pane of own) legends.push({ pane, entries: [], series: lines(pane) })
   return legends
+}
+
+/** How many lines a pane's legend takes: its own figures, and a line per series. */
+export function legendLines(legend: PaneLegend): number {
+  return (legend.entries.length ? 1 : 0) + legend.series.length
 }
 
 /** How tall a line of a legend stands — where the folded panes' lines are stacked. */
@@ -53,17 +68,29 @@ export const LEGEND_LINE = 20
 /**
  * Where each pane's legend stands, in pixels from the frame's top: at the top of its pane — and
  * where one pane has the whole height, the folded panes, which keep no room the library draws in,
- * stand as lines in it: one folded above it at its top, pushing its own legend down a line, one
- * folded below it just over the seam at its bottom.
+ * stand as their lines in it: those folded above it at its top, pushing its own legend down, those
+ * folded below it just over the seam at its bottom. A legend takes as many lines as `lines` says,
+ * one where it says nothing.
  */
-export function legendTops(boxes: PaneBox[], maximized: ChartPaneId | null): Map<ChartPaneId, number> {
+export function legendTops(
+  boxes: PaneBox[], maximized: string | null, lines: (pane: string) => number = () => 1,
+): Map<string, number> {
   const whole = boxes.find(box => box.id === maximized)
   if (!whole || boxes.length < 2) return new Map(boxes.map(box => [box.id, box.top]))
+  const height = (box: PaneBox): number => Math.max(1, lines(box.id)) * LEGEND_LINE
   const above = boxes.filter(box => box.top < whole.top)
   const below = boxes.filter(box => box.top > whole.top)
-  const tops = new Map<ChartPaneId, number>()
-  above.forEach((box, index) => tops.set(box.id, whole.top + index * LEGEND_LINE))
-  tops.set(whole.id, whole.top + above.length * LEGEND_LINE)
-  below.forEach((box, index) => tops.set(box.id, whole.top + whole.height - (below.length - index) * LEGEND_LINE))
+  const tops = new Map<string, number>()
+  let top = whole.top
+  for (const box of above) {
+    tops.set(box.id, top)
+    top += height(box)
+  }
+  tops.set(whole.id, top)
+  let bottom = whole.top + whole.height
+  for (const box of [...below].reverse()) {
+    bottom -= height(box)
+    tops.set(box.id, bottom)
+  }
   return tops
 }

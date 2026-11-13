@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { LEGEND_LINE, legendTops, paneLegends, type LegendSource } from '@/components/chart_legend'
+import { LEGEND_LINE, legendLines, legendTops, paneLegends, type LegendSource } from '@/components/chart_legend'
 import type { PaneLegend } from '@/types/chart_pane_types'
 
 const BAR = { time: 1_760_000_000, open: 0.87412, high: 0.8743, low: 0.87401, close: 0.8742 }
 
 function source(fields: Partial<LegendSource> = {}): LegendSource {
   // a format no number would print by itself, so a value read through it shows that it was
-  return { bar: BAR, volumeValue: 1234.5, volume: null, tickSize: null, formatVolume: value => `${value / 1000}K`, ...fields }
+  return {
+    bar: BAR, volumeValue: 1234.5, volume: null, tickSize: null, formatVolume: value => `${value / 1000}K`, series: [],
+    ...fields,
+  }
 }
 
 /** A legend as label and value pairs, the way it reads. */
@@ -58,6 +61,29 @@ describe('paneLegends', () => {
     const legends = paneLegends(source({ volumeValue: null, volume: { basis: 'traded', shown: true, ownPane: true } }))
     expect(read(legends[1])).toEqual(['Volume'])
   })
+
+  /**
+   * A worker's series (contract 55): one on the candles is a line of the price pane's legend, below
+   * its figures; one in a pane of its own makes that pane's legend — below the volume's, in the order
+   * the series are served, two series naming one pane sharing it.
+   */
+  it('gives each worker’s series a line in the legend of the pane it is drawn in', () => {
+    const line = (layer: string) => ({ layer, title: layer, entries: [{ label: '', value: '1' }] })
+    const legends = paneLegends(source({
+      volume: { basis: 'traded', shown: true, ownPane: true },
+      series: [
+        { pane: 'macd', line: line('worker:macd') },
+        { pane: 'price', line: line('worker:bands') },
+        { pane: 'rsi', line: line('worker:rsi') },
+        { pane: 'macd', line: line('worker:macd:signal') },
+      ],
+    }))
+    expect(legends.map(legend => legend.pane)).toEqual(['price', 'volume', 'macd', 'rsi'])
+    expect(legends[0]!.series.map(item => item.layer)).toEqual(['worker:bands'])
+    expect(legends[2]!.series.map(item => item.layer)).toEqual(['worker:macd', 'worker:macd:signal'])
+    expect(legends[2]!.entries).toEqual([])
+    expect(legends.map(legendLines)).toEqual([2, 1, 2, 1])
+  })
 })
 
 describe('legendTops', () => {
@@ -79,6 +105,16 @@ describe('legendTops', () => {
     const tops = legendTops([{ ...PRICE, height: 397 }, { ...VOLUME, top: 398, height: 2 }], 'price')
     expect(tops.get('price')).toBe(0)
     expect(tops.get('volume')).toBe(397 - LEGEND_LINE)
+  })
+
+  /** A folded legend of several lines — the candles' figures and a series on them — takes that many. */
+  it('stacks the folded legends by the lines each takes', () => {
+    const MACD = { id: 'macd', top: 402, height: 2 }
+    const tops = legendTops([{ ...PRICE, height: 2 }, { ...VOLUME, top: 3, height: 2 }, { ...MACD, top: 6, height: 394 }], 'macd',
+      pane => pane === 'price' ? 3 : 1)
+    expect(tops.get('price')).toBe(6)
+    expect(tops.get('volume')).toBe(6 + 3 * LEGEND_LINE)
+    expect(tops.get('macd')).toBe(6 + 4 * LEGEND_LINE)
   })
 
   it('places by the panes alone where the pane named is not among them', () => {

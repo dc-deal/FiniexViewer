@@ -140,7 +140,8 @@ and no other layer passes it.
 
 ## Where it lives
 
-- `src/types/chart_pane_types.ts` — the panes we stack, by name (`CHART_PANE_IDS`), and `PaneWeights`.
+- `src/types/chart_pane_types.ts` — the panes we stack of our own (`CHART_PANE_IDS`); a pane in
+  general is a name, a worker's the backend's, and `PaneWeights` is kept by it.
 - `src/composables/use_chart_panes.ts` — the weights applied, and read back once a drag is let go;
   where each pane stands in the frame, measured whenever one changes size.
 - `src/components/chart_legend.ts` — what each legend says, from one bar and the volume (`paneLegends`),
@@ -149,7 +150,8 @@ and no other layer passes it.
 - `src/components/ChartPaneControls.vue` — the eye and the arrows at the pane's top right.
 - `PANE_LAYERS` in `chart_pane_types.ts` — the layer each pane's eye switches.
 - `CandleChart.placeVolume` — which pane the volume stands in, on which scale, and the count of panes
-  on the element (`data-panes`), since a canvas cannot be read back.
+  on the element (`data-panes`), since a canvas cannot be read back. A worker's panes stand below it:
+  taken down before the volume moves and built again after, see [Indicator Series](indicator_series.md).
 - `run_chart_store` — `volume.ownPane` from the layer's option, `paneWeights` and `setPaneWeights`,
   `maximizedPane` and `setMaximizedPane`, `resetPanes`.
 
@@ -159,14 +161,8 @@ and no other layer passes it.
   instance — once #379 serves layers of its own. The tree and the names (`algo:<name>`,
   `worker:<instance>:<name>`) are agreed with FiniexTestingIDE as a direction (2026-11-12):
   [Chart Drawings and Layers](chart_drawings_and_layers.md).
-- **A worker's own pane** — an oscillator on a scale of its own, the way TradingView draws an RSI —
-  once FiniexTestingIDE serves a worker's outputs with the pane they belong in (testingide#379). A pane
-  joins `CHART_PANE_IDS` by name. The shape is agreed with them as a direction (2026-11-12), recorded
-  in #379 as *Indicator series — one value per bar*, and becomes a contract once #379's types are
-  fixed: one entry per worker instance with its `pane` (`"price"` on the candles), `plots` (Line,
-  Histogram, Area, Baseline), `price_lines`, `filled_areas` between two plots or two price lines, and
-  `times` beside `data`, one value per bar and `null` for a gap — read for a run as a stream through
-  testingide#580, and for the free chart computed on request over a window of bars.
+- **A worker's own pane on the free chart**, computed on request over a window of bars. A session's
+  is drawn since contract 55: [Indicator Series](indicator_series.md).
 
 ## How it is tested
 

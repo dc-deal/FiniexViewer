@@ -6,9 +6,14 @@ import type { ChartPaneId, PaneBox, PaneWeights } from '@/types/chart_pane_types
 /**
  * The weight a pane stands at where the reader never dragged it. The price pane takes the library's
  * own weight for its first pane, 2; a pane below it 0.5, so a fifth of the height — where Kraken Pro
- * stands its volume.
+ * stands its volume. A worker's pane, named by the backend, stands like the volume's.
  */
 export const DEFAULT_PANE_WEIGHTS: Record<ChartPaneId, number> = { price: 2, volume: 0.5 }
+
+/** The weight of a pane by its name, where the reader never dragged it. */
+export function defaultWeight(pane: string): number {
+  return DEFAULT_PANE_WEIGHTS[pane as ChartPaneId] ?? DEFAULT_PANE_WEIGHTS.volume
+}
 
 /** Two weights this close are one: the library keeps them as floats, and a drag that moved nothing is no change. */
 const SAME_WEIGHT = 1e-6
@@ -16,8 +21,8 @@ const SAME_WEIGHT = 1e-6
 
 interface ChartPanesOptions {
   chart: () => IChartApi | null
-  /** Which pane stands at each index, top to bottom. */
-  ids: () => readonly ChartPaneId[]
+  /** Which pane stands at each index, top to bottom, by its name. */
+  ids: () => readonly string[]
   /** The weights the reader kept, or none. */
   weights: () => PaneWeights | null | undefined
   /** Told the weights of every pane once a drag of a separator changed one. */
@@ -25,7 +30,7 @@ interface ChartPanesOptions {
   /** The element the panes are placed in — what a pane's box is measured from. */
   frame: () => HTMLElement | null
   /** The pane given the whole height, or none. */
-  maximized: () => ChartPaneId | null
+  maximized: () => string | null
 }
 
 interface ChartPanes {
@@ -66,7 +71,7 @@ export function useChartPanes(options: ChartPanesOptions): ChartPanes {
     applied = panes.map((pane, index) => {
       const id = ids[index]
       if (!id) return pane.getStretchFactor()
-      const weight = whole ? (id === maximized ? 1 : 0) : options.weights()?.[id] ?? DEFAULT_PANE_WEIGHTS[id]
+      const weight = whole ? (id === maximized ? 1 : 0) : options.weights()?.[id] ?? defaultWeight(id)
       pane.setStretchFactor(weight)
       return weight
     })
@@ -81,8 +86,9 @@ export function useChartPanes(options: ChartPanesOptions): ChartPanes {
     panes.forEach((pane, index) => {
       const id = ids[index]
       if (!id) return
-      read[id] = pane.getStretchFactor()
-      if (Math.abs(read[id] - applied[index]!) > SAME_WEIGHT) moved = true
+      const weight = pane.getStretchFactor()
+      read[id] = weight
+      if (Math.abs(weight - applied[index]!) > SAME_WEIGHT) moved = true
     })
     if (!moved) return
     // the drag is what stands now: told once, not again at the next click

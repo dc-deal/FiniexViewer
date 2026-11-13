@@ -11,15 +11,19 @@ import AppSpinner from '@/components/base/AppSpinner.vue'
 import ChartCard from '@/components/base/ChartCard.vue'
 import ChartPaneControls from '@/components/ChartPaneControls.vue'
 import ChartPaneLegend from '@/components/ChartPaneLegend.vue'
+import { withAlpha } from '@/components/chart_colours'
 import { ChartDrawingHost, type DrawingColours } from '@/components/chart_drawing_host'
 import type { BarRange } from '@/components/chart_geometry'
-import { legendTops, paneLegends } from '@/components/chart_legend'
+import { legendLines, legendTops, paneLegends } from '@/components/chart_legend'
+import { seriesLegend } from '@/components/indicator_drawing'
 import type { BarEdge } from '@/composables/use_bar_loader'
 import { useChartPanes } from '@/composables/use_chart_panes'
+import { useIndicatorSeries } from '@/composables/use_indicator_series'
 import type { ChartBar } from '@/types/api/bar_types'
 import type { ChartLayer } from '@/types/chart_drawing_types'
-import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
+import type { PaneWeights } from '@/types/chart_pane_types'
 import type { FigureCard } from '@/types/figure_types'
+import type { DrawnSeries, IndicatorInks } from '@/types/indicator_drawing_types'
 import type { ChartCandles, ChartVolume, PriceForm } from '@/types/run_chart_types'
 import { t } from '@/translate'
 
@@ -55,7 +59,12 @@ const props = defineProps<{
   /** The panes as tall as the reader dragged them; a pane not named stands at its default (viewer#57). */
   paneWeights?: PaneWeights | null
   /** The pane given the whole height, the others folded to their legend's line. */
-  maximizedPane?: ChartPaneId | null
+  maximizedPane?: string | null
+  /**
+   * The workers' series to draw (contract 55), each at its layer's opacity — on the candles, or in a
+   * pane of its own below the volume's, one per name the backend gives. Left out, none.
+   */
+  indicators?: DrawnSeries[] | null
 }>()
 
 const emit = defineEmits<{
@@ -72,10 +81,10 @@ const emit = defineEmits<{
   edge: [side: BarEdge]
   /** The weights of every pane, once the reader dragged a separator between two of them. */
   paneWeights: [weights: PaneWeights]
-  /** What a pane draws first, shown or hidden at its lever on the chart. */
-  paneShown: [pane: ChartPaneId, shown: boolean]
+  /** What a pane draws, shown or hidden at its lever on the chart — by the pane's name. */
+  paneShown: [pane: string, shown: boolean]
   /** One pane given the whole height, or none. */
-  maximize: [pane: ChartPaneId | null]
+  maximize: [pane: string | null]
   /** The panes asked back at their first heights — a double click on a seam. */
   resetPanes: []
 }>()
@@ -103,6 +112,14 @@ const EDGE_BARS = 20
 const VOLUME_SCALE = 'volume'
 /** How strongly a volume bar is drawn at full opacity — behind the candles, it must not compete. */
 const VOLUME_ALPHA = 0.45
+/**
+ * The inks of a worker's NEUTRAL series, the first series of a pane in the first: plain ink, then the
+ * quiet one — two lightness steps and no hue. Measured 2026-11-13 with the dataviz validator: every
+ * hue left over collides with a role this chart draws — an orange stood 6.1 from the falling
+ * candles to full colour vision, a violet 3.4 from the annotation under protan — so what tells two
+ * workers on one pane apart is lightness, the legend's word and the dash, never a hue alone.
+ */
+const INDICATOR_INKS = ['--color-text-primary', '--color-text-secondary']
 /** Where the volume's scale begins: the lowest fifth of the pane is the volume's. */
 const VOLUME_TOP = 0.8
 /**
@@ -141,10 +158,23 @@ const paneCount = ref(1)
 /** The share of the price pane the time lane takes, as the host last told it. */
 let laneShare = 0
 
+/**
+ * The workers' series, each plot a series of the library in the pane its series names (contract 55).
+ * Their panes stand below the candles and the volume's own; built and taken down whole, here, when
+ * the panes above them change.
+ */
+const indicatorSeries = useIndicatorSeries({
+  chart: () => chart,
+  drawn: () => props.indicators ?? [],
+  firstPane: () => volumeOwnPane.value ? 2 : 1,
+  inks: () => indicatorInks(readColours()),
+  symbolFormat: () => props.priceFormat ? { type: 'price', ...props.priceFormat } : null,
+})
+
 /** The panes the chart stacks, top to bottom, at the heights the reader kept (viewer#57). */
 const panes = useChartPanes({
   chart: () => chart,
-  ids: () => volumeOwnPane.value ? ['price', 'volume'] as ChartPaneId[] : ['price'],
+  ids: () => ['price', ...(volumeOwnPane.value ? ['volume'] : []), ...indicatorSeries.panes.value],
   weights: () => props.paneWeights,
   onWeights: weights => emit('paneWeights', weights),
   frame: () => container.value,
@@ -154,7 +184,7 @@ const panes = useChartPanes({
 /** Where each pane stands in the frame — the legends and the controls are placed by it. */
 const paneBoxes = panes.boxes
 /** The pane the pointer is over — its controls show at the top right of its plot. */
-const hoveredPane = ref<ChartPaneId | null>(null)
+const hoveredPane = ref<string | null>(null)
 /** How far above and below a seam a double click still lands on it — the library's handle is 9 px. */
 const SEAM_REACH = 5
 
@@ -175,14 +205,18 @@ function onFrameDoubleClick(event: MouseEvent): void {
   if (panes.boxes.value.slice(1).some(box => Math.abs(y - box.top) <= SEAM_REACH)) emit('resetPanes')
 }
 
-/** Whether what a pane draws first is on show — null where the chart is handed no lever for it. */
-function paneShown(pane: ChartPaneId): boolean | null {
+/**
+ * Whether what a pane draws first is on show — null where the chart is handed no lever for it. A
+ * worker's pane stands only while one of its series is shown, so its lever hides it.
+ */
+function paneShown(pane: string): boolean | null {
   if (pane === 'price') return props.candles ? props.candles.shown : null
-  return props.volume ? props.volume.shown : null
+  if (pane === 'volume') return props.volume ? props.volume.shown : null
+  return true
 }
 
 /** The whole height for a pane, or — where one has it — the heights back. */
-function toggleWhole(pane: ChartPaneId): void {
+function toggleWhole(pane: string): void {
   emit('maximize', props.maximizedPane ? null : pane)
 }
 
@@ -203,19 +237,27 @@ const legends = computed(() => {
     volume: props.volume ?? null,
     tickSize: props.priceFormat?.minMove ?? null,
     formatVolume: value => volumeFormat.value?.(value) ?? String(value),
+    // a series' values print as its own scale prints them, the value as served until it is drawn
+    series: (props.indicators ?? []).map(({ entry }) => ({
+      pane: entry.pane,
+      line: seriesLegend(entry, pointerTime.value, indicatorSeries.formatOf(entry.layer) ?? String),
+    })),
   })
 })
 
-/** Where each pane's legend stands — the folded panes' as lines in the one given the whole height. */
-const tops = computed(() => legendTops(panes.boxes.value, props.maximizedPane ?? null))
+/** Where each pane's legend stands — the folded panes' as their lines in the one given the whole height. */
+const tops = computed(() => {
+  const lines = new Map(legends.value.map(legend => [legend.pane, legendLines(legend)]))
+  return legendTops(panes.boxes.value, props.maximizedPane ?? null, pane => lines.get(pane) ?? 1)
+})
 
 /** Where a pane's legend stands: by its pane, the first pane's before any was measured. */
-function legendTop(pane: ChartPaneId): number | null {
+function legendTop(pane: string): number | null {
   return tops.value.get(pane) ?? (pane === 'price' ? 0 : null)
 }
 
-/** A pane folded beside one given the whole height: it keeps its legend's line and no controls. */
-function folded(pane: ChartPaneId): boolean {
+/** A pane folded beside one given the whole height: it keeps its legend's lines and no controls. */
+function folded(pane: string): boolean {
   return Boolean(props.maximizedPane) && props.maximizedPane !== pane && paneCount.value > 1
 }
 
@@ -299,6 +341,8 @@ interface ChartColours {
   quiet: string
   annotation: string
   warning: string
+  /** The inks of the workers' neutral series, one per series of a pane in turn. */
+  indicators: string[]
 }
 
 /**
@@ -325,6 +369,20 @@ function readColours(): ChartColours {
     annotation: token('--color-annotation'),
     // an order refused: something to weigh before trusting what is beside it
     warning: token('--color-warning'),
+    indicators: INDICATOR_INKS.map(token),
+  }
+}
+
+/**
+ * A worker's series by its role (contract 55): a result's polarity, a warning and an annotation are
+ * ours of the same names; a neutral one takes the next indicator ink of its pane, and a reference
+ * line on its scale the quiet ink of the price scale's labels.
+ */
+function indicatorInks(colours: ChartColours): IndicatorInks {
+  return {
+    roles: { positive: colours.rise, negative: colours.fall, warning: colours.warning, annotation: colours.annotation },
+    neutral: colours.indicators,
+    quiet: colours.quiet,
   }
 }
 
@@ -488,6 +546,21 @@ function buildPriceSeries(): void {
     chart.removeSeries(previous)
   }
   series.attachPrimitive(host)
+  // a series added later is drawn over those before it: the workers' series go over the candles anew
+  layoutIndicators()
+}
+
+/**
+ * The workers' series drawn anew below the panes above them — after the candles were built, the
+ * volume moved, or the series, their layers or the theme changed — and every pane laid out at its
+ * weight again.
+ */
+function layoutIndicators(): void {
+  if (!chart || !series) return
+  indicatorSeries.build()
+  panes.applyWeights()
+  paneCount.value = chart.panes().length
+  panes.track()
 }
 
 /** The bars as the series of the form drawn takes them: OHLC, or the close alone for a line or an area. */
@@ -560,15 +633,7 @@ function repaint(): void {
   series.applyOptions(priceColours(colours))
   showDrawings()
   showVolume()
-}
-
-/** A token's hex colour at a share of its strength — the library takes a colour, not a CSS mix. */
-function withAlpha(colour: string, alpha: number): string {
-  const hex = /^#([0-9a-f]{6})$/i.exec(colour)
-  // at full strength the token as it is
-  if (!hex || alpha >= 1) return colour
-  const value = Number.parseInt(hex[1]!, 16)
-  return `rgba(${value >> 16}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`
+  layoutIndicators()
 }
 
 /**
@@ -601,6 +666,8 @@ function placeVolume(): void {
   // edge, a layer switched — the weights laid out again undid a drag the reader still held
   if (own === placedOwn) return
   placedOwn = own
+  // the workers' panes stand below the volume's: taken down first, the volume's own pane is pane 1
+  indicatorSeries.remove()
   const index = own ? 1 : 0
   if (volumeSeries.getPane().paneIndex() !== index) volumeSeries.moveToPane(index)
   volumeOwnPane.value = own
@@ -613,6 +680,10 @@ function placeVolume(): void {
     volumeSeries.applyOptions({ priceScaleId: VOLUME_SCALE })
     volumeSeries.setSeriesOrder(0)
     fitVolume(laneShare)
+  }
+  if (series) {
+    layoutIndicators()
+    return
   }
   panes.applyWeights()
   paneCount.value = chart.panes().length
@@ -711,6 +782,7 @@ watch(() => props.layers, () => {
 watch(() => props.focus, () => frame())
 watch(() => props.volume, () => showVolume())
 watch(() => props.candles, () => showCandles())
+watch(() => props.indicators, () => layoutIndicators())
 // a layout loaded: the panes take the weights it holds
 watch(() => props.paneWeights, () => panes.applyWeights())
 watch(() => props.maximizedPane, () => panes.applyWeights())
@@ -727,6 +799,7 @@ watch(() => props.priceFormat, () => series?.applyOptions(
     :data-events="events"
     :data-drawings="drawingCounts"
     :data-panes="paneCount"
+    :data-indicators="(indicators ?? []).length"
     :data-bars="data.length"
     :data-time-at="timeAt"
     :data-visible-from="visibleFrom ?? undefined"
@@ -742,7 +815,12 @@ watch(() => props.priceFormat, () => series?.applyOptions(
     <div ref="container" class="candle-canvas" />
     <!-- each pane's legend at its top left, where TradingView and Kraken Pro set it -->
     <template v-for="legend in legends" :key="legend.pane">
-      <ChartPaneLegend v-if="legendTop(legend.pane) !== null" :legend="legend" :top="legendTop(legend.pane)!" />
+      <ChartPaneLegend
+        v-if="legendTop(legend.pane) !== null"
+        :legend="legend"
+        :top="legendTop(legend.pane)!"
+        :folded="folded(legend.pane)"
+      />
     </template>
     <!-- each pane's controls at the top right of its plot, where no figure of the legend can move them -->
     <template v-for="box in paneBoxes" :key="`controls-${box.id}`">

@@ -31,6 +31,29 @@ describe('useChartLayers', () => {
     })
   })
 
+  /**
+   * A worker's layer (contract 55) stands shown and whole until the reader sets it, and what is set is
+   * kept by its id beside the chart's own layers — writing one never drops the other.
+   */
+  it('keeps a worker\'s layer hidden or fainter beside the chart\'s own, neither dropping the other', () => {
+    const arrangement = useArrangementStore()
+    const layers = useChartLayers(() => 'run-chart')
+    expect(layers.servedState('worker:rsi_fast')).toEqual({ shown: true, opacity: 100 })
+    layers.showServed('worker:rsi_fast', false)
+    layers.setServedOpacity('worker:macd_main', 30)
+    layers.show('levels', false)
+    expect(arrangement.panelViews['run-chart']!.layers).toEqual({
+      hidden: ['levels'],
+      served: { hidden: ['worker:rsi_fast'], opacity: { 'worker:macd_main': 30 } },
+    })
+    expect(layers.servedState('worker:rsi_fast')).toEqual({ shown: false, opacity: 100 })
+    layers.showServed('worker:rsi_fast', true)
+    layers.setServedOpacity('worker:macd_main', 100)
+    layers.show('levels', true)
+    // all of it back as it was: nothing is kept
+    expect(arrangement.panelViews['run-chart']?.layers).toBeUndefined()
+  })
+
   /** Below the least opacity a layer would be hidden, which the lever does; above the whole there is nothing. */
   it('holds an opacity between the least one and the whole', () => {
     const { rows, setOpacity } = useChartLayers(() => 'run-chart')

@@ -12,6 +12,7 @@ import {
 } from '@/components/runs/run_chart_marks'
 import { BARS_PER_BATCH, useBarLoader } from '@/composables/use_bar_loader'
 import type { BarEdge } from '@/composables/use_bar_loader'
+import { drawsOn } from '@/components/indicator_drawing'
 import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
@@ -24,7 +25,8 @@ import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
 import type { StoredPanelView } from '@/types/arrangement_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
-import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
+import type { PaneWeights } from '@/types/chart_pane_types'
+import type { DrawnSeries, ServedLayerId } from '@/types/indicator_drawing_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
 
@@ -439,6 +441,20 @@ export const useRunChartStore = defineStore('runChart', () => {
     spacing.value = next
   }
 
+  /**
+   * The workers' series the chart draws (contract 55): each one the reader left shown, at its layer's
+   * opacity, on the timeframe on show where it can be drawn there — its own and every finer one.
+   */
+  const indicators = computed<DrawnSeries[]>(() => {
+    const tf = timeframe.value
+    if (!tf) return []
+    const kept = arrangement.panelViews[RUN_CHART]?.layers?.served
+    return indicatorSeries.series
+      .filter(entry => !kept?.hidden?.includes(entry.layer as ServedLayerId))
+      .filter(entry => drawsOn(entry.timeframe, tf, timeframeStore.minutesFor))
+      .map(entry => ({ entry, opacity: (kept?.opacity?.[entry.layer as ServedLayerId] ?? 100) / 100 }))
+  })
+
   /** The panes as tall as the reader dragged them, kept with the chart's own view (viewer#57). */
   const paneWeights = computed<PaneWeights | null>(() => arrangement.panelViews[RUN_CHART]?.panes ?? null)
 
@@ -458,10 +474,10 @@ export const useRunChartStore = defineStore('runChart', () => {
   }
 
   /** The pane given the whole height, kept like the heights: with the chart's view, in a layout. */
-  const maximizedPane = computed<ChartPaneId | null>(() => arrangement.panelViews[RUN_CHART]?.maximized ?? null)
+  const maximizedPane = computed<string | null>(() => arrangement.panelViews[RUN_CHART]?.maximized ?? null)
 
   /** Gives one pane the whole height, or none — the heights kept stand again. */
-  function setMaximizedPane(pane: ChartPaneId | null): void {
+  function setMaximizedPane(pane: string | null): void {
     const view = chartViewWithout('maximized')
     arrangement.setPanelView(RUN_CHART, pane ? { ...view, maximized: pane } : view)
   }
@@ -498,7 +514,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    paneWeights, maximizedPane, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
+    paneWeights, maximizedPane, indicators, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }
 })

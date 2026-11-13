@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef, watch } from 'vue'
 import { serverStateKey } from '@/active_server'
+import { isServedLayerId } from '@/layer_registry'
 import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
 import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { FacetSelection } from '@/types/facet_types'
@@ -8,12 +9,12 @@ import type { LinkContext, PositionRef } from '@/types/context_types'
 import { VIEW_FOLDS, VIEW_ROW_CAPS } from '@/types/arrangement_types'
 import type {
   DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredLayers, StoredPanelView, StoredRows, StoredRunChart,
-  ViewFold, ViewRowList,
+  StoredServedLayers, ViewFold, ViewRowList,
 } from '@/types/arrangement_types'
 import { CHART_LAYER_IDS } from '@/types/chart_drawing_types'
-import { CHART_PANE_IDS } from '@/types/chart_pane_types'
-import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
+import type { PaneWeights } from '@/types/chart_pane_types'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
+import type { ServedLayerId } from '@/types/indicator_drawing_types'
 import { LAYER_OPACITY_MIN, LAYER_OPTION_IDS } from '@/types/layer_types'
 import { LAYOUT_SIZES } from '@/types/named_layout_types'
 import type { LayoutSize } from '@/types/named_layout_types'
@@ -151,16 +152,38 @@ function readLayers(value: unknown): StoredLayers | undefined {
     if (typeof form === 'string' && (PRICE_FORMS as readonly string[]).includes(form)) drawn[id] = form as PriceForm
   }
   if (Object.keys(drawn).length) layers.forms = drawn
+  const served = readServedLayers(stored['served'])
+  if (served) layers.served = served
   return Object.keys(layers).length ? layers : undefined
 }
 
-/** A chart's pane weights: a pane this build does not know, or a weight that is no positive number, is none. */
-function readPaneWeights(value: unknown): PaneWeights | undefined {
+/** A worker's layers by the backend's ids: an id of another form, or an opacity out of range, is none. */
+function readServedLayers(value: unknown): StoredServedLayers | undefined {
   const stored = record(value)
+  const kept: StoredServedLayers = {}
+  const hidden = texts(stored['hidden']).filter(isServedLayerId)
+  if (hidden.length) kept.hidden = [...new Set(hidden)]
+  const faint: Partial<Record<ServedLayerId, number>> = {}
+  for (const [id, share] of Object.entries(record(stored['opacity']))) {
+    if (isServedLayerId(id) && typeof share === 'number' && share >= LAYER_OPACITY_MIN && share < 100) faint[id] = Math.round(share)
+  }
+  if (Object.keys(faint).length) kept.opacity = faint
+  return Object.keys(kept).length ? kept : undefined
+}
+
+/**
+ * A pane's name read back: one of ours, or a worker's pane the backend named (contract 55) — its
+ * word, so only that it is a short name is checked. A pane no run draws any more is laid out by no one.
+ */
+function isPaneName(value: unknown): value is string {
+  return typeof value === 'string' && /^\S{1,120}$/.test(value)
+}
+
+/** A chart's pane weights by the panes' names: a name of no pane's form, or a weight that is no positive number, is none. */
+function readPaneWeights(value: unknown): PaneWeights | undefined {
   const weights: PaneWeights = {}
-  for (const id of CHART_PANE_IDS) {
-    const weight = stored[id]
-    if (typeof weight === 'number' && Number.isFinite(weight) && weight > 0) weights[id] = weight
+  for (const [id, weight] of Object.entries(record(value))) {
+    if (isPaneName(id) && typeof weight === 'number' && Number.isFinite(weight) && weight > 0) weights[id] = weight
   }
   return Object.keys(weights).length ? weights : undefined
 }
@@ -179,7 +202,7 @@ export function readPanelViews(value: unknown): Record<string, StoredPanelView> 
     const panes = readPaneWeights(record(stored)['panes'])
     if (panes) view.panes = panes
     const maximized = record(stored)['maximized']
-    if (CHART_PANE_IDS.includes(maximized as ChartPaneId)) view.maximized = maximized as ChartPaneId
+    if (isPaneName(maximized)) view.maximized = maximized
     if (Object.keys(view).length) views[id] = view
   }
   return views

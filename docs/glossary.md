@@ -34,6 +34,11 @@ behind it: the panel *Free chart*, opened from the Panels menu. See *run-bound c
 *drawing layer*: FiniexTestingIDE's word for one switchable set of drawings on a run's chart, and
 their own name for this panel. Their glossary never uses *layer* alone, and neither does this one.
 
+**indicator series** — FiniexTestingIDE's word, from its document `indicator-series` (contract 55):
+one worker's outputs drawn as one value per bar of its own timeframe, on the candles or in a pane of
+its own. A *worker* is theirs too: the unit of a strategy that computes such an output. See
+[Indicator Series](panels/indicator_series.md).
+
 **link** — The set of choices a group of panels shares: a run, its narrowing and its marked
 position, a deployment, a market. A list writes the choice it makes; every panel reads the choices
 it needs. Not the HTTP `Link` header the API sends.

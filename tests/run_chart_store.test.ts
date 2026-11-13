@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
+import { useChartLayers } from '@/composables/use_chart_layers'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
 import { useFramePlayerStore } from '@/stores/frame_player_store'
@@ -13,6 +14,7 @@ import type {
   BrokerReport, OrderHistoryReport, PortfolioReport, RunConfigReport, RunInfo, TradeHistoryReport,
 } from '@/types/api/report_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { RecordedStreams, RecordedWindow } from '@/types/api/state_frame_types'
 
 import brokerFixture from './fixtures/broker.json'
 import orderFixture from './fixtures/order_history.json'
@@ -20,11 +22,15 @@ import portfolioFixture from './fixtures/portfolio.json'
 import runsList from './fixtures/runs_list.json'
 import scenarioFixture from './fixtures/scenario_details.json'
 import tradeFixture from './fixtures/trade_history.json'
+import seriesStreams from './fixtures/recorded_streams_series.json'
+import seriesWindow from './fixtures/recorded_window_series.json'
 
 vi.mock('@/api/api_client', () => ({
   findCoverage: vi.fn(),
   getBars: vi.fn(),
   getTimeframes: vi.fn(),
+  getRecordedStreams: vi.fn(),
+  getRecordedWindow: vi.fn(),
 }))
 
 const RUN = '20261012_205715_c3b41fff'
@@ -96,6 +102,9 @@ describe('useRunChartStore', () => {
     setActivePinia(createPinia())
     vi.mocked(apiClient.findCoverage).mockReset().mockResolvedValue(COVERAGE)
     vi.mocked(apiClient.getBars).mockReset().mockResolvedValue(ANSWER)
+    // a session's timeline: none recorded, unless a test says otherwise
+    vi.mocked(apiClient.getRecordedStreams).mockReset().mockResolvedValue({ absent: true, cause: 'streams_not_recorded', detail: '' })
+    vi.mocked(apiClient.getRecordedWindow).mockReset()
     vi.mocked(apiClient.getTimeframes).mockReset().mockResolvedValue([
       { name: 'M1', minutes: 1 }, { name: 'M5', minutes: 5 }, { name: 'M10', minutes: 10 }, { name: 'M15', minutes: 15 },
       { name: 'M30', minutes: 30 }, { name: 'H1', minutes: 60 }, { name: 'H4', minutes: 240 }, { name: 'D1', minutes: 1440 },
@@ -725,6 +734,57 @@ describe('useRunChartStore', () => {
     // the session's window from its start, one period earlier, to the end of the coverage
     expect(Date.parse(call[4])).toBe(Date.parse(COVERAGE.end))
     expect(Date.parse(call[3])).toBeLessThan(Date.parse('2026-10-01T00:00:00+00:00'))
+  })
+
+  /**
+   * A session's drawing workers (contract 55): each series the reader left shown, at its layer's
+   * opacity, where the timeframe on show can draw it — its own and every finer one. A backtest asks
+   * for none: its streams over time are not served yet.
+   */
+  it('draws a session\'s series shown and drawable on the timeframe on show', async () => {
+    vi.mocked(apiClient.getRecordedStreams).mockResolvedValue(seriesStreams as RecordedStreams)
+    vi.mocked(apiClient.getRecordedWindow).mockResolvedValue({ ...(seriesWindow as RecordedWindow), truncated: false, next_from: null })
+    const session: RunInfo = {
+      ...runInfo, run_id: 'session_1', group: 'autotrader',
+      data_windows: [{ unit_name: 'demo_btcusd_bot', start_date: '2026-10-01T00:00:00+00:00', end_date: null }],
+    }
+    useRunsStore().runs = [session]
+    useContextStore().selectRun('session_1')
+    const reports = useRunReportsStore()
+    reports.config = { run_id: 'session_1', config: { broker_type: 'kraken_spot', symbol: 'BTCUSD' } } as unknown as RunConfigReport
+    reports.tradeHistory = { trades: [] } as unknown as TradeHistoryReport
+    const chart = useRunChartStore()
+    chart.attach()
+    chart.chooseTimeframe('M5')
+    await flushPromises()
+    expect(apiClient.getRecordedStreams).toHaveBeenCalledWith('session_1', 'demo_btcusd_bot')
+    const served = (seriesWindow as RecordedWindow).indicator_series
+    expect(chart.indicators.map(drawn => drawn.entry.layer)).toEqual(served.map(entry => entry.layer))
+
+    // on M30 the series of M5 would set times between the candles: only those of M30 stand
+    chart.chooseTimeframe('M30')
+    await flushPromises()
+    expect(chart.indicators.map(drawn => drawn.entry.layer))
+      .toEqual(served.filter(entry => entry.timeframe === 'M30').map(entry => entry.layer))
+    expect(chart.indicators.length).toBeGreaterThan(0)
+
+    // a layer hidden is drawn no more, one faded at its opacity
+    const [hidden, faded] = chart.indicators
+    const layers = useChartLayers(() => 'run-chart')
+    layers.showServed(hidden!.entry.layer as `worker:${string}`, false)
+    layers.setServedOpacity(faded!.entry.layer as `worker:${string}`, 40)
+    expect(chart.indicators.map(drawn => drawn.entry.layer)).not.toContain(hidden!.entry.layer)
+    expect(chart.indicators.find(drawn => drawn.entry.layer === faded!.entry.layer)!.opacity).toBe(0.4)
+  })
+
+  it('asks a backtest for no series', async () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    expect(chart.bars.length).toBeGreaterThan(0)
+    expect(apiClient.getRecordedStreams).not.toHaveBeenCalled()
+    expect(chart.indicators).toEqual([])
   })
 
   it('asks nothing more once the last chart is gone', async () => {

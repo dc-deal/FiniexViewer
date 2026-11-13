@@ -135,6 +135,13 @@ by its tab, the way a reader does.
   layer dragged in front of another by its grip, a drag past the candles and the volume refused; and
   the signs switched off leaving the price axis the same pixel for pixel. And the layers in a group
   for each pane, the group of the candles folded and still folded after a real reload.
+- `indicator_series.spec.ts` holds a worker's series on the run chart (contract 55), on the session
+  FiniexTestingIDE produced to draw every kind of pane, its timeline, window, configuration and
+  bars captured: every series in the pane it names, below the volume's own in the order served, with
+  its line in that pane's legend; a pane's lever giving its room up and kept across a real reload; a
+  coarser timeframe drawing only its own series; a seam above a worker's pane kept by the pane's
+  name through a reload; and a worker's pane at the whole height stacking the folded legends, a line
+  each, without one standing on another.
 - `chart_panes.spec.ts` holds the run chart's panes (viewer#57), read off the rows of the library's
   table since a canvas cannot be read back: the volume in a pane of its own at a fifth of the height,
   a booking period's card found at the bottom of the pane of the candles and nothing of the lane over

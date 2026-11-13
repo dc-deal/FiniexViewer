@@ -1,6 +1,7 @@
 import type { ChartLayerId } from '@/types/chart_drawing_types'
-import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
+import type { PaneWeights } from '@/types/chart_pane_types'
 import type { FacetSelection } from '@/types/facet_types'
+import type { ServedLayerId } from '@/types/indicator_drawing_types'
 import type { LinkContext } from '@/types/context_types'
 import type { LayerOptionId } from '@/types/layer_types'
 import type { LayoutSize } from '@/types/named_layout_types'
@@ -88,6 +89,19 @@ export interface StoredLayers {
   options?: Partial<Record<LayerOptionId, boolean>>
   /** The form a layer is drawn in, only where it is not its own first. */
   forms?: Partial<Record<ChartLayerId, PriceForm>>
+  /**
+   * A worker's layers (contract 55), by the backend's id: bound to no run, so a worker of the same
+   * instance stands hidden or faint in every run that draws it. Shown and at full strength where not
+   * named.
+   */
+  served?: StoredServedLayers
+}
+
+/** What the reader set on the workers' layers: those hidden, and those below full strength. */
+export interface StoredServedLayers {
+  hidden?: ServedLayerId[]
+  /** In percent, only where below 100. */
+  opacity?: Partial<Record<ServedLayerId, number>>
 }
 
 /** The rows a panel keeps, and the run they were kept for — under any other they count for nothing. */
@@ -113,7 +127,7 @@ export interface StoredPanelView {
   /** A chart's panes as tall as the reader dragged them, bound to no run (viewer#57). */
   panes?: PaneWeights
   /** The pane of a chart given the whole height, the others folded to their legend (viewer#57). */
-  maximized?: ChartPaneId
+  maximized?: string
 }
 
 /** Everything stored under the one versioned key. */

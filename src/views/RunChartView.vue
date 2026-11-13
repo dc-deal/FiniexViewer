@@ -12,6 +12,7 @@ import { useRunsStore } from '@/stores/runs_store'
 import { t } from '@/translate'
 import { PANE_LAYERS } from '@/types/chart_pane_types'
 import type { ChartPaneId } from '@/types/chart_pane_types'
+import type { ServedLayerId } from '@/types/indicator_drawing_types'
 
 /**
  * The run-bound chart: one unit of the chosen run on its candles, its positions marked where they
@@ -24,13 +25,22 @@ import type { ChartPaneId } from '@/types/chart_pane_types'
 const chart = useRunChartStore()
 const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, loading, error, layers, offer, focusAt,
-  priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane,
+  priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane, indicators,
 } = storeToRefs(chart)
 
-/** The lever on a pane is its layer's own: the Layers panel and the chart show one state. */
+/**
+ * The lever on a pane is its layers' own: the Layers panel and the chart show one state. A pane of
+ * ours has one layer; a worker's pane hides every series drawn in it, and gives its room up.
+ */
 const chartLayers = useChartLayers(() => 'run-chart')
-function showPane(pane: ChartPaneId, shown: boolean): void {
-  chartLayers.show(PANE_LAYERS[pane], shown)
+function showPane(pane: string, shown: boolean): void {
+  if (pane in PANE_LAYERS) {
+    chartLayers.show(PANE_LAYERS[pane as ChartPaneId], shown)
+    return
+  }
+  for (const { entry } of indicators.value) {
+    if (entry.pane === pane) chartLayers.showServed(entry.layer as ServedLayerId, shown)
+  }
 }
 const { selectedRunId, selectedRun, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
@@ -98,6 +108,7 @@ onUnmounted(() => chart.detach())
       :edge-error="edgeError"
       :pane-weights="paneWeights"
       :maximized-pane="maximizedPane"
+      :indicators="indicators"
       @spacing="chart.setSpacing"
       @edge="chart.extendBars"
       @pane-weights="chart.setPaneWeights"

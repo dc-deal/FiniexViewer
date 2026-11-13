@@ -509,6 +509,43 @@ if series_unit:
         served.add(contract)
         TARGETS.append((name, path))
 
+# The market of the session that draws, so a browser test draws its series on its candles: its
+# configuration, which names the market, the coverage, and the M1 bars over its window, asked from
+# one minute earlier as the run chart asks.
+series_row = next((row for row in (bodies.get('runs_list.json') or {}).get('runs') or []
+                   if row.get('run_id') == SERIES_RUN), None)
+try:
+    config_body, contract = fetch(f'reports/runs/{SERIES_RUN}/config')
+    bodies['run_config_series.json'] = config_body
+    served.add(contract)
+    TARGETS.append(('run_config_series.json', f'reports/runs/{SERIES_RUN}/config'))
+    series_config = (config_body or {}).get('config') or {}
+except Exception as error:                                       # noqa: BLE001 - report, never mask
+    series_config = {}
+    failures.append(('the market of SERIES_RUN', f'reports/runs/{SERIES_RUN}/config', error))
+series_window = ((series_row or {}).get('data_windows') or [{}])[0]
+series_broker, series_symbol = series_config.get('broker_type'), series_config.get('symbol')
+if series_broker and series_symbol and series_window.get('start_date') and series_window.get('end_date'):
+    start = datetime.datetime.fromisoformat(series_window['start_date']) - datetime.timedelta(minutes=1)
+    # M1, where the chart opens on it, and the two timeframes its workers draw on, M5 and M30: a
+    # series is drawn on its own timeframe and every finer one, never on a coarser one
+    asked = [(f'coverage_{series_broker}_{series_symbol}.json', f'brokers/{series_broker}/symbols/{series_symbol}/coverage')]
+    for timeframe in (BAR_TIMEFRAME, 'M5', 'M30'):
+        asked.append((f'bars_{series_broker}_{series_symbol}_{timeframe}.json',
+                      f'brokers/{series_broker}/symbols/{series_symbol}/bars?timeframe={timeframe}'
+                      f'&from={urllib.parse.quote(start.isoformat())}&to={urllib.parse.quote(series_window["end_date"])}'))
+    for name, path in asked:
+        try:
+            body, contract = fetch(path)
+        except Exception as error:                               # noqa: BLE001 - report, never mask
+            failures.append((name, path, error))
+            continue
+        bodies[name] = body
+        served.add(contract)
+        TARGETS.append((name, path))
+elif 'recorded_window_series.json' in bodies:
+    failures.append(('the market of SERIES_RUN', 'its config and its window', 'no broker, symbol or window'))
+
 drawing = [row for row in (bodies.get('recorded_streams_series.json') or {}).get('streams') or []
            if row.get('stream_kind') == 'indicator_series']
 entries = (bodies.get('recorded_window_series.json') or {}).get('indicator_series') or []

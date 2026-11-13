@@ -279,19 +279,22 @@ describe('useArrangementStore', () => {
       expect(stored()['panelViews']).toEqual({ 'run-chart': { layers: { opacity: { levels: 50 } } } })
     })
 
-    /** A chart's panes as tall as the reader dragged them (viewer#57): a weight, kept beside the layers. */
+    /**
+     * A chart's panes as tall as the reader dragged them (viewer#57): a weight, kept beside the layers
+     * — a worker's pane by the name the backend gave it (contract 55), so any short name is a pane.
+     */
     it('keeps the weights of a chart\'s panes, and drops what is no pane or no weight', async () => {
       store({
         version: 1, links: {}, bars: {}, chart: {}, runChart: {},
         panelViews: {
-          'run-chart': { panes: { price: 1.6, volume: 0.8, 'no-such-pane': 1 } },
+          'run-chart': { panes: { price: 1.6, volume: 0.8, rsi_fast: 0.7, 'no pane': 1 } },
           // a weight of nothing, below it or not a number is none — the pane stands at its default
           'chart': { panes: { price: 0, volume: -1 } },
           'run-chart-2': { panes: { price: 'tall', volume: Number.POSITIVE_INFINITY } },
         },
       })
       const arrangement = useArrangementStore()
-      expect(arrangement.panelViews).toEqual({ 'run-chart': { panes: { price: 1.6, volume: 0.8 } } })
+      expect(arrangement.panelViews).toEqual({ 'run-chart': { panes: { price: 1.6, volume: 0.8, rsi_fast: 0.7 } } })
 
       arrangement.setPanelView('run-chart', { panes: { price: 1.6, volume: 0.8 }, layers: { hidden: ['levels'] } })
       await nextTick()
@@ -300,17 +303,45 @@ describe('useArrangementStore', () => {
       })
     })
 
-    /** The pane given the whole height is kept like the heights — and only a pane this build has. */
+    /** The pane given the whole height is kept like the heights — a worker's by its name, and no other value. */
     it('keeps the pane given the whole height, and drops one that is no pane', async () => {
       store({
         version: 1, links: {}, bars: {}, chart: {}, runChart: {},
-        panelViews: { 'run-chart': { maximized: 'volume' }, 'chart': { maximized: 'rsi' } },
+        panelViews: { 'run-chart': { maximized: 'volume' }, 'chart': { maximized: 'rsi_fast' }, 'other': { maximized: 42 } },
       })
       const arrangement = useArrangementStore()
-      expect(arrangement.panelViews).toEqual({ 'run-chart': { maximized: 'volume' } })
+      expect(arrangement.panelViews).toEqual({ 'run-chart': { maximized: 'volume' }, 'chart': { maximized: 'rsi_fast' } })
       arrangement.setPanelView('run-chart', { maximized: 'price', panes: { volume: 1 } })
       await nextTick()
-      expect(stored()['panelViews']).toEqual({ 'run-chart': { panes: { volume: 1 }, maximized: 'price' } })
+      expect(stored()['panelViews']).toEqual({
+        'run-chart': { panes: { volume: 1 }, maximized: 'price' }, 'chart': { maximized: 'rsi_fast' },
+      })
+    })
+
+    /**
+     * A worker's layers by the backend's ids (contract 55), bound to no run: hidden, and fainter. An id
+     * of another form, an opacity out of range, and what is whole are none.
+     */
+    it('keeps the workers\' layers the reader hid or faded, and drops what is no worker\'s layer', () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: {
+          'run-chart': {
+            layers: {
+              hidden: ['levels'],
+              served: {
+                hidden: ['worker:rsi_fast', 'worker:rsi_fast', 'levels', 'algo:x'],
+                opacity: { 'worker:macd_main': 40, 'worker:obv_volume': 100, 'worker:tide_wave': 3, 'trades': 50 },
+              },
+            },
+          },
+        },
+      })
+      const arrangement = useArrangementStore()
+      expect(arrangement.panelViews['run-chart']!.layers).toEqual({
+        hidden: ['levels'],
+        served: { hidden: ['worker:rsi_fast'], opacity: { 'worker:macd_main': 40 } },
+      })
     })
   })
 })

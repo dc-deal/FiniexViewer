@@ -1,0 +1,106 @@
+{
+  "run_id": "20261112_222914_f2285ca5",
+  "config_snapshot": "indicator_series_session.json",
+  "config_id": "3df184d6a049521c9c0380623f8f2543e2817977b99c6ff0cfe6f242bb621f76",
+  "config": {
+    "adapter_type": "mock",
+    "bot_id": "series01",
+    "broker_type": "kraken_spot",
+    "cold_start": {
+      "path": "/tmp/finiex_fixture_productions/indicator_series_session/cold_start_state"
+    },
+    "deployment": {
+      "_comment": "A test profile: every session stands alone.",
+      "continuous": false
+    },
+    "display": {
+      "enabled": false
+    },
+    "indicator_series": {
+      "_comment": "Every drawing worker's series, one value per closed bar of its timeframe (#379).",
+      "enabled": true
+    },
+    "profile_name": "indicator_series_session",
+    "run_purpose": "fixture",
+    "scenario_settings": {
+      "balances": {
+        "BTC": 0.0,
+        "USD": 10000.0
+      },
+      "end_date": "2026-01-25T08:00:00+00:00",
+      "start_date": "2026-01-25T02:19:46+00:00"
+    },
+    "state_frames": {
+      "_comment": "Recorded beside the series, so the recorded-streams window merges both kinds.",
+      "cadence_timeframe": "M1",
+      "enabled": true
+    },
+    "state_persistence": {
+      "path": "/tmp/finiex_fixture_productions/indicator_series_session/session_state"
+    },
+    "strategy_config": {
+      "_comment": "Every CORE worker that draws (#379), so a chart has each kind of indicator pane: RSI in its own 0-100 pane with lines at 30/70, Bollinger on the candles, MACD as a histogram and two lines, the tide-and-wave worker on two timeframes, the moving-average trend on the candles, OBV in volume format.",
+      "decision_logic_config": {
+        "bollinger_lower_threshold": 0.3,
+        "bollinger_upper_threshold": 0.7,
+        "lot_size": 0.1,
+        "min_confidence": 0.5,
+        "min_entry_capital": 1000,
+        "rsi_overbought": 70,
+        "rsi_oversold": 30
+      },
+      "decision_logic_type": "CORE/simple_consensus",
+      "worker_instances": {
+        "bollinger_main": "CORE/bollinger",
+        "macd_main": "CORE/macd",
+        "obv_volume": "CORE/obv",
+        "rsi_fast": "CORE/rsi",
+        "tide_wave": "CORE/tide_and_wave",
+        "trend_ema": "CORE/ma_trend"
+      },
+      "workers": {
+        "bollinger_main": {
+          "deviation": 2,
+          "periods": {
+            "M30": 20
+          }
+        },
+        "macd_main": {
+          "fast_period": 12,
+          "periods": {
+            "M5": 35
+          },
+          "signal_period": 9,
+          "slow_period": 26
+        },
+        "obv_volume": {
+          "periods": {
+            "M5": 20
+          }
+        },
+        "rsi_fast": {
+          "periods": {
+            "M5": 14
+          }
+        },
+        "tide_wave": {
+          "periods": {
+            "M30": 26,
+            "M5": 14
+          }
+        },
+        "trend_ema": {
+          "ma_type": "ema",
+          "neutral_band": 0.05,
+          "periods": {
+            "M30": 20
+          }
+        }
+      }
+    },
+    "symbol": "BTCUSD",
+    "tick_source": {
+      "type": "mock"
+    }
+  }
+}

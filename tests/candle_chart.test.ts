@@ -3,8 +3,12 @@ import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import CandleChart from '@/components/CandleChart.vue'
 import type { ChartBar } from '@/types/api/bar_types'
+import type { IndicatorSeriesEntry } from '@/types/api/indicator_series_types'
+import type { RecordedWindow } from '@/types/api/state_frame_types'
 import type { ChartLayer, SegmentDrawing } from '@/types/chart_drawing_types'
+import type { DrawnSeries } from '@/types/indicator_drawing_types'
 import type { ChartCandles, ChartMark, ChartVolume } from '@/types/run_chart_types'
+import seriesWindow from './fixtures/recorded_window_series.json'
 
 /**
  * The chart library itself is replaced: what is under test is WHEN the component builds, fits and
@@ -49,11 +53,30 @@ const lw = vi.hoisted(() => {
     /** The volume's own scale format, as the library prints it: two decimals at most, K from a thousand. */
     priceFormatter: () => ({ format: (value: number) => value < 995 ? String(Math.round(value * 100) / 100) : `${Math.round(value / 10) / 100}K` }),
   }
+  /**
+   * The workers' series the chart built (contract 55), each with the pane it was put in and what it
+   * was handed — removed ones kept, marked, so a test can tell what was taken down.
+   */
+  const built: {
+    definition: { type: string }, options: Record<string, unknown>, pane: number, data: unknown[],
+    lines: Record<string, unknown>[], removed: boolean,
+  }[] = []
+  function indicatorSeriesOf(definition: { type: string }, options: Record<string, unknown>, pane: number) {
+    const made = { definition, options, pane, data: [] as unknown[], lines: [] as Record<string, unknown>[], removed: false }
+    built.push(made)
+    return {
+      made,
+      setData: (data: unknown[]) => { made.data = data },
+      createPriceLine: (line: Record<string, unknown>) => { made.lines.push(line) },
+      /** A format no number prints by itself, so a legend read through it shows that it was. */
+      priceFormatter: () => ({ format: (value: number) => `~${value}` }),
+    }
+  }
   /** Each pane's weight as the library keeps it, set by the chart and read back after a drag. */
   const weights: number[] = [2, 1]
   /** Where each pane's row stands, top and height — jsdom lays nothing out, so a test says it. */
   const paneRows: { top: number, height: number }[] = []
-  const panes = () => Array.from({ length: volumePane.index + 1 }, (_, index) => ({
+  const panes = () => Array.from({ length: Math.max(volumePane.index, ...built.filter(made => !made.removed).map(made => made.pane)) + 1 }, (_, index) => ({
     getStretchFactor: () => weights[index]!,
     setStretchFactor: (weight: number) => { weights[index] = weight },
     getHTMLElement: () => {
@@ -84,14 +107,21 @@ const lw = vi.hoisted(() => {
   const chart = {
     subscribeCrosshairMove: vi.fn((handler: (param: Record<string, unknown>) => void) => { pointer.move = handler }),
     addSeries: vi.fn<(definition: { type: string }, options: Record<string, unknown>, paneIndex?: number) => unknown>(
-      (definition, _options, paneIndex) => {
-        if (definition !== HistogramSeries) return series
-        volumePane.index = paneIndex ?? 0
-        return volumeSeries
+      (definition, options, paneIndex) => {
+        // the price series is built without a pane, the volume with its own; a worker's series names one
+        if (paneIndex === undefined) return series
+        if (definition === HistogramSeries && options['lastValueVisible'] === false) {
+          volumePane.index = paneIndex
+          return volumeSeries
+        }
+        return indicatorSeriesOf(definition, options, paneIndex)
       }),
     panes,
     priceScale: vi.fn((id: string) => ({ id, applyOptions: priceScaleOptions })),
-    removeSeries: vi.fn<(series: unknown) => void>(),
+    removeSeries: vi.fn<(series: unknown) => void>(removed => {
+      const made = (removed as { made?: { removed: boolean } }).made
+      if (made) made.removed = true
+    }),
     applyOptions: vi.fn<(options: Record<string, unknown>) => void>(),
     timeScale: vi.fn(() => ({
       fitContent,
@@ -109,7 +139,8 @@ const lw = vi.hoisted(() => {
   )
   return {
     chart, series, pointer, zoom, setData, setVisibleLogicalRange, fitContent, createChart, CandlestickSeries,
-    HistogramSeries, BarSeries, LineSeries, AreaSeries, volumeSeries, volumePane, volumeScaleOptions, weights, paneRows,
+    HistogramSeries, BarSeries, LineSeries, AreaSeries, BaselineSeries: { type: 'Baseline' }, volumeSeries, volumePane,
+    volumeScaleOptions, weights, paneRows, built,
     priceScaleOptions, drawn, hovered, lane, DrawingHostProbe,
   }
 })
@@ -123,6 +154,7 @@ vi.mock('lightweight-charts', () => ({
   BarSeries: lw.BarSeries,
   LineSeries: lw.LineSeries,
   AreaSeries: lw.AreaSeries,
+  BaselineSeries: lw.BaselineSeries,
   ColorType: { Solid: 'solid' },
 }))
 
@@ -201,6 +233,7 @@ describe('CandleChart', () => {
     lw.volumePane.index = 0
     lw.weights.splice(0, lw.weights.length, 2, 1)
     lw.paneRows.splice(0, lw.paneRows.length)
+    lw.built.splice(0, lw.built.length)
     size = { width: 0, height: 0 }
     vi.stubGlobal('ResizeObserver', ResizeObserverProbe)
     vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(() => size.width)
@@ -821,6 +854,94 @@ describe('CandleChart', () => {
    * last bar it holds, keeps the view on the bars it showed as more arrive, and says in that corner
    * that a batch is on its way or failed.
    */
+  /**
+   * A worker's series (contract 55): each plot a series of the library in the pane its series names,
+   * the panes of their own below the candles and the volume's, in the order served. Read from the
+   * session FiniexTestingIDE produced to draw every kind of pane.
+   */
+  describe('the workers\u2019 series', () => {
+    const SERIES = (seriesWindow as RecordedWindow).indicator_series
+    const entry = (layer: string): IndicatorSeriesEntry => SERIES.find(item => item.layer === layer)!
+    const drawn = (...layers: string[]): DrawnSeries[] => layers.map(layer => ({ entry: entry(layer), opacity: 1 }))
+    const live = () => lw.built.filter(made => !made.removed)
+    const OWN_VOLUME: ChartVolume = { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] }
+
+    function mountWith(indicators: DrawnSeries[], volume: ChartVolume | null = OWN_VOLUME): VueWrapper {
+      mounted = mount(CandleChart, { props: { data: BARS, volume, indicators } })
+      return mounted
+    }
+
+    it('draws each plot in the pane its series names, the panes of their own below the volume\u2019s', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountWith(drawn('worker:bollinger_main', 'worker:rsi_fast', 'worker:macd_main'))
+      await nextTick()
+      const bands = entry('worker:bollinger_main')
+      expect(live().filter(made => made.pane === 0)).toHaveLength(bands.plots.length)
+      expect(live().filter(made => made.pane === 2).map(made => made.definition.type)).toEqual(['Line'])
+      expect(live().filter(made => made.pane === 3).map(made => made.definition.type))
+        .toEqual(entry('worker:macd_main').plots.map(plot => plot.kind === 'histogram' ? 'Histogram' : 'Line'))
+      expect(wrapper.attributes('data-panes')).toBe('4')
+      expect(wrapper.attributes('data-indicators')).toBe('3')
+      // every bar handed, in the library's seconds
+      const first = live()[0]!
+      expect(first.data).toHaveLength(bands.times.length)
+    })
+
+    /** The volume's own pane is pane 1: a worker's pane standing there would take it — so they go first. */
+    it('builds the series anew below the volume once it moves into a pane of its own', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountWith(drawn('worker:rsi_fast'), { ...OWN_VOLUME, ownPane: false })
+      await nextTick()
+      expect(live().map(made => made.pane)).toEqual([1])
+      await wrapper.setProps({ volume: OWN_VOLUME })
+      expect(lw.volumeSeries.moveToPane).toHaveBeenCalledWith(1)
+      expect(live().map(made => made.pane)).toEqual([2])
+      expect(lw.built.filter(made => made.removed)).toHaveLength(1)
+    })
+
+    /** Their RSI holds 0 to 100 whatever its values, with its lines at 30 and 70 on its own scale. */
+    it('holds a fixed range, and draws the reference lines with a title only where it says more', async () => {
+      size = { width: 800, height: 400 }
+      const rsi = entry('worker:rsi_fast')
+      const named = { ...rsi, price_lines: [...rsi.price_lines, { price: 50, line_style: 1, title: 'middle' }] }
+      mountWith([{ entry: named, opacity: 1 }])
+      await nextTick()
+      const made = live()[0]!
+      const provider = made.options['autoscaleInfoProvider'] as () => unknown
+      expect(provider()).toEqual({ priceRange: { minValue: rsi.range!.min_value, maxValue: rsi.range!.max_value } })
+      expect(made.options['priceFormat']).toMatchObject({ type: 'price', precision: rsi.price_format!.precision })
+      expect(made.lines.map(line => [line['price'], line['title']])).toEqual([
+        ...rsi.price_lines.map(line => [line.price, '']), [50, 'middle'],
+      ])
+    })
+
+    it('says each series in the legend of its pane, as its own scale prints it', async () => {
+      size = { width: 800, height: 400 }
+      // the candles, the volume and the RSI's pane, where the library stood them
+      lw.paneRows.push({ top: 0, height: 250 }, { top: 251, height: 70 }, { top: 322, height: 78 })
+      const wrapper = mountWith(drawn('worker:bollinger_main', 'worker:rsi_fast'))
+      await nextTick()
+      const rsi = entry('worker:rsi_fast')
+      const last = rsi.data['rsi_value']!.at(-1)!
+      const legend = wrapper.find('[data-legend="rsi_fast"]')
+      expect(legend.attributes('style')).toContain('top: 322px')
+      expect(legend.find('[data-series="worker:rsi_fast"]').text()).toBe(`RSI ${rsi.inputs['period']} · M5~${last}`)
+      // a series on the candles stands as a line of their legend
+      expect(wrapper.find('[data-legend="price"] [data-series="worker:bollinger_main"]').exists()).toBe(true)
+    })
+
+    it('takes every series down, and its panes with them, once none is handed', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountWith(drawn('worker:rsi_fast', 'worker:obv_volume'))
+      await nextTick()
+      expect(wrapper.attributes('data-panes')).toBe('4')
+      await wrapper.setProps({ indicators: [] })
+      expect(live()).toEqual([])
+      expect(wrapper.attributes('data-panes')).toBe('2')
+      expect(wrapper.find('[data-legend="rsi_fast"]').exists()).toBe(false)
+    })
+  })
+
   describe('the legend of each pane', () => {
     /** A legend's figures as they read: label, then value. */
     function legendOf(wrapper: VueWrapper, pane: string): string[] {

@@ -64,7 +64,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": true,
+      "fixture_superseded": false,
       "results": [
         {
           "currency": "USD",
