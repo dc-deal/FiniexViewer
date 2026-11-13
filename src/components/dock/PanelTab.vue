@@ -55,6 +55,15 @@ const members = computed<PanelKind[]>(() => (states?.value ?? [])
   .filter(state => state.place === 'column' && !state.absent)
   .flatMap(state => panelKind(memberKindId(bundle!, state.section.id)) ?? []))
 
+/** Whether this panel's group has the whole dock: read again whenever one gains or loses it. */
+const whole = computed(() => dock.maximized && props.api.isMaximized())
+
+/** A double-click on the tab gives its group the whole dock, or the groups their places back — never on a button of the tab. */
+function onDoubleClick(event: MouseEvent): void {
+  if ((event.target as Element | null)?.closest('button')) return
+  dock.toggleMaximized(props.api.id)
+}
+
 /** Built where the tab is drawn, so the subtitle, the status and the members follow their stores. */
 const card = computed(() => tabCard(kind, props.api.title ?? props.kindId, members.value))
 
@@ -89,11 +98,13 @@ onMounted(() => {
   tabElement = root.value?.closest<HTMLElement>('.dv-tab') ?? null
   tabElement?.addEventListener('focusin', onFocusIn)
   tabElement?.addEventListener('focusout', onFocusOut)
+  tabElement?.addEventListener('dblclick', onDoubleClick)
 })
 
 onUnmounted(() => {
   tabElement?.removeEventListener('focusin', onFocusIn)
   tabElement?.removeEventListener('focusout', onFocusOut)
+  tabElement?.removeEventListener('dblclick', onDoubleClick)
 })
 </script>
 
@@ -142,6 +153,16 @@ onUnmounted(() => {
           </DropdownMenuContent>
         </DropdownMenuPortal>
       </DropdownMenuRoot>
+      <!-- the way back shown where the panel was made large: a double-click and Esc are no control -->
+      <button
+        v-if="whole"
+        type="button"
+        class="panel-tab-button panel-tab-restore"
+        :aria-label="t('Give the panels their places back')"
+        @click.stop="dock.toggleMaximized(api.id)"
+      >
+        <AppIcon name="action-restore" />
+      </button>
       <button
         v-if="member"
         type="button"
@@ -237,5 +258,12 @@ onUnmounted(() => {
 .panel-tab-button:focus-visible {
   opacity: 1;
   outline: 1px solid var(--color-accent);
+}
+
+/* the way back once per tab bar, on the tab in front: every tab of the large group would say it */
+/* the whole selector global: Vue keeps only what stands inside `:global()`, and a class after it
+   would be dropped — the rule then hid every tab behind another, measured in the browser 2026-11-13 */
+:global(.dv-tab:not(.dv-active-tab) .panel-tab-restore) {
+  display: none;
 }
 </style>

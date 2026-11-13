@@ -50,6 +50,10 @@ const HINTS: HintDefinition[] = [
     text: t('⋯ on the tab of the bundle folds every section at once, or resets the bundle — its sections back in their first order, none of them hidden.'),
   },
   {
+    id: 'panel-maximize',
+    text: t('A double-click on a tab gives its panel the whole window; again, or Esc, or the arrows on its tab give the panels their places back. A pick inside it keeps it large, and the layout is stored without it.'),
+  },
+  {
     id: 'dock-edges',
     text: t('Drag a tab to the outermost edge of the panels to dock it along that whole edge — a column over the full height, a row over the full width.'),
   },

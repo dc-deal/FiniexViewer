@@ -34,7 +34,8 @@ by its tab, the way a reader does.
   every time, where it lost the run only when the other tab's delayed save landed in between.
 - `dock.spec.ts` holds the docked panels, which jsdom cannot lay out at all: the first arrangement
   in the suggested order, the run report beside the run list on a wide screen with the list keeping
-  its rows and a pick there showing the run, a tab behind another drawn only once it is shown, an arrangement that
+  its rows and a pick there showing the run, a double-click on a tab giving its panel the whole dock
+  — kept for a pick inside, never stored, ended by Esc and by the arrows on its tab — a tab behind another drawn only once it is shown, an arrangement that
   survives a reload, the way back to the suggested order, a closed panel brought back from the
   Panels menu, About opening as a dialog rather than as a tab, the quick bar holding the chart's
   selection only while the chart is in front, the run bundle's tab carrying the grade of a run that

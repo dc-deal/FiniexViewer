@@ -142,6 +142,14 @@ it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the o
   the public API (`addGroup({ direction })`, `moveTo`). dockview's own edges are switched off
   explicitly, so the two never compete. The `dock-edges` hint says it, because nothing on screen
   shows an edge until a tab is dragged.
+- **A double-click on a tab gives its panel the whole dock**, as VS Code does with an editor group
+  (operator, 2026-11-13: the chart or the run list *"kurz gross und dann wieder klein"*). dockview
+  holds the state (`maximizeGroup`); the dock store's `toggleMaximized` switches it, and again, Esc
+  or the arrows on the tab in front give the groups their places back. A pick inside the large panel
+  keeps it so — a panel of another group brought forward would end it — while a command or a link
+  ends it, as dockview does. It is **never stored**: dockview writes the large group into its layout
+  with the others hidden, so `flush` writes nothing while one group has the whole dock, and the
+  layout the reader made is what the next start opens. The `panel-maximize` hint says it.
 - **`PanelHost`** draws a panel the first time it is SHOWN and keeps it after: a tab behind another
   costs nothing until it is picked, and a panel returned to finds its scroll where it left it. It is
   the panel's error boundary, and it hands the panel its visibility — `onPanelShownAgain` fetches
