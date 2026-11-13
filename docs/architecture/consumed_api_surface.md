@@ -55,7 +55,7 @@ GET /api/v1/reports/runs/{run_id}/order-history       the orders themselves, as 
 GET /api/v1/reports/runs/{run_id}/order-events        the STEPS between those records, per position; whole for a live session's venue reads
 GET /api/v1/reports/runs/{run_id}/venue-account       what the venue held at a live session's start and end
 GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams         a unit's timeline (contract 43)
-GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams/window  its frames of [from, to), a page at a time; the indicator series beside them, not yet drawn
+GET /api/v1/reports/runs/{run_id}/units/{unit}/recorded-streams/window  its frames of [from, to), a page at a time; a drawing worker's indicator series beside them, drawn on the run chart
 GET /api/v1/reports/runs/{run_id}/...                 the further per-section reports, not yet consumed
 ```
 
