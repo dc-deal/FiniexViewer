@@ -30,7 +30,9 @@ series: one entry per layer, the pages merged, the frames left behind
   whose streams are not recorded at all is an absence in the backend's words, never an error.
 - **The stretch whose bars are loaded, and no more.** The series follow the bar loader: when the
   reader moves toward an edge and earlier or later bars arrive, the series of that stretch are read
-  as well — only the part not read yet.
+  as well — only the part not read yet. They are asked WITH the first batch, not after it (operator,
+  2026-11-13: the drawing came late): while it is on its way, over the stretch it covers at the
+  least — from its start the bars of one batch — and the read grows with what the bars then cover.
 - **At most four pages a follow, 8,000 records.** The window cannot be asked for the series alone: it
   merges every stream of the unit by time, so a page holds the unit's state frames beside the
   series' bars, and a thirty-day session at a minute's cadence holds some 43,000 frames, about
@@ -61,7 +63,10 @@ series: one entry per layer, the pages merged, the frames left behind
 - **Each plot is a series of the chart library** in the pane its series names: `line`, `histogram`,
   `area` or `baseline`, its `options` passed in the library's own codes. The first plot is drawn
   behind the others. `range` holds the scale fixed — an RSI's 0 to 100 — and `price_format` states
-  its labels; a series without one is in price units and takes the symbol's own.
+  its labels; a series without one is in price units and takes the symbol's own. **On the candles a
+  series leaves their scale to them**, as TradingView's *Scale price chart only*: a band's first,
+  wide values pulled the candles together, and switching it off sprang the scale back (operator, on
+  screen 2026-11-13). A band wider than the candles in view is cut at the pane's edge.
 - **One pane per name**, in the order the series are served, below the candles and the volume's own
   pane. `use_indicator_series` builds them whole and takes them down whole: when the volume moves
   into a pane of its own it takes pane 1, so the workers' panes go first and come back below it. A

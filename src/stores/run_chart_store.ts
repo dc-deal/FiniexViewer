@@ -389,15 +389,34 @@ export const useRunChartStore = defineStore('runChart', () => {
     if (at * 1000 < from || at * 1000 > to) void loadBars()
   })
 
-  // A session's drawing workers, for the unit on show over the stretch its bars cover (contract 55).
-  // A backtest records them too, but its streams over time are not served yet, so only a session
-  // asks. `loadedTo` is the last millisecond loaded, and the series are read up to the one after it.
+  /**
+   * The stretch a session's series are read over: what the bars cover, `loadedTo` being the last
+   * millisecond loaded. While the first batch is on its way, the stretch it covers at the least — from
+   * its start the bars of one batch, within the window — so the series are asked WITH the bars rather
+   * than after them (operator, 2026-11-13: the drawing came late). A batch over a gap covers more, and
+   * the read grows with what the bars then cover; what it read stays read.
+   */
+  const seriesSpan = computed<{ from: number, to: number } | null>(() => {
+    const from = loader.loadedFrom.value
+    if (from === null) return null
+    const to = loader.loadedTo.value
+    if (to !== null) return { from, to: to + 1 }
+    const span = window.value
+    const tf = timeframe.value
+    if (!span || !tf) return null
+    const period = (timeframeStore.minutesFor(tf) ?? 1) * 60_000
+    // a full batch without a gap ends on the bar that opens a batch less one period on, as `loadedTo` will
+    return { from, to: Math.min(Date.parse(span.to), from + (BARS_PER_BATCH - 1) * period) + 1 }
+  })
+
+  // A session's drawing workers, for the unit on show (contract 55). A backtest records them too,
+  // but its streams over time are not served yet, so only a session asks.
   watch(
     () => [viewers.value > 0, runsStore.selectedRun?.run_id, runsStore.selectedRun?.group, unit.value?.name,
-      loader.loadedFrom.value, loader.loadedTo.value] as const,
+      seriesSpan.value?.from, seriesSpan.value?.to] as const,
     ([shown, runId, group, name, from, to]) => {
       const session = shown && runId && group === 'autotrader' && name ? { runId, unit: name } : null
-      void indicatorSeries.follow(session, session && from !== null && to !== null ? { from, to: to + 1 } : null)
+      void indicatorSeries.follow(session, session && from !== undefined && to !== undefined ? { from, to } : null)
     },
     { immediate: true },
   )

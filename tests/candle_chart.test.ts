@@ -926,6 +926,19 @@ describe('CandleChart', () => {
       ])
     })
 
+    /** TradingView's "Scale price chart only": a band switched on or off moves no candle (operator, 2026-11-13). */
+    it('leaves the candles their own scale, and a series of its own pane its values', async () => {
+      size = { width: 800, height: 400 }
+      mountWith(drawn('worker:bollinger_main', 'worker:macd_main'))
+      await nextTick()
+      const scaleOf = (pane: number) => live().filter(made => made.pane === pane)
+        .map(made => (made.options['autoscaleInfoProvider'] as (() => unknown) | undefined)?.())
+      expect(scaleOf(0).length).toBeGreaterThan(0)
+      expect(scaleOf(0).every(scale => scale === null)).toBe(true)
+      // the MACD has no fixed range: the library scales its pane to its values
+      expect(scaleOf(2).every(scale => scale === undefined)).toBe(true)
+    })
+
     it('says each series in the legend of its pane, as its own scale prints it', async () => {
       size = { width: 800, height: 400 }
       // the candles, the volume and the RSI's pane, where the library stood them

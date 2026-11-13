@@ -82,6 +82,14 @@ export function useIndicatorSeries(options: IndicatorSeriesOptions): IndicatorSe
       const pane = entry.pane === PRICE_PANE ? 0 : options.firstPane() + order.indexOf(entry.pane)
       const format = formatFor(entry)
       const range = entry.range
+      // on the candles a series leaves their scale to them, as TradingView's "Scale price chart only":
+      // a band's first, wide values pulled the candles together, and switching it off sprang the scale
+      // back (operator, on screen 2026-11-13). In a pane of its own its values are the scale.
+      const scale = entry.pane === PRICE_PANE
+        ? { autoscaleInfoProvider: () => null }
+        : range
+          ? { autoscaleInfoProvider: () => ({ priceRange: { minValue: range.min_value, maxValue: range.max_value } }) }
+          : {}
       let first: ISeriesApi<SeriesType> | null = null
       // the first plot is drawn behind the others: the library draws in the order series are added
       for (const plot of entry.plots) {
@@ -90,7 +98,7 @@ export function useIndicatorSeries(options: IndicatorSeriesOptions): IndicatorSe
         const own = {
           ...plotOptions(plot, plotInk(plot, inks, place), opacity, inks),
           ...(format ? { priceFormat: format } : {}),
-          ...(range ? { autoscaleInfoProvider: () => ({ priceRange: { minValue: range.min_value, maxValue: range.max_value } }) } : {}),
+          ...scale,
         } as SeriesPartialOptionsMap[SeriesType]
         const series = chart.addSeries(kind, own, pane)
         series.setData(plotPoints(entry, plot.id) as (LineData<Time> | WhitespaceData<Time>)[])

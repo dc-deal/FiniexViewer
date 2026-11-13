@@ -715,6 +715,37 @@ describe('useRunChartStore', () => {
     expect(chart.bars.map(bar => bar.time)).toEqual([1761886800, 1761886860])
   })
 
+  /**
+   * The series are asked WITH the bars, not after them (operator, 2026-11-13: the drawing came late):
+   * while the first batch is on its way, over the stretch it covers at the least.
+   */
+  it('asks for the series of a session while its first bars are still on their way', async () => {
+    let answer: (value: Awaited<ReturnType<typeof apiClient.getBars>>) => void = () => {}
+    vi.mocked(apiClient.getBars).mockImplementation(() => new Promise(resolve => { answer = resolve }))
+    vi.mocked(apiClient.getRecordedStreams).mockResolvedValue(seriesStreams as RecordedStreams)
+    vi.mocked(apiClient.getRecordedWindow).mockResolvedValue({ ...(seriesWindow as RecordedWindow), truncated: false, next_from: null })
+    const session: RunInfo = {
+      ...runInfo, run_id: 'session_1', group: 'autotrader',
+      data_windows: [{ unit_name: 'demo_btcusd_bot', start_date: '2026-10-01T00:00:00+00:00', end_date: null }],
+    }
+    useRunsStore().runs = [session]
+    useContextStore().selectRun('session_1')
+    const reports = useRunReportsStore()
+    reports.config = { run_id: 'session_1', config: { broker_type: 'kraken_spot', symbol: 'BTCUSD' } } as unknown as RunConfigReport
+    reports.tradeHistory = { trades: [] } as unknown as TradeHistoryReport
+    const chart = useRunChartStore()
+    chart.attach()
+    chart.chooseTimeframe('M5')
+    await flushPromises()
+    // the bars not answered yet, the series asked all the same
+    expect(apiClient.getBars).toHaveBeenCalled()
+    expect(chart.bars).toEqual([])
+    expect(apiClient.getRecordedStreams).toHaveBeenCalledWith('session_1', 'demo_btcusd_bot')
+    expect(apiClient.getRecordedWindow).toHaveBeenCalled()
+    answer(ANSWER)
+    await flushPromises()
+  })
+
   /** A session declares only where its window starts: it is drawn to the end of what is covered. */
   it('draws a session in the market its configuration names, to the end of the coverage', async () => {
     const session: RunInfo = {
