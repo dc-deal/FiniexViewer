@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import type { Page } from '@playwright/test'
-import { fixture, mockApi, revealFixtureRun, FIXTURE_DEPLOYMENT, FIXTURE_RUN, LIVE_RUN, STATE_FRAME_RUNS } from './api_mock'
+import { fixture, mockApi, revealFixtureRun, FIXTURE_DEPLOYMENT, FIXTURE_RUN, LIVE_RUN, SERIES_RUN, STATE_FRAME_RUNS } from './api_mock'
 import { openWith, showPanel, FIXTURES_SHOWN } from './arrangement_seed'
 
 /**
@@ -287,6 +287,28 @@ test('the legends follow the pointer quickly', async ({ page }) => {
  * stretches are drawn: the first batch, the pieces across the gap, and the earlier bars merged in
  * front with the view kept where it was.
  */
+/**
+ * A session's indicator series (contract 55): the session FiniexTestingIDE produced to draw every kind
+ * of pane, from the run chosen until every series stands on the chart in its pane — the timeline, the
+ * window, the panes built — and a zoom step over its seven panes, each until the frame after it painted.
+ */
+test('a session’s indicator series are drawn, and zoomed, quickly', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  const series = (fixture('recorded_window_series.json') as { indicator_series: unknown[] }).indicator_series.length
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  const drawn = await timed('run chart — a session’s series drawn', async () => {
+    await openWith(page, '/', { run: SERIES_RUN, units: ['indicator_series_session'] })
+    await page.waitForFunction(
+      count => document.querySelector('[data-panel-kind="run-chart"] .candle-chart')?.getAttribute('data-indicators') === String(count),
+      series,
+      { polling: 'raf', timeout: 30_000 },
+    )
+  })
+  const perStep = await zoomSteps(page, chart, 'run chart — a zoom step, series (mean)')
+  expect(drawn).toBeLessThan(6000)
+  expect(perStep).toBeLessThan(500)
+})
+
 test('earlier bars are merged across a gap quickly', async ({ page }) => {
   await mockApi(page, { firstTick: { unit: 'EURGBP_refusals_01', at: '2025-10-10T06:00:00+00:00' } })
   await page.setViewportSize({ width: 1800, height: 900 })

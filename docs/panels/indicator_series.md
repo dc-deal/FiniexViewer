@@ -205,3 +205,5 @@ frames again. A read that serves only the series would end that; it is FiniexTes
   leaving every pane its controls; the volume moved into the candles' pane and back with the
   workers' panes below it in order; a worker's pane dragged small and large, hidden at its lever and
   shown from the Layers panel, back at the height dragged.
+- `e2e/performance.spec.ts` — the captured session's series from the run chosen until every one
+  stands in its pane, and a zoom step over its seven panes, each until the frame after it painted.
