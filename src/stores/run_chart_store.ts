@@ -17,6 +17,7 @@ import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
 import { useContextStore } from '@/stores/context_store'
 import { useFramePlayerStore } from '@/stores/frame_player_store'
+import { useIndicatorSeriesStore } from '@/stores/indicator_series_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
@@ -58,6 +59,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   const arrangement = useArrangementStore()
   const timeframeStore = useTimeframeStore()
   const framePlayers = useFramePlayerStore()
+  const indicatorSeries = useIndicatorSeriesStore()
 
   /** How many run charts are on show. Nothing is fetched while there are none. */
   const viewers = ref(0)
@@ -382,6 +384,19 @@ export const useRunChartStore = defineStore('runChart', () => {
     if (!viewers.value || at === null || loader.loading.value || from === null || to === null) return
     if (at * 1000 < from || at * 1000 > to) void loadBars()
   })
+
+  // A session's drawing workers, for the unit on show over the stretch its bars cover (contract 55).
+  // A backtest records them too, but its streams over time are not served yet, so only a session
+  // asks. `loadedTo` is the last millisecond loaded, and the series are read up to the one after it.
+  watch(
+    () => [viewers.value > 0, runsStore.selectedRun?.run_id, runsStore.selectedRun?.group, unit.value?.name,
+      loader.loadedFrom.value, loader.loadedTo.value] as const,
+    ([shown, runId, group, name, from, to]) => {
+      const session = shown && runId && group === 'autotrader' && name ? { runId, unit: name } : null
+      void indicatorSeries.follow(session, session && from !== null && to !== null ? { from, to: to + 1 } : null)
+    },
+    { immediate: true },
+  )
 
   // the place the offer centred on belongs to the unit and the position it was taken for
   watch(() => [unit.value?.name, focus.value?.position] as const, () => { offerAt.value = null })

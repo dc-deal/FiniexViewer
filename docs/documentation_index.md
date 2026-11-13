@@ -31,6 +31,7 @@ starts with the first group.
 | [Activities Panel](panels/activities_panel.md) | What runs on the machine — FiniexTestingIDE's activity list as a panel: each activity beneath the one it runs inside, its memory as served, asked only while someone reads it |
 | [Chart Drawings and Layers](panels/chart_drawings_and_layers.md) | What a chart draws for itself — marks, levels, lines, the time lane of booking periods and orders refused — through one drawing host, layer by layer: placed, painted and found under the pointer; and the Layers panel that shows, hides, dims and orders them |
 | [Chart Panes](panels/chart_panes.md) | The run chart's panes stacked on one time axis: the volume in a pane of its own below the candles or in theirs, the heights the reader drags kept as weights — with the chart's view and in a named layout — and what moves nothing |
+| [Indicator Series](panels/indicator_series.md) | What a session's drawing workers recorded for the run chart: read from the unit's timeline and window for the stretch whose bars are loaded, the pages merged per layer and the frames left behind, and what each field of a series is drawn as |
 
 ## Runs
 
