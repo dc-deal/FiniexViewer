@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  drawsOn, fillColour, holdsValues, plotInk, plotOptions, plotPoints, seriesLabel, seriesLegend, seriesTitle, servedPanes,
+  drawsOn, fillColour, holdsValues, plotInk, plotOptions, plotSample, plotPoints, seriesLabel, seriesLegend, seriesTitle, servedPanes,
 } from '@/components/indicator_drawing'
 import type { IndicatorPlot, IndicatorSeriesEntry } from '@/types/api/indicator_series_types'
 import type { RecordedWindow } from '@/types/api/state_frame_types'
@@ -61,6 +61,25 @@ describe('indicator drawing', () => {
     expect(servedPanes(SERIES)).not.toContain('price')
     expect(servedPanes([entry('worker:tide_wave'), entry('worker:rsi_fast'), entry('worker:tide_wave')]))
       .toEqual(['tide_wave', 'rsi_fast'])
+  })
+
+  /**
+   * The sample beside a worker's name in the Layers panel is the chart's look in a few pixels: the
+   * same ink, by role or by place, the same dash and strength (operator, 2026-11-13: which line is whose).
+   */
+  it('samples a plot in the ink, the dash and the strength the chart draws it in', () => {
+    expect(plotSample(plot(), 0)).toEqual({ form: 'line', ink: 'var(--color-text-primary)', dash: '', width: 1, alpha: 1 })
+    expect(plotSample(plot(), 1).ink).toBe('var(--color-text-secondary)')
+    expect(plotSample(plot({ style: { role: 'positive' } }), 1).ink).toBe('var(--color-positive)')
+    // the second series of a role dashed, the third dotted, as on the chart; their own style wins
+    expect(plotSample(plot({ style: { series: 1 } }), 0).dash).toBe('4 3')
+    expect(plotSample(plot({ style: { series: 2 } }), 0).dash).toBe('1 2')
+    expect(plotSample(plot({ style: { series: 1 }, options: { line_style: 0 } }), 0).dash).toBe('')
+    // strong is wider, quiet fainter; a histogram is bars, an area filled
+    expect(plotSample(plot({ style: { emphasis: 'strong' } }), 0).width).toBe(2)
+    expect(plotSample(plot({ style: { emphasis: 'quiet' } }), 0).alpha).toBeLessThan(1)
+    expect(plotSample(plot({ kind: 'histogram' }), 0)).toMatchObject({ form: 'bars', dash: '' })
+    expect(plotSample(plot({ kind: 'area' }), 0).form).toBe('area')
   })
 
   /** A role of ours keeps its colour; a neutral one takes the next neutral ink of its pane, round again. */

@@ -271,10 +271,11 @@ describe('LayersView', () => {
       const own = [...new Set(SERIES.map(entry => entry.pane).filter(pane => pane !== 'price'))]
       expect(wrapper.findAll('[data-pane-group]').map(group => group.attributes('data-pane-group')))
         .toEqual(['price', 'volume', ...own])
-      // the candles' pane: the framework's layers and two workers' — each source named
+      // the candles' pane: the framework's layers, then the workers under a heading of their own,
+      // each named
       const price = wrapper.find('[data-pane-group="price"]')
       const workers = [...new Set(SERIES.filter(entry => entry.pane === 'price').map(entry => entry.layer.split(':')[1]))]
-      expect(price.findAll('.source-heading').map(heading => heading.attributes('data-source'))).toEqual(['framework', ...workers])
+      expect(price.findAll('.source-heading').map(heading => heading.attributes('data-source'))).toEqual(['framework', 'workers', ...workers])
       // a pane of one worker's: no source named
       expect(wrapper.find(`[data-pane-group="${own[0]}"] .source-heading`).exists()).toBe(false)
       const rsi = SERIES.find(entry => entry.layer === 'worker:rsi_fast')!
@@ -282,6 +283,48 @@ describe('LayersView', () => {
       expect(row(wrapper, 'worker:rsi_fast').find('.layer-title').text()).toBe(`RSI ${rsi.inputs['period']} · ${rsi.timeframe}`)
       // never moved: no grip
       expect(row(wrapper, 'worker:rsi_fast').find('.layer-grip').text()).toBe('')
+    })
+
+    /**
+     * The workers apart from the framework, hidden whole by one eye (operator, 2026-11-13: "kann ich
+     * gruppe ausblenden komplett? wobei es aber keinen sinn macht die standardgruppe auszublenden").
+     */
+    it('puts the workers of the candles\' pane under a heading whose eye hides them all, the framework\'s left alone', async () => {
+      const wrapper = mountWithSeries()
+      const price = () => wrapper.find('[data-pane-group="price"]')
+      const workers = SERIES.filter(entry => entry.pane === 'price').map(entry => entry.layer)
+      expect(price().find('[data-source="framework"] [data-action]').exists()).toBe(false)
+      const eye = () => price().find('[data-source="workers"] [data-action="show-workers"]')
+      expect(eye().attributes('aria-pressed')).toBe('true')
+
+      await eye().trigger('click')
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden).toEqual(workers)
+      expect(eye().attributes('aria-pressed')).toBe('false')
+      expect(row(wrapper, 'candles').attributes('data-shown')).toBe('true')
+
+      await eye().trigger('click')
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden ?? []).toEqual([])
+    })
+
+    it('hides one worker whole by the eye beside its name, and no other', async () => {
+      const wrapper = mountWithSeries()
+      const [first, second] = [...new Set(SERIES.filter(entry => entry.pane === 'price').map(entry => entry.layer.split(':')[1]))]
+      await wrapper.find(`[data-source="${first}"] [data-action="show-worker"]`).trigger('click')
+      const hidden = useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden ?? []
+      expect(hidden.length).toBeGreaterThan(0)
+      expect(hidden.every(layer => layer.split(':')[1] === first)).toBe(true)
+      expect(wrapper.find(`[data-source="${second}"] [data-action="show-worker"]`).attributes('aria-pressed')).toBe('true')
+    })
+
+    /** Which line is whose (operator, on screen 2026-11-13): each row shows its line before its name. */
+    it('shows each worker\'s line before its name, in the ink of its place in its pane', () => {
+      const wrapper = mountWithSeries()
+      const [first, second] = SERIES.filter(entry => entry.pane === 'price')
+      const sample = (layer: string) => row(wrapper, layer).find('.plot-sample')
+      expect(sample(first!.layer).attributes('style')).toContain('var(--color-text-primary)')
+      expect(sample(second!.layer).attributes('style')).toContain('var(--color-text-secondary)')
+      // the MACD's first plot is its histogram: bars
+      expect(sample('worker:macd_main').attributes('data-form')).toBe('bars')
     })
 
     it('shows, hides and fades a worker\'s layer by its id, kept with the chart\'s view', async () => {

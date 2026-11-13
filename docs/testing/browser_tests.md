@@ -143,7 +143,7 @@ by its tab, the way a reader does.
   coarser timeframe drawing only its own series; a seam above a worker's pane kept by the pane's
   name through a reload; a worker's pane at the whole height stacking the folded legends, a line
   each, without one standing on another; the Layers panel's rows of the workers in their panes, a
-  switch hiding one on the chart; a pane at the whole height that goes — a timeframe that cannot draw
+  switch hiding one on the chart and the eye of the candles' workers hiding them all; a pane at the whole height that goes — a timeframe that cannot draw
   it, the volume hidden — leaving every pane its controls; the volume moved into the candles' pane and
   back with the workers' panes below it in order; and a worker's pane dragged small and large, hidden
   at its lever and shown from the Layers panel, back at the height dragged; and a pane set apart by a

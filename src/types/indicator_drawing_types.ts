@@ -11,6 +11,8 @@ export interface IndicatorLayer {
   opacity: number
   /** Whether the chart's timeframe can draw it: its own or a finer one. */
   drawable: boolean
+  /** Its place among every series served for its pane, shown or not — the neutral ink it takes (`DrawnSeries.place`). */
+  place: number
 }
 
 /** One series a chart draws, and how strongly — the reader's opacity of its layer, 0 to 1. */

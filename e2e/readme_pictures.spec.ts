@@ -42,7 +42,7 @@ const HINTS = [
   'layer-empty-state-frame', 'chart-marks',
   'trade-slippage', 'position-link', 'beyond-the-venue', 'first-start', 'run-membership',
   'chart-panes', 'layer-periods', 'layer-empty-periods', 'layer-refusals', 'venue-account', 'bundle-places',
-  'layer-indicator', 'layer-empty-indicator', 'run-families', 'panel-maximize',
+  'layer-indicator', 'layer-empty-indicator', 'run-families', 'panel-maximize', 'layer-workers',
   'servers', 'layouts', 'layout-by-run', 'size-by-window', 'suggested-order',
 ]
 

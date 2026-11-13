@@ -161,6 +161,10 @@ const HINTS: HintDefinition[] = [
     text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },
   {
+    id: 'layer-workers',
+    text: t("The eye beside Workers hides or shows every worker's series in that pane at once, the eye beside a worker all of its series. The line before a series is its look on the chart: its ink and its dash."),
+  },
+  {
     id: 'layer-indicator',
     text: t('What a worker of the strategy computed, one value per bar of its own timeframe — on the candles or in a pane of its own. Drawn as the run recorded it when it started, and on its own timeframe and every finer one. In a pane of its own, the first of its series sets the pane apart with a frame and a background.'),
   },

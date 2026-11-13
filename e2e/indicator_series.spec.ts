@@ -133,8 +133,15 @@ test('the Layers panel lists each worker’s layer in its pane, and its switch h
   await expect(layers.locator('[data-layer="worker:rsi_fast"]')).toBeVisible()
   const groups = await layers.locator('[data-pane-group]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-pane-group')))
   expect(groups).toEqual(['price', 'volume', ...OWN_PANES])
-  // the candles' pane holds the framework's layers and two workers': each source named
-  await expect(layers.locator('[data-pane-group="price"] .source-heading')).toHaveCount(3)
+  // the candles' pane holds the framework's layers and two workers': each source named, the workers
+  // under a heading of their own
+  await expect(layers.locator('[data-pane-group="price"] .source-heading')).toHaveCount(4)
+  // whose eye hides every worker of the candles' pane at once, and shows them again
+  const onCandles = SERIES.filter(entry => entry.pane === 'price').length
+  await layers.locator('[data-pane-group="price"] [data-action="show-workers"]').click()
+  await expect(chart).toHaveAttribute('data-indicators', String(SERIES.length - onCandles))
+  await layers.locator('[data-pane-group="price"] [data-action="show-workers"]').click()
+  await expect(chart).toHaveAttribute('data-indicators', String(SERIES.length))
   await layers.locator('[data-layer="worker:rsi_fast"] [data-action="show"]').click()
   await expect(chart).toHaveAttribute('data-indicators', String(SERIES.length - 1))
   await expect(chart).toHaveAttribute('data-panes', String(1 + OWN_PANES.length))

@@ -3,10 +3,12 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { VueDraggable } from 'vue-draggable-plus'
 import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
-import { holdsValues, seriesLabel } from '@/components/indicator_drawing'
+import { holdsValues, plotSample, seriesLabel } from '@/components/indicator_drawing'
+import type { PlotSample } from '@/components/indicator_drawing'
 import { useChartLayers } from '@/composables/use_chart_layers'
 import { useViewExpanded, useViewRows } from '@/composables/use_panel_view'
 import { layerDefinition } from '@/layer_registry'
@@ -132,9 +134,36 @@ const groups = computed(() => {
   })
   return [...ours, ...theirs]
     .filter(group => group.rows.length || group.workers.length)
-    // a source is named only where a pane holds two: the framework's and a worker's, or two workers'
-    .map(group => ({ ...group, named: (group.rows.length ? 1 : 0) + group.workers.length > 1 }))
+    .map(group => ({
+      ...group,
+      // a source is named only where a pane holds two: the framework's and a worker's, or two workers'
+      named: (group.rows.length ? 1 : 0) + group.workers.length > 1,
+      // the workers under a heading of their own where they stand beside the framework's layers
+      workersHeading: group.rows.length > 0 && group.workers.length > 0,
+      allWorkers: group.workers.flatMap(source => source.layers),
+    }))
 })
+
+/** Whether any of these layers is shown: the eye over them says so. */
+function anyShown(layers: IndicatorLayer[]): boolean {
+  return layers.some(layer => layer.shown)
+}
+
+/**
+ * Hides several of a worker's layers at once, or shows them — the eye of a pane's WORKERS, or of one
+ * worker (operator, 2026-11-13: "kann ich gruppe ausblenden komplett?"). It switches the layers and
+ * keeps nothing of its own: the eye reads what they are, hiding where any is shown.
+ */
+function showAll(layers: IndicatorLayer[]): void {
+  const on = !anyShown(layers)
+  for (const layer of layers) showServed(layer.entry.layer as ServedLayerId, on)
+}
+
+/** Each worker's layer's look, its first plot's, by its layer: the sample beside its name. */
+const samples = computed(() => new Map<string, PlotSample>(served.value.flatMap(layer => {
+  const plot = layer.entry.plots[0]
+  return plot ? [[layer.entry.layer, plotSample(plot, layer.place)] as const] : []
+})))
 
 /** Whether each of our panes' groups stands open — kept with this panel's view, open where nothing was kept. */
 const folds: Record<ChartPaneId, { value: boolean }> = {
@@ -270,6 +299,7 @@ function toggle(row: LayerState): void {
 <template>
   <div class="layers-view">
     <HintLine id="layers" />
+    <HintLine v-if="served.length" id="layer-workers" />
     <p v-if="!chartName" class="hint">{{ t('Open the run chart to arrange what it draws') }}</p>
     <template v-else>
       <p class="chart-name" :data-chart="lastChart">{{ chartName }}</p>
@@ -391,8 +421,34 @@ function toggle(row: LayerState): void {
         </VueDraggable>
         <!-- a worker's layers: shown, hidden and fainter like ours, never moved — they stand where the
              run recorded them, in the order served (contract 55) -->
+        <!-- the workers of a pane that holds the framework's layers too, under a heading of their own
+             whose eye hides or shows them all; the framework's have none, as hiding the default makes
+             no sense (operator, 2026-11-13) -->
+        <p v-if="isOpen(group.pane) && group.workersHeading" class="source-heading" data-source="workers">
+          <span>{{ t('Workers') }}</span>
+          <AppButton
+            variant="quiet"
+            size="compact"
+            glyph
+            data-action="show-workers"
+            :aria-pressed="anyShown(group.allWorkers)"
+            :aria-label="anyShown(group.allWorkers) ? t('Hide every worker of this pane') : t('Show every worker of this pane')"
+            @click="showAll(group.allWorkers)"
+          ><AppIcon :name="anyShown(group.allWorkers) ? 'status-shown' : 'status-hidden'" /></AppButton>
+        </p>
         <template v-for="source in isOpen(group.pane) ? group.workers : []" :key="source.worker">
-          <p v-if="group.named" class="source-heading" :data-source="source.worker">{{ source.worker }}</p>
+          <p v-if="group.named" class="source-heading" :class="{ under: group.workersHeading }" :data-source="source.worker">
+            <span>{{ source.worker }}</span>
+            <AppButton
+              variant="quiet"
+              size="compact"
+              glyph
+              data-action="show-worker"
+              :aria-pressed="anyShown(source.layers)"
+              :aria-label="anyShown(source.layers) ? t('Hide this worker') : t('Show this worker')"
+              @click="showAll(source.layers)"
+            ><AppIcon :name="anyShown(source.layers) ? 'status-shown' : 'status-hidden'" /></AppButton>
+          </p>
           <ul class="layer-list">
             <li
               v-for="layer in source.layers"
@@ -424,6 +480,31 @@ function toggle(row: LayerState): void {
                   <span class="layer-marker" aria-hidden="true">
                     {{ openableServed(layer) ? openedServed.has(layer.entry.layer) ? '▾' : '▸' : '' }}
                   </span>
+                  <!-- its line as the chart draws it, so a reader sees which line is whose -->
+                  <svg
+                    v-if="samples.get(layer.entry.layer)"
+                    class="plot-sample"
+                    :data-form="samples.get(layer.entry.layer)!.form"
+                    viewBox="0 0 16 8"
+                    aria-hidden="true"
+                    :style="{ color: samples.get(layer.entry.layer)!.ink, opacity: samples.get(layer.entry.layer)!.alpha }"
+                  >
+                    <template v-if="samples.get(layer.entry.layer)!.form === 'bars'">
+                      <rect x="1" y="3" width="3" height="5" fill="currentColor" />
+                      <rect x="6.5" y="0" width="3" height="8" fill="currentColor" />
+                      <rect x="12" y="4" width="3" height="4" fill="currentColor" />
+                    </template>
+                    <template v-else>
+                      <path v-if="samples.get(layer.entry.layer)!.form === 'area'" d="M0 5 L8 2 L16 3 L16 8 L0 8 Z" fill="currentColor" fill-opacity="0.25" />
+                      <path
+                        :d="samples.get(layer.entry.layer)!.form === 'area' ? 'M0 5 L8 2 L16 3' : 'M0 4 L16 4'"
+                        fill="none"
+                        stroke="currentColor"
+                        :stroke-width="samples.get(layer.entry.layer)!.width"
+                        :stroke-dasharray="samples.get(layer.entry.layer)!.dash || undefined"
+                      />
+                    </template>
+                  </svg>
                   <span class="layer-title">{{ seriesLabel(layer.entry) }}</span>
                   <span class="layer-summary">{{ servedSummary(layer) }}</span>
                 </button>
@@ -522,13 +603,35 @@ function toggle(row: LayerState): void {
 }
 
 /* a source within a pane — the framework's, a worker's — told by its form like the pane's heading,
-   set in under it */
+   set in under it; its eye, where it has one, at the row's end */
 .source-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
   margin: 0;
   padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* a worker under the pane's WORKERS: one step further in */
+.source-heading.under {
+  padding-left: calc(var(--space-md) + var(--space-md));
+}
+
+/* a worker's line in a few pixels, in its ink and its dash, before its name */
+.plot-sample {
+  flex: none;
+  width: 16px;
+  height: 8px;
+}
+
+/* the title beside the marker and the sample, with the two gaps between them: wider, it would wrap
+   onto the line the head's height cuts away, and the row would show no name at all */
+.layer.served .layer-title {
+  max-width: calc(100% - 1em - 16px - 2 * var(--space-xs) - 2px);
 }
 
 /* a row of the app's lists: the same rule below, the same padding, the surface under the pointer */

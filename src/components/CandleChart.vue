@@ -15,7 +15,7 @@ import { withAlpha } from '@/components/chart_colours'
 import { ChartDrawingHost, type DrawingColours } from '@/components/chart_drawing_host'
 import type { BarRange } from '@/components/chart_geometry'
 import { legendLines, legendTops, paneLegends } from '@/components/chart_legend'
-import { seriesLegend } from '@/components/indicator_drawing'
+import { NEUTRAL_TOKENS, seriesLegend } from '@/components/indicator_drawing'
 import { PaneLookPrimitive } from '@/components/pane_look'
 import type { BarEdge } from '@/composables/use_bar_loader'
 import { useChartPanes } from '@/composables/use_chart_panes'
@@ -122,7 +122,6 @@ const VOLUME_ALPHA = 0.45
  * candles to full colour vision, a violet 3.4 from the annotation under protan — so what tells two
  * workers on one pane apart is lightness, the legend's word and the dash, never a hue alone.
  */
-const INDICATOR_INKS = ['--color-text-primary', '--color-text-secondary']
 /** Where the volume's scale begins: the lowest fifth of the pane is the volume's. */
 const VOLUME_TOP = 0.8
 /**
@@ -393,7 +392,7 @@ function readColours(): ChartColours {
     annotation: token('--color-annotation'),
     // an order refused: something to weigh before trusting what is beside it
     warning: token('--color-warning'),
-    indicators: INDICATOR_INKS.map(token),
+    indicators: NEUTRAL_TOKENS.map(token),
     // a pane set apart stands on the surface a panel stands on, framed in the rule an overlay has
     paneSurface: token('--color-bg-surface'),
     paneFrame: token('--color-border-overlay'),

@@ -28,6 +28,23 @@ const AREA_ALPHA = 0.18
  */
 const SERIES_DASH = [0, 2, 1]
 
+/**
+ * The theme's tokens of the neutral inks, one per series of a pane in turn: plain, then quiet. The
+ * chart reads their values; a sample in the Layers panel paints with the tokens themselves.
+ */
+export const NEUTRAL_TOKENS = ['--color-text-primary', '--color-text-secondary']
+
+/** The theme's token of each role of ours a plot may name. */
+const ROLE_TOKENS: Partial<Record<string, string>> = {
+  positive: '--color-positive',
+  negative: '--color-negative',
+  warning: '--color-warning',
+  annotation: '--color-annotation',
+}
+
+/** A dash of the chart library's line styles (0 solid · 1 dotted · 2 dashed · 3 large dashed · 4 sparse dotted) as an SVG dash. */
+const SVG_DASH = ['', '1 2', '4 3', '6 3', '1 4']
+
 /** The name of a series in a legend and a list: its title, then its inputs' values — `RSI 14`. */
 export function seriesTitle(entry: IndicatorSeriesEntry): string {
   return [entry.title, ...Object.values(entry.inputs).map(String)].join(' ')
@@ -65,6 +82,38 @@ export function servedPanes(entries: readonly IndicatorSeriesEntry[]): string[] 
 export function plotInk(plot: IndicatorPlot, inks: IndicatorInks, place: number): string {
   const own = plot.style.role !== 'neutral' ? inks.roles[plot.style.role] : undefined
   return own ?? inks.neutral[place % inks.neutral.length]!
+}
+
+/** How a plot looks, for a sample of it beside its name: its form, the token of its ink, its dash, width and strength. */
+export interface PlotSample {
+  form: 'line' | 'bars' | 'area'
+  /** A CSS colour: the theme's token of its ink. */
+  ink: string
+  /** An SVG dash pattern; empty for a solid line. */
+  dash: string
+  width: number
+  /** 0 to 1, as the chart draws it at full opacity. */
+  alpha: number
+}
+
+/**
+ * A plot's look in a few pixels, by the rules the chart draws it with — so a reader can tell which
+ * line on the chart is whose (operator, on screen 2026-11-13: "was ist denn nun von was gezeichnet").
+ * Its ink is the role's token, else the neutral one of its series' place in its pane.
+ */
+export function plotSample(plot: IndicatorPlot, place: number): PlotSample {
+  const role = plot.style.role !== 'neutral' ? ROLE_TOKENS[plot.style.role] : undefined
+  const token = role ?? NEUTRAL_TOKENS[place % NEUTRAL_TOKENS.length]!
+  const quiet = plot.style.emphasis === 'quiet' ? QUIET_ALPHA : 1
+  const style = plot.options.line_style ?? SERIES_DASH[plot.style.series ?? 0] ?? 0
+  const form = plot.kind === 'histogram' ? 'bars' : plot.kind === 'area' || plot.kind === 'baseline' ? 'area' : 'line'
+  return {
+    form,
+    ink: `var(${token})`,
+    dash: form === 'bars' ? '' : SVG_DASH[style] ?? '',
+    width: WIDTHS[plot.style.emphasis ?? 'normal'] ?? 1,
+    alpha: (form === 'bars' ? HISTOGRAM_ALPHA : 1) * quiet,
+  }
 }
 
 /** A plot's options for the library, by its kind: its ink at the layer's opacity, its width and dash. */
