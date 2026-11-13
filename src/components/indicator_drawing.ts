@@ -8,6 +8,12 @@ export const PRICE_PANE = 'price'
 
 /** A line's width by its emphasis, in the library's whole pixels; none given leaves it normal. */
 const WIDTHS: Partial<Record<string, number>> = { strong: 2, normal: 1, quiet: 1 }
+/**
+ * A point's radius by its emphasis, in pixels. The library's own is half the line's width and 2 more,
+ * and a strong plot's points stood as one band of blots over the candles of a chart zoomed out (on
+ * screen 2026-11-13, a bar's close on M15 over M5 candles).
+ */
+const POINT_RADII: Partial<Record<string, number>> = { strong: 2, normal: 1.5, quiet: 1 }
 /** How far a quiet drawing stands back: its ink at this share. */
 const QUIET_ALPHA = 0.55
 /** A histogram's bars stand behind the lines drawn over them. */
@@ -75,6 +81,7 @@ export function plotOptions(
     ...(options.line_type !== null ? { lineType: options.line_type } : {}),
     ...(options.line_visible !== null ? { lineVisible: options.line_visible } : {}),
     ...(options.point_markers_visible !== null ? { pointMarkersVisible: options.point_markers_visible } : {}),
+    ...(options.point_markers_visible ? { pointMarkersRadius: POINT_RADII[plot.style.emphasis ?? 'normal'] ?? 1.5 } : {}),
   }
   const shared = { priceLineVisible: false, lastValueVisible: true }
   switch (plot.kind) {
@@ -99,8 +106,11 @@ export function plotOptions(
   }
 }
 
-/** How strongly an area is filled by its emphasis — under the lines and the candles, never over them. */
-const FILL_ALPHA: Partial<Record<string, number>> = { strong: 0.24, normal: 0.14, quiet: 0.08 }
+/**
+ * How strongly an area is filled by its emphasis — under the lines and the candles, never over them.
+ * A quiet one at 8 % vanished on the light theme's ground (on screen 2026-11-13, an entry zone).
+ */
+const FILL_ALPHA: Partial<Record<string, number>> = { strong: 0.28, normal: 0.18, quiet: 0.12 }
 
 /**
  * An area's colour: its role's ink — a neutral one the plain ink of the series' pane — at the share

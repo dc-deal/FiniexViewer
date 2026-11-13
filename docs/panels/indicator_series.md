@@ -78,7 +78,11 @@ series: one entry per layer, the pages merged, the frames left behind
   and the candles (the library's `bottom` stage): between two price lines a band across the pane,
   between two plots the stretch between their values bar by bar, broken where either has a gap.
   Their document allows no pair of one edge of each kind, so such a pair fills nothing. Its role's
-  ink at a share its emphasis gives — their default for an area is the annotation's, quiet.
+  ink at a share its emphasis gives — 12 % quiet, 18 % normal, 28 % strong; at 8 % a quiet one
+  vanished on the light theme — their default for an area is the annotation's, quiet.
+- **Points without a line** take a radius by their emphasis — 1 px quiet, 1.5 normal, 2 strong — not
+  the library's own, which grew with the line's width until a strong plot's points stood as one band
+  of blots on a chart zoomed out.
 - **The framework's own drawings stand in front** — the marks, the levels, the line, the time lane:
   the drawing host paints in the library's `top` stage, over the candles and every worker's series
   on them. What the run did stands over what its workers computed.
@@ -97,6 +101,13 @@ series: one entry per layer, the pages merged, the frames left behind
 - **A pane at the whole height that goes** — a worker's on a timeframe that cannot draw it, the volume
   hidden — folds nothing while it is gone: every pane keeps its controls. The choice is kept and holds
   again once the pane is back (on the way to this page 2026-11-13: every pane lost its controls).
+- **A legend stays inside its pane.** It wraps between entries on a narrow chart, never inside a
+  series' name, and where its pane is shorter than its lines the last ones are cut rather than laid
+  over the panes below (a small window, 2026-11-13). Folded, each legend is one line, cut at the plot.
+- **The chart says what it cannot draw.** Where shown series need a finer timeframe than the one on
+  show, a notice counts them and offers the coarsest timeframe that draws them all — theirs, where the
+  market is rendered in it. Where a read stopped at its pages, a notice says the instant the series
+  are read up to, with its ⚠: what is drawn beyond it is the candles alone.
 
 ## In the Layers panel
 
@@ -136,6 +147,25 @@ series: one entry per layer, the pages merged, the frames left behind
 | `price_lines`, `filled_areas` | reference lines on the series' scale, and an area between two edges |
 | `times`, `data` | each bar's opening instant, and per plot one value per bar — a null is a gap |
 
+## Measured on the sessions that challenge it (2026-11-13)
+
+FiniexTestingIDE produced three sessions under contract 55 to challenge the chart, beside the
+fixture that draws every kind of pane: a strategy that trades with two moving averages on the
+candles, an oscillator as a `baseline` on a fixed range and a volatility `area`; three workers, one
+drawing a bar's high and low as dotted step lines with the area between them and its close as points
+without a line; and an entry zone that is null outside a setup, a histogram against a dotted
+threshold in the warning role, a bias on a fixed −1 to +1 with titled lines, and one layer on D1
+beside three on M15. Each was drawn in both themes, its legends read, its panes given the whole
+height, dragged small and large, hidden and shown, the volume moved, a coarser timeframe taken and
+its offer accepted, and the window made small. What they found is in the rules above: the points'
+radius, the share of a quiet fill, a legend inside its pane, the notices — and a frame whose
+`balances` are null on an account that is not spot, which stopped the Latest state section from
+drawing at all ([Latest State Frame](../runs/latest_state_frame.md)).
+
+The window cannot be asked for the series alone: for the twenty-five daily values of the first
+session the chart read four pages of 2,000 frames, about 11 MB, and the frame player reads the same
+frames again. A read that serves only the series would end that; it is FiniexTestingIDE's to decide.
+
 ## Where it lives
 
 - `src/stores/indicator_series_store.ts` — what is read, for which unit and stretch.
@@ -152,6 +182,8 @@ series: one entry per layer, the pages merged, the frames left behind
 ## How it is tested
 
 - `indicator_series_store.test.ts` — the reading, against a route cut as documented.
+- `chart_notices.test.ts` — the timeframe offered for the series and handed back, and where the
+  series stop.
 - `indicator_drawing.test.ts` — every pure piece, against the session FiniexTestingIDE produced.
 - `indicator_fill.test.ts` — a band between two price lines, the stretch between two plots, broken at
   a gap and no lone bar filled, and nothing for a mixed pair, an unknown edge or one off the scale.

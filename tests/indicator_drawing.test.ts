@@ -104,14 +104,18 @@ describe('indicator drawing', () => {
     expect(baseline['bottomLineColor']).toBe('#aa0000')
     const line = plotOptions(plot({ options: { line_type: 1, point_markers_visible: true } }), '#eeeeee', 1, INKS)
     expect(line).toMatchObject({ lineType: 1, pointMarkersVisible: true, priceLineVisible: false })
+    // points small enough that a chart zoomed out shows them apart, a strong plot's a little larger
+    expect(line['pointMarkersRadius']).toBe(1.5)
+    const strong = plotOptions(plot({ options: { line_visible: false, point_markers_visible: true }, style: { emphasis: 'strong' } }), '#eeeeee', 1, INKS)
+    expect(strong).toMatchObject({ lineVisible: false, pointMarkersRadius: 2 })
   })
 
   /** Their default for an area: the annotation's ink, quiet — an area stands under the lines, never over them. */
   it('fills an area in its role’s ink at the share its emphasis gives, at the layer’s opacity', () => {
     const style = { role: 'annotation', series: null, emphasis: 'quiet', color: null }
-    expect(fillColour(style, INKS, 1)).toBe('rgba(170, 0, 170, 0.08)')
-    expect(fillColour({ ...style, emphasis: 'strong' }, INKS, 0.5)).toBe('rgba(170, 0, 170, 0.12)')
-    expect(fillColour({ ...style, role: 'neutral', emphasis: null }, INKS, 1)).toBe('rgba(238, 238, 238, 0.14)')
+    expect(fillColour(style, INKS, 1)).toBe('rgba(170, 0, 170, 0.12)')
+    expect(fillColour({ ...style, emphasis: 'strong' }, INKS, 0.5)).toBe('rgba(170, 0, 170, 0.14)')
+    expect(fillColour({ ...style, role: 'neutral', emphasis: null }, INKS, 1)).toBe('rgba(238, 238, 238, 0.18)')
   })
 
   /** Their document: a value the worker had none for is null — a gap, never filled, never left out. */

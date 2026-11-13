@@ -768,6 +768,13 @@ describe('useRunChartStore', () => {
       .toEqual(served.filter(entry => entry.timeframe === 'M30').map(entry => entry.layer))
     expect(chart.indicators.length).toBeGreaterThan(0)
 
+    // the series M30 cannot draw: M5 is offered, the coarsest of the shown series' own timeframes
+    const finer = served.filter(entry => entry.timeframe === 'M5').length
+    expect(chart.seriesOffer).toEqual({ timeframe: 'M5', apart: finer })
+    chart.chooseTimeframe('M5')
+    expect(chart.seriesOffer).toBeNull()
+    chart.chooseTimeframe('M30')
+
     // a layer hidden is drawn no more, one faded at its opacity
     const [hidden, faded] = chart.indicators
     const layers = useChartLayers(() => 'run-chart')

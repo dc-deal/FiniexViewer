@@ -37,8 +37,12 @@ export interface StateFrame {
   /** The mid the account is valued at. */
   last_price: number | null
   balance: number
-  /** At spot every currency the account holds, keyed by currency. */
-  balances: Record<string, number>
+  /**
+   * At spot every currency the account holds, keyed by currency — and null on an account that is not
+   * spot, which holds its one `balance`: measured 2026-11-13 on an MT5 session, whose frames read
+   * `"balances": null` (their document: *"at spot every currency it holds"*).
+   */
+  balances: Record<string, number> | null
   equity: number | null
   unrealized_pnl: number
   /** The same rows the portfolio serves. */

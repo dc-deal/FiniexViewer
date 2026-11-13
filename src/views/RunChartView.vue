@@ -25,7 +25,7 @@ import type { ServedLayerId } from '@/types/indicator_drawing_types'
 const chart = useRunChartStore()
 const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, loading, error, layers, offer, focusAt,
-  priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane, indicators,
+  priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane, indicators, seriesOffer, seriesCutAt,
 } = storeToRefs(chart)
 
 /**
@@ -116,7 +116,13 @@ onUnmounted(() => chart.detach())
       @maximize="chart.setMaximizedPane"
       @reset-panes="chart.resetPanes"
     >
-      <ChartNotices :offer="offer" @accept="chart.acceptOffer" />
+      <ChartNotices
+        :offer="offer"
+        :series-offer="seriesOffer"
+        :series-cut-at="seriesCutAt"
+        @accept="chart.acceptOffer"
+        @accept-series="chart.chooseTimeframe"
+      />
     </CandleChart>
   </div>
 </template>

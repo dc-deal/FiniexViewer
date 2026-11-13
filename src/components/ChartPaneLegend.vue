@@ -10,15 +10,17 @@ import type { PaneLegend } from '@/types/chart_pane_types'
  * @param top Where the pane begins inside the chart's frame, in pixels.
  * @param folded Whether its pane is folded beside one at the whole height: its lines are stacked
  *   by count there, so each stays one line, cut at the plot's edge rather than wrapped onto the next.
+ * @param room How tall its pane stands, in pixels: the legend stays inside it, its last lines cut
+ *   rather than laid over the panes below (a small window, 2026-11-13). None, no bound.
  */
-defineProps<{ legend: PaneLegend, top: number, folded?: boolean }>()
+defineProps<{ legend: PaneLegend, top: number, folded?: boolean, room?: number | null }>()
 </script>
 
 <template>
   <div
     class="pane-legend"
     :class="{ folded }"
-    :style="{ top: `${top}px` }"
+    :style="{ top: `${top}px`, ...(room ? { maxHeight: `${Math.max(0, room - 2)}px` } : {}) }"
     :data-legend="legend.pane"
   >
     <div v-if="legend.entries.length" class="legend-line">
@@ -49,6 +51,7 @@ defineProps<{ legend: PaneLegend, top: number, folded?: boolean }>()
   /* the plot's width, which the chart states: at 60 % of a narrow chart the close went to a line of
      its own (on screen 2026-11-12) */
   max-width: calc(var(--chart-plot-width, 100%) - 2 * var(--space-xs));
+  overflow: hidden;
   margin-top: 2px;
   font-family: monospace;
   font-size: var(--font-size-sm);

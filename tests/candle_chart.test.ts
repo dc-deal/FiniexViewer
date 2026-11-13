@@ -929,6 +929,8 @@ describe('CandleChart', () => {
       const last = rsi.data['rsi_value']!.at(-1)!
       const legend = wrapper.find('[data-legend="rsi_fast"]')
       expect(legend.attributes('style')).toContain('top: 322px')
+      // inside its pane: its lines below the pane's height are cut, never laid over the pane below
+      expect(legend.attributes('style')).toContain('max-height: 76px')
       expect(legend.find('[data-series="worker:rsi_fast"]').text()).toBe(`RSI ${rsi.inputs['period']} · M5~${last}`)
       // a series on the candles stands as a line of their legend
       expect(wrapper.find('[data-legend="price"] [data-series="worker:bollinger_main"]').exists()).toBe(true)

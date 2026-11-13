@@ -187,6 +187,7 @@
   "Runs inside": {"field": "parent_activity_id", "doc": "activities", "their": null, "ours": null, "note": ""},
   "Scenario": {"field": "name", "doc": "directory", "their": "Scenario", "ours": null, "note": ""},
   "Scenarios": {"field": ["scenario_count", "scenarios", "unit_count"], "doc": "aggregated-portfolio", "their": "Scenarios", "ours": null, "note": "adopted  their word for unit_count (sim_executive_summary:113), taken 2026-10-07. It was \"Units with results\" and it ended a double labelling with Accounts in the same panel"},
+  "Series this timeframe cannot draw": {"field": null, "doc": null, "their": null, "ours": null, "note": "display-term  how many of the workers' series the reader left shown the timeframe on show cannot draw: counted over our own choice of timeframe, never a figure of theirs (contract 55)"},
   "Server": {"field": "server", "doc": "broker", "their": null, "ours": null, "note": ""},
   "Session of deployment": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/runs/RunHeaderPanel.vue"},
   "Sessions": {"field": "sessions", "doc": "deployments", "their": null, "ours": null, "note": ""},

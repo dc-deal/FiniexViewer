@@ -24,4 +24,20 @@ describe('ChartNotices', () => {
     await button.trigger('click')
     expect(wrapper.emitted('accept')).toHaveLength(1)
   })
+
+  /** A worker's series on a coarser timeframe than its own is not drawn: the one that draws them is offered. */
+  it('offers the timeframe that draws every series shown, and hands it back', async () => {
+    const wrapper = mount(ChartNotices, { props: { offer: null, seriesOffer: { timeframe: 'M15', apart: 3 } } })
+    const notice = wrapper.find('.chart-notice.series-offer')
+    expect(notice.text()).toContain('Series this timeframe cannot draw: 3')
+    await notice.find('[data-action="series-timeframe"]').trigger('click')
+    expect(wrapper.emitted('acceptSeries')).toEqual([['M15']])
+  })
+
+  /** Read a stretch at a time, the series can stop short of the bars: said with its glyph and the instant. */
+  it('says where the series stop, where a read took its pages', () => {
+    const at = Date.parse('2026-10-25T20:40:03Z') / 1000
+    const wrapper = mount(ChartNotices, { props: { offer: null, seriesCutAt: at } })
+    expect(wrapper.find('.chart-notice.series-cut').text()).toBe('⚠ Series read up to 2026-10-25 20:40:03Z')
+  })
 })

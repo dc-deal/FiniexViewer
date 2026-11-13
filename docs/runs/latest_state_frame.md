@@ -78,6 +78,9 @@ frame on show as a dashed line ([Chart Drawings and Layers](../panels/chart_draw
 2026-01-25 02:29:03Z — the session clock · frame 11 of 344 · written for cadence
 ```
 
+- **An account that is not spot** holds its one `balance`: its frames say `"balances": null`
+  (measured 2026-11-13 on an MT5 session), and the section shows that one balance — the list of every
+  currency held is a spot account's.
 - **Two routes per unit.** `…/units/{unit}/recorded-streams` is the timeline: how many frames, the
   first and the latest by time. `…/recorded-streams/window` serves the frames of `[from, to)`, oldest
   first, a page at a time, and says with `next_from` where a page was cut. Frames are told apart by

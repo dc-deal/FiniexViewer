@@ -464,6 +464,23 @@ export const useRunChartStore = defineStore('runChart', () => {
     }))
   })
 
+  /**
+   * The timeframe that draws every worker's series the reader left shown, where the one on show
+   * cannot draw some: the coarsest of theirs, since a series draws on its own and every finer one —
+   * offered where the market is rendered in it. None where every shown series is drawn.
+   */
+  const seriesOffer = computed<{ timeframe: string, apart: number } | null>(() => {
+    const shown = indicatorLayers.value.filter(layer => layer.shown)
+    const undrawn = shown.filter(layer => !layer.drawable).length
+    if (!undrawn) return null
+    const finest = [...new Set(shown.map(layer => layer.entry.timeframe))]
+      .sort((a, b) => (timeframeStore.minutesFor(a) ?? Infinity) - (timeframeStore.minutesFor(b) ?? Infinity))[0]
+    return finest && coveredTimeframes.value.includes(finest) ? { timeframe: finest, apart: undrawn } : null
+  })
+
+  /** Where the series stop because a read took its pages, in UTC seconds — said on the chart. Null where none did. */
+  const seriesCutAt = computed(() => indicatorSeries.cutAt === null ? null : Math.floor(indicatorSeries.cutAt / 1000))
+
   /** The panes as tall as the reader dragged them, kept with the chart's own view (viewer#57). */
   const paneWeights = computed<PaneWeights | null>(() => arrangement.panelViews[RUN_CHART]?.panes ?? null)
 
@@ -523,7 +540,8 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    paneWeights, maximizedPane, indicators, indicatorLayers, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
+    paneWeights, maximizedPane, indicators, indicatorLayers, seriesOffer, seriesCutAt,
+    loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }
 })

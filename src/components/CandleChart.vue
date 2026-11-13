@@ -268,6 +268,12 @@ function legendTop(pane: string): number | null {
   return tops.value.get(pane) ?? (pane === 'price' ? 0 : null)
 }
 
+/** How tall a pane's legend may stand: its pane's height, where it is not folded and was measured. */
+function legendRoom(pane: string): number | null {
+  if (folded(pane)) return null
+  return panes.boxes.value.find(box => box.id === pane)?.height ?? null
+}
+
 /** A pane folded beside one given the whole height: it keeps its legend's lines and no controls. */
 function folded(pane: string): boolean {
   return wholePane.value !== null && wholePane.value !== pane && paneCount.value > 1
@@ -832,6 +838,7 @@ watch(() => props.priceFormat, () => series?.applyOptions(
         :legend="legend"
         :top="legendTop(legend.pane)!"
         :folded="folded(legend.pane)"
+        :room="legendRoom(legend.pane)"
       />
     </template>
     <!-- each pane's controls at the top right of its plot, where no figure of the legend can move them -->

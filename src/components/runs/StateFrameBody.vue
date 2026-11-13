@@ -52,7 +52,9 @@ function accountOf(frame: StateFrame): Figure[] {
     label: t('Equity'),
     value: frame.equity === null ? t('not valued yet') : amount(frame.equity, currency),
   }]
-  for (const [held, value] of Object.entries(frame.balances)) {
+  // at spot every currency held; an account of one currency holds its balance alone
+  if (frame.balances === null) figures.push({ label: t('Balance'), value: amount(frame.balance, currency) })
+  for (const [held, value] of Object.entries(frame.balances ?? {})) {
     figures.push({
       label: `${t('Balance')} ${held}`,
       value: held === currency ? amount(value, held) : `${quantity(value)} ${held}`,
