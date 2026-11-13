@@ -171,17 +171,18 @@ function choose(row: SweepListRow): void {
       @toggle="toggle"
       @pick="choose"
     >
-      <!-- the sweep on a line of its own: WHAT it searched, HOW MANY runs, by WHICH objective, WHEN —
-           and, only where the ranking compares unlike things, a word saying so -->
+      <!-- the sweep on a line of its own: WHEN first, as on the run list (operator, 2026-11-13: the
+           heading gave it last), then WHAT it searched, HOW MANY runs, by WHICH objective — and, only
+           where the ranking compares unlike things, a word saying so -->
       <template #group="{ group, marker }">
         <span class="sweep-head" :data-sweep="group.key">
           <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+          <span class="sweep-when">{{ startedAt(group.rows[0]!.sweep.started) || t('no date') }}</span>
           <span class="sweep-id">{{ group.key }}</span>
           <span class="sweep-meta">
             {{ group.rows[0]!.sweep.decision_logic_type }} {{ group.rows[0]!.sweep.decision_version }}
             · {{ plural(group.rows[0]!.sweep.run_count, t('run'), t('runs')) }}
             · {{ rankedBy(group.rows[0]!.sweep, rankings[group.key]).word }}
-            · {{ startedAt(group.rows[0]!.sweep.started) || t('no date') }}
           </span>
           <span
             v-for="notice in sweepNotices(group.rows[0]!.sweep, rankings[group.key])"
@@ -265,6 +266,7 @@ function choose(row: SweepListRow): void {
   white-space: nowrap;
 }
 
+.sweep-when,
 .sweep-id {
   flex-shrink: 0;
 }

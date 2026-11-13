@@ -48,8 +48,10 @@ first and last started, what it earned, how deep it fell, the longest idle stret
 configuration moved — were invisible until something had been chosen, which is the run cascade's
 defect one level shallower: a reader choosing a deployment is choosing between its HISTORIES.
 
-Nine columns ranked 9 → 7 → 5 → 3, a card for the rest; the list takes the height of its panel,
-the history standing in the bundle beside it. `Bot` is rank 1 beside the id deliberately: the id is minted per deployment
+The columns give way by rank as the panel narrows, a card for the rest; what stays is the last
+start, the id, the bot and the net P&L. The last start stands FIRST, as `Started` does on the run
+list (operator, 2026-11-13: a list of what ran is scanned by when). The list takes the height of its
+panel, the history standing in the bundle beside it. `Bot` is rank 1 beside the id deliberately: the id is minted per deployment
 and says nothing a reader recognises, while `bot` is what the profile is CALLED — and neither alone
 answers *is this the one I mean*, because the id is a stamp and an operator improves the name.
 

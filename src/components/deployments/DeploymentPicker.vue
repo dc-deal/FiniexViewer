@@ -86,11 +86,13 @@ const facets: FacetDefinition<DeploymentRow>[] = [
  * the row's card.
  */
 const columns: ListColumn[] = [
+  // the date first, as on the run list: a reader scans a list of what ran by WHEN (operator,
+  // 2026-11-13) — the last start, the order the list opens in, and kept however narrow the panel
+  { label: t('Last started'), width: 'auto', rank: 1 },
   { label: t('Deployment'), width: 'minmax(9rem, 20fr)', rank: 1 },
   { label: t('Bot'), width: 'minmax(0, 14fr)', rank: 1 },
   { label: t('Sessions'), width: 'minmax(0, 10fr)', figure: true, rank: 2 },
   { label: t('First started'), width: 'minmax(0, 16fr)', rank: 4 },
-  { label: t('Last started'), width: 'minmax(0, 16fr)', rank: 3 },
   { label: t('Net P&L'), width: 'minmax(0, 16fr)', figure: true, rank: 1 },
   { label: t('Max DD'), width: 'minmax(0, 15fr)', figure: true, rank: 2 },
   { label: t('Longest gap'), width: 'minmax(0, 12fr)', figure: true, rank: 4 },
@@ -231,6 +233,7 @@ function pick(row: DeploymentRow): void {
         <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
              this template owns the cells -->
         <template #default="{ row }">
+          <span :data-rank="1" class="deployment-when">{{ startedAt(row.last_started) || t('no date') }}</span>
           <span :data-rank="1" class="deployment-id" :title="row.deployment_id">
             <span v-if="recordingSession(row)" class="deployment-recording" @click.stop="openRecording(row)">{{ recordingOf('current').glyph }}</span>
             {{ row.deployment_id }}
@@ -238,7 +241,6 @@ function pick(row: DeploymentRow): void {
           <span :data-rank="1" class="deployment-bot" :title="row.bot">{{ row.bot }}</span>
           <span :data-rank="2" class="figure-cell">{{ row.sessions }}</span>
           <span :data-rank="4">{{ startedAt(row.first_started) || t('no date') }}</span>
-          <span :data-rank="3">{{ startedAt(row.last_started) || t('no date') }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.net_pnl)">
             {{ bookedAmount(row.net_pnl, row.currency) }}
           </span>
@@ -265,6 +267,11 @@ function pick(row: DeploymentRow): void {
 </template>
 
 <style scoped>
+/* a stamp breaks after its comma in a German locale: on one line, so every row stands one line tall */
+.deployment-when {
+  white-space: nowrap;
+}
+
 .deployment-picker {
   display: flex;
   flex-direction: column;

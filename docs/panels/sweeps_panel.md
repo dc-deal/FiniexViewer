@@ -79,11 +79,15 @@ splits, and several sweeps can stand open at once, to be compared.
 
 ```
  #     Parameters                 Objective   Net P&L      Trades  R trades  Win rate  PF    Run
- ▾ sweep_20261031_100348_42d8ea0b  CORE/trend_channel_reference 1.6.0 · 9 runs · net_pnl ↑ · Oct 31, 10:03
+ ▾ Oct 31, 10:03  sweep_20261031_100348_42d8ea0b  CORE/trend_channel_reference 1.6.0 · 9 runs · net_pnl ↑
    1 ★ sl_mult 1.5 · tp_mult 1.5   -32.64 USD  -32.64 USD     17       0     29.4%  0.64  2026…
    2   sl_mult 1.5 · tp_mult 3     -37.14 USD  -37.14 USD     22       0     45.5%  0.59  2026…
- ▸ sweep_20261012_075654  CORE/trend_channel_reference 1.4.0 · 9 runs · expectancy ↑ · Oct 12, 09:57
+ ▸ Oct 12, 09:57  sweep_20261012_075654  CORE/trend_channel_reference 1.4.0 · 9 runs · expectancy ↑
 ```
+
+The heading says WHEN first, as the run list's lines do (operator, 2026-11-13: it gave the date
+last). A sweep keeps its heading rather than standing as one of its combinations: its ranking loads
+when it is opened, so its best combination is not known before.
 
 - **A sweep's ranking loads the first time it is opened** (`sweeps_store.loadRanking`), and its one
   line says so while it comes — or that it could not be read, that the ledger knows the sweep no

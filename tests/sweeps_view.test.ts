@@ -64,6 +64,16 @@ describe('SweepsView', () => {
     expect(apiClient.getSweep).not.toHaveBeenCalled()
   })
 
+  /** When first, as on the run list (operator, 2026-11-13: the heading gave the date last). */
+  it('says when a sweep started first on its heading, then which it is', async () => {
+    const wrapper = mountPanel()
+    await flushPromises()
+    const head = heading(wrapper, ID)
+    const parts = head.findAll('.sweep-head > span:not(.record-marker)').map(part => part.classes()[0])
+    expect(parts.slice(0, 2)).toEqual(['sweep-when', 'sweep-id'])
+    expect(head.find('.sweep-when').text()).not.toBe('')
+  })
+
   it('opens a sweep to its combinations in the order served, the first starred, and makes it the one looked at', async () => {
     const wrapper = mountPanel()
     await flushPromises()
