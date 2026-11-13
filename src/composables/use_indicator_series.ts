@@ -75,13 +75,11 @@ export function useIndicatorSeries(options: IndicatorSeriesOptions): IndicatorSe
     const drawn = options.drawn()
     const order = servedPanes(drawn.map(item => item.entry))
     const inks = options.inks()
-    // the k-th series of a pane takes the k-th neutral ink
-    const places = new Map<string, number>()
     const printed = new Map<string, (value: number) => string>()
-    for (const { entry, opacity } of drawn) {
+    // a series takes the neutral ink of its place among every series served for its pane, so hiding
+    // one repaints no other
+    for (const { entry, opacity, place } of drawn) {
       const pane = entry.pane === PRICE_PANE ? 0 : options.firstPane() + order.indexOf(entry.pane)
-      const place = places.get(entry.pane) ?? 0
-      places.set(entry.pane, place + 1)
       const format = formatFor(entry)
       const range = entry.range
       let first: ISeriesApi<SeriesType> | null = null

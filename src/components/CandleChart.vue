@@ -849,7 +849,7 @@ watch(() => props.candles, () => showCandles())
  * own scale again, and a held drag undone.
  */
 const indicatorsDrawn = computed(() => (props.indicators ?? [])
-  .map(({ entry, opacity }) => `${entry.layer}|${opacity}|${entry.times.length}|${entry.times[0]}|${entry.times.at(-1)}`)
+  .map(({ entry, opacity, place }) => `${entry.layer}|${opacity}|${place}|${entry.times.length}|${entry.times[0]}|${entry.times.at(-1)}`)
   .join(' '))
 watch(indicatorsDrawn, () => layoutIndicators())
 watch(() => props.paneLooks, () => applyLooks())

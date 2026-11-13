@@ -447,12 +447,26 @@ export const useRunChartStore = defineStore('runChart', () => {
    * The workers' series the chart draws (contract 55): each one the reader left shown, at its layer's
    * opacity, on the timeframe on show where it can be drawn there — its own and every finer one.
    */
-  const indicators = computed<DrawnSeries[]>(() => indicatorLayers.value
-    .filter(layer => layer.shown && layer.drawable)
-    .map(layer => {
-      const minutes = timeframeStore.minutesFor(layer.entry.timeframe)
-      return { entry: layer.entry, opacity: layer.opacity / 100, span: minutes ? minutes * 60 : null }
+  const indicators = computed<DrawnSeries[]>(() => {
+    // each series' place among every series served for its pane, shown or not: its neutral ink
+    const counted = new Map<string, number>()
+    const places = new Map(indicatorSeries.series.map(entry => {
+      const place = counted.get(entry.pane) ?? 0
+      counted.set(entry.pane, place + 1)
+      return [entry.layer, place]
     }))
+    return indicatorLayers.value
+      .filter(layer => layer.shown && layer.drawable)
+      .map(layer => {
+        const minutes = timeframeStore.minutesFor(layer.entry.timeframe)
+        return {
+          entry: layer.entry,
+          opacity: layer.opacity / 100,
+          span: minutes ? minutes * 60 : null,
+          place: places.get(layer.entry.layer) ?? 0,
+        }
+      })
+  })
 
   /**
    * Every worker's layer of the unit on show, in the order served, as the reader set it — drawn or

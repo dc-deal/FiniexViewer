@@ -779,12 +779,17 @@ describe('useRunChartStore', () => {
     expect(chart.indicators.every(drawn => drawn.span === 30 * 60)).toBe(true)
 
     // a layer hidden is drawn no more, one faded at its opacity
-    const [hidden, faded] = chart.indicators
+    // two of one pane, the candles', so the place of the second is one the first could take
+    const [hidden, faded] = chart.indicators.filter(drawn => drawn.entry.pane === 'price')
+    expect(faded!.place).toBe(1)
     const layers = useChartLayers(() => 'run-chart')
     layers.showServed(hidden!.entry.layer as `worker:${string}`, false)
     layers.setServedOpacity(faded!.entry.layer as `worker:${string}`, 40)
     expect(chart.indicators.map(drawn => drawn.entry.layer)).not.toContain(hidden!.entry.layer)
-    expect(chart.indicators.find(drawn => drawn.entry.layer === faded!.entry.layer)!.opacity).toBe(0.4)
+    const kept = chart.indicators.find(drawn => drawn.entry.layer === faded!.entry.layer)!
+    expect(kept.opacity).toBe(0.4)
+    // its place, and with it its ink, whatever else is shown: hiding the first repaints no other
+    expect(kept.place).toBe(1)
   })
 
   /** A pane's frame and background: only what is on is kept, beside the heights. */

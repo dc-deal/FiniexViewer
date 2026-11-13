@@ -99,7 +99,9 @@ series: one entry per layer, the pages merged, the frames left behind
   on them. What the run did stands over what its workers computed.
 - **Roles, never colours.** `positive`, `negative`, `warning` and `annotation` are our roles of the
   same names. `neutral` takes plain ink for the first series of a pane and the quiet ink for the
-  next: measured 2026-11-13 with the dataviz validator, every hue left over collides with a role this
+  next, counted over every series served for the pane, shown or hidden — so hiding one repaints no
+  other (counted over the shown ones, hiding the EMA turned the Bollinger bands bright, seen on
+  screen 2026-11-13). Measured 2026-11-13 with the dataviz validator, every hue left over collides with a role this
   chart draws — an orange stood 6.1 from the falling candles to full colour vision, a violet 3.4 from
   the annotation under protan. The second series of one role is dashed and the third dotted, so
   the FORM tells a macd line from its signal. `emphasis` widens a strong line and fades a quiet one;

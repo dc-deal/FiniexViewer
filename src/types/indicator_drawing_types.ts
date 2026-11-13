@@ -19,6 +19,12 @@ export interface DrawnSeries {
   opacity: number
   /** How long one bar of its timeframe lasts, in seconds; null where the timeframe's length is not known. */
   span: number | null
+  /**
+   * Its place among every series served for its pane, shown or not — the neutral ink it takes. Counted
+   * over the drawn ones only, hiding the EMA turned the Bollinger bands from the quiet ink to the
+   * bright one (operator, on screen 2026-11-13): a colour follows the series, never what else is shown.
+   */
+  place: number
 }
 
 /**

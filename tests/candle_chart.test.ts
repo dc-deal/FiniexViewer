@@ -873,7 +873,7 @@ describe('CandleChart', () => {
   describe('the workers\u2019 series', () => {
     const SERIES = (seriesWindow as RecordedWindow).indicator_series
     const entry = (layer: string): IndicatorSeriesEntry => SERIES.find(item => item.layer === layer)!
-    const drawn = (...layers: string[]): DrawnSeries[] => layers.map(layer => ({ entry: entry(layer), opacity: 1, span: null }))
+    const drawn = (...layers: string[]): DrawnSeries[] => layers.map(layer => ({ entry: entry(layer), opacity: 1, span: null, place: 0 }))
     const live = () => lw.built.filter(made => !made.removed)
     const OWN_VOLUME: ChartVolume = { basis: 'ticks', shown: true, ownPane: true, opacity: 1, bars: [] }
 
@@ -915,7 +915,7 @@ describe('CandleChart', () => {
       size = { width: 800, height: 400 }
       const rsi = entry('worker:rsi_fast')
       const named = { ...rsi, price_lines: [...rsi.price_lines, { price: 50, line_style: 1, title: 'middle' }] }
-      mountWith([{ entry: named, opacity: 1, span: null }])
+      mountWith([{ entry: named, opacity: 1, span: null, place: 0 }])
       await nextTick()
       const made = live()[0]!
       const provider = made.options['autoscaleInfoProvider'] as () => unknown
@@ -986,7 +986,7 @@ describe('CandleChart', () => {
       const built = lw.built.length
       await wrapper.setProps({ indicators: drawn('worker:rsi_fast') })
       expect(lw.built.length).toBe(built)
-      await wrapper.setProps({ indicators: [{ entry: entry('worker:rsi_fast'), opacity: 0.5, span: null }] })
+      await wrapper.setProps({ indicators: [{ entry: entry('worker:rsi_fast'), opacity: 0.5, span: null, place: 0 }] })
       expect(lw.built.length).toBeGreaterThan(built)
     })
 
