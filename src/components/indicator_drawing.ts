@@ -157,10 +157,20 @@ function barAt(entry: IndicatorSeriesEntry, at: number | null, span: number | nu
   return found
 }
 
+/** Whether a series holds any value in what was read — a setup that never formed holds none. */
+export function holdsValues(entry: IndicatorSeriesEntry): boolean {
+  return Object.values(entry.data).some(values => values?.some(value => value !== null))
+}
+
+/** What a legend says for a plot with no value on the bar: a gap, before the series, past its end. */
+export const NO_VALUE = '—'
+
 /**
  * A series' line of its pane's legend: its name, then each plot's value on the bar under the
  * pointer, the last bar's otherwise — printed as its own scale prints it. A plot is named only where
- * the series has several: a lone RSI's value needs no `rsi_value` before it. A gap says nothing.
+ * the series has several: a lone RSI's value needs no `rsi_value` before it. A bar with no value
+ * says so with a dash, as TradingView's `∅` does: a name with nothing beside it read as a legend
+ * that failed to draw (operator, on screen 2026-11-13 — a setup that never formed).
  */
 export function seriesLegend(
   entry: IndicatorSeriesEntry, at: number | null, format: (value: number) => string, span: number | null = null,
@@ -169,7 +179,7 @@ export function seriesLegend(
   const named = entry.plots.length > 1
   const entries: PaneLegendEntry[] = entry.plots.map(plot => {
     const value = bar === null ? null : entry.data[plot.id]?.[bar] ?? null
-    return { label: named ? plot.id : '', value: value === null ? null : format(value) }
+    return { label: named ? plot.id : '', value: value === null ? NO_VALUE : format(value) }
   })
   return { layer: entry.layer, title: seriesLabel(entry), entries }
 }

@@ -79,9 +79,10 @@ series: one entry per layer, the pages merged, the frames left behind
 - **The legend** says the series' title, its inputs and its timeframe — `RSI 14 · M5` — then each
   plot's value on the bar under the pointer, the last bar's otherwise, as its own scale prints it. A
   coarser series' bar spans several candles: the value of the bar the moment falls in, and nothing
-  past the last bar's end — a series that stops says nothing over the candles after it. A plot is
-  named only where the series has several; a gap says nothing. A series on the candles is a line of
-  their legend; the others make their pane's legend.
+  past the last bar's end. A plot is named only where the series has several. A bar with no value —
+  a gap, before the series, past its end — says so with a dash (`entry_price —`), as TradingView's
+  `∅` does: a name with nothing beside it read as a legend that failed to draw. A series on the
+  candles is a line of their legend; the others make their pane's legend.
 - **A reference line** is drawn on the series' scale in the quiet ink, its price on the scale. A
   title that only repeats the price is left out (on screen 2026-11-13: `70` beside `70.00`).
 - **A filled area** is painted by one series primitive on the series' first plot, behind the lines
@@ -141,7 +142,9 @@ series: one entry per layer, the pages merged, the frames left behind
   instance as served.
 - **A worker's row** shows, hides and fades its layer like ours and is never moved: it stands where
   the run recorded it. It opens onto the hint that says what a worker's series is. Where the chart's
-  timeframe cannot draw it, its row says which can, and a hint below the list says why.
+  timeframe cannot draw it, its row says which can, and a hint below the list says why; where its
+  series holds no value at all in the stretch read — a setup that never formed — it says
+  `no values in view`.
 - **A worker's pane folds** like ours; the fold is kept with the panel's view for the run, since
   another run names other panes (`panes-folded`).
 

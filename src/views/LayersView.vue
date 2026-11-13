@@ -6,7 +6,7 @@ import AppButton from '@/components/base/AppButton.vue'
 import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
-import { seriesLabel } from '@/components/indicator_drawing'
+import { holdsValues, seriesLabel } from '@/components/indicator_drawing'
 import { useChartLayers } from '@/composables/use_chart_layers'
 import { useViewExpanded, useViewRows } from '@/composables/use_panel_view'
 import { layerDefinition } from '@/layer_registry'
@@ -200,10 +200,13 @@ const opened = ref(new Set<ChartLayerId>())
 
 /**
  * A worker's closed row says what the screen cannot: where the chart's timeframe cannot draw it, the
- * timeframes that can — its own and every finer one.
+ * timeframes that can — its own and every finer one; where its series holds no value at all in the
+ * stretch read, that it draws nothing there (on screen 2026-11-13: a setup that never formed looked
+ * like a layer that failed to draw).
  */
 function servedSummary(layer: IndicatorLayer): string {
-  return layer.drawable ? '' : `${layer.entry.timeframe} ${t('and finer')}`
+  if (!layer.drawable) return `${layer.entry.timeframe} ${t('and finer')}`
+  return holdsValues(layer.entry) ? '' : t('no values in view')
 }
 
 /** A worker's rows opened, by layer — onto the hint that says what a worker's series is, and its pane's look. */

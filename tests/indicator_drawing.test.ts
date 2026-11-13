@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  drawsOn, fillColour, plotInk, plotOptions, plotPoints, seriesLabel, seriesLegend, seriesTitle, servedPanes,
+  drawsOn, fillColour, holdsValues, plotInk, plotOptions, plotPoints, seriesLabel, seriesLegend, seriesTitle, servedPanes,
 } from '@/components/indicator_drawing'
 import type { IndicatorPlot, IndicatorSeriesEntry } from '@/types/api/indicator_series_types'
 import type { RecordedWindow } from '@/types/api/state_frame_types'
@@ -118,6 +118,14 @@ describe('indicator drawing', () => {
     expect(fillColour({ ...style, role: 'neutral', emphasis: null }, INKS, 1)).toBe('rgba(238, 238, 238, 0.18)')
   })
 
+  /** A setup that never formed holds no value in what was read: its row in the Layers panel says so. */
+  it('tells a series that holds no value from one that holds some', () => {
+    const rsi = entry('worker:rsi_fast')
+    expect(holdsValues(rsi)).toBe(true)
+    expect(holdsValues({ ...rsi, data: { rsi_value: rsi.times.map(() => null) } })).toBe(false)
+    expect(holdsValues({ ...rsi, times: [], data: {} })).toBe(false)
+  })
+
   /** Their document: a value the worker had none for is null — a gap, never filled, never left out. */
   it('hands every bar to the library, a null as a gap', () => {
     const rsi = { ...entry('worker:rsi_fast'), data: { rsi_value: [null, 41.2, 44.8] }, times: ['2026-01-25T02:15:00Z', '2026-01-25T02:20:00Z', '2026-01-25T02:25:00Z'] }
@@ -142,12 +150,15 @@ describe('indicator drawing', () => {
     const second = Date.parse(macd.times[1]!) / 1000
     // a moment inside the second bar, a minute after it opened
     expect(seriesLegend(macd, second + 60, String).entries[0]!.value).toBe(String(macd.data[macd.plots[0]!.id]![1]))
-    // before the first bar there is none to say
-    expect(seriesLegend(macd, Date.parse(macd.times[0]!) / 1000 - 60, String).entries.every(item => item.value === null)).toBe(true)
+    // before the first bar there is none: a dash says so, never a name with nothing beside it
+    expect(seriesLegend(macd, Date.parse(macd.times[0]!) / 1000 - 60, String).entries.every(item => item.value === '—')).toBe(true)
     expect(seriesLegend(entry('worker:rsi_fast'), null, String).entries.map(item => item.label)).toEqual([''])
     // past the last bar's end, where its length is known, the series says nothing: it stopped there
     const end = Date.parse(macd.times[last]!) / 1000 + 300
     expect(seriesLegend(macd, end - 1, String, 300).entries[0]!.value).not.toBeNull()
-    expect(seriesLegend(macd, end, String, 300).entries.every(item => item.value === null)).toBe(true)
+    expect(seriesLegend(macd, end, String, 300).entries.every(item => item.value === '—')).toBe(true)
+    // a gap on the bar: the dash
+    const gappy = { ...macd, data: { ...macd.data, [macd.plots[0]!.id]: macd.times.map(() => null) } }
+    expect(seriesLegend(gappy, null, String).entries[0]!.value).toBe('—')
   })
 })
