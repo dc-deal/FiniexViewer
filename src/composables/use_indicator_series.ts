@@ -5,8 +5,9 @@ import type {
   IChartApi, ISeriesApi, LineData, SeriesDefinition, SeriesPartialOptionsMap, SeriesType, Time, WhitespaceData,
 } from 'lightweight-charts'
 import {
-  PRICE_PANE, plotInk, plotOptions, plotPoints, servedPanes,
+  PRICE_PANE, fillColour, plotInk, plotOptions, plotPoints, servedPanes,
 } from '@/components/indicator_drawing'
+import { IndicatorFill } from '@/components/indicator_fill'
 import type { IndicatorSeriesEntry } from '@/types/api/indicator_series_types'
 import type { DrawnSeries, IndicatorInks } from '@/types/indicator_drawing_types'
 
@@ -51,6 +52,8 @@ interface IndicatorSeries {
  */
 export function useIndicatorSeries(options: IndicatorSeriesOptions): IndicatorSeries {
   let built: ISeriesApi<SeriesType>[] = []
+  /** Each series' filled areas, and the plot they are attached to. */
+  let fills: { series: ISeriesApi<SeriesType>, fill: IndicatorFill }[] = []
   /** Replaced whole at each build, so what reads a format reads again. */
   const formats = shallowRef(new Map<string, (value: number) => string>())
   const panes = shallowRef<string[]>([])
@@ -103,6 +106,13 @@ export function useIndicatorSeries(options: IndicatorSeriesOptions): IndicatorSe
           axisLabelVisible: true, title,
         })
       }
+      if (entry.filled_areas.length) {
+        const fill = new IndicatorFill(entry, entry.filled_areas.map(area => ({
+          between: area.between, colour: fillColour(area.style, inks, opacity),
+        })))
+        first.attachPrimitive(fill)
+        fills.push({ series: first, fill })
+      }
       const formatter = first.priceFormatter()
       printed.set(entry.layer, value => formatter.format(value))
     }
@@ -112,6 +122,8 @@ export function useIndicatorSeries(options: IndicatorSeriesOptions): IndicatorSe
 
   function remove(): void {
     const chart = options.chart()
+    for (const { series, fill } of fills) series.detachPrimitive(fill)
+    fills = []
     if (chart) for (const series of built) chart.removeSeries(series)
     built = []
     formats.value = new Map()

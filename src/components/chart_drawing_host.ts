@@ -33,7 +33,8 @@ const SPAN_FILL = 0.35
  * were attached and hit-tests them in another, so reordering layers would mean detaching and
  * attaching them again — here the order is a list, painted front last and searched front first.
  *
- * It draws in the library's `normal` stage, in front of the candles. The marks of the trades moved
+ * It draws in the library's `top` stage, in front of every series of its pane — the candles, and a
+ * worker's series on them (contract 55): what the run did stands over what its workers computed. The marks of the trades moved
  * here from the library's markers, which stood fixed directly behind the candles' own drawing and so
  * could take no place in an order of layers; drawn here they also size to the bar, where the
  * library's never went below 12 px.
@@ -60,7 +61,7 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
 
   constructor() {
     const renderer: IPrimitivePaneRenderer = { draw: target => this._draw(target) }
-    this._views = [{ zOrder: () => 'normal', renderer: () => renderer }]
+    this._views = [{ zOrder: () => 'top', renderer: () => renderer }]
   }
 
   attached(param: SeriesAttachedParameter<Time>): void {
@@ -142,7 +143,7 @@ export class ChartDrawingHost implements ISeriesPrimitive<Time> {
     if (!hit) return null
     return {
       externalId: hit.id,
-      zOrder: 'normal',
+      zOrder: 'top',
       distance: hit.distance,
       // a point outranks a stroke where both are hit, the way the library ranks its own
       hitTestPriority: hit.point ? 2 : 1,

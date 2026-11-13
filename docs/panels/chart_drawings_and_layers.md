@@ -13,7 +13,7 @@ each in front of the one before; a hit is searched the other way round, front fi
 on top is what is found.
 
 ```
-CandleChart :layers ──► ChartDrawingHost (series primitive, stage `normal`, in front of the candles)
+CandleChart :layers ──► ChartDrawingHost (series primitive, stage `top`, in front of every series of its pane)
                           ├─ updateAllViews   placeLayer() per layer, on every move of the view
                           ├─ paneViews        one renderer: paintLayer() per layer, in order
                           ├─ hitTest          hitDrawing() → its id → hoveredInfo.objectId → the card

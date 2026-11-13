@@ -1,5 +1,5 @@
 import { withAlpha } from '@/components/chart_colours'
-import type { IndicatorPlot, IndicatorSeriesEntry } from '@/types/api/indicator_series_types'
+import type { DrawingStyle, IndicatorPlot, IndicatorSeriesEntry } from '@/types/api/indicator_series_types'
 import type { PaneLegendEntry, SeriesLegendLine } from '@/types/chart_pane_types'
 import type { IndicatorInks } from '@/types/indicator_drawing_types'
 
@@ -97,6 +97,18 @@ export function plotOptions(
     default:
       return { ...shared, ...line, color: colour }
   }
+}
+
+/** How strongly an area is filled by its emphasis — under the lines and the candles, never over them. */
+const FILL_ALPHA: Partial<Record<string, number>> = { strong: 0.24, normal: 0.14, quiet: 0.08 }
+
+/**
+ * An area's colour: its role's ink — a neutral one the plain ink of the series' pane — at the share
+ * its emphasis gives, at the layer's opacity. Their default for an area is `annotation`, quiet.
+ */
+export function fillColour(style: DrawingStyle, inks: IndicatorInks, opacity: number): string {
+  const ink = (style.role !== 'neutral' ? inks.roles[style.role] : undefined) ?? inks.neutral[0]!
+  return withAlpha(ink, (FILL_ALPHA[style.emphasis ?? 'normal'] ?? FILL_ALPHA['normal']!) * opacity)
 }
 
 /** A plot's points for the library: one per bar, a null left a gap — never filled, never left out. */

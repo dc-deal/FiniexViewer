@@ -74,6 +74,14 @@ series: one entry per layer, the pages merged, the frames left behind
   their legend; the others make their pane's legend.
 - **A reference line** is drawn on the series' scale in the quiet ink, its price on the scale. A
   title that only repeats the price is left out (on screen 2026-11-13: `70` beside `70.00`).
+- **A filled area** is painted by one series primitive on the series' first plot, behind the lines
+  and the candles (the library's `bottom` stage): between two price lines a band across the pane,
+  between two plots the stretch between their values bar by bar, broken where either has a gap.
+  Their document allows no pair of one edge of each kind, so such a pair fills nothing. Its role's
+  ink at a share its emphasis gives — their default for an area is the annotation's, quiet.
+- **The framework's own drawings stand in front** — the marks, the levels, the line, the time lane:
+  the drawing host paints in the library's `top` stage, over the candles and every worker's series
+  on them. What the run did stands over what its workers computed.
 - **Roles, never colours.** `positive`, `negative`, `warning` and `annotation` are our roles of the
   same names. `neutral` takes plain ink for the first series of a pane and the quiet ink for the
   next: measured 2026-11-13 with the dataviz validator, every hue left over collides with a role this
@@ -106,15 +114,20 @@ series: one entry per layer, the pages merged, the frames left behind
   can be drawn, its name and its legend line.
 - `src/composables/use_indicator_series.ts` — the series on the chart, in their panes, and how each
   layer's values print.
+- `src/components/indicator_fill.ts` — a series' filled areas: their shapes in the pane's pixels
+  (`fillShapes`, pure), and the primitive that paints them.
 - `run_chart_store.indicators` — the series drawn: shown, at their opacity, on the timeframe on show.
 
 ## How it is tested
 
 - `indicator_series_store.test.ts` — the reading, against a route cut as documented.
 - `indicator_drawing.test.ts` — every pure piece, against the session FiniexTestingIDE produced.
+- `indicator_fill.test.ts` — a band between two price lines, the stretch between two plots, broken at
+  a gap and no lone bar filled, and nothing for a mixed pair, an unknown edge or one off the scale.
 - `candle_chart.test.ts` — each plot in the pane its series names, below the volume's own; built again
-  when the volume moves; the fixed range and the reference lines; a line per series in its pane's
-  legend; every series and its pane taken down once none is handed.
+  when the volume moves; the fixed range and the reference lines; the areas on the first plot,
+  taken off before it goes; a line per series in its pane's legend; every series and its pane taken
+  down once none is handed.
 - `chart_legend.test.ts`, `use_chart_layers.test.ts`, `arrangement_store.test.ts`,
   `run_chart_store.test.ts` — the lines a legend takes and how the folded ones stack, the workers'
   layers kept beside the chart's own, read back by their form, and the series a timeframe draws.

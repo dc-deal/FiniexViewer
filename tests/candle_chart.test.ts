@@ -59,15 +59,19 @@ const lw = vi.hoisted(() => {
    */
   const built: {
     definition: { type: string }, options: Record<string, unknown>, pane: number, data: unknown[],
-    lines: Record<string, unknown>[], removed: boolean,
+    lines: Record<string, unknown>[], fills: unknown[], removed: boolean,
   }[] = []
   function indicatorSeriesOf(definition: { type: string }, options: Record<string, unknown>, pane: number) {
-    const made = { definition, options, pane, data: [] as unknown[], lines: [] as Record<string, unknown>[], removed: false }
+    const made = {
+      definition, options, pane, data: [] as unknown[], lines: [] as Record<string, unknown>[], fills: [] as unknown[], removed: false,
+    }
     built.push(made)
     return {
       made,
       setData: (data: unknown[]) => { made.data = data },
       createPriceLine: (line: Record<string, unknown>) => { made.lines.push(line) },
+      attachPrimitive: (primitive: unknown) => { made.fills.push(primitive) },
+      detachPrimitive: (primitive: unknown) => { made.fills = made.fills.filter(held => held !== primitive) },
       /** A format no number prints by itself, so a legend read through it shows that it was. */
       priceFormatter: () => ({ format: (value: number) => `~${value}` }),
     }
@@ -928,6 +932,19 @@ describe('CandleChart', () => {
       expect(legend.find('[data-series="worker:rsi_fast"]').text()).toBe(`RSI ${rsi.inputs['period']} · M5~${last}`)
       // a series on the candles stands as a line of their legend
       expect(wrapper.find('[data-legend="price"] [data-series="worker:bollinger_main"]').exists()).toBe(true)
+    })
+
+    /** Their RSI's band between 30 and 70, their bands' channel: on the series' first plot, taken off with it. */
+    it('fills a series\' areas on its first plot, and takes them off before the series goes', async () => {
+      size = { width: 800, height: 400 }
+      const wrapper = mountWith(drawn('worker:bollinger_main', 'worker:macd_main'))
+      await nextTick()
+      const firsts = live().filter(made => made.fills.length)
+      // the bands fill their channel; the MACD names no area
+      expect(firsts).toHaveLength(1)
+      expect(firsts[0]!.pane).toBe(0)
+      await wrapper.setProps({ indicators: [] })
+      expect(lw.built.every(made => made.fills.length === 0)).toBe(true)
     })
 
     it('takes every series down, and its panes with them, once none is handed', async () => {

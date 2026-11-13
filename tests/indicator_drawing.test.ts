@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  drawsOn, plotInk, plotOptions, plotPoints, seriesLabel, seriesLegend, seriesTitle, servedPanes,
+  drawsOn, fillColour, plotInk, plotOptions, plotPoints, seriesLabel, seriesLegend, seriesTitle, servedPanes,
 } from '@/components/indicator_drawing'
 import type { IndicatorPlot, IndicatorSeriesEntry } from '@/types/api/indicator_series_types'
 import type { RecordedWindow } from '@/types/api/state_frame_types'
@@ -104,6 +104,14 @@ describe('indicator drawing', () => {
     expect(baseline['bottomLineColor']).toBe('#aa0000')
     const line = plotOptions(plot({ options: { line_type: 1, point_markers_visible: true } }), '#eeeeee', 1, INKS)
     expect(line).toMatchObject({ lineType: 1, pointMarkersVisible: true, priceLineVisible: false })
+  })
+
+  /** Their default for an area: the annotation's ink, quiet — an area stands under the lines, never over them. */
+  it('fills an area in its role’s ink at the share its emphasis gives, at the layer’s opacity', () => {
+    const style = { role: 'annotation', series: null, emphasis: 'quiet', color: null }
+    expect(fillColour(style, INKS, 1)).toBe('rgba(170, 0, 170, 0.08)')
+    expect(fillColour({ ...style, emphasis: 'strong' }, INKS, 0.5)).toBe('rgba(170, 0, 170, 0.12)')
+    expect(fillColour({ ...style, role: 'neutral', emphasis: null }, INKS, 1)).toBe('rgba(238, 238, 238, 0.14)')
   })
 
   /** Their document: a value the worker had none for is null — a gap, never filled, never left out. */
