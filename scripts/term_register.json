@@ -157,6 +157,7 @@
   "Pair": {"field": ["base_currency", "quote_currency"], "doc": "aggregated-portfolio", "their": null, "ours": null, "note": ""},
   "Parameters": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/runs/ConfigPanel.vue"},
   "Parameters hash": {"field": "param_hash", "doc": "sweeps", "their": null, "ours": null, "note": ""},
+  "Parent": {"field": "parent_kind", "doc": "run-header", "their": null, "ours": null, "note": ""},
   "Part of": {"field": null, "doc": null, "their": null, "ours": null, "note": "display-term  a line of a tab card (tab_card.ts): the bundle a member panel belongs to, by its title"},
   "Period": {"field": null, "doc": null, "their": null, "ours": null, "note": "unresolved src/components/runs/BookingPeriodTable.vue"},
   "Periods": {"field": "total_net_pnl", "doc": "booking-periods", "their": null, "ours": null, "note": "documented since 2026-10-07 on booking-periods. It is the SUM over the periods and the figure a consumer renders; run_net_pnl is what the run reports and exists to be compared against it, equal when the check holds - their words. The earlier note here called them two names for one figure, which read the identity and missed the two roles"},

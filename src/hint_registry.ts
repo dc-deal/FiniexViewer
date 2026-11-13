@@ -58,6 +58,10 @@ const HINTS: HintDefinition[] = [
     text: t('⌕ opens the search. Where the panel is narrow, the filters that do not fit wait behind +N, each with its values and counts.'),
   },
   {
+    id: 'run-families',
+    text: t('A set or a deployment stands as its newest run: a click on its line chooses that run, and ▸ with a number in the first column opens that many runs before it. A sweep keeps a line of its own, its ▸ opening all its runs. Parent says what a run belongs to.'),
+  },
+  {
     id: 'activities',
     text: t("What runs on the machine right now, read every few seconds while this panel is on show. An activity that runs inside another stands beneath it, and its memory is that one's. Its label opens its run, or its sweep. Rest the pointer on a row for its command line, its code and who started it."),
   },

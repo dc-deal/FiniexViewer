@@ -60,6 +60,8 @@ interface ListProps {
   rowClass?: (row: unknown) => string | undefined
   bands?: ListBand[]
   columns?: ListColumn[]
+  headOf?: (group: ListGroup<unknown>) => unknown
+  foldColumn?: string
 }
 
 function mountList(props: ListProps = {}, slots: Record<string, unknown> = {}) {
@@ -406,6 +408,67 @@ describe('RecordList — groups', () => {
 
   it('stays flat, with no heading at all, where no grouping was asked for', () => {
     expect(mountList().findAll('.record-group')).toHaveLength(0)
+  })
+})
+
+/**
+ * A group whose heading IS one of its rows — the run list's newest run of a set (operator,
+ * 2026-11-13). The row is chosen like any other, and the group's other rows fold behind a button of
+ * their own beside it.
+ */
+describe('RecordList — a row as the heading', () => {
+  const groupBy = (row: unknown) => asRow(row).unit
+  // the group's LAST row, so the head is not simply its first row under another name
+  const headOf = (group: ListGroup<unknown>) => (group.rows.length > 1 ? group.rows[group.rows.length - 1]! : null)
+  const slots = {
+    group: (scope: unknown) => h('span', groupOf(scope).key),
+    fold: (scope: unknown) => `${markerOf(scope)} ${(scope as { count: number }).count} earlier`,
+  }
+
+  it('draws the head row where the heading stood, the others folded behind a button', () => {
+    const wrapper = mountList({ groupBy, isOpen: () => false, headOf }, slots)
+    expect(wrapper.findAll('.record-headed .record-row').map(row => row.text())).toEqual(['alpha3'])
+    // a group the caller names no head row for keeps a heading of its own
+    expect(wrapper.findAll('.record-group').map(heading => heading.text())).toEqual(['beta'])
+    expect(wrapper.findAll('.record-row').map(row => row.text())).toEqual(['alpha3'])
+    const fold = wrapper.find('[data-action="fold"]')
+    expect(fold.text()).toBe('▸ 1 earlier')
+    expect(fold.attributes('aria-expanded')).toBe('false')
+  })
+
+  it('reports the head row as a pick and its button as the toggle of its group', async () => {
+    const wrapper = mountList({ groupBy, isOpen: () => false, headOf }, slots)
+    await wrapper.find('.record-headed .record-row').trigger('click')
+    expect(wrapper.emitted('pick')?.[0]?.[0]).toEqual(ROWS[2])
+    expect(wrapper.emitted('toggle')).toBeUndefined()
+    await wrapper.find('[data-action="fold"]').trigger('click')
+    expect(wrapper.emitted('toggle')?.[0]?.[0]).toBe('alpha')
+  })
+
+  it('draws the other rows beneath the head once open, and the head once', () => {
+    const wrapper = mountList({ groupBy, isOpen: () => true, headOf }, slots)
+    const rows = wrapper.findAll('.record-row')
+    expect(rows.map(row => row.text())).toEqual(['alpha3', 'alpha1', 'beta-2'])
+    // the head stands on its own; the rows beneath it are indented as under any heading
+    expect(rows[0]!.classes()).not.toContain('grouped')
+    expect(rows[1]!.classes()).toContain('grouped')
+    expect(wrapper.find('[data-action="fold"]').attributes('aria-expanded')).toBe('true')
+  })
+
+  it('places the button in the column the caller names, and names that column on its track', () => {
+    const columns: ListColumn[] = [{ label: 'Unit', width: 'minmax(0, 1fr)', name: 'unit' }, COLUMNS[1]!]
+    const wrapper = mountList({ groupBy, isOpen: () => false, headOf, foldColumn: 'unit', columns }, slots)
+    expect(wrapper.find('.record-list').attributes('style'))
+      .toContain('--list-tracks: [unit-start] minmax(0, 1fr) [unit-end] auto')
+    expect(wrapper.find('[data-action="fold"]').attributes('style')).toContain('grid-column: unit')
+    // a fold column standing first hands the step under a heading to the second cell
+    expect(wrapper.find('.record-list').classes()).toContain('fold-first')
+    expect(mountList({ groupBy, headOf }, slots).find('.record-list').classes()).not.toContain('fold-first')
+  })
+
+  it('measures the rows beneath a closed head, and never the head a second time', () => {
+    const wrapper = mountList({ groupBy, isOpen: () => false, headOf, measureClosed: true }, slots)
+    expect(wrapper.findAll('.record-unseen').map(row => row.text())).toEqual(['alpha1', 'beta-2'])
   })
 })
 

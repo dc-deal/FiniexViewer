@@ -15,6 +15,11 @@ export interface ListColumn {
   /** Right-aligned and read downwards. A figure column's heading sits over its digits. */
   figure?: boolean
   /**
+   * A name for the column's track, so something can be placed in it whatever columns a narrow list
+   * gave up — the button that folds a group's earlier rows stands in its head's column this way.
+   */
+  name?: string
+  /**
    * How early this column is given up when the list is narrow. 1 survives everything; 5 goes
    * first. Absent means 1 — a list that declares no ranks keeps every column at every width.
    *

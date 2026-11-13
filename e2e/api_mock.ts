@@ -72,21 +72,25 @@ export const LIVE_RUN = (fixture('order_events_live.json') as { run_id: string }
  * the same rule the run id follows, so a re-capture cannot strand it.
  */
 /**
- * The FAMILY line the fixture run sits behind, or '' where it stands alone.
+ * The FAMILY the fixture run belongs to, or null where it stands alone.
  *
  * The run list groups by family — the parent where the backend states one, the set name otherwise
- * — and a family of several opens CLOSED. So the run a spec wants is not in the document until its
- * heading is clicked, which is exactly what a reader does. Derived from the captured index rather
- * than transcribed, so a re-capture that moves the run between families cannot strand it.
+ * — and a family of several opens CLOSED: a set or a deployment shows its newest run, the earlier
+ * ones behind the button beside it, and a sweep shows a heading. So the run a spec wants may not be
+ * in the document until the fold is opened, which is exactly what a reader does. Derived from the
+ * captured index rather than transcribed, so a re-capture that moves the run cannot strand it.
  */
 const FIXTURE_FAMILY = (() => {
   const rows = (fixture('runs_list.json') as {
-    runs: { run_id: string, name: string, parent_id: string | null }[]
+    runs: { run_id: string, name: string, parent_id: string | null, parent_kind: string | null, start_time: string }[]
   }).runs
   const mine = rows.find(row => row.run_id === FIXTURE_RUN)
-  if (!mine) return ''
+  if (!mine) return null
   const key = mine.parent_id ?? mine.name
-  return rows.filter(row => (row.parent_id ?? row.name) === key).length > 1 ? key : ''
+  const family = rows.filter(row => (row.parent_id ?? row.name) === key)
+  if (family.length < 2) return null
+  const newest = family.every(row => Date.parse(row.start_time) <= Date.parse(mine.start_time))
+  return { key, sweep: mine.parent_kind === 'sweep', newest }
 })()
 
 /**
@@ -95,7 +99,15 @@ const FIXTURE_FAMILY = (() => {
  */
 export async function revealFixtureRun(page: Page): Promise<void> {
   if (!FIXTURE_FAMILY) return
-  await page.locator('.run-list .record-group', { hasText: FIXTURE_FAMILY }).first().click()
+  const { key, sweep, newest } = FIXTURE_FAMILY
+  if (sweep) {
+    await page.locator('.run-list .record-group', { hasText: key }).first().click()
+    return
+  }
+  // the family's newest run IS its line
+  if (newest) return
+  await page.locator('.run-list .record-headed', { has: page.locator(`.run-name[title="${key}"]`) })
+    .first().locator('[data-action="fold"]').click()
 }
 
 export const FIXTURE_DEPLOYMENT =
