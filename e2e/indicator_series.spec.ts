@@ -277,3 +277,23 @@ test('a pane is set apart by a frame and a background from its first row, kept a
   await look(first, 'pane-background')
   await expect.poll(stored).toBeUndefined()
 })
+
+/**
+ * The series on the candles fold away behind the bar's figures, which always stand (operator,
+ * 2026-11-14: "ich sehe mir die formen an, die koordinaten interessieren mich nur sekundär") —
+ * a click on the fold in a legend that takes no other pointer, kept across a reload.
+ */
+test('the series on the candles fold away behind their figures, kept across a reload', async ({ page }) => {
+  const chart = await openSession(page)
+  const price = chart.locator('[data-legend="price"]')
+  const onCandles = SERIES.filter(entry => entry.pane === 'price').length
+  await expect(price.locator('[data-series]')).toHaveCount(onCandles)
+  await price.locator('[data-action="legend-fold"]').click()
+  await expect(price.locator('[data-series]')).toHaveCount(0)
+  await expect(price.locator('[data-action="legend-fold"]')).toHaveText(`▸ ${onCandles}`)
+  await page.reload()
+  await expect.poll(async () => Number(await chart.getAttribute('data-bars')), { timeout: 30_000 }).toBeGreaterThan(0)
+  await expect(price.locator('[data-action="legend-fold"]')).toHaveText(`▸ ${onCandles}`)
+  await price.locator('[data-action="legend-fold"]').click()
+  await expect(price.locator('[data-series]')).toHaveCount(onCandles)
+})

@@ -101,7 +101,16 @@ and no other layer passes it.
   size, so each pane's element is watched (`track`, `boxes` in `use_chart_panes`) and the legend
   stands by what was measured.
 - **It takes no pointer** — the chart under it keeps every move — and it takes the plot's width before
-  it wraps: at 60 % of the chart beside the report, the close went to a line of its own.
+  it wraps: at 60 % of the chart beside the report, the close went to a line of its own. A line too
+  long for the width wraps rather than being cut, so no value is lost (operator, 2026-11-14).
+- **The series on the candles fold away behind the bar's figures** (operator, 2026-11-14: *"ich sehe
+  mir die formen an, die koordinaten interessieren mich nur sekundär"*), as TradingView folds the
+  legends of its studies. The first line always stands; beneath the series, or alone where they are
+  folded, a fold in the link's ink — the one part of the legend that takes the pointer — says `▾`
+  open and `▸ 3` closed, the count of the lines it holds. It stands at the start of a line, where the
+  width of the figures cannot move it. A pane of series alone has no line of its own to keep, and no
+  fold. Closed legends are kept with the chart's view by the panes' names (`closedLegends`), and in
+  a named layout.
 - **The notices moved to the top right**, beside the price scale (`ChartNotices.vue`): the top left is
   the legend's, as in TradingView and Kraken Pro. The chart states the plot's width as
   `--chart-plot-width`, from the library's own report of it (`subscribeSizeChange`), so a notice keeps

@@ -57,9 +57,21 @@ export function paneLegends(source: LegendSource): PaneLegend[] {
   return legends
 }
 
-/** How many lines a pane's legend takes: its own figures, and a line per series. */
-export function legendLines(legend: PaneLegend): number {
-  return (legend.entries.length ? 1 : 0) + legend.series.length
+/**
+ * Whether a pane's legend folds: where it has a first line of its own — the bar's figures — and
+ * series beneath it. That line always stands; the series fold away (operator, 2026-11-14).
+ */
+export function legendFolds(legend: PaneLegend): boolean {
+  return legend.entries.length > 0 && legend.series.length > 0
+}
+
+/**
+ * How many lines a pane's legend takes: its own figures, a line per series while it stands open, and
+ * the line of its fold where it has one.
+ */
+export function legendLines(legend: PaneLegend, closed = false): number {
+  const folds = legendFolds(legend)
+  return (legend.entries.length ? 1 : 0) + (folds && closed ? 0 : legend.series.length) + (folds ? 1 : 0)
 }
 
 /** How tall a line of a legend stands — where the folded panes' lines are stacked. */

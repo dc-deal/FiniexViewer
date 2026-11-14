@@ -355,6 +355,15 @@ describe('useArrangementStore', () => {
       })
     })
 
+    /** A chart's legends closed to their first line, by the panes' names: a name of no pane's form is none. */
+    it('keeps the legends the reader closed, by the names of their panes', () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: { 'run-chart': { closedLegends: ['price', 'price', 'rsi_fast', 'two words', 3] } },
+      })
+      expect(useArrangementStore().panelViews['run-chart']).toEqual({ closedLegends: ['price', 'rsi_fast'] })
+    })
+
     /** The groups hidden above their layers' switches, by key: a key of another form is none, each kept once. */
     it('keeps the groups the reader hid, and drops what is no key of a group', () => {
       store({

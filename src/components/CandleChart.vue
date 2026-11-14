@@ -70,6 +70,8 @@ const props = defineProps<{
   paneLooks?: PaneLooks | null
   /** The panes whose group is hidden (`layer_groups.ts`): the candles' says so at its eye. */
   hiddenPanes?: readonly string[] | null
+  /** The panes whose legend shows its first line alone, the series behind its fold. */
+  closedLegends?: readonly string[] | null
 }>()
 
 const emit = defineEmits<{
@@ -88,6 +90,8 @@ const emit = defineEmits<{
   paneWeights: [weights: PaneWeights]
   /** A pane shown or hidden at its eye or its ✕ on the chart — by the pane's name. */
   paneShown: [pane: string, shown: boolean]
+  /** A pane's legend folded to its first line, or opened again. */
+  legendClosed: [pane: string, closed: boolean]
   /** One pane given the whole height, or none. */
   maximize: [pane: string | null]
   /** The panes asked back at their first heights — a double click on a seam. */
@@ -261,9 +265,14 @@ const legends = computed(() => {
 
 /** Where each pane's legend stands — the folded panes' as their lines in the one given the whole height. */
 const tops = computed(() => {
-  const lines = new Map(legends.value.map(legend => [legend.pane, legendLines(legend)]))
+  const lines = new Map(legends.value.map(legend => [legend.pane, legendLines(legend, legendClosed(legend.pane))]))
   return legendTops(panes.boxes.value, wholePane.value, pane => lines.get(pane) ?? 1)
 })
+
+/** Whether a pane's legend shows its first line alone. */
+function legendClosed(pane: string): boolean {
+  return (props.closedLegends ?? []).includes(pane)
+}
 
 /** Where a pane's legend stands: by its pane, the first pane's before any was measured. */
 function legendTop(pane: string): number | null {
@@ -896,6 +905,8 @@ watch(() => props.priceFormat, () => {
         :top="legendTop(legend.pane)!"
         :folded="folded(legend.pane)"
         :room="legendRoom(legend.pane)"
+        :closed="legendClosed(legend.pane)"
+        @toggle="emit('legendClosed', legend.pane, !legendClosed(legend.pane))"
       />
     </template>
     <!-- each pane's controls at the top right of its plot, where no figure of the legend can move them -->

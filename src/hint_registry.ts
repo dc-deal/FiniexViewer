@@ -174,7 +174,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'chart-panes',
-    text: t('Drag the line between two panes to share the height, and double-click it for the first heights. Over a pane, the eye behind its figures shows or hides what it draws, and the arrows give it the whole height, the others folded to their line of figures — and the heights back.'),
+    text: t("Drag the line between two panes to share the height, and double-click it for the first heights. Over a pane, its controls show behind its figures: the eye shows or hides what the candles' pane draws, the cross closes a pane of its own, and the arrows give it the whole height, the others folded to their line of figures — and the heights back. ▾ under the figures folds the series' lines away."),
   },
   {
     id: 'trade-slippage',

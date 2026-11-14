@@ -967,6 +967,29 @@ describe('CandleChart', () => {
       expect(wrapper.find('[data-legend="price"] [data-series="worker:bollinger_main"]').exists()).toBe(true)
     })
 
+    /**
+     * The series on the candles fold away behind the bar's figures, which always stand (operator,
+     * 2026-11-14): closed, the fold says how many lines it holds; a pane of series alone has no fold.
+     */
+    it('folds the series of the candles away behind their figures, saying how many lines it holds', async () => {
+      size = { width: 800, height: 400 }
+      lw.paneRows.push({ top: 0, height: 250 }, { top: 251, height: 70 }, { top: 322, height: 78 })
+      const wrapper = mountWith(drawn('worker:bollinger_main', 'worker:trend_ema', 'worker:rsi_fast'))
+      await nextTick()
+      const price = () => wrapper.find('[data-legend="price"]')
+      expect(price().findAll('[data-series]')).toHaveLength(2)
+      expect(price().find('[data-action="legend-fold"]').text()).toBe('▾')
+      expect(wrapper.find('[data-legend="rsi_fast"] [data-action="legend-fold"]').exists()).toBe(false)
+
+      await price().find('[data-action="legend-fold"]').trigger('click')
+      expect(wrapper.emitted('legendClosed')).toEqual([['price', true]])
+      await wrapper.setProps({ closedLegends: ['price'] })
+      expect(price().findAll('[data-series]')).toHaveLength(0)
+      expect(price().find('.legend-line').text()).toContain('O')
+      expect(price().find('[data-action="legend-fold"]').text()).toBe('▸ 2')
+      expect(price().find('[data-action="legend-fold"]').attributes('aria-expanded')).toBe('false')
+    })
+
     /** Their RSI's band between 30 and 70, their bands' channel: on the series' first plot, taken off with it. */
     it('fills a series\' areas on its first plot, and takes them off before the series goes', async () => {
       size = { width: 800, height: 400 }

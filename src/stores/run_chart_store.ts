@@ -582,6 +582,16 @@ export const useRunChartStore = defineStore('runChart', () => {
     arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('looks'), ...(Object.keys(looks).length ? { looks } : {}) })
   }
 
+  /** The panes whose legend shows its first line alone, the rest behind its fold — by name. */
+  const closedLegends = computed<string[]>(() => arrangement.panelViews[RUN_CHART]?.closedLegends ?? [])
+
+  /** A pane's legend closed to its first line, or opened again (operator, 2026-11-14). */
+  function closeLegend(pane: string, closed: boolean): void {
+    const others = closedLegends.value.filter(name => name !== pane)
+    const next = closed ? [...others, pane] : others
+    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('closedLegends'), ...(next.length ? { closedLegends: next } : {}) })
+  }
+
   /** The panes back at their first heights, none of them given the whole height. */
   function resetPanes(): void {
     arrangement.setPanelView(RUN_CHART, chartViewWithout('panes', 'maximized'))
@@ -614,7 +624,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    paneWeights, maximizedPane, paneLooks, setPaneLook, indicators, indicatorLayers, seriesOffer, seriesCutAt, seriesError,
+    paneWeights, maximizedPane, paneLooks, setPaneLook, closedLegends, closeLegend, indicators, indicatorLayers, seriesOffer, seriesCutAt, seriesError,
     loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }

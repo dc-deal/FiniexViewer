@@ -143,6 +143,8 @@ export interface StoredPanelView {
   maximized?: string
   /** A chart's panes with a frame or a background, by name (viewer#57). */
   looks?: PaneLooks
+  /** A chart's panes whose legend shows its first line alone, the rest behind its fold, by name. */
+  closedLegends?: string[]
 }
 
 /** Everything stored under the one versioned key. */

@@ -857,6 +857,20 @@ describe('useRunChartStore', () => {
     expect(arrangement.panelViews['run-chart']).toEqual({ panes: { volume: 0.7 } })
   })
 
+  /** A pane's legend folded to its first line is kept with the chart's view, beside its heights. */
+  it('keeps the legends folded to their first line, and only those', () => {
+    const arrangement = useArrangementStore()
+    arrangement.setPanelView('run-chart', { panes: { volume: 0.7 } })
+    const chart = useRunChartStore()
+    chart.closeLegend('price', true)
+    chart.closeLegend('rsi_fast', true)
+    expect(chart.closedLegends).toEqual(['price', 'rsi_fast'])
+    chart.closeLegend('price', false)
+    expect(arrangement.panelViews['run-chart']).toEqual({ panes: { volume: 0.7 }, closedLegends: ['rsi_fast'] })
+    chart.closeLegend('rsi_fast', false)
+    expect(arrangement.panelViews['run-chart']).toEqual({ panes: { volume: 0.7 } })
+  })
+
   /** A drag reads the panes on screen; a pane not on it now keeps the height it had. */
   it('keeps the height of a pane not on screen when a seam is dragged', () => {
     const arrangement = useArrangementStore()

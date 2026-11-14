@@ -187,6 +187,9 @@ function isPaneName(value: unknown): value is string {
   return typeof value === 'string' && /^\S{1,120}$/.test(value)
 }
 
+/** How many panes' legends a chart keeps closed: a worker's panes are named by its run, so they add up. */
+const KEPT_LEGENDS = 24
+
 /** A chart's panes' looks by name: a name of no pane's form, or a part that is not on, is none. */
 function readPaneLooks(value: unknown): PaneLooks | undefined {
   const looks: PaneLooks = {}
@@ -226,6 +229,9 @@ export function readPanelViews(value: unknown): Record<string, StoredPanelView> 
     if (isPaneName(maximized)) view.maximized = maximized
     const looks = readPaneLooks(record(stored)['looks'])
     if (looks) view.looks = looks
+    const closed = record(stored)['closedLegends']
+    const legends = Array.isArray(closed) ? [...new Set(closed.filter(isPaneName))].slice(-KEPT_LEGENDS) : []
+    if (legends.length) view.closedLegends = legends
     if (Object.keys(view).length) views[id] = view
   }
   return views
@@ -413,6 +419,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
       if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
       if (view.maximized) kept.maximized = view.maximized
       if (view.looks && Object.keys(view.looks).length) kept.looks = view.looks
+      if (view.closedLegends?.length) kept.closedLegends = view.closedLegends
       if (Object.keys(kept).length) next[id] = kept
     }
     if (JSON.stringify(next) !== JSON.stringify(panelViews.value)) panelViews.value = next
@@ -430,6 +437,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
     if (view.panes && Object.keys(view.panes).length) kept.panes = view.panes
     if (view.maximized) kept.maximized = view.maximized
     if (view.looks && Object.keys(view.looks).length) kept.looks = view.looks
+    if (view.closedLegends?.length) kept.closedLegends = view.closedLegends
     const next = { ...panelViews.value }
     if (Object.keys(kept).length) next[panel] = kept
     else delete next[panel]

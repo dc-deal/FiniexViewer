@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { legendFolds } from '@/components/chart_legend'
+import { t } from '@/translate'
 import type { PaneLegend } from '@/types/chart_pane_types'
 
 /**
@@ -12,8 +15,21 @@ import type { PaneLegend } from '@/types/chart_pane_types'
  *   by count there, so each stays one line, cut at the plot's edge rather than wrapped onto the next.
  * @param room How tall its pane stands, in pixels: the legend stays inside it, its last lines cut
  *   rather than laid over the panes below (a small window, 2026-11-13). None, no bound.
+ * @param closed Whether its series stand folded away behind its fold, its first line alone.
  */
-defineProps<{ legend: PaneLegend, top: number, folded?: boolean, room?: number | null }>()
+const props = defineProps<{ legend: PaneLegend, top: number, folded?: boolean, room?: number | null, closed?: boolean }>()
+
+const emit = defineEmits<{
+  /** The series folded away, or back. */
+  toggle: []
+}>()
+
+/**
+ * The series fold away behind the bar's figures, which always stand (operator, 2026-11-14: "ich sehe
+ * mir die formen an, die koordinaten interessieren mich nur sekundär"), as TradingView folds the
+ * legends of its studies: closed, the fold says how many lines it holds.
+ */
+const folds = computed(() => legendFolds(props.legend))
 </script>
 
 <template>
@@ -30,12 +46,24 @@ defineProps<{ legend: PaneLegend, top: number, folded?: boolean, room?: number |
       </span>
     </div>
     <!-- a worker's series, a line each: its name quiet, its plots' values plain (contract 55) -->
-    <div v-for="line in legend.series" :key="line.layer" class="legend-line" :data-series="line.layer">
+    <div v-for="line in folds && closed ? [] : legend.series" :key="line.layer" class="legend-line" :data-series="line.layer">
       <span class="legend-label">{{ line.title }}</span>
       <span v-for="(entry, index) in line.entries" :key="index" class="legend-entry">
         <span v-if="entry.label" class="legend-label">{{ entry.label }}</span>
         <span v-if="entry.value !== null" class="legend-value">{{ entry.value }}</span>
       </span>
+    </div>
+    <!-- the fold, at a place that never moves: the start of the line after the figures, or after the
+         last series — a control at the end of a line of figures would move with their width -->
+    <div v-if="folds" class="legend-line">
+      <button
+        type="button"
+        class="legend-fold"
+        :aria-expanded="!closed"
+        :aria-label="closed ? t('Show the lines of the series') : t('Fold the lines of the series away')"
+        data-action="legend-fold"
+        @click="emit('toggle')"
+      >{{ closed ? `▸ ${legend.series.length}` : '▾' }}</button>
     </div>
   </div>
 </template>
@@ -77,6 +105,34 @@ defineProps<{ legend: PaneLegend, top: number, folded?: boolean, room?: number |
 .folded .legend-line > * {
   flex-shrink: 0;
 }
+/* a control in a legend that takes no pointer: it alone takes it, in the link's ink, as a control does */
+.legend-fold {
+  padding: 0 var(--space-xs);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.legend-fold:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-accent);
+}
+
+.legend-fold:active {
+  background-color: var(--color-bg-active);
+  transform: translateY(1px);
+}
+
+.legend-fold:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
 .legend-entry {
   display: flex;
   gap: var(--space-xs);

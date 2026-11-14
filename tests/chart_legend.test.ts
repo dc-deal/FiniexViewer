@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { LEGEND_LINE, legendLines, legendTops, paneLegends, type LegendSource } from '@/components/chart_legend'
+import { LEGEND_LINE, legendFolds, legendLines, legendTops, paneLegends, type LegendSource } from '@/components/chart_legend'
 import type { PaneLegend } from '@/types/chart_pane_types'
 
 const BAR = { time: 1_760_000_000, open: 0.87412, high: 0.8743, low: 0.87401, close: 0.8742 }
@@ -82,7 +82,13 @@ describe('paneLegends', () => {
     expect(legends[0]!.series.map(item => item.layer)).toEqual(['worker:bands'])
     expect(legends[2]!.series.map(item => item.layer)).toEqual(['worker:macd', 'worker:macd:signal'])
     expect(legends[2]!.entries).toEqual([])
-    expect(legends.map(legendLines)).toEqual([2, 1, 2, 1])
+    // the candles' figures, the series beneath them and the line of their fold; a pane of series alone
+    // has no line of its own to keep, and does not fold
+    expect(legends.map(legend => legendLines(legend))).toEqual([3, 1, 2, 1])
+    expect(legends.map(legendFolds)).toEqual([true, false, false, false])
+    // closed: the figures and the fold, the series behind it
+    expect(legendLines(legends[0]!, true)).toBe(2)
+    expect(legendLines(legends[2]!, true)).toBe(2)
   })
 })
 
