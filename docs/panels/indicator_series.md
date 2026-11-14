@@ -184,7 +184,19 @@ drawing at all ([Latest State Frame](../runs/latest_state_frame.md)).
 
 The window cannot be asked for the series alone: for the twenty-five daily values of the first
 session the chart read four pages of 2,000 frames, about 11 MB, and the frame player reads the same
-frames again. A read that serves only the series would end that; it is FiniexTestingIDE's to decide.
+frames again. **FiniexTestingIDE will serve it** (answered 2026-11-14, in the next delivery of
+testingide#379, from the week of 7 Dec at the latest): a filter `stream_kind` on the window, repeatable,
+`limit` counting only the streams chosen. The same delivery gives a plot a `title`, a series the inputs
+it shows, named — today's `inputs` are not to be built on — and the series in the order the profile
+declares its workers, which is to be stacked by (today's order is incidental).
+
+**Following a running session needs their rule, not the frames'.** A series' bar is stamped at its
+open and written at its close, so a page read from the newest record held misses the bar written with
+it: holding the frame 07:59, the pass at 08:00 writes the frame 08:00 and the M5 bar 07:55, and
+`from=07:59` never serves that bar. A reload reads every bar, which is all this chart does today; a
+chart that follows reads the two kinds apart with the filter — frames from the newest frame held,
+series from the OLDEST of each layer's newest bar — once it is served. `last_record_time` on the
+timeline names the record written last, for a worker on two timeframes its longer bar's open.
 
 ## Where it lives
 
