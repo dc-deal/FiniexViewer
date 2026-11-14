@@ -68,6 +68,8 @@ const props = defineProps<{
   indicators?: DrawnSeries[] | null
   /** Each pane's frame and background, by name; a pane not named stands plain (viewer#57). */
   paneLooks?: PaneLooks | null
+  /** The panes whose group is hidden (`layer_groups.ts`): the candles' says so at its eye. */
+  hiddenPanes?: readonly string[] | null
 }>()
 
 const emit = defineEmits<{
@@ -84,7 +86,7 @@ const emit = defineEmits<{
   edge: [side: BarEdge]
   /** The weights of every pane, once the reader dragged a separator between two of them. */
   paneWeights: [weights: PaneWeights]
-  /** What a pane draws, shown or hidden at its lever on the chart — by the pane's name. */
+  /** A pane shown or hidden at its eye or its ✕ on the chart — by the pane's name. */
   paneShown: [pane: string, shown: boolean]
   /** One pane given the whole height, or none. */
   maximize: [pane: string | null]
@@ -220,13 +222,11 @@ function onFrameDoubleClick(event: MouseEvent): void {
 }
 
 /**
- * Whether what a pane draws first is on show — null where the chart is handed no lever for it. A
- * worker's pane stands only while one of its series is shown, so its lever hides it.
+ * Whether the pane of the candles stands shown, at its eye — null for every other pane, which closes
+ * at its ✕ instead: it cannot be on show hidden, it gives its room up.
  */
 function paneShown(pane: string): boolean | null {
-  if (pane === 'price') return props.candles ? props.candles.shown : null
-  if (pane === 'volume') return props.volume ? props.volume.shown : null
-  return true
+  return pane === 'price' ? !(props.hiddenPanes ?? []).includes('price') : null
 }
 
 /** The whole height for a pane, or — where one has it — the heights back. */
@@ -903,12 +903,14 @@ watch(() => props.priceFormat, () => {
       <ChartPaneControls
         v-if="!folded(box.id) && (paneShown(box.id) !== null || paneCount > 1)"
         :shown="paneShown(box.id)"
+        :closable="box.id !== 'price'"
         :whole="wholePane !== null"
         :can-maximize="paneCount > 1"
         :visible="hoveredPane === box.id"
         :top="legendTop(box.id) ?? box.top"
         :data-pane="box.id"
         @toggle-shown="emit('paneShown', box.id, !paneShown(box.id))"
+        @close="emit('paneShown', box.id, false)"
         @toggle-whole="toggleWhole(box.id)"
       />
     </template>

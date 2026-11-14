@@ -1167,12 +1167,21 @@ describe('CandleChart', () => {
     })
 
     /** The lever of the layer the pane draws first: the candles above, the volume below. */
-    it('asks for what a pane draws to be hidden or shown at its eye', async () => {
+    /**
+     * The pane of the candles cannot go: its eye hides what it draws. A pane of its own goes at its ✕
+     * and gives its room up (operator, 2026-11-14: an eye that made a pane vanish read wrong).
+     */
+    it('asks for the candles\' pane to be hidden at its eye, and a pane of its own closed at its ✕', async () => {
       const wrapper = await mountPanes()
-      await wrapper.find('[data-pane="volume"] [data-action="pane-shown"]').trigger('click')
+      expect(wrapper.find('[data-pane="volume"] [data-action="pane-shown"]').exists()).toBe(false)
+      expect(wrapper.find('[data-pane="price"] [data-action="pane-close"]').exists()).toBe(false)
+      await wrapper.find('[data-pane="volume"] [data-action="pane-close"]').trigger('click')
       await wrapper.find('[data-pane="price"] [data-action="pane-shown"]').trigger('click')
       expect(wrapper.emitted('paneShown')).toEqual([['volume', false], ['price', false]])
+      // the eye reads the pane's group, not the candles' own switch
       await wrapper.setProps({ candles: { ...CANDLES, shown: false } })
+      expect(wrapper.find('[data-pane="price"] [data-action="pane-shown"]').attributes('aria-label')).toBe('Hide what this pane draws')
+      await wrapper.setProps({ hiddenPanes: ['price'] })
       expect(wrapper.find('[data-pane="price"] [data-action="pane-shown"]').attributes('aria-label')).toBe('Show what this pane draws')
       // the controls stand by the pane's top, not behind its figures, whose width changes bar by bar
       expect(wrapper.find('.pane-controls[data-pane="volume"]').attributes('style')).toContain('top: 301px')

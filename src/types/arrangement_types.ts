@@ -106,6 +106,8 @@ export interface StoredLayers {
    * named.
    */
   served?: StoredServedLayers
+  /** The groups hidden above their layers' own switches, by their keys (`layer_groups.ts`). */
+  groupsHidden?: string[]
 }
 
 /** What the reader set on the workers' layers: those hidden, and those below full strength. */

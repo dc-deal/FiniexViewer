@@ -6,6 +6,7 @@ import { MAIN_LINK, emptyLink, useContextStore } from '@/stores/context_store'
 import { readTabEntry, removeTabAndShared, writeTabAndShared } from '@/tab_storage'
 import type { FacetSelection } from '@/types/facet_types'
 import type { LinkContext, PositionRef } from '@/types/context_types'
+import { isLayerGroupKey } from '@/layer_groups'
 import { VIEW_FOLDS, VIEW_ROW_CAPS } from '@/types/arrangement_types'
 import type {
   DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredLayers, StoredPanelView, StoredRows, StoredRunChart,
@@ -154,8 +155,15 @@ function readLayers(value: unknown): StoredLayers | undefined {
   if (Object.keys(drawn).length) layers.forms = drawn
   const served = readServedLayers(stored['served'])
   if (served) layers.served = served
+  // a group's key of its form, each once, as many as a reader reaches by hand
+  const groups = Array.isArray(stored['groupsHidden']) ? stored['groupsHidden'].filter(isLayerGroupKey) : []
+  const once = [...new Set(groups)].slice(-GROUPS_KEPT)
+  if (once.length) layers.groupsHidden = once
   return Object.keys(layers).length ? layers : undefined
 }
+
+/** How many hidden groups a chart keeps: a worker's panes are named by its run, so they add up. */
+const GROUPS_KEPT = 60
 
 /** A worker's layers by the backend's ids: an id of another form, or an opacity out of range, is none. */
 function readServedLayers(value: unknown): StoredServedLayers | undefined {

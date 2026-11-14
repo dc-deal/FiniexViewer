@@ -140,11 +140,13 @@ by its tab, the way a reader does.
 - `indicator_series.spec.ts` holds a worker's series on the run chart (contract 55), on the session
   FiniexTestingIDE produced to draw every kind of pane, its timeline, window, configuration and
   bars captured: every series in the pane it names, below the volume's own in the order served, with
-  its line in that pane's legend; a pane's lever giving its room up and kept across a real reload; a
+  its line in that pane's legend; a worker's pane closed at its ✕ giving its room up, its group kept
+  hidden above its series' switches across a real reload; a
   coarser timeframe drawing only its own series; a seam above a worker's pane kept by the pane's
   name through a reload; a worker's pane at the whole height stacking the folded legends, a line
   each, without one standing on another; the Layers panel's rows of the workers in their panes, a
-  switch hiding one on the chart and the eye of the candles' workers hiding them all; a pane at the whole height that goes — a timeframe that cannot draw
+  switch hiding one on the chart and the eye of the candles' workers hiding them all; a worker's pane
+  closed on the chart and shown again at its eye in the Layers panel; a pane at the whole height that goes — a timeframe that cannot draw
   it, the volume hidden — leaving every pane its controls; the volume moved into the candles' pane and
   back with the workers' panes below it in order; and a worker's pane dragged small and large, hidden
   at its lever and shown from the Layers panel, back at the height dragged; and a pane set apart by a
@@ -159,7 +161,8 @@ by its tab, the way a reader does.
   the top of its pane on one line, following a seam, saying the bar under a real pointer and the last
   bar once it leaves; the controls at the top right of a pane — faint and behind the legend over the
   pane, whole and in front of it over themselves — the whole height kept across a reload
-  and given back, the eye hiding the volume; and a double click on the seam for the first heights.
+  and given back, the volume's pane closed at its ✕ by its group, the volume's own switch untouched;
+  and a double click on the seam for the first heights.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
   browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read
   from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its

@@ -6,7 +6,10 @@ export type ServedLayerId = `worker:${string}`
 /** A worker's layer as the Layers panel lists it: its series, as the reader set it, and whether the timeframe on show draws it. */
 export interface IndicatorLayer {
   entry: IndicatorSeriesEntry
+  /** Its own switch, as the reader set it. */
   shown: boolean
+  /** Hidden by a group it belongs to — its pane, the workers', its worker's — whatever its own switch says. */
+  muted: boolean
   /** In percent, `LAYER_OPACITY_MIN` to 100. */
   opacity: number
   /** Whether the chart's timeframe can draw it: its own or a finer one. */

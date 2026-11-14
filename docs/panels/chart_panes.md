@@ -125,8 +125,13 @@ and no other layer passes it.
   over the end of a line of figures). The pointer over the pane shows them faint — forty per cent
   see-through — and BEHIND the legend; the pointer over the controls themselves, or a keyboard on
   one, brings them in front of the legend, whole, on the chart's own surface.
-- **The eye is the layer's own lever** — the candles on the pane of the candles, the volume on its own
-  (`PANE_LAYERS`): the Layers panel and the chart always show one state.
+- **The eye and the ✕ are the pane's group's** (`layer_groups.ts`), the same as the eye at the pane's
+  heading in the Layers panel: one state, above every layer's own switch. The pane of the candles
+  cannot go, so its eye hides what it draws; a pane of its own goes at its ✕ and gives its room up —
+  the Layers panel shows it again, as the Panels menu does a panel (operator, 2026-11-14: an eye that
+  made a pane vanish read wrong; Kraken Pro removes a pane at a bin, and nothing of ours is deleted,
+  so the app's own ✕ for *hidden, there to come back*). Shown again, each layer in it stands as it
+  was set.
 - **The arrows give a pane the whole height**, the others folded to nothing — the library keeps
   2 px of a pane, too little to draw in. At 22 px the candles, the lane and the legend stood on each
   other (operator, on screen 2026-11-12). A folded pane's legend stands as a line in the pane at the

@@ -299,18 +299,25 @@ describe('LayersView', () => {
       const wrapper = mountWithSeries()
       const price = () => wrapper.find('[data-pane-group="price"]')
       const workers = SERIES.filter(entry => entry.pane === 'price').map(entry => entry.layer)
-      // the framework's heading folds, and has no eye
-      expect(price().find('[data-source="framework"] [data-action^="show"]').exists()).toBe(false)
+      // the framework's heading folds and has its own eye, untouched by the workers'
+      expect(price().find('[data-source="framework"] [data-action="show-framework"]').attributes('aria-pressed')).toBe('true')
       const eye = () => price().find('[data-source="workers"] [data-action="show-workers"]')
       expect(eye().attributes('aria-pressed')).toBe('true')
 
       await eye().trigger('click')
-      expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden).toEqual(workers)
+      // the group hidden above its layers: each keeps its own switch, faint while its group hides it
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.groupsHidden).toEqual(['workers:price'])
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden).toBeUndefined()
       expect(eye().attributes('aria-pressed')).toBe('false')
-      expect(row(wrapper, 'candles').attributes('data-shown')).toBe('true')
+      for (const layer of workers) {
+        expect(row(wrapper, layer).attributes('data-shown')).toBe('true')
+        expect(row(wrapper, layer).attributes('data-muted')).toBe('true')
+      }
+      expect(row(wrapper, 'candles').attributes('data-muted')).toBe('false')
 
       await eye().trigger('click')
-      expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden ?? []).toEqual([])
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.groupsHidden).toBeUndefined()
+      expect(row(wrapper, workers[0]!).attributes('data-muted')).toBe('false')
     })
 
     /** A worker drawing two layers in one pane is a group: a heading of its own, which folds and hides them. */
@@ -323,7 +330,9 @@ describe('LayersView', () => {
       expect(heading().exists()).toBe(true)
 
       await heading().find('[data-action="show-worker"]').trigger('click')
-      expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden).toEqual([first.layer, second.layer])
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.groupsHidden).toEqual([`worker:price|${worker}`])
+      expect(row(wrapper, first.layer).attributes('data-muted')).toBe('true')
+      expect(row(wrapper, second.layer).attributes('data-muted')).toBe('true')
       expect(heading().find('[data-action="show-worker"]').attributes('aria-pressed')).toBe('false')
 
       await heading().find('[data-action="fold-worker"]').trigger('click')
@@ -342,6 +351,27 @@ describe('LayersView', () => {
       expect(useArrangementStore().panelViews['layers']?.expanded).toEqual({ 'layers-workers-price': false })
       await wrapper.find('[data-pane-group="price"] [data-action="fold-workers"]').trigger('click')
       expect(row(wrapper, onCandles).exists()).toBe(true)
+    })
+
+    /**
+     * Every group has its eye (operator, 2026-11-14): a pane's, the framework's — each a visibility
+     * above its layers' switches, the way a folder track's mute works in a DAW.
+     */
+    it('hides a pane and the framework layers by their eyes, every switch kept as set', async () => {
+      const wrapper = mountWithSeries()
+      await wrapper.find('[data-pane-group="price"] [data-action="show-framework"]').trigger('click')
+      expect(row(wrapper, 'candles').attributes('data-muted')).toBe('true')
+      expect(row(wrapper, 'candles').attributes('data-shown')).toBe('true')
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      expect(row(wrapper, onCandles).attributes('data-muted')).toBe('false')
+
+      await wrapper.find('[data-pane-group="rsi_fast"] [data-action="show-pane"]').trigger('click')
+      expect(row(wrapper, 'worker:rsi_fast').attributes('data-muted')).toBe('true')
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.groupsHidden).toEqual(['framework:price', 'pane:rsi_fast'])
+      // the chart draws none of them, and its own switches stand
+      const chart = useRunChartStore()
+      expect(chart.layers.every(layer => layer.hidden)).toBe(true)
+      expect(chart.indicatorLayers.find(layer => layer.entry.layer === 'worker:rsi_fast')).toMatchObject({ shown: true, muted: true })
     })
 
     /** The framework's layers fold away as the workers' do (operator, 2026-11-14). */

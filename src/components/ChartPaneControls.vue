@@ -5,23 +5,29 @@ import { t } from '@/translate'
 
 /**
  * A pane's controls at the top right of its plot, beside the price scale, while the pointer is over
- * the pane (viewer#57): the lever of what the pane draws, and the whole height and back. They stand
+ * the pane (viewer#57): the pane's eye or its ✕, and the whole height and back. The pane of the
+ * candles cannot go, so its eye hides what it draws; a pane of its own goes at its ✕ and gives its
+ * room up — the Layers panel shows it again, as the Panels menu does a panel (operator, 2026-11-14:
+ * an eye that made the pane vanish read wrong, Kraken Pro removes a pane at a bin). They stand
  * at the right edge rather than behind the legend, whose figures change width with every bar — a
  * control that moves under the pointer is one the reader misses (operator, on screen 2026-11-12).
  * Present for a keyboard all the while — focused, they show — and taking the pointer only where they
  * show, so the chart under them keeps every move.
  *
- * @param shown Whether what the pane draws is on show; null where the pane has no lever here.
+ * @param shown Whether what the pane draws is on show; null where the pane has no eye.
+ * @param closable Whether the pane goes at a ✕ — a pane of its own.
  * @param whole Whether a pane has the whole height — this one or another: the control gives the heights back.
  * @param canMaximize Whether there is a pane to give the whole height to — one beside another.
  * @param visible Whether the pointer is over the pane.
  * @param top Where the pane begins inside the chart's frame, in pixels.
  */
-defineProps<{ shown: boolean | null, whole: boolean, canMaximize: boolean, visible: boolean, top: number }>()
+defineProps<{ shown: boolean | null, closable: boolean, whole: boolean, canMaximize: boolean, visible: boolean, top: number }>()
 
 const emit = defineEmits<{
   /** The lever of what the pane draws. */
   toggleShown: []
+  /** The pane closed: it goes, and the Layers panel shows it again. */
+  close: []
   /** The whole height for this pane, or the heights back. */
   toggleWhole: []
 }>()
@@ -38,6 +44,15 @@ const emit = defineEmits<{
       :aria-label="shown ? t('Hide what this pane draws') : t('Show what this pane draws')"
       @click="emit('toggleShown')"
     ><AppIcon :name="shown ? 'status-shown' : 'status-hidden'" /></AppButton>
+    <AppButton
+      v-if="closable"
+      variant="quiet"
+      size="compact"
+      glyph
+      data-action="pane-close"
+      :aria-label="t('Close this pane — the Layers panel shows it again')"
+      @click="emit('close')"
+    ><AppIcon name="action-close" /></AppButton>
     <AppButton
       v-if="canMaximize"
       variant="quiet"

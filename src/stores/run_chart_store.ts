@@ -13,6 +13,7 @@ import {
 import { BARS_PER_BATCH, useBarLoader } from '@/composables/use_bar_loader'
 import type { BarEdge } from '@/composables/use_bar_loader'
 import { drawsOn } from '@/components/indicator_drawing'
+import { framePaneOf, frameworkGroupsOf, hiddenByGroup, workerGroupsOf } from '@/layer_groups'
 import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
@@ -27,6 +28,7 @@ import type { StoredPanelView } from '@/types/arrangement_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
 import type { PaneLook, PaneLooks, PaneWeights } from '@/types/chart_pane_types'
 import type { DrawnSeries, IndicatorLayer, ServedLayerId } from '@/types/indicator_drawing_types'
+import type { LayerState } from '@/types/layer_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
 
@@ -270,8 +272,16 @@ export const useRunChartStore = defineStore('runChart', () => {
       id: state.id,
       drawings: drawn[state.id].value,
       ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
-      ...(state.shown ? {} : { hidden: true }),
+      ...(visible(state) ? {} : { hidden: true }),
     }]))
+
+  /** The groups hidden above their layers' own switches (`layer_groups.ts`). */
+  const groupsHidden = computed<ReadonlySet<string>>(() => new Set(arrangement.panelViews[RUN_CHART]?.layers?.groupsHidden ?? []))
+
+  /** A layer of ours drawn: its own switch on, and no group of it hidden — its pane, the framework's in it. */
+  function visible(state: LayerState): boolean {
+    return state.shown && !hiddenByGroup(groupsHidden.value, frameworkGroupsOf(framePaneOf(state.id, state.option)))
+  }
 
   /**
    * What the volume layer counts. Their `market-data` document: `v` is the traded volume, `0.0` on
@@ -285,7 +295,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   const candles = computed<ChartCandles | null>(() => {
     const state = arranged.value.find(entry => entry.id === 'candles')
     if (!state) return null
-    return { form: state.form ?? 'candles', shown: state.shown, opacity: state.opacity / 100 }
+    return { form: state.form ?? 'candles', shown: visible(state), opacity: state.opacity / 100 }
   })
 
   /** The volume layer: one value a bar, behind the candles, shown and as strong as arranged. */
@@ -295,7 +305,7 @@ export const useRunChartStore = defineStore('runChart', () => {
     const traded = volumeBasis.value === 'traded'
     return {
       basis: volumeBasis.value,
-      shown: state.shown,
+      shown: visible(state),
       // the layer's option, its default the register's: on
       ownPane: state.option === true,
       opacity: state.opacity / 100,
@@ -475,7 +485,7 @@ export const useRunChartStore = defineStore('runChart', () => {
    * opacity, on the timeframe on show where it can be drawn there — its own and every finer one.
    */
   const indicators = computed<DrawnSeries[]>(() => indicatorLayers.value
-    .filter(layer => layer.shown && layer.drawable)
+    .filter(layer => layer.shown && !layer.muted && layer.drawable)
     .map(layer => {
       const minutes = timeframeStore.minutesFor(layer.entry.timeframe)
       return { entry: layer.entry, opacity: layer.opacity / 100, span: minutes ? minutes * 60 : null, place: layer.place }
@@ -497,6 +507,7 @@ export const useRunChartStore = defineStore('runChart', () => {
       return {
         entry,
         shown: !kept?.hidden?.includes(entry.layer as ServedLayerId),
+        muted: hiddenByGroup(groupsHidden.value, workerGroupsOf(entry.pane, entry.layer)),
         opacity: kept?.opacity?.[entry.layer as ServedLayerId] ?? 100,
         drawable: tf !== null && drawsOn(entry.timeframe, tf, timeframeStore.minutesFor),
         place,
@@ -511,7 +522,7 @@ export const useRunChartStore = defineStore('runChart', () => {
    */
   const seriesOffer = computed<{ timeframe: string, apart: number } | null>(() => {
     // a timeframe whose length is not known draws only where it is the chart's own: none to offer for it
-    const known = indicatorLayers.value.filter(layer => layer.shown && timeframeStore.minutesFor(layer.entry.timeframe))
+    const known = indicatorLayers.value.filter(layer => layer.shown && !layer.muted && timeframeStore.minutesFor(layer.entry.timeframe))
     const undrawn = known.filter(layer => !layer.drawable).length
     if (!undrawn) return null
     const finest = [...new Set(known.map(layer => layer.entry.timeframe))]

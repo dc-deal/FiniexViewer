@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import CandleChart from '@/components/CandleChart.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
@@ -7,12 +7,10 @@ import AppSpinner from '@/components/base/AppSpinner.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import ChartNotices from '@/components/runs/ChartNotices.vue'
 import { useChartLayers } from '@/composables/use_chart_layers'
+import { paneGroup } from '@/layer_groups'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { t } from '@/translate'
-import { PANE_LAYERS } from '@/types/chart_pane_types'
-import type { ChartPaneId } from '@/types/chart_pane_types'
-import type { ServedLayerId } from '@/types/indicator_drawing_types'
 
 /**
  * The run-bound chart: one unit of the chosen run on its candles, its positions marked where they
@@ -30,19 +28,18 @@ const {
 } = storeToRefs(chart)
 
 /**
- * The lever on a pane is its layers' own: the Layers panel and the chart show one state. A pane of
- * ours has one layer; a worker's pane hides every series drawn in it, and gives its room up.
+ * The eye and the ✕ on a pane are its group's in the Layers panel: one state, above its layers' own
+ * switches (`layer_groups.ts`). A pane of its own hidden gives its room up; shown again, every layer
+ * in it stands as it was set.
  */
 const chartLayers = useChartLayers(() => 'run-chart')
 function showPane(pane: string, shown: boolean): void {
-  if (Object.prototype.hasOwnProperty.call(PANE_LAYERS, pane)) {
-    chartLayers.show(PANE_LAYERS[pane as ChartPaneId], shown)
-    return
-  }
-  for (const { entry } of indicators.value) {
-    if (entry.pane === pane) chartLayers.showServed(entry.layer as ServedLayerId, shown)
-  }
+  chartLayers.showGroup(paneGroup(pane), shown)
 }
+
+/** The panes whose group is hidden, by name. */
+const hiddenPanes = computed(() => [...chartLayers.groupsHidden.value]
+  .filter(key => key.startsWith('pane:')).map(key => key.slice('pane:'.length)))
 const { selectedRunId, selectedRun, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
 // the archive is asked only while a run chart is on show
@@ -111,6 +108,7 @@ onUnmounted(() => chart.detach())
       :maximized-pane="maximizedPane"
       :indicators="indicators"
       :pane-looks="paneLooks"
+      :hidden-panes="hiddenPanes"
       @spacing="chart.setSpacing"
       @edge="chart.extendBars"
       @pane-weights="chart.setPaneWeights"

@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
+import type { LayerGroupKey } from '@/layer_groups'
 import { arrangeLayers, keptLayers, layerDefinition } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import type { StoredServedLayers } from '@/types/arrangement_types'
@@ -24,6 +25,10 @@ interface ChartLayers {
   showServed: (id: ServedLayerId, shown: boolean) => void
   /** In percent, held to `LAYER_OPACITY_MIN`–100. */
   setServedOpacity: (id: ServedLayerId, opacity: number) => void
+  /** The groups hidden above their layers' own switches, by key (`layer_groups.ts`). */
+  groupsHidden: ComputedRef<ReadonlySet<string>>
+  /** A group shown or hidden; its layers' own switches stay as they are. */
+  showGroup: (key: LayerGroupKey, shown: boolean) => void
 }
 
 /**
@@ -42,12 +47,35 @@ export function useChartLayers(chartId: () => string | null): ChartLayers {
     return id ? arrangeLayers(id, arrangement.panelViews[id]?.layers) : []
   })
 
-  /** The chart's own layers as kept, beside what is kept of the workers' — the one never drops the other. */
-  function store(kept: ReturnType<typeof keptLayers>, served: StoredServedLayers | undefined): void {
+  /**
+   * The chart's own layers as kept, beside what is kept of the workers' and of the groups — the one
+   * never drops the others.
+   */
+  function store(
+    kept: ReturnType<typeof keptLayers>,
+    served: StoredServedLayers | undefined,
+    groups: string[] | undefined = arrangement.panelViews[chartId() ?? '']?.layers?.groupsHidden,
+  ): void {
     const id = chartId()
     if (!id) return
-    const layers = { ...kept, ...(served ? { served } : {}) }
+    const layers = { ...kept, ...(served ? { served } : {}), ...(groups?.length ? { groupsHidden: groups } : {}) }
     arrangement.setPanelView(id, { ...arrangement.panelViews[id], layers: Object.keys(layers).length ? layers : undefined })
+  }
+
+  const groupsHidden = computed<ReadonlySet<string>>(() => {
+    const id = chartId()
+    return new Set(id ? arrangement.panelViews[id]?.layers?.groupsHidden ?? [] : [])
+  })
+
+  function showGroup(key: LayerGroupKey, shown: boolean): void {
+    const id = chartId()
+    if (!id) return
+    const others = [...groupsHidden.value].filter(group => group !== key)
+    const rest = { ...arrangement.panelViews[id]?.layers }
+    const served = rest.served
+    delete rest.served
+    delete rest.groupsHidden
+    store(Object.keys(rest).length ? rest : undefined, served, shown ? others : [...others, key])
   }
 
   function write(next: LayerState[]): void {
@@ -70,6 +98,7 @@ export function useChartLayers(chartId: () => string | null): ChartLayers {
     if (next.opacity && Object.keys(next.opacity).length) kept.opacity = next.opacity
     const rest = { ...arrangement.panelViews[id]?.layers }
     delete rest.served
+    delete rest.groupsHidden
     store(Object.keys(rest).length ? rest : undefined, Object.keys(kept).length ? kept : undefined)
   }
 
@@ -111,5 +140,7 @@ export function useChartLayers(chartId: () => string | null): ChartLayers {
       delete others[id]
       writeServed({ ...served.value, opacity: share < 100 ? { ...others, [id]: share } : others })
     },
+    groupsHidden,
+    showGroup,
   }
 }

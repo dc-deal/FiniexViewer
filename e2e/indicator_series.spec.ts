@@ -46,16 +46,19 @@ test('each worker’s series stands in the pane it names, with its line in that 
   expect((await paneHeights(chart)).every(height => height > 20)).toBe(true)
 })
 
-test('a worker’s pane hidden at its lever gives its room up, and is kept hidden', async ({ page }) => {
+test('a worker’s pane closed at its ✕ gives its room up, and is kept closed', async ({ page }) => {
   const chart = await openSession(page)
   const pane = OWN_PANES[0]!
   const box = (await chart.locator(`[data-legend="${pane}"]`).boundingBox())!
   await page.mouse.move(box.x + 40, box.y + 30)
-  await chart.locator(`.pane-controls[data-pane="${pane}"] [data-action="pane-shown"]`).click()
+  await chart.locator(`.pane-controls[data-pane="${pane}"] [data-action="pane-close"]`).click()
   await expect(chart).toHaveAttribute('data-panes', String(1 + OWN_PANES.length))
   await expect(chart.locator(`[data-legend="${pane}"]`)).toHaveCount(0)
   const hidden = SERIES.filter(entry => entry.pane === pane).map(entry => entry.layer)
-  expect((await served(page))?.hidden).toEqual(hidden)
+  // the pane's group, above its series' own switches: none of them is touched
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').panelViews?.['run-chart']?.layers?.groupsHidden))
+    .toEqual([`pane:${pane}`])
+  expect((await served(page))?.hidden).toBeUndefined()
   await page.reload()
   await expect.poll(async () => Number(await chart.getAttribute('data-bars')), { timeout: 30_000 }).toBeGreaterThan(0)
   await expect(chart).toHaveAttribute('data-indicators', String(SERIES.length - hidden.length))
@@ -113,7 +116,7 @@ test('a worker’s pane given the whole height stacks the folded legends line by
 })
 
 /** Shows the controls of a pane by resting the pointer over its legend, and clicks one of them. */
-async function paneControl(page: Page, chart: Locator, pane: string, action: 'pane-shown' | 'pane-whole'): Promise<void> {
+async function paneControl(page: Page, chart: Locator, pane: string, action: 'pane-shown' | 'pane-close' | 'pane-whole'): Promise<void> {
   const box = (await chart.locator(`[data-legend="${pane}"]`).boundingBox())!
   await page.mouse.move(box.x + 40, box.y + 30)
   await chart.locator(`.pane-controls[data-pane="${pane}"] [data-action="${action}"]`).click()
@@ -171,10 +174,10 @@ test('a pane at the whole height that goes leaves every pane its controls, and h
   await expect(chart).toHaveAttribute('data-indicators', String(SERIES.length))
   await expect(chart).not.toHaveAttribute('data-maximized', /.+/)
 
-  // the volume at the whole height, then hidden at its own lever: the candles keep their controls
+  // the volume at the whole height, then closed at its ✕: the candles keep their controls
   await paneControl(page, chart, 'volume', 'pane-whole')
   await expect(chart).toHaveAttribute('data-maximized', 'volume')
-  await chart.locator('.pane-controls[data-pane="volume"] [data-action="pane-shown"]').click()
+  await chart.locator('.pane-controls[data-pane="volume"] [data-action="pane-close"]').click()
   await expect(chart).not.toHaveAttribute('data-maximized', /.+/)
   await paneControl(page, chart, 'price', 'pane-whole')
   await expect(chart).toHaveAttribute('data-maximized', 'price')
@@ -211,8 +214,8 @@ test('a worker’s pane dragged small and big, hidden and shown, comes back at t
   const pane = OWN_PANES[0]!
   // the Layers panel open first: it takes room beside the chart, and the heights are read after that
   await page.locator('[data-quick-bar="run-chart"] [data-action="layers"]').click()
-  const layer = SERIES.find(entry => entry.pane === pane)!.layer
-  const lever = page.locator(`[data-panel-kind="layers"] [data-layer="${layer}"] [data-action="show"]`)
+  // the pane's own eye in the Layers panel: the group the ✕ on the chart hides
+  const lever = page.locator(`[data-panel-kind="layers"] [data-pane-group="${pane}"] [data-action="show-pane"]`)
   await expect(lever).toBeVisible()
   const frame = (await chart.boundingBox())!
   const before = (await paneHeights(chart))[2]!
@@ -226,8 +229,8 @@ test('a worker’s pane dragged small and big, hidden and shown, comes back at t
   expect(large).toBeGreaterThan(before)
   await expect.poll(() => page.evaluate(name =>
     JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').panelViews?.['run-chart']?.panes?.[name], pane)).toBeDefined()
-  // hidden at its lever on the chart and shown again from the Layers panel: back at the height dragged
-  await paneControl(page, chart, pane, 'pane-shown')
+  // closed at its ✕ on the chart and shown again from the Layers panel: back at the height dragged
+  await paneControl(page, chart, pane, 'pane-close')
   await expect(chart).toHaveAttribute('data-panes', String(1 + OWN_PANES.length))
   await lever.click()
   await expect(chart).toHaveAttribute('data-panes', String(2 + OWN_PANES.length))

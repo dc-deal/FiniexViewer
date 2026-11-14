@@ -354,5 +354,16 @@ describe('useArrangementStore', () => {
         served: { hidden: ['worker:rsi_fast'], opacity: { 'worker:macd_main': 40 } },
       })
     })
+
+    /** The groups hidden above their layers' switches, by key: a key of another form is none, each kept once. */
+    it('keeps the groups the reader hid, and drops what is no key of a group', () => {
+      store({
+        version: 1, links: {}, bars: {}, chart: {}, runChart: {},
+        panelViews: {
+          'run-chart': { layers: { groupsHidden: ['pane:volume', 'pane:volume', 'workers:price', 'levels', 7] } },
+        },
+      })
+      expect(useArrangementStore().panelViews['run-chart']!.layers).toEqual({ groupsHidden: ['pane:volume', 'workers:price'] })
+    })
   })
 })

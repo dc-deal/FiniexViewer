@@ -231,13 +231,15 @@ test('the controls at the top right of a pane hide what it draws and give it the
   await painted(page)
   expect(await lowestShare(chart)).toBeCloseTo(0.2, 1)
 
-  // the eye: the volume hidden as its row in the Layers panel would hide it, its pane gone
+  // the ✕: a pane of its own closed, its pane's group hidden above the volume's own switch, its pane gone
   const again = (await paneRows(chart).last().boundingBox())!
   await page.mouse.move(again.x + 60, again.y + again.height / 2)
-  await controls.locator('[data-action="pane-shown"]').click()
+  await expect(controls.locator('[data-action="pane-shown"]')).toHaveCount(0)
+  await controls.locator('[data-action="pane-close"]').click()
   await expect(chart).toHaveAttribute('data-panes', '1')
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').panelViews?.['run-chart']?.layers?.hidden))
-    .toEqual(['volume'])
+  const layers = await page.evaluate(() => JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').panelViews?.['run-chart']?.layers)
+  expect(layers?.groupsHidden).toEqual(['pane:volume'])
+  expect(layers?.hidden).toBeUndefined()
 })
 
 /** As VS Code's sashes do: a double click on the seam brings the first heights back. */

@@ -3,15 +3,17 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { VueDraggable } from 'vue-draggable-plus'
 import AppButton from '@/components/base/AppButton.vue'
-import AppIcon from '@/components/base/AppIcon.vue'
 import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import { holdsValues, plotSample, seriesTitle } from '@/components/indicator_drawing'
 import { strategyOf } from '@/components/runs/config_shape'
+import VisibilityEye from '@/components/VisibilityEye.vue'
 import type { PlotSample } from '@/components/indicator_drawing'
 import { useChartLayers } from '@/composables/use_chart_layers'
 import { useViewExpanded, useViewRows } from '@/composables/use_panel_view'
+import { framePaneOf, frameworkGroupsOf, hiddenByGroup, instanceOf, paneGroup, sourceGroup, workerGroup } from '@/layer_groups'
+import type { LayerGroupKey } from '@/layer_groups'
 import { layerDefinition } from '@/layer_registry'
 import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
@@ -20,7 +22,7 @@ import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
-import { CHART_PANE_IDS, PANE_LAYERS } from '@/types/chart_pane_types'
+import { CHART_PANE_IDS } from '@/types/chart_pane_types'
 import type { ChartPaneId } from '@/types/chart_pane_types'
 import type { IndicatorLayer, ServedLayerId } from '@/types/indicator_drawing_types'
 import { LAYER_OPACITY_MIN } from '@/types/layer_types'
@@ -38,7 +40,7 @@ import { t } from '@/translate'
  */
 const { lastChart } = storeToRefs(useDockStore())
 const {
-  rows, show, setOpacity, setOption, setForm, reorder, showServed, setServedOpacity,
+  rows, show, setOpacity, setOption, setForm, reorder, showServed, setServedOpacity, groupsHidden, showGroup,
 } = useChartLayers(() => lastChart.value)
 
 /** The chart arranged, as its tab names it: `Run chart · ETHUSD_aug_sep`. */
@@ -83,9 +85,9 @@ const PANE_TITLES: Record<ChartPaneId, string> = { price: t('Price pane'), volum
  */
 const served = computed<IndicatorLayer[]>(() => lastChart.value === 'run-chart' ? runChart.indicatorLayers : [])
 
-/** The worker instance a layer belongs to, by the form their document gives it: `worker:<instance>[:<name>]`. */
+/** The worker instance a layer belongs to. */
 function workerOf(layer: IndicatorLayer): string {
-  return layer.entry.layer.split(':')[1] ?? layer.entry.layer
+  return instanceOf(layer.entry.layer)
 }
 
 /** One source of a pane's layers: the framework's own, or one worker instance's (agreed with FiniexTestingIDE). */
@@ -106,13 +108,9 @@ function workersIn(layers: IndicatorLayer[]): PaneSource[] {
   return sources
 }
 
-/**
- * The pane a layer is drawn in: a layer that may have a pane of its own — the volume — stands in it
- * while its option says so, every other in the pane of the candles.
- */
+/** The pane a layer of ours is drawn in (`framePaneOf`): the volume in its own while its option says so. */
 function paneOf(row: LayerState): ChartPaneId {
-  if (layerDefinition(row.id).option?.id !== 'own-pane' || row.option !== true) return 'price'
-  return CHART_PANE_IDS.find(pane => PANE_LAYERS[pane] === row.id) ?? 'price'
+  return framePaneOf(row.id, row.option)
 }
 
 /**
@@ -145,19 +143,22 @@ const groups = computed(() => {
     }))
 })
 
-/** Whether any of these layers is shown: the eye over them says so. */
-function anyShown(layers: IndicatorLayer[]): boolean {
-  return layers.some(layer => layer.shown)
+/**
+ * Whether a group stands shown — a visibility of its own above its layers' switches, the way a
+ * folder track's mute works in a DAW (operator, 2026-11-14): hidden, it hides everything in it and
+ * changes no switch; shown again, each layer stands as it was set. Every group has its eye.
+ */
+function groupShown(key: LayerGroupKey): boolean {
+  return !groupsHidden.value.has(key)
 }
 
-/**
- * Hides several of a worker's layers at once, or shows them — the eye of a pane's WORKERS, or of one
- * worker (operator, 2026-11-13: "kann ich gruppe ausblenden komplett?"). It switches the layers and
- * keeps nothing of its own: the eye reads what they are, hiding where any is shown.
- */
-function showAll(layers: IndicatorLayer[]): void {
-  const on = !anyShown(layers)
-  for (const layer of layers) showServed(layer.entry.layer as ServedLayerId, on)
+function toggleGroup(key: LayerGroupKey): void {
+  showGroup(key, !groupShown(key))
+}
+
+/** A row of ours hidden by a group it belongs to — its pane, the framework's in it — whatever its switch says. */
+function rowMuted(row: LayerState): boolean {
+  return hiddenByGroup(groupsHidden.value, frameworkGroupsOf(paneOf(row)))
 }
 
 /**
@@ -340,17 +341,27 @@ function toggle(row: LayerState): void {
     <template v-else>
       <p class="chart-name" :data-chart="lastChart">{{ chartName }}</p>
       <section v-for="group in groups" :key="group.pane" class="pane-group" :data-pane-group="group.pane">
-        <!-- a heading told by its form, an uppercase label, as the figure blocks have it -->
-        <button
-          type="button"
-          class="pane-heading"
-          :aria-expanded="isOpen(group.pane)"
-          data-action="fold-pane"
-          @click="toggleFold(group.pane)"
-        >
-          <span class="layer-marker" aria-hidden="true">{{ isOpen(group.pane) ? '▾' : '▸' }}</span>
-          <span>{{ group.title }}</span>
-        </button>
+        <!-- a heading told by its form, an uppercase label, as the figure blocks have it; its eye hides the
+             pane and everything in it — a pane of its own gives its room up — and changes no switch -->
+        <div class="pane-heading-row">
+          <button
+            type="button"
+            class="pane-heading"
+            :aria-expanded="isOpen(group.pane)"
+            data-action="fold-pane"
+            @click="toggleFold(group.pane)"
+          >
+            <span class="layer-marker" aria-hidden="true">{{ isOpen(group.pane) ? '▾' : '▸' }}</span>
+            <span>{{ group.title }}</span>
+          </button>
+          <VisibilityEye
+            :shown="groupShown(paneGroup(group.pane))"
+            :hide-label="t('Hide this pane')"
+            :show-label="t('Show this pane')"
+            data-action="show-pane"
+            @toggle="toggleGroup(paneGroup(group.pane))"
+          />
+        </div>
         <!-- the framework's own layers, named as a source only where a worker's stand beside them -->
         <p v-if="isOpen(group.pane) && group.workersHeading" class="source-heading" data-source="framework">
           <button
@@ -363,6 +374,13 @@ function toggle(row: LayerState): void {
             <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, 'framework') ? '▾' : '▸' }}</span>
             <span>{{ t('Framework') }}</span>
           </button>
+          <VisibilityEye
+            :shown="groupShown(sourceGroup(group.pane, 'framework'))"
+            :hide-label="t('Hide the framework layers of this pane')"
+            :show-label="t('Show the framework layers of this pane')"
+            data-action="show-framework"
+            @toggle="toggleGroup(sourceGroup(group.pane, 'framework'))"
+          />
         </p>
         <VueDraggable
           v-if="isOpen(group.pane) && group.rows.length && (!group.workersHeading || sourceOpen(group.pane, 'framework'))"
@@ -381,9 +399,10 @@ function toggle(row: LayerState): void {
           v-for="row in group.rows"
           :key="row.id"
           class="layer"
-          :class="{ off: !row.shown, fixed: layerDefinition(row.id).fixed }"
+          :class="{ off: !row.shown, muted: rowMuted(row), fixed: layerDefinition(row.id).fixed }"
           :data-layer="row.id"
           :data-shown="row.shown"
+          :data-muted="rowMuted(row)"
           :data-opacity="row.opacity"
         >
           <div class="layer-row">
@@ -482,15 +501,13 @@ function toggle(row: LayerState): void {
             <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, 'workers') ? '▾' : '▸' }}</span>
             <span>{{ t('Workers') }}</span>
           </button>
-          <AppButton
-            variant="quiet"
-            size="compact"
-            glyph
+          <VisibilityEye
+            :shown="groupShown(sourceGroup(group.pane, 'workers'))"
+            :hide-label="t('Hide every worker of this pane')"
+            :show-label="t('Show every worker of this pane')"
             data-action="show-workers"
-            :aria-pressed="anyShown(group.allWorkers)"
-            :aria-label="anyShown(group.allWorkers) ? t('Hide every worker of this pane') : t('Show every worker of this pane')"
-            @click="showAll(group.allWorkers)"
-          ><AppIcon :name="anyShown(group.allWorkers) ? 'status-shown' : 'status-hidden'" /></AppButton>
+            @toggle="toggleGroup(sourceGroup(group.pane, 'workers'))"
+          />
         </p>
         <template v-for="source in isOpen(group.pane) && (!group.workersHeading || sourceOpen(group.pane, 'workers')) ? group.workers : []" :key="source.worker">
           <p v-if="source.layers.length > 1" class="source-heading" :class="{ under: group.workersHeading }" :data-source="source.worker">
@@ -504,24 +521,23 @@ function toggle(row: LayerState): void {
               <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, `worker:${source.worker}`) ? '▾' : '▸' }}</span>
               <span>{{ source.worker }}</span>
             </button>
-            <AppButton
-              variant="quiet"
-              size="compact"
-              glyph
+            <VisibilityEye
+              :shown="groupShown(workerGroup(group.pane, source.worker))"
+              :hide-label="t('Hide this worker')"
+              :show-label="t('Show this worker')"
               data-action="show-worker"
-              :aria-pressed="anyShown(source.layers)"
-              :aria-label="anyShown(source.layers) ? t('Hide this worker') : t('Show this worker')"
-              @click="showAll(source.layers)"
-            ><AppIcon :name="anyShown(source.layers) ? 'status-shown' : 'status-hidden'" /></AppButton>
+              @toggle="toggleGroup(workerGroup(group.pane, source.worker))"
+            />
           </p>
           <ul v-if="source.layers.length < 2 || sourceOpen(group.pane, `worker:${source.worker}`)" class="layer-list">
             <li
               v-for="layer in source.layers"
               :key="layer.entry.layer"
               class="layer served"
-              :class="{ off: !layer.shown }"
+              :class="{ off: !layer.shown, muted: layer.muted }"
               :data-layer="layer.entry.layer"
               :data-shown="layer.shown"
+              :data-muted="layer.muted"
               :data-opacity="layer.opacity"
               :data-drawable="layer.drawable"
             >
@@ -657,6 +673,18 @@ function toggle(row: LayerState): void {
 }
 
 /* a pane's heading: its fold, told by its form — an uppercase label in the ink of structure */
+/* a pane's heading and its eye on one line, the eye at the end where every eye of the panel stands */
+.pane-heading-row {
+  display: flex;
+  align-items: center;
+  padding-right: var(--space-xs);
+}
+
+/* a row its group hides: its own switch stays as set, the whole row faint — the group's eye says why */
+.layer.muted .layer-row {
+  opacity: 0.45;
+}
+
 .pane-heading {
   display: flex;
   align-items: center;

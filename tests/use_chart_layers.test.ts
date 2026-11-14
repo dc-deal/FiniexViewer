@@ -54,6 +54,27 @@ describe('useChartLayers', () => {
     expect(arrangement.panelViews['run-chart']?.layers).toBeUndefined()
   })
 
+  /** A group hidden is kept beside the layers' own switches and the workers': none of them drops another. */
+  it('keeps a group hidden above the switches of its layers, beside the layers of the workers', () => {
+    const arrangement = useArrangementStore()
+    const layers = useChartLayers(() => 'run-chart')
+    layers.showGroup('pane:volume', false)
+    layers.showServed('worker:rsi_fast', false)
+    layers.show('levels', false)
+    layers.showGroup('workers:price', false)
+    expect(arrangement.panelViews['run-chart']!.layers).toEqual({
+      hidden: ['levels'],
+      served: { hidden: ['worker:rsi_fast'] },
+      groupsHidden: ['pane:volume', 'workers:price'],
+    })
+    expect([...layers.groupsHidden.value]).toEqual(['pane:volume', 'workers:price'])
+    layers.showGroup('pane:volume', true)
+    layers.showGroup('workers:price', true)
+    layers.showServed('worker:rsi_fast', true)
+    layers.show('levels', true)
+    expect(arrangement.panelViews['run-chart']?.layers).toBeUndefined()
+  })
+
   /** Below the least opacity a layer would be hidden, which the lever does; above the whole there is nothing. */
   it('holds an opacity between the least one and the whole', () => {
     const { rows, setOpacity } = useChartLayers(() => 'run-chart')
