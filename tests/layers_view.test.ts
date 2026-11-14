@@ -11,7 +11,8 @@ import { useRunChartStore } from '@/stores/run_chart_store'
 import { useIndicatorSeriesStore } from '@/stores/indicator_series_store'
 import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
-import type { RunInfo } from '@/types/api/report_types'
+import { useRunReportsStore } from '@/stores/run_reports_store'
+import type { RunConfigReport, RunInfo } from '@/types/api/report_types'
 import type { RecordedWindow } from '@/types/api/state_frame_types'
 import seriesWindow from './fixtures/recorded_window_series.json'
 import runsList from './fixtures/runs_list.json'
@@ -248,13 +249,13 @@ describe('LayersView', () => {
     const SERIES = (seriesWindow as RecordedWindow).indicator_series
     const RUN = (seriesWindow as RecordedWindow).run_id
 
-    function mountWithSeries(): VueWrapper {
+    function mountWithSeries(series = SERIES): VueWrapper {
       const runs = useRunsStore()
       runs.runs = (runsList as unknown as { runs: RunInfo[] }).runs
       useContextStore().selectRun(RUN)
       // the chart's store first: it lets go of the series while no chart is on show, as it should
       useRunChartStore()
-      useIndicatorSeriesStore().series = SERIES
+      useIndicatorSeriesStore().series = series
       useDockStore().lastChart = 'run-chart'
       const Host = defineComponent({
         setup() {
@@ -266,21 +267,26 @@ describe('LayersView', () => {
       return mounted
     }
 
-    it('lists each in the pane its series names, a source named only where a pane holds two', () => {
+    /**
+     * A line of its own only for a group (operator, 2026-11-14): the framework's and the workers'
+     * where both stand in a pane, a worker only where it draws more than one layer there. Each row
+     * says the timeframe its worker was served in a column of its own, never cut by its name.
+     */
+    it('lists each in the pane its series names, a line of its own only for a group', () => {
       const wrapper = mountWithSeries()
       const own = [...new Set(SERIES.map(entry => entry.pane).filter(pane => pane !== 'price'))]
       expect(wrapper.findAll('[data-pane-group]').map(group => group.attributes('data-pane-group')))
         .toEqual(['price', 'volume', ...own])
-      // the candles' pane: the framework's layers, then the workers under a heading of their own,
-      // each named
+      // the candles' pane: the framework's layers and the workers', each worker drawing one layer
+      // there and standing as its row alone
       const price = wrapper.find('[data-pane-group="price"]')
-      const workers = [...new Set(SERIES.filter(entry => entry.pane === 'price').map(entry => entry.layer.split(':')[1]))]
-      expect(price.findAll('.source-heading').map(heading => heading.attributes('data-source'))).toEqual(['framework', 'workers', ...workers])
+      expect(price.findAll('.source-heading').map(heading => heading.attributes('data-source'))).toEqual(['framework', 'workers'])
       // a pane of one worker's: no source named
       expect(wrapper.find(`[data-pane-group="${own[0]}"] .source-heading`).exists()).toBe(false)
       const rsi = SERIES.find(entry => entry.layer === 'worker:rsi_fast')!
       expect(wrapper.find('[data-pane-group="rsi_fast"] .pane-heading').text()).toContain(`${rsi.title} pane`)
-      expect(row(wrapper, 'worker:rsi_fast').find('.layer-title').text()).toBe(`RSI ${rsi.inputs['period']} · ${rsi.timeframe}`)
+      expect(row(wrapper, 'worker:rsi_fast').find('.layer-title').text()).toBe(`RSI ${rsi.inputs['period']}`)
+      expect(row(wrapper, 'worker:rsi_fast').find('.layer-timeframe').text()).toBe(rsi.timeframe)
       // never moved: no grip
       expect(row(wrapper, 'worker:rsi_fast').find('.layer-grip').text()).toBe('')
     })
@@ -306,25 +312,63 @@ describe('LayersView', () => {
       expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden ?? []).toEqual([])
     })
 
-    it('hides one worker whole by the eye beside its name, and no other', async () => {
-      const wrapper = mountWithSeries()
-      const [first, second] = [...new Set(SERIES.filter(entry => entry.pane === 'price').map(entry => entry.layer.split(':')[1]))]
-      await wrapper.find(`[data-source="${first}"] [data-action="show-worker"]`).trigger('click')
-      const hidden = useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden ?? []
-      expect(hidden.length).toBeGreaterThan(0)
-      expect(hidden.every(layer => layer.split(':')[1] === first)).toBe(true)
-      expect(wrapper.find(`[data-source="${second}"] [data-action="show-worker"]`).attributes('aria-pressed')).toBe('true')
+    /** A worker drawing two layers in one pane is a group: a heading of its own, which folds and hides them. */
+    it('gives a worker with two layers in a pane a heading that folds them and an eye that hides them', async () => {
+      const first = SERIES.find(entry => entry.pane === 'price')!
+      const worker = first.layer.split(':')[1]!
+      const second = { ...first, layer: `${first.layer}:second` }
+      const wrapper = mountWithSeries([...SERIES, second])
+      const heading = () => wrapper.find(`[data-source="${worker}"]`)
+      expect(heading().exists()).toBe(true)
+
+      await heading().find('[data-action="show-worker"]').trigger('click')
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden).toEqual([first.layer, second.layer])
+      expect(heading().find('[data-action="show-worker"]').attributes('aria-pressed')).toBe('false')
+
+      await heading().find('[data-action="fold-worker"]').trigger('click')
+      expect(row(wrapper, second.layer).exists()).toBe(false)
+      expect(useArrangementStore().panelViews['layers']?.rows?.keys['workers-folded']).toEqual([`price|${worker}`])
     })
 
-    /** Which line is whose (operator, on screen 2026-11-13): each row shows its line before its name. */
-    it('shows each worker\'s line before its name, in the ink of its place in its pane', () => {
+    /** The workers of a pane fold away as one (operator, 2026-11-14: "ich kann worker nicht einklappen?"). */
+    it('folds the workers of a pane away under their heading, kept for the run', async () => {
       const wrapper = mountWithSeries()
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      await wrapper.find('[data-pane-group="price"] [data-action="fold-workers"]').trigger('click')
+      expect(row(wrapper, onCandles).exists()).toBe(false)
+      expect(row(wrapper, 'candles').exists()).toBe(true)
+      expect(useArrangementStore().panelViews['layers']?.rows).toEqual({ scope: RUN, keys: { 'workers-folded': ['price'] } })
+      await wrapper.find('[data-pane-group="price"] [data-action="fold-workers"]').trigger('click')
+      expect(row(wrapper, onCandles).exists()).toBe(true)
+    })
+
+    /**
+     * Which line is whose (operator, on screen 2026-11-13; under the opened row since 2026-11-14): the
+     * opened row names the worker as the run's configuration does, and shows each plot by its name
+     * beside its ink and dash.
+     */
+    it('opens a worker\'s row onto the worker that drew it and each of its plots with its look', async () => {
       const [first, second] = SERIES.filter(entry => entry.pane === 'price')
-      const sample = (layer: string) => row(wrapper, layer).find('.plot-sample')
-      expect(sample(first!.layer).attributes('style')).toContain('var(--color-text-primary)')
-      expect(sample(second!.layer).attributes('style')).toContain('var(--color-text-secondary)')
+      useRunReportsStore().config = {
+        run_id: RUN,
+        config: { strategy_config: { worker_instances: { [first!.layer.split(':')[1]!]: 'CORE/bollinger' } } },
+      } as unknown as RunConfigReport
+      const wrapper = mountWithSeries()
+      expect(row(wrapper, first!.layer).find('.plot-sample').exists()).toBe(false)
+      await row(wrapper, first!.layer).find('[data-action="open"]').trigger('click')
+      await row(wrapper, second!.layer).find('[data-action="open"]').trigger('click')
+      const options = (layer: string) => row(wrapper, layer).find('.layer-options')
+      const parts = (layer: string) => options(layer).findAll('[data-fact="worker"] .fact-part').map(part => part.text())
+      expect(parts(first!.layer)).toEqual([first!.layer.split(':')[1], '· CORE/bollinger'])
+      // a worker the configuration does not name: its instance alone
+      expect(parts(second!.layer)).toEqual([second!.layer.split(':')[1]])
+      expect(options(first!.layer).findAll('[data-plot]').map(plot => plot.attributes('data-plot')))
+        .toEqual(first!.plots.map(plot => plot.id))
+      expect(options(first!.layer).find('.plot-sample').attributes('style')).toContain('var(--color-text-primary)')
+      expect(options(second!.layer).find('.plot-sample').attributes('style')).toContain('var(--color-text-secondary)')
       // the MACD's first plot is its histogram: bars
-      expect(sample('worker:macd_main').attributes('data-form')).toBe('bars')
+      await row(wrapper, 'worker:macd_main').find('[data-action="open"]').trigger('click')
+      expect(row(wrapper, 'worker:macd_main').find('.plot-sample').attributes('data-form')).toBe('bars')
     })
 
     it('shows, hides and fades a worker\'s layer by its id, kept with the chart\'s view', async () => {
@@ -344,20 +388,17 @@ describe('LayersView', () => {
       expect(wrapper.text()).toContain('A worker\'s series stands on its own timeframe and every finer one')
     })
 
-    /**
-     * A series on the candles opens onto its hint alone, and onto nothing once that is put away; the
-     * first series of a worker's own pane still opens, onto its pane's frame and background.
-     */
-    it('opens a worker\'s row onto the hint that says what it is, and onto nothing once that is put away', async () => {
+    /** A worker's row opens onto the hint that says what it is while it stands, and onto its worker and plots always. */
+    it('opens a worker\'s row onto the hint that says what it is, and onto its facts once that is put away', async () => {
       const wrapper = mountWithSeries()
       const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
       await row(wrapper, onCandles).find('[data-action="open"]').trigger('click')
       expect(row(wrapper, onCandles).find('.layer-options').text()).toContain('What a worker of the strategy computed')
       useHintsStore().ban('layer-indicator')
       await wrapper.vm.$nextTick()
-      expect(row(wrapper, onCandles).find('.layer-options').exists()).toBe(false)
-      expect(row(wrapper, onCandles).find('.layer-marker').text()).toBe('')
-      expect(row(wrapper, 'worker:rsi_fast').find('.layer-marker').text()).toBe('▸')
+      expect(row(wrapper, onCandles).find('.layer-options').text()).not.toContain('What a worker of the strategy computed')
+      expect(row(wrapper, onCandles).find('[data-fact="plots"]').exists()).toBe(true)
+      expect(row(wrapper, onCandles).find('.layer-marker').text()).toBe('▾')
     })
 
     /**

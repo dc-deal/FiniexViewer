@@ -74,6 +74,8 @@ export const VIEW_ROW_CAPS = {
   'groups-closed': 100,
   /** Layers: a worker's panes folded, by the name the backend gave the pane (contract 55). */
   'panes-folded': 20,
+  /** Layers: a pane's workers folded, by the pane's name — and a worker's group in it, by `pane|instance`. */
+  'workers-folded': 40,
 } as const
 export type ViewRowList = keyof typeof VIEW_ROW_CAPS
 

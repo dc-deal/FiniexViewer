@@ -149,17 +149,27 @@ Run chart · ETHUSD_aug_sep
   order and opacity are kept by it; no `:` in a name, a `title` beside it for the words on screen. One
   level of names for now: a `/` is kept for a group level later (`entries/long`). An *Indicator series*
   entry is one layer, its plots switched together.
-- **The workers apart from the framework, each hidden whole by an eye** (operator, 2026-11-13:
+- **The workers apart from the framework, folded and hidden whole** (operator, 2026-11-13:
   *"kann ich gruppe ausblenden komplett? wobei es aber keinen sinn macht die standardgruppe
   auszublenden"*). Where a pane holds the framework's layers and workers' too, the workers stand
-  under a heading of their own, *Workers*, whose eye hides or shows every worker's series of that
-  pane; each worker's heading has an eye for all of its series. The framework's heading has none.
-  An eye switches the layers and keeps nothing of its own: it reads them, hiding where any is shown.
-- **A worker's row shows its line before its name** — its first plot in a few pixels, in the ink,
-  the dash and the strength the chart draws it with (`plotSample`), so a reader sees which line is
-  whose (operator, on screen 2026-11-13: *"was ist denn nun von was gezeichnet worden"*). The ink is
-  the theme's token of its role, else the neutral ink of its place among every series served for
-  its pane — counted over hidden ones too, so hiding one repaints no other, on the chart or here.
+  under a heading of their own, *Workers*, whose marker folds them away and whose eye hides or shows
+  every worker's series of that pane. The framework's heading has neither. **A line of its own only
+  for a group** (operator, 2026-11-14): a worker gets a heading — folding, with an eye — only where it
+  draws more than one layer in the pane; a worker of one layer stands as its row. An eye switches the
+  layers and keeps nothing of its own: it reads them, hiding where any is shown. The folds are kept
+  for the run (`workers-folded`: the pane's name, or `pane|instance`).
+- **A worker's row says the timeframe its worker was served** — `M15`, `H1` — in a column of its
+  own, three characters wide whatever it says, before the series' name and in the ink of structure:
+  head information, never cut by a long name (operator, 2026-11-14). The series' `timeframe`, as
+  served.
+- **The opened row names the worker and shows its plots.** *Worker*: the instance and its type, as
+  the run's configuration names them (`tunnel · CORE/bollinger`). *Plots* — FiniexTestingIDE's word:
+  each plot by its own name beside its look in a few pixels, in the ink, the dash and the strength
+  the chart draws it with (`plotSample`) — a legend, so a reader sees which line is whose (operator,
+  on screen 2026-11-13: *"was ist denn nun von was gezeichnet worden"*; before the name, the sample
+  said nothing on its own). The ink is the theme's token of its role, else the neutral ink of its
+  place among every series served for its pane — counted over hidden ones too, so hiding one
+  repaints no other, on the chart or here.
 - **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
   the row opens its options.

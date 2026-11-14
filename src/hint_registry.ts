@@ -162,7 +162,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'layer-workers',
-    text: t("The eye beside Workers hides or shows every worker's series in that pane at once, the eye beside a worker all of its series. The line before a series is its look on the chart: its ink and its dash."),
+    text: t("The eye beside Workers hides or shows every worker's series in that pane at once; the marker folds them away. The letters before a series are the timeframe its worker was served, and its opened row names the worker and shows each of its lines as the chart draws it."),
   },
   {
     id: 'layer-indicator',

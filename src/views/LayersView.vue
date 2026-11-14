@@ -7,7 +7,8 @@ import AppIcon from '@/components/base/AppIcon.vue'
 import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
-import { holdsValues, plotSample, seriesLabel } from '@/components/indicator_drawing'
+import { holdsValues, plotSample, seriesTitle } from '@/components/indicator_drawing'
+import { strategyOf } from '@/components/runs/config_shape'
 import type { PlotSample } from '@/components/indicator_drawing'
 import { useChartLayers } from '@/composables/use_chart_layers'
 import { useViewExpanded, useViewRows } from '@/composables/use_panel_view'
@@ -16,6 +17,7 @@ import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
+import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
 import { CHART_PANE_IDS, PANE_LAYERS } from '@/types/chart_pane_types'
@@ -136,9 +138,8 @@ const groups = computed(() => {
     .filter(group => group.rows.length || group.workers.length)
     .map(group => ({
       ...group,
-      // a source is named only where a pane holds two: the framework's and a worker's, or two workers'
-      named: (group.rows.length ? 1 : 0) + group.workers.length > 1,
-      // the workers under a heading of their own where they stand beside the framework's layers
+      // the workers under a heading of their own where they stand beside the framework's layers, and
+      // the framework's under theirs; a line of its own only for a group (operator, 2026-11-14)
       workersHeading: group.rows.length > 0 && group.workers.length > 0,
       allWorkers: group.workers.flatMap(source => source.layers),
     }))
@@ -159,11 +160,32 @@ function showAll(layers: IndicatorLayer[]): void {
   for (const layer of layers) showServed(layer.entry.layer as ServedLayerId, on)
 }
 
-/** Each worker's layer's look, its first plot's, by its layer: the sample beside its name. */
-const samples = computed(() => new Map<string, PlotSample>(served.value.flatMap(layer => {
-  const plot = layer.entry.plots[0]
-  return plot ? [[layer.entry.layer, plotSample(plot, layer.place)] as const] : []
-})))
+/**
+ * Each plot of a worker's layer with its look, by the layer: the opened row's *Plots*, each line's
+ * name beside its ink and dash — a legend, so a reader sees which line is whose (operator, on screen
+ * 2026-11-13; under its plots since 2026-11-14: before the name it said nothing on its own).
+ */
+const plotsOf = computed(() => new Map<string, { id: string, sample: PlotSample }[]>(served.value.map(layer =>
+  [layer.entry.layer, layer.entry.plots.map(plot => ({ id: plot.id, sample: plotSample(plot, layer.place) }))])))
+
+const reports = useRunReportsStore()
+
+/**
+ * What a worker instance is, as the run's configuration names it: `tunnel`, `CORE/bollinger`. The
+ * type only where the configuration on show is the run's and names the instance.
+ */
+function workerParts(layer: IndicatorLayer): string[] {
+  const instance = workerOf(layer)
+  const strategy = reports.config?.config ? strategyOf(reports.config.config) : null
+  const type = strategy?.worker_instances[instance]
+  return type ? [instance, type] : [instance]
+}
+
+/**
+ * A pane's workers folded, and a worker's group in it (operator, 2026-11-14: "ich kann worker nicht
+ * einklappen?") — kept for the run, as the run names its workers.
+ */
+const foldedWorkers = useViewRows('workers-folded', () => runs.selectedRunId)
 
 /** Whether each of our panes' groups stands open — kept with this panel's view, open where nothing was kept. */
 const folds: Record<ChartPaneId, { value: boolean }> = {
@@ -264,13 +286,7 @@ function lookOf(pane: string): { frame: boolean, background: boolean } {
   return { frame: kept?.frame === true, background: kept?.background === true }
 }
 
-/** Whether a worker's row opens onto anything: its hint while not put away, or its pane's look. */
-function openableServed(layer: IndicatorLayer): boolean {
-  return hints.isVisible('layer-indicator') || servedLookPane(layer) !== null
-}
-
 function toggleServed(layer: IndicatorLayer): void {
-  if (!openableServed(layer)) return
   const next = new Set(openedServed.value)
   if (!next.delete(layer.entry.layer)) next.add(layer.entry.layer)
   openedServed.value = next
@@ -316,7 +332,7 @@ function toggle(row: LayerState): void {
           <span>{{ group.title }}</span>
         </button>
         <!-- the framework's own layers, named as a source only where a worker's stand beside them -->
-        <p v-if="isOpen(group.pane) && group.named && group.rows.length" class="source-heading" data-source="framework">
+        <p v-if="isOpen(group.pane) && group.workersHeading" class="source-heading" data-source="framework">
           {{ t('Framework') }}
         </p>
         <VueDraggable
@@ -422,10 +438,21 @@ function toggle(row: LayerState): void {
         <!-- a worker's layers: shown, hidden and fainter like ours, never moved — they stand where the
              run recorded them, in the order served (contract 55) -->
         <!-- the workers of a pane that holds the framework's layers too, under a heading of their own
-             whose eye hides or shows them all; the framework's have none, as hiding the default makes
-             no sense (operator, 2026-11-13) -->
+             that folds them and whose eye hides or shows them all; the framework's have none, as hiding
+             the default makes no sense (operator, 2026-11-13). A line of its own only for a group:
+             a worker gets a heading where it draws more than one layer in the pane (operator,
+             2026-11-14) — its name otherwise in its opened row -->
         <p v-if="isOpen(group.pane) && group.workersHeading" class="source-heading" data-source="workers">
-          <span>{{ t('Workers') }}</span>
+          <button
+            type="button"
+            class="source-fold"
+            :aria-expanded="!foldedWorkers.has(group.pane)"
+            data-action="fold-workers"
+            @click="foldedWorkers.toggle(group.pane)"
+          >
+            <span class="layer-marker" aria-hidden="true">{{ foldedWorkers.has(group.pane) ? '▸' : '▾' }}</span>
+            <span>{{ t('Workers') }}</span>
+          </button>
           <AppButton
             variant="quiet"
             size="compact"
@@ -436,9 +463,18 @@ function toggle(row: LayerState): void {
             @click="showAll(group.allWorkers)"
           ><AppIcon :name="anyShown(group.allWorkers) ? 'status-shown' : 'status-hidden'" /></AppButton>
         </p>
-        <template v-for="source in isOpen(group.pane) ? group.workers : []" :key="source.worker">
-          <p v-if="group.named" class="source-heading" :class="{ under: group.workersHeading }" :data-source="source.worker">
-            <span>{{ source.worker }}</span>
+        <template v-for="source in isOpen(group.pane) && !foldedWorkers.has(group.pane) ? group.workers : []" :key="source.worker">
+          <p v-if="source.layers.length > 1" class="source-heading" :class="{ under: group.workersHeading }" :data-source="source.worker">
+            <button
+              type="button"
+              class="source-fold"
+              :aria-expanded="!foldedWorkers.has(`${group.pane}|${source.worker}`)"
+              data-action="fold-worker"
+              @click="foldedWorkers.toggle(`${group.pane}|${source.worker}`)"
+            >
+              <span class="layer-marker" aria-hidden="true">{{ foldedWorkers.has(`${group.pane}|${source.worker}`) ? '▸' : '▾' }}</span>
+              <span>{{ source.worker }}</span>
+            </button>
             <AppButton
               variant="quiet"
               size="compact"
@@ -449,7 +485,7 @@ function toggle(row: LayerState): void {
               @click="showAll(source.layers)"
             ><AppIcon :name="anyShown(source.layers) ? 'status-shown' : 'status-hidden'" /></AppButton>
           </p>
-          <ul class="layer-list">
+          <ul v-if="source.layers.length < 2 || !foldedWorkers.has(`${group.pane}|${source.worker}`)" class="layer-list">
             <li
               v-for="layer in source.layers"
               :key="layer.entry.layer"
@@ -472,40 +508,15 @@ function toggle(row: LayerState): void {
                 <button
                   type="button"
                   class="layer-head"
-                  :class="{ inert: !openableServed(layer) }"
-                  :aria-expanded="openableServed(layer) ? openedServed.has(layer.entry.layer) : undefined"
+                  :aria-expanded="openedServed.has(layer.entry.layer)"
                   data-action="open"
                   @click="toggleServed(layer)"
                 >
-                  <span class="layer-marker" aria-hidden="true">
-                    {{ openableServed(layer) ? openedServed.has(layer.entry.layer) ? '▾' : '▸' : '' }}
-                  </span>
-                  <!-- its line as the chart draws it, so a reader sees which line is whose -->
-                  <svg
-                    v-if="samples.get(layer.entry.layer)"
-                    class="plot-sample"
-                    :data-form="samples.get(layer.entry.layer)!.form"
-                    viewBox="0 0 16 8"
-                    aria-hidden="true"
-                    :style="{ color: samples.get(layer.entry.layer)!.ink, opacity: samples.get(layer.entry.layer)!.alpha }"
-                  >
-                    <template v-if="samples.get(layer.entry.layer)!.form === 'bars'">
-                      <rect x="1" y="3" width="3" height="5" fill="currentColor" />
-                      <rect x="6.5" y="0" width="3" height="8" fill="currentColor" />
-                      <rect x="12" y="4" width="3" height="4" fill="currentColor" />
-                    </template>
-                    <template v-else>
-                      <path v-if="samples.get(layer.entry.layer)!.form === 'area'" d="M0 5 L8 2 L16 3 L16 8 L0 8 Z" fill="currentColor" fill-opacity="0.25" />
-                      <path
-                        :d="samples.get(layer.entry.layer)!.form === 'area' ? 'M0 5 L8 2 L16 3' : 'M0 4 L16 4'"
-                        fill="none"
-                        stroke="currentColor"
-                        :stroke-width="samples.get(layer.entry.layer)!.width"
-                        :stroke-dasharray="samples.get(layer.entry.layer)!.dash || undefined"
-                      />
-                    </template>
-                  </svg>
-                  <span class="layer-title">{{ seriesLabel(layer.entry) }}</span>
+                  <span class="layer-marker" aria-hidden="true">{{ openedServed.has(layer.entry.layer) ? '▾' : '▸' }}</span>
+                  <!-- the timeframe the worker was served, in a column of its own: head information,
+                       never cut by a long name (operator, 2026-11-14) — the series' own, as served -->
+                  <span class="layer-timeframe">{{ layer.entry.timeframe }}</span>
+                  <span class="layer-title">{{ seriesTitle(layer.entry) }}</span>
                   <span class="layer-summary">{{ servedSummary(layer) }}</span>
                 </button>
                 <AppSlider
@@ -518,8 +529,48 @@ function toggle(row: LayerState): void {
                   @update:model-value="value => setServedOpacity(layer.entry.layer as ServedLayerId, value)"
                 />
               </div>
-              <div v-if="openableServed(layer) && openedServed.has(layer.entry.layer)" class="layer-options">
+              <div v-if="openedServed.has(layer.entry.layer)" class="layer-options">
                 <HintLine id="layer-indicator" />
+                <!-- what drew it, and each of its lines with its look: a label and its value, as the
+                     app's figure lines are -->
+                <p class="layer-fact" data-fact="worker">
+                  <span class="fact-label">{{ t('Worker') }}</span>
+                  <!-- the instance and its type each whole: a narrow panel breaks between them, never inside -->
+                  <span class="fact-parts">
+                    <span v-for="(part, at) in workerParts(layer)" :key="at" class="fact-part">{{ at ? `· ${part}` : part }}</span>
+                  </span>
+                </p>
+                <p class="layer-fact" data-fact="plots">
+                  <span class="fact-label">{{ t('Plots') }}</span>
+                  <span class="plot-list">
+                    <span v-for="plot in plotsOf.get(layer.entry.layer) ?? []" :key="plot.id" class="plot-item" :data-plot="plot.id">
+                      <svg
+                        class="plot-sample"
+                        :data-form="plot.sample.form"
+                        viewBox="0 0 16 8"
+                        aria-hidden="true"
+                        :style="{ color: plot.sample.ink, opacity: plot.sample.alpha }"
+                      >
+                        <template v-if="plot.sample.form === 'bars'">
+                          <rect x="1" y="3" width="3" height="5" fill="currentColor" />
+                          <rect x="6.5" y="0" width="3" height="8" fill="currentColor" />
+                          <rect x="12" y="4" width="3" height="4" fill="currentColor" />
+                        </template>
+                        <template v-else>
+                          <path v-if="plot.sample.form === 'area'" d="M0 5 L8 2 L16 3 L16 8 L0 8 Z" fill="currentColor" fill-opacity="0.25" />
+                          <path
+                            :d="plot.sample.form === 'area' ? 'M0 5 L8 2 L16 3' : 'M0 4 L16 4'"
+                            fill="none"
+                            stroke="currentColor"
+                            :stroke-width="plot.sample.width"
+                            :stroke-dasharray="plot.sample.dash || undefined"
+                          />
+                        </template>
+                      </svg>
+                      {{ plot.id }}
+                    </span>
+                  </span>
+                </p>
                 <template v-if="servedLookPane(layer)">
                   <AppSwitch
                     compact
@@ -621,17 +672,84 @@ function toggle(row: LayerState): void {
   padding-left: calc(var(--space-md) + var(--space-md));
 }
 
-/* a worker's line in a few pixels, in its ink and its dash, before its name */
+/* a heading that folds what is under it: the heading's own words, a control by its marker */
+.source-fold {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.source-fold:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* the timeframe a worker was served: three characters wide whatever it says (M1 to M30), so the names
+   beside it stand in one column, in the ink of structure so it does not read as part of the name */
+.layer-timeframe {
+  flex: none;
+  width: 3ch;
+  color: var(--color-text-secondary);
+}
+
+/* the title beside the marker and the timeframe, with the two gaps between them: wider, it would wrap
+   onto the line the head's height cuts away, and the row would show no name at all */
+.layer.served .layer-title {
+  max-width: calc(100% - 1em - 3ch - 2 * var(--space-xs) - 2px);
+}
+
+/* a fact of the opened row: its label, then its value — the app's figure line */
+.layer-fact {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin: 0;
+  min-width: 0;
+}
+
+.fact-label {
+  flex: none;
+  min-width: 7ch;
+  color: var(--color-text-secondary);
+}
+
+.fact-parts {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-xs);
+  min-width: 0;
+}
+
+.fact-part {
+  white-space: nowrap;
+}
+
+.plot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-sm);
+  min-width: 0;
+}
+
+.plot-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* a line in a few pixels, in its ink, its dash and its strength */
 .plot-sample {
   flex: none;
   width: 16px;
   height: 8px;
-}
-
-/* the title beside the marker and the sample, with the two gaps between them: wider, it would wrap
-   onto the line the head's height cuts away, and the row would show no name at all */
-.layer.served .layer-title {
-  max-width: calc(100% - 1em - 16px - 2 * var(--space-xs) - 2px);
 }
 
 /* a row of the app's lists: the same rule below, the same padding, the surface under the pointer */
