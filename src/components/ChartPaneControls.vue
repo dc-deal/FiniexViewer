@@ -56,18 +56,31 @@ const emit = defineEmits<{
 .pane-controls {
   position: absolute;
   right: calc(100% - var(--chart-plot-width, calc(100% - 5rem)) + var(--space-xs));
-  z-index: var(--z-chart);
+  /* behind the pane's legend while only the pane is pointed at: a long line of figures stands over
+     them and stays readable (operator, on screen 2026-11-14) */
+  z-index: calc(var(--z-chart) - 1);
   margin-top: 2px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  border-radius: 4px;
   opacity: 0;
   pointer-events: none;
 }
 
-.pane-controls.visible,
+/* two steps, as the operator drew them on 2026-11-14: the pointer over the pane shows them faint —
+   forty per cent see-through — behind the figures; the pointer over them, or a keyboard on one,
+   brings them in front of the figures, whole, on the chart's own surface */
+.pane-controls.visible {
+  opacity: 0.6;
+  pointer-events: auto;
+}
+
+.pane-controls:hover,
 .pane-controls:focus-within {
+  z-index: calc(var(--z-chart) + 1);
   opacity: 1;
   pointer-events: auto;
+  background-color: var(--color-bg-base);
 }
 </style>

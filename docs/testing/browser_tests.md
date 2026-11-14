@@ -156,7 +156,8 @@ by its tab, the way a reader does.
   built anew at another timeframe and a real reload; the volume hidden giving its pane up and coming
   back at the height dragged, and in the pane of the candles moving no candle; and each pane's legend at
   the top of its pane on one line, following a seam, saying the bar under a real pointer and the last
-  bar once it leaves; the controls at the top right of a pane, the whole height kept across a reload
+  bar once it leaves; the controls at the top right of a pane — faint and behind the legend over the
+  pane, whole and in front of it over themselves — the whole height kept across a reload
   and given back, the eye hiding the volume; and a double click on the seam for the first heights.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
   browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read

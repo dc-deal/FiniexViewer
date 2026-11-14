@@ -201,9 +201,16 @@ test('the controls at the top right of a pane hide what it draws and give it the
   const controls = chart.locator('.pane-controls[data-pane="volume"]')
   await expect(controls).toHaveCSS('opacity', '0')
   await page.mouse.move(box.x + 60, box.y + box.height / 2)
-  await expect(controls).toHaveCSS('opacity', '1')
+  // two steps (operator, 2026-11-14): over the pane, faint and behind its figures
+  await expect(controls).toHaveCSS('opacity', '0.6')
+  const legendLayer = Number(await chart.locator('[data-legend="volume"]').evaluate(node => getComputedStyle(node).zIndex))
+  expect(Number(await controls.evaluate(node => getComputedStyle(node).zIndex))).toBeLessThan(legendLayer)
   // at the right edge, far from the figures at the left — whatever their width
   expect((await controls.boundingBox())!.x).toBeGreaterThan(box.x + box.width / 2)
+  // over the controls themselves, whole and in front of the figures
+  await controls.hover()
+  await expect(controls).toHaveCSS('opacity', '1')
+  expect(Number(await controls.evaluate(node => getComputedStyle(node).zIndex))).toBeGreaterThan(legendLayer)
 
   // the arrows: the volume the whole height, the candles folded to their line of figures
   await controls.locator('[data-action="pane-whole"]').click()

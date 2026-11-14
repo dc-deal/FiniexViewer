@@ -121,6 +121,10 @@ and no other layer passes it.
   (operator, on screen 2026-11-12). They show while the pointer is over the pane and take the
   pointer only then; a keyboard reaches them all the while, and one focused shows. The notices stand
   a row below them.
+- **Two steps, so a long legend stays readable** (operator, on screen 2026-11-14: the controls stood
+  over the end of a line of figures). The pointer over the pane shows them faint — forty per cent
+  see-through — and BEHIND the legend; the pointer over the controls themselves, or a keyboard on
+  one, brings them in front of the legend, whole, on the chart's own surface.
 - **The eye is the layer's own lever** — the candles on the pane of the candles, the volume on its own
   (`PANE_LAYERS`): the Layers panel and the chart always show one state.
 - **The arrows give a pane the whole height**, the others folded to nothing — the library keeps
