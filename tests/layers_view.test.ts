@@ -287,6 +287,18 @@ describe('LayersView', () => {
       expect(wrapper.find('[data-pane-group="rsi_fast"] .pane-heading').text()).toContain(`${rsi.title} pane`)
       expect(row(wrapper, 'worker:rsi_fast').find('.layer-title').text()).toBe(`RSI ${rsi.inputs['period']}`)
       expect(row(wrapper, 'worker:rsi_fast').find('.layer-timeframe').text()).toBe(rsi.timeframe)
+      // each level one step in, along its guide (operator, 2026-11-14): a row of the candles' framework
+      // and workers stands two groups deep, a row of a worker's own pane one
+      const depth = (layer: string): number => {
+        let count = 0
+        for (let node = row(wrapper, layer).element.parentElement; node; node = node.parentElement) {
+          if (node.classList.contains('group-body')) count++
+        }
+        return count
+      }
+      expect(depth('candles')).toBe(2)
+      expect(depth(SERIES.find(entry => entry.pane === 'price')!.layer)).toBe(2)
+      expect(depth('worker:rsi_fast')).toBe(1)
       // never moved: no grip
       expect(row(wrapper, 'worker:rsi_fast').find('.layer-grip').text()).toBe('')
     })

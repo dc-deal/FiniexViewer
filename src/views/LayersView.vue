@@ -362,8 +362,12 @@ function toggle(row: LayerState): void {
             @toggle="toggleGroup(paneGroup(group.pane))"
           />
         </div>
+        <!-- what the pane holds, one step in, a guide along it down to its last row: which level a
+             heading stands on and where its group ends, as VS Code's tree shows them (operator,
+             2026-11-14) -->
+        <div v-if="isOpen(group.pane)" class="group-body">
         <!-- the framework's own layers, named as a source only where a worker's stand beside them -->
-        <p v-if="isOpen(group.pane) && group.workersHeading" class="source-heading" data-source="framework">
+        <p v-if="group.workersHeading" class="source-heading" data-source="framework">
           <button
             type="button"
             class="source-fold"
@@ -382,8 +386,11 @@ function toggle(row: LayerState): void {
             @toggle="toggleGroup(sourceGroup(group.pane, 'framework'))"
           />
         </p>
+        <div
+          v-if="group.rows.length && (!group.workersHeading || sourceOpen(group.pane, 'framework'))"
+          :class="{ 'group-body': group.workersHeading }"
+        >
         <VueDraggable
-          v-if="isOpen(group.pane) && group.rows.length && (!group.workersHeading || sourceOpen(group.pane, 'framework'))"
           :model-value="group.rows"
           tag="ul"
           class="layer-list"
@@ -483,6 +490,7 @@ function toggle(row: LayerState): void {
           </div>
         </li>
         </VueDraggable>
+        </div>
         <!-- a worker's layers: shown, hidden and fainter like ours, never moved — they stand where the
              run recorded them, in the order served (contract 55) -->
         <!-- the workers of a pane that holds the framework's layers too, under a heading of their own
@@ -490,7 +498,7 @@ function toggle(row: LayerState): void {
              the default makes no sense (operator, 2026-11-13). A line of its own only for a group:
              a worker gets a heading where it draws more than one layer in the pane (operator,
              2026-11-14) — its name otherwise in its opened row -->
-        <p v-if="isOpen(group.pane) && group.workersHeading" class="source-heading" data-source="workers">
+        <p v-if="group.workersHeading" class="source-heading" data-source="workers">
           <button
             type="button"
             class="source-fold"
@@ -509,8 +517,9 @@ function toggle(row: LayerState): void {
             @toggle="toggleGroup(sourceGroup(group.pane, 'workers'))"
           />
         </p>
-        <template v-for="source in isOpen(group.pane) && (!group.workersHeading || sourceOpen(group.pane, 'workers')) ? group.workers : []" :key="source.worker">
-          <p v-if="source.layers.length > 1" class="source-heading" :class="{ under: group.workersHeading }" :data-source="source.worker">
+        <div v-if="!group.workersHeading || sourceOpen(group.pane, 'workers')" :class="{ 'group-body': group.workersHeading }">
+        <template v-for="source in group.workers" :key="source.worker">
+          <p v-if="source.layers.length > 1" class="source-heading" :data-source="source.worker">
             <button
               type="button"
               class="source-fold"
@@ -529,7 +538,11 @@ function toggle(row: LayerState): void {
               @toggle="toggleGroup(workerGroup(group.pane, source.worker))"
             />
           </p>
-          <ul v-if="source.layers.length < 2 || sourceOpen(group.pane, `worker:${source.worker}`)" class="layer-list">
+          <ul
+            v-if="source.layers.length < 2 || sourceOpen(group.pane, `worker:${source.worker}`)"
+            class="layer-list"
+            :class="{ 'group-body': source.layers.length > 1 }"
+          >
             <li
               v-for="layer in source.layers"
               :key="layer.entry.layer"
@@ -636,6 +649,8 @@ function toggle(row: LayerState): void {
             </li>
           </ul>
         </template>
+        </div>
+        </div>
       </section>
       <HintLine v-if="emptyHints.length" :id="emptyHints" />
     </template>
@@ -718,15 +733,21 @@ function toggle(row: LayerState): void {
   justify-content: space-between;
   gap: var(--space-xs);
   margin: 0;
-  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
+  padding: var(--space-xs);
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-/* a worker under the pane's WORKERS: one step further in */
-.source-heading.under {
-  padding-left: calc(var(--space-md) + var(--space-md));
+/*
+ * A group's members one step in, a guide along their left from under the heading's marker down to the
+ * last of them — the level of a heading and where its group ends are seen at once, the way VS Code's
+ * tree draws them (operator, 2026-11-14). A rule, so it costs no line; the step is all it takes.
+ */
+.group-body {
+  margin-left: calc(var(--space-xs) + 0.5em);
+  padding-left: var(--space-xs);
+  border-left: 1px solid var(--color-border);
 }
 
 /* a heading that folds what is under it: the heading's own words, a control by its marker */

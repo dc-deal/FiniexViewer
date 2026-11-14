@@ -164,6 +164,11 @@ Run chart · ETHUSD_aug_sep
   on the chart's pane, where a pane of its own closes at a ✕ (`chart_panes.md`).
 - **Every group folds, and its state is kept** — the framework's layers fold away under their
   heading as the workers' do (operator, 2026-11-14).
+- **Each level one step in, along a guide** (operator, 2026-11-14: the second level was not told
+  from the first): a group's members stand a step in, with a fine rule along their left from under
+  the heading's marker down to the last of them, as VS Code's tree draws it — which level a heading
+  stands on and where its group ends are seen at once, and no line is spent. Each level costs the
+  names about ten pixels in a narrow panel.
   The framework's and the workers' of our panes are the same in every run and kept for all (`layers-framework-price`, `layers-workers-price`, and the volume's); a worker's
   group is kept for its run, which names its workers (`sources-folded`: `pane|worker:<instance>`).
 - **A worker's row says the timeframe its worker was served** — `M15`, `H1` — in a column of its
