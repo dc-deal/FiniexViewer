@@ -182,10 +182,30 @@ function workerParts(layer: IndicatorLayer): string[] {
 }
 
 /**
- * A pane's workers folded, and a worker's group in it (operator, 2026-11-14: "ich kann worker nicht
- * einklappen?") — kept for the run, as the run names its workers.
+ * A pane's sources folded — the framework's layers, the workers', a worker's group. Every group
+ * folds, and its state is kept (operator, 2026-11-14: "gruppen sollten alle einklappbar sein,
+ * grundsätzlich, und wir merken uns den zustand"): the framework's and the workers' of our panes for
+ * every run, as they are the same in each; a worker's group for its run, as the run names its workers.
  */
-const foldedWorkers = useViewRows('workers-folded', () => runs.selectedRunId)
+const foldedSources = useViewRows('sources-folded', () => runs.selectedRunId)
+const sourceFolds: Partial<Record<string, { value: boolean }>> = {
+  'price|framework': useViewExpanded('layers-framework-price', true),
+  'price|workers': useViewExpanded('layers-workers-price', true),
+  'volume|framework': useViewExpanded('layers-framework-volume', true),
+  'volume|workers': useViewExpanded('layers-workers-volume', true),
+}
+
+/** Whether a source of a pane stands open: `framework`, `workers`, or `worker:<instance>`. */
+function sourceOpen(pane: string, source: string): boolean {
+  const kept = sourceFolds[`${pane}|${source}`]
+  return kept ? kept.value : !foldedSources.has(`${pane}|${source}`)
+}
+
+function toggleSource(pane: string, source: string): void {
+  const kept = sourceFolds[`${pane}|${source}`]
+  if (kept) kept.value = !kept.value
+  else foldedSources.toggle(`${pane}|${source}`)
+}
 
 /** Whether each of our panes' groups stands open — kept with this panel's view, open where nothing was kept. */
 const folds: Record<ChartPaneId, { value: boolean }> = {
@@ -333,10 +353,19 @@ function toggle(row: LayerState): void {
         </button>
         <!-- the framework's own layers, named as a source only where a worker's stand beside them -->
         <p v-if="isOpen(group.pane) && group.workersHeading" class="source-heading" data-source="framework">
-          {{ t('Framework') }}
+          <button
+            type="button"
+            class="source-fold"
+            :aria-expanded="sourceOpen(group.pane, 'framework')"
+            data-action="fold-framework"
+            @click="toggleSource(group.pane, 'framework')"
+          >
+            <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, 'framework') ? '▾' : '▸' }}</span>
+            <span>{{ t('Framework') }}</span>
+          </button>
         </p>
         <VueDraggable
-          v-if="isOpen(group.pane) && group.rows.length"
+          v-if="isOpen(group.pane) && group.rows.length && (!group.workersHeading || sourceOpen(group.pane, 'framework'))"
           :model-value="group.rows"
           tag="ul"
           class="layer-list"
@@ -446,11 +475,11 @@ function toggle(row: LayerState): void {
           <button
             type="button"
             class="source-fold"
-            :aria-expanded="!foldedWorkers.has(group.pane)"
+            :aria-expanded="sourceOpen(group.pane, 'workers')"
             data-action="fold-workers"
-            @click="foldedWorkers.toggle(group.pane)"
+            @click="toggleSource(group.pane, 'workers')"
           >
-            <span class="layer-marker" aria-hidden="true">{{ foldedWorkers.has(group.pane) ? '▸' : '▾' }}</span>
+            <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, 'workers') ? '▾' : '▸' }}</span>
             <span>{{ t('Workers') }}</span>
           </button>
           <AppButton
@@ -463,16 +492,16 @@ function toggle(row: LayerState): void {
             @click="showAll(group.allWorkers)"
           ><AppIcon :name="anyShown(group.allWorkers) ? 'status-shown' : 'status-hidden'" /></AppButton>
         </p>
-        <template v-for="source in isOpen(group.pane) && !foldedWorkers.has(group.pane) ? group.workers : []" :key="source.worker">
+        <template v-for="source in isOpen(group.pane) && (!group.workersHeading || sourceOpen(group.pane, 'workers')) ? group.workers : []" :key="source.worker">
           <p v-if="source.layers.length > 1" class="source-heading" :class="{ under: group.workersHeading }" :data-source="source.worker">
             <button
               type="button"
               class="source-fold"
-              :aria-expanded="!foldedWorkers.has(`${group.pane}|${source.worker}`)"
+              :aria-expanded="sourceOpen(group.pane, `worker:${source.worker}`)"
               data-action="fold-worker"
-              @click="foldedWorkers.toggle(`${group.pane}|${source.worker}`)"
+              @click="toggleSource(group.pane, `worker:${source.worker}`)"
             >
-              <span class="layer-marker" aria-hidden="true">{{ foldedWorkers.has(`${group.pane}|${source.worker}`) ? '▸' : '▾' }}</span>
+              <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, `worker:${source.worker}`) ? '▾' : '▸' }}</span>
               <span>{{ source.worker }}</span>
             </button>
             <AppButton
@@ -485,7 +514,7 @@ function toggle(row: LayerState): void {
               @click="showAll(source.layers)"
             ><AppIcon :name="anyShown(source.layers) ? 'status-shown' : 'status-hidden'" /></AppButton>
           </p>
-          <ul v-if="source.layers.length < 2 || !foldedWorkers.has(`${group.pane}|${source.worker}`)" class="layer-list">
+          <ul v-if="source.layers.length < 2 || sourceOpen(group.pane, `worker:${source.worker}`)" class="layer-list">
             <li
               v-for="layer in source.layers"
               :key="layer.entry.layer"

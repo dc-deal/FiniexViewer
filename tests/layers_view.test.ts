@@ -299,7 +299,8 @@ describe('LayersView', () => {
       const wrapper = mountWithSeries()
       const price = () => wrapper.find('[data-pane-group="price"]')
       const workers = SERIES.filter(entry => entry.pane === 'price').map(entry => entry.layer)
-      expect(price().find('[data-source="framework"] [data-action]').exists()).toBe(false)
+      // the framework's heading folds, and has no eye
+      expect(price().find('[data-source="framework"] [data-action^="show"]').exists()).toBe(false)
       const eye = () => price().find('[data-source="workers"] [data-action="show-workers"]')
       expect(eye().attributes('aria-pressed')).toBe('true')
 
@@ -327,7 +328,7 @@ describe('LayersView', () => {
 
       await heading().find('[data-action="fold-worker"]').trigger('click')
       expect(row(wrapper, second.layer).exists()).toBe(false)
-      expect(useArrangementStore().panelViews['layers']?.rows?.keys['workers-folded']).toEqual([`price|${worker}`])
+      expect(useArrangementStore().panelViews['layers']?.rows?.keys['sources-folded']).toEqual([`price|worker:${worker}`])
     })
 
     /** The workers of a pane fold away as one (operator, 2026-11-14: "ich kann worker nicht einklappen?"). */
@@ -337,9 +338,24 @@ describe('LayersView', () => {
       await wrapper.find('[data-pane-group="price"] [data-action="fold-workers"]').trigger('click')
       expect(row(wrapper, onCandles).exists()).toBe(false)
       expect(row(wrapper, 'candles').exists()).toBe(true)
-      expect(useArrangementStore().panelViews['layers']?.rows).toEqual({ scope: RUN, keys: { 'workers-folded': ['price'] } })
+      // the workers of the candles' pane are the same in every run: their fold is kept for all
+      expect(useArrangementStore().panelViews['layers']?.expanded).toEqual({ 'layers-workers-price': false })
       await wrapper.find('[data-pane-group="price"] [data-action="fold-workers"]').trigger('click')
       expect(row(wrapper, onCandles).exists()).toBe(true)
+    })
+
+    /** The framework's layers fold away as the workers' do (operator, 2026-11-14). */
+    it('folds the layers of the framework away under their heading, those of the workers left open', async () => {
+      const wrapper = mountWithSeries()
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      const fold = () => wrapper.find('[data-pane-group="price"] [data-action="fold-framework"]')
+      expect(fold().attributes('aria-expanded')).toBe('true')
+      await fold().trigger('click')
+      expect(fold().attributes('aria-expanded')).toBe('false')
+      expect(row(wrapper, 'candles').exists()).toBe(false)
+      expect(row(wrapper, onCandles).exists()).toBe(true)
+      await fold().trigger('click')
+      expect(row(wrapper, 'candles').exists()).toBe(true)
     })
 
     /**

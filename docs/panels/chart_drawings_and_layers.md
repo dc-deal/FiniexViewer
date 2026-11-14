@@ -153,11 +153,14 @@ Run chart · ETHUSD_aug_sep
   *"kann ich gruppe ausblenden komplett? wobei es aber keinen sinn macht die standardgruppe
   auszublenden"*). Where a pane holds the framework's layers and workers' too, the workers stand
   under a heading of their own, *Workers*, whose marker folds them away and whose eye hides or shows
-  every worker's series of that pane. The framework's heading has neither. **A line of its own only
+  every worker's series of that pane. The framework's heading folds too, and has no eye. **A line of its own only
   for a group** (operator, 2026-11-14): a worker gets a heading — folding, with an eye — only where it
   draws more than one layer in the pane; a worker of one layer stands as its row. An eye switches the
-  layers and keeps nothing of its own: it reads them, hiding where any is shown. The folds are kept
-  for the run (`workers-folded`: the pane's name, or `pane|instance`).
+  layers and keeps nothing of its own: it reads them, hiding where any is shown. The framework's
+  layers fold away under their heading as the workers' do: every group folds, and its state is kept
+  (operator, 2026-11-14). The framework's and the workers' of our panes are the same in every run
+  and kept for all (`layers-framework-price`, `layers-workers-price`, and the volume's); a worker's
+  group is kept for its run, which names its workers (`sources-folded`: `pane|worker:<instance>`).
 - **A worker's row says the timeframe its worker was served** — `M15`, `H1` — in a column of its
   own, three characters wide whatever it says, before the series' name and in the ink of structure:
   head information, never cut by a long name (operator, 2026-11-14). The series' `timeframe`, as

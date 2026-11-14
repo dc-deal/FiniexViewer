@@ -57,7 +57,11 @@ export interface DockPlace {
  * fails the type-check, and a stored name is checked against it. A name joins with the component
  * that reads it.
  */
-export const VIEW_FOLDS = ['periods-table', 'layers-pane-price', 'layers-pane-volume'] as const
+export const VIEW_FOLDS = [
+  'periods-table', 'layers-pane-price', 'layers-pane-volume',
+  // the framework's layers and the workers' in each of our panes: the same in every run, so kept for all
+  'layers-framework-price', 'layers-workers-price', 'layers-framework-volume', 'layers-workers-volume',
+] as const
 export type ViewFold = typeof VIEW_FOLDS[number]
 
 /**
@@ -74,8 +78,11 @@ export const VIEW_ROW_CAPS = {
   'groups-closed': 100,
   /** Layers: a worker's panes folded, by the name the backend gave the pane (contract 55). */
   'panes-folded': 20,
-  /** Layers: a pane's workers folded, by the pane's name — and a worker's group in it, by `pane|instance`. */
-  'workers-folded': 40,
+  /**
+   * Layers: a pane's sources folded where the run names them — the workers of a worker's own pane
+   * (`pane|workers`), a worker's group (`pane|worker:<instance>`); those of our panes are `VIEW_FOLDS`.
+   */
+  'sources-folded': 40,
 } as const
 export type ViewRowList = keyof typeof VIEW_ROW_CAPS
 
