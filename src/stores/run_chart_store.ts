@@ -378,8 +378,13 @@ export const useRunChartStore = defineStore('runChart', () => {
     if (unit.value && unit.value.block === null) void askCoverage(unit.value)
   }, { immediate: true })
 
+  // each source watched on its own, so that only a value that changed loads afresh: one getter
+  // answering a new array each time loaded the bars again for the same values — whenever the run index
+  // was read anew, as the run list does when it is shown again — and the chart lost the reader's zoom
+  // (on screen 2026-11-14, a panel given the whole dock and back)
   watch(
-    () => [viewers.value > 0, unit.value?.name, unit.value?.broker, unit.value?.symbol, window.value?.from, window.value?.to, timeframe.value],
+    [() => viewers.value > 0, () => unit.value?.name, () => unit.value?.broker, () => unit.value?.symbol,
+      () => window.value?.from, () => window.value?.to, () => timeframe.value],
     () => { if (viewers.value) void loadBars() },
   )
 
@@ -415,8 +420,8 @@ export const useRunChartStore = defineStore('runChart', () => {
   // A session's drawing workers, for the unit on show (contract 55). A backtest records them too,
   // but its streams over time are not served yet, so only a session asks.
   watch(
-    () => [viewers.value > 0, runsStore.selectedRun?.run_id, runsStore.selectedRun?.group, unit.value?.name,
-      seriesSpan.value?.from, seriesSpan.value?.to] as const,
+    [() => viewers.value > 0, () => runsStore.selectedRun?.run_id, () => runsStore.selectedRun?.group,
+      () => unit.value?.name, () => seriesSpan.value?.from, () => seriesSpan.value?.to],
     ([shown, runId, group, name, from, to]) => {
       const session = shown && runId && group === 'autotrader' && name ? { runId, unit: name } : null
       void indicatorSeries.follow(session, session && from !== undefined && to !== undefined ? { from, to } : null)
@@ -425,7 +430,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   )
 
   // the place the offer centred on belongs to the unit and the position it was taken for
-  watch(() => [unit.value?.name, focus.value?.position] as const, () => { offerAt.value = null })
+  watch([() => unit.value?.name, () => focus.value?.position], () => { offerAt.value = null })
 
   // the focus cleared leaves the chart where it was: the unit it showed becomes its own choice.
   // Only within one run — a new run clears the focus too, and its chart starts afresh

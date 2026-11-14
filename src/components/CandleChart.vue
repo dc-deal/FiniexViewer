@@ -515,7 +515,10 @@ function initChart(size: { width: number, height: number }): void {
   chart = createChart(container.value, {
     width: size.width,
     height: size.height,
-    timeScale: { timeVisible: true, minBarSpacing: MIN_BAR_SPACING },
+    // the time on show kept when the chart is made wider or narrower: a panel given the whole dock
+    // zooms the same stretch across it, and gives it back as it was when the dock does (operator,
+    // 2026-11-14) — at a kept bar spacing the bars stood in a third of the width, the rest empty
+    timeScale: { timeVisible: true, minBarSpacing: MIN_BAR_SPACING, lockVisibleTimeRangeOnResize: true },
     // the library's licence asks for its notice in the code and a link to tradingview.com on a page
     // the reader can open; the logo is one way to meet the link, and may go where both are met
     // otherwise (`attributionLogo`, lightweight-charts 5.2.1): the notice is in NOTICE, the link in

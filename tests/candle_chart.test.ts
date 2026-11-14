@@ -486,6 +486,17 @@ describe('CandleChart', () => {
     expect(10_000 * options.timeScale.minBarSpacing).toBeLessThanOrEqual(500)
   })
 
+  /**
+   * A panel given the whole dock zooms the same stretch across it, and gives it back as it was
+   * (operator, 2026-11-14): the time on show is kept through a change of width.
+   */
+  it('keeps the time on show when the chart is made wider or narrower', () => {
+    size = { width: 800, height: 400 }
+    mountChart()
+    const options = lw.createChart.mock.lastCall![1] as { timeScale: { lockVisibleTimeRangeOnResize?: boolean } }
+    expect(options.timeScale.lockVisibleTimeRangeOnResize).toBe(true)
+  })
+
   /** The marks are drawn on a canvas, where nothing can read them back — so the element counts them. */
   /** The chart draws for itself through ONE primitive of its candles, attached once, when it is built. */
   it('attaches its drawing host to its candles once, when it is built', () => {

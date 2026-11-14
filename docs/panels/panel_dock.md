@@ -149,7 +149,12 @@ it — so it is not struck in the Panels menu (`run_sections_store.lacks`, the o
   keeps it so — a panel of another group brought forward would end it — while a command or a link
   ends it, as dockview does. It is **never stored**: dockview writes the large group into its layout
   with the others hidden, so `flush` writes nothing while one group has the whole dock, and the
-  layout the reader made is what the next start opens. The `panel-maximize` hint says it.
+  layout the reader made is what the next start opens. The `panel-maximize` hint says it. **A chart
+  keeps its stretch of time** through it (`lockVisibleTimeRangeOnResize`): made larger it zooms the
+  same stretch across the width, and back it shows that stretch again — at a kept bar spacing the
+  bars stood in a third of the width (operator, on screen 2026-11-14). Its bars are loaded again only
+  where a value they are asked by changed: one getter answering a new array each time loaded them
+  again whenever the run list, shown again, read the run index anew, and the zoom was lost.
 - **`PanelHost`** draws a panel the first time it is SHOWN and keeps it after: a tab behind another
   costs nothing until it is picked, and a panel returned to finds its scroll where it left it. It is
   the panel's error boundary, and it hands the panel its visibility — `onPanelShownAgain` fetches

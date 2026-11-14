@@ -116,7 +116,8 @@ by its tab, the way a reader does.
 - `run_chart.spec.ts` holds the run chart: the chart mark on a trade opening it BESIDE the run
   report, on the trade's unit, drawn on a canvas with its marks counted on the element and the
   position marked in the list; the Panels menu opening it on the first unit with trades; the opening
-  of a position the run ended with still open marked, though it has no trade; marks that would cover
+  of a position the run ended with still open marked, though it has no trade; its stretch of time
+  kept through its panel given the whole dock and back; marks that would cover
   each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
   the chart leaving the whole chart inside its panel; the levels of the position looked at painted
   on a real canvas, from a position the mock hands a stop and a target; an own level that fired drawn

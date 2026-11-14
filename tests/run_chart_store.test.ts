@@ -701,6 +701,23 @@ describe('useRunChartStore', () => {
     expect(limit).toBe(2000)
   })
 
+  /**
+   * The run index read anew — as the run list does whenever it is shown again — holds the same values
+   * in new objects: the bars are not loaded again, so the chart keeps the reader's zoom (on screen
+   * 2026-11-14, a panel given the whole dock and back).
+   */
+  it('loads no bars again where the run index is read anew with the same values', async () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const asked = vi.mocked(apiClient.getBars).mock.calls.length
+    expect(asked).toBeGreaterThan(0)
+    useRunsStore().runs = RUNS.map(run => ({ ...run }))
+    await flushPromises()
+    expect(vi.mocked(apiClient.getBars).mock.calls).toHaveLength(asked)
+  })
+
   /** A quick change of unit must not leave the earlier unit's candles behind when they arrive late. */
   it('writes nothing from an answer for a unit no longer on show', async () => {
     let late: (answer: BarAnswer) => void = () => {}
