@@ -10,12 +10,15 @@ import { useContextStore } from '@/stores/context_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
+import { useIndicatorSeriesStore } from '@/stores/indicator_series_store'
 import * as apiClient from '@/api/api_client'
 import type { CoverageResponse } from '@/types/api/bar_types'
 import type { RunInfo, TradeHistoryReport } from '@/types/api/report_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
+import type { RecordedWindow } from '@/types/api/state_frame_types'
 
 import runsList from './fixtures/runs_list.json'
+import seriesWindow from './fixtures/recorded_window_series.json'
 import scenarioFixture from './fixtures/scenario_details.json'
 import tradeFixture from './fixtures/trade_history.json'
 
@@ -232,6 +235,26 @@ describe('RunChartQuickBar', () => {
     expect(timeframes!.findAll('option').map(option => option.attributes('value')).filter(Boolean)).toEqual(['M1', 'M5', 'H1'])
     await timeframes!.setValue('M5')
     expect(chart.timeframe).toBe('M5')
+  })
+
+  /**
+   * Which workers work on which timeframe (operator, 2026-11-14): each timeframe says how many of the
+   * unit's workers were served it, counted over the series served, each worker once.
+   */
+  it('marks each timeframe with how many workers were served it', async () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    // after the chart settled: a backtest asks for no series, and its store lets go of any it held
+    useIndicatorSeriesStore().series = (seriesWindow as RecordedWindow).indicator_series
+    mounted = mount(RunChartQuickBar)
+    await flushPromises()
+    const workers = new Set((seriesWindow as RecordedWindow).indicator_series
+      .filter(entry => entry.timeframe === 'M5').map(entry => entry.layer.split(':')[1]))
+    const labels = mounted.findAll('select')[1]!.findAll('option').map(option => option.text())
+    expect(labels).toContain(`M5 ● ${workers.size}`)
+    expect(labels).toContain('M1')
   })
 
   /** A select is as wide as its widest option: the word stood wider than any timeframe. */

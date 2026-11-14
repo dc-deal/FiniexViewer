@@ -240,6 +240,21 @@ describe('ConfigPanel', () => {
     expect(text).toContain('CORE/rsi')
   })
 
+  /** The timeframes a worker is served stand first: a narrow panel cut them off behind … (operator, 2026-11-14). */
+  it('puts the timeframes a worker is served first in its tuning', () => {
+    const model = {
+      ...LIVE,
+      config: {
+        strategy_config: {
+          worker_instances: { tunnel: 'CORE/bollinger' },
+          workers: { tunnel: { deviation: 2, compute_basis: 'bar_close', periods: { M15: 20 } } },
+        },
+      },
+    } as unknown as RunConfigReport
+    const text = mountPanel(model).find('.worker-list').text()
+    expect(text).toContain('periods M15 20 · deviation: 2 · compute_basis: bar_close')
+  })
+
   /**
    * On the shared list stem, which is what removed the last bespoke `<table>` from the app. Inert:
    * a configuration is reference material, with nothing to choose and nothing to sort by — so the

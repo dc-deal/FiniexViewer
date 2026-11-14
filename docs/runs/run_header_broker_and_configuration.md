@@ -119,7 +119,9 @@ run, ends it. testingide#615's `config_changes` replaces its source.
 **The workers are on the shared list**, which removed the last bespoke `<table>` from the app.
 Three columns, read-only, no ranks: measured over the stored configurations a worker is 8–14
 characters of type and 19–37 of parameters, so all three fit at any width this panel is given, and
-a rank that never engages is a breakpoint that changes nothing.
+a rank that never engages is a breakpoint that changes nothing. **A worker's `periods` stand first
+in its parameters** — the timeframes it is served, `periods M15 20 · deviation: 2 · …`: where a
+narrow panel cuts the line with …, they were what stood cut off (operator, on screen 2026-11-14).
 
 **So the panel reports presence, not resolution.** That a scenario carries its own block is
 readable from the document; what that override resolves to is not. The notice therefore names the

@@ -52,7 +52,10 @@ it says so and draws nothing.
 - **The timeframe is the finest the archive renders for the market that draws the window in at
   most 2,000 bars** — an hour of a backtest in M1, a session of weeks in hours — unless the reader
   chose one. The coverage lists its timeframes alphabetically, so they are ordered by the lengths
-  `/timeframes` states.
+  `/timeframes` states. **Each says how many workers were served it** — `M5 ● 4`, counted over the
+  series the window serves, each worker once (operator, 2026-11-14: which worker works on which
+  timeframe was nowhere to be seen); the Layers panel names them, in its timeframe column. A select
+  is as wide as its widest option, so the unit's name beside it gives the room.
 - **The bars are asked from a millisecond inside the period BEFORE the window.** The route answers
   the bars that open in the range, and the bar the first tick fell in opened before it — measured
   2026-10-15: `from=05:00:00.274` answered from the 05:01 bar, and the trade at 05:00:40 had no
