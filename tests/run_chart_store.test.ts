@@ -130,8 +130,9 @@ describe('useRunChartStore', () => {
     const row = unitRow(firstWithOpenings())
     expect(apiClient.findCoverage).toHaveBeenCalledWith(row.data_broker_type, row.symbol)
     expect(chart.timeframe).toBe('M1')
-    // from one period before the first tick: the route answers the bars that OPEN in the range
-    const before = new Date(Date.parse(row.first_tick_time) - 60_000).toISOString()
+    // from just inside one period before the first tick: the route answers the bars that OPEN in the
+    // range, so the bar the first tick fell in comes, and the one before it — closed as the run began — does not
+    const before = new Date(Date.parse(row.first_tick_time) - 60_000 + 1).toISOString()
     const end = new Date(Date.parse(row.last_tick_time)).toISOString()
     expect(apiClient.getBars).toHaveBeenLastCalledWith(row.data_broker_type, row.symbol, 'M1', before, end, 2000)
     expect(chart.bars.map(bar => bar.time)).toEqual([1761886800, 1761886860])
@@ -695,7 +696,8 @@ describe('useRunChartStore', () => {
     await flushPromises()
     const [, , timeframe, from, , limit] = vi.mocked(apiClient.getBars).mock.calls[0]!
     expect(timeframe).toBe('M1')
-    expect(Date.parse(from)).toBe(Date.parse(chart.window!.from) - 60_000)
+    // a millisecond inside the period before: the bar the window starts in, never the one that closed as it began
+    expect(Date.parse(from)).toBe(Date.parse(chart.window!.from) - 60_000 + 1)
     expect(limit).toBe(2000)
   })
 

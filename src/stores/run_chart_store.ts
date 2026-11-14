@@ -351,7 +351,10 @@ export const useRunChartStore = defineStore('runChart', () => {
     // bar the first tick fell in opened BEFORE the window, and is asked for from one period earlier.
     // Measured 2026-10-15: `from=05:00:00.274` answered from the 05:01 bar, and the trade at
     // 05:00:40 had no candle. The length only widens the ask; marks stand on the bars served.
-    const from = Date.parse(span.from) - period
+    // A millisecond less than a period: a window that starts ON a bar's open would otherwise take the
+    // whole bar before it, which closed as the run began — seen on screen 2026-11-14, a session from
+    // 00:00 drew the 23:45 bar, of no tick of its own.
+    const from = Date.parse(span.from) - period + 1
     const at = focusAt.value
     await loader.open({
       broker: target.broker!,

@@ -53,9 +53,11 @@ it says so and draws nothing.
   most 2,000 bars** — an hour of a backtest in M1, a session of weeks in hours — unless the reader
   chose one. The coverage lists its timeframes alphabetically, so they are ordered by the lengths
   `/timeframes` states.
-- **The bars are asked from one period BEFORE the window.** The route answers the bars that open in
-  the range, and the bar the first tick fell in opened before it — measured 2026-10-15:
-  `from=05:00:00.274` answered from the 05:01 bar, and the trade at 05:00:40 had no candle. The
+- **The bars are asked from a millisecond inside the period BEFORE the window.** The route answers
+  the bars that open in the range, and the bar the first tick fell in opened before it — measured
+  2026-10-15: `from=05:00:00.274` answered from the 05:01 bar, and the trade at 05:00:40 had no
+  candle. A whole period early took one bar too many where the window starts ON a bar's open: a
+  session from 00:00 drew the 23:45 bar, which closed as it began (seen on screen 2026-11-14). The
   length only widens the ask; a mark stands on a bar SERVED, the last one that opened at or before
   the event, never on one computed from a period's length — a trading day or a week does not start
   on a multiple of its length, and lightweight-charts snaps a mark between bars onto the next one.
