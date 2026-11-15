@@ -87,7 +87,8 @@ frame on show as a dashed line ([Chart Drawings and Layers](../panels/chart_draw
   `record_no`, the key the route declares, since two can share an instant. Since contract 55 the
   window also serves a drawing worker's indicator series, merged with the frames by time, so its
   `limit` and `next_from` count both: where a unit draws, a page holds fewer frames, and the player
-  follows `next_from` as before. Nothing draws the series yet.
+  follows `next_from` as before. The run chart draws the series
+  ([Indicator Series](../panels/indicator_series.md)).
 - **Never the whole stream.** A thirty-day session at a minute's cadence holds some 43,000 frames,
   about 60 MB. `frame_player_store` reads a page of 1,000 around the frame on show and holds at most
   two pages. A step past the held stretch reads the next one in, and a jump reads the stretch around
@@ -95,6 +96,9 @@ frame on show as a dashed line ([Chart Drawings and Layers](../panels/chart_draw
   timeline in 0.38 s, the whole window in 0.27 s and 480 KB.
 - **It opens on the newest frame**, the one the section showed before. A unit whose frames over time
   are not recorded (`streams_not_recorded`) shows its latest frame alone, as before.
+- **Its controls wait while it reads.** The player stands as soon as the timeline is read, its frames
+  still coming; until it holds a frame of its own and reads nothing, every control is disabled, since
+  a step there finds no frame to step from and a jump to the first races the read of the newest.
 - **A session that records is followed.** While a unit's timeline reads `current` and the section is
   on show, the timeline is asked every two seconds — their document: *made to be asked every second
   or two* — and the frames written since are read from the newest held, nothing twice. A player on

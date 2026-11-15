@@ -279,7 +279,8 @@ three columns with every bundle closed and its members standing apart — laid o
 own proportions, the dark theme, every hint put away: the whole window once, then the dock group a
 highlight is about. Nothing private reaches a picture: the lists are narrowed to public runs, and
 `PICTURES_HIDE`, a comma list of words given at the call and never written into the repository,
-fails the run wherever one of them stands in the window's text. Like the performance spec, an
+fails the run wherever one of them stands in the window's text. The session's picture fails the
+same way unless it shows the frame the spec stepped to. Like the performance spec, an
 ordinary run leaves it out:
 `PICTURES=1 PICTURES_HIDE=<words> bash scripts/e2e.sh e2e/readme_pictures.spec.ts --workers=1`.
 

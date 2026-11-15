@@ -176,6 +176,8 @@ test('a session played over time', async ({ page }) => {
   await expect(section.locator('.player .where')).toContainText('frame', { timeout: 30_000 })
   await section.locator('[data-action="first"]').click()
   await section.locator('[data-action="on"]').click()
+  // the second frame, or the run fails: a step lost showed the first in the README
+  await expect(section.locator('.player')).toHaveAttribute('data-frame', '2')
   await settled(page)
   await cut(page, 'session_frames_dark', 'run')
 })

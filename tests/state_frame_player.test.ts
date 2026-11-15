@@ -79,4 +79,23 @@ describe('StateFramePlayer', () => {
     expect(atNewest.find('[data-action="on"]').attributes('disabled')).toBeDefined()
     expect(atNewest.find('[data-action="play"]').attributes('disabled')).toBeDefined()
   })
+
+  /**
+   * The player stands once the timeline is read, its frames still coming: a step there found no frame
+   * to step from and was lost, so every control waits until the player holds a frame and reads nothing.
+   */
+  it('waits while it holds no frame of its own, or reads', async () => {
+    const transport = ['first', 'back', 'play', 'on', 'newest']
+    for (const shown of [view(231, { frame: null }), view(231, { loading: true })]) {
+      const { wrapper, calls } = mountWith(shown)
+      for (const action of transport) {
+        expect(wrapper.find(`[data-action="${action}"]`).attributes('disabled')).toBeDefined()
+      }
+      await wrapper.find('.scrubber').trigger('keydown', { key: 'ArrowRight' })
+      expect(calls).toEqual(['open state_frames_test'])
+    }
+    // what plays can still be stopped while the next stretch is read
+    const playing = mountWith(view(231, { loading: true, playing: true })).wrapper
+    expect(playing.find('[data-action="play"]').attributes('disabled')).toBeUndefined()
+  })
 })
