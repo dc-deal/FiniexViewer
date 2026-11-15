@@ -507,7 +507,7 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
             {{ [plural(group.rows.length, t('trade'), t('trades')), ...costParts(group.key)].join(' · ') }}
           </span>
           <!-- the net beside is the unit's served total: a symbol picked left some of its trades out -->
-          <ScopeMark v-if="symbols.cut.value.has(group.key)" of="unit" />
+          <ScopeMark v-if="symbols.cut.value.has(group.key)" class="unit-scope" of="unit" />
         </span>
         <span class="group-net" :class="signClass(totalOf(group.key)?.net_pnl ?? 0)">
           <template v-if="totalOf(group.key)">
@@ -655,6 +655,11 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
    after the name in the same cell rather than sitting under a heading they have nothing to do with */
 .group-meta {
   color: var(--color-text-secondary);
+}
+
+/* apart from the costs before it, which it does not belong to (on screen 2026-11-15: it touched `USD`) */
+.unit-scope {
+  margin-left: var(--space-sm);
 }
 
 /* the fills are a level BELOW the trade, and the indent plus the secondary ink says so without a

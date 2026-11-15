@@ -557,7 +557,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
             <template v-else>{{ t('no pending statistics — nothing reached the queue') }}</template>
           </span>
           <!-- the funnel is the unit's as served: a symbol picked left some of its records out -->
-          <ScopeMark v-if="symbols.cut.value.has(group.key)" of="unit" />
+          <ScopeMark v-if="symbols.cut.value.has(group.key)" class="unit-scope" of="unit" />
         </span>
         <span class="group-count">{{ plural(group.rows.length, t('record'), t('records')) }}</span>
       </template>
@@ -752,6 +752,11 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
 
 .group-meta {
   color: var(--color-text-secondary);
+  margin-left: var(--space-sm);
+}
+
+/* apart from the funnel before it, which it marks as the unit's */
+.unit-scope {
   margin-left: var(--space-sm);
 }
 
