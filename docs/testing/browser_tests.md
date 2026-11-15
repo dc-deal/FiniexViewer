@@ -261,7 +261,10 @@ its marks stand on the candles, read on the page's own frames, and a zoom step u
 it has painted, the mean of ten — a figure that carries two round trips to the browser per step, so
 it is read against its own earlier column, never as the drawing's cost alone. And a sweep's ranking
 at the size a real search reaches (viewer#32): 500 combinations built from the capture, timed from
-the sweep opened until the 500th row stands — what says whether the ranking needs a row cap. A
+the sweep opened until the 500th row stands — what says whether the ranking needs a row cap. The
+trade list at the size a long session reaches (viewer#36): 5,000 trades built from the capture, each
+unit's together, from the panel opened until the last row the cap allows stands — at the cap of 500
+and at its ceiling, all 5,000 — what says whether the list needs virtual rows. A
 deployment picked in its list until its bundle draws the sessions (viewer#43), and a step of a
 session's frame player (viewer#51) over 500 frames built from the captured ones and served as the
 route serves them — from, to and a limit — the mean of twenty. The same steps again with the run chart beside the
