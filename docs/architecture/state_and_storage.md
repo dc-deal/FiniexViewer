@@ -30,7 +30,8 @@ created in `App.vue` so every view mounts onto the restored selection:
 ```
 arrangement.v1 = { version: 1,
                    links: { A: { run: { id, units, position }, deployment: { id }, market: { broker, symbol } } },
-                   bars:  { 'run-picker': { selection, search, sort }, 'scenario-roster': { …, scope: <run id> } },
+                   bars:  { 'run-picker': { selection, search, sort }, 'scenario-roster': { …, scope: <run id> },
+                            'trade-history' / 'orders': { …, scope: <run id> } },
                    chart: { timeframe },
                    runChart: { run, unit, timeframe },
                    dock:  <dockview's toJSON()>,  places: { <panel id>: { besides, direction, index?, size? } },

@@ -182,7 +182,8 @@ by its tab, the way a reader does.
   `pos_ethusd_1` appears in five scenarios of the order history and two of them produced a trade, so
   the link is drawn twice and the mark lands in one scenario rather than in every row carrying that
   id. And the count of scenarios that produced nothing, above the scenario list, opening the folded
-  Warnings & errors at a click.
+  Warnings & errors at a click. A symbol picked in the trade history narrowing it to that
+  instrument, kept through a real reload (viewer#36).
 - `open_in_context.spec.ts` holds the way from one VIEW into another — a deployment's session into
   its run, a run into the deployment it was a session of, and a session's run shown in the sections
   standing apart while the run bundle stays closed — because a unit test records where a panel

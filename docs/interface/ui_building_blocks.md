@@ -61,7 +61,7 @@ Everything in `src/components/base/` unless the third column names another place
 | `ChartCard` | the card of a thing drawn on a chart, at the pointer — a mark is paint, not an element | base | [Candle Charts](../panels/candle_charts.md) |
 | `FigureCardBody` | what a card of figures says, its heading, its pairs and any paths — both cards say it alike | base | [Candle Charts](../panels/candle_charts.md) |
 | `PathLabel` | a path-shaped identifier, a worker type or a decision logic, held by a column or a card | base | [Run Header, Broker and Configuration](../runs/run_header_broker_and_configuration.md) |
-| `ScopeMark` | the mark that a figure is the whole run's, beside one a narrowing cannot split | base | [Scenario Roster and Focus](../runs/scenario_roster_and_focus.md) |
+| `ScopeMark` | the mark that a figure is the whole run's — or the whole unit's (`of="unit"`) — beside one a narrowing cannot split | base | [Scenario Roster and Focus](../runs/scenario_roster_and_focus.md) |
 | `JsonTree` | any JSON value as a collapsible tree — the floor under every named view | base | [Run Header, Broker and Configuration](../runs/run_header_broker_and_configuration.md) |
 
 **Explanations, waiting and dialogs**

@@ -175,4 +175,14 @@ describe('FacetBar', () => {
     await sortBy(wrapper, 'longest name')
     expect(wrapper.emitted('update:sort')?.at(-1)).toEqual(['longest-name'])
   })
+
+  /** A list kept in the order it was served offers no sort: with one order there is nothing to choose. */
+  it('offers no sort where there is only one order', () => {
+    mounted = mount(FacetBar, {
+      props: { rows: ROWS, facets: FACETS, sorts: SORTS.slice(0, 1), selection: {}, sort: 'id' },
+      attachTo: document.body,
+    })
+    expect(mounted.find('.facet-sort-trigger').exists()).toBe(false)
+    expect(mounted.text()).toContain('Colour')
+  })
 })

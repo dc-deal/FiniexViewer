@@ -34,6 +34,8 @@ lines before a single row of the list showed, so it was folded:
   sort at its longest name, the count on `+N` at two digits — because the facets that fit are
   measured against what stands beside them, and a chip would otherwise go behind `+N` or come out
   from under the pointer.
+- **A bar with one sort offers none.** A report table kept in the order it was served — the symbol
+  filter of Trade History and Orders — has nothing to choose there, so no control stands for it.
 - **At the narrowest the right-hand group takes a second line**, never a third; which line it takes
   depends on the panel's width alone. Measured 2026-10-15 on the run list: one line at 1400 and at
   700 px, two at 420 px.

@@ -107,6 +107,10 @@ scenario is one symbol, so the parameter would narrow nothing a reader asked for
 it was also unsafe: a rejected row had an empty symbol and the filter silently dropped every
 rejection.
 
+**The symbol filter** of [Trade History](trade_history_and_run_totals.md) stands above these records as
+well, kept apart for each table (`orders`, `trade-history`): where the symbols picked left some of a
+unit's records out, its served funnel is marked `whole unit`.
+
 ## The third level — what an order actually went through
 
 `GET /api/v1/reports/runs/{run_id}/order-events`, narrowed, rendered by `runs/OrderStepList.vue`

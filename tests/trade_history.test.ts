@@ -10,6 +10,7 @@ import { providePanelView } from '@/composables/use_panel_view'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideTestPositionLink } from './position_link_harness'
 import { provideTickSizes } from '@/composables/use_tick_sizes'
+import { useArrangementStore } from '@/stores/arrangement_store'
 import type { TickSizeLookup } from '@/composables/use_tick_sizes'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 import type { DisplaySettings } from '@/types/settings_types'
@@ -1040,5 +1041,48 @@ describe('TradeHistoryPanel — kept for the run on show', () => {
     const other = mountKept(twoUnits('run_2'))
     expect(other.find('.fill-list').exists()).toBe(false)
     expect(tradesOnShow(other)).toHaveLength(2)
+  })
+})
+
+/**
+ * The symbol filter (viewer#36): offered where the trades are of two symbols or more, kept for the run
+ * on show; a symbol picked narrows the trades, and the total of a unit it took trades of is marked
+ * the whole unit's — the served total, never the rows added up.
+ */
+describe('TradeHistoryPanel — the symbol filter', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
+  function twoSymbols(): TradeHistoryReport {
+    return report({
+      run_id: 'run_symbols',
+      trades: [
+        trade({ position_id: 'pos_1', scenario_name: 'unit_a', symbol: 'EURUSD' }),
+        trade({ position_id: 'pos_2', scenario_name: 'unit_a', symbol: 'GBPUSD' }),
+        trade({ position_id: 'pos_3', scenario_name: 'unit_b', symbol: 'EURUSD' }),
+      ],
+      count: 3,
+      scenario_totals: ['unit_a', 'unit_b'].map(name => ({
+        ...BASE.scenario_totals[0]!, scenario_name: name, trade_count: 1, net_pnl: 5,
+      })),
+    })
+  }
+
+  it('offers no bar where every trade is of one symbol', () => {
+    const one = report({ trades: [trade({ position_id: 'pos_1', symbol: 'EURUSD' }), trade({ position_id: 'pos_2', symbol: 'EURUSD' })] })
+    expect(mountPanel(one).find('.facet-bar').exists()).toBe(false)
+  })
+
+  it('narrows the trades to a symbol picked, and marks the total of a unit it took trades of', () => {
+    const whole = mountPanel(twoSymbols())
+    expect(whole.find('.facet-bar').exists()).toBe(true)
+    expect(whole.findAll('.scope')).toHaveLength(0)
+    whole.unmount()
+    useArrangementStore().setFacets('trade-history', { selection: { symbol: ['EURUSD'] }, search: '', sort: 'served', scope: 'run_symbols' })
+    const wrapper = mountPanel(twoSymbols())
+    expect(tradeRows(wrapper)).toHaveLength(2)
+    expect(wrapper.findAll('.scope').map(mark => mark.text())).toEqual(['whole unit'])
   })
 })

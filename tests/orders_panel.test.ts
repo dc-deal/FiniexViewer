@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import OrdersPanel from '@/components/runs/OrdersPanel.vue'
+import { useArrangementStore } from '@/stores/arrangement_store'
 import { provideTestSelection } from './scenario_selection_harness'
 import { provideChartLink } from '@/composables/use_chart_link'
 import { providePanelView } from '@/composables/use_panel_view'
@@ -143,6 +144,12 @@ function heading(wrapper: ReturnType<typeof mountPanel>): string {
 }
 
 describe('OrdersPanel', () => {
+  // the symbol filter keeps its narrowing with the arrangement
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
   it('draws the captured run, one group per scenario', () => {
     const wrapper = mountPanel({ pending: PENDING, history: HISTORY, trades: null })
     const scenarios = new Set(HISTORY.orders.map(row => row.scenario_name))
@@ -1008,7 +1015,30 @@ describe('OrdersPanel', () => {
     const wrapper = mountPanel({ pending: PENDING, history: HISTORY, trades: null })
     // no host supplies the step capability here, so a position heading opens nothing
     expect(wrapper.findAll('.order-list .record-row button')).toHaveLength(0)
-    expect(wrapper.findAll('button').length).toBe(wrapper.findAll('.group-name').length)
+    // in the list: the symbol filter above it is a control of its own
+    expect(wrapper.find('.order-list').findAll('button').length).toBe(wrapper.findAll('.group-name').length)
+  })
+
+  /**
+   * The symbol filter (viewer#36): offered where the records trade two symbols or more; a symbol
+   * picked narrows the records, and the funnel of a unit it took records of is marked the whole unit's.
+   */
+  describe('the symbol filter', () => {
+    it('offers no bar where every order is of one symbol', () => {
+      expect(mountPanel(model([order(), order({ order_id: 'pos_ethusd_2' })])).find('.facet-bar').exists()).toBe(false)
+    })
+
+    it('narrows the records to a symbol picked, and marks the funnel of a unit it took records of', () => {
+      useArrangementStore().setFacets('orders', { selection: { symbol: ['ETHUSD'] }, search: '', sort: 'served', scope: '20260615_130000' })
+      const wrapper = mountPanel(model([
+        order(),
+        order({ order_id: 'pos_btcusd_1', symbol: 'BTCUSD' }),
+        order({ order_id: 'pos_ethusd_1', scenario_name: 'other_unit' }),
+      ], [unit(), unit({ name: 'other_unit' })]))
+      expect(wrapper.find('.facet-bar').exists()).toBe(true)
+      expect(wrapper.findAll('.order-list .record-row')).toHaveLength(2)
+      expect(wrapper.findAll('.scope').map(mark => mark.text())).toEqual(['whole unit'])
+    })
   })
 })
 

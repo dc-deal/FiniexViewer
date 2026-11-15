@@ -282,7 +282,8 @@ function stayOpen(event: Event): void {
         {{ shownCount }} {{ t('of') }} {{ rows.length }}
       </span>
 
-      <DropdownMenuRoot>
+      <!-- one order only, as a report table served: nothing to choose, so no control -->
+      <DropdownMenuRoot v-if="sorts.length > 1">
         <DropdownMenuTrigger as-child>
           <AppButton class="facet-sort-trigger" size="compact">
             {{ t('Sort') }}:

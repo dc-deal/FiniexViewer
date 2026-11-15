@@ -3,6 +3,7 @@
   "Accounts": {"field": "unit_count", "doc": "run-summary", "their": null, "ours": null, "note": "display-term  a deliberate reframing: the ACCOUNT block is about balances, and a backtest of N scenarios is N independent accounts. Their console says Scenarios for this field"},
   "Action": {"field": "action", "doc": "order-events", "their": null, "ours": null, "note": ""},
   "Artifacts": {"field": "artifacts", "doc": "aggregated-portfolio", "their": null, "ours": null, "note": ""},
+  "As served": {"field": null, "doc": null, "their": null, "ours": null, "note": "display-term  the one order a report table keeps, never drawn: a facet bar with one sort offers none"},
   "As of": {"field": "frame_time", "doc": "recorded-streams", "their": null, "ours": null, "note": ""},
   "At the start": {"field": "spot_total_est_initial", "doc": "aggregated-portfolio", "their": null, "ours": null, "note": ""},
   "Avg loss R": {"field": ["avg_loss_r", "r_loss_count"], "doc": "run-summary", "their": null, "ours": null, "note": ""},
