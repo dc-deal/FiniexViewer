@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h, type Ref } from 'vue'
 import type { IChartApi } from 'lightweight-charts'
-import { useChartPanes, DEFAULT_PANE_WEIGHTS } from '@/composables/use_chart_panes'
+import { defaultWeight, useChartPanes, DEFAULT_PANE_WEIGHTS } from '@/composables/use_chart_panes'
 import type { ChartPaneId, PaneBox, PaneWeights } from '@/types/chart_pane_types'
 
 /** An element that says where it stands — jsdom lays nothing out. */
@@ -62,6 +62,16 @@ function hosted(
 function release(): void {
   window.dispatchEvent(new Event('pointerup'))
 }
+
+describe('defaultWeight', () => {
+  /** A worker's pane is named by the backend: a name like `constructor` is no key of ours. */
+  it('stands the pane of a worker like the volume, whatever its name', () => {
+    expect(defaultWeight('price')).toBe(2)
+    expect(defaultWeight('rsi_fast')).toBe(0.5)
+    expect(defaultWeight('constructor')).toBe(0.5)
+    expect(defaultWeight('toString')).toBe(0.5)
+  })
+})
 
 describe('use_chart_panes', () => {
   afterEach(() => {

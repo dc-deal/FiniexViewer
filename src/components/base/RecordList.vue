@@ -1,5 +1,6 @@
 <script setup lang="ts" generic="T">
 import { computed } from 'vue'
+import AppButton from '@/components/base/AppButton.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import type { FigureCard } from '@/types/figure_types'
 import type { ListBand, ListColumn, ListGroup } from '@/types/list_types'
@@ -169,6 +170,15 @@ const props = defineProps<{
    * Opt-in, because a long list then draws, unseen, rows it does not show.
    */
   measureClosed?: boolean
+  /**
+   * The row a group's heading IS, where it has one: the newest run of a family, say. It is chosen
+   * by a click like any row, and the group's other rows fold beneath it behind a button of their
+   * own (operator, 2026-11-13: "meist interessiert mich nur der neueste run"). Where it answers null
+   * the group keeps a heading of its own.
+   */
+  headOf?: (group: ListGroup<T>) => T | null
+  /** The named column (`ListColumn.name`) the button that folds a head's earlier rows stands in. */
+  foldColumn?: string
 }>()
 
 const emit = defineEmits<{
@@ -180,9 +190,12 @@ const emit = defineEmits<{
 defineSlots<{
   /**
    * The row's cells, in column order — exactly `columns.length` of them. `marker` is the
-   * disclosure glyph where the row opens children, and '' where it does not.
+   * disclosure glyph where the row opens children, and '' where it does not. `head` is the group a
+   * row stands at the head of (`headOf`), where it does: its fold button stands over its cells.
    */
-  default: (props: { row: T, marker: string }) => unknown
+  default: (props: { row: T, marker: string, head?: ListGroup<T> }) => unknown
+  /** The words on the button that folds a head's earlier rows: `▸ 4 earlier`. */
+  fold?: (props: { group: ListGroup<T>, marker: string, count: number }) => unknown
   /** The spanning second line, drawn only where `hasDetail` says so. */
   detail?: (props: { row: T }) => unknown
   /** The spanning line BEFORE a row, drawn only where `hasLead` says so. */
@@ -204,7 +217,12 @@ defineSlots<{
  */
 const TIERS = 5
 
-const tracks = computed(() => props.columns.map(column => column.width).join(' '))
+/** A column's track, its name on both edges where it has one. */
+function track(column: ListColumn): string {
+  return column.name ? `[${column.name}-start] ${column.width} [${column.name}-end]` : column.width
+}
+
+const tracks = computed(() => props.columns.map(track).join(' '))
 
 /**
  * The highest rank any column declares. 1 means nothing was ranked, and then the container queries
@@ -227,7 +245,7 @@ const tierTracks = computed<Record<string, string>>(() => {
   for (let tier = 1; tier <= TIERS; tier += 1) {
     styles[`--list-tracks-${tier}`] = props.columns
       .filter(column => (column.rank ?? 1) <= tier)
-      .map(column => column.width)
+      .map(track)
       .join(' ')
   }
   return styles
@@ -314,6 +332,12 @@ function headTitle(column: ListColumn): string {
 const grouping = computed(() => props.groupBy !== undefined)
 
 /**
+ * The fold buttons stand in the FIRST column, a column of their own: the step that sets a row under
+ * its heading then moves to the second cell, since an indent of that column moves nothing visible.
+ */
+const foldFirst = computed(() => props.foldColumn !== undefined && props.columns[0]?.name === props.foldColumn)
+
+/**
  * Does this row sit UNDER A HEADING? That is what the indent step means, and it is not the same
  * as "the list is grouped": `showsGroupHead` lets a group state nothing, and its rows then stand
  * at the heading level rather than one step in.
@@ -363,6 +387,25 @@ function rowAttrs(row: T): Record<string, unknown> {
  * TWO triangles — measured 2026-10-09, and invisible in a test that read the first of them.
  * A reader learns one shape once.
  */
+/** The row a group's heading is, where the caller names one and the group draws a heading. */
+function headRow(section: ListGroup<T>): T | null {
+  if (!props.headOf || !hasHead(section.key)) return null
+  return props.headOf(section)
+}
+
+/** A group's rows beneath its head row — every row but that one. */
+function rowsUnder(section: ListGroup<T>): T[] {
+  const head = headRow(section)
+  return head ? section.rows.filter(row => row !== head) : section.rows
+}
+
+/** A head row's attributes: those of any row, standing on its own rather than under a heading. */
+function headAttrs(row: T): Record<string, unknown> {
+  const attrs = rowAttrs(row)
+  const classes = attrs['class'] as unknown[]
+  return { ...attrs, class: [...classes.slice(0, 2), { ...(classes[2] as object), grouped: false }] }
+}
+
 function markerFor(row: T): string {
   if (!props.showsChildren || !isControl(row)) return ''
   return glyph(props.showsChildren(row))
@@ -424,7 +467,7 @@ function sectionsOf(rows: T[]): ListGroup<T>[] {
 const unseenRows = computed<T[]>(() => {
   if (!props.measureClosed) return []
   return layout.value.flatMap(outer =>
-    outer.groups.flatMap(section => (outer.open && section.open ? [] : section.rows)))
+    outer.groups.flatMap(section => (outer.open && section.open ? [] : rowsUnder(section))))
 })
 
 const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
@@ -445,7 +488,7 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   <div class="record-shell">
   <ul
     class="record-list"
-    :class="{ ranked: deepestRank > 1, grouping }"
+    :class="{ ranked: deepestRank > 1, grouping, 'fold-first': foldFirst }"
     :style="{
       '--list-tracks': tracks,
       '--list-head-top': bandSpans ? bandHeight : '0px',
@@ -506,7 +549,40 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
         class this project has paid for most. Found on screen 2026-10-09: *"warum kann man das
         klicken?"* about an order heading in the step list.
       -->
-      <li v-if="groupBy && hasHead(section.key)">
+      <!--
+        A head ROW where the caller names one (`headOf`): the group's newest row, chosen by a click
+        like any row, and beside it — a sibling, never inside it, since a button cannot hold one — the
+        button that folds the others, placed in its named column over the row's own cells.
+      -->
+      <li v-if="headRow(section)">
+        <div class="record-headed">
+          <HoverCard
+            v-if="isControl(headRow(section)!) && rowCard?.(headRow(section)!)"
+            :title="rowCard(headRow(section)!)!.title"
+            :details="rowCard(headRow(section)!)!.details"
+            side="top"
+          >
+            <button type="button" v-bind="headAttrs(headRow(section)!)" @click="emit('pick', headRow(section)!)">
+              <slot :row="headRow(section)!" marker="" :head="section" />
+            </button>
+          </HoverCard>
+          <button v-else type="button" v-bind="headAttrs(headRow(section)!)" @click="emit('pick', headRow(section)!)">
+            <slot :row="headRow(section)!" marker="" :head="section" />
+          </button>
+          <AppButton
+            variant="quiet"
+            size="compact"
+            class="record-fold"
+            :style="{ gridColumn: foldColumn }"
+            :aria-expanded="section.open"
+            data-action="fold"
+            @click="emit('toggle', section.key)"
+          >
+            <slot name="fold" :group="section" :marker="glyph(section.open)" :count="section.rows.length - 1" />
+          </AppButton>
+        </div>
+      </li>
+      <li v-else-if="groupBy && hasHead(section.key)">
         <!-- the button twice, as on a row: a card must WRAP its trigger -->
         <HoverCard
           v-if="(isOpen || showsGroupChildren) && groupCard?.(section)"
@@ -537,7 +613,7 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
         </div>
       </li>
 
-      <li v-for="row in (section.open ? section.rows : [])" :key="rowKey(row)">
+      <li v-for="row in (section.open ? rowsUnder(section) : [])" :key="rowKey(row)">
         <!-- what changed BETWEEN this row and the one above it — a statement about the gap, so it
              is a line of its own and not a control -->
         <p v-if="hasLead?.(row)" class="record-lead">
@@ -799,6 +875,30 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   cursor: pointer;
 }
 
+/* a head row and the button that folds the rows beneath it, on one line of the list's tracks: both
+   in the first row of this grid, the button over the row in its named column, at that column's start
+   so the glyphs stand one under another */
+.record-headed {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.record-headed > .record-row,
+.record-headed > :deep(.record-row) {
+  grid-row: 1;
+}
+
+.record-fold {
+  grid-row: 1;
+  justify-self: start;
+  align-self: center;
+  z-index: 1;
+  /* past the row's own padding and its edge, as the row's cells stand: the subgrid around it has
+     none, so the button would start ten pixels left of the cells beneath it */
+  margin-left: calc(var(--space-sm) + 2px);
+}
+
 /* measured for the column widths, drawn with no height: its cells widen a track and take no line */
 .record-row.record-unseen {
   height: 0;
@@ -950,6 +1050,21 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
  * leaves others ungrouped would carry the marker out of the row with the shift. No list does today.
  */
 .record-list.grouping .record-row:not(.grouped) > :first-child {
+  transform: translateX(calc(-1 * var(--record-step)));
+}
+
+/* where the fold buttons have the first column, the step is the second cell's: an indent of a
+   column that holds nothing on a grouped row would move nothing a reader can see */
+.record-list.grouping.fold-first .record-row > :first-child {
+  padding-left: 0;
+  transform: none;
+}
+
+.record-list.grouping.fold-first .record-row > :nth-child(2) {
+  padding-left: var(--record-step);
+}
+
+.record-list.grouping.fold-first .record-row:not(.grouped) > :nth-child(2) {
   transform: translateX(calc(-1 * var(--record-step)));
 }
 

@@ -27,7 +27,7 @@ import { showPanel, FIXTURES_SHOWN, SEEDED } from './arrangement_seed'
 const OUT = '/app/docs/images'
 const RUN = '20261007_145935_5f9186f8'
 const UNIT = 'EURUSD_blocks_09'
-const SESSION = '20261022_123550_0bfde90e'
+const SESSION = '20261112_221825_c7364106'
 const DEPLOYMENT = 'deploy_20261110_145808_6b55f50f'
 // a session of that deployment, so the panels beside it show the bot's run
 const DEPLOYMENT_SESSION = '20261110_145930_c1df9fa3'
@@ -42,6 +42,7 @@ const HINTS = [
   'layer-empty-state-frame', 'chart-marks',
   'trade-slippage', 'position-link', 'beyond-the-venue', 'first-start', 'run-membership',
   'chart-panes', 'layer-periods', 'layer-empty-periods', 'layer-refusals', 'venue-account', 'bundle-places',
+  'layer-indicator', 'layer-empty-indicator', 'run-families', 'panel-maximize', 'layer-workers',
   'servers', 'layouts', 'layout-by-run', 'size-by-window', 'suggested-order',
 ]
 

@@ -135,6 +135,18 @@ describe('LatestStatePanel', () => {
     expect(text).not.toContain('0.016555830000')
   })
 
+  /**
+   * An account that is not spot holds its one balance, and its frames say `"balances": null` —
+   * measured 2026-11-13 on an MT5 session, whose Latest state then failed to draw at all.
+   */
+  it('says the one balance of an account that is not spot, where its frame lists none', () => {
+    const wrapper = mountPanel(answer(endedFixture, {}, { balances: null, balance: 10_000, account_currency: 'USD' }))
+    const text = wrapper.text()
+    expect(text).toContain('Balance')
+    expect(text).toContain('10,000.00 USD')
+    expect(text).not.toContain('Balance USD')
+  })
+
   /** A frame's prices at the tick size of the unit's instrument; a holding is no price and keeps its own digits. */
   it('prints the prices of a frame at the tick size of its unit\'s instrument', () => {
     const model = answer(endedFixture)

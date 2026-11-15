@@ -101,7 +101,16 @@ and no other layer passes it.
   size, so each pane's element is watched (`track`, `boxes` in `use_chart_panes`) and the legend
   stands by what was measured.
 - **It takes no pointer** — the chart under it keeps every move — and it takes the plot's width before
-  it wraps: at 60 % of the chart beside the report, the close went to a line of its own.
+  it wraps: at 60 % of the chart beside the report, the close went to a line of its own. A line too
+  long for the width wraps rather than being cut, so no value is lost (operator, 2026-11-14).
+- **The series on the candles fold away behind the bar's figures** (operator, 2026-11-14: *"ich sehe
+  mir die formen an, die koordinaten interessieren mich nur sekundär"*), as TradingView folds the
+  legends of its studies. The first line always stands; beneath the series, or alone where they are
+  folded, a fold in the link's ink — the one part of the legend that takes the pointer — says `▾`
+  open and `▸ 3` closed, the count of the lines it holds. It stands at the start of a line, where the
+  width of the figures cannot move it. A pane of series alone has no line of its own to keep, and no
+  fold. Closed legends are kept with the chart's view by the panes' names (`closedLegends`), and in
+  a named layout.
 - **The notices moved to the top right**, beside the price scale (`ChartNotices.vue`): the top left is
   the legend's, as in TradingView and Kraken Pro. The chart states the plot's width as
   `--chart-plot-width`, from the library's own report of it (`subscribeSizeChange`), so a notice keeps
@@ -121,8 +130,17 @@ and no other layer passes it.
   (operator, on screen 2026-11-12). They show while the pointer is over the pane and take the
   pointer only then; a keyboard reaches them all the while, and one focused shows. The notices stand
   a row below them.
-- **The eye is the layer's own lever** — the candles on the pane of the candles, the volume on its own
-  (`PANE_LAYERS`): the Layers panel and the chart always show one state.
+- **Two steps, so a long legend stays readable** (operator, on screen 2026-11-14: the controls stood
+  over the end of a line of figures). The pointer over the pane shows them faint — forty per cent
+  see-through — and BEHIND the legend; the pointer over the controls themselves, or a keyboard on
+  one, brings them in front of the legend, whole, on the chart's own surface.
+- **The eye and the ✕ are the pane's group's** (`layer_groups.ts`), the same as the eye at the pane's
+  heading in the Layers panel: one state, above every layer's own switch. The pane of the candles
+  cannot go, so its eye hides what it draws; a pane of its own goes at its ✕ and gives its room up —
+  the Layers panel shows it again, as the Panels menu does a panel (operator, 2026-11-14: an eye that
+  made a pane vanish read wrong; Kraken Pro removes a pane at a bin, and nothing of ours is deleted,
+  so the app's own ✕ for *hidden, there to come back*). Shown again, each layer in it stands as it
+  was set.
 - **The arrows give a pane the whole height**, the others folded to nothing — the library keeps
   2 px of a pane, too little to draw in. At 22 px the candles, the lane and the legend stood on each
   other (operator, on screen 2026-11-12). A folded pane's legend stands as a line in the pane at the
@@ -138,9 +156,35 @@ and no other layer passes it.
   double click nor a click beside a folded pane reads as a drag.
 - **One hint says it all** (`chart-panes`), above the chart beside the one for the marks, until put away.
 
+A drag reads the panes on screen, and a pane not on it keeps the height it had — the volume hidden,
+a worker's pane of another run or timeframe — up to the newest twenty-four panes kept. Before, a
+drag kept only the panes it read, and a hidden volume came back at its default.
+
+## Frame and background — a pane set apart (2026-11-13)
+
+```
+▾ VOLUME PANE
+     ● Volume                       ◐        ├──────────────────────────────┤
+       ◉ Own pane                            │░ Ticks 238 ░░░░░░░░░░░░░░░░░░│  background: the raised
+       ◉ Frame                               │░▂▅▃▇▂▁▃▅░░░░░░░░░░░░░░░░░░░░░│  surface, frame: a rule
+       ○ Background                          └──────────────────────────────┘  along its edges
+```
+
+- **Two switches, in the options of the pane's first row** (operator, 2026-11-13): the candles' row
+  for the pane of the candles, the volume's while it stands in a pane of its own, a worker's first
+  series for its own pane. A later row of the same pane sets nothing — the trades' row stands first
+  in the list of the candles' pane and is not the pane's.
+- **Off for every pane by default.** Only what is on is kept, by the pane's name, with the chart's
+  view and in a named layout, like the heights.
+- **One pane primitive each**, in the library's `bottom` stage: the background is the surface a panel
+  stands on (`--color-bg-surface`), the frame a device pixel of the overlay's rule
+  (`--color-border-overlay`). The library takes a pane's primitives down with the pane, so they are
+  painted anew after every layout of the panes, taken off before it while each pane still stands.
+
 ## Where it lives
 
-- `src/types/chart_pane_types.ts` — the panes we stack, by name (`CHART_PANE_IDS`), and `PaneWeights`.
+- `src/types/chart_pane_types.ts` — the panes we stack of our own (`CHART_PANE_IDS`); a pane in
+  general is a name, a worker's the backend's, and `PaneWeights` is kept by it.
 - `src/composables/use_chart_panes.ts` — the weights applied, and read back once a drag is let go;
   where each pane stands in the frame, measured whenever one changes size.
 - `src/components/chart_legend.ts` — what each legend says, from one bar and the volume (`paneLegends`),
@@ -149,9 +193,11 @@ and no other layer passes it.
 - `src/components/ChartPaneControls.vue` — the eye and the arrows at the pane's top right.
 - `PANE_LAYERS` in `chart_pane_types.ts` — the layer each pane's eye switches.
 - `CandleChart.placeVolume` — which pane the volume stands in, on which scale, and the count of panes
-  on the element (`data-panes`), since a canvas cannot be read back.
+  on the element (`data-panes`), since a canvas cannot be read back. A worker's panes stand below it:
+  taken down before the volume moves and built again after, see [Indicator Series](indicator_series.md).
 - `run_chart_store` — `volume.ownPane` from the layer's option, `paneWeights` and `setPaneWeights`,
-  `maximizedPane` and `setMaximizedPane`, `resetPanes`.
+  `maximizedPane` and `setMaximizedPane`, `paneLooks` and `setPaneLook`, `resetPanes`.
+- `src/components/pane_look.ts` — the primitive that paints a pane's background and frame.
 
 ## Not built yet
 
@@ -159,14 +205,8 @@ and no other layer passes it.
   instance — once #379 serves layers of its own. The tree and the names (`algo:<name>`,
   `worker:<instance>:<name>`) are agreed with FiniexTestingIDE as a direction (2026-11-12):
   [Chart Drawings and Layers](chart_drawings_and_layers.md).
-- **A worker's own pane** — an oscillator on a scale of its own, the way TradingView draws an RSI —
-  once FiniexTestingIDE serves a worker's outputs with the pane they belong in (testingide#379). A pane
-  joins `CHART_PANE_IDS` by name. The shape is agreed with them as a direction (2026-11-12), recorded
-  in #379 as *Indicator series — one value per bar*, and becomes a contract once #379's types are
-  fixed: one entry per worker instance with its `pane` (`"price"` on the candles), `plots` (Line,
-  Histogram, Area, Baseline), `price_lines`, `filled_areas` between two plots or two price lines, and
-  `times` beside `data`, one value per bar and `null` for a gap — read for a run as a stream through
-  testingide#580, and for the free chart computed on request over a window of bars.
+- **A worker's own pane on the free chart**, computed on request over a window of bars. A session's
+  is drawn since contract 55: [Indicator Series](indicator_series.md).
 
 ## How it is tested
 

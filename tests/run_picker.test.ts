@@ -241,31 +241,54 @@ describe('RunPicker', () => {
       })
     })
 
-    it('folds a set into one line and gives its runs back on a click', async () => {
+    /**
+     * A set's NEWEST run is its line (operator, 2026-11-13: "meist interessiert mich nur der neueste
+     * run"): a row like any, chosen by a click, and its earlier runs fold behind a button of their
+     * own beside it.
+     */
+    it('shows a set as its newest run, the earlier ones folded behind a button of their own', async () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'early', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
+        run({ run_id: 'late', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
+      ])
+      // no heading of its own: the newest run stands for the set, under the set's name
+      expect(wrapper.find('.record-group').exists()).toBe(false)
+      expect(rowIds(wrapper)).toEqual(['late'])
+      expect(rowFor(wrapper, 'late').find('.run-name').text()).toBe('nightly')
+      // CLOSED to begin with: the fold is the point, and a list that opens expanded folded nothing
+      const fold = wrapper.find('[data-action="fold"]')
+      expect(fold.attributes('aria-expanded')).toBe('false')
+      expect(fold.text()).toBe('▸ 1')
+
+      await fold.trigger('click')
+      expect(rowIds(wrapper)).toEqual(['late', 'early'])
+      expect(wrapper.find('[data-action="fold"]').attributes('aria-expanded')).toBe('true')
+    })
+
+    it('chooses the newest run of a set with one click on its line', async () => {
       const wrapper = mountPicker([
         run({ run_id: 'late', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
         run({ run_id: 'early', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
       ])
-      const heading = wrapper.find('.record-group')
-      expect(heading.exists()).toBe(true)
-      // CLOSED to begin with: the fold is the point, and a list that opens expanded folded nothing
-      expect(heading.attributes('aria-expanded')).toBe('false')
-      expect(rowIds(wrapper)).toEqual([])
-
-      await heading.trigger('click')
-      expect(rowIds(wrapper)).toEqual(['late', 'early'])
-      expect(wrapper.find('.record-group').attributes('aria-expanded')).toBe('true')
+      await rowFor(wrapper, 'late').trigger('click')
+      await flushPromises()
+      expect(useRunsStore().selectedRunId).toBe('late')
+      // the earlier runs stay folded: the chosen run is on show already
+      expect(rowIds(wrapper)).toEqual(['late'])
+      expect(rowFor(wrapper, 'late').classes()).toContain('picked')
     })
 
     it('leaves a set of one a plain row, with nothing to open', () => {
       const wrapper = mountPicker([run({ run_id: 'alone', name: 'once' })])
       expect(wrapper.findAll('.record-group')).toHaveLength(0)
+      expect(wrapper.find('[data-action="fold"]').exists()).toBe(false)
       expect(rowIds(wrapper)).toEqual(['alone'])
     })
 
     /**
      * The sweep case, and the one that refuted grouping by set name alone: nine runs with nine
-     * different set names, bound by one `parent_id`.
+     * different set names, bound by one `parent_id`. A sweep keeps a heading: its runs are
+     * combinations started together, and no one of them stands for it.
      */
     it('binds runs by their parent even where every set name differs', async () => {
       const wrapper = mountPicker([
@@ -275,9 +298,10 @@ describe('RunPicker', () => {
       ])
       const headings = wrapper.findAll('.record-group')
       expect(headings).toHaveLength(1)
+      expect(wrapper.find('[data-action="fold"]').exists()).toBe(false)
       // the heading is the parent itself, in their word for what it is
-      expect(headings[0]!.text()).toContain('sweep_1')
-      expect(headings[0]!.text()).toContain('sweep')
+      expect(headings[0]!.find('.family-name').text()).toBe('sweep_1')
+      expect(headings[0]!.find('.run-parent').text()).toBe('sweep')
       // the run outside the sweep is untouched by it
       expect(rowIds(wrapper)).toEqual(['solo'])
       await headings[0]!.trigger('click')
@@ -285,64 +309,72 @@ describe('RunPicker', () => {
     })
 
     /**
-     * How many, and WHEN the run at the top of it ran. The stamp is that row's own `Started`, which
-     * is what makes the family stand where it does: the list keeps families in the order their
-     * first row appears, so the sort the reader chose orders the families too.
+     * The date FIRST, as on every row (operator, 2026-11-13: the heading gave it last), and the
+     * newest of the family's, whatever the list is sorted by.
      */
-    it('says how many runs a family holds and when its top one ran', () => {
+    it('says when the newest run of a sweep ran, in the first cell, and how many it holds', () => {
+      useArrangementStore().setFacets('runs', {
+        selection: { purpose: ['regular', 'certificate', 'unknown'] }, search: '', sort: 'oldest', scope: null,
+      })
       const wrapper = mountPicker([
-        run({ run_id: 'b', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
-        run({ run_id: 'a', name: 'nightly', start_time: '2026-09-25T08:30:00+00:00' }),
+        run({ run_id: 'b', name: 'base__sweep_1_c001', parent_id: 'sweep_1', parent_kind: 'sweep', start_time: '2026-09-24T10:00:00+00:00' }),
+        run({ run_id: 'a', name: 'base__sweep_1_c002', parent_id: 'sweep_1', parent_kind: 'sweep', start_time: '2026-09-25T08:30:00+00:00' }),
       ])
-      const heading = wrapper.find('.record-group').text()
-      expect(heading).toContain('2 runs')
-      // the newest of the two, since the list opens newest-first
-      expect(heading).toContain('Sep 25')
-      expect(heading).not.toContain('Sep 24')
+      const heading = wrapper.find('.record-group')
+      expect(heading.find('.run-when').text()).toContain('Sep 25')
+      expect(heading.text()).not.toContain('Sep 24')
+      expect(heading.find('.family-meta').text()).toBe('▸ 2')
     })
 
     /**
-     * Where a family STANDS, which was the decision of 2026-10-09: at its top run, so that
-     * "sort by time" keeps meaning time. The alternative was grouping only under the name sort,
-     * which is two lists.
+     * Where a family STANDS: at its newest run, so that "sort by time" keeps meaning time — and
+     * under the oldest-first sort too, where that run comes after the family's others.
      */
-    it('orders families by the run each one stands at', () => {
-      const wrapper = mountPicker([
+    it('orders families by their newest run, whatever the sort', () => {
+      const rows = [
         run({ run_id: 'old_pair', name: 'older_set', start_time: '2026-09-20T10:00:00+00:00' }),
         run({ run_id: 'old_pair_2', name: 'older_set', start_time: '2026-09-19T10:00:00+00:00' }),
         run({ run_id: 'newest_alone', name: 'single', start_time: '2026-09-26T10:00:00+00:00' }),
         run({ run_id: 'new_pair', name: 'newer_set', start_time: '2026-09-25T10:00:00+00:00' }),
         run({ run_id: 'new_pair_2', name: 'newer_set', start_time: '2026-09-18T10:00:00+00:00' }),
-      ])
-      // the lines in the order they are drawn: a family stands at its top run, so `newer_set`
-      // comes above `older_set` although it also holds the oldest run of all
-      // read from the cell's own title, not out of the running text: the heading now carries
-      // the list's disclosure glyph as its first token
-      const lines = wrapper.findAll(`.record-group, ${SHOWN}`)
-        .map(node => node.find('.family-name').exists()
-          ? node.find('.family-name').attributes('title')
-          : node.find('.run-id').attributes('title'))
-      expect(lines).toEqual(['newest_alone', 'newer_set', 'older_set'])
+      ]
+      // read from the id cell's title: the cell itself shortens an id this long
+      const order = (wrapper: VueWrapper) => wrapper.findAll(`${SHOWN} .run-id`).map(node => node.attributes('title'))
+      // `newer_set` comes above `older_set` although it also holds the oldest run of all
+      expect(order(mountPicker(rows))).toEqual(['newest_alone', 'new_pair', 'old_pair'])
+
+      useArrangementStore().setFacets('runs', {
+        selection: { purpose: ['regular', 'certificate', 'unknown'] }, search: '', sort: 'oldest', scope: null,
+      })
+      const oldest = mountPicker(rows)
+      expect(order(oldest)).toEqual(['old_pair', 'new_pair', 'newest_alone'])
+      // opened, each family's earlier runs follow its newest, in the sort's own order
+      for (const fold of oldest.findAll('[data-action="fold"]')) (fold.element as HTMLElement).click()
+      return flushPromises().then(() => {
+        expect(order(oldest)).toEqual(['old_pair', 'old_pair_2', 'new_pair', 'new_pair_2', 'newest_alone'])
+      })
     })
 
     /**
-     * The kind is said ONCE. A family states it on its heading, so the rows beneath carried five
-     * identical `deployment` badges until this — seen on screen 2026-10-09, not reasoned about.
+     * What a run belongs to, in a column of its own (operator, 2026-11-13: "ev. dann type spalte"):
+     * their word, on every row it applies to, where a mark at the row's end stood on some rows only.
      */
-    it('marks the kind on a run that stands alone, and not under a heading that says it', async () => {
+    it('says what each run belongs to in its own column, a deployment under its own id', async () => {
       const wrapper = mountPicker([
         run({ run_id: 'alone', name: 'solo', parent_id: 'deploy_9', parent_kind: 'deployment' }),
-        run({ run_id: 'held_1', name: 'pair', parent_id: 'deploy_1', parent_kind: 'deployment' }),
-        run({ run_id: 'held_2', name: 'pair', parent_id: 'deploy_1', parent_kind: 'deployment' }),
+        run({ run_id: 'held_1', name: 'bot', parent_id: 'deploy_1', parent_kind: 'deployment', start_time: '2026-09-26T10:00:00+00:00' }),
+        run({ run_id: 'held_2', name: 'bot', parent_id: 'deploy_1', parent_kind: 'deployment' }),
+        run({ run_id: 'plain' }),
       ])
-      // the lone run keeps its badge: nothing above it says what kind of run it is
-      expect(wrapper.findAll(`${SHOWN} .run-marks`).map(node => node.text())).toEqual(['deployment'])
-
-      await wrapper.find('.record-group').trigger('click')
-      // opened, the family's two rows carry no badge at all — the heading carries it
-      expect(wrapper.findAll(SHOWN)).toHaveLength(3)
-      // the lone run is first (all three share a stamp, so the order is the one they arrived in)
-      expect(wrapper.findAll(`${SHOWN} .run-marks`).map(node => node.text())).toEqual(['deployment', '', ''])
+      await wrapper.find('[data-action="fold"]').trigger('click')
+      const types = Object.fromEntries(['alone', 'held_1', 'held_2', 'plain']
+        .map(id => [id, rowFor(wrapper, id).find('.run-parent').text()]))
+      expect(types).toEqual({ alone: 'deployment', held_1: 'deployment', held_2: 'deployment', plain: '' })
+      // the end of the row no longer says it
+      expect(wrapper.findAll(`${SHOWN} .run-marks`).every(node => !node.text().includes('deployment'))).toBe(true)
+      // the deployment's newest session stands under the deployment's id, the earlier under its name
+      expect(rowFor(wrapper, 'held_1').find('.run-name').text()).toBe('deploy_1')
+      expect(rowFor(wrapper, 'held_2').find('.run-name').text()).toBe('bot')
     })
 
     /**
@@ -379,34 +411,38 @@ describe('RunPicker', () => {
     })
 
     /** A chosen run must never sit inside a fold nobody opened — it would be out of reach. */
-    it('keeps the family of the chosen run open', async () => {
+    it('opens the family of a chosen earlier run, and leaves it folded for its newest', async () => {
       const wrapper = mountPicker([
-        run({ run_id: 'pickedone', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
-        run({ run_id: 'other', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
+        run({ run_id: 'newest', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
+        run({ run_id: 'earlier', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
       ])
-      expect(rowIds(wrapper)).toEqual([])
-      useContextStore().selectRun('pickedone')
+      expect(rowIds(wrapper)).toEqual(['newest'])
+      useContextStore().selectRun('newest')
       await flushPromises()
-      expect(rowIds(wrapper)).toEqual(['pickedone', 'other'])
+      expect(rowIds(wrapper)).toEqual(['newest'])
+
+      useContextStore().selectRun('earlier')
+      await flushPromises()
+      expect(rowIds(wrapper)).toEqual(['newest', 'earlier'])
     })
 
     /**
-     * Opened WITH the choice rather than held open: a heading that could not close the family was a
+     * Opened WITH the choice rather than held open: a fold that could not close the family was a
      * button that did nothing. *Show in list* opens it again where the reader closed it.
      */
     it('lets the reader close the family of the chosen run, and opens it again when the row is asked for', async () => {
       const wrapper = mountPicker([
-        run({ run_id: 'pickedone', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
-        run({ run_id: 'other', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
+        run({ run_id: 'newest', name: 'nightly', start_time: '2026-09-25T10:00:00+00:00' }),
+        run({ run_id: 'earlier', name: 'nightly', start_time: '2026-09-24T10:00:00+00:00' }),
       ])
-      useContextStore().selectRun('pickedone')
+      useContextStore().selectRun('earlier')
       await flushPromises()
-      await wrapper.find('.record-group').trigger('click')
-      expect(rowIds(wrapper)).toEqual([])
+      await wrapper.find('[data-action="fold"]').trigger('click')
+      expect(rowIds(wrapper)).toEqual(['newest'])
 
       useRunsStore().askForChosenRow()
       await flushPromises()
-      expect(rowIds(wrapper)).toEqual(['pickedone', 'other'])
+      expect(rowIds(wrapper)).toEqual(['newest', 'earlier'])
     })
   })
 
@@ -836,8 +872,24 @@ describe('RunPicker', () => {
 
       expect(heads).not.toHaveLength(0)
       expect(cells).toEqual(heads)
-      // WHICH run, whether it worked, what it earned: Started, Set, Outcome, Net P&L
+      // the fold column, then WHEN, WHICH run and what it earned: Started, Set, Net P&L — the
+      // outcome gives way next
       expect(heads.filter(rank => rank === '1')).toHaveLength(4)
+    })
+
+    /** A sweep's heading stands in the same tracks as a row, so its cells give way with theirs. */
+    it('gives a sweep heading the ranks its columns declare', () => {
+      useArrangementStore().setFacets('runs', {
+        selection: { purpose: ['regular', 'certificate', 'unknown'] }, search: '', sort: 'newest', scope: null,
+      })
+      const wrapper = mountPicker([
+        run({ run_id: 'c1', name: 'base__sweep_1_c001', parent_id: 'sweep_1', parent_kind: 'sweep' }),
+        run({ run_id: 'c2', name: 'base__sweep_1_c002', parent_id: 'sweep_1', parent_kind: 'sweep' }),
+      ])
+      const heads = wrapper.findAll('.record-head > span').map(node => node.attributes('data-rank'))
+      const cells = wrapper.find('.record-group').findAll('[data-rank]').map(node => node.attributes('data-rank'))
+      expect(heads).not.toHaveLength(0)
+      expect(cells).toEqual(heads)
     })
 
     /** Every row carries one: the index row has twenty-one fields and ten of them reach a column. */

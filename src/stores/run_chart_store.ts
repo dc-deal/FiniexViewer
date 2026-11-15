@@ -12,18 +12,23 @@ import {
 } from '@/components/runs/run_chart_marks'
 import { BARS_PER_BATCH, useBarLoader } from '@/composables/use_bar_loader'
 import type { BarEdge } from '@/composables/use_bar_loader'
+import { drawsOn } from '@/components/indicator_drawing'
+import { framePaneOf, frameworkGroupsOf, hiddenByGroup, workerGroupsOf } from '@/layer_groups'
 import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
 import { useContextStore } from '@/stores/context_store'
 import { useFramePlayerStore } from '@/stores/frame_player_store'
+import { useIndicatorSeriesStore } from '@/stores/indicator_series_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { useTimeframeStore } from '@/stores/timeframe_store'
 import type { ChartBar, CoverageResponse } from '@/types/api/bar_types'
 import type { StoredPanelView } from '@/types/arrangement_types'
 import type { ChartDrawing, ChartLayer, DrawingLayerId } from '@/types/chart_drawing_types'
-import type { ChartPaneId, PaneWeights } from '@/types/chart_pane_types'
+import type { PaneLook, PaneLooks, PaneWeights } from '@/types/chart_pane_types'
+import type { DrawnSeries, IndicatorLayer, ServedLayerId } from '@/types/indicator_drawing_types'
+import type { LayerState } from '@/types/layer_types'
 import type { PositionRef } from '@/types/context_types'
 import type { ChartCandles, ChartMark, ChartUnit, ChartVolume, TimeframeOffer, VolumeBasis } from '@/types/run_chart_types'
 
@@ -32,6 +37,8 @@ type CoverageEntry = CoverageResponse | 'none'
 
 /** The run chart's dock id — the drawing layers the reader arranged for it are kept under it. */
 const RUN_CHART = 'run-chart'
+/** How many panes' heights are kept, the newest: a worker's panes come and go with the runs shown. */
+const KEPT_PANES = 24
 
 function marketKey(unit: ChartUnit): string {
   return `${unit.broker}/${unit.symbol}`
@@ -58,6 +65,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   const arrangement = useArrangementStore()
   const timeframeStore = useTimeframeStore()
   const framePlayers = useFramePlayerStore()
+  const indicatorSeries = useIndicatorSeriesStore()
 
   /** How many run charts are on show. Nothing is fetched while there are none. */
   const viewers = ref(0)
@@ -264,8 +272,16 @@ export const useRunChartStore = defineStore('runChart', () => {
       id: state.id,
       drawings: drawn[state.id].value,
       ...(state.opacity < 100 ? { opacity: state.opacity / 100 } : {}),
-      ...(state.shown ? {} : { hidden: true }),
+      ...(visible(state) ? {} : { hidden: true }),
     }]))
+
+  /** The groups hidden above their layers' own switches (`layer_groups.ts`). */
+  const groupsHidden = computed<ReadonlySet<string>>(() => new Set(arrangement.panelViews[RUN_CHART]?.layers?.groupsHidden ?? []))
+
+  /** A layer of ours drawn: its own switch on, and no group of it hidden — its pane, the framework's in it. */
+  function visible(state: LayerState): boolean {
+    return state.shown && !hiddenByGroup(groupsHidden.value, frameworkGroupsOf(framePaneOf(state.id, state.option)))
+  }
 
   /**
    * What the volume layer counts. Their `market-data` document: `v` is the traded volume, `0.0` on
@@ -279,7 +295,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   const candles = computed<ChartCandles | null>(() => {
     const state = arranged.value.find(entry => entry.id === 'candles')
     if (!state) return null
-    return { form: state.form ?? 'candles', shown: state.shown, opacity: state.opacity / 100 }
+    return { form: state.form ?? 'candles', shown: visible(state), opacity: state.opacity / 100 }
   })
 
   /** The volume layer: one value a bar, behind the candles, shown and as strong as arranged. */
@@ -289,7 +305,7 @@ export const useRunChartStore = defineStore('runChart', () => {
     const traded = volumeBasis.value === 'traded'
     return {
       basis: volumeBasis.value,
-      shown: state.shown,
+      shown: visible(state),
       // the layer's option, its default the register's: on
       ownPane: state.option === true,
       opacity: state.opacity / 100,
@@ -345,7 +361,10 @@ export const useRunChartStore = defineStore('runChart', () => {
     // bar the first tick fell in opened BEFORE the window, and is asked for from one period earlier.
     // Measured 2026-10-15: `from=05:00:00.274` answered from the 05:01 bar, and the trade at
     // 05:00:40 had no candle. The length only widens the ask; marks stand on the bars served.
-    const from = Date.parse(span.from) - period
+    // A millisecond less than a period: a window that starts ON a bar's open would otherwise take the
+    // whole bar before it, which closed as the run began — seen on screen 2026-11-14, a session from
+    // 00:00 drew the 23:45 bar, of no tick of its own.
+    const from = Date.parse(span.from) - period + 1
     const at = focusAt.value
     await loader.open({
       broker: target.broker!,
@@ -369,8 +388,13 @@ export const useRunChartStore = defineStore('runChart', () => {
     if (unit.value && unit.value.block === null) void askCoverage(unit.value)
   }, { immediate: true })
 
+  // each source watched on its own, so that only a value that changed loads afresh: one getter
+  // answering a new array each time loaded the bars again for the same values — whenever the run index
+  // was read anew, as the run list does when it is shown again — and the chart lost the reader's zoom
+  // (on screen 2026-11-14, a panel given the whole dock and back)
   watch(
-    () => [viewers.value > 0, unit.value?.name, unit.value?.broker, unit.value?.symbol, window.value?.from, window.value?.to, timeframe.value],
+    [() => viewers.value > 0, () => unit.value?.name, () => unit.value?.broker, () => unit.value?.symbol,
+      () => window.value?.from, () => window.value?.to, () => timeframe.value],
     () => { if (viewers.value) void loadBars() },
   )
 
@@ -383,8 +407,40 @@ export const useRunChartStore = defineStore('runChart', () => {
     if (at * 1000 < from || at * 1000 > to) void loadBars()
   })
 
+  /**
+   * The stretch a session's series are read over: what the bars cover, `loadedTo` being the last
+   * millisecond loaded. While the first batch is on its way, the stretch it covers at the least — from
+   * its start the bars of one batch, within the window — so the series are asked WITH the bars rather
+   * than after them (operator, 2026-11-13: the drawing came late). A batch over a gap covers more, and
+   * the read grows with what the bars then cover; what it read stays read.
+   */
+  const seriesSpan = computed<{ from: number, to: number } | null>(() => {
+    const from = loader.loadedFrom.value
+    if (from === null) return null
+    const to = loader.loadedTo.value
+    if (to !== null) return { from, to: to + 1 }
+    const span = window.value
+    const tf = timeframe.value
+    if (!span || !tf) return null
+    const period = (timeframeStore.minutesFor(tf) ?? 1) * 60_000
+    // a full batch without a gap ends on the bar that opens a batch less one period on, as `loadedTo` will
+    return { from, to: Math.min(Date.parse(span.to), from + (BARS_PER_BATCH - 1) * period) + 1 }
+  })
+
+  // A session's drawing workers, for the unit on show (contract 55). A backtest records them too,
+  // but its streams over time are not served yet, so only a session asks.
+  watch(
+    [() => viewers.value > 0, () => runsStore.selectedRun?.run_id, () => runsStore.selectedRun?.group,
+      () => unit.value?.name, () => seriesSpan.value?.from, () => seriesSpan.value?.to],
+    ([shown, runId, group, name, from, to]) => {
+      const session = shown && runId && group === 'autotrader' && name ? { runId, unit: name } : null
+      void indicatorSeries.follow(session, session && from !== undefined && to !== undefined ? { from, to } : null)
+    },
+    { immediate: true },
+  )
+
   // the place the offer centred on belongs to the unit and the position it was taken for
-  watch(() => [unit.value?.name, focus.value?.position] as const, () => { offerAt.value = null })
+  watch([() => unit.value?.name, () => focus.value?.position], () => { offerAt.value = null })
 
   // the focus cleared leaves the chart where it was: the unit it showed becomes its own choice.
   // Only within one run — a new run clears the focus too, and its chart starts afresh
@@ -424,6 +480,62 @@ export const useRunChartStore = defineStore('runChart', () => {
     spacing.value = next
   }
 
+  /**
+   * The workers' series the chart draws (contract 55): each one the reader left shown, at its layer's
+   * opacity, on the timeframe on show where it can be drawn there — its own and every finer one.
+   */
+  const indicators = computed<DrawnSeries[]>(() => indicatorLayers.value
+    .filter(layer => layer.shown && !layer.muted && layer.drawable)
+    .map(layer => {
+      const minutes = timeframeStore.minutesFor(layer.entry.timeframe)
+      return { entry: layer.entry, opacity: layer.opacity / 100, span: minutes ? minutes * 60 : null, place: layer.place }
+    }))
+
+  /**
+   * Every worker's layer of the unit on show, in the order served, as the reader set it — drawn or
+   * not: the Layers panel lists them all, and says where one cannot be drawn on the timeframe on show.
+   */
+  const indicatorLayers = computed<IndicatorLayer[]>(() => {
+    const tf = timeframe.value
+    const kept = arrangement.panelViews[RUN_CHART]?.layers?.served
+    // each series' place among every series served for its pane, shown or not: its neutral ink, in
+    // the chart and in its sample in the Layers panel alike
+    const counted = new Map<string, number>()
+    return indicatorSeries.series.map(entry => {
+      const place = counted.get(entry.pane) ?? 0
+      counted.set(entry.pane, place + 1)
+      return {
+        entry,
+        shown: !kept?.hidden?.includes(entry.layer as ServedLayerId),
+        muted: hiddenByGroup(groupsHidden.value, workerGroupsOf(entry.pane, entry.layer)),
+        opacity: kept?.opacity?.[entry.layer as ServedLayerId] ?? 100,
+        drawable: tf !== null && drawsOn(entry.timeframe, tf, timeframeStore.minutesFor),
+        place,
+      }
+    })
+  })
+
+  /**
+   * The timeframe that draws every worker's series the reader left shown, where the one on show
+   * cannot draw some: the coarsest of theirs, since a series draws on its own and every finer one —
+   * offered where the market is rendered in it. None where every shown series is drawn.
+   */
+  const seriesOffer = computed<{ timeframe: string, apart: number } | null>(() => {
+    // a timeframe whose length is not known draws only where it is the chart's own: none to offer for it
+    const known = indicatorLayers.value.filter(layer => layer.shown && !layer.muted && timeframeStore.minutesFor(layer.entry.timeframe))
+    const undrawn = known.filter(layer => !layer.drawable).length
+    if (!undrawn) return null
+    const finest = [...new Set(known.map(layer => layer.entry.timeframe))]
+      .sort((a, b) => timeframeStore.minutesFor(a)! - timeframeStore.minutesFor(b)!)[0]
+    return finest && finest !== timeframe.value && coveredTimeframes.value.includes(finest) ? { timeframe: finest, apart: undrawn } : null
+  })
+
+  /** Why the series could not be read, in words; null once a read succeeds. */
+  const seriesError = computed(() => indicatorSeries.error)
+
+  /** Where the series stop because a read took its pages, in UTC seconds — said on the chart. Null where none did. */
+  const seriesCutAt = computed(() => indicatorSeries.cutAt === null ? null : Math.floor(indicatorSeries.cutAt / 1000))
+
   /** The panes as tall as the reader dragged them, kept with the chart's own view (viewer#57). */
   const paneWeights = computed<PaneWeights | null>(() => arrangement.panelViews[RUN_CHART]?.panes ?? null)
 
@@ -432,7 +544,12 @@ export const useRunChartStore = defineStore('runChart', () => {
    * whole height: the heights the reader drew are theirs from then on.
    */
   function setPaneWeights(weights: PaneWeights): void {
-    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('maximized'), panes: weights })
+    // a drag reads the panes on screen; a pane not on it now — the volume hidden, a worker's pane of
+    // another run or timeframe — keeps the height it had. The newest last, the oldest let go past a cap
+    const kept = { ...arrangement.panelViews[RUN_CHART]?.panes }
+    for (const pane of Object.keys(weights)) delete kept[pane]
+    const panes = Object.fromEntries(Object.entries({ ...kept, ...weights }).slice(-KEPT_PANES))
+    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('maximized'), panes })
   }
 
   /** The chart's own view as kept, without the fields named. */
@@ -443,12 +560,36 @@ export const useRunChartStore = defineStore('runChart', () => {
   }
 
   /** The pane given the whole height, kept like the heights: with the chart's view, in a layout. */
-  const maximizedPane = computed<ChartPaneId | null>(() => arrangement.panelViews[RUN_CHART]?.maximized ?? null)
+  const maximizedPane = computed<string | null>(() => arrangement.panelViews[RUN_CHART]?.maximized ?? null)
 
   /** Gives one pane the whole height, or none — the heights kept stand again. */
-  function setMaximizedPane(pane: ChartPaneId | null): void {
+  function setMaximizedPane(pane: string | null): void {
     const view = chartViewWithout('maximized')
     arrangement.setPanelView(RUN_CHART, pane ? { ...view, maximized: pane } : view)
+  }
+
+  /** Each pane's frame and background, kept like the heights: with the chart's view, in a layout (viewer#57). */
+  const paneLooks = computed<PaneLooks | null>(() => arrangement.panelViews[RUN_CHART]?.looks ?? null)
+
+  /** A pane's frame or background on or off — only what is on is kept. */
+  function setPaneLook(pane: string, part: keyof PaneLook, on: boolean): void {
+    const looks: PaneLooks = { ...arrangement.panelViews[RUN_CHART]?.looks }
+    const look: PaneLook = { ...looks[pane] }
+    if (on) look[part] = true
+    else delete look[part]
+    if (Object.keys(look).length) looks[pane] = look
+    else delete looks[pane]
+    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('looks'), ...(Object.keys(looks).length ? { looks } : {}) })
+  }
+
+  /** The panes whose legend shows its first line alone, the rest behind its fold — by name. */
+  const closedLegends = computed<string[]>(() => arrangement.panelViews[RUN_CHART]?.closedLegends ?? [])
+
+  /** A pane's legend closed to its first line, or opened again (operator, 2026-11-14). */
+  function closeLegend(pane: string, closed: boolean): void {
+    const others = closedLegends.value.filter(name => name !== pane)
+    const next = closed ? [...others, pane] : others
+    arrangement.setPanelView(RUN_CHART, { ...chartViewWithout('closedLegends'), ...(next.length ? { closedLegends: next } : {}) })
   }
 
   /** The panes back at their first heights, none of them given the whole height. */
@@ -483,7 +624,8 @@ export const useRunChartStore = defineStore('runChart', () => {
   return {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
-    paneWeights, maximizedPane, loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
+    paneWeights, maximizedPane, paneLooks, setPaneLook, closedLegends, closeLegend, indicators, indicatorLayers, seriesOffer, seriesCutAt, seriesError,
+    loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }
 })

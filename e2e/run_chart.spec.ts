@@ -249,3 +249,32 @@ test('earlier bars arrive across a gap as the view nears them, and the view does
   await expect(chart).toHaveAttribute('data-visible-from', String(Date.parse('2025-10-31T05:00:00Z') / 1000))
   await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
 })
+
+/**
+ * A run chart given the whole dock zooms the same stretch across it, and gives it back as it was
+ * (operator, 2026-11-14): at a kept bar spacing the bars stood in a third of the width, the rest
+ * empty. The first bar on show is the measure — the same before, while large and after.
+ */
+test('the run chart keeps its stretch of time when its panel is given the whole dock and back', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => Number(await chart.getAttribute('data-bars'))).toBeGreaterThan(0)
+  const box = (await chart.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  // zoomed in, so that a wider chart at the same bar spacing would show earlier bars
+  for (let step = 0; step < 6; step++) await page.mouse.wheel(0, -400)
+  await expect.poll(async () => chart.getAttribute('data-visible-from')).not.toBeNull()
+  await page.waitForTimeout(300)
+  const from = await chart.getAttribute('data-visible-from')
+
+  await page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="run-chart"]') }).dblclick()
+  await expect.poll(async () => (await chart.boundingBox())!.width).toBeGreaterThan(box.width * 1.3)
+  await page.waitForTimeout(300)
+  expect(await chart.getAttribute('data-visible-from')).toBe(from)
+
+  await page.keyboard.press('Escape')
+  await expect.poll(async () => Math.abs((await chart.boundingBox())!.width - box.width)).toBeLessThan(3)
+  await page.waitForTimeout(300)
+  expect(await chart.getAttribute('data-visible-from')).toBe(from)
+})

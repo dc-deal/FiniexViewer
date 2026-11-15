@@ -201,9 +201,16 @@ test('the controls at the top right of a pane hide what it draws and give it the
   const controls = chart.locator('.pane-controls[data-pane="volume"]')
   await expect(controls).toHaveCSS('opacity', '0')
   await page.mouse.move(box.x + 60, box.y + box.height / 2)
-  await expect(controls).toHaveCSS('opacity', '1')
+  // two steps (operator, 2026-11-14): over the pane, faint and behind its figures
+  await expect(controls).toHaveCSS('opacity', '0.6')
+  const legendLayer = Number(await chart.locator('[data-legend="volume"]').evaluate(node => getComputedStyle(node).zIndex))
+  expect(Number(await controls.evaluate(node => getComputedStyle(node).zIndex))).toBeLessThan(legendLayer)
   // at the right edge, far from the figures at the left — whatever their width
   expect((await controls.boundingBox())!.x).toBeGreaterThan(box.x + box.width / 2)
+  // over the controls themselves, whole and in front of the figures
+  await controls.hover()
+  await expect(controls).toHaveCSS('opacity', '1')
+  expect(Number(await controls.evaluate(node => getComputedStyle(node).zIndex))).toBeGreaterThan(legendLayer)
 
   // the arrows: the volume the whole height, the candles folded to their line of figures
   await controls.locator('[data-action="pane-whole"]').click()
@@ -224,13 +231,15 @@ test('the controls at the top right of a pane hide what it draws and give it the
   await painted(page)
   expect(await lowestShare(chart)).toBeCloseTo(0.2, 1)
 
-  // the eye: the volume hidden as its row in the Layers panel would hide it, its pane gone
+  // the ✕: a pane of its own closed, its pane's group hidden above the volume's own switch, its pane gone
   const again = (await paneRows(chart).last().boundingBox())!
   await page.mouse.move(again.x + 60, again.y + again.height / 2)
-  await controls.locator('[data-action="pane-shown"]').click()
+  await expect(controls.locator('[data-action="pane-shown"]')).toHaveCount(0)
+  await controls.locator('[data-action="pane-close"]').click()
   await expect(chart).toHaveAttribute('data-panes', '1')
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').panelViews?.['run-chart']?.layers?.hidden))
-    .toEqual(['volume'])
+  const layers = await page.evaluate(() => JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').panelViews?.['run-chart']?.layers)
+  expect(layers?.groupsHidden).toEqual(['pane:volume'])
+  expect(layers?.hidden).toBeUndefined()
 })
 
 /** As VS Code's sashes do: a double click on the seam brings the first heights back. */

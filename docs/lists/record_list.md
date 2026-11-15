@@ -75,6 +75,18 @@ group: the run list folds 85 lines into 42, but 28 of those groups hold one run,
 one row is a line, a glyph and a click to disclose what is already on screen. A group with no
 heading is never closed — nothing could open it again.
 
+**A group's heading can be one of its ROWS.** `headOf` names it — the run list's newest run of a
+set or a deployment, because that is the run a reader looks for (operator, 2026-11-13). It is
+drawn and chosen like any row, standing level rather than a step in, and the group's other rows
+fold beneath it. Beside it stands a button of its own that folds them — a sibling of the row,
+never inside it, since a button cannot hold one — in the column `foldColumn` names, at that
+column's start. The column is named by `ListColumn.name`, which puts named lines on its track
+(`[fold-start] … [fold-end]`), so the button finds its column whatever columns a narrow list gave
+up. The `fold` slot fills the button, and the caller leaves the cell beneath it empty. Where the
+fold column stands FIRST, as on the run list, the step that sets a row under its heading moves to
+the second cell (`fold-first`), since an indent of an empty column moves nothing a reader sees.
+Where `headOf` answers null the group keeps a heading of its own.
+
 **ONE disclosure glyph, and the list decides it.** Two panels wrote `group.open ? '▾' : '▸'` by
 hand, a third opened its fills with no glyph at all, and the operator could not find the disclosure
 on screen (2026-10-08). The glyph now travels as a slot prop — `marker` — exactly as a row's does:

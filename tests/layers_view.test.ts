@@ -8,6 +8,14 @@ import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useHintsStore } from '@/stores/hints_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
+import { useIndicatorSeriesStore } from '@/stores/indicator_series_store'
+import { useContextStore } from '@/stores/context_store'
+import { useRunsStore } from '@/stores/runs_store'
+import { useRunReportsStore } from '@/stores/run_reports_store'
+import type { RunConfigReport, RunInfo } from '@/types/api/report_types'
+import type { RecordedWindow } from '@/types/api/state_frame_types'
+import seriesWindow from './fixtures/recorded_window_series.json'
+import runsList from './fixtures/runs_list.json'
 
 /**
  * The Layers panel over the chart last in front: its drawing layers front first, one row each —
@@ -230,6 +238,262 @@ describe('LayersView', () => {
   it('puts the handle of each layer\'s opacity in its row', () => {
     const wrapper = mountOn('run-chart')
     expect(row(wrapper, 'trades').find('[data-action="opacity"]').attributes('aria-label')).toBe('Opacity: 100 %')
+  })
+
+  /**
+   * A worker's layers (contract 55), from the session FiniexTestingIDE produced to draw every kind of
+   * pane: each in the pane its series names — a pane of their own grouped like ours — and a source
+   * named only where a pane holds two: the framework's and a worker's, or two workers'.
+   */
+  describe('a worker\'s layers', () => {
+    const SERIES = (seriesWindow as RecordedWindow).indicator_series
+    const RUN = (seriesWindow as RecordedWindow).run_id
+
+    function mountWithSeries(series = SERIES): VueWrapper {
+      const runs = useRunsStore()
+      runs.runs = (runsList as unknown as { runs: RunInfo[] }).runs
+      useContextStore().selectRun(RUN)
+      // the chart's store first: it lets go of the series while no chart is on show, as it should
+      useRunChartStore()
+      useIndicatorSeriesStore().series = series
+      useDockStore().lastChart = 'run-chart'
+      const Host = defineComponent({
+        setup() {
+          providePanelView('layers')
+          return () => h(LayersView)
+        },
+      })
+      mounted = mount(Host)
+      return mounted
+    }
+
+    /**
+     * A line of its own only for a group (operator, 2026-11-14): the framework's and the workers'
+     * where both stand in a pane, a worker only where it draws more than one layer there. Each row
+     * says the timeframe its worker was served in a column of its own, never cut by its name.
+     */
+    it('lists each in the pane its series names, a line of its own only for a group', () => {
+      const wrapper = mountWithSeries()
+      const own = [...new Set(SERIES.map(entry => entry.pane).filter(pane => pane !== 'price'))]
+      expect(wrapper.findAll('[data-pane-group]').map(group => group.attributes('data-pane-group')))
+        .toEqual(['price', 'volume', ...own])
+      // the candles' pane: the framework's layers and the workers', each worker drawing one layer
+      // there and standing as its row alone
+      const price = wrapper.find('[data-pane-group="price"]')
+      expect(price.findAll('.source-heading').map(heading => heading.attributes('data-source'))).toEqual(['framework', 'workers'])
+      // a pane of one worker's: no source named
+      expect(wrapper.find(`[data-pane-group="${own[0]}"] .source-heading`).exists()).toBe(false)
+      const rsi = SERIES.find(entry => entry.layer === 'worker:rsi_fast')!
+      expect(wrapper.find('[data-pane-group="rsi_fast"] .pane-heading').text()).toContain(`${rsi.title} pane`)
+      expect(row(wrapper, 'worker:rsi_fast').find('.layer-title').text()).toBe(`RSI ${rsi.inputs['period']}`)
+      expect(row(wrapper, 'worker:rsi_fast').find('.layer-timeframe').text()).toBe(rsi.timeframe)
+      // each level one step in, along its guide (operator, 2026-11-14): a row of the candles' framework
+      // and workers stands two groups deep, a row of a worker's own pane one
+      const depth = (layer: string): number => {
+        let count = 0
+        for (let node = row(wrapper, layer).element.parentElement; node; node = node.parentElement) {
+          if (node.classList.contains('group-body')) count++
+        }
+        return count
+      }
+      expect(depth('candles')).toBe(2)
+      expect(depth(SERIES.find(entry => entry.pane === 'price')!.layer)).toBe(2)
+      expect(depth('worker:rsi_fast')).toBe(1)
+      // never moved: no grip
+      expect(row(wrapper, 'worker:rsi_fast').find('.layer-grip').text()).toBe('')
+    })
+
+    /**
+     * The workers apart from the framework, hidden whole by one eye (operator, 2026-11-13: "kann ich
+     * gruppe ausblenden komplett? wobei es aber keinen sinn macht die standardgruppe auszublenden").
+     */
+    it('puts the workers of the candles\' pane under a heading whose eye hides them all, the framework\'s left alone', async () => {
+      const wrapper = mountWithSeries()
+      const price = () => wrapper.find('[data-pane-group="price"]')
+      const workers = SERIES.filter(entry => entry.pane === 'price').map(entry => entry.layer)
+      // the framework's heading folds and has its own eye, untouched by the workers'
+      expect(price().find('[data-source="framework"] [data-action="show-framework"]').attributes('aria-pressed')).toBe('true')
+      const eye = () => price().find('[data-source="workers"] [data-action="show-workers"]')
+      expect(eye().attributes('aria-pressed')).toBe('true')
+
+      await eye().trigger('click')
+      // the group hidden above its layers: each keeps its own switch, faint while its group hides it
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.groupsHidden).toEqual(['workers:price'])
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden).toBeUndefined()
+      expect(eye().attributes('aria-pressed')).toBe('false')
+      for (const layer of workers) {
+        expect(row(wrapper, layer).attributes('data-shown')).toBe('true')
+        expect(row(wrapper, layer).attributes('data-muted')).toBe('true')
+      }
+      expect(row(wrapper, 'candles').attributes('data-muted')).toBe('false')
+
+      await eye().trigger('click')
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.groupsHidden).toBeUndefined()
+      expect(row(wrapper, workers[0]!).attributes('data-muted')).toBe('false')
+    })
+
+    /** A worker drawing two layers in one pane is a group: a heading of its own, which folds and hides them. */
+    it('gives a worker with two layers in a pane a heading that folds them and an eye that hides them', async () => {
+      const first = SERIES.find(entry => entry.pane === 'price')!
+      const worker = first.layer.split(':')[1]!
+      const second = { ...first, layer: `${first.layer}:second` }
+      const wrapper = mountWithSeries([...SERIES, second])
+      const heading = () => wrapper.find(`[data-source="${worker}"]`)
+      expect(heading().exists()).toBe(true)
+
+      await heading().find('[data-action="show-worker"]').trigger('click')
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.groupsHidden).toEqual([`worker:price|${worker}`])
+      expect(row(wrapper, first.layer).attributes('data-muted')).toBe('true')
+      expect(row(wrapper, second.layer).attributes('data-muted')).toBe('true')
+      expect(heading().find('[data-action="show-worker"]').attributes('aria-pressed')).toBe('false')
+
+      await heading().find('[data-action="fold-worker"]').trigger('click')
+      expect(row(wrapper, second.layer).exists()).toBe(false)
+      expect(useArrangementStore().panelViews['layers']?.rows?.keys['sources-folded']).toEqual([`price|worker:${worker}`])
+    })
+
+    /** The workers of a pane fold away as one (operator, 2026-11-14: "ich kann worker nicht einklappen?"). */
+    it('folds the workers of a pane away under their heading, kept for the run', async () => {
+      const wrapper = mountWithSeries()
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      await wrapper.find('[data-pane-group="price"] [data-action="fold-workers"]').trigger('click')
+      expect(row(wrapper, onCandles).exists()).toBe(false)
+      expect(row(wrapper, 'candles').exists()).toBe(true)
+      // the workers of the candles' pane are the same in every run: their fold is kept for all
+      expect(useArrangementStore().panelViews['layers']?.expanded).toEqual({ 'layers-workers-price': false })
+      await wrapper.find('[data-pane-group="price"] [data-action="fold-workers"]').trigger('click')
+      expect(row(wrapper, onCandles).exists()).toBe(true)
+    })
+
+    /**
+     * Every group has its eye (operator, 2026-11-14): a pane's, the framework's — each a visibility
+     * above its layers' switches, the way a folder track's mute works in a DAW.
+     */
+    it('hides a pane and the framework layers by their eyes, every switch kept as set', async () => {
+      const wrapper = mountWithSeries()
+      await wrapper.find('[data-pane-group="price"] [data-action="show-framework"]').trigger('click')
+      expect(row(wrapper, 'candles').attributes('data-muted')).toBe('true')
+      expect(row(wrapper, 'candles').attributes('data-shown')).toBe('true')
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      expect(row(wrapper, onCandles).attributes('data-muted')).toBe('false')
+
+      await wrapper.find('[data-pane-group="rsi_fast"] [data-action="show-pane"]').trigger('click')
+      expect(row(wrapper, 'worker:rsi_fast').attributes('data-muted')).toBe('true')
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.groupsHidden).toEqual(['framework:price', 'pane:rsi_fast'])
+      // the chart draws none of them, and its own switches stand
+      const chart = useRunChartStore()
+      expect(chart.layers.every(layer => layer.hidden)).toBe(true)
+      expect(chart.indicatorLayers.find(layer => layer.entry.layer === 'worker:rsi_fast')).toMatchObject({ shown: true, muted: true })
+    })
+
+    /** The framework's layers fold away as the workers' do (operator, 2026-11-14). */
+    it('folds the layers of the framework away under their heading, those of the workers left open', async () => {
+      const wrapper = mountWithSeries()
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      const fold = () => wrapper.find('[data-pane-group="price"] [data-action="fold-framework"]')
+      expect(fold().attributes('aria-expanded')).toBe('true')
+      await fold().trigger('click')
+      expect(fold().attributes('aria-expanded')).toBe('false')
+      expect(row(wrapper, 'candles').exists()).toBe(false)
+      expect(row(wrapper, onCandles).exists()).toBe(true)
+      await fold().trigger('click')
+      expect(row(wrapper, 'candles').exists()).toBe(true)
+    })
+
+    /**
+     * Which line is whose (operator, on screen 2026-11-13; under the opened row since 2026-11-14): the
+     * opened row names the worker as the run's configuration does, and shows each plot by its name
+     * beside its ink and dash.
+     */
+    it('opens a worker\'s row onto the worker that drew it and each of its plots with its look', async () => {
+      const [first, second] = SERIES.filter(entry => entry.pane === 'price')
+      useRunReportsStore().config = {
+        run_id: RUN,
+        config: { strategy_config: { worker_instances: { [first!.layer.split(':')[1]!]: 'CORE/bollinger' } } },
+      } as unknown as RunConfigReport
+      const wrapper = mountWithSeries()
+      expect(row(wrapper, first!.layer).find('.plot-sample').exists()).toBe(false)
+      await row(wrapper, first!.layer).find('[data-action="open"]').trigger('click')
+      await row(wrapper, second!.layer).find('[data-action="open"]').trigger('click')
+      const options = (layer: string) => row(wrapper, layer).find('.layer-options')
+      const parts = (layer: string) => options(layer).findAll('[data-fact="worker"] .fact-part').map(part => part.text())
+      expect(parts(first!.layer)).toEqual([first!.layer.split(':')[1], '· CORE/bollinger'])
+      // a worker the configuration does not name: its instance alone
+      expect(parts(second!.layer)).toEqual([second!.layer.split(':')[1]])
+      expect(options(first!.layer).findAll('[data-plot]').map(plot => plot.attributes('data-plot')))
+        .toEqual(first!.plots.map(plot => plot.id))
+      expect(options(first!.layer).find('.plot-sample').attributes('style')).toContain('var(--color-text-primary)')
+      expect(options(second!.layer).find('.plot-sample').attributes('style')).toContain('var(--color-text-secondary)')
+      // the MACD's first plot is its histogram: bars
+      await row(wrapper, 'worker:macd_main').find('[data-action="open"]').trigger('click')
+      expect(row(wrapper, 'worker:macd_main').find('.plot-sample').attributes('data-form')).toBe('bars')
+    })
+
+    it('shows, hides and fades a worker\'s layer by its id, kept with the chart\'s view', async () => {
+      const wrapper = mountWithSeries()
+      await row(wrapper, 'worker:macd_main').find('[data-action="show"]').trigger('click')
+      expect(useArrangementStore().panelViews['run-chart']?.layers?.served?.hidden).toEqual(['worker:macd_main'])
+      expect(row(wrapper, 'worker:macd_main').attributes('data-shown')).toBe('false')
+      expect(row(wrapper, 'worker:macd_main').classes()).toContain('off')
+    })
+
+    /** With no timeframe on show — here no market is covered — no series can be drawn: each row says which can. */
+    it('says where the timeframe on show cannot draw a worker\'s layer, and why below the list', () => {
+      const wrapper = mountWithSeries()
+      const rsi = row(wrapper, 'worker:rsi_fast')
+      expect(rsi.attributes('data-drawable')).toBe('false')
+      expect(rsi.find('.layer-summary').text()).toBe('M5 and finer')
+      expect(wrapper.text()).toContain('A worker\'s series stands on its own timeframe and every finer one')
+    })
+
+    /** A worker's row opens onto the hint that says what it is while it stands, and onto its worker and plots always. */
+    it('opens a worker\'s row onto the hint that says what it is, and onto its facts once that is put away', async () => {
+      const wrapper = mountWithSeries()
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      await row(wrapper, onCandles).find('[data-action="open"]').trigger('click')
+      expect(row(wrapper, onCandles).find('.layer-options').text()).toContain('What a worker of the strategy computed')
+      useHintsStore().ban('layer-indicator')
+      await wrapper.vm.$nextTick()
+      expect(row(wrapper, onCandles).find('.layer-options').text()).not.toContain('What a worker of the strategy computed')
+      expect(row(wrapper, onCandles).find('[data-fact="plots"]').exists()).toBe(true)
+      expect(row(wrapper, onCandles).find('.layer-marker').text()).toBe('▾')
+    })
+
+    /**
+     * A pane is set apart from its first row (operator, 2026-11-13): the candles' pane from the
+     * candles', the volume's from its own, a worker's from its first series — a later one sets nothing.
+     */
+    it('sets a pane apart from its first row, and from no other', async () => {
+      const wrapper = mountWithSeries()
+      await row(wrapper, 'candles').find('[data-action="open"]').trigger('click')
+      await row(wrapper, 'candles').find('[data-action="pane-frame"]').trigger('click')
+      await row(wrapper, 'volume').find('[data-action="open"]').trigger('click')
+      await row(wrapper, 'volume').find('[data-action="pane-background"]').trigger('click')
+      await row(wrapper, 'worker:rsi_fast').find('[data-action="open"]').trigger('click')
+      await row(wrapper, 'worker:rsi_fast').find('[data-action="pane-frame"]').trigger('click')
+      expect(useArrangementStore().panelViews['run-chart']?.looks).toEqual({
+        price: { frame: true }, volume: { background: true }, rsi_fast: { frame: true },
+      })
+      // a series on the candles sets nothing: the candles' row does
+      const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
+      await row(wrapper, onCandles).find('[data-action="open"]').trigger('click')
+      expect(row(wrapper, onCandles).find('[data-action="pane-frame"]').exists()).toBe(false)
+      // nor does the trades' row, which stands first in the list of the candles' pane
+      await row(wrapper, 'trades').find('[data-action="open"]').trigger('click')
+      expect(row(wrapper, 'trades').find('[data-action="pane-frame"]').exists()).toBe(false)
+    })
+
+    /** Another run names other panes, so a worker's pane folded is kept for its run alone. */
+    it('folds a worker\'s pane away, kept with the panel\'s view for the run', async () => {
+      const wrapper = mountWithSeries()
+      const heading = wrapper.find('[data-pane-group="rsi_fast"] [data-action="fold-pane"]')
+      await heading.trigger('click')
+      expect(heading.attributes('aria-expanded')).toBe('false')
+      expect(row(wrapper, 'worker:rsi_fast').exists()).toBe(false)
+      expect(useArrangementStore().panelViews['layers']?.rows).toEqual({ scope: RUN, keys: { 'panes-folded': ['rsi_fast'] } })
+      await heading.trigger('click')
+      expect(row(wrapper, 'worker:rsi_fast').exists()).toBe(true)
+    })
   })
 
   it('says what to open where no chart that draws layers is open', () => {

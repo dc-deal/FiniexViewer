@@ -126,6 +126,31 @@ describe('PanelTab', () => {
     host.unmount()
   })
 
+  /** A double-click on the tab gives the panel the whole dock (operator, 2026-11-13), never one on a button of the tab. */
+  it('gives its panel the whole dock on a double-click, and shows the way back on the tab', async () => {
+    let large = false
+    const api = { ...fakeApi(), id: 'runs', isMaximized: () => large }
+    const Host = defineComponent({
+      render: () => h('div', { class: 'dv-tab' }, [h(PanelTab, { kindId: 'runs', api: api as unknown as DockviewPanelApi })]),
+    })
+    const host = mount(Host, { attachTo: document.body })
+    const dock = useDockStore()
+    const toggle = vi.spyOn(dock, 'toggleMaximized').mockImplementation(() => {})
+
+    host.find('.dv-tab').element.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(toggle).toHaveBeenCalledWith('runs')
+    host.find('.panel-tab-close').element.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(toggle).toHaveBeenCalledTimes(1)
+    expect(host.find('.panel-tab-restore').exists()).toBe(false)
+
+    large = true
+    dock.maximized = true
+    await flushPromises()
+    await host.find('.panel-tab-restore').trigger('click')
+    expect(toggle).toHaveBeenCalledTimes(2)
+    host.unmount()
+  })
+
   /** Two windows comparing two runs tell them apart by the tab; the list's tab names no run. */
   it('names the chosen run on the tab of the run report, and on no other', () => {
     openRun('success')

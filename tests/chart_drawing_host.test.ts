@@ -76,11 +76,14 @@ describe('ChartDrawingHost', () => {
     expect(requestUpdate).toHaveBeenCalledTimes(1)
   })
 
-  /** The library caches by the array it is handed, so the host hands the same one every time. */
-  it('hands the library one pane view, the same array every time, in the stage in front of the candles', () => {
+  /**
+   * The library caches by the array it is handed, so the host hands the same one every time — in the
+   * stage in front of every series of its pane: the candles, and a worker's series on them.
+   */
+  it('hands the library one pane view, the same array every time, in front of every series', () => {
     const host = new ChartDrawingHost()
     expect(host.paneViews()).toBe(host.paneViews())
-    expect(host.paneViews()[0]!.zOrder!()).toBe('normal')
+    expect(host.paneViews()[0]!.zOrder!()).toBe('top')
   })
 
   it('answers a hit with the drawing\'s id, a mark ranked as a point above a stroke', () => {
@@ -88,7 +91,7 @@ describe('ChartDrawingHost', () => {
     attachTo(host)
     host.setDrawings(LAYERS, BARS, COLOURS)
     // the level at price 250 stands at y 250, from x 10 to 20
-    expect(host.hitTest(15, 250)).toMatchObject({ externalId: 'level|SL|a', zOrder: 'normal', hitTestPriority: 1 })
+    expect(host.hitTest(15, 250)).toMatchObject({ externalId: 'level|SL|a', zOrder: 'top', hitTestPriority: 1 })
     const placed = placeLayer(LAYERS[1]!, BARS, { x: time => time * 10, y: price => 500 - price, spacing: 80, width: 800 })
     const exit = placed.marks.find(entry => entry.mark.id === 'exit|a')!
     expect(host.hitTest(exit.x, exit.y)).toMatchObject({ externalId: 'exit|a', hitTestPriority: 2, itemType: 'marker' })

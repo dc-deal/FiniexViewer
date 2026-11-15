@@ -12,7 +12,7 @@ import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { useFacetState } from '@/composables/use_facet_state'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
-import type { ListColumn } from '@/types/list_types'
+import type { ListColumn, ListGroup } from '@/types/list_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
 import { amount, bytes, marketSpan, shortHash, sortInstant, startedAt, utcInstant } from '@/components/runs/report_format'
 import type { RunInfo, RunResult } from '@/types/api/report_types'
@@ -225,7 +225,16 @@ const columns: ListColumn[] = [
   // Sized from the cells rather than from a rem number, now that the stamp is 13 characters
   // instead of 22. `auto` needs the cell to stay on one line, which `.run-when` declares — the
   // 13rem it replaces was chosen because the old stamp wrapped at 11.
+  // the button that folds a family's earlier runs, in a column of its own reserved on every row, so
+  // the glyphs stand one under another and the name keeps its cell (operator, 2026-11-13). `▸ 15` is
+  // four characters, a fifth for three digits, and the button adds its padding and its border; a
+  // wider button widens the track rather than running into the date
+  { label: '', width: 'minmax(calc(5ch + 2 * var(--space-sm) + 2px), auto)', rank: 1, name: 'fold' },
   { label: t('Started'), width: 'auto', rank: 1 },
+  // what the run belongs to, under the backend's label for `parent_kind`, the facet's too: a
+  // deployment or a sweep, nothing for a run of a set or one standing alone — one place on every
+  // row, where a mark at the row's end stood on some rows only (operator, 2026-11-13)
+  { label: t('Parent'), width: 'auto', rank: 2 },
   { label: t('Pipeline'), width: '7rem', rank: 5 },
   // a floor as well as the slack: the set NAMES the run, and with a bare `1fr` the columns added
   // since squeezed it to `EU…` — the one cell on the row a reader actually recognises
@@ -236,7 +245,9 @@ const columns: ListColumn[] = [
   // How much MARKET the run read — what the scenario roster puts first for the same reason: it is
   // the figure that says how big a run was, and nothing else on the row carries it.
   { label: t('Tick timespan'), width: 'auto', figure: true, rank: 4 },
-  { label: t('Outcome'), width: 'auto', rank: 1 },
+  // the narrowest list keeps the name, then what the run earned, then whether it worked (operator,
+  // 2026-11-13: "name -> p&l -> success"): the outcome gives way first, and stays in the row's card
+  { label: t('Outcome'), width: 'auto', rank: 2 },
   { label: t('Net P&L'), width: 'auto', figure: true, rank: 1 },
   { label: t('Trades'), width: 'auto', figure: true, rank: 3 },
   // Gives way at 48 rem rather than 34: measured 2026-10-13, once the docked panels gave the list
@@ -353,18 +364,83 @@ function openFamily(key: string): void {
   if (!opened.value.has(key)) opened.value = new Set([...opened.value, key])
 }
 
+function isFamilyOpen(key: string): boolean {
+  return opened.value.has(key)
+}
+
+/** A run's start as a number, a run with none last. */
+function startOf(run: RunInfo): number {
+  const at = run.start_time ? Date.parse(run.start_time) : Number.NaN
+  return Number.isNaN(at) ? -Infinity : at
+}
+
+/**
+ * Each family's newest run, by its start — whatever the list is sorted by: what a reader of a set or
+ * a deployment looks at first (operator, 2026-11-13: "meist interessiert mich nur der neueste run").
+ * A sweep has none: its runs are combinations started together, and no one of them stands for it.
+ */
+const familyHeads = computed(() => {
+  const heads = new Map<string, RunInfo>()
+  for (const run of shown.value) {
+    if (run.parent_kind === 'sweep') continue
+    const key = familyOf(run)
+    const held = heads.get(key)
+    if (!held || startOf(run) > startOf(held)) heads.set(key, run)
+  }
+  return heads
+})
+
+/** The row a family's heading is: its newest run, where the family draws a heading and is no sweep. */
+function familyHead(group: ListGroup<RunInfo>): RunInfo | null {
+  return showsFamilyHead(group.key) ? familyHeads.value.get(group.key) ?? null : null
+}
+
+/**
+ * The rows as the list draws them: a family with a head stands where its newest run stands in the
+ * sort, that run first and the earlier ones after it — the list keeps families in the order their
+ * first row appears, so the head has to come first. Every other row keeps its place.
+ */
+const listed = computed(() => {
+  const heads = familyHeads.value
+  const headOf = (key: string) => (showsFamilyHead(key) ? heads.get(key) : undefined)
+  const earlier = new Map<string, RunInfo[]>()
+  for (const run of shown.value) {
+    const key = familyOf(run)
+    const head = headOf(key)
+    if (!head || head === run) continue
+    const held = earlier.get(key)
+    if (held) held.push(run)
+    else earlier.set(key, [run])
+  }
+  const rows: RunInfo[] = []
+  for (const run of shown.value) {
+    const head = headOf(familyOf(run))
+    if (!head) rows.push(run)
+    else if (run === head) rows.push(run, ...(earlier.get(familyOf(run)) ?? []))
+  }
+  return rows
+})
+
+/** The newest start of a family without a head — a sweep's, said on its heading. */
+function newestOf(group: ListGroup<RunInfo>): RunInfo | null {
+  return group.rows.reduce<RunInfo | null>((newest, run) => !newest || startOf(run) > startOf(newest) ? run : newest, null)
+}
+
 /**
  * The chosen run stays reachable: its family opens WITH the choice, wherever the choice was made,
  * and again when *Show in list* asks for its row. Opened once rather than held open — a family
  * heading that could not close was a button that did nothing.
  */
-watch(() => (selectedRun.value ? familyOf(selectedRun.value) : null), key => { if (key) openFamily(key) },
-  { immediate: true })
-watch(() => runsStore.chosenRowAsked, () => { if (selectedRun.value) openFamily(familyOf(selectedRun.value)) })
-
-function isFamilyOpen(key: string): boolean {
-  return opened.value.has(key)
-}
+watch(() => selectedRun.value?.run_id, () => {
+  // by the run, not its family: a choice moving to an earlier run of the same family opens it. The
+  // newest run is the family's line and on show already: its earlier runs stay folded
+  const run = selectedRun.value
+  if (run && familyHeads.value.get(familyOf(run)) !== run) openFamily(familyOf(run))
+}, { immediate: true })
+watch(() => runsStore.chosenRowAsked, () => {
+  const run = selectedRun.value
+  if (run && familyHeads.value.get(familyOf(run)) !== run) openFamily(familyOf(run))
+})
 
 /**
  * The chosen run is not among the rows the filter or the search leaves — said where the list is,
@@ -534,6 +610,7 @@ function choose(runId: string): void {
 
     <template v-else>
       <HintLine id="facet-bar" />
+      <HintLine id="run-families" />
       <FacetBar
         v-model:selection="selection"
         v-model:search="search"
@@ -555,7 +632,7 @@ function choose(runId: string): void {
         ref="listRef"
         class="run-list"
         tabindex="-1"
-        :rows="shown"
+        :rows="listed"
         :columns="columns"
         :row-key="run => run.run_id"
         :is-picked="run => run.run_id === selectedRunId"
@@ -563,6 +640,8 @@ function choose(runId: string): void {
         :group-by="familyOf"
         :is-open="isFamilyOpen"
         :shows-group-head="showsFamilyHead"
+        :head-of="familyHead"
+        fold-column="fold"
         measure-closed
         @toggle="toggleFamily"
         @pick="run => choose(run.run_id)"
@@ -577,39 +656,49 @@ function choose(runId: string): void {
           and the runs between them are one click away.
         -->
         <template #group="{ group, marker }">
-          <span class="family-name" :title="group.key">
+          <!-- a family without a head row — a sweep — in the same cells as a row, its newest start
+               first, so the columns read alike down the list (operator, 2026-11-13); the disclosure
+               glyph and how many rows it opens in the first column, where a head row's button
+               stands, so a sweep's `▸ 9` and a set's `▸ 4` read down one edge. Each cell's rank is
+               read from its column, so the heading gives way with the rows and no number is kept
+               twice; the row's cells below stay the place that pairs a column with its field -->
+          <span :data-rank="columns[0]!.rank" class="family-meta">
             <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
-            <!-- their word for what the parent is, where there is one: a sweep and a deployment
-                 are different things and a reader should not have to read the id to tell -->
-            <span v-if="group.rows[0]?.parent_kind" class="family-kind"
-              >{{ group.rows[0]!.parent_kind }}</span>
-            {{ group.key }}
-            <span class="family-meta">
-              {{ plural(group.rows.length, t('run'), t('runs')) }}
-              <template v-if="group.rows[0]">
-                · {{ startedAt(group.rows[0]!.start_time) || t('no date') }}
-              </template>
-            </span>
+            {{ group.rows.length }}
           </span>
+          <span :data-rank="columns[1]!.rank" class="run-when">{{ startedAt(newestOf(group)?.start_time ?? '') || t('no date') }}</span>
+          <span :data-rank="columns[2]!.rank" class="run-parent">{{ group.rows[0]?.parent_kind ?? '' }}</span>
+          <span :data-rank="columns[3]!.rank" class="run-group" />
+          <span :data-rank="columns[4]!.rank" class="family-name" :title="group.key">{{ group.key }}</span>
+          <span v-for="(column, at) in columns.slice(5)" :key="at" :data-rank="column.rank" />
         </template>
+        <!-- the button that folds a family's earlier runs, beside its newest one: the glyph and how
+             many it opens, no word — `▸ 4 earlier` left a narrow list `t…` of the set's name
+             (operator, on screen 2026-11-13); the hint says what it opens -->
+        <template #fold="{ marker, count }">{{ marker }} {{ count }}</template>
         <!-- A logs-only run is chosen like any other: the view says what it is, and the store asks
              for nothing. A row that cannot be clicked is the look of a broken control. -->
         <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
              this template owns the cells, so a track given up under a cell that stayed would shift
              every later cell into the wrong column -->
-        <template #default="{ row: run }">
+        <template #default="{ row: run, head }">
+          <!-- the fold column: a head row's button stands over it -->
+          <span :data-rank="1" />
           <span :data-rank="1" class="run-when">
             {{ startedAt(run.start_time) || t('no date') }}
           </span>
+          <span :data-rank="2" class="run-parent">{{ run.parent_kind ?? '' }}</span>
           <span :data-rank="5" class="run-group">{{ run.group }}</span>
-          <span :data-rank="1" class="run-name" :title="run.name">{{ run.name }}</span>
+          <!-- at a family's head the family's name — a deployment's id, a set's name — in the one
+               cell, so every column keeps exactly one cell -->
+          <span :data-rank="1" class="run-name" :title="head?.key ?? run.name">{{ head?.key ?? run.name }}</span>
           <!-- the stamp identifies it to a reader, the eight hex characters do not — and the whole
                id is one hover away. Same treatment the configuration id already gets. -->
           <span :data-rank="5" class="run-id" :title="run.run_id">{{ shortId(run.run_id) }}</span>
           <!-- What the run DID, from the index row itself — no request per run (contract 15). -->
           <span :data-rank="4" class="run-span">{{ marketSpan(run.tick_timespan_seconds) }}</span>
           <span
-            :data-rank="1"
+            :data-rank="2"
             class="run-outcome"
             :class="run.run_outcome ?? (run.recording ? `recording-${run.recording}` : '')"
             :title="!run.run_outcome && run.recording ? recordingOf(run.recording).title : undefined"
@@ -644,13 +733,6 @@ function choose(runId: string): void {
           <!-- one cell, however many marks: two spans of their own would push the id column to a
                different place on every row, which is what made the list look ragged -->
           <span :data-rank="2" class="run-marks">
-            <!-- the kind only where the row STANDS ALONE. Inside a family the heading above says
-                 it once, and the mark was then repeating it on every row beneath — five identical
-                 badges under one `deployment` heading, seen on screen 2026-10-09. -->
-            <span
-              v-if="run.parent_kind && !showsFamilyHead(familyOf(run))"
-              class="run-mark"
-            >{{ run.parent_kind }}</span>
             <!-- `artifacts` read with `reporting`, as their runs document asks: without the pair a
                  run that never got to its report and one never meant to write any look alike -->
             <span
@@ -729,26 +811,16 @@ function choose(runId: string): void {
    right edge; here the count belongs beside the name — it says how many runs the line stands for,
    which is part of what the line IS rather than a measured column. */
 .family-name {
-  grid-column: 1 / -1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--color-text-primary);
 }
 
-/* their word for the kind of parent, boxed like the row's own mark so the two read as the same
-   fact at two levels — and never in the link colour, which would read as clickable */
-.family-kind {
-  margin-right: var(--space-xs);
-  padding: 0 var(--space-xs);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  line-height: 1;
-  color: var(--color-text-secondary);
-}
-
+/* starts where the text of a head row's fold button starts: past its border and its padding */
 .family-meta {
-  margin-left: var(--space-sm);
+  padding-left: calc(var(--space-sm) + 1px);
+  white-space: nowrap;
   color: var(--color-text-secondary);
 }
 
@@ -773,6 +845,11 @@ function choose(runId: string): void {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.run-parent {
+  white-space: nowrap;
+  color: var(--color-text-secondary);
 }
 
 .run-id,

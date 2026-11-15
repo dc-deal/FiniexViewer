@@ -59,6 +59,53 @@ test('on a wide screen the run report stands beside the run list, and a pick the
 })
 
 /**
+ * A double-click on a tab gives its panel the whole dock, as in VS Code, and a pick inside it keeps
+ * it so (operator, 2026-11-13). The way back is on the tab, or Esc; a reload opens the layout the
+ * reader made, never the large panel — dockview would store it with the others hidden.
+ */
+test('a double-click on a tab gives its panel the whole dock, and the layout is stored without it', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 })
+  await page.goto('/')
+  const list = page.locator('[data-panel-kind="runs"]')
+  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+  const before = (await list.boundingBox())!.width
+  const dockWidth = (await page.locator('.panel-dock-view').boundingBox())!.width
+  // measured by the list's width: dockview hides the other groups without taking their tabs from the page
+  const large = async () => (await list.boundingBox())!.width > dockWidth - 20
+  const placed = async () => Math.abs((await list.boundingBox())!.width - before) <= 2
+  const tab = page.locator('.dv-tab', { has: page.locator('.panel-tab[data-kind="runs"]') })
+  // on the tab in front of the large group; every tab of that group carries it, shown on that one only
+  const restore = page.locator('.panel-tab[data-kind="runs"] .panel-tab-restore')
+  expect(before).toBeLessThan(dockWidth - 20)
+
+  await tab.dblclick()
+  await expect(restore).toBeVisible()
+  await expect.poll(large).toBe(true)
+
+  // a pick inside keeps it large
+  await page.locator('.run-list .record-row:not(.record-unseen) >> visible=true').first().click()
+  await expect(restore).toBeVisible()
+  expect(await large()).toBe(true)
+
+  // stored without it: a reload opens the layout as it was
+  await page.waitForTimeout(400)
+  await page.reload()
+  await expect(page.locator('.run-list .record-row').first()).toBeVisible()
+  await expect(restore).toHaveCount(0)
+  await expect.poll(placed).toBe(true)
+
+  // Esc, and the button on the tab, give the panels their places back
+  await tab.dblclick()
+  await expect.poll(large).toBe(true)
+  await page.keyboard.press('Escape')
+  await expect.poll(placed).toBe(true)
+  await tab.dblclick()
+  await restore.click()
+  await expect.poll(placed).toBe(true)
+  await expect(restore).toHaveCount(0)
+})
+
+/**
  * A tab behind another is not drawn until the reader picks it — the run list must not wait for the
  * chart's library. Counted in the document rather than inferred: the host is there from the start,
  * its content only once shown.

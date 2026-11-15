@@ -25,6 +25,8 @@ interface FakePanel {
     close: () => void
     moveTo: (options: { group: FakeGroup }) => void
     setTitle: (title: string) => void
+    maximize: () => void
+    isMaximized: () => boolean
   }
 }
 
@@ -70,6 +72,16 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
   const fronted: ((event: { panel: FakePanel | undefined }) => void)[] = []
   // every group keeps a tab in front, by group id
   const frontOf = new Map<string, string>()
+  // the group with the whole dock, as dockview holds it, and who hears it change
+  let maximizedGroup: FakeGroup | null = null
+  const maximizedChanged: (() => void)[] = []
+
+  /** dockview announces a group gaining or losing the whole dock, and lays the dock out anew. */
+  function setMaximized(group: FakeGroup | null): void {
+    maximizedGroup = group
+    maximizedChanged.forEach(listener => listener())
+    changed?.()
+  }
 
   const panels = () => row.flatMap(group => group.panels)
   const find = (id: string) => panels().find(panel => panel.id === id)
@@ -125,10 +137,16 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
       group,
       title: spec.title ?? spec.id,
       api: {
-        setActive: () => front(spec.id),
+        // as dockview: a panel of another group made active ends the whole dock of a group
+        setActive: () => {
+          if (maximizedGroup && maximizedGroup !== panel.group) setMaximized(null)
+          front(spec.id)
+        },
         close: () => close(spec.id),
         moveTo: ({ group: target }) => movePanel(panel, target),
         setTitle: (title: string) => { panel.title = title },
+        maximize: () => setMaximized(panel.group),
+        isMaximized: () => maximizedGroup === panel.group,
       },
     }
     const index = reference && direction === 'within' && spec.position?.index !== undefined
@@ -230,6 +248,12 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
       fronted.push(listener)
       return { dispose: () => { fronted.splice(fronted.indexOf(listener), 1) } }
     },
+    hasMaximizedGroup: () => maximizedGroup !== null,
+    exitMaximizedGroup: () => setMaximized(null),
+    onDidMaximizedGroupChange: (listener: () => void) => {
+      maximizedChanged.push(listener)
+      return { dispose: () => { maximizedChanged.splice(maximizedChanged.indexOf(listener), 1) } }
+    },
   }
   return {
     api: api as unknown as DockviewApi,
@@ -257,6 +281,8 @@ function fakeDock(options: { refuse?: boolean, width?: number } = {}) {
     dragGroupOf: (id: string) => { const panel = find(id); if (panel) groupDrags.forEach(listener => listener({ group: panel.group })) },
     /** A drop on one of dockview's own targets. */
     drop: () => drops.forEach(listener => listener()),
+    /** The group with the whole dock, by the id of the panel in front of it; null where none has. */
+    maximized: () => maximizedGroup?.activePanel?.id ?? null,
   }
 }
 
@@ -1005,6 +1031,73 @@ describe('useDockStore', () => {
    * a column over the full height, a row over the full width — through dockview's public API,
    * because its own edge targets never saw a drag over a panel kept in the page.
    */
+  /**
+   * A panel given the whole dock and back (operator, 2026-11-13: the chart or the run list "kurz
+   * gross und dann wieder klein") — a double-click on its tab, as in VS Code. dockview holds it.
+   */
+  describe('a panel given the whole dock', () => {
+    afterEach(() => useDockStore().detach())
+
+    it('gives a panel the whole dock and the panels their places back, and on Esc', () => {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+
+      store.toggleMaximized('runs')
+      expect(dock.maximized()).toBe('runs')
+      expect(store.maximized).toBe(true)
+      store.toggleMaximized('runs')
+      expect(dock.maximized()).toBeNull()
+      expect(store.maximized).toBe(false)
+
+      store.toggleMaximized('runs')
+      // a key someone else took is theirs
+      const taken = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true })
+      taken.preventDefault()
+      window.dispatchEvent(taken)
+      expect(dock.maximized()).toBe('runs')
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      expect(dock.maximized()).toBeNull()
+    })
+
+    /** Written, the next start would open with one panel and the others hidden. */
+    it('writes no layout while a panel has the whole dock, and the layout as usual after', () => {
+      vi.useFakeTimers()
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      const arrangement = useArrangementStore()
+      const before = arrangement.dock
+
+      store.toggleMaximized('runs')
+      vi.advanceTimersByTime(300)
+      store.flush()
+      expect(arrangement.dock).toBe(before)
+
+      dock.close('run-chart')
+      store.toggleMaximized('runs')
+      vi.advanceTimersByTime(300)
+      expect(Object.keys((arrangement.dock as { panels: object }).panels)).not.toContain('run-chart')
+    })
+
+    /** A pick inside it keeps it large; a command brings its panel forward, as dockview ends it then. */
+    it('keeps a panel large for a pick inside it, and gives the places back for a command', () => {
+      const dock = fakeDock()
+      const store = useDockStore()
+      store.attach(dock.api)
+      // two panels in different groups: the list and the run chart
+      expect(dock.groups()[dock.ids().indexOf('runs')]).not.toBe(dock.groups()[dock.ids().indexOf('run-chart')])
+
+      store.toggleMaximized('runs')
+      expect(store.reveal('run-chart', 'selection', 'runs')).toBe(true)
+      expect(dock.maximized()).toBe('runs')
+
+      store.reveal('run-chart', 'command')
+      expect(dock.maximized()).toBeNull()
+      expect(dock.active()).toBe('run-chart')
+    })
+  })
+
   describe('the edges of the dock', () => {
     function attached() {
       const dock = fakeDock()

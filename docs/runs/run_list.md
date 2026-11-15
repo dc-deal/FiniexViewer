@@ -113,13 +113,30 @@ sweep or the deployment it belongs to and leads to its panel; the bar's entry is
 runs: 42 lines instead of 85, 14 of them a family and 28 a run standing alone.
 
 ```
-[Search ...] [Pipeline v] [Artifacts v] ... [Money v] [Outcome v]        27 of 85
-
-  Oct 08, 13:06  demo_btcusd_bot            24.3 h  OK success    0.00 USD   0 trades  deployment
-> deployment deploy_20261008_110304   5 runs - Oct 08, 13:05
-> spot_field_study                    2 runs - Oct 08, 01:43
-  Oct 07, 17:06  eurusd_aggressive_trend_mock  48.0 h  OK success  -359.85 USD  335 trades
+      Started         Parent      Set                       Outcome    Net P&L
+      Nov 12, 23:29               indicator_series_session  ✓ success  0.00 USD
+▸ 2   Nov 12, 23:18               state_frames_test         ✓ success  0.00 USD
+▸ 4   Nov 10, 16:00   deployment  deploy_20261110_145808
+▸ 9   Nov 10, 15:48   sweep       sweep_20261110_143917
 ```
+
+**A set or a deployment stands as its NEWEST run** (operator, 2026-11-13: *"meist interessiert mich
+nur der neueste run"*). That run is the family's line — chosen by a click like any row, under the
+family's name: a set's, or a deployment's id. `▸ N` in the first column opens the N runs before
+it — a column of its own reserved on every row, so the glyphs stand one under another and the name
+keeps its cell (operator, 2026-11-13): `▸ 4 earlier` at the end of the name had left a narrow list
+`t…` of it, and the name is what the reader scans by. Choosing an earlier run opens its family; choosing the newest leaves it
+folded, the run being on show already. A **sweep** keeps a heading of its own, since its runs are
+combinations started together and no one of them stands for it — in the same cells as a row, so
+the columns read alike down the list: `▸ 9` where a set's `▸ 2` stands, its newest start, its
+kind, its id.
+
+**The date comes first on every line, and a family's is its newest run's** — the old heading gave
+it last, and the operator found that confusing on sight. **`Parent` is a column of its own**,
+`parent_kind` under the backend's label for it, the facet's as well: `deployment` or `sweep`, empty
+for a run of a set or one standing alone.
+It replaced a badge at the end of some rows. Where the list narrows it keeps the stamp, the name and
+the net P&L, then the outcome (operator: *"name -> p&l -> success"*).
 
 The key is the PARENT where the backend states one and the set name otherwise, and the measurement
 is what decided that: **the set name alone folds no sweep**, because a sweep's children each carry
@@ -127,13 +144,9 @@ their own (`..._c000` through `..._c008`), so the thirteen sweep runs stayed thi
 exactly the complaint. By set name, meanwhile, eighteen `demo_btcusd_bot` runs fold under one
 heading although they are six separate deployment sessions.
 
-Three consequences. Families start CLOSED, because the fold is the point. A family stands at its
-TOP run and says that run's stamp, so "sort by time" keeps meaning time whatever the sort is — the
-list keeps groups in the order their first row appears, so the reader's sort orders the families
-too. And the `Set` FACET fell away: the grouping is that partition, and on a sweep the facet
-offered thirteen values matching one run each, which is a second search line. The search still
-reads the set name.
-
-The kind badge (`deployment`, `sweep`) is on the heading, and a row inside a family no longer
-carries it — five identical badges under one heading that says the word is the noise this project's
-own rule forbids. A run standing alone keeps its badge, because nothing above it says what it is.
+Three consequences. Families start CLOSED, because the fold is the point. A family stands where
+its NEWEST run stands in the sort, so "sort by time" keeps meaning time whatever the sort is — the
+list keeps groups in the order their first row appears, so the newest run is put first and the
+reader's sort orders the families too. And the `Set` FACET fell away: the grouping is that
+partition, and on a sweep the facet offered thirteen values matching one run each, which is a
+second search line. The search still reads the set name.

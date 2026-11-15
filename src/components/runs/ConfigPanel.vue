@@ -43,7 +43,10 @@ const scenarios = computed(() => scenarioCount(props.model.config))
  * better to look unfriendly than to flatten a structure into something it is not.
  */
 function inline(parameters: Record<string, unknown>): string {
+  // the timeframes a worker is served first: where a narrow panel cuts the line with …, they are what
+  // a reader looks for and what stood cut off (operator, on screen 2026-11-14)
   const entries = Object.entries(parameters)
+    .sort(([a], [b]) => Number(b === 'periods') - Number(a === 'periods'))
   if (!entries.length) return '—'
   return entries.map(([key, value]) => {
     if (value !== null && typeof value === 'object' && !Array.isArray(value)) {

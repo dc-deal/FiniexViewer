@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
+import { instanceOf } from '@/layer_groups'
 import { useDockStore } from '@/stores/dock_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import type { ChartUnitBlock } from '@/types/run_chart_types'
@@ -15,7 +16,7 @@ import { t } from '@/translate'
  * the panel that arranges what the chart draws, beside it — marked while that panel is open.
  */
 const chart = useRunChartStore()
-const { units, unit, timeframe, coveredTimeframes } = storeToRefs(chart)
+const { units, unit, timeframe, coveredTimeframes, indicatorLayers } = storeToRefs(chart)
 const dock = useDockStore()
 const { openIds } = storeToRefs(dock)
 
@@ -23,6 +24,27 @@ const BLOCKED: Record<ChartUnitBlock, string> = {
   'no-ticks': t('processed no tick'),
   'no-market': t('names no market'),
 }
+
+/**
+ * How many workers of the unit on show were served each timeframe (operator, 2026-11-14: "ich sehe
+ * nicht welche worker auf welchen timeframes arbeiten") — counted over the series the window serves,
+ * each worker once. The Layers panel names them, in the timeframe column of their rows.
+ */
+const workersOn = computed(() => {
+  const workers = new Map<string, Set<string>>()
+  for (const layer of indicatorLayers.value) {
+    const held = workers.get(layer.entry.timeframe) ?? new Set<string>()
+    held.add(instanceOf(layer.entry.layer))
+    workers.set(layer.entry.timeframe, held)
+  }
+  return workers
+})
+
+/** The timeframes the market is rendered in, each marked with how many workers were served it. */
+const timeframeOptions = computed(() => coveredTimeframes.value.map(tf => {
+  const count = workersOn.value.get(tf)?.size ?? 0
+  return { value: tf, label: count ? `${tf} ● ${count}` : tf }
+}))
 
 const unitOptions = computed(() => (units.value ?? []).map(entry => ({
   value: entry.name,
@@ -48,7 +70,7 @@ const unitOptions = computed(() => (units.value ?? []).map(entry => ({
       compact
       :label="t('Timeframe')"
       :model-value="timeframe"
-      :options="coveredTimeframes.map(tf => ({ value: tf, label: tf }))"
+      :options="timeframeOptions"
       :placeholder="timeframe ? undefined : t('Timeframe')"
       :disabled="!coveredTimeframes.length"
       @update:model-value="chart.chooseTimeframe"

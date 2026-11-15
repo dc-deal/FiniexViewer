@@ -158,8 +158,18 @@ describe('DeploymentPicker', () => {
 
       expect(heads).not.toHaveLength(0)
       expect(cells).toEqual(heads)
-      // WHICH deployment, what it is called, what it earned
-      expect(heads.filter(rank => rank === '1')).toHaveLength(3)
+      // WHEN it last started, WHICH deployment, what it is called, what it earned
+      expect(heads.filter(rank => rank === '1')).toHaveLength(4)
+    })
+
+    /** The date first, as on the run list (operator, 2026-11-13): a list of what ran is scanned by when. */
+    it('puts when the deployment last started first, kept however narrow', () => {
+      const wrapper = mountPicker([deployment()])
+      expect(wrapper.find('.record-head > span').text()).toBe('Last started')
+      const first = wrapper.find('.record-row').find(':scope > span')
+      expect(first.classes()).toContain('deployment-when')
+      expect(first.attributes('data-rank')).toBe('1')
+      expect(first.text()).toContain('Sep')
     })
 
     it('offers a card on every row, titled by the row the ledger declared', () => {

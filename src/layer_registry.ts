@@ -1,5 +1,6 @@
 import type { StoredLayers } from '@/types/arrangement_types'
 import type { ChartLayerId } from '@/types/chart_drawing_types'
+import type { ServedLayerId } from '@/types/indicator_drawing_types'
 import type { LayerDefinition, LayerOptionId, LayerState } from '@/types/layer_types'
 import { t } from '@/translate'
 
@@ -70,6 +71,14 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
  */
 const CHART_LAYERS: Record<string, readonly ChartLayerId[]> = {
   'run-chart': ['volume', 'candles', 'periods', 'refusals', 'state-frame', 'levels', 'entry-exit', 'trades'],
+}
+
+/**
+ * Whether a name read back is a worker's layer as the backend names it (contract 55):
+ * `worker:<instance>`, or `worker:<instance>:<name>` — its word, so only the form is checked.
+ */
+export function isServedLayerId(value: unknown): value is ServedLayerId {
+  return typeof value === 'string' && /^worker:\S{1,200}$/.test(value)
 }
 
 export function layerDefinition(id: ChartLayerId): LayerDefinition {

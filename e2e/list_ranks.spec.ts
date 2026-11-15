@@ -56,7 +56,8 @@ async function measure(page: Page, selector: string): Promise<ListState> {
     const shown = (element: Element) => getComputedStyle(element).display !== 'none'
     return {
       shellRem: shell.getBoundingClientRect().width / rem,
-      tracks: getComputedStyle(list).gridTemplateColumns.split(' ').length,
+      // a track's line names — `[fold-start]` — are no track of their own
+      tracks: getComputedStyle(list).gridTemplateColumns.replace(/\[[^\]]*\]/g, ' ').trim().split(/\s+/).length,
       trackList: getComputedStyle(list).gridTemplateColumns,
       shownHeads: heads.filter(shown).length,
       shownCells: cells.filter(shown).length,
@@ -280,9 +281,10 @@ test('opening a family leaves the run list columns where they were', async ({ pa
     .evaluate(list => getComputedStyle(list).gridTemplateColumns)
 
   const closed = await tracks()
-  await page.locator('.run-list .record-group').first().click()
+  // a set's earlier runs, behind the button beside its newest
+  await page.locator('.run-list [data-action="fold"]').first().click()
   // the family really opened, or this would compare one state with itself
-  await expect(page.locator('.run-list .record-group').first()).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.locator('.run-list [data-action="fold"]').first()).toHaveAttribute('aria-expanded', 'true')
   expect(await tracks()).toBe(closed)
 })
 

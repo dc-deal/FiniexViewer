@@ -34,7 +34,8 @@ by its tab, the way a reader does.
   every time, where it lost the run only when the other tab's delayed save landed in between.
 - `dock.spec.ts` holds the docked panels, which jsdom cannot lay out at all: the first arrangement
   in the suggested order, the run report beside the run list on a wide screen with the list keeping
-  its rows and a pick there showing the run, a tab behind another drawn only once it is shown, an arrangement that
+  its rows and a pick there showing the run, a double-click on a tab giving its panel the whole dock
+  — kept for a pick inside, never stored, ended by Esc and by the arrows on its tab — a tab behind another drawn only once it is shown, an arrangement that
   survives a reload, the way back to the suggested order, a closed panel brought back from the
   Panels menu, About opening as a dialog rather than as a tab, the quick bar holding the chart's
   selection only while the chart is in front, the run bundle's tab carrying the grade of a run that
@@ -115,7 +116,8 @@ by its tab, the way a reader does.
 - `run_chart.spec.ts` holds the run chart: the chart mark on a trade opening it BESIDE the run
   report, on the trade's unit, drawn on a canvas with its marks counted on the element and the
   position marked in the list; the Panels menu opening it on the first unit with trades; the opening
-  of a position the run ended with still open marked, though it has no trade; marks that would cover
+  of a position the run ended with still open marked, though it has no trade; its stretch of time
+  kept through its panel given the whole dock and back; marks that would cover
   each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
   the chart leaving the whole chart inside its panel; the levels of the position looked at painted
   on a real canvas, from a position the mock hands a stop and a target; an own level that fired drawn
@@ -135,6 +137,22 @@ by its tab, the way a reader does.
   layer dragged in front of another by its grip, a drag past the candles and the volume refused; and
   the signs switched off leaving the price axis the same pixel for pixel. And the layers in a group
   for each pane, the group of the candles folded and still folded after a real reload.
+- `indicator_series.spec.ts` holds a worker's series on the run chart (contract 55), on the session
+  FiniexTestingIDE produced to draw every kind of pane, its timeline, window, configuration and
+  bars captured: every series in the pane it names, below the volume's own in the order served, with
+  its line in that pane's legend; a worker's pane closed at its ✕ giving its room up, its group kept
+  hidden above its series' switches across a real reload; a
+  coarser timeframe drawing only its own series; a seam above a worker's pane kept by the pane's
+  name through a reload; a worker's pane at the whole height stacking the folded legends, a line
+  each, without one standing on another; the Layers panel's rows of the workers in their panes, a
+  switch hiding one on the chart and the eye of the candles' workers hiding them all; a worker's pane
+  closed on the chart and shown again at its eye in the Layers panel; the series on the candles
+  folded away behind their figures and kept across a real reload; a pane at the whole height that goes — a timeframe that cannot draw
+  it, the volume hidden — leaving every pane its controls; the volume moved into the candles' pane and
+  back with the workers' panes below it in order; and a worker's pane dragged small and large, hidden
+  at its lever and shown from the Layers panel, back at the height dragged; and a pane set apart by a
+  frame and a background from its first row, from no later one, kept across a real reload and taken
+  off again from the same switch.
 - `chart_panes.spec.ts` holds the run chart's panes (viewer#57), read off the rows of the library's
   table since a canvas cannot be read back: the volume in a pane of its own at a fifth of the height,
   a booking period's card found at the bottom of the pane of the candles and nothing of the lane over
@@ -142,8 +160,10 @@ by its tab, the way a reader does.
   built anew at another timeframe and a real reload; the volume hidden giving its pane up and coming
   back at the height dragged, and in the pane of the candles moving no candle; and each pane's legend at
   the top of its pane on one line, following a seam, saying the bar under a real pointer and the last
-  bar once it leaves; the controls at the top right of a pane, the whole height kept across a reload
-  and given back, the eye hiding the volume; and a double click on the seam for the first heights.
+  bar once it leaves; the controls at the top right of a pane — faint and behind the legend over the
+  pane, whole and in front of it over themselves — the whole height kept across a reload
+  and given back, the volume's pane closed at its ✕ by its group, the volume's own switch untouched;
+  and a double click on the seam for the first heights.
 - `trade_groups.spec.ts` holds the open/closed regimes of the scenario groups, and two things only a
   browser can state: that the group heading resolves to the SAME grid as the rows beneath it — read
   from `getComputedStyle`, which also catches a track collapsed to zero — and that a trade opens its

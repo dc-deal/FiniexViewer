@@ -13,7 +13,10 @@ each in front of the one before; a hit is searched the other way round, front fi
 on top is what is found.
 
 ```
-CandleChart :layers ──► ChartDrawingHost (series primitive, stage `normal`, in front of the candles)
+CandleChart :layers ──► ChartDrawingHost (series primitive, stage `top`, in front of every series of its pane)
+
+A worker's series are layers too, served rather than ours: [Indicator Series](indicator_series.md)
+says how they are drawn and how the Layers panel lists them.
                           ├─ updateAllViews   placeLayer() per layer, on every move of the view
                           ├─ paneViews        one renderer: paintLayer() per layer, in order
                           ├─ hitTest          hitDrawing() → its id → hoveredInfo.objectId → the card
@@ -146,6 +149,40 @@ Run chart · ETHUSD_aug_sep
   order and opacity are kept by it; no `:` in a name, a `title` beside it for the words on screen. One
   level of names for now: a `/` is kept for a group level later (`entries/long`). An *Indicator series*
   entry is one layer, its plots switched together.
+- **The workers apart from the framework, folded and hidden whole** (operator, 2026-11-13:
+  *"kann ich gruppe ausblenden komplett?"*). Where a pane holds the framework's layers and workers'
+  too, the workers stand under a heading of their own, *Workers*, and the framework's under theirs.
+  **A line of its own only for a group** (operator, 2026-11-14): a worker gets a heading only where
+  it draws more than one layer in the pane; a worker of one layer stands as its row.
+- **Every group has its eye: a visibility of its own, above its layers' switches** (operator,
+  2026-11-14: *"übergeordnete separate Sichtbarkeitsebene, ähnlich wie der Mute-Schalter in einer
+  DAW"* — the way a group's eye works in Figma, Photoshop or QGIS). A pane's, the framework's, the
+  workers', a worker's group's: hidden, it hides everything in it and changes no switch; shown again,
+  each layer stands as it was set. A row its group hides is faint, its switch as set. The chart draws
+  a layer where its own switch and every group of it are shown (`layer_groups.ts`); the hidden groups
+  are kept with the chart's view (`layers.groupsHidden`), bound to no run. The eye of a pane is the one
+  on the chart's pane, where a pane of its own closes at a ✕ (`chart_panes.md`).
+- **Every group folds, and its state is kept** — the framework's layers fold away under their
+  heading as the workers' do (operator, 2026-11-14).
+- **Each level one step in, along a guide** (operator, 2026-11-14: the second level was not told
+  from the first): a group's members stand a step in, with a fine rule along their left from under
+  the heading's marker down to the last of them, as VS Code's tree draws it — which level a heading
+  stands on and where its group ends are seen at once, and no line is spent. Each level costs the
+  names about ten pixels in a narrow panel.
+  The framework's and the workers' of our panes are the same in every run and kept for all (`layers-framework-price`, `layers-workers-price`, and the volume's); a worker's
+  group is kept for its run, which names its workers (`sources-folded`: `pane|worker:<instance>`).
+- **A worker's row says the timeframe its worker was served** — `M15`, `H1` — in a column of its
+  own, three characters wide whatever it says, before the series' name and in the ink of structure:
+  head information, never cut by a long name (operator, 2026-11-14). The series' `timeframe`, as
+  served.
+- **The opened row names the worker and shows its plots.** *Worker*: the instance and its type, as
+  the run's configuration names them (`tunnel · CORE/bollinger`). *Plots* — FiniexTestingIDE's word:
+  each plot by its own name beside its look in a few pixels, in the ink, the dash and the strength
+  the chart draws it with (`plotSample`) — a legend, so a reader sees which line is whose (operator,
+  on screen 2026-11-13: *"was ist denn nun von was gezeichnet worden"*; before the name, the sample
+  said nothing on its own). The ink is the theme's token of its role, else the neutral ink of its
+  place among every series served for its pane — counted over hidden ones too, so hiding one
+  repaints no other, on the chart or here.
 - **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
   hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
   the row opens its options.

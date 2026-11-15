@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import CandleChart from '@/components/CandleChart.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
@@ -7,11 +7,10 @@ import AppSpinner from '@/components/base/AppSpinner.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import ChartNotices from '@/components/runs/ChartNotices.vue'
 import { useChartLayers } from '@/composables/use_chart_layers'
+import { paneGroup } from '@/layer_groups'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { t } from '@/translate'
-import { PANE_LAYERS } from '@/types/chart_pane_types'
-import type { ChartPaneId } from '@/types/chart_pane_types'
 
 /**
  * The run-bound chart: one unit of the chosen run on its candles, its positions marked where they
@@ -24,14 +23,23 @@ import type { ChartPaneId } from '@/types/chart_pane_types'
 const chart = useRunChartStore()
 const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, loading, error, layers, offer, focusAt,
-  priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane,
+  priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane, indicators, seriesOffer, seriesCutAt,
+  seriesError, paneLooks, closedLegends,
 } = storeToRefs(chart)
 
-/** The lever on a pane is its layer's own: the Layers panel and the chart show one state. */
+/**
+ * The eye and the ✕ on a pane are its group's in the Layers panel: one state, above its layers' own
+ * switches (`layer_groups.ts`). A pane of its own hidden gives its room up; shown again, every layer
+ * in it stands as it was set.
+ */
 const chartLayers = useChartLayers(() => 'run-chart')
-function showPane(pane: ChartPaneId, shown: boolean): void {
-  chartLayers.show(PANE_LAYERS[pane], shown)
+function showPane(pane: string, shown: boolean): void {
+  chartLayers.showGroup(paneGroup(pane), shown)
 }
+
+/** The panes whose group is hidden, by name. */
+const hiddenPanes = computed(() => [...chartLayers.groupsHidden.value]
+  .filter(key => key.startsWith('pane:')).map(key => key.slice('pane:'.length)))
 const { selectedRunId, selectedRun, awaitingRun, unknownRunId, indexError } = storeToRefs(useRunsStore())
 
 // the archive is asked only while a run chart is on show
@@ -98,14 +106,26 @@ onUnmounted(() => chart.detach())
       :edge-error="edgeError"
       :pane-weights="paneWeights"
       :maximized-pane="maximizedPane"
+      :indicators="indicators"
+      :pane-looks="paneLooks"
+      :hidden-panes="hiddenPanes"
+      :closed-legends="closedLegends"
       @spacing="chart.setSpacing"
       @edge="chart.extendBars"
       @pane-weights="chart.setPaneWeights"
       @pane-shown="showPane"
+      @legend-closed="chart.closeLegend"
       @maximize="chart.setMaximizedPane"
       @reset-panes="chart.resetPanes"
     >
-      <ChartNotices :offer="offer" @accept="chart.acceptOffer" />
+      <ChartNotices
+        :offer="offer"
+        :series-offer="seriesOffer"
+        :series-cut-at="seriesCutAt"
+        :series-error="seriesError"
+        @accept="chart.acceptOffer"
+        @accept-series="chart.chooseTimeframe"
+      />
     </CandleChart>
   </div>
 </template>

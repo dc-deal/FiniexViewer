@@ -135,6 +135,8 @@ export const useDockStore = defineStore('dock', () => {
 
   // the API object is dockview's own and large — held, never made reactive
   const api = shallowRef<DockviewApi | null>(null)
+  /** Whether one group has the whole dock — the reader's for the moment, never stored. */
+  const maximized = ref(false)
 
   /** What is being dragged, while it is — the dock's edges offer a place only then. */
   const dragging = shallowRef<DockDrag | null>(null)
@@ -309,6 +311,9 @@ export const useDockStore = defineStore('dock', () => {
     if (timer) clearTimeout(timer)
     timer = null
     if (!api.value || api.value.totalPanels === 0) return
+    // a group with the whole dock is the reader's for the moment: written, the next start would open
+    // with it, the others hidden. Its end changes the layout, and that is written as usual
+    if (api.value.hasMaximizedGroup()) return
     arrangement.setDock(api.value.toJSON())
   }
 
@@ -339,7 +344,8 @@ export const useDockStore = defineStore('dock', () => {
    */
   function recordPlaces(): void {
     const dock = api.value
-    if (!dock || restoring) return
+    // the other groups are hidden while one has the whole dock: their sizes are no place to return to
+    if (!dock || restoring || dock.hasMaximizedGroup()) return
     const places = { ...arrangement.places }
     for (const panel of dock.panels) {
       const place = placeOf(dock, panel)
@@ -422,7 +428,29 @@ export const useDockStore = defineStore('dock', () => {
       dock.onWillDragPanel(event => { dragging.value = { panel: event.panel.id } }),
       dock.onWillDragGroup(event => { dragging.value = { group: event.group.id } }),
       dock.onDidDrop(endDrag),
+      dock.onDidMaximizedGroupChange(() => { maximized.value = dock.hasMaximizedGroup() }),
     ]
+    maximized.value = dock.hasMaximizedGroup()
+    window.addEventListener('keydown', onKey)
+  }
+
+  /**
+   * Gives a panel's group the whole dock, or the groups their places back — a double-click on its
+   * tab, as in VS Code (operator, 2026-11-13: the chart or the run list "kurz gross und dann wieder
+   * klein"). dockview holds the state; it is never stored (`flush`).
+   */
+  function toggleMaximized(kindId: string): void {
+    const dock = api.value
+    const panel = dock?.getPanel(kindId)
+    if (!dock || !panel) return
+    if (dock.hasMaximizedGroup()) dock.exitMaximizedGroup()
+    else panel.api.maximize()
+  }
+
+  /** Esc gives the groups their places back, where nothing before it took the key. */
+  function onKey(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || event.defaultPrevented || !api.value?.hasMaximizedGroup()) return
+    api.value.exitMaximizedGroup()
   }
 
   function endDrag(): void {
@@ -455,6 +483,8 @@ export const useDockStore = defineStore('dock', () => {
     flush()
     subscriptions.forEach(subscription => subscription.dispose())
     subscriptions = []
+    window.removeEventListener('keydown', onKey)
+    maximized.value = false
     api.value = null
     openIds.value = []
     shownIds.value = []
@@ -518,6 +548,9 @@ export const useDockStore = defineStore('dock', () => {
     const panel = dock.getPanel(kindId)
     const source = reason === 'selection' && from ? dock.getPanel(from) : undefined
     if (panel && source && source.group === panel.group) return true
+    // a pick inside a panel with the whole dock leaves it so: a panel of another group brought
+    // forward would end it, which the reader did not ask for. A command or a link still does
+    if (panel && reason === 'selection' && dock.hasMaximizedGroup() && !panel.api.isMaximized()) return true
     panel?.api.setActive()
     return panel !== undefined
   }
@@ -683,8 +716,8 @@ export const useDockStore = defineStore('dock', () => {
   }
 
   return {
-    api, openIds, shownIds, dragging, lastChart,
+    api, openIds, shownIds, dragging, lastChart, maximized,
     attach, detach, reveal, close, openSection, backIntoColumn, standsApart, showSection, hideSection, reset, restore, flush,
-    dockToEdge, endDrag, noteShown,
+    dockToEdge, endDrag, noteShown, toggleMaximized,
   }
 })

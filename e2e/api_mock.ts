@@ -45,14 +45,21 @@ const REPORTS: Record<string, string> = {
 }
 
 /**
- * The sessions the latest-state-frame captures came from, read off the captured index rather than
- * transcribed: the first row in each of the two states a stored session keeps for good.
+ * The sessions the latest-state-frame captures came from, read off the captures rather than
+ * transcribed: the ended one is the session its frames over time were captured from — the first
+ * ended row of the index is the one listed newest, which since contract 55 is the session that
+ * draws — and the stopped one the first row of the index in that state, the only one it holds.
  */
 export const STATE_FRAME_RUNS: Record<'ended' | 'stopped', string> = (() => {
   const rows = (fixture('runs_list.json') as { runs: { run_id: string, recording: string | null }[] }).runs
-  const first = (state: string) => rows.find(row => row.recording === state)?.run_id ?? ''
-  return { ended: first('ended'), stopped: first('stopped') }
+  return {
+    ended: (fixture('recorded_window.json') as { run_id: string }).run_id,
+    stopped: rows.find(row => row.recording === 'stopped')?.run_id ?? '',
+  }
 })()
+
+/** The session whose drawing workers were captured (contract 55): its timeline, a window of it, its market. */
+export const SERIES_RUN = (fixture('recorded_window_series.json') as { run_id: string }).run_id
 
 /** The run every report capture was taken from — the only one the mock can answer for. */
 export const FIXTURE_RUN = (fixture('scenario_details.json') as { run_id: string }).run_id
@@ -65,21 +72,25 @@ export const LIVE_RUN = (fixture('order_events_live.json') as { run_id: string }
  * the same rule the run id follows, so a re-capture cannot strand it.
  */
 /**
- * The FAMILY line the fixture run sits behind, or '' where it stands alone.
+ * The FAMILY the fixture run belongs to, or null where it stands alone.
  *
  * The run list groups by family — the parent where the backend states one, the set name otherwise
- * — and a family of several opens CLOSED. So the run a spec wants is not in the document until its
- * heading is clicked, which is exactly what a reader does. Derived from the captured index rather
- * than transcribed, so a re-capture that moves the run between families cannot strand it.
+ * — and a family of several opens CLOSED: a set or a deployment shows its newest run, the earlier
+ * ones behind the button beside it, and a sweep shows a heading. So the run a spec wants may not be
+ * in the document until the fold is opened, which is exactly what a reader does. Derived from the
+ * captured index rather than transcribed, so a re-capture that moves the run cannot strand it.
  */
 const FIXTURE_FAMILY = (() => {
   const rows = (fixture('runs_list.json') as {
-    runs: { run_id: string, name: string, parent_id: string | null }[]
+    runs: { run_id: string, name: string, parent_id: string | null, parent_kind: string | null, start_time: string }[]
   }).runs
   const mine = rows.find(row => row.run_id === FIXTURE_RUN)
-  if (!mine) return ''
+  if (!mine) return null
   const key = mine.parent_id ?? mine.name
-  return rows.filter(row => (row.parent_id ?? row.name) === key).length > 1 ? key : ''
+  const family = rows.filter(row => (row.parent_id ?? row.name) === key)
+  if (family.length < 2) return null
+  const newest = family.every(row => Date.parse(row.start_time) <= Date.parse(mine.start_time))
+  return { key, sweep: mine.parent_kind === 'sweep', newest }
 })()
 
 /**
@@ -88,7 +99,15 @@ const FIXTURE_FAMILY = (() => {
  */
 export async function revealFixtureRun(page: Page): Promise<void> {
   if (!FIXTURE_FAMILY) return
-  await page.locator('.run-list .record-group', { hasText: FIXTURE_FAMILY }).first().click()
+  const { key, sweep, newest } = FIXTURE_FAMILY
+  if (sweep) {
+    await page.locator('.run-list .record-group', { hasText: key }).first().click()
+    return
+  }
+  // the family's newest run IS its line
+  if (newest) return
+  await page.locator('.run-list .record-headed', { has: page.locator(`.run-name[title="${key}"]`) })
+    .first().locator('[data-action="fold"]').click()
 }
 
 export const FIXTURE_DEPLOYMENT =
@@ -286,6 +305,32 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
      * can reach either end. Every other run records nothing over time, as a backtest answers.
      */
     const recorded = /^\/api\/v1\/reports\/runs\/([^/]+)\/units\/([^/]+)\/recorded-streams(\/window)?$/.exec(path)
+    if (recorded && recorded[1] === SERIES_RUN) {
+      // the session that draws: its timeline as captured, and its captured window's frames and
+      // series' bars of the range asked — every one of them, as one page
+      if (!recorded[3]) return route.fulfill({ json: fixture('recorded_streams_series.json'), headers: CONTRACT })
+      const page = fixture('recorded_window_series.json') as {
+        state_frames: { frame_time: string }[], indicator_series: { times: string[], data: Record<string, unknown[]> }[]
+      }
+      const asked = new URL(route.request().url()).searchParams
+      const from = asked.get('from') ? Date.parse(asked.get('from')!) : -Infinity
+      const to = asked.get('to') ? Date.parse(asked.get('to')!) : Infinity
+      const inside = (time: string) => Date.parse(time) >= from && Date.parse(time) < to
+      const frames = page.state_frames.filter(frame => inside(frame.frame_time))
+      const series = page.indicator_series.map(entry => {
+        const kept = entry.times.flatMap((time, index) => inside(time) ? [index] : [])
+        return {
+          ...entry,
+          times: kept.map(index => entry.times[index]!),
+          data: Object.fromEntries(Object.entries(entry.data).map(([id, values]) => [id, kept.map(index => values[index])])),
+        }
+      }).filter(entry => entry.times.length)
+      const count = frames.length + series.reduce((sum, entry) => sum + entry.times.length, 0)
+      return route.fulfill({
+        json: { ...page, matched: count, returned: count, truncated: false, next_from: null, state_frames: frames, indicator_series: series },
+        headers: CONTRACT,
+      })
+    }
     if (recorded) {
       if (recorded[1] !== STATE_FRAME_RUNS.ended) {
         return route.fulfill(absent('streams_not_recorded', 'This run records no stream over time.'))
@@ -350,6 +395,10 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       const file = REPORTS[section]
       if (!file) {
         return route.fulfill(absent('artifact_not_produced', `No capture for section '${section}'`))
+      }
+      // the session that draws is captured with its configuration alone: it names its market
+      if (runId === SERIES_RUN && section === 'config') {
+        return route.fulfill({ json: fixture('run_config_series.json'), headers: CONTRACT })
       }
       // a body naming another run would trip our own RunIdMismatchError — so it is not served
       if (runId !== FIXTURE_RUN) {
