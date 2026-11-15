@@ -26,6 +26,7 @@ vi.mock('@/api/api_client', () => ({
   findCoverage: vi.fn(),
   getBars: vi.fn(),
   getTimeframes: vi.fn(),
+  getOrderEvents: vi.fn(),
 }))
 
 const RUN = '20261012_205715_c3b41fff'
@@ -71,6 +72,8 @@ describe('RunChartView', () => {
     vi.mocked(apiClient.getTimeframes).mockReset().mockResolvedValue([
       { name: 'M1', minutes: 1 }, { name: 'M5', minutes: 5 }, { name: 'H1', minutes: 60 },
     ])
+    // a unit's order steps: none placed at a price
+    vi.mocked(apiClient.getOrderEvents).mockReset().mockResolvedValue({ absent: true, cause: 'artifact_not_produced', detail: '' })
   })
 
   afterEach(() => {
@@ -91,6 +94,14 @@ describe('RunChartView', () => {
     expect(chart.exists()).toBe(true)
     expect(Number(chart.attributes('data-marks'))).toBeGreaterThan(0)
     expect(wrapper.find('.chart-notice').exists()).toBe(false)
+  })
+
+  /** A unit whose order steps could not be read says so over the chart, with the error's glyph. */
+  it('says over the chart why the order steps could not be read', async () => {
+    vi.mocked(apiClient.getOrderEvents).mockRejectedValue(new Error('network down'))
+    chooseFixtureRun()
+    const wrapper = await mountView()
+    expect(wrapper.find('.chart-notice.orders-error').text()).toContain('The order steps could not be read')
   })
 
   /** What the shapes mean, said once over the chart — and dismissible, like every hint. */
@@ -202,6 +213,8 @@ describe('RunChartQuickBar', () => {
     vi.mocked(apiClient.getTimeframes).mockReset().mockResolvedValue([
       { name: 'M1', minutes: 1 }, { name: 'M5', minutes: 5 }, { name: 'H1', minutes: 60 },
     ])
+    // a unit's order steps: none placed at a price
+    vi.mocked(apiClient.getOrderEvents).mockReset().mockResolvedValue({ absent: true, cause: 'artifact_not_produced', detail: '' })
   })
 
   afterEach(() => {

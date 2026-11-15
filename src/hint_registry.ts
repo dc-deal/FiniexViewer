@@ -157,6 +157,14 @@ const HINTS: HintDefinition[] = [
     text: t('Orders of the unit on show that were refused — denied before anything was sent, rejected by the venue, or any other refusal the Orders panel marks — as a cross, and orders that ran out without filling as a ring, in a row above the booking periods. They have no price, so they stand at the time they ended. Several close together are drawn as one with a count; zoom in to draw them apart.'),
   },
   {
+    id: 'layer-resting-orders',
+    text: t('Orders of the unit on show that rested at the venue, each dotted on its price from where the venue took it to the step that ended it — filled, cancelled, expired — with its words where it begins. A moved price continues the same order. Rest the pointer on one to see how it ended.'),
+  },
+  {
+    id: 'layer-empty-resting-orders',
+    text: t('No order of the unit on show rested at a price on the bars loaded: a market order fills at once, and a run without an order-event stream has none to show.'),
+  },
+  {
     id: 'chart-marks',
     text: t('↑↓ a position opened · ● a trade closed, + − 0 its result · ×3 several drawn as one — rest the pointer on one to see which'),
   },

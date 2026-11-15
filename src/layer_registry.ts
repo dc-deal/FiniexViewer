@@ -63,6 +63,12 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
     title: t('Refused and expired'),
     hintId: 'layer-refusals',
   },
+  // their glossary's word: a pending order the venue has accepted and that waits for its price
+  'resting-orders': {
+    title: t('Resting orders'),
+    hintId: 'layer-resting-orders',
+    emptyHintId: 'layer-empty-resting-orders',
+  },
 }
 
 /**
@@ -70,7 +76,7 @@ const LAYERS: Record<ChartLayerId, LayerDefinition> = {
  * draws only its candles, and the Layers panel has nothing to arrange for it: the free chart today.
  */
 const CHART_LAYERS: Record<string, readonly ChartLayerId[]> = {
-  'run-chart': ['volume', 'candles', 'periods', 'refusals', 'state-frame', 'levels', 'entry-exit', 'trades'],
+  'run-chart': ['volume', 'candles', 'periods', 'refusals', 'state-frame', 'resting-orders', 'levels', 'entry-exit', 'trades'],
 }
 
 /**

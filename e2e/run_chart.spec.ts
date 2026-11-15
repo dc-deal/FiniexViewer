@@ -1,7 +1,7 @@
 import { test, expect } from './cdp_fixture'
 import type { Page } from '@playwright/test'
-import { mockApi, FIXTURE_RUN } from './api_mock'
-import { openWith, storedLink } from './arrangement_seed'
+import { mockApi, FIXTURE_RUN, LIVE_RUN } from './api_mock'
+import { FIXTURES_SHOWN, openWith, storedLink } from './arrangement_seed'
 import { paneRows } from './pane_rows'
 
 /**
@@ -277,4 +277,21 @@ test('the run chart keeps its stretch of time when its panel is given the whole 
   await expect.poll(async () => Math.abs((await chart.boundingBox())!.width - box.width)).toBeLessThan(3)
   await page.waitForTimeout(300)
   expect(await chart.getAttribute('data-visible-from')).toBe(from)
+})
+
+/**
+ * The orders that rested at a price (viewer#41, section D), from the unit's order-event stream: the
+ * field study placed limit orders and cancelled most of them, and the chart draws each from where the
+ * venue took it to the step that ended it — counted on the chart's element, since a canvas cannot be
+ * read back. The session's own configuration names its market.
+ */
+test('the run chart draws the orders of a session that rested at a price', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, '/', { ...FIXTURES_SHOWN, run: LIVE_RUN })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  // the session's window runs to the end of the coverage: M1, where its bars are captured
+  await page.locator('[data-quick-bar="run-chart"] select').nth(1).selectOption('M1')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/resting-orders:[1-9]/)
+  await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
+  await expect(page.locator('[data-panel-kind="run-chart"] .chart-notice.orders-error')).toHaveCount(0)
 })

@@ -436,6 +436,8 @@ function drawingColours(colours: ChartColours): DrawingColours {
       entry: colours.mark,
       annotation: colours.annotation,
       warning: colours.warning,
+      // an order resting at its price is a fact, not a result: the quiet ink, told apart by its dots
+      order: colours.quiet,
     },
     surface: colours.surface,
     ink: colours.mark,

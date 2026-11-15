@@ -466,6 +466,25 @@ for unit in bodies.get('scenario_details.json', {}).get('units', []):
     merged = markets.setdefault(key, {})
     for row in rows:
         merged[row['t']] = row
+# The field study's market around its order steps, so a browser test draws its resting orders on
+# candles: its configuration names the market, and its window declares no end, so the bars are asked
+# from ten minutes before its first step to ten after its last - merged into the same market's file.
+live_market = (bodies.get('run_config_live.json') or {}).get('config') or {}
+live_times = [step['event_time'] for step in (bodies.get('order_events_live.json') or {}).get('events') or []
+              if step.get('event_time')]
+if live_market.get('broker_type') and live_market.get('symbol') and live_times:
+    key = (live_market['broker_type'], live_market['symbol'])
+    start = datetime.datetime.fromisoformat(min(live_times)) - datetime.timedelta(minutes=10)
+    end = datetime.datetime.fromisoformat(max(live_times)) + datetime.timedelta(minutes=10)
+    path = (f"brokers/{key[0]}/symbols/{key[1]}/bars?timeframe={BAR_TIMEFRAME}"
+            f"&from={urllib.parse.quote(start.isoformat())}&to={urllib.parse.quote(end.isoformat())}")
+    try:
+        rows, _ = fetch(path)
+        merged = markets.setdefault(key, {})
+        for row in rows:
+            merged[row['t']] = row
+    except Exception as error:                                   # noqa: BLE001 - report, never mask
+        failures.append(('bars of the field study', path, error))
 for (broker, symbol), rows in sorted(markets.items()):
     name = f'bars_{broker}_{symbol}_{BAR_TIMEFRAME}.json'
     bodies[name] = [rows[t] for t in sorted(rows)]

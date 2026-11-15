@@ -12,7 +12,7 @@ import type { ChartMark } from '@/types/run_chart_types'
  */
 
 const COLOURS: DrawingColours = {
-  roles: { positive: '#0a0', negative: '#a00', flat: '#888', mixed: '#888', entry: '#fff', annotation: '#f0f', warning: '#fa0' },
+  roles: { positive: '#0a0', negative: '#a00', flat: '#888', mixed: '#888', entry: '#fff', annotation: '#f0f', warning: '#fa0', order: '#999' },
   surface: '#111',
   ink: '#eee',
 }
@@ -61,7 +61,9 @@ function attachTo(host: ChartDrawingHost): { requestUpdate: ReturnType<typeof vi
 function recordingContext(): { context: CanvasRenderingContext2D, calls: string[] } {
   const calls: string[] = []
   const record = (name: string) => (...args: unknown[]) => { calls.push(`${name}(${args.join(',')})`) }
-  const context = new Proxy({} as Record<string, unknown>, {
+  // a word six pixels a letter, so the painter can tell where one would cover another
+  const measureText = (text: string) => ({ width: text.length * 6 })
+  const context = new Proxy({ measureText } as Record<string, unknown>, {
     get: (target, name: string) => target[name] ?? record(name),
     set: (target, name: string, value) => { calls.push(`${name}=${value}`); target[name] = value; return true },
   })
@@ -172,6 +174,42 @@ describe('ChartDrawingHost', () => {
     expect(calls.some(call => call.startsWith('fillText(+,'))).toBe(true)
     expect(calls).toContain('fillStyle=#0a0')
     expect(calls).toContain('fillStyle=#fff')
+  })
+
+  /** A resting order is dotted, told from a level by its form; a stretch without a word paints none. */
+  it('paints a resting order dotted in its role, and no word where it carries none', () => {
+    const orders: ChartLayer = {
+      id: 'resting-orders',
+      drawings: [{
+        kind: 'segment', id: 'order|u|1|0', from: 1, to: 2, price: 250, label: 'limit · open long', role: 'order',
+        stroke: 'dotted', focused: false, card: { title: 'Resting order', details: [] },
+      }, {
+        kind: 'segment', id: 'order|u|1|1', from: 2, to: null, price: 240, label: '', role: 'order',
+        stroke: 'dotted', focused: false, card: { title: 'Resting order', details: [] },
+      }],
+    }
+    const placed = placeLayer(orders, BARS, { x: time => time * 10, y: price => 500 - price, spacing: 80, width: 800 })
+    const { context, calls } = recordingContext()
+    paintLayer(context, placed, COLOURS, '10px Probe Sans', 400)
+    expect(calls).toContain('setLineDash(1,2)')
+    expect(calls).not.toContain('setLineDash(4,3)')
+    expect(calls).toContain('strokeStyle=#999')
+    expect(calls.filter(call => call.startsWith('fillText('))).toEqual([expect.stringMatching(/^fillText\(limit · open long,/)])
+  })
+
+  /** Orders placed close together: a word that would cover one already painted is left out, its stroke kept. */
+  it('leaves out a word that would cover one already painted, and paints every stroke', () => {
+    const order = (id: string, price: number) => ({
+      kind: 'segment' as const, id, from: 1, to: 1, price, label: 'limit · open long', role: 'order' as const,
+      stroke: 'dotted' as const, focused: false, card: { title: 'Resting order', details: [] },
+    })
+    // two a price unit apart, one pixel here; the third far below
+    const placed = placeLayer({ id: 'resting-orders', drawings: [order('a', 250), order('b', 251), order('c', 230)] }, BARS,
+      { x: time => time * 10, y: price => 500 - price, spacing: 80, width: 800 })
+    const { context, calls } = recordingContext()
+    paintLayer(context, placed, COLOURS, '10px Probe Sans', 400)
+    expect(calls.filter(call => call.startsWith('stroke('))).toHaveLength(3)
+    expect(calls.filter(call => call.startsWith('fillText('))).toHaveLength(2)
   })
 
   /**

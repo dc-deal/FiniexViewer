@@ -7,6 +7,7 @@ import {
 } from '@/components/runs/run_chart'
 import { periodSpans, refusalMarks } from '@/components/runs/run_chart_lane'
 import { entryExitLines, frameMoment, positionLevels } from '@/components/runs/run_chart_levels'
+import { restingOrders } from '@/components/runs/run_chart_orders'
 import {
   barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
 } from '@/components/runs/run_chart_marks'
@@ -17,6 +18,7 @@ import { framePaneOf, frameworkGroupsOf, hiddenByGroup, workerGroupsOf } from '@
 import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
+import { useChartOrdersStore } from '@/stores/chart_orders_store'
 import { useContextStore } from '@/stores/context_store'
 import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useIndicatorSeriesStore } from '@/stores/indicator_series_store'
@@ -39,6 +41,8 @@ type CoverageEntry = CoverageResponse | 'none'
 const RUN_CHART = 'run-chart'
 /** How many panes' heights are kept, the newest: a worker's panes come and go with the runs shown. */
 const KEPT_PANES = 24
+/** The order-event stream, as the run list names it under `stream_files`. */
+const ORDER_EVENTS = 'order_events.jsonl'
 
 function marketKey(unit: ChartUnit): string {
   return `${unit.broker}/${unit.symbol}`
@@ -66,6 +70,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   const timeframeStore = useTimeframeStore()
   const framePlayers = useFramePlayerStore()
   const indicatorSeries = useIndicatorSeriesStore()
+  const chartOrders = useChartOrdersStore()
 
   /** How many run charts are on show. Nothing is fetched while there are none. */
   const viewers = ref(0)
@@ -250,6 +255,10 @@ export const useRunChartStore = defineStore('runChart', () => {
       : []),
     refusals: computed(() => unit.value
       ? refusalMarks(reports.orderHistory?.orders ?? [], unit.value.name, barTimes.value, cutAt.value, perMark.value)
+      : []),
+    // the unit's orders that rested at a price, from its order-event stream
+    'resting-orders': computed(() => unit.value
+      ? restingOrders(chartOrders.events, unit.value.name, barTimes.value, cutAt.value, tickSize.value)
       : []),
     // the player of the unit on show and of the run on show: its name is the unit's in `data_windows`
     'state-frame': computed(() => {
@@ -439,6 +448,18 @@ export const useRunChartStore = defineStore('runChart', () => {
     { immediate: true },
   )
 
+  // the unit's order steps, for its resting orders — only where the run wrote the stream: a run from
+  // before it, or a backtest that placed no order, would answer an absence for every unit
+  watch(
+    [() => viewers.value > 0, () => runsStore.selectedRun?.run_id, () => unit.value?.name,
+      () => runsStore.selectedRun?.stream_files.includes(ORDER_EVENTS) ?? false],
+    ([shown, runId, name, written]) => {
+      void chartOrders.follow(shown && runId && name && written ? { runId, unit: name } : null)
+    },
+    { immediate: true },
+  )
+  const ordersError = computed(() => chartOrders.error)
+
   // the place the offer centred on belongs to the unit and the position it was taken for
   watch([() => unit.value?.name, () => focus.value?.position], () => { offerAt.value = null })
 
@@ -625,6 +646,7 @@ export const useRunChartStore = defineStore('runChart', () => {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
     paneWeights, maximizedPane, paneLooks, setPaneLook, closedLegends, closeLegend, indicators, indicatorLayers, seriesOffer, seriesCutAt, seriesError,
+    ordersError,
     loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
     chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }

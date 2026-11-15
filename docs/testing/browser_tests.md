@@ -119,7 +119,8 @@ by its tab, the way a reader does.
   of a position the run ended with still open marked, though it has no trade; its stretch of time
   kept through its panel given the whole dock and back; marks that would cover
   each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
-  the chart leaving the whole chart inside its panel; the levels of the position looked at painted
+  the chart leaving the whole chart inside its panel; the field study's resting orders drawn on its
+  market's candles, from its own configuration; the levels of the position looked at painted
   on a real canvas, from a position the mock hands a stop and a target; an own level that fired drawn
   from the row that names it, which no stored run carries yet; the refusing unit's booking period
   and its orders refused drawn in the time lane, counted on the element, and the period's card

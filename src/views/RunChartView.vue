@@ -24,7 +24,7 @@ const chart = useRunChartStore()
 const {
   units, unit, waiting, unitCoverage, coverageError, timeframe, bars, loading, error, layers, offer, focusAt,
   priceFormat, volume, candles, loadingEdges, edgeError, paneWeights, maximizedPane, indicators, seriesOffer, seriesCutAt,
-  seriesError, paneLooks, closedLegends,
+  seriesError, ordersError, paneLooks, closedLegends,
 } = storeToRefs(chart)
 
 /**
@@ -123,6 +123,7 @@ onUnmounted(() => chart.detach())
         :series-offer="seriesOffer"
         :series-cut-at="seriesCutAt"
         :series-error="seriesError"
+        :orders-error="ordersError"
         @accept="chart.acceptOffer"
         @accept-series="chart.chooseTimeframe"
       />

@@ -303,12 +303,13 @@ export async function getOrderHistory(
 export async function getOrderEvents(
   runId: string,
   scenarioName: string,
-  orderId: string
+  orderId?: string
 ): Promise<OrderEventsReport | SectionAbsence> {
   try {
     const response = await http.get<OrderEventsReport>(
       `/reports/runs/${runId}/order-events`,
-      { params: { scenario_name: scenarioName, order_id: orderId } }
+      // without the order: every step of the unit, as the run chart draws its resting orders from
+      { params: orderId === undefined ? { scenario_name: scenarioName } : { scenario_name: scenarioName, order_id: orderId } }
     )
     return assertBelongsTo(runId, response.data)
   } catch (error) {

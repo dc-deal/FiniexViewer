@@ -1,8 +1,9 @@
 # Chart Drawings and Layers
 
 What a chart draws for itself beside its candles — the run chart's marks, the levels and the line of
-the position in focus — and how it is drawn, placed and found under the pointer. Read this before
-you change `chart_drawing_host.ts`, `chart_geometry.ts` or `run_chart_levels.ts`. How the run chart
+the position in focus, the orders resting at their price — and how it is drawn, placed and found under
+the pointer. Read this before you change `chart_drawing_host.ts`, `chart_geometry.ts`,
+`run_chart_levels.ts` or `run_chart_orders.ts`. How the run chart
 picks its unit, timeframe and bars is in [Candle Charts](candle_charts.md).
 
 ## One host, layers in a list (viewer#41)
@@ -46,13 +47,13 @@ and the card it shows there; a time is the open of a bar drawn.
 | kind | what | from |
 |---|---|---|
 | marker (`ChartMark`) | an opening ↑↓ or an exit ●, single or gathered `×N` | [Candle Charts](candle_charts.md) |
-| `segment { from, to, price }` | a level held from one bar to another — `to` null: to the window's edge; `from` equal to `to`: known at that bar alone, a short stroke ending there | `run_chart_levels.ts` |
+| `segment { from, to, price }` | a price held from one bar to another — a level dashed, a resting order dotted (`stroke`); `to` null: to the window's edge; `from` equal to `to`: known at that bar alone, a short stroke ending there | `run_chart_levels.ts`, `run_chart_orders.ts` |
 | `line { from, to }` | two points joined: where a trade entered and where it left | `run_chart_levels.ts` |
 | `time { time }` | a moment over the whole height, dashed: the state frame on show. Ours until testingide#379 names one | `run_chart_levels.ts` |
 | `span { from, to, endsAtOpen }` | a stretch of time in the lane's strip: a booking period | `run_chart_lane.ts` |
 | `lane-mark { time, shape }` | a moment with no price, in the lane's row: an order refused (cross) or expired (ring), single or gathered `×N` | `run_chart_lane.ts` |
 
-A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry` · `annotation` · `warning`), read from the
+A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry` · `annotation` · `warning` · `order`), read from the
 theme tokens by the chart and handed to the host — a canvas cannot read CSS. The shape and the word
 come first: a level carries `SL` or `TP`, a mark its sign or its count, so the colour only reinforces.
 
@@ -181,6 +182,38 @@ on show (`run_chart_lane.ts`).
   which needs the order events placed by time and a word from FiniexTestingIDE on how a pending order
   is spanned; and the kinds testingide#379 will name.
 
+## Resting orders (2026-11-15)
+
+The orders of the unit on show that rested at the venue, each dotted on its price from where the
+venue took it to the step that ended it (viewer#41, section D) — their glossary's *resting*: "a pending
+order the venue (or the trade simulator) has accepted and that waits for its price". Read from the
+unit's order-event stream, asked through the route's own narrowing (`order-events?scenario_name=`,
+`chart_orders_store.ts`) only where the run wrote it (`stream_files`), once per run and unit.
+
+```
+ 2642.28 ·····························              limit · open long      cancelled: the stroke ends
+ 2565.30 ······················▲                    limit · open long      filled: the trade's mark at its end
+ 2437.32 ···················                         stop · close long      a protective stop, released
+```
+
+- **Every value is a served field** (`run_chart_orders.ts`). The steps of one order are grouped by
+  `submitted_seq`, their join key, and read in `seq` order, never by time. It rests from `accepted` —
+  or `adopted`, taken over at a session's start — to `filled`, `cancelled`, `expired`, `rejected` or
+  `undelivered`; with none of them, or `unaccounted`, it runs to the window's edge.
+- **The price** is `limit_price`, or `trigger_price` where it has no limit or waits for its trigger.
+  A stop-limit stands at its trigger until `triggered`, then at its limit; a plain stop rests no longer
+  once triggered. `modified` starts a stretch at the new price, its words drawn once, at the first.
+- **Not drawn:** a market order (no price to rest at), a `denied` one (never sent), one the venue
+  never took. An order within one bar is a short stroke at that bar.
+- **Its words** where it begins, as served — `order_type · action direction` — in the quiet ink, the
+  dotted form telling it from a level's dashes. A word that would cover one already painted is left
+  out; the stroke stays, and its card names it: the limit or trigger, the lots, when it was accepted,
+  moved and ended, the end reason, the initiator and the position.
+- **Measured 2026-11-15:** one unit of a backtest of 129 trades answered 57 KB in 0.34 s, the whole run
+  404 KB. The backtests in the archive trade at the market; the field study placed limit orders.
+- **An empty layer** says why in its hint: a market order fills at once, and a run without the stream
+  has none. A read that failed says so over the chart, beside the other notices.
+
 ## The volume — a layer the library draws (2026-10-27)
 
 A layer like the others to the reader, drawn by the chart library as a series of its own — in a pane
@@ -217,9 +250,13 @@ line · area** (`forms` in the register, kept under `forms` only where it is not
   against a canvas context that records what it was told to draw (jsdom has no canvas).
 - `run_chart_levels.test.ts` — the levels and the line from served fields.
 - `run_chart_lane.test.ts` — the periods' spans and the refusals' marks from the run's reports, gathered and cut.
+- `run_chart_orders.test.ts`, `chart_orders_store.test.ts` — the resting orders from an order's steps,
+  against the field study and against steps written for a modification and a trigger; the steps read
+  once per run and unit.
 - `candle_chart.test.ts` — what the chart hands its host: the layers, every bar's range, the colours;
   and the volume's series, its scale and its colours, built only where a volume is handed — its pane
   in [Chart Panes](chart_panes.md).
 - `e2e/run_chart.spec.ts` — the levels painted on a real canvas, from a capture whose position the
   mock hands a stop and a target (no trade of the fixture run set one); and the lane of the refusing
-  unit, its period's card found at the bottom of the pane.
+  unit, its period's card found at the bottom of the pane; and the field study's resting orders on its
+  market's candles.
