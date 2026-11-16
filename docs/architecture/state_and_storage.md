@@ -136,7 +136,7 @@ http://localhost:5173/?server=default&run=<run id>&units=<unit>&position=<scenar
 - **Copied on demand** from the run chart's quick bar (🔗): this window's server, the run, the
   scenarios in focus — or the unit on show where none is — the marked position, the timeframe and the
   bar in the middle of the stretch on show. What came of it stands at the button: ✓, or ✕ where the
-  clipboard refused.
+  clipboard refused. What it does is said by the quick bar's hint, with ≡ Layers.
 - **Applied once, as a pick** (`use_link_from_address.ts`, at the app root after the layout by run).
   The parameters leave the address at once, so a reload shows the stored state. Once the run index is
   there, the run, the scenarios and the position are chosen through the stores' actions, and

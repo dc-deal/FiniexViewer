@@ -485,8 +485,10 @@ export const useRunChartStore = defineStore('runChart', () => {
     pendingCentre.value = null
   }
 
-  // after the reset above: the unit a link named has resolved, and its centre stands
-  watch([() => unit.value?.name, pendingCentre], takePendingCentre, { flush: 'post' })
+  // after the reset above: the unit a link named has resolved, and its centre stands. The unit is read
+  // only while a centre waits — read always, a run's broken order history threw here, outside every
+  // panel's boundary, and took the whole run bundle down (the browser suite, 2026-11-16)
+  watch(() => pendingCentre.value ? [pendingCentre.value, unit.value?.name ?? null] : null, takePendingCentre, { flush: 'post' })
 
   /** Centres the chart on a moment, in UTC seconds, once the unit named — or any, where none is — is on show. */
   function centreOn(at: number, unitName: string | null = null): void {

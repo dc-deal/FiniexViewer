@@ -43,7 +43,7 @@ const HINTS = [
   'trade-slippage', 'position-link', 'beyond-the-venue', 'first-start', 'run-membership',
   'chart-panes', 'layer-periods', 'layer-empty-periods', 'layer-refusals', 'venue-account', 'bundle-places',
   'layer-indicator', 'layer-empty-indicator', 'run-families', 'panel-maximize', 'layer-workers',
-  'layer-resting-orders', 'layer-empty-resting-orders', 'symbol-filter', 'link-copy',
+  'layer-resting-orders', 'layer-empty-resting-orders', 'symbol-filter',
   'servers', 'layouts', 'layout-by-run', 'size-by-window', 'suggested-order',
 ]
 
