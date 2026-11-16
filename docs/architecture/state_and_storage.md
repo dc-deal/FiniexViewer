@@ -133,7 +133,7 @@ which is where things stand and stays the reader's own (`link_address.ts`).
 http://localhost:5173/?server=default&run=<run id>&units=<unit>&position=<scenario>~<position id>&chart=M1@2026-10-07T15:30:00Z
 ```
 
-- **Copied on demand** from the run chart's quick bar (🔗): this window's server, the run, the
+- **Copied on demand** from the run chart's quick bar (the link button): this window's server, the run, the
   scenarios in focus — or the unit on show where none is — the marked position, the timeframe and the
   bar in the middle of the stretch on show. What came of it stands at the button: ✓, or ✕ where the
   clipboard refused. What it does is said by the quick bar's hint, with ≡ Layers.

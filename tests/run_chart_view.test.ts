@@ -287,7 +287,7 @@ describe('RunChartQuickBar', () => {
     chart.setVisibleMiddle(Date.parse('2026-10-07T15:30:00Z') / 1000)
     await flushPromises()
     const button = mounted.find('[data-action="copy-link"]')
-    expect(button.text()).toBe('🔗')
+    expect(button.find('svg').exists()).toBe(true)
     await button.trigger('click')
     await flushPromises()
     const copied = readLink(new URL(writeText.mock.calls[0]![0] as string).search)!

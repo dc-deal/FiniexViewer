@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { activeServer } from '@/active_server'
 import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
 import { instanceOf } from '@/layer_groups'
 import { writeLink } from '@/link_address'
@@ -17,8 +18,8 @@ import { t } from '@/translate'
  * What the run chart shows — which unit, in which timeframe — beside the tabs while it is the panel
  * in front: `EURGBP_refusals_01 · M1`. A unit nothing can be drawn for stays listed, disabled, with
  * the reason, so the list is the run's whole set of units rather than a shorter one. ≡ Layers opens
- * the panel that arranges what the chart draws, beside it — marked while that panel is open. 🔗
- * copies a link to the view on show (viewer#60).
+ * the panel that arranges what the chart draws, beside it — marked while that panel is open. The
+ * link button copies a link to the view on show (viewer#60).
  */
 const chart = useRunChartStore()
 const { units, unit, timeframe, coveredTimeframes, indicatorLayers, visibleMiddle } = storeToRefs(chart)
@@ -142,7 +143,9 @@ onUnmounted(() => clearTimeout(copiedTimer))
       data-action="copy-link"
       @click="copyLink"
     >
-      {{ copied === 'done' ? '✓' : copied === 'failed' ? '✕' : '🔗' }}
+      <template v-if="copied">{{ copied === 'done' ? '✓' : '✕' }}</template>
+      <!-- an icon, never the emoji: it takes the button's ink, where the emoji's own grey read as disabled -->
+      <AppIcon v-else name="action-copy-link" />
     </AppButton>
   </div>
 </template>
