@@ -81,12 +81,20 @@ export interface ScenarioRow {
   trades_requested: number | null
   /**
    * The decisions that asked to buy or sell, the buy and the sell signals together, and it and
-   * `trades_requested` per tick processed, in percent (contract 52): 0.0 over no tick, null where the
-   * decisions were not counted — null exactly where the four counters above are.
+   * `trades_requested` in percent (contract 52): 0.0 over no pass, null where the decisions were not
+   * counted — null exactly where the four counters above are. Per PASS since contract 57, algo and
+   * heartbeat passes together; on a backtest recorded before, each pass was one tick, so it reads as before.
    */
   non_flat_signals: number | null
   non_flat_signal_pct: number | null
   trades_requested_pct: number | null
+  /**
+   * How often the algo computed, and how often a heartbeat logic's decision ran between ticks
+   * (contract 57). A backtest computes once for the ticks of one millisecond, so `algo_passes` falls
+   * below `ticks_processed`, which still counts ticks. Null on a backtest recorded before 57.
+   */
+  algo_passes: number | null
+  ghost_passes: number | null
   /** How many workers the scenario DECLARES — read from its configuration, so a refused one has it too. */
   worker_count: number
   /** Both empty on a scenario that ran; both set on one that did not. */

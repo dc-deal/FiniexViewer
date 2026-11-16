@@ -87,7 +87,7 @@ describe('AggregatedPortfolioPanel', () => {
   describe('what the run paid', () => {
     it('shows the split rather than only the total', () => {
       const shown = figures(mountPanel())
-      expect(shown['Spread']).toBe('7.82 EUR')
+      expect(shown['Spread']).toBe('7.93 EUR')
       expect(shown['Commission']).toBe('0.00 EUR')
       expect(shown['Swap']).toBe('0.00 EUR')
     })
@@ -144,17 +144,17 @@ describe('AggregatedPortfolioPanel', () => {
     /** Realised against valued: the two differ by exactly the unrealised movement. */
     it('puts the realised balance beside its own caveat', () => {
       const balance = figurePairs(mountPanel()).find(pair => pair.label === 'Final balance')
-      expect(balance?.value).toBe('40,003.74 EUR')
+      expect(balance?.value).toBe('40,003.95 EUR')
       expect(balance?.title).toContain('Realised only')
     })
 
     it('carries the balance change as a magnitude and a percentage together', () => {
-      expect(figures(mountPanel())['Balance change']).toBe('3.74 EUR (0.01%)')
+      expect(figures(mountPanel())['Balance change']).toBe('3.95 EUR (0.01%)')
     })
 
     it('shows the averages behind the profit factor, and the direction split', () => {
       const shown = figures(mountPanel())
-      expect(shown['Avg win / loss']).toBe('0.64 EUR / 0.06 EUR')
+      expect(shown['Avg win / loss']).toBe('0.68 EUR / 0.06 EUR')
       expect(shown['Long / short']).toBe('6 / 2')
     })
 
@@ -174,7 +174,7 @@ describe('AggregatedPortfolioPanel', () => {
     it('says the worth of a spot account is estimated', () => {
       // section 1, because the captured run's FIRST currency is a forex account now
       const shown = figures(mountPanel(), 1)
-      expect(shown['Estimated now']).toBe('2,978.04 USD')
+      expect(shown['Estimated now']).toBe('2,978.12 USD')
       expect(shown['At the start']).toBe('3,003.88 USD')
       expect(shown['Base asset held']).toBe('yes')
     })

@@ -286,7 +286,8 @@ describe('sweep_rows', () => {
   it('carries the order counts of a combination, and a dash on a row from before they folded', () => {
     const [row] = combinations({
       combinations: [combination({
-        orders_submitted: 12, orders_executed: 11, orders_rejected: 1, orders_cancelled: 0, sl_tp_triggered: 4,
+        // every count the line names given here, none left to the capture
+        orders_submitted: 12, orders_executed: 11, orders_rejected: 1, orders_cancelled: 0, orders_expired: 0, sl_tp_triggered: 4,
       })],
     })
     const orders = combinationCard(row!).details.find(pair => pair.label === 'Orders')

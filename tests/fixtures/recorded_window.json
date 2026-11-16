@@ -1,7 +1,7 @@
 {
-  "run_id": "20261116_123727_2075f774",
+  "run_id": "20261116_142757_38677227",
   "unit_name": "state_frames_test",
-  "served_at": "2026-11-16T13:00:35.651256Z",
+  "served_at": "2026-11-16T15:13:50.909409Z",
   "window": {
     "from": "2026-01-25T02:19:57.550000Z",
     "to": "2026-01-25T08:00:00.321000Z"
@@ -23,7 +23,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:19:57.550000Z",
-      "written_at": "2026-11-16T12:37:32.578485Z",
+      "written_at": "2026-11-16T14:28:04.015131Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:19:00Z",
       "ticks_processed": 1,
@@ -81,15 +81,15 @@
       "closed_bars": {},
       "order_id": null,
       "process_memory": {
-        "rss_bytes": 606691328,
-        "private_bytes": 531460096
+        "rss_bytes": 463470592,
+        "private_bytes": 387133440
       },
       "record_no": 1
     },
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:20:03.436000Z",
-      "written_at": "2026-11-16T12:37:32.583865Z",
+      "written_at": "2026-11-16T14:28:04.021322Z",
       "written_for": "bar_close",
       "cadence_slot": "2026-01-25T02:20:00Z",
       "ticks_processed": 2,
@@ -154,7 +154,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:21:02.991000Z",
-      "written_at": "2026-11-16T12:37:32.586614Z",
+      "written_at": "2026-11-16T14:28:04.024804Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:21:00Z",
       "ticks_processed": 12,

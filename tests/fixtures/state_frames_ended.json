@@ -2,21 +2,21 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-11-16T12:59:11.131204Z",
+  "served_at": "2026-11-16T15:12:27.853657Z",
   "units": [
     {
       "unit_name": "state_frames_test",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
-      "written_at": "2026-11-16T12:37:34.077187Z",
-      "age_s": 1297.054017,
+      "written_at": "2026-11-16T14:28:06.355938Z",
+      "age_s": 2661.497719,
       "recording": "ended",
       "truncated_tail": false,
       "first_frame": {
-        "written_at": "2026-11-16T12:37:32.578485Z",
+        "written_at": "2026-11-16T14:28:04.015131Z",
         "process_memory": {
-          "rss_bytes": 606691328,
-          "private_bytes": 531460096
+          "rss_bytes": 463470592,
+          "private_bytes": 387133440
         }
       },
       "outcome": {
@@ -43,7 +43,7 @@
       "frame": {
         "record_kind": "frame",
         "frame_time": "2026-01-25T08:00:00.320000Z",
-        "written_at": "2026-11-16T12:37:34.077187Z",
+        "written_at": "2026-11-16T14:28:06.355938Z",
         "written_for": "shutdown",
         "cadence_slot": null,
         "ticks_processed": 5980,
@@ -114,8 +114,8 @@
         "closed_bars": {},
         "order_id": null,
         "process_memory": {
-          "rss_bytes": 606691328,
-          "private_bytes": 531456000
+          "rss_bytes": 463470592,
+          "private_bytes": 387133440
         }
       }
     }
