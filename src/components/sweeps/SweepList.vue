@@ -8,7 +8,7 @@ import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { bookedAmount, magnitude, numberOrNa, orDash, percentOrNa, signClass, sortInstant, startedAt } from '@/components/runs/report_format'
 import {
-  combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
+  bestLines, combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
 } from '@/components/sweeps/sweep_rows'
 import type { SweepListRow } from '@/components/sweeps/sweep_rows'
 import { useFacetState } from '@/composables/use_facet_state'
@@ -184,6 +184,11 @@ function choose(row: SweepListRow): void {
             · {{ plural(group.rows[0]!.sweep.run_count, t('run'), t('runs')) }}
             · {{ rankedBy(group.rows[0]!.sweep, rankings[group.key]).word }}
           </span>
+          <!-- its best combination as the list serves it (contract 56), without opening the sweep —
+               one per account currency, the card naming its run -->
+          <span v-for="{ currency, text } in bestLines(group.rows[0]!.sweep)" :key="currency" class="sweep-best">
+            {{ t('best') }} {{ text }}
+          </span>
           <span
             v-for="notice in sweepNotices(group.rows[0]!.sweep, rankings[group.key])"
             :key="notice.word"
@@ -275,6 +280,16 @@ function choose(row: SweepListRow): void {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--color-text-secondary);
+}
+
+/* the best combination after the objective it was ranked by, cut before anything else of the line */
+.sweep-best {
+  min-width: 0;
+  flex-shrink: 100;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text-secondary);
 }
 

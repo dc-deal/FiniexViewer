@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
+  bestLines, combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
 } from '@/components/sweeps/sweep_rows'
 import type { CombinationRow, SweepRankings } from '@/components/sweeps/sweep_rows'
 import type { SweepCombination, SweepDetail, SweepList, SweepRow } from '@/types/api/sweep_types'
@@ -318,5 +318,19 @@ describe('sweep_rows', () => {
     const labels = combinationCard(row!).details.map(pair => pair.label)
     expect(labels).toContain('Deepest drawdown')
     expect(labels).not.toContain('Max drawdown')
+  })
+
+  /**
+   * A sweep's best combination as the list serves it (contract 56): its parameters and its objective's
+   * figure, printed as the ranking's column prints it; none where the list names none.
+   */
+  it('names the best combination in each currency as the list serves it', () => {
+    const best = SWEEP.best_combinations[0]!
+    const [line] = bestLines(SWEEP)
+    expect(line!.currency).toBe(best.currency)
+    expect(line!.runId).toBe(best.run_id)
+    expect(line!.text.startsWith(parametersText(best))).toBe(true)
+    expect(line!.text).toContain(best.currency)
+    expect(bestLines({ ...SWEEP, best_combinations: [] })).toEqual([])
   })
 })

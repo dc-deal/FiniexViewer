@@ -8,6 +8,7 @@ import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import { useContextStore } from '@/stores/context_store'
 import { useRunsStore } from '@/stores/runs_store'
 import type { SweepDetail, SweepList } from '@/types/api/sweep_types'
+import type { Figure } from '@/types/figure_types'
 
 import listFixture from './fixtures/sweeps_list.json'
 import detailFixture from './fixtures/sweep_detail.json'
@@ -62,6 +63,23 @@ describe('SweepsView', () => {
       .toEqual(LIST.sweeps.map(row => row.sweep_id))
     expect(wrapper.find('.sweep-list .place').exists()).toBe(false)
     expect(apiClient.getSweep).not.toHaveBeenCalled()
+  })
+
+  /**
+   * A sweep's best combination as the list serves it (contract 56), on its heading without opening it,
+   * and in its card with the run it is: the same run that heads its own ranking.
+   */
+  it('names a sweep\'s best combination on its heading, as the list serves it', async () => {
+    const wrapper = mountPanel()
+    await flushPromises()
+    const best = LIST.sweeps.find(row => row.sweep_id === ID)!.best_combinations[0]!
+    const line = heading(wrapper, ID).find('.sweep-best').text()
+    expect(line).toMatch(/^best sl_mult \S+ · tp_mult \S+ → /)
+    expect(line).toContain(best.currency)
+    expect(apiClient.getSweep).not.toHaveBeenCalled()
+    const card = wrapper.findAllComponents(HoverCard).find(hover => hover.props('title') === ID)!
+    expect((card.props('details') as Figure[]).some(figure => figure.label === `Best ${best.currency}` && figure.value.endsWith(best.run_id)))
+      .toBe(true)
   })
 
   /** When first, as on the run list (operator, 2026-11-13: the heading gave the date last). */

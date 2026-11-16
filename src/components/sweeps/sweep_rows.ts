@@ -2,7 +2,7 @@ import { rowKey } from '@/api/list_key'
 import {
   bookedAmount, drawdownFigure, duration, figure, magnitude, numberOrNa, orDash, percentOrNa, rValue, shortHash, signClass, utcInstant,
 } from '@/components/runs/report_format'
-import type { SweepCombination, SweepDetail, SweepRow } from '@/types/api/sweep_types'
+import type { BestCombination, SweepCombination, SweepDetail, SweepRow } from '@/types/api/sweep_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
 import { plural, t } from '@/translate'
 
@@ -119,8 +119,36 @@ function statesFigure(combination: SweepCombination, objective: string): boolean
 }
 
 /** A parameter by the last part of its configuration key; the whole key is in the row's card. */
-export function parametersText(combination: SweepCombination): string {
+export function parametersText(combination: Pick<SweepCombination, 'sweep_params'>): string {
   return Object.entries(combination.sweep_params).map(([key, value]) => `${key.split('.').pop()} ${value}`).join(' · ')
+}
+
+/**
+ * A best combination's figure, printed as its objective is in the ranking's column — the value as
+ * served (contract 56), where the ranking reads it off the combination's own field. A count the
+ * column weighs it by is not on the list's row, so a rate or an R reads as the figure alone.
+ */
+function bestFigure(objective: string, best: BestCombination): string {
+  switch (objective) {
+    case 'net_pnl': return bookedAmount(best.objective_value, best.currency)
+    case 'account_max_drawdown': return magnitude(best.objective_value, best.currency)
+    case 'win_rate': return percentOrNa(best.objective_value, 1)
+    case 'expectancy': return rValue(best.objective_value, 1)
+  }
+  return figure(best.objective_value)
+}
+
+/**
+ * A sweep's first-ranked combination in each account currency, as the list serves it (contract 56):
+ * its parameters and its objective's figure — `sl_mult 1.5 · tp_mult 1.5 → -32.64 USD`. Empty where
+ * the list names none: a sweep whose objective cannot rank, or one recorded before.
+ */
+export function bestLines(sweep: SweepRow): { currency: string, text: string, runId: string }[] {
+  return sweep.best_combinations.map(best => ({
+    currency: best.currency,
+    text: `${parametersText(best)} → ${bestFigure(sweep.objective, best)}`,
+    runId: best.run_id,
+  }))
 }
 
 /**
@@ -239,6 +267,8 @@ export function sweepNotices(sweep: SweepRow, detail: SweepDetail | undefined): 
  * word as the label. One card, because a heading is one button: a keyboard reaches it and nothing inside.
  */
 export function sweepCard(sweep: SweepRow, detail: SweepDetail | undefined): FigureCard {
+  // its best combination in each currency, as the list serves it (contract 56), the run it is
+  const best: Figure[] = bestLines(sweep).map(({ currency, text, runId }) => ({ label: `${t('Best')} ${currency}`, value: `${text} · ${runId}` }))
   return {
     title: sweep.sweep_id,
     details: [
@@ -249,6 +279,7 @@ export function sweepCard(sweep: SweepRow, detail: SweepDetail | undefined): Fig
       { label: t('Starts spread over'), value: duration(sweep.duration_s / 3600) },
       { label: t('Combinations'), value: `${sweep.run_count} · ${sweep.ok_count} ${t('usable')}` },
       { label: t('Ranked by'), value: rankedBy(sweep, detail).sentence },
+      ...best,
       ...sweepNotices(sweep, detail).map(notice => ({ label: notice.word, value: `⚠ ${notice.sentence}`, tone: 'warning' })),
     ],
   }
