@@ -207,4 +207,12 @@ onUnmounted(() => clearTimeout(copiedTimer))
     display: none;
   }
 }
+
+/* Narrower still, the link button gives way: the unit's name is what the bar is read for, and at
+   the README's width it was cut to "E…" (2026-11-16). The copy waits for a wider chart. */
+@container dock-header (max-width: 28rem) {
+  .link-button {
+    display: none;
+  }
+}
 </style>

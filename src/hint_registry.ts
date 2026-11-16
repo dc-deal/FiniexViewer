@@ -19,7 +19,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'quick-bar',
-    text: t('The bar beside the tabs holds what the panel in front shows — for the free chart its broker, symbol and timeframe, for the run chart its unit and timeframe, ≡ Layers, which opens beside it what it draws, and the link button, which copies a link to the view on show: opened, it chooses the same run, scenario, position and stretch as a click would, the layout by run switching as set.'),
+    text: t('The bar beside the tabs holds what the panel in front shows — for the free chart its broker, symbol and timeframe, for the run chart its unit and timeframe, ≡ Layers, which opens beside it what it draws, and, where the bar has room, the link button, which copies a link to the view on show: opened, it chooses the same run, scenario, position and stretch as a click would, the layout by run switching as set.'),
   },
   {
     id: 'open-as-panel',
