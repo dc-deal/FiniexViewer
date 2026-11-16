@@ -327,6 +327,14 @@ export interface RunInfo {
    * counts once. `null` on a run recorded before the figure existed — an absence, not a zero.
    */
   tick_timespan_seconds: number | null
+  /**
+   * How many units the run had — its scenarios in a backtest, the session in live — and how many of
+   * them failed or did not, as its warnings-errors outcome counts them (contract 56). Null on a run
+   * recorded before 56, while a session still runs, and on a run that died before its close.
+   */
+  total_units: number | null
+  failed_count: number | null
+  succeeded_count: number | null
 }
 
 /** What one run earned in one account currency. */

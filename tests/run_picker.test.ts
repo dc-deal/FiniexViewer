@@ -35,6 +35,10 @@ const BASE: RunInfo = {
   warning_count: null,
   log_warning_count: null,
   tick_timespan_seconds: null,
+  // contract 56: the unit counts, absent here as on a run recorded before them
+  total_units: null,
+  failed_count: null,
+  succeeded_count: null,
   run_id: '20260925_095227_d9b8d79d',
   group: 'simulation',
   name: 'ETHUSD_blocks',

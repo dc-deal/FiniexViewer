@@ -2,7 +2,38 @@
   "key": [
     "sweep_id"
   ],
+  "best_combinations_key": [
+    "currency"
+  ],
   "sweeps": [
+    {
+      "sweep_id": "sweep_20261116_123939_c0b1ab0f",
+      "started": "2026-11-16T12:39:44.184275Z",
+      "duration_s": 465.502082,
+      "run_count": 9,
+      "ok_count": 9,
+      "error_count": 0,
+      "decision_logic_type": "CORE/trend_channel_reference",
+      "decision_version": "1.7.0",
+      "base_config": "trend_channel_reference_sweep_base",
+      "symbols": [
+        "EURUSD"
+      ],
+      "objective": "net_pnl",
+      "maximize": true,
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261116_124532_b3c8efcb",
+          "objective_value": -32.64000000000786,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 1.5,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
+    },
     {
       "sweep_id": "sweep_20261110_143917_09b2f3f1",
       "started": "2026-11-10T14:39:23.290589Z",
@@ -18,7 +49,18 @@
       ],
       "objective": "net_pnl",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261110_144630_939d29c3",
+          "objective_value": -32.64000000000786,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 1.5,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261109_171217_85abfeab",
@@ -35,7 +77,18 @@
       ],
       "objective": "net_pnl",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261109_171913_90eda7bf",
+          "objective_value": -32.64000000000786,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 1.5,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261109_150539_3bfe3982",
@@ -52,7 +105,18 @@
       ],
       "objective": "net_pnl",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261109_151230_bad6feee",
+          "objective_value": -32.64000000000786,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 1.5,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261109_143059_9fcc4db8",
@@ -69,7 +133,18 @@
       ],
       "objective": "net_pnl",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261109_143803_8a93ff3a",
+          "objective_value": -32.64000000000786,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 1.5,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261108_143818_441afbf1",
@@ -86,7 +161,18 @@
       ],
       "objective": "net_pnl",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261108_144404_a025f908",
+          "objective_value": -32.64000000000786,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 1.5,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261105_142740_11ae7e03",
@@ -103,7 +189,18 @@
       ],
       "objective": "net_pnl",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261105_143538_afc211fc",
+          "objective_value": -32.64000000000786,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 1.5,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261031_100348_42d8ea0b",
@@ -120,7 +217,18 @@
       ],
       "objective": "net_pnl",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261031_100940_f340a435",
+          "objective_value": -32.64000000000786,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 1.5,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261019_214323_e47deb11",
@@ -137,7 +245,18 @@
       ],
       "objective": "expectancy",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261019_214334_dd21ad03",
+          "objective_value": 10.032210678161112,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 0.8,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261012_210055",
@@ -154,7 +273,18 @@
       ],
       "objective": "expectancy",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261012_210101_fcb871d7",
+          "objective_value": 11.065427341436054,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 0.8,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261012_075654",
@@ -171,7 +301,18 @@
       ],
       "objective": "expectancy",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261012_075704_b6c8b779",
+          "objective_value": 11.065427341436054,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 0.8,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261011_171406",
@@ -188,7 +329,18 @@
       ],
       "objective": "expectancy",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261011_171413_55e21e36",
+          "objective_value": 11.065427341436054,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 0.8,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261008_233229",
@@ -205,7 +357,18 @@
       ],
       "objective": "expectancy",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261008_233235_98cdb786",
+          "objective_value": 11.065427341436054,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 0.8,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
     },
     {
       "sweep_id": "sweep_20261008_223212",
@@ -222,8 +385,19 @@
       ],
       "objective": "net_pnl",
       "maximize": true,
-      "features_beyond_venue": ""
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261008_223213_9ae005f5",
+          "objective_value": 0.0,
+          "sweep_params": {
+            "decision_logic_config.bollinger_extremes": 0.2,
+            "decision_logic_config.min_confidence": 0.3
+          }
+        }
+      ]
     }
   ],
-  "count": 13
+  "count": 14
 }

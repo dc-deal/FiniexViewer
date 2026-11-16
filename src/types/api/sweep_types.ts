@@ -27,10 +27,26 @@ export interface SweepRow {
   // The order features the search was allowed beyond its venue's API, comma-joined: the scenario set's,
   // so one value per sweep (contract 46). Empty for every other sweep
   features_beyond_venue: string
+  /**
+   * Its first-ranked combination in each account currency, by the rule and the tie-break the sweep's
+   * own route ranks with (contract 56) — keyed by `currency`, as the list's `best_combinations_key`
+   * says. None for a currency no combination carries a value in, and none at all for a sweep whose
+   * recorded objective cannot rank.
+   */
+  best_combinations: BestCombination[]
+}
+
+/** The head of a sweep's ranking in one account currency, as the sweep list serves it. */
+export interface BestCombination {
+  currency: string
+  run_id: string
+  objective_value: number
+  sweep_params: Record<string, number | string | boolean | null>
 }
 
 export interface SweepList {
   key: string[]
+  best_combinations_key: string[]
   sweeps: SweepRow[]
   count: number
 }
@@ -173,6 +189,21 @@ export interface SweepCombination {
   broker_config_id: string
   // the ticks its booking periods applied, summed; null on a row written before
   period_tick_count: number | null
+  /**
+   * The run's unit counts, as on the run list (contract 56); null where not recorded. Their documents
+   * name `succeeded_count` here as well, but the route does not serve it (measured 2026-11-16 on the
+   * catalog's sweep) — mirrored as served, and asked.
+   */
+  total_units: number | null
+  failed_count: number | null
+  /**
+   * What the run's accounts in this currency held at its end and started with, each summed over its
+   * accounts (contract 56) — so a combination of several scenarios has an end equity where
+   * `final_equity`, one account's reading, is null. It includes what is still open, so it can order
+   * combinations differently from `net_pnl`. Null on a run recorded before 56 and while a session runs.
+   */
+  total_final_equity: number | null
+  total_initial_balance: number | null
 
   // the ledger row's own period fields, carried on the folded row; their sweeps document names none
   period_no: number

@@ -563,6 +563,9 @@ export async function getSweep(sweepId: string): Promise<SweepDetail | null> {
   } catch (error) {
     raiseIfForbidden(error, 'sweeps')
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    // `sweep_objective_unrankable` (contract 56): the objective it recorded cannot order its
+    // combinations — said in the backend's own sentence, where a server error stood before
+    raiseIfUnreadable(error, 'The sweep recorded an objective its combinations cannot be ranked by')
     throw error
   }
 }

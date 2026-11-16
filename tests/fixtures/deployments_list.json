@@ -5,6 +5,48 @@
   ],
   "deployments": [
     {
+      "deployment_id": "deploy_20261116_123633_148cf10c",
+      "sessions": 1,
+      "sessions_without_figures": 0,
+      "sessions_failed": 0,
+      "first_started": "2026-11-16T12:36:33.393807Z",
+      "last_started": "2026-11-16T12:36:33.393807Z",
+      "net_pnl": 0.0,
+      "max_drawdown": 334.1393599999992,
+      "max_drawdown_pct": 3.341393599999992,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": null,
+      "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
+      "orders_to": [
+        "simulated"
+      ]
+    },
+    {
+      "deployment_id": "deploy_20261116_123329_5b6890eb",
+      "sessions": 4,
+      "sessions_without_figures": 1,
+      "sessions_failed": 0,
+      "first_started": "2026-11-16T12:33:29.231278Z",
+      "last_started": "2026-11-16T12:35:30.757402Z",
+      "net_pnl": 23.036319999998213,
+      "max_drawdown": 539.5260000000017,
+      "max_drawdown_pct": 5.361645613206252,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": 0.003966754166666667,
+      "changed": true,
+      "configuration_changed": true,
+      "code_summary": null,
+      "orders_to": [
+        "simulated"
+      ]
+    },
+    {
       "deployment_id": "deploy_20261110_150107_11c4d414",
       "sessions": 1,
       "sessions_without_figures": 0,
@@ -614,5 +656,5 @@
       ]
     }
   ],
-  "count": 29
+  "count": 31
 }

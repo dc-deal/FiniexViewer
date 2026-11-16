@@ -253,6 +253,25 @@ describe('api contract', () => {
     expect(typed.key).toEqual(EXPECTED_KEYS.sweeps)
   })
 
+  /**
+   * Contract 56: a run row counts its units as its warnings-errors outcome does, and a sweep row names
+   * the head of what its own route ranks — the same run in the same currency, so a list can show a
+   * sweep as its best combination without asking for each sweep.
+   */
+  it('counts a run\'s units on its row, and names a sweep\'s best combination as its ranking does', () => {
+    const typed: SweepList = sweepsList
+    expect(typed.best_combinations_key).toEqual(['currency'])
+    const row = typed.sweeps.find(sweep => sweep.sweep_id === (sweepDetail as SweepDetail).sweep_id)!
+    const detail: SweepDetail = sweepDetail
+    for (const best of row.best_combinations) {
+      expect(detail.combinations.find(combination => combination.currency === best.currency)!.run_id).toBe(best.run_id)
+    }
+    expect(row.best_combinations.length).toBeGreaterThan(0)
+    const counted = (runsList as RunListResponse).runs.filter(run => run.total_units !== null)
+    expect(counted.length).toBeGreaterThan(0)
+    for (const run of counted) expect(run.failed_count! + run.succeeded_count!).toBe(run.total_units)
+  })
+
   /** The ranking used an objective, and the response says which: the sweep's own, or the fallback it names. */
   it("a sweep's combinations are keyed per run and account currency, and name the objective they were ranked by", () => {
     const typed: SweepDetail = sweepDetail

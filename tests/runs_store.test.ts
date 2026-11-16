@@ -33,6 +33,10 @@ function runRow(overrides: Partial<RunInfo> & Pick<RunInfo, 'run_id' | 'group' |
     warning_count: null,
     log_warning_count: null,
     tick_timespan_seconds: null,
+    // contract 56: the unit counts, absent here as on a run recorded before them
+    total_units: null,
+    failed_count: null,
+    succeeded_count: null,
     start_time: '2026-06-15T12:00:00+00:00',
     parent_id: null,
     parent_kind: null,

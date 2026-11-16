@@ -41,6 +41,11 @@ combination's `net_pnl`, `win_rate`, `total_fees` and trade counts are nullable 
 run that failed before it measured anything; a ranked one never carries null there, and where one
 did it would read a dash, never a zero.
 
+**A sweep whose recorded objective cannot rank** — not a number, or a figure a run can leave
+undefined — is refused by its route since contract 56 (`409 sweep_objective_unrankable`, a server
+error before), and its ranking says so in the backend's own sentence. Such a sweep names no best
+combination on the list either.
+
 ## What makes a ranking comparable
 
 Their document: *"A ranking is comparable only where the things ranked are."* The panel says so only

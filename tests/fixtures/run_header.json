@@ -1,15 +1,15 @@
 {
-  "run_id": "20261110_143247_618a9984",
-  "start_time": "2026-11-10T14:32:47.581664Z",
+  "run_id": "20261116_123253_665a8360",
+  "start_time": "2026-11-16T12:32:53.388993Z",
   "run_type": "simulation",
   "run_name": "report_coverage_reference",
   "parent_id": null,
   "parent_kind": null,
   "config_snapshot": "report_coverage_reference.json",
   "config_id": "76988fb0d45da74a48c37ae0ce3a72daa54f66aa6f2c75f6a9d22d9a4e2dc4fe",
-  "rendered_config_id": "ba82f0ba0c56a184292a2eb44cc4352381fbe1733f0dbd6a0c1379dda0c2b32a",
+  "rendered_config_id": "75010d575640b77af6bde00394c5761a0ef88d701ee26a0c4f19d09650419d7c",
   "app_version": "1.5.0",
-  "git_commit": "6a375c1a",
+  "git_commit": "76278dbe",
   "reporting": "expected",
   "origin": {
     "channel": "cli",
@@ -24,7 +24,7 @@
     "framework": {
       "root": ".",
       "in_repository": true,
-      "commit": "6a375c1a",
+      "commit": "76278dbe",
       "branch": "dev-1-6-0",
       "dirty": false,
       "uncommitted_count": 0,
@@ -121,5 +121,5 @@
   ],
   "run_purpose": "fixture",
   "features_beyond_venue": [],
-  "report_contract": 53
+  "report_contract": 56
 }

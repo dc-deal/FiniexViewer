@@ -7,6 +7,2619 @@
   ],
   "runs": [
     {
+      "run_id": "20261116_124729_fcfc706c",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261116_123939_c0b1ab0f_c008",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:47:29.686357+00:00",
+      "parent_id": "sweep_20261116_123939_c0b1ab0f",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 343504,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -37.140000000005145,
+          "total_trades": 22
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_124629_c4bd8363",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261116_123939_c0b1ab0f_c007",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:46:29.499976+00:00",
+      "parent_id": "sweep_20261116_123939_c0b1ab0f",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 343482,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -44.29000000000536,
+          "total_trades": 22
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_124532_b3c8efcb",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261116_123939_c0b1ab0f_c006",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:45:32.174833+00:00",
+      "parent_id": "sweep_20261116_123939_c0b1ab0f",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 307254,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -32.64000000000786,
+          "total_trades": 17
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_124434_37387bc1",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261116_123939_c0b1ab0f_c005",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:44:34.567290+00:00",
+      "parent_id": "sweep_20261116_123939_c0b1ab0f",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 786997,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -248.94000000001384,
+          "total_trades": 60
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_124335_3fe1a2dc",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261116_123939_c0b1ab0f_c004",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:43:35.484975+00:00",
+      "parent_id": "sweep_20261116_123939_c0b1ab0f",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 786963,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -244.74000000001408,
+          "total_trades": 60
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_124236_a46fdab6",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261116_123939_c0b1ab0f_c003",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:42:36.538902+00:00",
+      "parent_id": "sweep_20261116_123939_c0b1ab0f",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 787004,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -239.39000000001565,
+          "total_trades": 60
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_124139_efd8162a",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261116_123939_c0b1ab0f_c002",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:41:39.689566+00:00",
+      "parent_id": "sweep_20261116_123939_c0b1ab0f",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 5563191,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -2567.0400000000154,
+          "total_trades": 459
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_124044_083a1722",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261116_123939_c0b1ab0f_c001",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:40:44.145502+00:00",
+      "parent_id": "sweep_20261116_123939_c0b1ab0f",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 5563202,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -2567.0400000000154,
+          "total_trades": 459
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123944_902ebf2b",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261116_123939_c0b1ab0f_c000",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:39:44.184275+00:00",
+      "parent_id": "sweep_20261116_123939_c0b1ab0f",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 5563234,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -2556.9900000000166,
+          "total_trades": 459
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123912_541548c7",
+      "group": "simulation",
+      "name": "signal_feed_disturbance_reference",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:39:12.618163+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "c6f540a543f858a18d9ccc70dfdb2b2dafe6bb1cb6357d5fc285e90d772a58fa",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "signal_feed_disturbance_reference.json",
+      "reporting": "expected",
+      "size_bytes": 138833,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "BTCUSD_signal_feed_disturbed",
+          "start_date": "2026-08-11T00:00:00+00:00",
+          "end_date": "2026-08-14T20:00:00+00:00"
+        },
+        {
+          "unit_name": "GBPUSD_signal_feed_disturbed",
+          "start_date": "2026-08-11T00:00:00+00:00",
+          "end_date": "2026-08-14T20:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -1.7483038079080249,
+          "total_trades": 2
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 7,
+      "log_warning_count": 7,
+      "tick_timespan_seconds": 56245.206,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123857_dedb3ad8",
+      "group": "autotrader",
+      "name": "partial_close_lifecycle",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-16T12:38:57.616663+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "ea9755ae7beedbcbd00a852ddc2b35c8f1974be3bd46143d0870de99722d8eb3",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "partial_close_lifecycle.json",
+      "reporting": "expected",
+      "size_bytes": 230329,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "partial_close_lifecycle",
+          "start_date": "2025-09-18T05:58:34+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "JPY",
+          "net_pnl": -137.99999999991996,
+          "total_trades": 4
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 7372.549,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123829_f46d8377",
+      "group": "autotrader",
+      "name": "tp_triggered_test",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-16T12:38:29.253208+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "a7f4acec5d29d59ede55555e134680e4a6df578e08c9888ad8628fc46772450d",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "tp_triggered_test.json",
+      "reporting": "expected",
+      "size_bytes": 115201,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "tp_triggered_test",
+          "start_date": "2026-01-25T04:19:46+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -1.3564160000000116,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 4019.998,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123756_f1207531",
+      "group": "autotrader",
+      "name": "indicator_series_session",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "indicator_series_bollinger_main.jsonl",
+        "indicator_series_macd_main.jsonl",
+        "indicator_series_obv_volume.jsonl",
+        "indicator_series_rsi_fast.jsonl",
+        "indicator_series_tide_wave.jsonl",
+        "indicator_series_trend_ema.jsonl",
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-16T12:37:56.168394+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "3df184d6a049521c9c0380623f8f2543e2817977b99c6ff0cfe6f242bb621f76",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "indicator_series_session.json",
+      "reporting": "expected",
+      "size_bytes": 763143,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "indicator_series_session",
+          "start_date": "2026-01-25T02:19:46+00:00",
+          "end_date": "2026-01-25T08:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 20402.77,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123727_2075f774",
+      "group": "autotrader",
+      "name": "state_frames_test",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-16T12:37:27.624784+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "04b025ee328e8a31a7f47654acc5f5979b02ea4b268d646c3e3a4b426f6baa29",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "state_frames_test.json",
+      "reporting": "expected",
+      "size_bytes": 534290,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "state_frames_test",
+          "start_date": "2026-01-25T02:19:46+00:00",
+          "end_date": "2026-01-25T08:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 20402.77,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123633_b9b1719e",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-16T12:36:33.393807+00:00",
+      "parent_id": "deploy_20261116_123633_148cf10c",
+      "parent_kind": "deployment",
+      "config_id": "03297e1327bbd4f9b11b3bf62b5bff485dc858a1e46497572d9fd45917bef6ba",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "demo_btcusd_bot_s6.json",
+      "reporting": "expected",
+      "size_bytes": 1788251,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-06T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 87570.084,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123613_26479d78",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:36:13.058759+00:00",
+      "parent_id": "deploy_20261116_123329_5b6890eb",
+      "parent_kind": "deployment",
+      "config_id": "4bc7464fa238e696b707aaf3616d0046a431eb1385c03aab080b83fd7f31a51b",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "demo_btcusd_bot_s5.json",
+      "reporting": "expected",
+      "size_bytes": 0,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-05T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": false
+    },
+    {
+      "run_id": "20261116_123530_8f62ce42",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-16T12:35:30.757402+00:00",
+      "parent_id": "deploy_20261116_123329_5b6890eb",
+      "parent_kind": "deployment",
+      "config_id": "df1f470df85dc5f2260995aa2c6058a370461cacc591749b15af37fe553bec9f",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "demo_btcusd_bot_s4.json",
+      "reporting": "expected",
+      "size_bytes": 1157365,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-04T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 62680.037,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123450_5498efb3",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-16T12:34:50.273085+00:00",
+      "parent_id": "deploy_20261116_123329_5b6890eb",
+      "parent_kind": "deployment",
+      "config_id": "2a4da01f02c304f05d27805497fdda1e0c881b91d8f2a150818e74981746d5e7",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "demo_btcusd_bot_s3.json",
+      "reporting": "expected",
+      "size_bytes": 1511018,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-03T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 52.1836799999997,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 80445.679,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123409_ab43cc6c",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-16T12:34:09.379155+00:00",
+      "parent_id": "deploy_20261116_123329_5b6890eb",
+      "parent_kind": "deployment",
+      "config_id": "05240f6822a68bc8024cfaa915ce3aa0c00e6b9dabc2baf50de12123a37a8992",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "demo_btcusd_bot_s2.json",
+      "reporting": "expected",
+      "size_bytes": 1822726,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-02T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -30.361600000001175,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 87591.504,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123329_fbfaa75f",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-16T12:33:29.231278+00:00",
+      "parent_id": "deploy_20261116_123329_5b6890eb",
+      "parent_kind": "deployment",
+      "config_id": "f0cca77614c9fa5a5e59314af2aec9b2d4b4285e151e04b4feb2381556b6534f",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "demo_btcusd_bot_s1.json",
+      "reporting": "expected",
+      "size_bytes": 1428776,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-01T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 1.2142399999996911,
+          "total_trades": 2
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 75641.721,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261116_123253_665a8360",
+      "group": "simulation",
+      "name": "report_coverage_reference",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-16T12:32:53.388993+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "76988fb0d45da74a48c37ae0ce3a72daa54f66aa6f2c75f6a9d22d9a4e2dc4fe",
+      "app_version": "1.5.0",
+      "git_commit": "76278dbe",
+      "config_snapshot": "report_coverage_reference.json",
+      "reporting": "expected",
+      "size_bytes": 1020840,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURGBP_refusals_01",
+          "start_date": "2025-10-31T05:00:00+00:00",
+          "end_date": "2025-10-31T06:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_refusals_02",
+          "start_date": "2025-10-10T06:00:00+00:00",
+          "end_date": "2025-10-10T07:00:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_spot_two_balances",
+          "start_date": "2026-02-10T10:00:00+00:00",
+          "end_date": "2026-02-10T20:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_before_the_archive",
+          "start_date": "2024-01-10T10:00:00+00:00",
+          "end_date": "2024-01-10T11:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_left_open",
+          "start_date": "2025-10-10T06:00:00+00:00",
+          "end_date": "2025-10-10T07:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_partial_close",
+          "start_date": "2025-10-31T05:00:00+00:00",
+          "end_date": "2025-10-31T06:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 56,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "EUR",
+          "net_pnl": 3.740203674122538,
+          "total_trades": 8
+        },
+        {
+          "currency": "USD",
+          "net_pnl": -23.29977697838381,
+          "total_trades": 10
+        }
+      ],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 7,
+      "log_warning_count": 39,
+      "tick_timespan_seconds": 72133.049,
+      "total_units": 6,
+      "failed_count": 1,
+      "succeeded_count": 5,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_095611_28e01209",
+      "group": "autotrader",
+      "name": "touch_and_turn_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "indicator_series_touch_and_turn_range.jsonl",
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-13T09:56:11.702079+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "6c917005e9cbadca9919819c2289a477acf48b447529827e3b2d6229b5a1751a",
+      "app_version": "1.5.0",
+      "git_commit": "4781fe1b",
+      "config_snapshot": "touch_and_turn_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 604941,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "touch_and_turn_chart_mock",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 421019.283,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_095108_3c558b0d",
+      "group": "autotrader",
+      "name": "touch_and_turn_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "indicator_series_touch_and_turn_range.jsonl",
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-13T09:51:08.787341+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "73d72c0d7952a9517353440d82f77d40972a31c2e0ca053af8190b007006944e",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "touch_and_turn_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 1248699,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "touch_and_turn_chart_mock",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 421019.283,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_095025_005fb1f1",
+      "group": "autotrader",
+      "name": "tunnel_swing_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "indicator_series_m15_bar.jsonl",
+        "indicator_series_trend.jsonl",
+        "indicator_series_tunnel.jsonl",
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-13T09:50:25.527672+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "47d633c682c668f020a447aac73feccc667d6b35121e63f404675ae4d3c8faca",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "tunnel_swing_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 434535,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "tunnel_swing_chart_mock",
+          "start_date": "2025-10-13T00:00:00+00:00",
+          "end_date": "2025-10-15T12:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 216000.654,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_094638_ff03eeaf",
+      "group": "autotrader",
+      "name": "touch_and_turn_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:46:38.356661+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "4cfa4d6481b4c5ffa47a2555b7697be33b4dbac7e30c099463d3591c6b9dd83e",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "touch_and_turn_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 24843,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "touch_and_turn_chart_mock",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_094612_50cd7326",
+      "group": "autotrader",
+      "name": "tunnel_swing_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:46:12.870531+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "1d4907aabfdadb59c8c121d32d023a7a0fb5207115714e03664d7de4e9083001",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "tunnel_swing_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 25491,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "tunnel_swing_chart_mock",
+          "start_date": "2025-10-13T00:00:00+00:00",
+          "end_date": "2025-10-15T12:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_094530_3950a715",
+      "group": "autotrader",
+      "name": "touch_and_turn_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:45:30.342182+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "4cfa4d6481b4c5ffa47a2555b7697be33b4dbac7e30c099463d3591c6b9dd83e",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "touch_and_turn_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 24334,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "touch_and_turn_chart_mock",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_094502_be629cd6",
+      "group": "autotrader",
+      "name": "tunnel_swing_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:45:02.474087+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "1d4907aabfdadb59c8c121d32d023a7a0fb5207115714e03664d7de4e9083001",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "tunnel_swing_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 25240,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "tunnel_swing_chart_mock",
+          "start_date": "2025-10-13T00:00:00+00:00",
+          "end_date": "2025-10-15T12:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_094234_d88c9156",
+      "group": "simulation",
+      "name": "touch_and_turn_chart",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:42:34.660391+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "a3a01f3ab2d5249b573e711f6915dad392347f9283993fdd6e5898b57caaa663",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "touch_and_turn_chart.json",
+      "reporting": "expected",
+      "size_bytes": 2209899,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_week",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        },
+        {
+          "unit_name": "GBPUSD_week",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 2,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 421019.283,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_094011_87595ef5",
+      "group": "autotrader",
+      "name": "spot_strategy_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "indicator_series_ewmac_d1.jsonl",
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-13T09:40:11.996729+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "ece88039b813757eb14796e5fc093e43a0b527a023e932b4f7a595fd19b279df",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "spot_strategy_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 1549094,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "spot_strategy_chart_mock",
+          "start_date": "2026-10-12T00:05:00+00:00",
+          "end_date": "2026-11-06T23:55:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -24.72537263896639,
+          "total_trades": 8
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 2245788.735,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_093943_fb28a528",
+      "group": "autotrader",
+      "name": "touch_and_turn_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:39:43.092282+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "b89aeb53e7a8e58e8b205dd347e7fe6827f33ebe6ec1ee63a8cc9a36fc43a28a",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "touch_and_turn_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 25758,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "touch_and_turn_chart_mock",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_093913_efcfc1bd",
+      "group": "autotrader",
+      "name": "tunnel_swing_chart_mock",
+      "artifacts": [
+        "booking_periods.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:39:13.181637+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "c7bb672cfcded88ee417e7a74e9487bc9693b8fe7d870fb61d520491daa884e7",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "tunnel_swing_chart_mock.json",
+      "reporting": "expected",
+      "size_bytes": 26842,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "tunnel_swing_chart_mock",
+          "start_date": "2025-10-13T00:00:00+00:00",
+          "end_date": "2025-10-15T12:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_093652_47f9cfc1",
+      "group": "simulation",
+      "name": "tunnel_swing_chart",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-13T09:36:52.478706+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "c79bb24a9cbaac3bd45164bd4a543f78beb109f3fee8601797a28b4b13476079",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "tunnel_swing_chart.json",
+      "reporting": "expected",
+      "size_bytes": 421489,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_oct",
+          "start_date": "2025-10-13T00:00:00+00:00",
+          "end_date": "2025-10-15T12:00:00+00:00"
+        },
+        {
+          "unit_name": "GBPUSD_oct",
+          "start_date": "2025-10-13T00:00:00+00:00",
+          "end_date": "2025-10-15T23:59:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -49.05999999999811,
+          "total_trades": 9
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 259140.272,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_093610_c0a6734d",
+      "group": "simulation",
+      "name": "touch_and_turn_chart",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:36:10.415469+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "92257612c6650ac99c2628252ec5e7732a5e87f78e8365713fb9d9202cc2815b",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "touch_and_turn_chart.json",
+      "reporting": "expected",
+      "size_bytes": 239327,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_week",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        },
+        {
+          "unit_name": "GBPUSD_week",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 2,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 55818.234,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_093441_98b94227",
+      "group": "simulation",
+      "name": "spot_strategy_chart",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-13T09:34:41.096070+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "cf4da69ba3fd91f9e4ac4c3bd0a4512f4502419fe2188650c74a9ee858fcc63c",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "spot_strategy_chart.json",
+      "reporting": "expected",
+      "size_bytes": 267508,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "ETHUSD_aug_sep",
+          "start_date": "2026-08-05T00:00:00+00:00",
+          "end_date": "2026-09-20T19:40:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_sep_oct",
+          "start_date": "2026-09-22T00:00:00+00:00",
+          "end_date": "2026-10-09T23:59:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -19.40418396657465,
+          "total_trades": 2
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 6,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 5600333.902000001,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_093408_2e40994d",
+      "group": "simulation",
+      "name": "tunnel_swing_chart",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:34:08.463250+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "c79bb24a9cbaac3bd45164bd4a543f78beb109f3fee8601797a28b4b13476079",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "tunnel_swing_chart.json",
+      "reporting": "expected",
+      "size_bytes": 34063,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_oct",
+          "start_date": "2025-10-13T00:00:00+00:00",
+          "end_date": "2025-10-15T12:00:00+00:00"
+        },
+        {
+          "unit_name": "GBPUSD_oct",
+          "start_date": "2025-10-13T00:00:00+00:00",
+          "end_date": "2025-10-15T23:59:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261113_093331_a1a9f9fd",
+      "group": "simulation",
+      "name": "touch_and_turn_chart",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-13T09:33:31.823164+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "92257612c6650ac99c2628252ec5e7732a5e87f78e8365713fb9d9202cc2815b",
+      "app_version": "1.5.0",
+      "git_commit": "dbc1f4ec",
+      "config_snapshot": "touch_and_turn_chart.json",
+      "reporting": "expected",
+      "size_bytes": 33683,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_week",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        },
+        {
+          "unit_name": "GBPUSD_week",
+          "start_date": "2025-10-20T00:00:00+00:00",
+          "end_date": "2025-10-25T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 55,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 0,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": true
+    },
+    {
       "run_id": "20261112_222914_f2285ca5",
       "group": "autotrader",
       "name": "indicator_series_session",
@@ -64,7 +2677,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -77,6 +2690,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 20402.77,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -131,7 +2747,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -144,6 +2760,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 20402.77,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -211,6 +2830,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 20402.77,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -265,7 +2887,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -278,6 +2900,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -314,13 +2939,16 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": null,
       "run_outcome": null,
       "error_count": null,
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -375,7 +3003,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -388,6 +3016,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -442,7 +3073,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -455,6 +3086,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -509,7 +3143,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -522,6 +3156,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -576,7 +3213,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -589,6 +3226,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -656,6 +3296,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -699,6 +3342,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -766,6 +3412,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -833,6 +3482,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -900,6 +3552,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -967,6 +3622,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1027,7 +3685,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1040,6 +3698,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1100,7 +3761,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1113,6 +3774,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1173,7 +3837,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1186,6 +3850,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1246,7 +3913,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1259,6 +3926,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1319,7 +3989,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1332,6 +4002,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1392,7 +4065,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1405,6 +4078,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1465,7 +4141,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1478,6 +4154,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1538,7 +4217,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1551,6 +4230,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1611,7 +4293,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1624,6 +4306,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1684,7 +4369,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1697,6 +4382,9 @@
       "warning_count": 7,
       "log_warning_count": 7,
       "tick_timespan_seconds": 56245.206,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1751,7 +4439,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "JPY",
@@ -1764,6 +4452,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1818,7 +4509,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1831,6 +4522,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1898,6 +4592,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -1965,6 +4662,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2032,6 +4732,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2112,7 +4815,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "EUR",
@@ -2130,6 +4833,9 @@
       "warning_count": 7,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2203,6 +4909,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2276,6 +4985,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2349,6 +5061,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2422,6 +5137,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2495,6 +5213,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2568,6 +5289,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2641,6 +5365,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2714,6 +5441,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2787,6 +5517,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2860,6 +5593,9 @@
       "warning_count": 7,
       "log_warning_count": 7,
       "tick_timespan_seconds": 56245.206,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2927,6 +5663,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -2994,6 +5733,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3061,6 +5803,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3104,6 +5849,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -3171,6 +5919,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3238,6 +5989,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3305,6 +6059,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3372,6 +6129,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3470,6 +6230,9 @@
       "warning_count": 7,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3543,6 +6306,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3616,6 +6382,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3689,6 +6458,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3762,6 +6534,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3835,6 +6610,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3908,6 +6686,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -3981,6 +6762,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4054,6 +6838,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4127,6 +6914,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4200,6 +6990,9 @@
       "warning_count": 7,
       "log_warning_count": 7,
       "tick_timespan_seconds": 56245.206,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4267,6 +7060,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4334,6 +7130,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4401,6 +7200,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4444,6 +7246,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -4511,6 +7316,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4578,6 +7386,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4645,6 +7456,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4712,6 +7526,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4810,6 +7627,9 @@
       "warning_count": 7,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4883,6 +7703,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -4956,6 +7779,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5029,6 +7855,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5102,6 +7931,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5175,6 +8007,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5248,6 +8083,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5321,6 +8159,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5394,6 +8235,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5467,6 +8311,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5540,6 +8387,9 @@
       "warning_count": 7,
       "log_warning_count": 7,
       "tick_timespan_seconds": 56245.206,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5607,6 +8457,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5674,6 +8527,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5741,6 +8597,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5784,6 +8643,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -5851,6 +8713,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5918,6 +8783,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -5985,6 +8853,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6052,6 +8923,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6150,6 +9024,9 @@
       "warning_count": 7,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6223,6 +9100,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6296,6 +9176,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6369,6 +9252,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6442,6 +9328,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6515,6 +9404,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6588,6 +9480,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6661,6 +9556,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6734,6 +9632,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6807,6 +9708,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6874,6 +9778,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -6917,6 +9824,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -6984,6 +9894,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7051,6 +9964,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7118,6 +10034,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7185,6 +10104,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7252,6 +10174,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7319,6 +10244,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7392,6 +10320,9 @@
       "warning_count": 7,
       "log_warning_count": 7,
       "tick_timespan_seconds": 56245.206,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7490,6 +10421,9 @@
       "warning_count": 7,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7557,6 +10491,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7630,6 +10567,9 @@
       "warning_count": 7,
       "log_warning_count": 7,
       "tick_timespan_seconds": 56245.206,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7728,6 +10668,9 @@
       "warning_count": 7,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7801,6 +10744,9 @@
       "warning_count": 7,
       "log_warning_count": 7,
       "tick_timespan_seconds": 56245.206,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7899,6 +10845,9 @@
       "warning_count": 7,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -7972,6 +10921,9 @@
       "warning_count": 6,
       "log_warning_count": 7,
       "tick_timespan_seconds": 56245.206,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8045,6 +10997,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8118,6 +11073,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8191,6 +11149,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8264,6 +11225,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8337,6 +11301,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8410,6 +11377,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8483,6 +11453,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8556,6 +11529,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8629,6 +11605,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8696,6 +11675,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8739,6 +11721,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -8806,6 +11791,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8873,6 +11861,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -8940,6 +11931,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9007,6 +12001,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9074,6 +12071,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9141,6 +12141,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9206,6 +12209,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9304,6 +12310,9 @@
       "warning_count": 6,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9373,6 +12382,9 @@
       "warning_count": 1,
       "log_warning_count": 2,
       "tick_timespan_seconds": 0.205751,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9441,6 +12453,9 @@
       "warning_count": 1,
       "log_warning_count": 1,
       "tick_timespan_seconds": 0.738563,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9509,6 +12524,9 @@
       "warning_count": 1,
       "log_warning_count": 3,
       "tick_timespan_seconds": 0.0,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9577,6 +12595,9 @@
       "warning_count": 1,
       "log_warning_count": 3,
       "tick_timespan_seconds": 14.69836,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9645,6 +12666,9 @@
       "warning_count": 1,
       "log_warning_count": 9,
       "tick_timespan_seconds": 72.484753,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9713,6 +12737,9 @@
       "warning_count": 1,
       "log_warning_count": 6,
       "tick_timespan_seconds": 588.213796,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9782,6 +12809,9 @@
       "warning_count": 0,
       "log_warning_count": 2,
       "tick_timespan_seconds": 7.770828,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9850,6 +12880,9 @@
       "warning_count": 0,
       "log_warning_count": 2,
       "tick_timespan_seconds": 0.6926,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9918,6 +12951,9 @@
       "warning_count": 0,
       "log_warning_count": 3,
       "tick_timespan_seconds": 0.0,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -9986,6 +13022,9 @@
       "warning_count": 1,
       "log_warning_count": 4,
       "tick_timespan_seconds": 15.718119,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10054,6 +13093,9 @@
       "warning_count": 1,
       "log_warning_count": 8,
       "tick_timespan_seconds": 75.19158,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10122,6 +13164,9 @@
       "warning_count": 0,
       "log_warning_count": 12,
       "tick_timespan_seconds": 641.869997,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10195,6 +13240,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10268,6 +13316,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10341,6 +13392,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10414,6 +13468,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10487,6 +13544,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10560,6 +13620,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10633,6 +13696,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10706,6 +13772,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10779,6 +13848,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -10819,6 +13891,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -10859,6 +13934,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -10899,6 +13977,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -10965,6 +14046,9 @@
       "warning_count": 0,
       "log_warning_count": 1,
       "tick_timespan_seconds": 6588.582879,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11008,6 +14092,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -11075,6 +14162,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 20402.77,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11120,6 +14210,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -11193,6 +14286,9 @@
       "warning_count": 4,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11266,6 +14362,9 @@
       "warning_count": 4,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11339,6 +14438,9 @@
       "warning_count": 4,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11412,6 +14514,9 @@
       "warning_count": 4,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11454,6 +14559,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -11496,6 +14604,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -11594,6 +14705,9 @@
       "warning_count": 6,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11692,6 +14806,9 @@
       "warning_count": 6,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11810,6 +14927,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11884,6 +15004,9 @@
       "warning_count": 8,
       "log_warning_count": 0,
       "tick_timespan_seconds": 31517474.883,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -11944,6 +15067,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 0.0,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12011,6 +15137,9 @@
       "warning_count": 0,
       "log_warning_count": 3,
       "tick_timespan_seconds": 0.178665,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12077,6 +15206,9 @@
       "warning_count": 0,
       "log_warning_count": 2,
       "tick_timespan_seconds": 0.154327,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12143,6 +15275,9 @@
       "warning_count": 0,
       "log_warning_count": 3,
       "tick_timespan_seconds": 0.0,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12209,6 +15344,9 @@
       "warning_count": 0,
       "log_warning_count": 4,
       "tick_timespan_seconds": 14.86944,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12275,6 +15413,9 @@
       "warning_count": 0,
       "log_warning_count": 11,
       "tick_timespan_seconds": 72.091732,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12342,6 +15483,9 @@
       "warning_count": 1,
       "log_warning_count": 3,
       "tick_timespan_seconds": 0.452384,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12408,6 +15552,9 @@
       "warning_count": 1,
       "log_warning_count": 2,
       "tick_timespan_seconds": 0.490403,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12474,6 +15621,9 @@
       "warning_count": 1,
       "log_warning_count": 3,
       "tick_timespan_seconds": 0.0,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12540,6 +15690,9 @@
       "warning_count": 1,
       "log_warning_count": 4,
       "tick_timespan_seconds": 14.168513,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12606,6 +15759,9 @@
       "warning_count": 1,
       "log_warning_count": 8,
       "tick_timespan_seconds": 73.350664,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12679,6 +15835,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12752,6 +15911,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12825,6 +15987,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12898,6 +16063,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -12971,6 +16139,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13044,6 +16215,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13117,6 +16291,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13190,6 +16367,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13263,6 +16443,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13329,6 +16512,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13395,6 +16581,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13461,6 +16650,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13503,6 +16695,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -13569,6 +16764,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13635,6 +16833,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13701,6 +16902,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13767,6 +16971,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13865,6 +17072,9 @@
       "warning_count": 4,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -13938,6 +17148,9 @@
       "warning_count": 6,
       "log_warning_count": 0,
       "tick_timespan_seconds": 5600333.902000001,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14011,6 +17224,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14084,6 +17300,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14157,6 +17376,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14230,6 +17452,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14303,6 +17528,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14376,6 +17604,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14449,6 +17680,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14522,6 +17756,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14595,6 +17832,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14661,6 +17901,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14727,6 +17970,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14793,6 +18039,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14835,6 +18084,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -14901,6 +18153,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -14967,6 +18222,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15033,6 +18291,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15099,6 +18360,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15197,6 +18461,9 @@
       "warning_count": 4,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15263,6 +18530,9 @@
       "warning_count": 0,
       "log_warning_count": 10,
       "tick_timespan_seconds": 636.822,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15336,6 +18606,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15409,6 +18682,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15482,6 +18758,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15555,6 +18834,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15628,6 +18910,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15701,6 +18986,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15774,6 +19062,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15847,6 +19138,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15920,6 +19214,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -15986,6 +19283,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16052,6 +19352,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16118,6 +19421,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16160,6 +19466,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -16226,6 +19535,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16292,6 +19604,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16358,6 +19673,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16424,6 +19742,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16522,6 +19843,9 @@
       "warning_count": 4,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16595,6 +19919,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16668,6 +19995,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16741,6 +20071,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16814,6 +20147,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16887,6 +20223,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -16960,6 +20299,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17033,6 +20375,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17106,6 +20451,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17179,6 +20527,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 835201.829,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17245,6 +20596,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17311,6 +20665,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17377,6 +20734,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17419,6 +20779,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -17485,6 +20848,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17551,6 +20917,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17617,6 +20986,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17683,6 +21055,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17749,6 +21124,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17815,6 +21193,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17881,6 +21262,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 37534.047,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -17949,6 +21333,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 1902.086,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18017,6 +21404,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 1902.086,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18085,6 +21475,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 1902.086,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18153,6 +21546,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 1902.086,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18219,6 +21615,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 13712.262,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18285,6 +21684,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18351,6 +21753,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18393,6 +21798,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -18459,6 +21867,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18525,6 +21936,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18591,6 +22005,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18657,6 +22074,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18755,6 +22175,9 @@
       "warning_count": 4,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18821,6 +22244,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87570.084,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18863,6 +22289,9 @@
       "warning_count": null,
       "log_warning_count": null,
       "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": false
     },
     {
@@ -18929,6 +22358,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 62680.037,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -18995,6 +22427,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 80445.679,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19061,6 +22496,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 87591.504,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19127,6 +22565,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 75641.721,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19225,6 +22666,9 @@
       "warning_count": 4,
       "log_warning_count": 39,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19291,6 +22735,9 @@
       "warning_count": 1,
       "log_warning_count": 6,
       "tick_timespan_seconds": 809.742335,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19379,6 +22826,9 @@
       "warning_count": 4,
       "log_warning_count": 35,
       "tick_timespan_seconds": 72133.049,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19445,6 +22895,9 @@
       "warning_count": 0,
       "log_warning_count": 6,
       "tick_timespan_seconds": 508.710006,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19511,6 +22964,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 37534.047,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19577,6 +23033,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4019.998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19643,6 +23102,9 @@
       "warning_count": 1,
       "log_warning_count": 6,
       "tick_timespan_seconds": 5888.713,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19709,6 +23171,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 10098.308,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19775,6 +23240,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 20420.435,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19841,6 +23309,9 @@
       "warning_count": 1,
       "log_warning_count": 2,
       "tick_timespan_seconds": 11079.183,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19907,6 +23378,9 @@
       "warning_count": 0,
       "log_warning_count": 1,
       "tick_timespan_seconds": 35727.308,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -19973,6 +23447,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20039,6 +23516,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 7372.549,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20105,6 +23585,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 86042.614,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20171,6 +23654,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 86042.614,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20237,6 +23723,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 86042.614,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20303,6 +23792,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 86042.614,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20369,6 +23861,9 @@
       "warning_count": 1,
       "log_warning_count": 7,
       "tick_timespan_seconds": 5888.713,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20435,6 +23930,9 @@
       "warning_count": 0,
       "log_warning_count": 1,
       "tick_timespan_seconds": 376.34,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20501,6 +23999,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 3022.177,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20567,6 +24068,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 172800.625,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20633,6 +24137,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 533.516,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20699,6 +24206,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 1429.06,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20765,6 +24275,9 @@
       "warning_count": 0,
       "log_warning_count": 1,
       "tick_timespan_seconds": 37534.047,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20831,6 +24344,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 86042.614,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20897,6 +24413,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 86042.614,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -20963,6 +24482,9 @@
       "warning_count": 0,
       "log_warning_count": 0,
       "tick_timespan_seconds": 86042.614,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -21156,6 +24678,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 9023759.922,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -21349,6 +24874,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 9023759.922,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -21593,6 +25121,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 12889797.354,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -21696,6 +25227,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 1670403.214,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -21769,6 +25303,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 259140.272,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -22407,6 +25944,9 @@
       "warning_count": 4,
       "log_warning_count": 0,
       "tick_timespan_seconds": 4680558.438999999,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -22940,6 +26480,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 5538524.371999999,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23013,6 +26556,9 @@
       "warning_count": 4,
       "log_warning_count": 0,
       "tick_timespan_seconds": 56245.206,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23091,6 +26637,9 @@
       "warning_count": 3,
       "log_warning_count": 0,
       "tick_timespan_seconds": 84253.551,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23179,6 +26728,9 @@
       "warning_count": 5,
       "log_warning_count": 0,
       "tick_timespan_seconds": 63860.89200000001,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23257,6 +26809,9 @@
       "warning_count": 1,
       "log_warning_count": 0,
       "tick_timespan_seconds": 219482.12699999998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23335,6 +26890,9 @@
       "warning_count": 1,
       "log_warning_count": 0,
       "tick_timespan_seconds": 219482.12699999998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23413,6 +26971,9 @@
       "warning_count": 1,
       "log_warning_count": 0,
       "tick_timespan_seconds": 219482.12699999998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23541,6 +27102,9 @@
       "warning_count": 3,
       "log_warning_count": 904,
       "tick_timespan_seconds": 43159.306000000004,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23655,6 +27219,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 172691.47199999998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23769,6 +27336,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 172691.47199999998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23883,6 +27453,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 172691.47199999998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -23997,6 +27570,9 @@
       "warning_count": 2,
       "log_warning_count": 0,
       "tick_timespan_seconds": 172691.47199999998,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     },
     {
@@ -24068,8 +27644,11 @@
       "warning_count": 6,
       "log_warning_count": 0,
       "tick_timespan_seconds": 8133.442,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
       "has_reports": true
     }
   ],
-  "count": 322
+  "count": 359
 }
