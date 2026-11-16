@@ -105,6 +105,25 @@ describe('useLayoutByRun', () => {
     expect(layouts.offered?.id).toBe('deploys')
   })
 
+  /** A link names the run the reload brought back: no watcher sees it change, so it is taken as picked by asking. */
+  it('takes the run on show as picked where asked, the one a reload brought back as well', async () => {
+    useSettingsStore().setLayoutByRun('switch')
+    const layouts = useNamedLayoutsStore()
+    layouts.load('backtests')
+    useContextStore().selectRun('session')
+    let pickRun = (): void => {}
+    mounted = mount(defineComponent({
+      setup() {
+        pickRun = useLayoutByRun().pickRun
+        return () => h('div')
+      },
+    }))
+    await nextTick()
+    expect(layouts.loaded?.id).toBe('backtests')
+    pickRun()
+    expect(layouts.loaded?.id).toBe('deploys')
+  })
+
   it('loads the layout at the pick where the reader chose to switch', async () => {
     useSettingsStore().setLayoutByRun('switch')
     const layouts = useNamedLayoutsStore()

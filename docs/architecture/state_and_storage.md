@@ -8,8 +8,8 @@ This document answers where the reader's selection and preferences are kept, and
 reader is looking at — `run {id, units, position}`, `deployment {id}`, `market {broker, symbol}` —
 and nothing outside a link carries a selection. Link A is the main one; more arrive with the docked
 panels of viewer#31, where a panel reads its own link's context. There is no URL state (operator,
-2026-10-12): a single-user, local-first viewer has no link to share yet, and a link command is
-cheap to add back because the context keys are the old query keys.
+2026-10-12): the address carries a selection only for a moment, as a link that is applied once — see
+*Links* below.
 
 **Every write is an action, and an action applies its cascade.** A restore applies stored values
 as they are, without cascading:
@@ -122,6 +122,33 @@ itself — a data store that changes what the reader chose is the defect this re
 **A picker opens collapsed on a selection it finds at mount.** Its `watch` sees only a CHANGE, and a
 restored selection is none — measured 2026-10-13 in the browser, where every restored run opened
 with the whole list above it.
+
+### Links — a selection in an address, applied once (viewer#60)
+
+A link says *look at this*: the server, the run, the scenarios in focus, the position marked, and the
+run chart's timeframe and moment. Its keys are the link keys of the context store; never the layout,
+which is where things stand and stays the reader's own (`link_address.ts`).
+
+```
+http://localhost:5173/?server=default&run=<run id>&units=<unit>&position=<scenario>~<position id>&chart=M1@2026-10-07T15:30:00Z
+```
+
+- **Copied on demand** from the run chart's quick bar (🔗): this window's server, the run, the
+  scenarios in focus — or the unit on show where none is — the marked position, the timeframe and the
+  bar in the middle of the stretch on show. What came of it stands at the button: ✓, or ✕ where the
+  clipboard refused.
+- **Applied once, as a pick** (`use_link_from_address.ts`, at the app root after the layout by run).
+  The parameters leave the address at once, so a reload shows the stored state. Once the run index is
+  there, the run, the scenarios and the position are chosen through the stores' actions, and
+  `pickRun` of `use_layout_by_run.ts` takes the run as picked — also the one a reload brought back, which
+  no watcher sees change — so the layout its kind maps to is offered or loaded as Settings › Layouts
+  says. Then the run chart comes to the front on the timeframe, centred on the moment
+  (`centreOn`, held until the unit it is for is on show: its unit resolves once the run's reports are in).
+- **Another server:** a link to a server set up here switches to it — which identifies it and reloads
+  the page — and waits in this tab's `sessionStorage` until it is applied there. A link to a server not
+  set up here is applied nowhere, and the menu bar says so beside the servers.
+- **What does not read is left out**, never guessed; a run the server does not have is said by the run
+  panels as for any run that is gone. Nothing in an address can stop the app from starting.
 
 ## Settings — three kinds of state, and which one needs an account
 

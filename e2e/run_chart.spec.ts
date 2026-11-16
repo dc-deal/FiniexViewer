@@ -295,3 +295,38 @@ test('the run chart draws the orders of a session that rested at a price', async
   await expect(page.locator('[data-panel-kind="run-chart"] .error-msg')).toHaveCount(0)
   await expect(page.locator('[data-panel-kind="run-chart"] .chart-notice.orders-error')).toHaveCount(0)
 })
+
+/**
+ * A link (viewer#60): opened, it chooses the run and the unit as a pick would, puts the run chart on
+ * its timeframe centred on its moment, and leaves the address clean — a reload then shows the stored
+ * state, which the pick wrote. The field study's orders rest at 15:30, so they stand in view.
+ */
+test('a link opens the run chart on its timeframe at its moment, and leaves the address clean', async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 900 })
+  const moment = Date.parse('2026-10-07T15:30:00Z') / 1000
+  await openWith(page, `/?run=${LIVE_RUN}&units=spot_venue_field_study&chart=M1@2026-10-07T15:30:00Z`, { ...FIXTURES_SHOWN })
+  const chart = page.locator('[data-panel-kind="run-chart"] .candle-chart')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/resting-orders:[1-9]/)
+  expect(Number(await chart.getAttribute('data-visible-from'))).toBeLessThanOrEqual(moment)
+  await expect(page.locator('[data-quick-bar="run-chart"] select').nth(1)).toHaveValue('M1')
+  expect(new URL(page.url()).search).toBe('')
+  expect((await storedLink(page))?.run.id).toBe(LIVE_RUN)
+
+  await page.reload()
+  expect(new URL(page.url()).search).toBe('')
+  await expect.poll(async () => await chart.getAttribute('data-drawings')).toMatch(/resting-orders:[1-9]/)
+})
+
+/** Where the layout by run is set to switch, a link is a pick: the session's layout is loaded with it. */
+test('a link loads the layout its run maps to where the layout by run switches', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('settings.v1')) {
+      localStorage.setItem('settings.v1', JSON.stringify({ version: 1, layoutByRun: 'switch', layoutForSession: 'deploys' }))
+    }
+  })
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await openWith(page, `/?run=${LIVE_RUN}&chart=M1@2026-10-07T15:30:00Z`, { ...FIXTURES_SHOWN })
+  await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem('arrangement.v1') ?? '{}').layout ?? null))
+    .toBe('deploys')
+  await expect(page.locator('[data-panel-kind="run-chart"] .candle-chart')).toBeVisible()
+})

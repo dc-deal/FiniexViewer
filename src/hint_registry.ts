@@ -157,6 +157,10 @@ const HINTS: HintDefinition[] = [
     text: t('Orders of the unit on show that were refused — denied before anything was sent, rejected by the venue, or any other refusal the Orders panel marks — as a cross, and orders that ran out without filling as a ring, in a row above the booking periods. They have no price, so they stand at the time they ended. Several close together are drawn as one with a count; zoom in to draw them apart.'),
   },
   {
+    id: 'link-copy',
+    text: t('🔗 copies a link to this view: the run, the scenario in focus, the position marked, the timeframe and the middle of the stretch on show. Opened, it chooses them as a click would — the layout by run switching as set in Settings — and is gone from the address after. The layout itself is never in a link.'),
+  },
+  {
     id: 'symbol-filter',
     text: t("Symbol narrows the rows to the instruments picked, within the scenario in focus, and is kept for the run. Where it leaves out some of a unit's rows, the unit's heading still shows the total the run served for the whole unit, marked so — nothing is added up from the rows on show."),
   },

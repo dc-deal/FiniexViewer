@@ -328,6 +328,21 @@ describe('useRunChartStore', () => {
   })
 
   /** The cards print a price at the tick size once the broker report is there; the drawing keeps the price as served. */
+  /** A moment a link names (viewer#60) waits for the unit it is for, and then the chart centres on it. */
+  it('centres on a moment a link names once the unit it is for is on show', async () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const moment = 1761886800 + 600
+    chart.centreOn(moment, 'a_unit_not_on_show')
+    await flushPromises()
+    expect(chart.focusAt).not.toBe(moment)
+    chart.centreOn(moment, chart.unit!.name)
+    await flushPromises()
+    expect(chart.focusAt).toBe(moment)
+  })
+
   it('prints the prices of its cards at the tick size of the unit\'s instrument', async () => {
     chooseFixtureRun()
     vi.mocked(apiClient.getBars).mockResolvedValue({

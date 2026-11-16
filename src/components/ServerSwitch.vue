@@ -17,7 +17,7 @@ import { t } from '@/translate'
  * for looking right. One server per window; a second window is how two are compared.
  */
 const store = useServersStore()
-const { servers, current, answeredAsAnother, switchingTo } = storeToRefs(store)
+const { servers, current, answeredAsAnother, switchingTo, unknownLinkServer } = storeToRefs(store)
 const settingsOpen = ref(false)
 
 const name = computed(() => (current.value ? serverName(current.value) : t('Server')))
@@ -32,6 +32,13 @@ const name = computed(() => (current.value ? serverName(current.value) : t('Serv
       <span class="server-moved" tabindex="0">
         <AppIcon name="status-warning" />
         <span>{{ t('another installation') }}</span>
+      </span>
+    </HoverCard>
+    <!-- a link to a server not set up here was applied nowhere: said where the servers are chosen -->
+    <HoverCard v-if="unknownLinkServer" :title="t('Link')" :details="[{ label: t('Server'), value: unknownLinkServer }]">
+      <span class="server-moved" tabindex="0" data-notice="unknown-link-server">
+        <AppIcon name="status-warning" />
+        <span>{{ t('link to an unknown server') }}</span>
       </span>
     </HoverCard>
     <DropdownMenuRoot>

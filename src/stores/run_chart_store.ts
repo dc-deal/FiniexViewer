@@ -329,8 +329,21 @@ export const useRunChartStore = defineStore('runChart', () => {
     return timeframeOffer(events.value, timeframe.value, coveredTimeframes.value, timeframeStore.minutesFor, minutes)
   })
 
-  /** Where the chart centres after the offer was taken — until the reader looks elsewhere. */
+  /**
+   * Where the chart centres after the offer was taken, or a link named a moment — until the reader
+   * looks elsewhere.
+   */
   const offerAt = ref<number | null>(null)
+
+  /**
+   * A moment a link asked the chart to centre on (viewer#60), held until the unit it is for is on show:
+   * a link chooses the run first, and its unit resolves once the run's reports are in — which clears
+   * any centre taken before it. Null: none waits.
+   */
+  const pendingCentre = ref<{ unit: string | null, at: number } | null>(null)
+
+  /** The bar in the middle of the stretch on show, as the chart last reported it — what a link copies. */
+  const visibleMiddle = ref<number | null>(null)
 
   const focusAt = computed<number | null>(() =>
     offerAt.value ?? focusTime(unitOpenings.value, unitTrades.value, focus.value))
@@ -462,6 +475,27 @@ export const useRunChartStore = defineStore('runChart', () => {
 
   // the place the offer centred on belongs to the unit and the position it was taken for
   watch([() => unit.value?.name, () => focus.value?.position], () => { offerAt.value = null })
+
+  /** A centre a link asked for, taken once the unit it names is on show. */
+  function takePendingCentre(): void {
+    const pending = pendingCentre.value
+    const name = unit.value?.name
+    if (!pending || !name || (pending.unit !== null && pending.unit !== name)) return
+    offerAt.value = pending.at
+    pendingCentre.value = null
+  }
+
+  // after the reset above: the unit a link named has resolved, and its centre stands
+  watch([() => unit.value?.name, pendingCentre], takePendingCentre, { flush: 'post' })
+
+  /** Centres the chart on a moment, in UTC seconds, once the unit named — or any, where none is — is on show. */
+  function centreOn(at: number, unitName: string | null = null): void {
+    pendingCentre.value = { unit: unitName, at }
+  }
+
+  function setVisibleMiddle(at: number): void {
+    visibleMiddle.value = at
+  }
 
   // the focus cleared leaves the chart where it was: the unit it showed becomes its own choice.
   // Only within one run — a new run clears the focus too, and its chart starts afresh
@@ -646,8 +680,8 @@ export const useRunChartStore = defineStore('runChart', () => {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
     paneWeights, maximizedPane, paneLooks, setPaneLook, closedLegends, closeLegend, indicators, indicatorLayers, seriesOffer, seriesCutAt, seriesError,
-    ordersError,
+    ordersError, visibleMiddle,
     loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
-    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
+    chooseUnit, chooseTimeframe, acceptOffer, centreOn, setVisibleMiddle, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }
 })

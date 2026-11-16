@@ -52,6 +52,7 @@ onUnmounted(() => chart.detach())
     <!-- what the shapes mean, once: above the states, so it pushes the chart at mount and never again -->
     <HintLine id="chart-marks" />
     <HintLine id="chart-panes" />
+    <HintLine id="link-copy" />
     <div v-if="!selectedRunId" class="state-overlay">
       <span class="hint">{{ t('Choose a run to see its trades on the candles') }}</span>
     </div>
@@ -112,6 +113,7 @@ onUnmounted(() => chart.detach())
       :closed-legends="closedLegends"
       @spacing="chart.setSpacing"
       @edge="chart.extendBars"
+      @middle="chart.setVisibleMiddle"
       @pane-weights="chart.setPaneWeights"
       @pane-shown="showPane"
       @legend-closed="chart.closeLegend"

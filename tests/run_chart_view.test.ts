@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import RunChartView from '@/views/RunChartView.vue'
 import CandleChart from '@/components/CandleChart.vue'
 import RunChartQuickBar from '@/components/RunChartQuickBar.vue'
+import { readLink } from '@/link_address'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
@@ -268,6 +269,30 @@ describe('RunChartQuickBar', () => {
     const labels = mounted.findAll('select')[1]!.findAll('option').map(option => option.text())
     expect(labels).toContain(`M5 ● ${workers.size}`)
     expect(labels).toContain('M1')
+  })
+
+  /**
+   * A link to the view on show (viewer#60): the run, the unit on show with none in focus, and the
+   * timeframe at the bar in the middle of the stretch — copied, and said at the button.
+   */
+  it('copies a link to the view on show, and says so at the button', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    mounted = mount(RunChartQuickBar)
+    await flushPromises()
+    chart.chooseTimeframe('M5')
+    chart.setVisibleMiddle(Date.parse('2026-10-07T15:30:00Z') / 1000)
+    await flushPromises()
+    const button = mounted.find('[data-action="copy-link"]')
+    expect(button.text()).toBe('🔗')
+    await button.trigger('click')
+    await flushPromises()
+    const copied = readLink(new URL(writeText.mock.calls[0]![0] as string).search)!
+    expect(copied).toMatchObject({ run: RUN, units: [chart.unit!.name], chart: { timeframe: 'M5', at: Date.parse('2026-10-07T15:30:00Z') / 1000 } })
+    expect(button.text()).toBe('✓')
   })
 
   /** A select is as wide as its widest option: the word stood wider than any timeframe. */
