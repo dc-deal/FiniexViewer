@@ -184,17 +184,17 @@ function choose(row: SweepListRow): void {
             · {{ plural(group.rows[0]!.sweep.run_count, t('run'), t('runs')) }}
             · {{ rankedBy(group.rows[0]!.sweep, rankings[group.key]).word }}
           </span>
-          <!-- its best combination as the list serves it (contract 56), without opening the sweep —
-               one per account currency, the card naming its run -->
-          <span v-for="{ currency, text } in bestLines(group.rows[0]!.sweep)" :key="currency" class="sweep-best">
-            {{ t('best') }} {{ text }}
-          </span>
           <span
             v-for="notice in sweepNotices(group.rows[0]!.sweep, rankings[group.key])"
             :key="notice.word"
             class="sweep-notice"
           >
             <AppIcon name="status-warning" /> {{ notice.word }}
+          </span>
+          <!-- its best combination as the list serves it (contract 56), without opening the sweep —
+               one per account currency, the card naming its run; after the notices, which it never pushes out -->
+          <span v-for="{ currency, text } in bestLines(group.rows[0]!.sweep)" :key="currency" class="sweep-best">
+            {{ t('best') }} {{ text }}
           </span>
         </span>
       </template>
@@ -283,10 +283,11 @@ function choose(row: SweepListRow): void {
   color: var(--color-text-secondary);
 }
 
-/* the best combination after the objective it was ranked by, cut before anything else of the line */
+/* the best combination last, in the room the line has left: no width of its own, so nothing before it
+   is cut for it — the objective stood cut to "net_pnl…" while it took its share (2026-11-16) */
 .sweep-best {
+  flex: 1 1 0;
   min-width: 0;
-  flex-shrink: 100;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
