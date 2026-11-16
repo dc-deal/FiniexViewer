@@ -12,12 +12,13 @@ import type { ChartMark } from '@/types/run_chart_types'
 /**
  * A set of drawings switched as one — a *drawing layer* in FiniexTestingIDE's glossary (contract
  * 35): the trades' marks, the levels of the position in focus, the line from its entry to its exit,
- * and in the time lane along the bottom the booking periods and the orders refused or expired.
+ * the orders resting at their price, and in the time lane along the bottom the booking periods and
+ * the orders refused or expired.
  * Ours, so a closed set — a name read back from storage is checked against it; `layer_registry.ts`
  * describes each and says which chart draws which.
  */
 export const CHART_LAYER_IDS = [
-  'levels', 'entry-exit', 'trades', 'state-frame', 'periods', 'refusals', 'volume', 'candles',
+  'levels', 'entry-exit', 'trades', 'state-frame', 'periods', 'refusals', 'resting-orders', 'volume', 'candles',
 ] as const
 export type ChartLayerId = typeof CHART_LAYER_IDS[number]
 
@@ -29,9 +30,10 @@ export type DrawingLayerId = Exclude<ChartLayerId, 'volume' | 'candles'>
 
 /**
  * What a drawing's colour says — a role, never a colour; the shape and the word say it first. `warning`
- * is an order refused: something to weigh before trusting what is beside it.
+ * is an order refused: something to weigh before trusting what is beside it. `order` is an order
+ * resting at its price: a fact, not a result, in the quiet ink — its dotted form tells it from a level.
  */
-export type DrawingRole = Polarity | 'mixed' | 'entry' | 'annotation' | 'warning'
+export type DrawingRole = Polarity | 'mixed' | 'entry' | 'annotation' | 'warning' | 'order'
 
 /**
  * A price held from one bar to another — a stop loss, a target. `to` null: to the window's edge.
@@ -44,9 +46,11 @@ export interface SegmentDrawing {
   from: number
   to: number | null
   price: number
-  /** The word the segment carries where it starts — `SL`, `TP`. */
+  /** The word the segment carries where it starts — `SL`, `TP`; empty where it carries none. */
   label: string
   role: DrawingRole
+  /** Dotted for a resting order; a level is dashed, the default. */
+  stroke?: 'dotted'
   /** Of the position looked at — only its levels put their price on the axis. */
   focused: boolean
   card: FigureCard

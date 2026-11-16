@@ -189,6 +189,41 @@ test('the trade list draws within its row cap', async ({ page }) => {
 })
 
 /**
+ * The trade list at the size a long session reaches (viewer#36): 5,000 trades built from the captured
+ * ones — each row repeated in place, so every unit's trades stay together, each under a key of its own
+ * — drawn at the row cap of 500 and at the cap's ceiling, all 5,000. Whether the list needs virtual
+ * rows is decided by these two figures: from the panel opened until the last row the cap allows stands.
+ */
+for (const cap of [500, 5000]) {
+  test(`5,000 trades are drawn at a row cap of ${cap}`, async ({ page }) => {
+    const history = fixture('trade_history.json') as { trades: Record<string, unknown>[] }
+    const each = Math.ceil(5000 / history.trades.length)
+    const trades = history.trades
+      .flatMap((row, at) => Array.from({ length: each }, (_, copy) => ({
+        ...row, position_id: `pos_${at}_${copy}`, exit_tick_index: at * each + copy,
+      })))
+      .slice(0, 5000)
+    await page.route(`**/api/v1/reports/runs/${FIXTURE_RUN}/trade-history`, route =>
+      route.fulfill({ json: { ...history, trades, count: trades.length } }))
+    await page.addInitScript(rows => localStorage.setItem('settings.v1', JSON.stringify({ version: 1, tradeRowCap: rows })), cap)
+    await page.setViewportSize({ width: 1600, height: 900 })
+    await openWith(page, '/', { run: FIXTURE_RUN })
+    const trigger = page.locator('.panel-trigger', { hasText: 'Trade history' })
+    await trigger.waitFor()
+
+    const ms = await timed(`trade history — 5,000 at cap ${cap}`, async () => {
+      await trigger.click()
+      await page.waitForFunction(
+        rows => document.querySelectorAll('.trade-list .record-row').length >= rows,
+        cap,
+        { polling: 'raf', timeout: 60_000 },
+      )
+    })
+    expect(ms).toBeLessThan(cap > 500 ? 30_000 : 3000)
+  })
+}
+
+/**
  * The run chart since it draws for itself (viewer#41): its own drawing host places and paints every
  * layer on each move of the view, where the library's markers did that inside the library. Two
  * figures, on the fixture's busiest unit — 21 events over 1,075 bars: a unit chosen until its marks

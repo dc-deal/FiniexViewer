@@ -43,6 +43,12 @@ const span = computed(() => {
 })
 
 const number = computed(() => view.value?.frame?.record_no ?? null)
+/**
+ * Until the player holds a frame of its own and reads nothing, its controls wait: the player stands
+ * as soon as the timeline is read, its frames still coming, and there a step finds no frame to step
+ * from while a jump to the first races the read of the newest — the click would be lost.
+ */
+const busy = computed(() => number.value === null || view.value?.loading === true)
 const atFirst = computed(() => number.value === 1)
 const atNewest = computed(() => number.value !== null && number.value === stream.value?.record_count)
 
@@ -53,6 +59,7 @@ function onKey(event: KeyboardEvent): void {
   if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
   event.preventDefault()
   event.stopPropagation()
+  if (busy.value) return
   player.step(props.unit, event.key === 'ArrowRight' ? 1 : -1)
 }
 </script>
@@ -60,24 +67,25 @@ function onKey(event: KeyboardEvent): void {
 <template>
   <div v-if="span && view" class="player" :data-frame="number">
     <div class="transport">
-      <AppButton size="compact" variant="quiet" glyph :disabled="atFirst" :title="t('The first frame')" data-action="first" @click="player.first(unit)">⏮</AppButton>
-      <AppButton size="compact" variant="quiet" glyph :disabled="atFirst" :title="t('One frame back')" data-action="back" @click="player.step(unit, -1)">◀</AppButton>
+      <AppButton size="compact" variant="quiet" glyph :disabled="busy || atFirst" :title="t('The first frame')" data-action="first" @click="player.first(unit)">⏮</AppButton>
+      <AppButton size="compact" variant="quiet" glyph :disabled="busy || atFirst" :title="t('One frame back')" data-action="back" @click="player.step(unit, -1)">◀</AppButton>
       <AppButton
         size="compact"
         variant="quiet"
         glyph
-        :disabled="atNewest && !view.playing"
+        :disabled="!view.playing && (busy || atNewest)"
         :title="view.playing ? t('Stop') : t('Play from this frame')"
         data-action="play"
         @click="player.toggle(unit)"
       >
         {{ view.playing ? '❚❚' : '▶' }}
       </AppButton>
-      <AppButton size="compact" variant="quiet" glyph :disabled="atNewest" :title="t('One frame on')" data-action="on" @click="player.step(unit, 1)">▶|</AppButton>
+      <AppButton size="compact" variant="quiet" glyph :disabled="busy || atNewest" :title="t('One frame on')" data-action="on" @click="player.step(unit, 1)">▶|</AppButton>
       <AppButton
         size="compact"
         variant="quiet"
         glyph
+        :disabled="busy"
         :active="view.following"
         :title="t('The newest frame — and the ones that follow, while the session records')"
         data-action="newest"

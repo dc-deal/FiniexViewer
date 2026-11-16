@@ -47,6 +47,15 @@ process died — the Activities panel tells which), `■ ended` between its last
 The `Outcome` facet offers the same words. What runs on the machine is the Activities panel's
 answer; this one is per run.
 
+**How many units of how many succeeded — contract 56, asked for by this repo.** The row counts its
+units (`total_units`, `failed_count`, `succeeded_count`, as the run's warnings-errors outcome counts
+them), and the `Outcome` cell shows that count beside the grade's glyph: `✓ 6/6`, `⚠ 5/6`, `✖ 0/2`
+(operator, 2026-11-13: *"eigentlich will man nur wissen wieviel von wieviel green sind"*). Each grade
+has a FORM of its own — ✓ success, ⚠ finished_with_errors, ✖ failed or crashed — so a warning and an
+error are told apart without their colour, and the grade's word stands in the row's card with the
+counts beside it. A row without counts — recorded before 56, a session still running, a run that died
+before its close — keeps the grade's word in the cell, as before.
+
 Three rules govern how it is rendered, and each has cost something to learn elsewhere:
 
 - **`null`, `[]` and a list are three statements, not two.** `null` is the ledger holding nothing

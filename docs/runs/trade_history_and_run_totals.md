@@ -23,6 +23,20 @@ trade's card is titled by its position, which a narrow column cuts, and opens wi
 with its id, price and fee. The group's name stands whole in the title of the group's card. What the
 links to the orders and to the chart do is the `position-link` hint above the list.
 
+**A symbol filter above the rows, where they trade two symbols or more** (viewer#36). The facet bar
+the run list uses, with one facet, *Symbol*, and no sort: the rows stay in the order they were served
+(`use_symbol_facet.ts`, shared with [Orders](orders_and_order_steps.md)). It narrows what the scenario
+in focus left, before the row cap, and is kept with the arrangement for the run on show — a narrowing
+made for another run is dropped. Where every row trades one symbol there is nothing to choose and no
+bar. A unit's heading still shows its SERVED total: where the symbols picked left some of its trades
+out, the heading is marked `whole unit` beside it (`ScopeMark`), and nothing is added up from the rows
+on show. The `symbol-filter` hint says so.
+
+```
+▾ forex_multi   2 trades · fees 0.42 USD  ⌜whole unit⌟     12.63 USD   ← served for the unit, GBPUSD left out
+  EURUSD  long  …                                           1.16 USD
+```
+
 **Three levels: the unit, the trade, the FILLS.** The trades are grouped under the unit that
 produced them, and a click on a trade opens the executions that opened and closed it. The fill level
 answers the one question the columns cannot: *why do four rows carry the same entry price?* Because

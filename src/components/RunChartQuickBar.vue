@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { activeServer } from '@/active_server'
 import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
 import { instanceOf } from '@/layer_groups'
+import { writeLink } from '@/link_address'
+import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
+import { useRunsStore } from '@/stores/runs_store'
 import type { ChartUnitBlock } from '@/types/run_chart_types'
 import { t } from '@/translate'
 
@@ -13,10 +18,13 @@ import { t } from '@/translate'
  * What the run chart shows — which unit, in which timeframe — beside the tabs while it is the panel
  * in front: `EURGBP_refusals_01 · M1`. A unit nothing can be drawn for stays listed, disabled, with
  * the reason, so the list is the run's whole set of units rather than a shorter one. ≡ Layers opens
- * the panel that arranges what the chart draws, beside it — marked while that panel is open.
+ * the panel that arranges what the chart draws, beside it — marked while that panel is open. The
+ * link button copies a link to the view on show (viewer#60).
  */
 const chart = useRunChartStore()
-const { units, unit, timeframe, coveredTimeframes, indicatorLayers } = storeToRefs(chart)
+const { units, unit, timeframe, coveredTimeframes, indicatorLayers, visibleMiddle } = storeToRefs(chart)
+const runs = useRunsStore()
+const context = useContextStore()
 const dock = useDockStore()
 const { openIds } = storeToRefs(dock)
 
@@ -51,6 +59,44 @@ const unitOptions = computed(() => (units.value ?? []).map(entry => ({
   label: entry.block ? `${entry.name} — ${BLOCKED[entry.block]}` : entry.name,
   disabled: entry.block !== null,
 })))
+
+/**
+ * The view on show as a link (viewer#60): this window's server, the run, the scenarios in focus — or,
+ * with none in focus, the unit on show, so the chart opens on it — the position marked, and the
+ * timeframe with the bar in the middle of the stretch on show. Never the layout.
+ */
+const linkToView = computed<string | null>(() => {
+  const run = runs.selectedRunId
+  if (!run) return null
+  const focus = runs.selectedUnits
+  const at = visibleMiddle.value
+  return writeLink(`${window.location.origin}${window.location.pathname}`, {
+    server: activeServer().id,
+    run,
+    units: focus.length ? [...focus] : unit.value ? [unit.value.name] : [],
+    position: context.main.run.position,
+    chart: timeframe.value && at !== null ? { timeframe: timeframe.value, at } : null,
+  })
+})
+
+/** What the copy came to, said at the button for a moment: copied, or the clipboard refused it. */
+const copied = ref<'done' | 'failed' | null>(null)
+let copiedTimer: ReturnType<typeof setTimeout> | undefined
+
+async function copyLink(): Promise<void> {
+  const link = linkToView.value
+  if (!link) return
+  try {
+    await navigator.clipboard.writeText(link)
+    copied.value = 'done'
+  } catch {
+    copied.value = 'failed'
+  }
+  clearTimeout(copiedTimer)
+  copiedTimer = setTimeout(() => { copied.value = null }, 2000)
+}
+
+onUnmounted(() => clearTimeout(copiedTimer))
 </script>
 
 <template>
@@ -86,6 +132,20 @@ const unitOptions = computed(() => (units.value ?? []).map(entry => ({
     >
       <!-- what it does is said by the quick bar's hint, never on a browser tooltip -->
       ≡ <span class="layers-word">{{ t('Layers') }}</span>
+    </AppButton>
+    <!-- what it copies is said by its hint; what came of it, at the button itself, where the click was -->
+    <AppButton
+      class="link-button"
+      :class="{ failed: copied === 'failed' }"
+      size="compact"
+      :disabled="!linkToView"
+      :aria-label="t('Copy a link to this view')"
+      data-action="copy-link"
+      @click="copyLink"
+    >
+      <template v-if="copied">{{ copied === 'done' ? '✓' : '✕' }}</template>
+      <!-- an icon, never the emoji: it takes the button's ink, where the emoji's own grey read as disabled -->
+      <AppIcon v-else name="action-copy-link" />
     </AppButton>
   </div>
 </template>
@@ -130,10 +190,28 @@ const unitOptions = computed(() => (units.value ?? []).map(entry => ({
   white-space: nowrap;
 }
 
+/* one width for its three glyphs, so the answer at the click moves nothing beside it */
+.link-button {
+  min-width: 2.2em;
+  justify-content: center;
+}
+
+.link-button.failed {
+  color: var(--color-error);
+}
+
 /* In a short header the word gives way and ≡ stays: at the run chart's first width, 457 px beside a
    1800 px window, the tab and the bar did not fit together (2026-10-28). */
 @container dock-header (max-width: 32rem) {
   .layers-word {
+    display: none;
+  }
+}
+
+/* Narrower still, the link button gives way: the unit's name is what the bar is read for, and at
+   the README's width it was cut to "E…" (2026-11-16). The copy waits for a wider chart. */
+@container dock-header (max-width: 28rem) {
+  .link-button {
     display: none;
   }
 }

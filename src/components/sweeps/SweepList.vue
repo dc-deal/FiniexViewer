@@ -8,7 +8,7 @@ import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { bookedAmount, magnitude, numberOrNa, orDash, percentOrNa, signClass, sortInstant, startedAt } from '@/components/runs/report_format'
 import {
-  combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
+  bestLines, combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
 } from '@/components/sweeps/sweep_rows'
 import type { SweepListRow } from '@/components/sweeps/sweep_rows'
 import { useFacetState } from '@/composables/use_facet_state'
@@ -191,6 +191,11 @@ function choose(row: SweepListRow): void {
           >
             <AppIcon name="status-warning" /> {{ notice.word }}
           </span>
+          <!-- its best combination as the list serves it (contract 56), without opening the sweep —
+               one per account currency, the card naming its run; after the notices, which it never pushes out -->
+          <span v-for="{ currency, text } in bestLines(group.rows[0]!.sweep)" :key="currency" class="sweep-best">
+            {{ t('best') }} {{ text }}
+          </span>
         </span>
       </template>
 
@@ -275,6 +280,17 @@ function choose(row: SweepListRow): void {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--color-text-secondary);
+}
+
+/* the best combination last, in the room the line has left: no width of its own, so nothing before it
+   is cut for it — the objective stood cut to "net_pnl…" while it took its share (2026-11-16) */
+.sweep-best {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text-secondary);
 }
 

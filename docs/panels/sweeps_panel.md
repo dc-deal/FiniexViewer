@@ -33,13 +33,22 @@ and direction the sweep declared — or, where it declared neither, by the one i
 - the *Objective* column prints each sweep's own objective, in weight, formatted as the executive
   summary formats the same field; the sweep's heading names it (`expectancy ↑`), and its card
   says whose objective it was;
-- two currencies are two rankings under one heading, each numbered from 1.
+- two currencies are two rankings under one heading, each numbered from 1;
+- **the heading names the best combination** the sweep list serves (contract 56, `best_combinations`,
+  one per account currency): its parameters and its objective's figure, `best sl_mult 1.5 · tp_mult
+  1.5 → −32.64 USD`, without opening the sweep — cut first where the line is short — and its card names
+  the run it is. None for a sweep whose objective cannot rank.
 
 **Error combinations never rank**, so the route leaves them out while the sweep's own `error_count`
 still counts them — said on the sweep's heading where it is not zero. Since contract 50 a
 combination's `net_pnl`, `win_rate`, `total_fees` and trade counts are nullable in the schema, for a
 run that failed before it measured anything; a ranked one never carries null there, and where one
 did it would read a dash, never a zero.
+
+**A sweep whose recorded objective cannot rank** — not a number, or a figure a run can leave
+undefined — is refused by its route since contract 56 (`409 sweep_objective_unrankable`, a server
+error before), and its ranking says so in the backend's own sentence. Such a sweep names no best
+combination on the list either.
 
 ## What makes a ranking comparable
 

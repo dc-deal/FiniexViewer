@@ -25,7 +25,7 @@ describe('layer_registry', () => {
   /** The free chart draws only its candles: the Layers panel has nothing to arrange there. */
   it('says which chart draws which layers, back to front', () => {
     expect(chartLayers('run-chart')).toEqual([
-      'volume', 'candles', 'periods', 'refusals', 'state-frame', 'levels', 'entry-exit', 'trades',
+      'volume', 'candles', 'periods', 'refusals', 'state-frame', 'resting-orders', 'levels', 'entry-exit', 'trades',
     ])
     expect(chartLayers('chart')).toEqual([])
   })
@@ -37,6 +37,7 @@ describe('layer_registry', () => {
       { id: 'periods', shown: true, opacity: 100, option: null, form: null },
       { id: 'refusals', shown: true, opacity: 100, option: null, form: null },
       { id: 'state-frame', shown: true, opacity: 100, option: null, form: null },
+      { id: 'resting-orders', shown: true, opacity: 100, option: null, form: null },
       { id: 'levels', shown: true, opacity: 100, option: false, form: null },
       { id: 'entry-exit', shown: true, opacity: 100, option: false, form: null },
       { id: 'trades', shown: true, opacity: 100, option: true, form: null },
@@ -56,6 +57,7 @@ describe('layer_registry', () => {
       { id: 'periods', shown: true, opacity: 100, option: null, form: null },
       { id: 'refusals', shown: true, opacity: 100, option: null, form: null },
       { id: 'state-frame', shown: true, opacity: 100, option: null, form: null },
+      { id: 'resting-orders', shown: true, opacity: 100, option: null, form: null },
       { id: 'trades', shown: true, opacity: 100, option: false, form: null },
       // the line's option is its own: the levels' of the same word leaves it alone
       { id: 'entry-exit', shown: false, opacity: 100, option: false, form: null },
@@ -66,7 +68,7 @@ describe('layer_registry', () => {
   /** A kept order is reconciled: what the chart no longer draws goes, what it draws since stands where its own order has it. */
   it('reconciles a kept order against the layers the chart draws', () => {
     expect(arrangeLayers('run-chart', { order: ['trades', 'levels'] }).map(state => state.id))
-      .toEqual(['volume', 'candles', 'periods', 'refusals', 'state-frame', 'trades', 'entry-exit', 'levels'])
+      .toEqual(['volume', 'candles', 'periods', 'refusals', 'state-frame', 'resting-orders', 'trades', 'entry-exit', 'levels'])
     expect(arrangeLayers('chart', { order: ['trades'] })).toEqual([])
   })
 
@@ -74,7 +76,7 @@ describe('layer_registry', () => {
   it('keeps a fixed layer at the back whatever order was kept', () => {
     expect(layerDefinition('volume').fixed).toBe(true)
     expect(arrangeLayers('run-chart', { order: ['trades', 'candles', 'volume', 'levels', 'entry-exit'] }).map(state => state.id))
-      .toEqual(['volume', 'candles', 'trades', 'periods', 'refusals', 'state-frame', 'levels', 'entry-exit'])
+      .toEqual(['volume', 'candles', 'trades', 'periods', 'refusals', 'state-frame', 'resting-orders', 'levels', 'entry-exit'])
   })
 
   /** The candles' form is kept only where it is not their own first, and a form read back is held to the set. */
@@ -91,7 +93,7 @@ describe('layer_registry', () => {
     expect(keptLayers('run-chart', own)).toBeUndefined()
     const changed = own.map(state => state.id === 'trades' ? { ...state, shown: false, opacity: 40, option: false } : state)
     expect(keptLayers('run-chart', [...changed].reverse())).toEqual({
-      order: ['trades', 'entry-exit', 'levels', 'state-frame', 'refusals', 'periods', 'candles', 'volume'], hidden: ['trades'], opacity: { trades: 40 }, options: { 'trade-signs': false },
+      order: ['trades', 'entry-exit', 'levels', 'resting-orders', 'state-frame', 'refusals', 'periods', 'candles', 'volume'], hidden: ['trades'], opacity: { trades: 40 }, options: { 'trade-signs': false },
     })
   })
 })

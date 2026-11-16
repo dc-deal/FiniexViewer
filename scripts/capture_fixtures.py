@@ -75,7 +75,14 @@ BASE = 'http://localhost:5173/api/v1'
 #
 # Re-pinned 2026-11-12 to the catalog produced again after three changes to the backtest's realism
 # (still contract 53), the id FiniexTestingIDE named; no money figure and no count moved.
-RUN = '20261110_143247_618a9984'
+#
+# Re-pinned 2026-11-16 to the catalog produced again under contract 56, the id FiniexTestingIDE named;
+# no figure moved, and its row counts 6 units, 1 failed, 5 succeeded.
+#
+# Re-pinned the same day to the catalog under contract 57, the backtest's timeline, the id
+# FiniexTestingIDE named: EUR net P&L 3.74 -> 3.95, USD -23.30 -> -23.27, its drawdown 43.30 -> 43.21 —
+# a fill at its due time instead of the next tick.
+RUN = '20261116_142142_83ec622d'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -105,7 +112,10 @@ LIVE_RUN = '20261007_152959_0275a107'
 #
 # Re-pinned 2026-11-12 to the next production: the main history, as before. Its first session carries
 # an empty `config_id`, a fault FiniexTestingIDE named on their side; nothing here keys on it.
-DEPLOY = 'deploy_20261110_145808_6b55f50f'
+#
+# Re-pinned 2026-11-16 to the production under contract 56, and the same day under 57: the main
+# history, as before; sessions are not driven by the backtest's timeline, and no figure moved.
+DEPLOY = 'deploy_20261116_142222_8135460c'
 
 # The sweep the ranking fixtures come from: a stored search of several combinations, every one of
 # them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get
@@ -120,7 +130,14 @@ DEPLOY = 'deploy_20261110_145808_6b55f50f'
 #
 # Re-pinned 2026-11-12 to the next production, the id FiniexTestingIDE named: no figure moved, its
 # strategy runs as version 1.7.0 and its runs carry a new `rendered_config_id`.
-SWEEP = 'sweep_20261110_143917_09b2f3f1'
+#
+# Re-pinned 2026-11-16 to the production under contract 56, the id FiniexTestingIDE named: no figure
+# moved; its row names its best combination in USD, and every combination its end equity.
+#
+# Re-pinned the same day to the production under contract 57, the id FiniexTestingIDE named: all nine
+# combinations moved with a fill at its due time — sl_mult 0.8 · tp_mult 1.5 459 -> 555 trades — and
+# sl_mult 1.5 · tp_mult 1.5 is still the best in USD, at -43.14.
+SWEEP = 'sweep_20261116_143053_3ac3fc68'
 
 # The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
 # than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs
@@ -137,13 +154,17 @@ DIRTY_RUN = '20261012_205715_c3b41fff'
 # be replayed, so it stays as it is. A running session cannot be pinned: it ends.
 # Re-pinned 2026-11-12 to `state_frames_session` produced again under contract 55, the id
 # FiniexTestingIDE named; the same session, 344 frames, no indicator series.
-STATE_ENDED_RUN = '20261112_221825_c7364106'
+# Re-pinned 2026-11-16 to its production under contract 56, and the same day under 57, the id
+# FiniexTestingIDE named; a session, so no figure moved.
+STATE_ENDED_RUN = '20261116_142757_38677227'
 STATE_STOPPED_RUN = '20261022_123713_e059d354'
 
 # What a drawing worker records over time (contract 55): the fixture catalog's
 # `indicator_series_session`, a mock session whose workers draw every kind of indicator pane - on
 # the candles and in panes of their own, one worker on two timeframes - beside its state frames.
-SERIES_RUN = '20261112_222914_f2285ca5'
+# Re-pinned 2026-11-16 to its production under contract 56, and the same day under 57, the id
+# FiniexTestingIDE named.
+SERIES_RUN = '20261116_142838_bfb973b6'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),
@@ -466,6 +487,25 @@ for unit in bodies.get('scenario_details.json', {}).get('units', []):
     merged = markets.setdefault(key, {})
     for row in rows:
         merged[row['t']] = row
+# The field study's market around its order steps, so a browser test draws its resting orders on
+# candles: its configuration names the market, and its window declares no end, so the bars are asked
+# from ten minutes before its first step to ten after its last - merged into the same market's file.
+live_market = (bodies.get('run_config_live.json') or {}).get('config') or {}
+live_times = [step['event_time'] for step in (bodies.get('order_events_live.json') or {}).get('events') or []
+              if step.get('event_time')]
+if live_market.get('broker_type') and live_market.get('symbol') and live_times:
+    key = (live_market['broker_type'], live_market['symbol'])
+    start = datetime.datetime.fromisoformat(min(live_times)) - datetime.timedelta(minutes=10)
+    end = datetime.datetime.fromisoformat(max(live_times)) + datetime.timedelta(minutes=10)
+    path = (f"brokers/{key[0]}/symbols/{key[1]}/bars?timeframe={BAR_TIMEFRAME}"
+            f"&from={urllib.parse.quote(start.isoformat())}&to={urllib.parse.quote(end.isoformat())}")
+    try:
+        rows, _ = fetch(path)
+        merged = markets.setdefault(key, {})
+        for row in rows:
+            merged[row['t']] = row
+    except Exception as error:                                   # noqa: BLE001 - report, never mask
+        failures.append(('bars of the field study', path, error))
 for (broker, symbol), rows in sorted(markets.items()):
     name = f'bars_{broker}_{symbol}_{BAR_TIMEFRAME}.json'
     bodies[name] = [rows[t] for t in sorted(rows)]

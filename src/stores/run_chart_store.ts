@@ -7,6 +7,7 @@ import {
 } from '@/components/runs/run_chart'
 import { periodSpans, refusalMarks } from '@/components/runs/run_chart_lane'
 import { entryExitLines, frameMoment, positionLevels } from '@/components/runs/run_chart_levels'
+import { restingOrders } from '@/components/runs/run_chart_orders'
 import {
   barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
 } from '@/components/runs/run_chart_marks'
@@ -17,6 +18,7 @@ import { framePaneOf, frameworkGroupsOf, hiddenByGroup, workerGroupsOf } from '@
 import { arrangeLayers } from '@/layer_registry'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { toChartBars } from '@/stores/bars_store'
+import { useChartOrdersStore } from '@/stores/chart_orders_store'
 import { useContextStore } from '@/stores/context_store'
 import { useFramePlayerStore } from '@/stores/frame_player_store'
 import { useIndicatorSeriesStore } from '@/stores/indicator_series_store'
@@ -39,6 +41,8 @@ type CoverageEntry = CoverageResponse | 'none'
 const RUN_CHART = 'run-chart'
 /** How many panes' heights are kept, the newest: a worker's panes come and go with the runs shown. */
 const KEPT_PANES = 24
+/** The order-event stream, as the run list names it under `stream_files`. */
+const ORDER_EVENTS = 'order_events.jsonl'
 
 function marketKey(unit: ChartUnit): string {
   return `${unit.broker}/${unit.symbol}`
@@ -66,6 +70,7 @@ export const useRunChartStore = defineStore('runChart', () => {
   const timeframeStore = useTimeframeStore()
   const framePlayers = useFramePlayerStore()
   const indicatorSeries = useIndicatorSeriesStore()
+  const chartOrders = useChartOrdersStore()
 
   /** How many run charts are on show. Nothing is fetched while there are none. */
   const viewers = ref(0)
@@ -251,6 +256,10 @@ export const useRunChartStore = defineStore('runChart', () => {
     refusals: computed(() => unit.value
       ? refusalMarks(reports.orderHistory?.orders ?? [], unit.value.name, barTimes.value, cutAt.value, perMark.value)
       : []),
+    // the unit's orders that rested at a price, from its order-event stream
+    'resting-orders': computed(() => unit.value
+      ? restingOrders(chartOrders.events, unit.value.name, barTimes.value, cutAt.value, tickSize.value)
+      : []),
     // the player of the unit on show and of the run on show: its name is the unit's in `data_windows`
     'state-frame': computed(() => {
       const player = unit.value ? framePlayers.playerOf(unit.value.name) : null
@@ -320,8 +329,21 @@ export const useRunChartStore = defineStore('runChart', () => {
     return timeframeOffer(events.value, timeframe.value, coveredTimeframes.value, timeframeStore.minutesFor, minutes)
   })
 
-  /** Where the chart centres after the offer was taken — until the reader looks elsewhere. */
+  /**
+   * Where the chart centres after the offer was taken, or a link named a moment — until the reader
+   * looks elsewhere.
+   */
   const offerAt = ref<number | null>(null)
+
+  /**
+   * A moment a link asked the chart to centre on (viewer#60), held until the unit it is for is on show:
+   * a link chooses the run first, and its unit resolves once the run's reports are in — which clears
+   * any centre taken before it. Null: none waits.
+   */
+  const pendingCentre = ref<{ unit: string | null, at: number } | null>(null)
+
+  /** The bar in the middle of the stretch on show, as the chart last reported it — what a link copies. */
+  const visibleMiddle = ref<number | null>(null)
 
   const focusAt = computed<number | null>(() =>
     offerAt.value ?? focusTime(unitOpenings.value, unitTrades.value, focus.value))
@@ -439,8 +461,43 @@ export const useRunChartStore = defineStore('runChart', () => {
     { immediate: true },
   )
 
+  // the unit's order steps, for its resting orders — only where the run wrote the stream: a run from
+  // before it, or a backtest that placed no order, would answer an absence for every unit
+  watch(
+    [() => viewers.value > 0, () => runsStore.selectedRun?.run_id, () => unit.value?.name,
+      () => runsStore.selectedRun?.stream_files.includes(ORDER_EVENTS) ?? false],
+    ([shown, runId, name, written]) => {
+      void chartOrders.follow(shown && runId && name && written ? { runId, unit: name } : null)
+    },
+    { immediate: true },
+  )
+  const ordersError = computed(() => chartOrders.error)
+
   // the place the offer centred on belongs to the unit and the position it was taken for
   watch([() => unit.value?.name, () => focus.value?.position], () => { offerAt.value = null })
+
+  /** A centre a link asked for, taken once the unit it names is on show. */
+  function takePendingCentre(): void {
+    const pending = pendingCentre.value
+    const name = unit.value?.name
+    if (!pending || !name || (pending.unit !== null && pending.unit !== name)) return
+    offerAt.value = pending.at
+    pendingCentre.value = null
+  }
+
+  // after the reset above: the unit a link named has resolved, and its centre stands. The unit is read
+  // only while a centre waits — read always, a run's broken order history threw here, outside every
+  // panel's boundary, and took the whole run bundle down (the browser suite, 2026-11-16)
+  watch(() => pendingCentre.value ? [pendingCentre.value, unit.value?.name ?? null] : null, takePendingCentre, { flush: 'post' })
+
+  /** Centres the chart on a moment, in UTC seconds, once the unit named — or any, where none is — is on show. */
+  function centreOn(at: number, unitName: string | null = null): void {
+    pendingCentre.value = { unit: unitName, at }
+  }
+
+  function setVisibleMiddle(at: number): void {
+    visibleMiddle.value = at
+  }
 
   // the focus cleared leaves the chart where it was: the unit it showed becomes its own choice.
   // Only within one run — a new run clears the focus too, and its chart starts afresh
@@ -625,7 +682,8 @@ export const useRunChartStore = defineStore('runChart', () => {
     units, unit, waiting, unitCoverage, coverageError, window, coveredTimeframes, timeframe,
     bars, loading, error, events, marks, layers, candles, volume, volumeBasis, focus, offer, focusAt, priceFormat,
     paneWeights, maximizedPane, paneLooks, setPaneLook, closedLegends, closeLegend, indicators, indicatorLayers, seriesOffer, seriesCutAt, seriesError,
+    ordersError, visibleMiddle,
     loadingEdges: loader.loadingEdges, edgeError: loader.edgeError,
-    chooseUnit, chooseTimeframe, acceptOffer, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
+    chooseUnit, chooseTimeframe, acceptOffer, centreOn, setVisibleMiddle, setSpacing, setPaneWeights, setMaximizedPane, resetPanes, showPosition, canShow, attach, detach, extendBars,
   }
 })

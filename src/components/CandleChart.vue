@@ -86,6 +86,8 @@ const emit = defineEmits<{
    * the caller's to prevent.
    */
   edge: [side: BarEdge]
+  /** The bar in the middle of the stretch on show, each time it changes — what a link to this view names. */
+  middle: [time: number]
   /** The weights of every pane, once the reader dragged a separator between two of them. */
   paneWeights: [weights: PaneWeights]
   /** A pane shown or hidden at its eye or its ✕ on the chart — by the pane's name. */
@@ -311,6 +313,8 @@ let settleFrame = 0
  * that bars loaded at an edge moved nothing the reader was looking at.
  */
 const visibleFrom = ref<number | null>(null)
+/** The middle bar last said, so a move that keeps it says nothing. */
+let visibleMiddle: number | null = null
 
 /**
  * Every drawn thing that can say what it is, by the id the library reports under the pointer.
@@ -436,6 +440,8 @@ function drawingColours(colours: ChartColours): DrawingColours {
       entry: colours.mark,
       annotation: colours.annotation,
       warning: colours.warning,
+      // an order resting at its price is a fact, not a result: the quiet ink, told apart by its dots
+      order: colours.quiet,
     },
     surface: colours.surface,
     ink: colours.mark,
@@ -654,6 +660,11 @@ function reportEdges(): void {
   const range = chart.timeScale().getVisibleLogicalRange()
   if (!range) return
   visibleFrom.value = shown[Math.min(shown.length - 1, Math.max(0, Math.ceil(range.from)))]!.time
+  const middle = shown[Math.min(shown.length - 1, Math.max(0, Math.round((range.from + range.to) / 2)))]!.time
+  if (middle !== visibleMiddle) {
+    visibleMiddle = middle
+    emit('middle', middle)
+  }
   if (range.from < EDGE_BARS) emit('edge', 'left')
   if (range.to > shown.length - 1 - EDGE_BARS) emit('edge', 'right')
 }

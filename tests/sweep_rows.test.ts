@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
+  bestLines, combinationCard, objectiveFigure, parametersText, rankedBy, sweepCard, sweepListRows, sweepNotices,
 } from '@/components/sweeps/sweep_rows'
 import type { CombinationRow, SweepRankings } from '@/components/sweeps/sweep_rows'
 import type { SweepCombination, SweepDetail, SweepList, SweepRow } from '@/types/api/sweep_types'
@@ -286,7 +286,8 @@ describe('sweep_rows', () => {
   it('carries the order counts of a combination, and a dash on a row from before they folded', () => {
     const [row] = combinations({
       combinations: [combination({
-        orders_submitted: 12, orders_executed: 11, orders_rejected: 1, orders_cancelled: 0, sl_tp_triggered: 4,
+        // every count the line names given here, none left to the capture
+        orders_submitted: 12, orders_executed: 11, orders_rejected: 1, orders_cancelled: 0, orders_expired: 0, sl_tp_triggered: 4,
       })],
     })
     const orders = combinationCard(row!).details.find(pair => pair.label === 'Orders')
@@ -318,5 +319,19 @@ describe('sweep_rows', () => {
     const labels = combinationCard(row!).details.map(pair => pair.label)
     expect(labels).toContain('Deepest drawdown')
     expect(labels).not.toContain('Max drawdown')
+  })
+
+  /**
+   * A sweep's best combination as the list serves it (contract 56): its parameters and its objective's
+   * figure, printed as the ranking's column prints it; none where the list names none.
+   */
+  it('names the best combination in each currency as the list serves it', () => {
+    const best = SWEEP.best_combinations[0]!
+    const [line] = bestLines(SWEEP)
+    expect(line!.currency).toBe(best.currency)
+    expect(line!.runId).toBe(best.run_id)
+    expect(line!.text.startsWith(parametersText(best))).toBe(true)
+    expect(line!.text).toContain(best.currency)
+    expect(bestLines({ ...SWEEP, best_combinations: [] })).toEqual([])
   })
 })

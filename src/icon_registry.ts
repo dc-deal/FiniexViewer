@@ -24,6 +24,7 @@ import {
   IconLayoutGrid,
   IconLayoutSidebarRightCollapse,
   IconLayoutSidebarRightExpand,
+  IconLink,
   IconList,
   IconMemory,
   IconSearch,
@@ -70,6 +71,8 @@ export const ICONS = {
   // a chart's pane: the whole height, and the heights back
   'action-maximize': IconArrowsMaximize,
   'action-restore': IconArrowsMinimize,
+  // a link to the view on show, copied from the run chart's quick bar (viewer#60)
+  'action-copy-link': IconLink,
   // what a pane draws, shown or hidden — the lever of its layer
   'status-shown': IconEye,
   'status-hidden': IconEyeOff,

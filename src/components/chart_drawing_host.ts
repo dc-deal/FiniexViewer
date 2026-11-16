@@ -26,6 +26,8 @@ export interface DrawingColours {
 const DEFAULT_SPACING = 6
 /** How strong a booking period's strip is filled: quiet, so the candles above it read first. */
 const SPAN_FILL = 0.35
+/** How far apart two words stand, top to bottom, before one covers the other — the text's own size. */
+const WORD_HEIGHT_PX = MARK_TEXT_PX + 1
 
 /**
  * The chart's own drawings, painted by ONE series primitive (viewer#41, decided 2026-10-19). One
@@ -292,19 +294,27 @@ export function paintLayer(
       context.fillText(placed.mark.text, placed.x + placed.size / 2 + 2, placed.y)
     }
   }
+  // the words already painted: a word that would cover one is left out — orders placed close together
+  // stand on top of each other, and the stroke stays, its card naming it
+  const words: { x1: number, x2: number, y: number }[] = []
   for (const placed of layer.segments) {
     const colour = colours.roles[placed.segment.role]
     context.strokeStyle = colour
-    context.setLineDash([4, 3])
+    // a level dashed, a resting order dotted: two kinds of price held, told apart by their form
+    context.setLineDash(placed.segment.stroke === 'dotted' ? [1, 2] : [4, 3])
     context.beginPath()
     context.moveTo(placed.x1, placed.y)
     context.lineTo(placed.x2, placed.y)
     context.stroke()
     context.setLineDash([])
+    if (!placed.segment.label) continue
+    const word = { x1: placed.x1 + 2, x2: placed.x1 + 2 + context.measureText(placed.segment.label).width, y: placed.y - 2 }
+    if (words.some(other => word.x1 < other.x2 && other.x1 < word.x2 && Math.abs(word.y - other.y) < WORD_HEIGHT_PX)) continue
+    words.push(word)
     context.fillStyle = colour
     context.textAlign = 'left'
     context.textBaseline = 'bottom'
-    context.fillText(placed.segment.label, placed.x1 + 2, placed.y - 2)
+    context.fillText(placed.segment.label, word.x1, word.y)
   }
   for (const placed of layer.lines) {
     context.strokeStyle = colours.roles[placed.line.role]

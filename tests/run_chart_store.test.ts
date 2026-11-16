@@ -11,13 +11,15 @@ import { useRunsStore } from '@/stores/runs_store'
 import * as apiClient from '@/api/api_client'
 import type { BarAnswer, CoverageResponse } from '@/types/api/bar_types'
 import type {
-  BrokerReport, OrderHistoryReport, PortfolioReport, RunConfigReport, RunInfo, TradeHistoryReport,
+  BrokerReport, OrderEvent, OrderEventsReport, OrderHistoryReport, PortfolioReport, RunConfigReport, RunInfo,
+  TradeHistoryReport,
 } from '@/types/api/report_types'
 import type { ScenarioDetailsReport } from '@/types/api/scenario_types'
 import type { RecordedStreams, RecordedWindow } from '@/types/api/state_frame_types'
 
 import brokerFixture from './fixtures/broker.json'
 import orderFixture from './fixtures/order_history.json'
+import liveOrderSteps from './fixtures/order_events_live.json'
 import portfolioFixture from './fixtures/portfolio.json'
 import runsList from './fixtures/runs_list.json'
 import scenarioFixture from './fixtures/scenario_details.json'
@@ -31,6 +33,7 @@ vi.mock('@/api/api_client', () => ({
   getTimeframes: vi.fn(),
   getRecordedStreams: vi.fn(),
   getRecordedWindow: vi.fn(),
+  getOrderEvents: vi.fn(),
 }))
 
 const RUN = '20261012_205715_c3b41fff'
@@ -105,6 +108,8 @@ describe('useRunChartStore', () => {
     // a session's timeline: none recorded, unless a test says otherwise
     vi.mocked(apiClient.getRecordedStreams).mockReset().mockResolvedValue({ absent: true, cause: 'streams_not_recorded', detail: '' })
     vi.mocked(apiClient.getRecordedWindow).mockReset()
+    // a unit's order steps: none placed at a price, unless a test says otherwise
+    vi.mocked(apiClient.getOrderEvents).mockReset().mockResolvedValue({ absent: true, cause: 'artifact_not_produced', detail: '' })
     vi.mocked(apiClient.getTimeframes).mockReset().mockResolvedValue([
       { name: 'M1', minutes: 1 }, { name: 'M5', minutes: 5 }, { name: 'M10', minutes: 10 }, { name: 'M15', minutes: 15 },
       { name: 'M30', minutes: 30 }, { name: 'H1', minutes: 60 }, { name: 'H4', minutes: 240 }, { name: 'D1', minutes: 1440 },
@@ -280,7 +285,7 @@ describe('useRunChartStore', () => {
     chart.attach()
     await flushPromises()
     const layer = (id: string) => chart.layers.find(entry => entry.id === id)!.drawings
-    expect(chart.layers.map(entry => entry.id)).toEqual(['periods', 'refusals', 'state-frame', 'levels', 'entry-exit', 'trades'])
+    expect(chart.layers.map(entry => entry.id)).toEqual(['periods', 'refusals', 'state-frame', 'resting-orders', 'levels', 'entry-exit', 'trades'])
     expect(layer('levels')).toEqual([])
     expect(layer('trades').length).toBeGreaterThan(0)
 
@@ -290,7 +295,54 @@ describe('useRunChartStore', () => {
     expect(layer('entry-exit').every(drawing => drawing.kind === 'line')).toBe(true)
   })
 
+  /**
+   * The unit's order steps are asked through the route's own narrowing, where the run wrote the stream,
+   * and its orders that rested at a price are drawn — here one limit order of the field study, its steps
+   * moved onto the unit and the bars on show.
+   */
+  it('draws the resting orders of the unit on show from its own order steps', async () => {
+    chooseFixtureRun()
+    vi.mocked(apiClient.getBars).mockResolvedValue({
+      bars: Array.from({ length: 60 }, (_, index) => ({ t: 1761886800 + index * 60, o: 0.87, h: 0.88, l: 0.86, c: 0.87, v: 1, tc: 1 })),
+      truncated: false,
+      priceBasis: '',
+    })
+    const live = liveOrderSteps as unknown as OrderEventsReport
+    const limit = live.events.find(step => step.event_type === 'accepted' && step.limit_price !== null)!
+    const at = (minute: number) => new Date((1761886800 + minute * 60) * 1000).toISOString()
+    vi.mocked(apiClient.getOrderEvents).mockImplementation(async (_runId, unit) => {
+      const steps: OrderEvent[] = [
+        { ...limit, scenario_name: unit, seq: 1, event_time: at(2) },
+        { ...limit, scenario_name: unit, seq: 2, event_type: 'cancelled', event_time: at(5) },
+      ]
+      return { ...live, events: steps }
+    })
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    expect(apiClient.getOrderEvents).toHaveBeenCalledWith(RUN, chart.unit!.name)
+    const drawn = chart.layers.find(entry => entry.id === 'resting-orders')!.drawings
+    expect(drawn).toEqual([expect.objectContaining({
+      kind: 'segment', from: 1761886800 + 120, to: 1761886800 + 300, price: limit.limit_price, role: 'order',
+    })])
+  })
+
   /** The cards print a price at the tick size once the broker report is there; the drawing keeps the price as served. */
+  /** A moment a link names (viewer#60) waits for the unit it is for, and then the chart centres on it. */
+  it('centres on a moment a link names once the unit it is for is on show', async () => {
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    await flushPromises()
+    const moment = 1761886800 + 600
+    chart.centreOn(moment, 'a_unit_not_on_show')
+    await flushPromises()
+    expect(chart.focusAt).not.toBe(moment)
+    chart.centreOn(moment, chart.unit!.name)
+    await flushPromises()
+    expect(chart.focusAt).toBe(moment)
+  })
+
   it('prints the prices of its cards at the tick size of the unit\'s instrument', async () => {
     chooseFixtureRun()
     vi.mocked(apiClient.getBars).mockResolvedValue({
@@ -466,10 +518,10 @@ describe('useRunChartStore', () => {
     // the chart paints nothing of it and keeps its marks' room
     expect(chart.layers.map(entry => [entry.id, entry.opacity ?? 1, entry.hidden ?? false]))
       .toEqual([
-        ['periods', 1, false], ['refusals', 1, false], ['state-frame', 1, false],
+        ['periods', 1, false], ['refusals', 1, false], ['state-frame', 1, false], ['resting-orders', 1, false],
         ['trades', 1, false], ['levels', 0.4, false], ['entry-exit', 1, true],
       ])
-    const [, , , trading, levels] = chart.layers
+    const [, , , , trading, levels] = chart.layers
     expect(trading!.drawings.length).toBeGreaterThan(0)
     // the signs switched off keep their room and paint no text, so the switch rescales nothing
     expect(trading!.drawings.every(drawing => drawing.kind === 'marker' && drawing.textHidden === true)).toBe(true)

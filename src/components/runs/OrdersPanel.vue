@@ -2,14 +2,17 @@
 import { computed, ref, watch } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
+import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import ScopeMark from '@/components/base/ScopeMark.vue'
 import OrderStepList from '@/components/runs/OrderStepList.vue'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { useChartLink } from '@/composables/use_chart_link'
 import { useViewRows } from '@/composables/use_panel_view'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
+import { useSymbolFacet } from '@/composables/use_symbol_facet'
 import type { PositionRef } from '@/types/context_types'
 import { useOrderSteps } from '@/composables/use_order_steps'
 import { useTickSizes } from '@/composables/use_tick_sizes'
@@ -157,9 +160,14 @@ function positionKey(order: OrderHistoryRow): string {
   return `${order.scenario_name}~${positionOf(order)}`
 }
 
+const inScenario = computed(() => props.model.history.orders
+  .filter(order => showsUnit(narrowing.units.value, order.scenario_name)))
+
+/** The symbols picked narrow what the scenario selection left (viewer#36). */
+const symbols = useSymbolFacet('orders', () => inScenario.value, () => props.model.history.run_id)
+
 const shown = computed(() => {
-  const rows = props.model.history.orders
-    .filter(order => showsUnit(narrowing.units.value, order.scenario_name))
+  const rows = symbols.kept.value
   const byPosition = new Map<string, OrderHistoryRow[]>()
   for (const order of rows) {
     const held = byPosition.get(positionKey(order))
@@ -465,10 +473,22 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
 
 <template>
   <div class="orders-panel">
+    <HintLine v-if="symbols.offered.value" id="symbol-filter" />
+    <!-- only where the rows trade two symbols or more: with one there is nothing to choose -->
+    <FacetBar
+      v-if="symbols.offered.value"
+      v-model:selection="symbols.selection.value"
+      v-model:sort="symbols.sort.value"
+      :rows="inScenario"
+      :facets="symbols.facets"
+      :sorts="symbols.sorts"
+    />
     <div v-if="!shown.length" class="hint">
-      {{ narrowed
-        ? t('The scenario in focus placed no order')
-        : t('This run placed no order') }}
+      {{ symbols.narrowing.value && inScenario.length
+        ? t('No order of the symbols picked')
+        : narrowed
+          ? t('The scenario in focus placed no order')
+          : t('This run placed no order') }}
     </div>
     <template v-else>
     <!--
@@ -536,6 +556,8 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
             <!-- not a funnel of zeroes: this scenario never entered the pending pipeline -->
             <template v-else>{{ t('no pending statistics — nothing reached the queue') }}</template>
           </span>
+          <!-- the funnel is the unit's as served: a symbol picked left some of its records out -->
+          <ScopeMark v-if="symbols.cut.value.has(group.key)" class="unit-scope" of="unit" />
         </span>
         <span class="group-count">{{ plural(group.rows.length, t('record'), t('records')) }}</span>
       </template>
@@ -730,6 +752,11 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
 
 .group-meta {
   color: var(--color-text-secondary);
+  margin-left: var(--space-sm);
+}
+
+/* apart from the funnel before it, which it marks as the unit's */
+.unit-scope {
   margin-left: var(--space-sm);
 }
 

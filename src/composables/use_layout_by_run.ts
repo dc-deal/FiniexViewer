@@ -26,8 +26,11 @@ export function runKindOf(group: string): RunKind | null {
  * Only a PICK switches — never the selection a reload brings back, which is in place before this
  * exists, so its watchers never see it; that one is offered at most. An offer needs a layout loaded:
  * a reader who never loaded one is not using layouts. Called ONCE, at the app root.
+ *
+ * A link opened is a pick as well (viewer#60): `pickRun` takes the run on show as picked, also where
+ * the link names the run the reload brought back, which no watcher would see change.
  */
-export function useLayoutByRun(): void {
+export function useLayoutByRun(): { pickRun: () => void } {
   const context = useContextStore()
   const runs = useRunsStore()
   const settingsStore = useSettingsStore()
@@ -71,4 +74,6 @@ export function useLayoutByRun(): void {
   watch(() => context.main.deployment.id, id => {
     if (id) onPick('session')
   })
+
+  return { pickRun: () => onPick(runs.selectedRun ? runKindOf(runs.selectedRun.group) : null) }
 }

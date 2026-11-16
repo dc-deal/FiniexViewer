@@ -47,6 +47,8 @@ export const useServersStore = defineStore('servers', () => {
   const answeredAsAnother = ref(takeMovedNote())
   /** The server a switch is on its way to: the page is about to reload, and says so at the click. */
   const switchingTo = ref<ServerEntry | null>(null)
+  /** The server a link named that is not set up here — the link was applied nowhere (viewer#60). */
+  const unknownLinkServer = ref<string | null>(null)
 
   function apply(list: ServerList): void {
     servers.value = list.servers
@@ -135,5 +137,8 @@ export const useServersStore = defineStore('servers', () => {
     return probe
   }
 
-  return { servers, secretFiles, activeId: active.id, current, answeredAsAnother, switchingTo, load, switchTo, save, remove, check }
+  return {
+    servers, secretFiles, activeId: active.id, current, answeredAsAnother, switchingTo, unknownLinkServer,
+    load, switchTo, save, remove, check,
+  }
 })

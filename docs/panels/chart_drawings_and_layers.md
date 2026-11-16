@@ -1,8 +1,9 @@
 # Chart Drawings and Layers
 
 What a chart draws for itself beside its candles — the run chart's marks, the levels and the line of
-the position in focus — and how it is drawn, placed and found under the pointer. Read this before
-you change `chart_drawing_host.ts`, `chart_geometry.ts` or `run_chart_levels.ts`. How the run chart
+the position in focus, the orders resting at their price — and how it is drawn, placed and found under
+the pointer. Read this before you change `chart_drawing_host.ts`, `chart_geometry.ts`,
+`run_chart_levels.ts` or `run_chart_orders.ts`. How the run chart
 picks its unit, timeframe and bars is in [Candle Charts](candle_charts.md).
 
 ## One host, layers in a list (viewer#41)
@@ -46,13 +47,13 @@ and the card it shows there; a time is the open of a bar drawn.
 | kind | what | from |
 |---|---|---|
 | marker (`ChartMark`) | an opening ↑↓ or an exit ●, single or gathered `×N` | [Candle Charts](candle_charts.md) |
-| `segment { from, to, price }` | a level held from one bar to another — `to` null: to the window's edge; `from` equal to `to`: known at that bar alone, a short stroke ending there | `run_chart_levels.ts` |
+| `segment { from, to, price }` | a price held from one bar to another — a level dashed, a resting order dotted (`stroke`); `to` null: to the window's edge; `from` equal to `to`: known at that bar alone, a short stroke ending there | `run_chart_levels.ts`, `run_chart_orders.ts` |
 | `line { from, to }` | two points joined: where a trade entered and where it left | `run_chart_levels.ts` |
 | `time { time }` | a moment over the whole height, dashed: the state frame on show. Ours until testingide#379 names one | `run_chart_levels.ts` |
 | `span { from, to, endsAtOpen }` | a stretch of time in the lane's strip: a booking period | `run_chart_lane.ts` |
 | `lane-mark { time, shape }` | a moment with no price, in the lane's row: an order refused (cross) or expired (ring), single or gathered `×N` | `run_chart_lane.ts` |
 
-A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry` · `annotation` · `warning`), read from the
+A drawing's colour is a ROLE (`positive` · `negative` · `flat` · `mixed` · `entry` · `annotation` · `warning` · `order`), read from the
 theme tokens by the chart and handed to the host — a canvas cannot read CSS. The shape and the word
 come first: a level carries `SL` or `TP`, a mark its sign or its count, so the colour only reinforces.
 
@@ -110,120 +111,10 @@ switches the levels off in the Layers panel.
 - **Past the last bar of a window the route cut** nothing is drawn: a level known only past it has
   no candle to stand at.
 
-## The Layers panel — arranging the layers
+## The Layers panel
 
-A panel of its own (kind `layers`), opened from the chart's quick bar (`≡ Layers`) as a narrow split
-to the right of the chart it arranges, at any width of the dock: as a tab it would hide that chart.
-It works on the chart LAST IN FRONT (`dock.lastChart`) — focus, not a selection, so no link key
-carries it, the way VS Code's Outline follows the editor in front; its tab card says *Follows — the
-chart last in front*. Another panel coming to the front, the Layers panel itself among them, leaves
-it on the same chart. *Layers panel* is FiniexTestingIDE's own name for it; each row is a *drawing
-layer* in their glossary.
-
-```
-Run chart · ETHUSD_aug_sep
-▾ PRICE PANE                                       ← a pane's group, folded or open
-⠿ (━●) ▸ Trades                                ◐
-⠿ (━●) ▾ Entry–exit line     pick a position   ◐ 40%
-           💡 what it draws and what its option does      ← a hint, dismissible
-           (━●) every position                            ← the option, plain
-⠿ (●━) ▸ Levels                                ◐   ← switched off: the row grey
-  (━●) ▸ Candles                               ◐   ← fixed: no grip, never moved
-▾ VOLUME PANE
-  (━●) ▸ Volume                  ticks per bar ◐
-```
-
-- **The register** is `src/layer_registry.ts`: each layer's title, its hint and its one option, and
-  which chart draws which layers, back to front (`chartLayers`). The free chart draws none today.
-- **Grouped by the pane each layer is drawn in** (operator, 2026-11-12), the way TradingView's
-  object tree is: the pane of the candles, and the volume's own while its option *own pane* is on —
-  off, the volume stands in the group of the candles, behind them. A group's heading is an uppercase
-  label that folds it away; the fold is kept with the panel's view (`layers-pane-price`,
-  `layers-pane-volume`). Each group is a list of its own, so a layer is dragged within its pane only.
-  Below the pane, a group for each source of a layer waits for testingide#379's layers. The tree is
-  agreed with FiniexTestingIDE as a direction (2026-11-12, #379's section *Grouping the layers*):
-  pane, then source — *framework* (ours, from the record routes), the algo, a worker instance — then
-  layer; a source's heading only where a pane holds layers of more than one. A layer is one string:
-  `algo` for the algo's default layer, `algo:<name>` for every further one, `worker:<instance>` and
-  `worker:<instance>:<name>` alike — the name a constant in the algo's code, so a reader's on/off,
-  order and opacity are kept by it; no `:` in a name, a `title` beside it for the words on screen. One
-  level of names for now: a `/` is kept for a group level later (`entries/long`). An *Indicator series*
-  entry is one layer, its plots switched together.
-- **The workers apart from the framework, folded and hidden whole** (operator, 2026-11-13:
-  *"kann ich gruppe ausblenden komplett?"*). Where a pane holds the framework's layers and workers'
-  too, the workers stand under a heading of their own, *Workers*, and the framework's under theirs.
-  **A line of its own only for a group** (operator, 2026-11-14): a worker gets a heading only where
-  it draws more than one layer in the pane; a worker of one layer stands as its row.
-- **Every group has its eye: a visibility of its own, above its layers' switches** (operator,
-  2026-11-14: *"übergeordnete separate Sichtbarkeitsebene, ähnlich wie der Mute-Schalter in einer
-  DAW"* — the way a group's eye works in Figma, Photoshop or QGIS). A pane's, the framework's, the
-  workers', a worker's group's: hidden, it hides everything in it and changes no switch; shown again,
-  each layer stands as it was set. A row its group hides is faint, its switch as set. The chart draws
-  a layer where its own switch and every group of it are shown (`layer_groups.ts`); the hidden groups
-  are kept with the chart's view (`layers.groupsHidden`), bound to no run. The eye of a pane is the one
-  on the chart's pane, where a pane of its own closes at a ✕ (`chart_panes.md`).
-- **Every group folds, and its state is kept** — the framework's layers fold away under their
-  heading as the workers' do (operator, 2026-11-14).
-- **Each level one step in, along a guide** (operator, 2026-11-14: the second level was not told
-  from the first): a group's members stand a step in, with a fine rule along their left from under
-  the heading's marker down to the last of them, as VS Code's tree draws it — which level a heading
-  stands on and where its group ends are seen at once, and no line is spent. Each level costs the
-  names about ten pixels in a narrow panel.
-  The framework's and the workers' of our panes are the same in every run and kept for all (`layers-framework-price`, `layers-workers-price`, and the volume's); a worker's
-  group is kept for its run, which names its workers (`sources-folded`: `pane|worker:<instance>`).
-- **A worker's row says the timeframe its worker was served** — `M15`, `H1` — in a column of its
-  own, three characters wide whatever it says, before the series' name and in the ink of structure:
-  head information, never cut by a long name (operator, 2026-11-14). The series' `timeframe`, as
-  served.
-- **The opened row names the worker and shows its plots.** *Worker*: the instance and its type, as
-  the run's configuration names them (`tunnel · CORE/bollinger`). *Plots* — FiniexTestingIDE's word:
-  each plot by its own name beside its look in a few pixels, in the ink, the dash and the strength
-  the chart draws it with (`plotSample`) — a legend, so a reader sees which line is whose (operator,
-  on screen 2026-11-13: *"was ist denn nun von was gezeichnet worden"*; before the name, the sample
-  said nothing on its own). The ink is the theme's token of its role, else the neutral ink of its
-  place among every series served for its pane — counted over hidden ones too, so hiding one
-  repaints no other, on the chart or here.
-- **One row a layer, front first,** drawn as the app's lists are. The lever (`AppSwitch`) shows or
-  hides it, and a hidden row goes grey; ◐ opens the lever of its opacity (`AppSlider`, 10–100 %);
-  the row opens its options.
-- **The opened row holds plain options beneath one hint** (operator, 2026-10-28), the way an
-  editor's panels do: what the layer draws and what its option does is the layer's hint
-  (`layer-trades`, `layer-levels` …, named on each layer as `hintId`), and a reader who knows it
-  dismisses it. The option is its switch alone (the trades' signs; the levels, or the lines, of
-  every position rather than of the one looked at; the volume's own pane); the candles add their
-  forms. A row opens only onto something: a layer with no option and no forms — the booking periods
-  — shows no marker once its hint is put away, and a click opens nothing (operator, on screen
-  2026-10-29).
-- **The closed row's words say only what the screen cannot**: what an empty layer waits for —
-  *pick a position* for the levels and the line, which draw for the position looked at alone, *none
-  for this position* where one is looked at, *none in view* for the trades or where every position
-  is asked for — and what the volume counts. A switched option, the candles' form or a fixed layer's
-  place is seen elsewhere, so it is not repeated (operator, 2026-10-28). The words stand only where
-  they fit whole: the title comes first, and the words wrap onto a line the head's height cuts away
-  the moment they would not fit. With no position chosen the levers of the line and the levels
-  changed nothing on screen and looked broken (2026-10-19); *nothing to draw* said so, and not what
-  to do.
-- **Why a shown layer draws nothing stands below the list** as hints, one box for every such layer
-  — a narrow panel cut the row's word to a letter and kept the reason on hover, and the levers still
-  looked broken (2026-10-27). Hints of the shared register (`layer-empty-*`, named on each layer as
-  `emptyHintId`). Below the list their coming and going moves no row, and the panel holds its
-  scrollbar's track free (`scrollbar-gutter: stable`), so one appearing moves none either.
-- **Compact as the app's lists** (operator, 2026-10-28): a row is as tall as a list row (25 px), the
-  surface under the pointer spans the whole row, and the lever is the compact one (`AppSwitch`
-  `compact`), so it does not outweigh ◐ beside it.
-- **Moved by dragging its grip ⠿, and only so** (operator, 2026-10-28), through `vue-draggable-plus`
-  — the package the run bundle's column already sorts its sections with — and written back whole
-  (`reorder`). The candles and the volume have no grip, and a drag that would pass them is refused
-  (`onMove`). The arrows that moved a layer one step went with it: a reorder is the pointer's alone.
-- **The trades' signs switched off keep their room.** The marks are handed over `textHidden`: the
-  host places their text and paints none of it, so the switch rescales nothing — emptied, the text
-  gave its room up and the price axis moved at the switch (operator, on screen 2026-10-28).
-- **Kept with the chart's own view**, `panelViews[<chart id>].layers`: only what differs from the
-  chart's own arrangement, reconciled whenever it is read — a layer the chart no longer draws is
-  left out, one it draws since stands where its own order puts it (`arrangeLayers`, `keptLayers`).
-- **The run chart's store applies it.** A hidden layer is handed over marked `hidden`: the host
-  neither paints nor hits it and puts nothing of it on the axis, and only the room its marks take is
-  kept. A fainter one carries its `opacity`, and the host paints that layer whole at it.
+How the reader shows, hides, dims and orders the layers — the panel, its rows, its groups and their
+eyes, and how what it keeps is applied: [The Layers Panel](layers_panel.md).
 
 ## The state frame on show (2026-10-30)
 
@@ -291,6 +182,38 @@ on show (`run_chart_lane.ts`).
   which needs the order events placed by time and a word from FiniexTestingIDE on how a pending order
   is spanned; and the kinds testingide#379 will name.
 
+## Resting orders (2026-11-15)
+
+The orders of the unit on show that rested at the venue, each dotted on its price from where the
+venue took it to the step that ended it (viewer#41, section D) — their glossary's *resting*: "a pending
+order the venue (or the trade simulator) has accepted and that waits for its price". Read from the
+unit's order-event stream, asked through the route's own narrowing (`order-events?scenario_name=`,
+`chart_orders_store.ts`) only where the run wrote it (`stream_files`), once per run and unit.
+
+```
+ 2642.28 ·····························              limit · open long      cancelled: the stroke ends
+ 2565.30 ······················▲                    limit · open long      filled: the trade's mark at its end
+ 2437.32 ···················                         stop · close long      a protective stop, released
+```
+
+- **Every value is a served field** (`run_chart_orders.ts`). The steps of one order are grouped by
+  `submitted_seq`, their join key, and read in `seq` order, never by time. It rests from `accepted` —
+  or `adopted`, taken over at a session's start — to `filled`, `cancelled`, `expired`, `rejected` or
+  `undelivered`; with none of them, or `unaccounted`, it runs to the window's edge.
+- **The price** is `limit_price`, or `trigger_price` where it has no limit or waits for its trigger.
+  A stop-limit stands at its trigger until `triggered`, then at its limit; a plain stop rests no longer
+  once triggered. `modified` starts a stretch at the new price, its words drawn once, at the first.
+- **Not drawn:** a market order (no price to rest at), a `denied` one (never sent), one the venue
+  never took. An order within one bar is a short stroke at that bar.
+- **Its words** where it begins, as served — `order_type · action direction` — in the quiet ink, the
+  dotted form telling it from a level's dashes. A word that would cover one already painted is left
+  out; the stroke stays, and its card names it: the limit or trigger, the lots, when it was accepted,
+  moved and ended, the end reason, the initiator and the position.
+- **Measured 2026-11-15:** one unit of a backtest of 129 trades answered 57 KB in 0.34 s, the whole run
+  404 KB. The backtests in the archive trade at the market; the field study placed limit orders.
+- **An empty layer** says why in its hint: a market order fills at once, and a run without the stream
+  has none. A read that failed says so over the chart, beside the other notices.
+
 ## The volume — a layer the library draws (2026-10-27)
 
 A layer like the others to the reader, drawn by the chart library as a series of its own — in a pane
@@ -327,9 +250,13 @@ line · area** (`forms` in the register, kept under `forms` only where it is not
   against a canvas context that records what it was told to draw (jsdom has no canvas).
 - `run_chart_levels.test.ts` — the levels and the line from served fields.
 - `run_chart_lane.test.ts` — the periods' spans and the refusals' marks from the run's reports, gathered and cut.
+- `run_chart_orders.test.ts`, `chart_orders_store.test.ts` — the resting orders from an order's steps,
+  against the field study and against steps written for a modification and a trigger; the steps read
+  once per run and unit.
 - `candle_chart.test.ts` — what the chart hands its host: the layers, every bar's range, the colours;
   and the volume's series, its scale and its colours, built only where a volume is handed — its pane
   in [Chart Panes](chart_panes.md).
 - `e2e/run_chart.spec.ts` — the levels painted on a real canvas, from a capture whose position the
   mock hands a stop and a target (no trade of the fixture run set one); and the lane of the refusing
-  unit, its period's card found at the bottom of the pane.
+  unit, its period's card found at the bottom of the pane; and the field study's resting orders on its
+  market's candles.

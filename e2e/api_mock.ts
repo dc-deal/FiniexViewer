@@ -369,9 +369,15 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
      */
     const stream = /^\/api\/v1\/reports\/runs\/([^/]+)\/order-events$/.exec(path)
     if (stream) {
-      // the live run's stream is asked for WHOLE, for the venue's reads — and captured whole
+      // the live run's stream is asked for WHOLE, for the venue's reads — and captured whole; the
+      // run chart asks it narrowed to its one unit, which is the whole of it, and any other unit has none
       if (stream[1] === LIVE_RUN && !new URL(route.request().url()).searchParams.has('order_id')) {
-        return route.fulfill({ json: fixture('order_events_live.json'), headers: CONTRACT })
+        const live = fixture('order_events_live.json') as StreamCapture
+        const unit = new URL(route.request().url()).searchParams.get('scenario_name')
+        if (unit !== null && unit !== live.events[0]?.scenario_name) {
+          return route.fulfill({ json: { ...live, events: [], broker_truth: [], count: 0 }, headers: CONTRACT })
+        }
+        return route.fulfill({ json: live, headers: CONTRACT })
       }
       if (stream[1] !== FIXTURE_RUN) {
         return route.fulfill(absent('run_not_found', `Only ${FIXTURE_RUN} is captured`))
@@ -399,6 +405,10 @@ export async function mockApi(page: Page, options: ApiMockOptions = {}): Promise
       // the session that draws is captured with its configuration alone: it names its market
       if (runId === SERIES_RUN && section === 'config') {
         return route.fulfill({ json: fixture('run_config_series.json'), headers: CONTRACT })
+      }
+      // and the field study as well: the run chart draws its resting orders on its market's candles
+      if (runId === LIVE_RUN && section === 'config') {
+        return route.fulfill({ json: fixture('run_config_live.json'), headers: CONTRACT })
       }
       // a body naming another run would trip our own RunIdMismatchError — so it is not served
       if (runId !== FIXTURE_RUN) {

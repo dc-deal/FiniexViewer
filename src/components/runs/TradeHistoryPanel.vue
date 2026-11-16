@@ -2,9 +2,11 @@
 import { computed } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
+import FacetBar from '@/components/base/FacetBar.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import ScopeMark from '@/components/base/ScopeMark.vue'
 import { useChartLink } from '@/composables/use_chart_link'
 import {
   SPREAD_NOT_RECORDED, amount, magnitude, modelledSpreadFigures, priceAt, quantity, signClass, spreadFigure, utcInstant,
@@ -14,6 +16,7 @@ import { useDisplaySettings } from '@/composables/use_display_settings'
 import { useViewRows } from '@/composables/use_panel_view'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import { marksPosition, usePositionLink } from '@/composables/use_position_link'
+import { useSymbolFacet } from '@/composables/use_symbol_facet'
 import { useTickSizes } from '@/composables/use_tick_sizes'
 import { rowKey } from '@/api/list_key'
 import type { Figure, FigureCard } from '@/types/figure_types'
@@ -156,11 +159,15 @@ const narrowed = computed(() => narrowing.units.value.length > 0)
  * the backend's code. A unit that traded nothing is still in the roster, so an empty result means
  * "traded nothing", never "failed to match", and the empty state below says exactly that.
  */
-const selected = computed(() => {
+const inScenario = computed(() => {
   const units = narrowing.units.value
   if (!units.length) return props.model.trades
   return props.model.trades.filter(trade => showsUnit(units, trade.scenario_name))
 })
+
+/** The symbols picked narrow what the scenario selection left, before the cap as well (viewer#36). */
+const symbols = useSymbolFacet('trade-history', () => inScenario.value, () => props.model.run_id)
+const selected = symbols.kept
 
 const shown = computed(() => selected.value.slice(0, rowCap.value))
 const hidden = computed(() => Math.max(0, selected.value.length - rowCap.value))
@@ -170,7 +177,7 @@ const hidden = computed(() => Math.max(0, selected.value.length - rowCap.value))
  * response carried, so it stays the figure for the whole run — but under a narrowing it would
  * name a number the rows below have nothing to do with.
  */
-const total = computed(() => narrowed.value ? selected.value.length : props.model.count)
+const total = computed(() => narrowed.value || symbols.narrowing.value ? selected.value.length : props.model.count)
 
 /**
  * The trades grouped under the unit that produced them, each group carrying its own totals.
@@ -272,6 +279,17 @@ function groupCard(group: ListGroup<TradeRow>): FigureCard | null {
  * the distinct names rather than building a second set of groups beside the one on screen.
  */
 const unitCount = computed(() => new Set(shown.value.map(trade => trade.scenario_name)).size)
+
+/**
+ * How many trades a unit has under the narrowings in force — counted over every row they leave, never
+ * the rows drawn: a unit the row cap cuts showed only the trades above it (measured 2026-11-15, the
+ * unit across row 500 of a run of 572). The notice above the list says what is not drawn.
+ */
+const tradesPerUnit = computed(() => {
+  const counts = new Map<string, number>()
+  for (const trade of selected.value) counts.set(trade.scenario_name, (counts.get(trade.scenario_name) ?? 0) + 1)
+  return counts
+})
 
 /**
  * Past the scenario threshold the individual unit recedes and its summary becomes the primary
@@ -447,12 +465,24 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
          pattern, never a browser tooltip -->
     <HintLine v-if="selected.length" id="trade-slippage" />
     <HintLine v-if="selected.length && link.canJumpTo('orders')" id="position-link" />
+    <HintLine v-if="symbols.offered.value" id="symbol-filter" />
+    <!-- only where the rows trade two symbols or more: with one there is nothing to choose -->
+    <FacetBar
+      v-if="symbols.offered.value"
+      v-model:selection="symbols.selection.value"
+      v-model:sort="symbols.sort.value"
+      :rows="inScenario"
+      :facets="symbols.facets"
+      :sorts="symbols.sorts"
+    />
     <!-- an empty narrowed set is a statement about the SCENARIO, not a failed match: every unit
          the run declared is in the roster whether it traded or not -->
     <div v-if="!selected.length" class="hint">
-      {{ narrowed
-        ? t('The scenario in focus closed no positions')
-        : t('This run closed no positions') }}
+      {{ symbols.narrowing.value && inScenario.length
+        ? t('No trade of the symbols picked')
+        : narrowed
+          ? t('The scenario in focus closed no positions')
+          : t('This run closed no positions') }}
     </div>
     <RecordList
       v-else
@@ -485,8 +515,10 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
           {{ group.key }}
           <span class="group-meta">
             <!-- one string: a `v-for` over text drops the space between its iterations -->
-            {{ [plural(group.rows.length, t('trade'), t('trades')), ...costParts(group.key)].join(' · ') }}
+            {{ [plural(tradesPerUnit.get(group.key) ?? group.rows.length, t('trade'), t('trades')), ...costParts(group.key)].join(' · ') }}
           </span>
+          <!-- the net beside is the unit's served total: a symbol picked left some of its trades out -->
+          <ScopeMark v-if="symbols.cut.value.has(group.key)" class="unit-scope" of="unit" />
         </span>
         <span class="group-net" :class="signClass(totalOf(group.key)?.net_pnl ?? 0)">
           <template v-if="totalOf(group.key)">
@@ -634,6 +666,11 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
    after the name in the same cell rather than sitting under a heading they have nothing to do with */
 .group-meta {
   color: var(--color-text-secondary);
+}
+
+/* apart from the costs before it, which it does not belong to (on screen 2026-11-15: it touched `USD`) */
+.unit-scope {
+  margin-left: var(--space-sm);
 }
 
 /* the fills are a level BELOW the trade, and the indent plus the secondary ink says so without a

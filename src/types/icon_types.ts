@@ -23,6 +23,7 @@ export type IconName =
   | 'action-layouts'
   | 'action-maximize'
   | 'action-restore'
+  | 'action-copy-link'
   | 'status-shown'
   | 'status-hidden'
   | 'kind-executive'

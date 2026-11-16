@@ -46,6 +46,9 @@ const BASE: ScenarioRow = {
   non_flat_signals: 1,
   non_flat_signal_pct: 100 / 4200,
   trades_requested_pct: 200 / 4200,
+  // contract 57: how often the algo and a heartbeat decision ran — absent, as on a backtest recorded before
+  algo_passes: null,
+  ghost_passes: null,
   worker_count: 3,
   error_type: '',
   error_message: '',

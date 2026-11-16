@@ -736,6 +736,10 @@ function runInfo(overrides: Partial<RunInfo> = {}): RunInfo {
     warning_count: null,
     log_warning_count: null,
     tick_timespan_seconds: null,
+    // contract 56: the unit counts, absent here as on a run recorded before them
+    total_units: null,
+    failed_count: null,
+    succeeded_count: null,
 
     has_reports: true,
     start_time: '2026-08-30T14:58:19.182635+00:00',

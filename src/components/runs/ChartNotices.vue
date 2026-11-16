@@ -21,6 +21,8 @@ defineProps<{
   seriesCutAt?: number | null
   /** Why the series could not be read, in words. */
   seriesError?: string | null
+  /** Why the unit's order steps, its resting orders, could not be read, in words. */
+  ordersError?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -32,7 +34,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="offer || seriesOffer || seriesCutAt || seriesError" class="chart-notices">
+  <div v-if="offer || seriesOffer || seriesCutAt || seriesError || ordersError" class="chart-notices">
     <!-- one sentence, the value after it: pieces of a sentence around a value cannot be reordered
          by a later translation -->
     <p v-if="offer" class="chart-notice offer">
@@ -66,6 +68,10 @@ const emit = defineEmits<{
     <p v-if="seriesError" class="chart-notice series-error">
       <span class="notice-glyph" aria-hidden="true">✖</span>
       {{ seriesError }}
+    </p>
+    <p v-if="ordersError" class="chart-notice orders-error">
+      <span class="notice-glyph" aria-hidden="true">✖</span>
+      {{ ordersError }}
     </p>
   </div>
 </template>
@@ -112,7 +118,8 @@ const emit = defineEmits<{
   color: var(--color-warning);
 }
 
-.series-error .notice-glyph {
+.series-error .notice-glyph,
+.orders-error .notice-glyph {
   color: var(--color-error);
 }
 </style>

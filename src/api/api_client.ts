@@ -303,12 +303,13 @@ export async function getOrderHistory(
 export async function getOrderEvents(
   runId: string,
   scenarioName: string,
-  orderId: string
+  orderId?: string
 ): Promise<OrderEventsReport | SectionAbsence> {
   try {
     const response = await http.get<OrderEventsReport>(
       `/reports/runs/${runId}/order-events`,
-      { params: { scenario_name: scenarioName, order_id: orderId } }
+      // without the order: every step of the unit, as the run chart draws its resting orders from
+      { params: orderId === undefined ? { scenario_name: scenarioName } : { scenario_name: scenarioName, order_id: orderId } }
     )
     return assertBelongsTo(runId, response.data)
   } catch (error) {
@@ -562,6 +563,9 @@ export async function getSweep(sweepId: string): Promise<SweepDetail | null> {
   } catch (error) {
     raiseIfForbidden(error, 'sweeps')
     if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    // `sweep_objective_unrankable` (contract 56): the objective it recorded cannot order its
+    // combinations — said in the backend's own sentence, where a server error stood before
+    raiseIfUnreadable(error, 'The sweep recorded an objective its combinations cannot be ranked by')
     throw error
   }
 }

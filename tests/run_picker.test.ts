@@ -35,6 +35,10 @@ const BASE: RunInfo = {
   warning_count: null,
   log_warning_count: null,
   tick_timespan_seconds: null,
+  // contract 56: the unit counts, absent here as on a run recorded before them
+  total_units: null,
+  failed_count: null,
+  succeeded_count: null,
   run_id: '20260925_095227_d9b8d79d',
   group: 'simulation',
   name: 'ETHUSD_blocks',
@@ -850,6 +854,30 @@ describe('RunPicker', () => {
         .map(node => node.textContent ?? '')
       expect(offered.some(text => text.includes('recording stopped'))).toBe(true)
       expect(offered.some(text => text.includes('ended'))).toBe(true)
+    })
+
+    /**
+     * How many units of how many succeeded (contract 56; operator, 2026-11-13: "wieviel von wieviel
+     * green sind 3/3"), beside the grade's own glyph — a form for each grade, so a warning and an error
+     * are told apart without their colour. Without counts the grade's word stays; the card keeps it.
+     */
+    it('counts the units that succeeded beside the glyph of the grade, and keeps the grade in the card', () => {
+      const wrapper = mountPicker([
+        run({ run_id: 'whole', run_outcome: 'success', total_units: 6, failed_count: 0, succeeded_count: 6 }),
+        run({ run_id: 'part', run_outcome: 'finished_with_errors', total_units: 6, failed_count: 1, succeeded_count: 5 }),
+        run({ run_id: 'none', run_outcome: 'failed', total_units: 2, failed_count: 2, succeeded_count: 0 }),
+        run({ run_id: 'before', run_outcome: 'success' }),
+      ])
+      const outcomeOf = (id: string) => rowFor(wrapper, id).find('.run-outcome').text()
+      expect(outcomeOf('whole')).toBe('✓ 6/6')
+      expect(outcomeOf('part')).toBe('⚠ 5/6')
+      expect(outcomeOf('none')).toBe('✖ 0/2')
+      expect(outcomeOf('before')).toBe('✓ success')
+      const card = wrapper.findAllComponents(HoverCard).map(hover => (hover.props('details') ?? []) as Figure[])
+        .find(details => details.some(figure => figure.value === 'finished_with_errors'))!
+      const values = Object.fromEntries(card.map(figure => [figure.label, figure.value]))
+      expect(values['Outcome']).toBe('finished_with_errors')
+      expect(values['Units']).toBe('5 of 6 succeeded · 1 failed')
     })
   })
   /**

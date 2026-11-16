@@ -19,7 +19,7 @@ const HINTS: HintDefinition[] = [
   },
   {
     id: 'quick-bar',
-    text: t('The bar beside the tabs holds what the panel in front shows — for the free chart its broker, symbol and timeframe, for the run chart its unit and timeframe, and ≡ Layers, which opens beside it what it draws.'),
+    text: t('The bar beside the tabs holds what the panel in front shows — for the free chart its broker, symbol and timeframe, for the run chart its unit and timeframe, ≡ Layers, which opens beside it what it draws, and, where the bar has room, the link button, which copies a link to the view on show: opened, it chooses the same run, scenario, position and stretch as a click would, the layout by run switching as set.'),
   },
   {
     id: 'open-as-panel',
@@ -155,6 +155,18 @@ const HINTS: HintDefinition[] = [
   {
     id: 'layer-refusals',
     text: t('Orders of the unit on show that were refused — denied before anything was sent, rejected by the venue, or any other refusal the Orders panel marks — as a cross, and orders that ran out without filling as a ring, in a row above the booking periods. They have no price, so they stand at the time they ended. Several close together are drawn as one with a count; zoom in to draw them apart.'),
+  },
+  {
+    id: 'symbol-filter',
+    text: t("Symbol narrows the rows to the instruments picked, within the scenario in focus, and is kept for the run. Where it leaves out some of a unit's rows, the unit's heading still shows the total the run served for the whole unit, marked so — nothing is added up from the rows on show."),
+  },
+  {
+    id: 'layer-resting-orders',
+    text: t('Orders of the unit on show that rested at the venue, each dotted on its price from where the venue took it to the step that ended it — filled, cancelled, expired — with its words where it begins. A moved price continues the same order. Rest the pointer on one to see how it ended.'),
+  },
+  {
+    id: 'layer-empty-resting-orders',
+    text: t('No order of the unit on show rested at a price on the bars loaded: a market order fills at once, and a run without an order-event stream has none to show.'),
   },
   {
     id: 'chart-marks',

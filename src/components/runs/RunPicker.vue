@@ -524,8 +524,33 @@ function toggleFamily(key: string): void {
  * are conditional — `reporting` reads `expected` on all 46 and `app_version` `1.4.0` on all 46,
  * while `ticks_from` is stated on 18 and `data_windows` on 18.
  */
+/**
+ * The grade's glyph — a FORM for each, since its colour cannot carry it: a dark yellow and a dark red
+ * are inseparable under red-green colour blindness in the light theme. The grade is the backend's
+ * word; one it adds later reads as the cross.
+ */
+const OUTCOME_GLYPH: Record<string, string> = {
+  success: '✓',
+  finished_with_errors: '⚠',
+  failed: '✖',
+  crashed: '✖',
+}
+
+/** How many of a run's units succeeded, as its row counts them (contract 56) — none where it does not. */
+function unitsOf(run: RunInfo): string | null {
+  return run.succeeded_count !== null && run.total_units !== null ? `${run.succeeded_count}/${run.total_units}` : null
+}
+
 function card(run: RunInfo): FigureCard {
   const details: Figure[] = []
+  // the grade's word, which the cell gives up for the count where the row counts its units
+  if (run.run_outcome) details.push({ label: t('Outcome'), value: run.run_outcome })
+  if (run.total_units !== null && run.succeeded_count !== null) {
+    const parts = [`${run.succeeded_count} ${t('of')} ${run.total_units} ${t('succeeded')}`]
+    // the failed ones only where there are any: none failed is what the count above already says
+    if (run.failed_count) parts.push(`${run.failed_count} ${t('failed')}`)
+    details.push({ label: t('Units'), value: parts.join(' · ') })
+  }
   // UTC beside the column's local rendering: the stamp in the column is in the reader's own zone,
   // and the canonical clock is the one the run itself was written in. Absent for a stamp that is
   // not a date — the same hole the column shows as "no date", never an empty pair.
@@ -703,8 +728,11 @@ function choose(runId: string): void {
             :class="run.run_outcome ?? (run.recording ? `recording-${run.recording}` : '')"
             :title="!run.run_outcome && run.recording ? recordingOf(run.recording).title : undefined"
           >
+            <!-- the grade's glyph, then how many units of how many succeeded where the row counts them
+                 (contract 56; operator, 2026-11-13: "wieviel von wieviel green sind 3/3"), else the
+                 grade's word. The word stands in the row's card either way -->
             <template v-if="run.run_outcome">
-              {{ run.run_outcome === 'success' ? '✓' : '✖' }} {{ run.run_outcome }}
+              {{ OUTCOME_GLYPH[run.run_outcome] ?? '✖' }} {{ unitsOf(run) ?? run.run_outcome }}
             </template>
             <!-- no grade yet: a session recording its state frames says how that stands -->
             <template v-else-if="run.recording">

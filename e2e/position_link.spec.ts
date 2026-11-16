@@ -1,6 +1,6 @@
 import { test, expect } from './cdp_fixture'
 import { mockApi, fixture, FIXTURE_RUN } from './api_mock'
-import { openWith, storedLink } from './arrangement_seed'
+import { openWith, storedBar, storedLink } from './arrangement_seed'
 
 /**
  * The jump between an order and its trade, which only a browser can prove.
@@ -200,4 +200,28 @@ test('the count of scenarios that produced nothing opens Warnings & errors at a 
   await expect(notice).toContainText('produced nothing')
   await notice.locator('[data-action="to-warnings"]').click()
   await expect(warnings).toHaveAttribute('aria-expanded', 'true')
+})
+
+/**
+ * The symbol filter of the report tables (viewer#36), kept with the run: a symbol picked in the trade
+ * history narrows its trades to that instrument, and a real reload finds the same narrowing.
+ */
+test('a symbol picked in the trade history narrows it, and a reload keeps it', async ({ page }) => {
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  await openPanel(page, 'Trade history')
+  const panel = page.locator('.trade-history')
+  await expect(panel.locator('.trade-list .record-row').first()).toBeVisible()
+
+  await panel.locator('.facet-trigger').first().click()
+  await page.locator('.facet-option', { hasText: 'ETHUSD' }).click()
+  await page.keyboard.press('Escape')
+  await expect.poll(async () => (await storedBar(page, 'trade-history'))?.selection).toEqual({ symbol: ['ETHUSD'] })
+  const narrowed = await panel.locator('.trade-list .record-row').allInnerTexts()
+  expect(narrowed.length).toBeGreaterThan(0)
+  expect(narrowed.every(row => row.includes('ETHUSD'))).toBe(true)
+
+  await page.reload()
+  await openPanel(page, 'Trade history')
+  await expect(panel.locator('.trade-list .record-row').first()).toBeVisible()
+  expect(await panel.locator('.trade-list .record-row').allInnerTexts()).toEqual(narrowed)
 })

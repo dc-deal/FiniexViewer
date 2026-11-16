@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import RunChartView from '@/views/RunChartView.vue'
 import CandleChart from '@/components/CandleChart.vue'
 import RunChartQuickBar from '@/components/RunChartQuickBar.vue'
+import { readLink } from '@/link_address'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useContextStore } from '@/stores/context_store'
@@ -26,6 +27,7 @@ vi.mock('@/api/api_client', () => ({
   findCoverage: vi.fn(),
   getBars: vi.fn(),
   getTimeframes: vi.fn(),
+  getOrderEvents: vi.fn(),
 }))
 
 const RUN = '20261012_205715_c3b41fff'
@@ -71,6 +73,8 @@ describe('RunChartView', () => {
     vi.mocked(apiClient.getTimeframes).mockReset().mockResolvedValue([
       { name: 'M1', minutes: 1 }, { name: 'M5', minutes: 5 }, { name: 'H1', minutes: 60 },
     ])
+    // a unit's order steps: none placed at a price
+    vi.mocked(apiClient.getOrderEvents).mockReset().mockResolvedValue({ absent: true, cause: 'artifact_not_produced', detail: '' })
   })
 
   afterEach(() => {
@@ -91,6 +95,14 @@ describe('RunChartView', () => {
     expect(chart.exists()).toBe(true)
     expect(Number(chart.attributes('data-marks'))).toBeGreaterThan(0)
     expect(wrapper.find('.chart-notice').exists()).toBe(false)
+  })
+
+  /** A unit whose order steps could not be read says so over the chart, with the error's glyph. */
+  it('says over the chart why the order steps could not be read', async () => {
+    vi.mocked(apiClient.getOrderEvents).mockRejectedValue(new Error('network down'))
+    chooseFixtureRun()
+    const wrapper = await mountView()
+    expect(wrapper.find('.chart-notice.orders-error').text()).toContain('The order steps could not be read')
   })
 
   /** What the shapes mean, said once over the chart — and dismissible, like every hint. */
@@ -202,6 +214,8 @@ describe('RunChartQuickBar', () => {
     vi.mocked(apiClient.getTimeframes).mockReset().mockResolvedValue([
       { name: 'M1', minutes: 1 }, { name: 'M5', minutes: 5 }, { name: 'H1', minutes: 60 },
     ])
+    // a unit's order steps: none placed at a price
+    vi.mocked(apiClient.getOrderEvents).mockReset().mockResolvedValue({ absent: true, cause: 'artifact_not_produced', detail: '' })
   })
 
   afterEach(() => {
@@ -255,6 +269,30 @@ describe('RunChartQuickBar', () => {
     const labels = mounted.findAll('select')[1]!.findAll('option').map(option => option.text())
     expect(labels).toContain(`M5 ● ${workers.size}`)
     expect(labels).toContain('M1')
+  })
+
+  /**
+   * A link to the view on show (viewer#60): the run, the unit on show with none in focus, and the
+   * timeframe at the bar in the middle of the stretch — copied, and said at the button.
+   */
+  it('copies a link to the view on show, and says so at the button', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    chooseFixtureRun()
+    const chart = useRunChartStore()
+    chart.attach()
+    mounted = mount(RunChartQuickBar)
+    await flushPromises()
+    chart.chooseTimeframe('M5')
+    chart.setVisibleMiddle(Date.parse('2026-10-07T15:30:00Z') / 1000)
+    await flushPromises()
+    const button = mounted.find('[data-action="copy-link"]')
+    expect(button.find('svg').exists()).toBe(true)
+    await button.trigger('click')
+    await flushPromises()
+    const copied = readLink(new URL(writeText.mock.calls[0]![0] as string).search)!
+    expect(copied).toMatchObject({ run: RUN, units: [chart.unit!.name], chart: { timeframe: 'M5', at: Date.parse('2026-10-07T15:30:00Z') / 1000 } })
+    expect(button.text()).toBe('✓')
   })
 
   /** A select is as wide as its widest option: the word stood wider than any timeframe. */

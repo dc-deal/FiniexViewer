@@ -119,7 +119,10 @@ by its tab, the way a reader does.
   of a position the run ended with still open marked, though it has no trade; its stretch of time
   kept through its panel given the whole dock and back; marks that would cover
   each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
-  the chart leaving the whole chart inside its panel; the levels of the position looked at painted
+  the chart leaving the whole chart inside its panel; the field study's resting orders drawn on its
+  market's candles, from its own configuration; a link opening the run chart on its timeframe at its
+  moment with the address clean after and a reload keeping the stored state, and a link loading the
+  layout its run maps to where the layout by run switches (viewer#60); the levels of the position looked at painted
   on a real canvas, from a position the mock hands a stop and a target; an own level that fired drawn
   from the row that names it, which no stored run carries yet; the refusing unit's booking period
   and its orders refused drawn in the time lane, counted on the element, and the period's card
@@ -181,7 +184,8 @@ by its tab, the way a reader does.
   `pos_ethusd_1` appears in five scenarios of the order history and two of them produced a trade, so
   the link is drawn twice and the mark lands in one scenario rather than in every row carrying that
   id. And the count of scenarios that produced nothing, above the scenario list, opening the folded
-  Warnings & errors at a click.
+  Warnings & errors at a click. A symbol picked in the trade history narrowing it to that
+  instrument, kept through a real reload (viewer#36).
 - `open_in_context.spec.ts` holds the way from one VIEW into another — a deployment's session into
   its run, a run into the deployment it was a session of, and a session's run shown in the sections
   standing apart while the run bundle stays closed — because a unit test records where a panel
@@ -259,7 +263,10 @@ its marks stand on the candles, read on the page's own frames, and a zoom step u
 it has painted, the mean of ten — a figure that carries two round trips to the browser per step, so
 it is read against its own earlier column, never as the drawing's cost alone. And a sweep's ranking
 at the size a real search reaches (viewer#32): 500 combinations built from the capture, timed from
-the sweep opened until the 500th row stands — what says whether the ranking needs a row cap. A
+the sweep opened until the 500th row stands — what says whether the ranking needs a row cap. The
+trade list at the size a long session reaches (viewer#36): 5,000 trades built from the capture, each
+unit's together, from the panel opened until the last row the cap allows stands — at the cap of 500
+and at its ceiling, all 5,000 — what says whether the list needs virtual rows. A
 deployment picked in its list until its bundle draws the sessions (viewer#43), and a step of a
 session's frame player (viewer#51) over 500 frames built from the captured ones and served as the
 route serves them — from, to and a limit — the mean of twenty. The same steps again with the run chart beside the
@@ -279,7 +286,8 @@ three columns with every bundle closed and its members standing apart — laid o
 own proportions, the dark theme, every hint put away: the whole window once, then the dock group a
 highlight is about. Nothing private reaches a picture: the lists are narrowed to public runs, and
 `PICTURES_HIDE`, a comma list of words given at the call and never written into the repository,
-fails the run wherever one of them stands in the window's text. Like the performance spec, an
+fails the run wherever one of them stands in the window's text. The session's picture fails the
+same way unless it shows the frame the spec stepped to. Like the performance spec, an
 ordinary run leaves it out:
 `PICTURES=1 PICTURES_HIDE=<words> bash scripts/e2e.sh e2e/readme_pictures.spec.ts --workers=1`.
 
