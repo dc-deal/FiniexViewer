@@ -594,6 +594,14 @@ describe('TradeHistoryPanel', () => {
     expect(wrapper.find('.notice').text()).toContain('120')
   })
 
+  /** A unit the cap cuts counts all its trades in its heading, not the ones drawn above the cap. */
+  it('counts every trade of a unit the cap cuts, not only those drawn', () => {
+    const many = Array.from({ length: 60 }, (_, index) => trade({ position_id: `pos_${index}` }))
+    const wrapper = mountWithDisplay(report({ trades: many, count: 60 }), { tradeRowCap: 50 })
+    expect(tradeRows(wrapper)).toHaveLength(50)
+    expect(wrapper.find('.group-meta').text()).toContain('60 trades')
+  })
+
   // no host, no settings — the panel behaves exactly as it did before there were any
   it('falls back to the defaults when no host supplied settings', { timeout: 20_000 }, () => {
     const many = Array.from({ length: 640 }, (_, index) => trade({ position_id: `pos_${index}` }))

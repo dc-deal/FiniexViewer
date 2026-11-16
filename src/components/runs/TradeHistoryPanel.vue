@@ -281,6 +281,17 @@ function groupCard(group: ListGroup<TradeRow>): FigureCard | null {
 const unitCount = computed(() => new Set(shown.value.map(trade => trade.scenario_name)).size)
 
 /**
+ * How many trades a unit has under the narrowings in force — counted over every row they leave, never
+ * the rows drawn: a unit the row cap cuts showed only the trades above it (measured 2026-11-15, the
+ * unit across row 500 of a run of 572). The notice above the list says what is not drawn.
+ */
+const tradesPerUnit = computed(() => {
+  const counts = new Map<string, number>()
+  for (const trade of selected.value) counts.set(trade.scenario_name, (counts.get(trade.scenario_name) ?? 0) + 1)
+  return counts
+})
+
+/**
  * Past the scenario threshold the individual unit recedes and its summary becomes the primary
  * thing: the group header still states the name, the net, the fees and the count, and the rows
  * under it wait to be asked for. A forty-scenario run is otherwise a list nobody reads.
@@ -504,7 +515,7 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
           {{ group.key }}
           <span class="group-meta">
             <!-- one string: a `v-for` over text drops the space between its iterations -->
-            {{ [plural(group.rows.length, t('trade'), t('trades')), ...costParts(group.key)].join(' · ') }}
+            {{ [plural(tradesPerUnit.get(group.key) ?? group.rows.length, t('trade'), t('trades')), ...costParts(group.key)].join(' · ') }}
           </span>
           <!-- the net beside is the unit's served total: a symbol picked left some of its trades out -->
           <ScopeMark v-if="symbols.cut.value.has(group.key)" class="unit-scope" of="unit" />
