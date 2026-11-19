@@ -4,7 +4,6 @@ import { useSelectionStore } from '@/stores/selection_store'
 import { useBarsStore } from '@/stores/bars_store'
 import { useChartBinding } from '@/composables/use_chart_binding'
 import CandleChart from '@/components/CandleChart.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import { t } from '@/translate'
 
@@ -17,7 +16,6 @@ useChartBinding()
 
 <template>
   <div class="chart-view">
-    <HintLine id="quick-bar" />
     <div v-if="!isReady" class="state-overlay">
       <span class="hint">{{ t('Select broker, symbol and timeframe to continue') }}</span>
     </div>

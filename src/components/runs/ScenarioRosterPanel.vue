@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
@@ -425,12 +424,6 @@ function isPicked(name: string): boolean {
       </JumpLink>
       <span v-else>{{ t('Warnings & errors') }}</span>
     </p>
-
-    <!-- What a click does, and it STAYS once something is picked: swapping it for a line that
-         named the choice moved the whole list under the pointer — by a pixel with the hint showing,
-         by a line once it was dismissed (2026-10-14). The choice is marked on its rows here, and said
-         once in the menu bar, with the way back to the whole run. -->
-    <HintLine id="scenario-pick" />
 
     <FacetBar
       v-model:selection="selection"

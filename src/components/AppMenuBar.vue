@@ -7,7 +7,6 @@ import {
 } from 'reka-ui'
 import NarrowingStatement from '@/components/NarrowingStatement.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import LayoutsMenu from '@/components/LayoutsMenu.vue'
 import TopMenu from '@/components/TopMenu.vue'
 import { useRankedBar } from '@/composables/use_ranked_bar'
@@ -182,7 +181,6 @@ useRankedBar(bar)
                         <AppIcon v-if="state.place === 'panel'" name="action-open-panel" />
                       </span>
                     </DropdownMenuCheckboxItem>
-                    <HintLine id="bundle-places" class="menu-hint" />
                   </template>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
@@ -262,13 +260,6 @@ useRankedBar(bar)
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   white-space: nowrap;
-}
-
-/* as wide as the rows it explains, never wider: a line of its length would stretch the whole menu */
-.menu-hint {
-  width: 0;
-  min-width: 100%;
-  margin-top: var(--space-xs);
 }
 
 /* the run's doing: the section does not exist, so the entry cannot be switched */

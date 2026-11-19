@@ -59,10 +59,7 @@ test('the run list keeps at least a row in a very short window', async ({ page }
  * fixed 11.5 rem for the hint line and the facet bar, so with the hint dismissed or the bar on one
  * line that reserve stood empty below the last row — seen on screen 2026-10-16, about 140 px of it.
  */
-test('the run list reaches the bottom of its panel once the hint is dismissed', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('hints.v1', JSON.stringify({ version: 1, banned: ['facet-bar'] }))
-  })
+test('the run list reaches the bottom of its panel', async ({ page }) => {
   // 640 px, not 800: at the 12 px text of 2026-11-10 the whole list fit in 800 and no longer scrolled
   await page.setViewportSize({ width: 1300, height: 640 })
   await mockApi(page)

@@ -3,7 +3,6 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppIcon from '@/components/base/AppIcon.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import { bookedAmount, magnitude, numberOrNa, orDash, percentOrNa, signClass, sortInstant, startedAt } from '@/components/runs/report_format'
@@ -140,7 +139,6 @@ function choose(row: SweepListRow): void {
 
 <template>
   <div class="sweep-browser">
-    <HintLine id="sweeps" />
     <FacetBar
       v-model:selection="selection"
       v-model:search="search"

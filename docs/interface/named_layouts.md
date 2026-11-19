@@ -128,7 +128,7 @@ bundle out and say where each comes back.
 
 `layouts.v1` lives in `localStorage`, shared by every window. Every write reads the stored list again
 first, and a write in another window reaches this one (`onSharedWrite` in `src/tab_storage.ts`), so
-a layout saved there is never lost here; the settings and the banned hints follow another window the
+a layout saved there is never lost here; the settings follow another window the
 same way since 2026-11-03. Two windows with the same layout loaded write into it in turn, and the
 later change wins.
 

@@ -4,7 +4,6 @@ import DeploymentHeader from '@/components/deployments/DeploymentHeader.vue'
 import SessionsTable from '@/components/deployments/SessionsTable.vue'
 import AdvisoryNotice from '@/components/deployments/AdvisoryNotice.vue'
 import { codeSummaryText } from '@/components/deployments/deployment_card'
-import HintLine from '@/components/base/HintLine.vue'
 import type { DeploymentRow, DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { DeploymentSessionsModel } from '@/types/deployment_bundle_types'
 import { plural, t } from '@/translate'
@@ -44,8 +43,6 @@ const blocks = computed(() => {
 
 <template>
   <div class="deployment-sessions">
-    <!-- what a run id, before and after, and the unfinished count mean: the one explanation pattern -->
-    <HintLine id="deployment-sessions" />
     <!-- the deployment's own line, above every currency: a run can be unfinished in any of them or
          before it has one, and the advisory speaks of the whole history -->
     <p class="counts">

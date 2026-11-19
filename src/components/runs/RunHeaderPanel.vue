@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import HintLine from '@/components/base/HintLine.vue'
+import HelpInfo from '@/components/base/HelpInfo.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
@@ -208,7 +208,7 @@ const hints = computed(() => [
       </template>
     </template>
   </dl>
-  <HintLine v-if="hints.length" :id="hints" class="meta-hint" />
+  <HelpInfo v-if="hints.length" :id="hints" class="meta-help" />
 
   <!--
     WHICH CODE RAN. The one thing the index row cannot carry, and the question a reader arrives
@@ -281,9 +281,9 @@ const hints = computed(() => [
   overflow-wrap: anywhere;
 }
 
-/* a hint elsewhere stands above what it explains; this one stands below a list with no margin of its own */
-.meta-hint {
-  margin-top: var(--space-sm);
+/* below a list with no margin of its own: the mark keeps a little room above it */
+.meta-help {
+  margin-top: var(--space-xs);
 }
 
 .mono {

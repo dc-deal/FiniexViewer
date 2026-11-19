@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import HintLine from '@/components/base/HintLine.vue'
 import RuleHeading from '@/components/base/RuleHeading.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import { utcInstant, venueFigure } from '@/components/runs/report_format'
@@ -45,7 +44,6 @@ const units = computed(() => unitNames(props.model).map(name => {
 
 <template>
   <div class="venue-account">
-    <HintLine id="venue-account" />
     <section v-for="unit in units" :key="unit.name" class="unit" :data-unit="unit.name">
       <RuleHeading v-if="units.length > 1" class="unit-name">{{ unit.name }}</RuleHeading>
 

@@ -2,6 +2,7 @@
 import { onErrorCaptured, ref, watch } from 'vue'
 import { CollapsibleRoot, CollapsibleTrigger, CollapsibleContent } from 'reka-ui'
 import AppIcon from '@/components/base/AppIcon.vue'
+import HelpInfo from '@/components/base/HelpInfo.vue'
 import type { IconName } from '@/types/icon_types'
 import { t } from '@/translate'
 
@@ -16,6 +17,8 @@ const props = defineProps<{
    * that failed is given another go, so a defect on one run does not follow the reader to the next.
    */
   resetOn?: unknown
+  /** What the section is and does, behind its ⓘ — explanations of `hint_registry.ts` (viewer#24). */
+  help?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -64,6 +67,8 @@ watch(() => props.resetOn, () => {
         <span class="panel-title">{{ t(title) }}</span>
         <span v-if="failed" class="panel-failed-mark" :title="t('This section could not be drawn')"><AppIcon name="status-warning" /></span>
       </CollapsibleTrigger>
+      <!-- always in view, unlike the controls beside it: an explanation hidden until hovered is found by nobody -->
+      <HelpInfo v-if="help?.length" :id="help" />
       <!-- controls appear on hover, and on focus so they stay keyboard-reachable -->
       <div class="panel-controls">
         <!-- beside the column rather than in it; the panel's tab carries the way back -->

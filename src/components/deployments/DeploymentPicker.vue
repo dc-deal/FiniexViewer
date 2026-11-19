@@ -7,7 +7,6 @@ import { recordingOf } from '@/components/runs/recording_mark'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
 import AppIcon from '@/components/base/AppIcon.vue'
@@ -204,7 +203,6 @@ function pick(row: DeploymentRow): void {
     </div>
 
     <template v-else>
-      <HintLine id="facet-bar" />
       <FacetBar
         v-model:selection="selection"
         v-model:search="search"

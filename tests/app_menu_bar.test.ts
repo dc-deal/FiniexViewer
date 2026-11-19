@@ -150,13 +150,6 @@ describe('AppMenuBar', () => {
     expect(hidden).toEqual([])
   })
 
-  /** The rows explained once, where they are read: dismissible and bannable, like every hint. */
-  it('explains the places of the sections in a hint below them', async () => {
-    await openRunsSubmenu()
-    const hint = document.querySelector('.menu-hint')!
-    expect(hint.textContent).toContain('A section in a closed bundle is on show nowhere')
-  })
-
   it('hides a shown section and shows a hidden one again', async () => {
     useLayoutStore().hide('config')
     const dock = useDockStore()

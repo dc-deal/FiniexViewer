@@ -169,7 +169,7 @@ screen, 2026-10-19). A toggle that drew a frame only while on changed its width,
 beside it moved at every click; a hint whose dismissals stood beside its text squeezed the text to
 one word a line in a 240 px panel. So a glyph or a value that changes gets a fixed width (a
 `min-width` in `ch`); an off state is said by the knob and by greying the row, never by taking a
-frame away; and a box's actions wrap below its text before the text is squeezed (`HintLine`).
+frame away; and a box's actions wrap below its text before the text is squeezed.
 
 ## Icons — `AppIcon` and the registry
 

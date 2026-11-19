@@ -3,7 +3,6 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import RunReportView from '@/views/RunReportView.vue'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import { useContextStore } from '@/stores/context_store'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore } from '@/stores/layout_store'
@@ -121,29 +120,8 @@ describe('RunReportView', () => {
     expect(wrapper.find('.empty-bundle').text())
       .toBe("Every section stands as a panel of its own or is hidden — “Back into the bundle” on a panel's tab brings it back here, the Panels menu shows a hidden one.")
     expect(wrapper.findComponent(PanelColumn).exists()).toBe(false)
-    expect(wrapper.findAllComponents(HintLine).flatMap(hint => [hint.props('id')].flat())).not.toContain('open-as-panel')
   })
 
-  /**
-   * ⋯ on the bundle's tab is a control nothing else on screen explains (#42), and how a section
-   * comes out and goes back is said while there are sections to take out — the emptied bundle's
-   * test holds that the second hint stands down, this one that it is there to stand down.
-   */
-  it('explains what ⋯ on its tab offers, and how a section comes out', () => {
-    chooseRun()
-    const wrapper = mount(RunReportView)
-    const hints = wrapper.findAllComponents(HintLine).flatMap(hint => [hint.props('id')].flat())
-    expect(hints).toContain('bundle-commands')
-    expect(hints).toContain('open-as-panel')
-  })
-
-  /** Its hints stand in ONE box with one pair of dismissals, rather than a box for each. */
-  it('says its hints in one box', () => {
-    chooseRun()
-    const wrapper = mount(RunReportView)
-    expect(wrapper.findAllComponents(HintLine)).toHaveLength(1)
-    expect(wrapper.findAll('.hint-line')).toHaveLength(1)
-  })
 
   /** What stays in the column the run does not carry, so the sentence speaks of what it carries. */
   it('speaks of the sections the run carries where the rest it does not', () => {

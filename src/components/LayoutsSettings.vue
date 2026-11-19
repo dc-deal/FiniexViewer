@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
-import HintLine from '@/components/base/HintLine.vue'
+import HelpInfo from '@/components/base/HelpInfo.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import { useDockStore } from '@/stores/dock_store'
@@ -131,7 +131,7 @@ function suggestedOrder(): void {
 
 <template>
   <div class="layouts-settings">
-    <HintLine id="layouts" />
+    <HelpInfo id="layouts" class="settings-help" />
     <div class="layouts-body">
       <div class="layouts-list">
         <RecordList
@@ -221,7 +221,7 @@ function suggestedOrder(): void {
           />
         </div>
       </div>
-      <HintLine id="layout-by-run" />
+      <HelpInfo id="layout-by-run" class="settings-help" />
     </div>
 
     <!-- the window's width choosing the loaded layout's size: on unless the reader switches it off -->
@@ -260,7 +260,7 @@ function suggestedOrder(): void {
           >
         </label>
       </div>
-      <HintLine id="size-by-window" />
+      <HelpInfo id="size-by-window" class="settings-help" />
     </div>
 
     <!-- where the docked panels stand without a layout: one way back, beside the layouts -->
@@ -269,7 +269,7 @@ function suggestedOrder(): void {
       <AppButton data-action="reset-dock" @click="suggestedOrder()">
         {{ t('Back to the suggested order') }}
       </AppButton>
-      <HintLine id="suggested-order" />
+      <HelpInfo id="suggested-order" class="settings-help" />
     </div>
   </div>
 </template>

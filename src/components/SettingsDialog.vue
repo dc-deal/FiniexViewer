@@ -8,7 +8,6 @@ import AppSelect from '@/components/base/AppSelect.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import LayoutsSettings from '@/components/LayoutsSettings.vue'
 import ServersSettings from '@/components/ServersSettings.vue'
-import { useHintsStore } from '@/stores/hints_store'
 import {
   SCENARIO_THRESHOLD_RANGE, TRADE_ROW_CAP_RANGE, useSettingsStore,
 } from '@/stores/settings_store'
@@ -23,7 +22,6 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:open': [boolean] }>()
 
 const settingsStore = useSettingsStore()
-const hintsStore = useHintsStore()
 const { settings } = storeToRefs(settingsStore)
 
 const activeTab = ref<SettingsTab>('display')
@@ -123,17 +121,6 @@ function onNumber(event: Event, apply: (value: number) => void): void {
             @change="event => onNumber(event, settingsStore.setTradeRowCap)"
           >
         </div>
-
-        <!-- a banned hint has no other way back: the control that banned it is gone with it -->
-        <div class="setting">
-          <span class="setting-label">{{ t('Hints') }}</span>
-          <AppButton class="hints-reset" @click="hintsStore.reset()">
-            {{ t('Show all hints again') }}
-          </AppButton>
-        </div>
-        <p class="setting-hint">
-          {{ t('Brings back every short explanation you dismissed or turned off.') }}
-        </p>
 
         <AppButton @click="settingsStore.reset()">
           {{ t('Restore defaults') }}

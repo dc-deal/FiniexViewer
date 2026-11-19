@@ -10,7 +10,7 @@
  * entry any tab saved and from then on reads only its own; a write goes to both: the tab's own, and
  * the start of the next new tab.
  *
- * What is the reader's rather than the tab's — the settings, the hints dismissed — stays in
+ * What is the reader's rather than the tab's — the settings, the named layouts — stays in
  * `localStorage` alone. Every access may throw, in a private window or with storage blocked, and is
  * then the same as none: these are conveniences, never a reason for the app not to start.
  */
@@ -81,7 +81,7 @@ export function removeTabAndShared(key: string): void {
 
 /**
  * Reacts when ANOTHER window writes `key` — the browser tells every window but the writer. What is
- * the reader's rather than a tab's (the settings, the hints banned, the named layouts) was read once
+ * the reader's rather than a tab's (the settings, the named layouts) was read once
  * and written whole, so the last window to write took back what the other had just changed.
  */
 export function onSharedWrite(key: string, react: () => void): void {

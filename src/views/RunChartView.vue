@@ -4,7 +4,6 @@ import { storeToRefs } from 'pinia'
 import CandleChart from '@/components/CandleChart.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import ChartNotices from '@/components/runs/ChartNotices.vue'
 import { useChartLayers } from '@/composables/use_chart_layers'
 import { paneGroup } from '@/layer_groups'
@@ -49,9 +48,6 @@ onUnmounted(() => chart.detach())
 
 <template>
   <div class="run-chart-view">
-    <!-- what the shapes mean, once: above the states, so it pushes the chart at mount and never again -->
-    <HintLine id="chart-marks" />
-    <HintLine id="chart-panes" />
     <div v-if="!selectedRunId" class="state-overlay">
       <span class="hint">{{ t('Choose a run to see its trades on the candles') }}</span>
     </div>

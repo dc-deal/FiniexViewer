@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import ScopeMark from '@/components/base/ScopeMark.vue'
@@ -461,11 +460,6 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
       {{ t('trades — the remainder are not drawn, which is not the same as not there') }}
     </p>
 
-    <!-- what the card's slippage is measured against, and where the links go: the one explanation
-         pattern, never a browser tooltip -->
-    <HintLine v-if="selected.length" id="trade-slippage" />
-    <HintLine v-if="selected.length && link.canJumpTo('orders')" id="position-link" />
-    <HintLine v-if="symbols.offered.value" id="symbol-filter" />
     <!-- only where the rows trade two symbols or more: with one there is nothing to choose -->
     <FacetBar
       v-if="symbols.offered.value"

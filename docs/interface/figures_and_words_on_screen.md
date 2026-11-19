@@ -102,24 +102,42 @@ case gets a sentence of its own rather than an `s` joined onto the plural one.
 
 No tool enforces the marker — it is carried by review.
 
-## Hints — one registry, two levels of "go away"
+## Explanations — one registry, three forms
 
-`hint_registry.ts` holds every explanation in ONE list, an id plus a sentence. Central rather than a
-string per component, for two reasons: the texts are the only place the app explains itself and are
-worth reading as a set, and a guided tour is the same data in a sequence — a step is an element plus
-a sentence, which is exactly a row here. An id is stable across releases because it is what a
-permanent dismissal is remembered by.
+`hint_registry.ts` holds every explanation in ONE list: an id, a NAME — what it is about — and the
+text. Central rather than a string per component: the texts are the only place the app explains
+itself and are worth reading as a set, and an explanation that contradicts another is invisible
+while they sit in twenty files.
 
-`hints_store.ts` keeps two levels apart. **Dismiss** means *not now*: it lasts the session and
-writes nothing, so a reader who closed the line by accident is not punished for it. **Ban** means
-*never again* and is the only one persisted, under one versioned key, reconciled on load like every
-other stored preference — an id the registry no longer contains is dropped, or the list only grows
-and a hint reintroduced under an old id returns already banned. The settings dialog resets both,
-because a banned hint has no other way back: the control that banned it disappeared with it.
+**Three forms, and no other** (viewer#24; operator, 2026-11-19). Until then each explanation was a
+line in the layout, `HintLine`, put away with ✕ for the session or with *Never again* for good, and
+a reset in the settings brought the banned ones back. The lines stood until the reader put each one
+away, and the operator found them tiring. What established applications do instead is what the app
+does now:
 
-**The hints of one place stand in ONE box.** `HintLine` takes one id or several, and several share a
-box and its two dismissals — the run bundle once stacked three boxes over its column, nine lines and
-six clicks to clear. Each hint keeps its own id in the store, so one banned on its own stays away in
-the box too, and a hint added to a place later shows there by itself. In a narrow panel the two
-dismissals wrap below the text rather than squeeze it: beside it they left a 240 px panel's text one
-word wide (measured 2026-10-19).
+```
+the ⓘ, pointer resting          the ⓘ, a click                    an empty area
+┌─────────────────────────┐     ┌───────────────────────────┐     ┌──────────────────────────┐
+│ LAYERS                  │     │ LAYERS                    │     │ No order of the unit on   │
+│ Front layer first: drag │     │ Front layer first: drag … │     │ show rested at a price …  │
+│ a layer by its grip …   │     │ ───────────────────────── │     └──────────────────────────┘
+└─────────────────────────┘     │ WORKERS’ LAYERS           │
+                                │ The eye beside a group …  │
+                                └───────────────────────────┘
+```
+
+- **`base/HelpInfo.vue`** — a small ⓘ beside what it explains. While the pointer rests on it (half a
+  second) or the keyboard is on it, a HELP CARD shows the name and the first sentence
+  (`firstSentence`); a click opens the whole text of every explanation of that place. The help card
+  wears an edge in the link role down its left side, so a sentence of help is never taken for a data
+  card's figures; it stands above a dialog, so the settings explain themselves with it too.
+- **`base/EmptyNote.vue`** — why an area is empty, said in that area as a fixed sentence, gone once
+  there is something to show and never put away: the Layers panel's reasons a layer draws nothing.
+- **Where an ⓘ stands** is data, `panel_help.ts`: a panel kind names its explanations, and the ⓘ
+  stands beside the tabs while that panel is in front (`QuickBar`) and in the header of a section in
+  its bundle (`AccordionPanel`) — the same for a section as a panel of its own and in the column. A
+  control with an explanation of its own carries its ⓘ beside it instead: a layer's row in the
+  Layers panel, the run header's flagged lines, the settings' layouts and servers.
+
+Nothing is stored any more: the key `hints.v1` is gone, read by nothing, and no setting resets it.
+A control added since carries its help in the registry (the project's own rule for a new control).

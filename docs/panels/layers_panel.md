@@ -15,8 +15,7 @@ layer* in their glossary.
 Run chart · ETHUSD_aug_sep
 ▾ PRICE PANE                                       ← a pane's group, folded or open
 ⠿ (━●) ▸ Trades                                ◐
-⠿ (━●) ▾ Entry–exit line     pick a position   ◐ 40%
-           💡 what it draws and what its option does      ← a hint, dismissible
+⠿ (━●) ▾ Entry–exit line     pick a position ⓘ ◐ 40%   ← what it draws: behind its ⓘ
            (━●) every position                            ← the option, plain
 ⠿ (●━) ▸ Levels                                ◐   ← switched off: the row grey
   (━●) ▸ Candles                               ◐   ← fixed: no grip, never moved

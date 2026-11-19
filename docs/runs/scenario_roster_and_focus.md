@@ -126,9 +126,9 @@ list entry and the first reader to see it could not tell that clicking did anyth
 was real but happened below the fold, and the two panels nearest the click did not react at all.
 Four things fix that class of problem: the scenario name wears the interactive colour and the row
 has a hover surface; the choice is marked on its rows, beside where the click happens; the column
-is framed and the menu bar says what is chosen; and a `HintLine` says what a click does. The
-hint STAYS after a pick: until 2026-10-14 a line naming the choice replaced it, and the swap moved
-the whole list under the pointer — a pixel with the hint showing, a line once it was dismissed.
+is framed and the menu bar says what is chosen; and the ⓘ in its header says what a click does
+(since 2026-11-19 — a line in the layout did until then). Nothing replaces it after a pick: until
+2026-10-14 a line naming the choice did, and the swap moved the whole list under the pointer.
 
 **Narrowing happens BEFORE the row cap.** Capped first, the first N trades of the whole run would
 be filtered down, and a scenario that traded late would show nothing while the panel claimed it had

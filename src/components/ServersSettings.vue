@@ -5,7 +5,7 @@ import AppButton from '@/components/base/AppButton.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
-import HintLine from '@/components/base/HintLine.vue'
+import HelpInfo from '@/components/base/HelpInfo.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import { serverName, useServersStore } from '@/stores/servers_store'
@@ -140,7 +140,7 @@ function remove(): Promise<void> {
 
 <template>
   <div class="servers">
-    <HintLine id="servers" />
+    <HelpInfo id="servers" class="settings-help" />
     <div class="servers-body">
       <div class="servers-list">
         <RecordList
