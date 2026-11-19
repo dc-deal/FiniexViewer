@@ -125,8 +125,8 @@ by its tab, the way a reader does.
   position marked in the list; the Panels menu opening it on the first unit with trades; the opening
   of a position the run ended with still open marked, though it has no trade; its stretch of time
   kept through its panel given the whole dock and back; marks that would cover
-  each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
-  the chart leaving the whole chart inside its panel; the field study's resting orders drawn on its
+  each other drawn as one when zoomed out and split again when zoomed in, none lost; the whole chart
+  inside its panel, its time axis in view; the field study's resting orders drawn on its
   market's candles, from its own configuration; a link opening the run chart on its timeframe at its
   moment with the address clean after and a reload keeping the stored state, and a link loading the
   layout its run maps to where the layout by run switches (viewer#60); the levels of the position looked at painted

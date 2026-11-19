@@ -156,12 +156,15 @@ test('marks that would cover each other are drawn as one, and split as the reade
   expect(Number(await chart.getAttribute('data-events'))).toBe(21)
 })
 
-/** A line above the chart — the hint on its shapes — takes room from it, never its time axis. */
-test('the hint above the run chart leaves the whole chart inside its panel', async ({ page }) => {
+/**
+ * The whole chart stands inside its panel, its time axis in view. A line above it — the hint on its
+ * shapes, until the explanations moved behind an ⓘ beside the tabs (viewer#24) — once pushed the
+ * axis out of the panel; whatever stands above it may take room from it, never its axis.
+ */
+test('the run chart stands whole inside its panel, its time axis in view', async ({ page }) => {
   await page.setViewportSize({ width: 1800, height: 900 })
   await openWith(page, '/', { run: FIXTURE_RUN })
   const panel = page.locator('[data-panel-kind="run-chart"]')
-  await expect(panel.getByText('a position opened')).toBeVisible()
   const chart = panel.locator('.candle-chart')
   await expect.poll(async () => Number(await chart.getAttribute('data-marks'))).toBeGreaterThan(0)
   const outer = (await panel.boundingBox())!
