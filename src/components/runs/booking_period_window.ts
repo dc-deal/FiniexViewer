@@ -76,13 +76,15 @@ export function clampWindow(window: TimeWindow, scale: TimeWindow): TimeWindow {
 
 /**
  * The preset a window is exactly, inside the scale — the one its control then shows as chosen. A
- * window dragged free, or cut at the scale's edge, is none.
+ * window dragged free is none. Only an OFFERED preset counts: cut at the scale's edges, a year can
+ * be the very stretch of a quarter (a run from October to the year's end), and naming the year then
+ * marked no control and titled the detail with a year nobody chose (seen 2026-11-19).
  *
  * @param window The window on show.
  * @param scale The stretch the timeline covers.
  */
 export function presetOf(window: TimeWindow, scale: TimeWindow): WindowPreset | null {
-  return WINDOW_PRESETS.find(preset => {
+  return offeredPresets(scale).find(preset => {
     const named = presetIn(preset, window.from, scale)
     return named.from === window.from && named.to === window.to
   }) ?? null

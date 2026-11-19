@@ -43,6 +43,14 @@ describe('booking_period_window', () => {
     expect(presetOf({ from: month.from + DAY, to: month.to + DAY }, YEAR)).toBeNull()
   })
 
+  /** From October to the year's end the cut year IS the cut quarter: only what is offered is named. */
+  it('names the offered preset where a longer one cut at the edges would be the same stretch', () => {
+    const autumn = { from: at('2025-10-13T00:00:00Z'), to: at('2026-10-12T00:00:00Z') }
+    const fourth = presetIn('quarter', autumn.from, autumn)
+    expect(presetIn('year', autumn.from, autumn)).toEqual(fourth)
+    expect(presetOf(fourth, autumn)).toBe('quarter')
+  })
+
   it('offers only the presets shorter than the scale: a frame as long as the whole draws it twice', () => {
     // 364.8 days, the year-long run's span: a year is no shorter, a quarter is
     expect(offeredPresets(YEAR)).toEqual(['quarter', 'month', 'week'])
