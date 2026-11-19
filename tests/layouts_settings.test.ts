@@ -61,7 +61,7 @@ describe('LayoutsSettings', () => {
     useNamedLayoutsStore().load('deploys')
     const wrapper = await settings()
     expect(wrapper.find('[data-layout="backtests"]').text()).toContain('shipped')
-    expect(wrapper.find('[data-layout="deploys"] .layout-check').text()).toBe('✓')
+    expect(wrapper.find('[data-layout="deploys"] .layout-check').find('[data-icon="status-checked"]').exists()).toBe(true)
     expect(wrapper.find('[data-layout="backtests"] .layout-check').text()).toBe('')
     expect(wrapper.find<HTMLInputElement>('.layout-name-input').element.value).toBe('Deploys')
   })
@@ -136,7 +136,7 @@ describe('LayoutsSettings', () => {
     await wrapper.find('form').trigger('submit')
     await flushPromises()
     expect(store.loaded?.name).toBe('Morning review')
-    expect(wrapper.find(`.layout-row[data-layout="${store.loaded!.id}"] .layout-check`).text()).toBe('✓')
+    expect(wrapper.find(`.layout-row[data-layout="${store.loaded!.id}"] .layout-check`).find('[data-icon="status-checked"]').exists()).toBe(true)
   })
 
   it('resets a shipped layout to how it shipped', async () => {

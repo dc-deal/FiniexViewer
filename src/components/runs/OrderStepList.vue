@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import RecordList from '@/components/base/RecordList.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { orderKeyOf } from '@/composables/use_order_steps'
 import { useTickSizes } from '@/composables/use_tick_sizes'
 import { ORDER_REFUSALS, priceAt, utcInstant } from '@/components/runs/report_format'
@@ -151,7 +152,7 @@ const DEFERRED = new Set(['expired', 'cancel_deferred'])
   >
     <template #group="{ group, marker }">
       <span class="step-group">
-        <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+        <span v-if="marker" class="record-marker" aria-hidden="true"><AppIcon :name="marker" /></span>
         {{ orderName(group.rows[0]) }}
         <span class="step-shape">{{ orderShape(group.rows[0]) }}</span>
       </span>

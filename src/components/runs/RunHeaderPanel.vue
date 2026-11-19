@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import HintLine from '@/components/base/HintLine.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import type { ComponentIdentity, RepositoryIdentity, RunHeader, RunInfo } from '@/types/api/report_types'
 import { utcInstant } from '@/components/runs/report_format'
@@ -162,7 +163,7 @@ const hints = computed(() => [
          always on a session, null on a run recorded before contract 45: both state nothing. -->
     <template v-if="served?.features_beyond_venue?.length">
       <dt>{{ t('Beyond the venue') }}</dt>
-      <dd class="flagged">⚠ {{ served.features_beyond_venue.join(' · ') }}</dd>
+      <dd class="flagged"><AppIcon name="status-warning" /> {{ served.features_beyond_venue.join(' · ') }}</dd>
     </template>
 
     <!--
@@ -187,7 +188,7 @@ const hints = computed(() => [
            trusting the figures beside it. False is the ordinary case and states nothing. -->
       <template v-if="served.origin.allow_dirty">
         <dt>{{ t('Uncommitted code allowed') }}</dt>
-        <dd class="flagged">⚠ {{ t('yes') }}</dd>
+        <dd class="flagged"><AppIcon name="status-warning" /> {{ t('yes') }}</dd>
       </template>
 
       <!-- Only when TRUE, and as a plain fact rather than a warning: a session trading real money
@@ -198,7 +199,7 @@ const hints = computed(() => [
            The label is theirs; the session's warning says whether it let anything through. -->
       <template v-if="served.origin.accept_composite_change">
         <dt>{{ t('Changed configuration accepted') }}</dt>
-        <dd class="flagged">⚠ {{ served.origin.accept_composite_change }}</dd>
+        <dd class="flagged"><AppIcon name="status-warning" /> {{ served.origin.accept_composite_change }}</dd>
       </template>
 
       <template v-if="served.origin.first_start">
@@ -226,7 +227,7 @@ const hints = computed(() => [
       <span v-if="repository.branch" class="repo-branch">{{ repository.branch }}</span>
       <!-- a clean tree states nothing beyond its commit: the commit IS the statement -->
       <HoverCard v-if="repository.dirty" :title="t('Changes')" :paths="changeSample(repository)">
-        <span class="flagged" tabindex="0">⚠ {{ changeNote(repository) }}</span>
+        <span class="flagged" tabindex="0"><AppIcon name="status-warning" /> {{ changeNote(repository) }}</span>
       </HoverCard>
       <!-- whether the code can be put back exactly, which is the question the dirtiness raises -->
       <span v-if="repository.dirty && !repository.restorable" class="flagged">

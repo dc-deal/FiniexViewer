@@ -292,7 +292,7 @@ describe('RunChartQuickBar', () => {
     await flushPromises()
     const copied = readLink(new URL(writeText.mock.calls[0]![0] as string).search)!
     expect(copied).toMatchObject({ run: RUN, units: [chart.unit!.name], chart: { timeframe: 'M5', at: Date.parse('2026-10-07T15:30:00Z') / 1000 } })
-    expect(button.text()).toBe('✓')
+    expect(button.find('[data-icon="status-checked"]').exists()).toBe(true)
   })
 
   /** A select is as wide as its widest option: the word stood wider than any timeframe. */

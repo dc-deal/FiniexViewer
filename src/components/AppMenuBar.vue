@@ -133,7 +133,7 @@ useRankedBar(bar)
 
     <DropdownMenuRoot>
       <DropdownMenuTrigger class="menu-bar-trigger" data-rank="4">
-        <AppIcon name="action-panels" class="bar-icon" /><span class="bar-word">{{ t('Panels') }}</span> ▾
+        <AppIcon name="action-panels" class="bar-icon" /><span class="bar-word">{{ t('Panels') }}</span> <AppIcon name="nav-menu" />
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="menu-content" :side-offset="4" align="start">
@@ -143,7 +143,7 @@ useRankedBar(bar)
                 <span class="menu-check" aria-hidden="true" />
                 <AppIcon :name="entry.icon" />
                 <span class="menu-label">{{ entry.title }}</span>
-                <span class="menu-sub-arrow" aria-hidden="true">▸</span>
+                <span class="menu-sub-arrow" aria-hidden="true"><AppIcon name="nav-submenu" /></span>
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuSubContent class="menu-content" :side-offset="2">
@@ -156,7 +156,7 @@ useRankedBar(bar)
                     @update:model-value="toggleKind(kind)"
                     @select="stayOpen"
                   >
-                    <span class="menu-check" aria-hidden="true">{{ isOpen(kind) ? '✓' : '' }}</span>
+                    <span class="menu-check" aria-hidden="true"><AppIcon v-if="isOpen(kind)" name="status-checked" /></span>
                     <AppIcon :name="kind.icon" />
                     <span class="menu-label">{{ kind.menuTitle ?? kind.title }}</span>
                   </DropdownMenuCheckboxItem>
@@ -174,7 +174,7 @@ useRankedBar(bar)
                       @update:model-value="toggleSection(state, membersOf(entry.id)!.bundle)"
                       @select="stayOpen"
                     >
-                      <span class="menu-check" aria-hidden="true">{{ sectionShown(state, membersOf(entry.id)!.bundle) ? '✓' : '' }}</span>
+                      <span class="menu-check" aria-hidden="true"><AppIcon v-if="sectionShown(state, membersOf(entry.id)!.bundle)" name="status-checked" /></span>
                       <AppIcon :name="state.section.icon" />
                       <span class="menu-label">{{ t(state.section.title) }}</span>
                       <span class="menu-place">
@@ -195,7 +195,7 @@ useRankedBar(bar)
               @update:model-value="toggleKind(entry.kind)"
               @select="stayOpen"
             >
-              <span class="menu-check" aria-hidden="true">{{ isOpen(entry.kind) ? '✓' : '' }}</span>
+              <span class="menu-check" aria-hidden="true"><AppIcon v-if="isOpen(entry.kind)" name="status-checked" /></span>
               <AppIcon :name="entry.kind.icon" />
               <span class="menu-label">{{ entry.kind.menuTitle ?? entry.kind.title }}</span>
             </DropdownMenuCheckboxItem>

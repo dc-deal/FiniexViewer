@@ -398,7 +398,7 @@ describe('AdvisoryNotice', () => {
    * the glyph and the sentence — never by hue. This holds the glyph.
    */
   it('carries a glyph, not only a colour, when it warns', () => {
-    expect(mountAdvisory({ strategy_stands: 2 }).find('.mark').text()).toBe('⚠')
+    expect(mountAdvisory({ strategy_stands: 2 }).find('.mark').find('[data-icon="status-warning"]').exists()).toBe(true)
   })
 
   /**
@@ -442,7 +442,8 @@ describe('a session without booked figures', () => {
   /** Contract 50: one that failed before it measured anything says so where its result would stand. */
   it('marks a session that failed before it measured anything, where its result would stand', () => {
     const row = mountSessions([session({ ...notBooked, booking_state: 'failed' })])
-    expect(row.find('.session-failed').text()).toBe('✖ failed')
+    expect(row.find('.session-failed').text()).toBe('failed')
+    expect(row.find('.session-failed').find('[data-icon="status-error"]').exists()).toBe(true)
     expect(row.text()).not.toContain('0.00')
   })
 })
@@ -462,8 +463,10 @@ describe('SessionsTable, what is running now', () => {
   }
 
   it('says the verdict where the ledger has no close yet', () => {
-    expect(table({ run_live: 'current' }).text()).toContain('● recording')
-    expect(table({ run_live: 'stopped' }).text()).toContain('⚠ recording stopped')
+    expect(table({ run_live: 'current' }).text()).toContain('recording')
+    expect(table({ run_live: 'current' }).find('[data-icon="status-recording"]').exists()).toBe(true)
+    expect(table({ run_live: 'stopped' }).text()).toContain('recording stopped')
+    expect(table({ run_live: 'stopped' }).find('[data-icon="status-warning"]').exists()).toBe(true)
     expect(table({}).text()).not.toContain('recording')
   })
 

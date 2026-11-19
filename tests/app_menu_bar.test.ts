@@ -222,8 +222,9 @@ describe('AppMenuBar', () => {
    * order stays in the settings: it is no layout.
    */
   it('offers the Layouts menu right after the Panels menu', () => {
-    const menus = mounted!.findAll('.menu-bar-trigger').map(node => node.text())
-    expect(menus.slice(0, 2)).toEqual(['Panels ▾', 'Layouts ▾'])
+    const menus = mounted!.findAll('.menu-bar-trigger').slice(0, 2)
+    expect(menus.map(node => node.text())).toEqual(['Panels', 'Layouts'])
+    expect(menus.map(node => node.find('[data-icon="nav-menu"]').exists())).toEqual([true, true])
   })
 
   /**

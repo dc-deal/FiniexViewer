@@ -982,7 +982,8 @@ describe('RunHeaderPanel', () => {
       props: { model: headerModel({}, header({ features_beyond_venue: ['stop_loss', 'take_profit'] })) },
     })
     expect(beyond.text()).toContain('Beyond the venue')
-    expect(beyond.find('.flagged').text()).toBe('⚠ stop_loss · take_profit')
+    expect(beyond.find('.flagged').text()).toBe('stop_loss · take_profit')
+    expect(beyond.find('.flagged').find('[data-icon="status-warning"]').exists()).toBe(true)
     expect(beyond.text()).toContain('do not predict a session on that venue')
   })
 

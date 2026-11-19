@@ -978,7 +978,7 @@ describe('CandleChart', () => {
       await nextTick()
       const price = () => wrapper.find('[data-legend="price"]')
       expect(price().findAll('[data-series]')).toHaveLength(2)
-      expect(price().find('[data-action="legend-fold"]').text()).toBe('▾')
+      expect(price().find('[data-action="legend-fold"]').find('[data-icon="status-expanded"]').exists()).toBe(true)
       expect(wrapper.find('[data-legend="rsi_fast"] [data-action="legend-fold"]').exists()).toBe(false)
 
       await price().find('[data-action="legend-fold"]').trigger('click')
@@ -986,7 +986,8 @@ describe('CandleChart', () => {
       await wrapper.setProps({ closedLegends: ['price'] })
       expect(price().findAll('[data-series]')).toHaveLength(0)
       expect(price().find('.legend-line').text()).toContain('O')
-      expect(price().find('[data-action="legend-fold"]').text()).toBe('▸ 2')
+      expect(price().find('[data-action="legend-fold"]').text()).toBe('2')
+      expect(price().find('[data-action="legend-fold"]').find('[data-icon="status-collapsed"]').exists()).toBe(true)
       expect(price().find('[data-action="legend-fold"]').attributes('aria-expanded')).toBe('false')
     })
 

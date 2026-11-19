@@ -115,7 +115,7 @@ describe('sweep_rows', () => {
     expect(pairs['Set']!.value).toBe(SWEEP.base_config)
     expect(pairs['Ranked by']!.value).toContain(`${DETAIL.objective}, `)
     expect(pairs['beyond the venue']).toMatchObject({ tone: 'warning' })
-    expect(pairs['beyond the venue']!.value).toMatch(/^⚠ .*do not predict a session there$/)
+    expect(pairs['beyond the venue']!.value).toMatch(/do not predict a session there$/)
     // no row of a card shares its label, which is its key
     expect(new Set(card.details.map(pair => pair.label)).size).toBe(card.details.length)
     // a ranking not read yet: what the sweep's own row holds stands, and nothing it does not state
@@ -258,7 +258,7 @@ describe('sweep_rows', () => {
   it('names the features of a combination allowed them in its card, and nothing on one allowed none', () => {
     const [row] = combinations({ combinations: [combination({ features_beyond_venue: 'stop_loss,take_profit' })] })
     expect(combinationCard(row!).details.find(pair => pair.label === 'Beyond the venue'))
-      .toEqual({ label: 'Beyond the venue', value: '⚠ stop_loss · take_profit', tone: 'warning' })
+      .toEqual({ label: 'Beyond the venue', value: 'stop_loss · take_profit', tone: 'warning' })
     const [plain] = combinations({ combinations: [combination({ features_beyond_venue: '' })] })
     expect(combinationCard(plain!).details.map(pair => pair.label)).not.toContain('Beyond the venue')
   })

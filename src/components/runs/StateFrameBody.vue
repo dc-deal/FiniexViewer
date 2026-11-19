@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import FigureBlock from '@/components/base/FigureBlock.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import {
   amount, percentFigure, polarity, priceAt, quantity, readingOf, utcInstant,
 } from '@/components/runs/report_format'
@@ -99,7 +100,7 @@ function outputsOf(outputs: Record<string, unknown>): Figure[] {
     class="health"
     :class="{ warning: line.warning }"
   >
-    <span v-if="line.warning" class="glyph">⚠ </span>{{ line.words }}
+    <span v-if="line.warning" class="glyph"><AppIcon name="status-warning" /> </span>{{ line.words }}
   </p>
 
   <div class="blocks">

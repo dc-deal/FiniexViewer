@@ -160,7 +160,7 @@ describe('BookingPeriodsPanel — the reconciliation', () => {
     const wrapper = mountPanel(report({ reconciles: null, run_net_pnl: null, run_total_trades: null }))
     expect(wrapper.text()).toContain('Not checked')
     expect(wrapper.find('.verdict').classes()).not.toContain('agrees')
-    expect(wrapper.find('.verdict-mark').text()).not.toBe('✓')
+    expect(wrapper.find('.verdict-mark [data-icon]').attributes('data-icon')).toBe('status-unchecked')
   })
 
   it('makes an unrun check as loud as a failed one', () => {

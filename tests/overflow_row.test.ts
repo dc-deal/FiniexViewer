@@ -49,7 +49,8 @@ describe('OverflowRow', () => {
     const wrapper = await mountRow()
     expect(cellsOf(wrapper, false)).toEqual(['alpha', 'beta', 'gamma'])
     expect(cellsOf(wrapper, true)).toEqual(['delta', 'epsilon'])
-    expect(wrapper.find('.overflow-more').text()).toBe('+2 ▾')
+    expect(wrapper.find('.overflow-more').text()).toBe('+2')
+    expect(wrapper.find('.overflow-more').find('[data-icon="nav-menu"]').exists()).toBe(true)
     expect(wrapper.emitted('overflow')!.at(-1)).toEqual([2])
   })
 

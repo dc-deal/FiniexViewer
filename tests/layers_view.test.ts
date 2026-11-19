@@ -206,7 +206,7 @@ describe('LayersView', () => {
   /** Dragged by its grip, never a fixed layer: the candles and the volume keep their places at the back. */
   it('offers a grip on every movable layer and none on a fixed one', () => {
     const wrapper = mountOn('run-chart')
-    expect(row(wrapper, 'trades').find('.layer-grip').text()).toBe('⠿')
+    expect(row(wrapper, 'trades').find('.layer-grip').find('[data-icon="action-drag"]').exists()).toBe(true)
     expect(row(wrapper, 'candles').find('.layer-grip').text()).toBe('')
     expect(row(wrapper, 'volume').find('.layer-grip').text()).toBe('')
   })
@@ -456,7 +456,7 @@ describe('LayersView', () => {
       await wrapper.vm.$nextTick()
       expect(row(wrapper, onCandles).find('.layer-options').text()).not.toContain('What a worker of the strategy computed')
       expect(row(wrapper, onCandles).find('[data-fact="plots"]').exists()).toBe(true)
-      expect(row(wrapper, onCandles).find('.layer-marker').text()).toBe('▾')
+      expect(row(wrapper, onCandles).find('.layer-marker').find('[data-icon="status-expanded"]').exists()).toBe(true)
     })
 
     /**

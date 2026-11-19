@@ -5,6 +5,7 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import AppButton from '@/components/base/AppButton.vue'
 import AppDialog from '@/components/base/AppDialog.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import LayoutsSettings from '@/components/LayoutsSettings.vue'
 import ServersSettings from '@/components/ServersSettings.vue'
 import { useHintsStore } from '@/stores/hints_store'
@@ -34,8 +35,8 @@ watch(() => props.open, isOpen => {
 })
 
 const themeOptions = [
-  { value: 'dark', label: `🌙 ${t('Dark')}` },
-  { value: 'light', label: `☀️ ${t('Light')}` },
+  { value: 'dark', label: t('Dark') },
+  { value: 'light', label: t('Light') },
 ]
 
 const laneOrderOptions = [
@@ -57,7 +58,7 @@ function onNumber(event: Event, apply: (value: number) => void): void {
        very buttons the reader is about to press, so the tallest tab sets the height -->
   <AppDialog
     :open="open"
-    :title="`⚙️ ${t('Settings')}`"
+    :title="t('Settings')"
     name="settings"
     height="min(38rem, 80vh)"
     width="min(46rem, 90vw)"
@@ -65,9 +66,9 @@ function onNumber(event: Event, apply: (value: number) => void): void {
   >
     <TabsRoot v-model="activeTab" class="settings-tabs">
       <TabsList class="tab-list">
-        <TabsTrigger value="display" class="tab-trigger">🎚️ {{ t('Display') }}</TabsTrigger>
-        <TabsTrigger value="layouts" class="tab-trigger">🗂️ {{ t('Layouts') }}</TabsTrigger>
-        <TabsTrigger value="servers" class="tab-trigger">🖧 {{ t('Servers') }}</TabsTrigger>
+        <TabsTrigger value="display" class="tab-trigger"><AppIcon name="nav-display" /> {{ t('Display') }}</TabsTrigger>
+        <TabsTrigger value="layouts" class="tab-trigger"><AppIcon name="action-layouts" /> {{ t('Layouts') }}</TabsTrigger>
+        <TabsTrigger value="servers" class="tab-trigger"><AppIcon name="status-server" /> {{ t('Servers') }}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="servers" class="tab-panel">

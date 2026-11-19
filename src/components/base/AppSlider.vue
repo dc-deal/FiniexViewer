@@ -3,6 +3,7 @@ import {
   PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger, SliderRange, SliderRoot, SliderThumb, SliderTrack,
 } from 'reka-ui'
 import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 
 /**
  * A share in percent along a scale — a layer's opacity — set by a lever that opens from its handle
@@ -40,7 +41,7 @@ function moved(values: number[] | undefined): void {
   <PopoverRoot>
     <PopoverTrigger as-child>
       <AppButton class="slider-handle" size="compact" variant="quiet" glyph :aria-label="`${label}: ${modelValue} %`" v-bind="$attrs">
-        <span aria-hidden="true">◐</span>
+        <AppIcon name="action-level" />
         <span class="slider-handle-value">{{ modelValue < max ? `${modelValue}%` : '' }}</span>
       </AppButton>
     </PopoverTrigger>

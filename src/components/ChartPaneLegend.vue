@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { legendFolds } from '@/components/chart_legend'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { t } from '@/translate'
 import type { PaneLegend } from '@/types/chart_pane_types'
 
@@ -63,7 +64,7 @@ const folds = computed(() => legendFolds(props.legend))
         :aria-label="closed ? t('Show the lines of the series') : t('Fold the lines of the series away')"
         data-action="legend-fold"
         @click="emit('toggle')"
-      >{{ closed ? `▸ ${legend.series.length}` : '▾' }}</button>
+      ><AppIcon :name="closed ? 'status-collapsed' : 'status-expanded'" /><template v-if="closed"> {{ legend.series.length }}</template></button>
     </div>
   </div>
 </template>

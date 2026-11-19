@@ -131,7 +131,7 @@ onUnmounted(() => clearTimeout(copiedTimer))
       @click="dock.reveal('layers', 'command')"
     >
       <!-- what it does is said by the quick bar's hint, never on a browser tooltip -->
-      ≡ <span class="layers-word">{{ t('Layers') }}</span>
+      <AppIcon name="action-layers" /> <span class="layers-word">{{ t('Layers') }}</span>
     </AppButton>
     <!-- what it copies is said by its hint; what came of it, at the button itself, where the click was -->
     <AppButton
@@ -143,7 +143,7 @@ onUnmounted(() => clearTimeout(copiedTimer))
       data-action="copy-link"
       @click="copyLink"
     >
-      <template v-if="copied">{{ copied === 'done' ? '✓' : '✕' }}</template>
+      <AppIcon v-if="copied" :name="copied === 'done' ? 'status-checked' : 'status-error'" />
       <!-- an icon, never the emoji: it takes the button's ink, where the emoji's own grey read as disabled -->
       <AppIcon v-else name="action-copy-link" />
     </AppButton>

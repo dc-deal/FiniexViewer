@@ -13,6 +13,7 @@ import PanelColumn from '@/components/panels/PanelColumn.vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { t } from '@/translate'
 
 /*
@@ -173,7 +174,7 @@ const missingSections = computed(() => {
         <p v-if="!selectedRun.has_reports" class="notice">{{ noReportReason(selectedRun) }}</p>
         <!-- one line per REASON, never one per absent section -->
         <p v-for="missing in missingSections" :key="missing.cause" class="notice absent">
-          <span class="mark">ⓘ</span>
+          <span class="mark"><AppIcon name="action-info" /></span>
           <span>
             <strong>{{ missing.sections.join(' · ') }}</strong>
             <template v-if="missing.detail"> — {{ missing.detail }}</template>

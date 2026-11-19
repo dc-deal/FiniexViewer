@@ -47,12 +47,12 @@ test('past the threshold the groups start closed and a click opens one', async (
   await openTradeHistory(page)
 
   const group = page.locator('.trade-history .record-group').first()
-  await expect(group.locator('.record-marker')).toHaveText('▸')
+  await expect(group.locator('.record-marker [data-icon]')).toHaveAttribute('data-icon', 'status-collapsed')
   expect(await tradeRows(page).count()).toBe(0)
 
   await group.click()
 
-  await expect(group.locator('.record-marker')).toHaveText('▾')
+  await expect(group.locator('.record-marker [data-icon]')).toHaveAttribute('data-icon', 'status-expanded')
   expect(await tradeRows(page).count()).toBeGreaterThan(0)
 })
 
@@ -61,12 +61,12 @@ test('below the threshold they start open and a click closes one', async ({ page
   await openTradeHistory(page)
 
   const group = page.locator('.trade-history .record-group').first()
-  await expect(group.locator('.record-marker')).toHaveText('▾')
+  await expect(group.locator('.record-marker [data-icon]')).toHaveAttribute('data-icon', 'status-expanded')
   const before = await tradeRows(page).count()
 
   await group.click()
 
-  await expect(group.locator('.record-marker')).toHaveText('▸')
+  await expect(group.locator('.record-marker [data-icon]')).toHaveAttribute('data-icon', 'status-collapsed')
   expect(await tradeRows(page).count()).toBeLessThan(before)
 })
 
@@ -76,10 +76,10 @@ test('a unit closed by hand stays closed across a reload', async ({ page }) => {
   await openTradeHistory(page)
   const group = page.locator('.trade-history .record-group').first()
   await group.click()
-  await expect(group.locator('.record-marker')).toHaveText('▸')
+  await expect(group.locator('.record-marker [data-icon]')).toHaveAttribute('data-icon', 'status-collapsed')
 
   await page.reload()
-  await expect(page.locator('.trade-history .record-group').first().locator('.record-marker')).toHaveText('▸')
+  await expect(page.locator('.trade-history .record-group').first().locator('.record-marker [data-icon]')).toHaveAttribute('data-icon', 'status-collapsed')
 })
 
 /**

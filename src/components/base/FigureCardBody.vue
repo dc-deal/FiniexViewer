@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import PathLabel from '@/components/base/PathLabel.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import type { Figure } from '@/types/figure_types'
 
 /**
@@ -24,7 +25,7 @@ defineProps<{
          every caveat handed to a card was dropped in silence -->
     <template v-for="row in details" :key="row.label">
       <dt :title="row.title">{{ row.label }}</dt>
-      <dd :class="row.tone" :title="row.title">{{ row.value }}</dd>
+      <dd :class="row.tone" :title="row.title"><template v-if="row.tone === 'warning'"><AppIcon name="status-warning" /> </template>{{ row.value }}</dd>
     </template>
   </dl>
   <!-- the card shows each whole, so no browser tooltip is to repeat it: this overrides the label's own -->

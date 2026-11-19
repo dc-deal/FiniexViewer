@@ -59,10 +59,10 @@ watch(() => props.resetOn, () => {
   >
     <div class="panel-header">
       <CollapsibleTrigger class="panel-trigger">
-        <span class="panel-chevron" :class="{ expanded: open }">▸</span>
+        <span class="panel-chevron" :class="{ expanded: open }"><AppIcon name="status-collapsed" /></span>
         <AppIcon :name="icon" />
         <span class="panel-title">{{ t(title) }}</span>
-        <span v-if="failed" class="panel-failed-mark" :title="t('This section could not be drawn')">⚠</span>
+        <span v-if="failed" class="panel-failed-mark" :title="t('This section could not be drawn')"><AppIcon name="status-warning" /></span>
       </CollapsibleTrigger>
       <!-- controls appear on hover, and on focus so they stay keyboard-reachable -->
       <div class="panel-controls">
@@ -81,21 +81,21 @@ watch(() => props.resetOn, () => {
           :class="{ active: pinned }"
           :title="t('Pin to top')"
           @click="emit('toggle-pin')"
-        >📌</button>
+        ><AppIcon name="action-pin" /></button>
         <button
           class="panel-control"
           :class="{ active: locked }"
           :title="t('Keep open')"
           @click="emit('toggle-lock')"
-        >🔒</button>
-        <button class="panel-control" :title="t('Hide panel')" @click="emit('hide')">✕</button>
+        ><AppIcon name="action-keep-open" /></button>
+        <button class="panel-control" :title="t('Hide panel')" @click="emit('hide')"><AppIcon name="action-close" /></button>
       </div>
     </div>
     <CollapsibleContent class="panel-content">
       <!-- the slot is not rendered again after it threw: the same input produces the same throw,
            and a panel that re-enters its own failure loops -->
       <p v-if="failed" class="panel-failed">
-        <span class="mark" aria-hidden="true">⚠</span>
+        <span class="mark" aria-hidden="true"><AppIcon name="status-warning" /></span>
         <span>{{ t('This section could not be drawn. The rest of the report is unaffected.') }}</span>
       </p>
       <slot v-else />

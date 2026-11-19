@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { DeploymentAdvisory } from '@/types/api/deployment_types'
 import { plural, t } from '@/translate'
+import AppIcon from '@/components/base/AppIcon.vue'
 
 /**
  * Says that the sessions below may NOT be read as one series. The backend sends counts, not
@@ -41,7 +42,7 @@ const sentence = computed(() => [
   <span class="advisory" :title="sentence">
     <!-- the glyph, not the colour, is what carries "warning": a dark yellow and a dark red are
          inseparable under red-green colour blindness in the light theme -->
-    <span class="mark">⚠</span>
+    <span class="mark"><AppIcon name="status-warning" /></span>
     {{ stands.join(' · ') }}<template v-if="mixed"> · {{ t('real money and simulated orders') }}</template>
     — {{ t('not one series') }}
   </span>

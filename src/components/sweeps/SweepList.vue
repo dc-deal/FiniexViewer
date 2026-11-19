@@ -176,7 +176,7 @@ function choose(row: SweepListRow): void {
            where the ranking compares unlike things, a word saying so -->
       <template #group="{ group, marker }">
         <span class="sweep-head" :data-sweep="group.key">
-          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+          <span v-if="marker" class="record-marker" aria-hidden="true"><AppIcon :name="marker" /></span>
           <span class="sweep-when">{{ startedAt(group.rows[0]!.sweep.started) || t('no date') }}</span>
           <span class="sweep-id">{{ group.key }}</span>
           <span class="sweep-meta">
@@ -206,7 +206,7 @@ function choose(row: SweepListRow): void {
             :data-rank="1"
             class="figure-cell place"
             :class="{ best: row.first }"
-          >{{ row.place }}<template v-if="row.first"> ★</template></span>
+          >{{ row.place }}<template v-if="row.first"> <AppIcon name="status-best" /></template></span>
           <span :data-rank="1">{{ parametersText(row.combination) }}</span>
           <span :data-rank="1" class="figure-cell objective">{{ objectiveFigure(row) }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.combination.net_pnl)">

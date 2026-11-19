@@ -7,6 +7,7 @@ import AppSwitch from '@/components/base/AppSwitch.vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
 import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { serverName, useServersStore } from '@/stores/servers_store'
 import type { ServerProbe } from '@/api/servers_api'
 import type { Figure } from '@/types/figure_types'
@@ -224,12 +225,12 @@ function remove(): Promise<void> {
           </AppButton>
         </div>
 
-        <p v-if="problem" class="server-problem">⚠ {{ problem }}</p>
+        <p v-if="problem" class="server-problem"><AppIcon name="status-warning" /> {{ problem }}</p>
         <p v-if="probe && !probe.connected" class="server-problem" data-state="no-connection">
-          ⚠ {{ t('No connection to this server: tunnel or host') }}
+          <AppIcon name="status-warning" /> {{ t('No connection to this server: tunnel or host') }}
         </p>
         <p v-if="probe?.tokenRefused" class="server-problem" data-state="token-refused">
-          ⚠ {{ t('The server answers and does not accept this token') }}
+          <AppIcon name="status-warning" /> {{ t('The server answers and does not accept this token') }}
         </p>
         <FigureBlock v-if="probeFigures.length" :figures="probeFigures" />
       </form>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 
 /**
  * Any JSON value as a collapsible tree.
@@ -51,7 +52,7 @@ const leafKind = computed(() => (props.value === null ? 'null' : typeof props.va
 <template>
   <div class="node" :style="{ '--depth': depth }">
     <button v-if="branch" class="row toggle" :aria-expanded="open" @click="open = !open">
-      <span class="caret">{{ open ? '▾' : '▸' }}</span>
+      <span class="caret"><AppIcon :name="open ? 'status-expanded' : 'status-collapsed'" /></span>
       <span class="key">{{ name || '/' }}</span>
       <span class="summary">{{ summary }}</span>
     </button>

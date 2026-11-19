@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import { rowKey } from '@/api/list_key'
 import { bookedAmount, drawdownFigure, duration, orDash, signClass, utcInstant } from '@/components/runs/report_format'
@@ -232,7 +233,7 @@ function gap(session: DeploymentSessionRow): string {
           class="session-live"
           @click="openRun(session.run_id, 'latest-state')"
         >
-          {{ recordingOf('current').glyph }}
+          <AppIcon :name="recordingOf('current').icon!" />
         </JumpLink>
       </span>
       <span :data-rank="2">{{ utcInstant(session.started) }}</span>
@@ -244,14 +245,14 @@ function gap(session: DeploymentSessionRow): string {
         class="figure-cell"
         :class="`recording-${recordings[session.run_id]}`"
       >
-        {{ recordingOf(recordings[session.run_id]!).glyph }} {{ recordingOf(recordings[session.run_id]!).word }}
+        <AppIcon v-if="recordingOf(recordings[session.run_id]!).icon" :name="recordingOf(recordings[session.run_id]!).icon!" /> {{ recordingOf(recordings[session.run_id]!).word }}
       </span>
       <span v-else :data-rank="3" class="figure-cell">{{ orDash(session.ran_hours, duration) }}</span>
       <span :data-rank="3" class="figure-cell">{{ gap(session) }}</span>
       <!-- a session that failed before it measured anything says so where its result would stand
            (`booking_state`, contract 50): a dash there reads like one not booked yet, which still will -->
       <span v-if="session.booking_state === 'failed'" :data-rank="1" class="figure-cell session-failed">
-        ✖ {{ t('failed') }}
+        <AppIcon name="status-error" /> {{ t('failed') }}
       </span>
       <span v-else :data-rank="1" class="figure-cell" :class="signClass(session.net_pnl)">
         {{ bookedAmount(session.net_pnl, session.currency) }}

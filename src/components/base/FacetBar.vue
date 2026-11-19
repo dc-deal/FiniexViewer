@@ -210,7 +210,7 @@ function stayOpen(event: Event): void {
                      operator picked a value and the chips behind it moved. Same symptom as the facet
                      that used to be dropped, a second cause — the bar must not move when it is used. -->
                 <span class="facet-badge">{{ pickedCount(entry.facet.id) || '' }}</span>
-                <span class="facet-caret">▾</span>
+                <span class="facet-caret"><AppIcon name="nav-menu" /></span>
               </AppButton>
             </PopoverTrigger>
             <PopoverPortal>
@@ -222,7 +222,7 @@ function stayOpen(event: Event): void {
                   :class="{ chosen: option.active }"
                   @click="toggle(entry.facet.id, option.value)"
                 >
-                  <span class="facet-mark">{{ option.active ? '☑' : '☐' }}</span>
+                  <span class="facet-mark"><AppIcon :name="option.active ? 'status-ticked' : 'status-unticked'" /></span>
                   <span class="facet-value">{{ option.value }}</span>
                   <span class="facet-count">{{ option.count }}</span>
                 </button>
@@ -241,7 +241,7 @@ function stayOpen(event: Event): void {
             >
               <span class="menu-label">{{ t(entry.facet.label) }}</span>
               <span class="facet-badge">{{ pickedCount(entry.facet.id) || '' }}</span>
-              <span class="menu-sub-arrow" aria-hidden="true">▸</span>
+              <span class="menu-sub-arrow" aria-hidden="true"><AppIcon name="nav-submenu" /></span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent class="menu-content facet-menu-values" :side-offset="2">
@@ -253,7 +253,7 @@ function stayOpen(event: Event): void {
                   @update:model-value="toggle(entry.facet.id, option.value)"
                   @select="stayOpen"
                 >
-                  <span class="menu-check" aria-hidden="true">{{ option.active ? '✓' : '' }}</span>
+                  <span class="menu-check" aria-hidden="true"><AppIcon v-if="option.active" name="status-checked" /></span>
                   <span class="menu-label">{{ option.value }}</span>
                   <span class="facet-menu-count">{{ option.count }}</span>
                 </DropdownMenuCheckboxItem>
@@ -274,7 +274,7 @@ function stayOpen(event: Event): void {
         :inert="!narrowed || undefined"
         @click="clear()"
       >
-        ✕ {{ t('clear') }}
+        <AppIcon name="action-clear" /> {{ t('clear') }}
       </AppButton>
 
       <!-- the count is the honest half of a filter: it says what is NOT being shown -->
@@ -288,7 +288,7 @@ function stayOpen(event: Event): void {
           <AppButton class="facet-sort-trigger" size="compact">
             {{ t('Sort') }}:
             <span class="facet-sort-value" :style="{ minWidth: sortWidth }">{{ t(sortLabel) }}</span>
-            <span class="facet-caret">▾</span>
+            <span class="facet-caret"><AppIcon name="nav-menu" /></span>
           </AppButton>
         </DropdownMenuTrigger>
         <DropdownMenuPortal>
@@ -300,7 +300,7 @@ function stayOpen(event: Event): void {
                 :value="option.id"
                 class="menu-item facet-sort"
               >
-                <span class="menu-check" aria-hidden="true">{{ option.id === sort ? '✓' : '' }}</span>
+                <span class="menu-check" aria-hidden="true"><AppIcon v-if="option.id === sort" name="status-checked" /></span>
                 <span class="menu-label">{{ t(option.label) }}</span>
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>

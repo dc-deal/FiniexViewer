@@ -527,7 +527,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
       -->
       <template #outer="{ group, marker }">
         <span class="group-name" :title="group.key">
-          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+          <span v-if="marker" class="record-marker" aria-hidden="true"><AppIcon :name="marker" /></span>
           {{ group.key }}
           <span class="group-meta">
             <!--
@@ -588,7 +588,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
       -->
       <template #group="{ group, marker }">
         <span class="position-name" :title="group.key">
-          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+          <span v-if="marker" class="record-marker" aria-hidden="true"><AppIcon :name="marker" /></span>
           <!-- a LINK only where there is somewhere to go: a position that produced no trade, and
                a run that serves no trade history, both draw the id as the plain text it is -->
           <JumpLink

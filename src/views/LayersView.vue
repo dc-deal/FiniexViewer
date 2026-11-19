@@ -6,6 +6,7 @@ import AppButton from '@/components/base/AppButton.vue'
 import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import HintLine from '@/components/base/HintLine.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { holdsValues, plotSample, seriesTitle } from '@/components/indicator_drawing'
 import { strategyOf } from '@/components/runs/config_shape'
 import VisibilityEye from '@/components/VisibilityEye.vue'
@@ -351,7 +352,7 @@ function toggle(row: LayerState): void {
             data-action="fold-pane"
             @click="toggleFold(group.pane)"
           >
-            <span class="layer-marker" aria-hidden="true">{{ isOpen(group.pane) ? '▾' : '▸' }}</span>
+            <span class="layer-marker" aria-hidden="true"><AppIcon :name="isOpen(group.pane) ? 'status-expanded' : 'status-collapsed'" /></span>
             <span>{{ group.title }}</span>
           </button>
           <VisibilityEye
@@ -375,7 +376,7 @@ function toggle(row: LayerState): void {
             data-action="fold-framework"
             @click="toggleSource(group.pane, 'framework')"
           >
-            <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, 'framework') ? '▾' : '▸' }}</span>
+            <span class="layer-marker" aria-hidden="true"><AppIcon :name="sourceOpen(group.pane, 'framework') ? 'status-expanded' : 'status-collapsed'" /></span>
             <span>{{ t('Framework') }}</span>
           </button>
           <VisibilityEye
@@ -414,7 +415,7 @@ function toggle(row: LayerState): void {
         >
           <div class="layer-row">
             <!-- a fixed layer keeps the grip's room, so every row's controls stand in one column -->
-            <span class="layer-grip" aria-hidden="true">{{ layerDefinition(row.id).fixed ? '' : '⠿' }}</span>
+            <span class="layer-grip" aria-hidden="true"><AppIcon v-if="!layerDefinition(row.id).fixed" name="action-drag" /></span>
             <AppSwitch
               compact
               :model-value="row.shown"
@@ -430,7 +431,7 @@ function toggle(row: LayerState): void {
               data-action="open"
               @click="toggle(row)"
             >
-              <span class="layer-marker" aria-hidden="true">{{ openable(row) ? opened.has(row.id) ? '▾' : '▸' : '' }}</span>
+              <span class="layer-marker" aria-hidden="true"><AppIcon v-if="openable(row)" :name="opened.has(row.id) ? 'status-expanded' : 'status-collapsed'" /></span>
               <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
               <span class="layer-summary">{{ summary(row) }}</span>
             </button>
@@ -506,7 +507,7 @@ function toggle(row: LayerState): void {
             data-action="fold-workers"
             @click="toggleSource(group.pane, 'workers')"
           >
-            <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, 'workers') ? '▾' : '▸' }}</span>
+            <span class="layer-marker" aria-hidden="true"><AppIcon :name="sourceOpen(group.pane, 'workers') ? 'status-expanded' : 'status-collapsed'" /></span>
             <span>{{ t('Workers') }}</span>
           </button>
           <VisibilityEye
@@ -527,7 +528,7 @@ function toggle(row: LayerState): void {
               data-action="fold-worker"
               @click="toggleSource(group.pane, `worker:${source.worker}`)"
             >
-              <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, `worker:${source.worker}`) ? '▾' : '▸' }}</span>
+              <span class="layer-marker" aria-hidden="true"><AppIcon :name="sourceOpen(group.pane, `worker:${source.worker}`) ? 'status-expanded' : 'status-collapsed'" /></span>
               <span>{{ source.worker }}</span>
             </button>
             <VisibilityEye
@@ -570,7 +571,7 @@ function toggle(row: LayerState): void {
                   data-action="open"
                   @click="toggleServed(layer)"
                 >
-                  <span class="layer-marker" aria-hidden="true">{{ openedServed.has(layer.entry.layer) ? '▾' : '▸' }}</span>
+                  <span class="layer-marker" aria-hidden="true"><AppIcon :name="openedServed.has(layer.entry.layer) ? 'status-expanded' : 'status-collapsed'" /></span>
                   <!-- the timeframe the worker was served, in a column of its own: head information,
                        never cut by a long name (operator, 2026-11-14) — the series' own, as served -->
                   <span class="layer-timeframe">{{ layer.entry.timeframe }}</span>

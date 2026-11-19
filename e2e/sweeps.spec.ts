@@ -28,7 +28,8 @@ test('a sweep opened in the Sweeps panel shows its combinations as ranked, and o
   const panel = page.locator('[data-panel-kind="sweeps"]')
   await panel.locator(`.sweep-list .record-group:has([data-sweep="${detail.sweep_id}"])`).click()
   await expect(panel.locator('.sweep-list .run-id')).toHaveText(detail.combinations.map(row => row.run_id))
-  await expect(panel.locator('.sweep-list .place').first()).toHaveText('1 ★')
+  await expect(panel.locator('.sweep-list .place').first()).toHaveText('1')
+  await expect(panel.locator('.sweep-list .place').first().locator('[data-icon="status-best"]')).toBeVisible()
 
   const second = detail.combinations[1]!.run_id
   await panel.locator('.sweep-list button.record-row').nth(1).click()

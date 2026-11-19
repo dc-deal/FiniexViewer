@@ -793,9 +793,9 @@ describe('OrdersPanel', () => {
       // ONE glyph. The list draws it for every disclosure heading, so a panel that also writes
       // its own puts two triangles on the line.
       expect(heading().findAll('.record-marker')).toHaveLength(1)
-      expect(heading().find('.record-marker').text()).toBe('▸')
+      expect(heading().find('.record-marker [data-icon]').attributes('data-icon')).toBe('status-collapsed')
       await openPosition(wrapper)
-      expect(heading().find('.record-marker').text()).toBe('▾')
+      expect(heading().find('.record-marker [data-icon]').attributes('data-icon')).toBe('status-expanded')
       expect(heading().attributes('aria-expanded')).toBe('true')
     })
 
@@ -976,7 +976,7 @@ describe('OrdersPanel', () => {
       await wrapper.findAll('.step-list .record-group')[0]!.trigger('click')
       // the first order's two steps are away, the second order's one remains
       expect(wrapper.findAll('.step-list .record-row')).toHaveLength(1)
-      expect(wrapper.findAll('.step-group')[0]!.text()).toContain('▸')
+      expect(wrapper.findAll('.step-group')[0]!.find('[data-icon="status-collapsed"]').exists()).toBe(true)
     })
 
     it('offers a way to close everything, and only while something is open', async () => {

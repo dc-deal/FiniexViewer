@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
 import ScopeMark from '@/components/base/ScopeMark.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import {
   SPREAD_NOT_RECORDED, amount, modelledSpreadFigures, numberOrNa, percentFigure, signClass, spreadFigure,
 } from '@/components/runs/report_format'
@@ -165,7 +166,7 @@ function holdings(row: AggregatedCurrency): Figure[] {
            and the backend says so with `is_mixed`. Silent otherwise, because one model is the
            ordinary case and has nothing to caveat. -->
       <p v-if="row.is_mixed" class="notice">
-        <span class="mark">⚠</span>
+        <span class="mark"><AppIcon name="status-warning" /></span>
         {{ t('This currency holds margin and spot accounts together — the figures below fold two account models into one') }}
       </p>
 

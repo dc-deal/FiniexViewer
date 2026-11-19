@@ -432,7 +432,7 @@ describe('RecordList — a row as the heading', () => {
     expect(wrapper.findAll('.record-group').map(heading => heading.text())).toEqual(['beta'])
     expect(wrapper.findAll('.record-row').map(row => row.text())).toEqual(['alpha3'])
     const fold = wrapper.find('[data-action="fold"]')
-    expect(fold.text()).toBe('▸ 1 earlier')
+    expect(fold.text()).toBe('status-collapsed 1 earlier')
     expect(fold.attributes('aria-expanded')).toBe('false')
   })
 

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { percentFigure } from '@/components/runs/report_format'
 import type { Figure } from '@/types/figure_types'
 import type { ListColumn } from '@/types/list_types'
@@ -183,7 +184,7 @@ function swap(symbol: BrokerSymbol): string {
     <!-- the advisory, and ONLY where there is something to advise: one broker is the ordinary case
          and has nothing to say about comparability -->
     <p v-if="several" class="notice">
-      <span class="mark">⚠</span>
+      <span class="mark"><AppIcon name="status-warning" /></span>
       {{ plural(model.units.length, t('broker'), t('brokers')) }}
       {{ t('in one run — the scenarios did not trade on comparable terms') }}
       <template v-if="differences.length">: {{ differences.join(' · ') }}</template>
