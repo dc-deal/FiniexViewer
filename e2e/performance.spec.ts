@@ -224,6 +224,35 @@ for (const cap of [500, 5000]) {
 }
 
 /**
+ * A year of daily booking periods (viewer#48): 365 built from the captured first one, a day each — the
+ * overview frames a stretch and the detail beneath draws it apart. From the section opened until the
+ * detail's first period stands.
+ */
+test('a year of booking periods is framed and drawn apart quickly', async ({ page }) => {
+  const captured = fixture('run_booking_periods.json') as { periods: { opened_at: string, period_no: number }[] }
+  const first = captured.periods[0]!
+  const day = (count: number) => new Date(Date.parse(first.opened_at) + count * 86_400_000).toISOString()
+  const periods = Array.from({ length: 365 }, (_, at) => ({
+    ...first, period_no: first.period_no + at, opened_at: day(at), closed_at: day(at + 1),
+  }))
+  await page.route(`**/api/v1/reports/runs/${FIXTURE_RUN}/booking-periods`, route =>
+    route.fulfill({ json: { ...captured, periods } }))
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const trigger = page.locator('.panel-trigger', { hasText: 'Booking periods' })
+  await trigger.waitFor()
+  // closed first, so the figure is the opening and not a section drawn at load
+  if ((await trigger.getAttribute('aria-expanded')) === 'true') await trigger.click()
+  const detail = page.locator('[data-panel="booking-periods"] .booking-timeline .timeline').nth(1)
+
+  const ms = await timed('booking periods — a year drawn apart', async () => {
+    await trigger.click()
+    await detail.locator('.span').first().waitFor({ timeout: 30_000 })
+  })
+  expect(ms).toBeLessThan(5000)
+})
+
+/**
  * The run chart since it draws for itself (viewer#41): its own drawing host places and paints every
  * layer on each move of the view, where the library's markers did that inside the library. Two
  * figures, on the fixture's busiest unit — 21 events over 1,075 bars: a unit chosen until its marks
