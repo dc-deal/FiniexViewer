@@ -162,8 +162,9 @@ describe('LayersView', () => {
     expect(wrapper.find('.layer-options').exists()).toBe(false)
     await row(wrapper, 'levels').find('[data-action="open"]').trigger('click')
     expect(row(wrapper, 'levels').find('[data-action="open"]').attributes('aria-expanded')).toBe('true')
-    expect(row(wrapper, 'levels').find('[data-help]').attributes('data-help-ids')).toBe('layer-levels')
-    expect(row(wrapper, 'levels').find('.layer-options [data-help]').exists()).toBe(false)
+    // the whole text behind the ⓘ of the opened row, and no mark in the row itself to cut its name
+    expect(row(wrapper, 'levels').find('.layer-options [data-help]').attributes('data-help-ids')).toBe('layer-levels')
+    expect(row(wrapper, 'levels').find('.layer-row [data-help]').exists()).toBe(false)
     expect(row(wrapper, 'levels').find('[data-action="front"]').exists()).toBe(false)
     await row(wrapper, 'levels').find('[data-action="option"]').trigger('click')
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ options: { 'every-position': true } })
@@ -444,12 +445,13 @@ describe('LayersView', () => {
       expect(wrapper.text()).toContain('A worker\'s series stands on its own timeframe and every finer one')
     })
 
-    /** What a worker's row is stands behind its mark; opened, the row shows its worker and plots. */
+    /** What a worker's row is stands behind the mark of its opened row, beside its worker and plots. */
     it('explains a worker\'s row behind its mark, and opens onto its facts', async () => {
       const wrapper = mountWithSeries()
       const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
       await row(wrapper, onCandles).find('[data-action="open"]').trigger('click')
-      expect(row(wrapper, onCandles).find('[data-help]').attributes('data-help-ids')).toBe('layer-indicator')
+      expect(row(wrapper, onCandles).find('.layer-options [data-help]').attributes('data-help-ids')).toBe('layer-indicator')
+      expect(row(wrapper, onCandles).find('.layer-row [data-help]').exists()).toBe(false)
       expect(row(wrapper, onCandles).find('.layer-options').text()).not.toContain('What a worker of the strategy computed')
       expect(row(wrapper, onCandles).find('[data-fact="plots"]').exists()).toBe(true)
       expect(row(wrapper, onCandles).find('.layer-marker').find('[data-icon="status-expanded"]').exists()).toBe(true)

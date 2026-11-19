@@ -1,6 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
+import { defineComponent, h } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import HelpInfo from '@/components/base/HelpInfo.vue'
+import HelpTip from '@/components/base/HelpTip.vue'
 import EmptyNote from '@/components/base/EmptyNote.vue'
 import AccordionPanel from '@/components/panels/AccordionPanel.vue'
 import QuickBar from '@/components/dock/QuickBar.vue'
@@ -9,8 +11,9 @@ import { helpedKinds, helpFor } from '@/panel_help'
 import { panelKind } from '@/panel_kinds'
 
 /**
- * The three forms an explanation takes (viewer#24; operator, 2026-11-19): a help card on an ⓘ, the
- * whole text at a click, and the fixed sentence of an empty area — nothing in the layout to put away.
+ * The three forms an explanation takes (viewer#24; operator, 2026-11-19): a help card on an ⓘ or on
+ * the control itself, the whole text at a click, and the fixed sentence of an empty area — nothing in
+ * the layout to put away.
  */
 describe('explanations', () => {
   afterEach(() => {
@@ -45,6 +48,27 @@ describe('explanations', () => {
     expect(entries.map(entry => entry.dataset['helpEntry'])).toEqual(['layers', 'layer-workers'])
     expect(entries[0]!.textContent).toContain(hintById('layers')!.text)
     wrapper.unmount()
+  })
+
+  /** A row of controls in a narrow panel: a mark in every row cut the layers' names to four letters. */
+  it('puts the help card on the control itself, adding no element, and leaves it plain for an unknown id', async () => {
+    const around = (id: string) => mount(defineComponent({
+      render: () => h(HelpTip, { id }, { default: () => h('button', { type: 'button', class: 'control' }, 'Levels') }),
+    }), { attachTo: document.body })
+    // the control stands alone in the element it is mounted into: nothing wraps it
+    const alone = (wrapper: ReturnType<typeof around>) => wrapper.find('.control').element.parentElement!.childElementCount
+    const wrapper = around('layer-levels')
+    expect(alone(wrapper)).toBe(1)
+    await wrapper.find('.control').trigger('focus')
+    await flushPromises()
+    const card = document.querySelector<HTMLElement>('[data-help-tip="layer-levels"]')
+    expect(card?.querySelector('.help-name')?.textContent).toBe(hintById('layer-levels')!.name)
+    expect(card?.querySelector('.help-sentence')?.textContent).toBe(firstSentence(hintById('layer-levels')!.text))
+    wrapper.unmount()
+    const plain = around('no-such-hint')
+    expect(alone(plain)).toBe(1)
+    expect(plain.find('.control').attributes('data-state')).toBeUndefined()
+    plain.unmount()
   })
 
   it('says why an area is empty in fixed sentences, one for each reason', () => {

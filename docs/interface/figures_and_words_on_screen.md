@@ -131,13 +131,18 @@ the ⓘ, pointer resting          the ⓘ, a click                    an empty a
   (`firstSentence`); a click opens the whole text of every explanation of that place. The help card
   wears an edge in the link role down its left side, so a sentence of help is never taken for a data
   card's figures; it stands above a dialog, so the settings explain themselves with it too.
+- **`base/HelpTip.vue`** — the same help card on a control itself, with no mark of its own: wrapped
+  round the control, it adds no element. For a row of controls in a narrow panel, where a mark in
+  every row would take the width its words need.
 - **`base/EmptyNote.vue`** — why an area is empty, said in that area as a fixed sentence, gone once
   there is something to show and never put away: the Layers panel's reasons a layer draws nothing.
 - **Where an ⓘ stands** is data, `panel_help.ts`: a panel kind names its explanations, and the ⓘ
   stands beside the tabs while that panel is in front (`QuickBar`) and in the header of a section in
   its bundle (`AccordionPanel`) — the same for a section as a panel of its own and in the column. A
-  control with an explanation of its own carries its ⓘ beside it instead: a layer's row in the
-  Layers panel, the run header's flagged lines, the settings' layouts and servers.
+  control with an explanation of its own carries its ⓘ beside it instead: the run header's flagged
+  lines, the settings' layouts and servers. A layer of the Layers panel carries its help card on its
+  name and its ⓘ in its opened row, in the room the options are indented by: an ⓘ in every row cut
+  the names to four letters in a narrow panel (measured 2026-11-19).
 
 Nothing is stored any more: the key `hints.v1` is gone, read by nothing, and no setting resets it.
 A control added since carries its help in the registry (the project's own rule for a new control).

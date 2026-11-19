@@ -7,6 +7,7 @@ import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
 import EmptyNote from '@/components/base/EmptyNote.vue'
 import HelpInfo from '@/components/base/HelpInfo.vue'
+import HelpTip from '@/components/base/HelpTip.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import { holdsValues, plotSample, seriesTitle } from '@/components/indicator_drawing'
 import { strategyOf } from '@/components/runs/config_shape'
@@ -418,21 +419,21 @@ function toggle(row: LayerState): void {
               data-action="show"
               @update:model-value="on => show(row.id, on)"
             />
-            <button
-              type="button"
-              class="layer-head"
-              :class="{ inert: !openable(row) }"
-              :aria-expanded="openable(row) ? opened.has(row.id) : undefined"
-              data-action="open"
-              @click="toggle(row)"
-            >
-              <span class="layer-marker" aria-hidden="true"><AppIcon v-if="openable(row)" :name="opened.has(row.id) ? 'status-expanded' : 'status-collapsed'" /></span>
-              <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
-              <span class="layer-summary">{{ summary(row) }}</span>
-            </button>
-            <!-- what it draws and what its option does, behind its ⓘ: the options below stand plain,
-                 the way an editor's do -->
-            <HelpInfo :id="layerDefinition(row.id).hintId" />
+            <!-- what it draws on the name itself: a mark in every row cut the names in a narrow panel -->
+            <HelpTip :id="layerDefinition(row.id).hintId">
+              <button
+                type="button"
+                class="layer-head"
+                :class="{ inert: !openable(row) }"
+                :aria-expanded="openable(row) ? opened.has(row.id) : undefined"
+                data-action="open"
+                @click="toggle(row)"
+              >
+                <span class="layer-marker" aria-hidden="true"><AppIcon v-if="openable(row)" :name="opened.has(row.id) ? 'status-expanded' : 'status-collapsed'" /></span>
+                <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
+                <span class="layer-summary">{{ summary(row) }}</span>
+              </button>
+            </HelpTip>
             <AppSlider
               :model-value="row.opacity"
               :min="LAYER_OPACITY_MIN"
@@ -444,6 +445,9 @@ function toggle(row: LayerState): void {
             />
           </div>
           <div v-if="openable(row) && opened.has(row.id)" class="layer-options">
+            <!-- what it draws and what its option does, whole, behind its ⓘ: the options below stand
+                 plain, the way an editor's do -->
+            <HelpInfo :id="layerDefinition(row.id).hintId" />
             <AppSwitch
               v-if="layerDefinition(row.id).option"
               compact
@@ -559,21 +563,22 @@ function toggle(row: LayerState): void {
                   data-action="show"
                   @update:model-value="on => showServed(layer.entry.layer as ServedLayerId, on)"
                 />
-                <button
-                  type="button"
-                  class="layer-head"
-                  :aria-expanded="openedServed.has(layer.entry.layer)"
-                  data-action="open"
-                  @click="toggleServed(layer)"
-                >
-                  <span class="layer-marker" aria-hidden="true"><AppIcon :name="openedServed.has(layer.entry.layer) ? 'status-expanded' : 'status-collapsed'" /></span>
-                  <!-- the timeframe the worker was served, in a column of its own: head information,
-                       never cut by a long name (operator, 2026-11-14) — the series' own, as served -->
-                  <span class="layer-timeframe">{{ layer.entry.timeframe }}</span>
-                  <span class="layer-title">{{ seriesTitle(layer.entry) }}</span>
-                  <span class="layer-summary">{{ servedSummary(layer) }}</span>
-                </button>
-                <HelpInfo id="layer-indicator" />
+                <HelpTip id="layer-indicator">
+                  <button
+                    type="button"
+                    class="layer-head"
+                    :aria-expanded="openedServed.has(layer.entry.layer)"
+                    data-action="open"
+                    @click="toggleServed(layer)"
+                  >
+                    <span class="layer-marker" aria-hidden="true"><AppIcon :name="openedServed.has(layer.entry.layer) ? 'status-expanded' : 'status-collapsed'" /></span>
+                    <!-- the timeframe the worker was served, in a column of its own: head information,
+                         never cut by a long name (operator, 2026-11-14) — the series' own, as served -->
+                    <span class="layer-timeframe">{{ layer.entry.timeframe }}</span>
+                    <span class="layer-title">{{ seriesTitle(layer.entry) }}</span>
+                    <span class="layer-summary">{{ servedSummary(layer) }}</span>
+                  </button>
+                </HelpTip>
                 <AppSlider
                   :model-value="layer.opacity"
                   :min="LAYER_OPACITY_MIN"
@@ -585,6 +590,7 @@ function toggle(row: LayerState): void {
                 />
               </div>
               <div v-if="openedServed.has(layer.entry.layer)" class="layer-options">
+                <HelpInfo id="layer-indicator" />
                 <!-- what drew it, and each of its lines with its look: a label and its value, as the
                      app's figure lines are -->
                 <p class="layer-fact" data-fact="worker">
@@ -925,6 +931,7 @@ function toggle(row: LayerState): void {
 
 /* the opened part is a boundary in the list, raised rather than coloured, as a group heading is */
 .layer-options {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -932,6 +939,14 @@ function toggle(row: LayerState): void {
   padding: var(--space-xs) var(--space-sm) var(--space-xs) calc(var(--space-xs) + 1em + 22px + 3 * var(--space-xs) + 1em);
   border-top: 1px solid var(--color-border);
   background-color: var(--color-bg-elevated);
+}
+
+/* the ⓘ of the whole explanation in the room the options are indented by, under the row's lever: a
+   column of its own narrowed the options until their labels broke, a line of its own cost height */
+.layer-options > :deep(.help-info) {
+  position: absolute;
+  top: var(--space-xs);
+  left: calc(2 * var(--space-xs) + 1em);
 }
 
 .option-line {

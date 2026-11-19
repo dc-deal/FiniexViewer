@@ -18,7 +18,7 @@ const help = computed(() => helpFor(props.kindId))
 </script>
 
 <template>
-  <div v-if="bar || help.length" class="quick-bar" :data-quick-bar="kindId">
+  <div v-if="bar || help.length" class="quick-bar" :class="{ 'with-options': bar !== null }" :data-quick-bar="kindId">
     <component :is="bar" v-if="bar" />
     <HelpInfo v-if="help.length" :id="help" />
   </div>
@@ -29,5 +29,14 @@ const help = computed(() => helpFor(props.kindId))
   display: flex;
   align-items: center;
   height: 100%;
+}
+
+/* In a short header the ⓘ beside options gives way, as the run chart's link button does: the unit's
+   name is what that bar is read for, and the mark cut it to "E…" at the README's width (2026-11-19).
+   The help waits for a wider header; a bar of the ⓘ alone keeps it. */
+@container dock-header (max-width: 28rem) {
+  .quick-bar.with-options > :deep(.help-info) {
+    display: none;
+  }
 }
 </style>

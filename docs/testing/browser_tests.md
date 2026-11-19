@@ -53,8 +53,9 @@ by its tab, the way a reader does.
   on purpose.
 - `help_cards.spec.ts` holds the explanations' forms (viewer#24): the ⓘ beside the tabs showing a help
   card with its name after a real rest of the pointer, the whole text of every explanation of the place
-  at a click, closed by Escape; a section of the bundle carrying its ⓘ in its header; and no hint line
-  left in the layout.
+  at a click, closed by Escape; a section of the bundle carrying its ⓘ in its header; no hint line
+  left in the layout; and a layer explaining itself on its name, with no ⓘ in its row and the whole
+  text behind an ⓘ under its lever when opened, on the line of the first option.
 - `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per
   tab, and to a frame that stays inside a small window with its content scrolling, and the account
   standing in the status bar with no tab for it in the settings.
