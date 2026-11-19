@@ -430,3 +430,84 @@ describe('TimelineChart — an axis of time', () => {
     expect(wrapper.findAll('.tick').map(node => node.text())).toEqual(['0', '50', '100'])
   })
 })
+
+/**
+ * A stretch FRAMED over the plot (viewer#48): the chart draws it and asks for every change, always
+ * inside the scale; what the frame stands for is the caller's.
+ */
+describe('TimelineChart — a frame over the plot', () => {
+  function stubWidths(axis: number): void {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const width = this.classList.contains('axis') ? axis : (this.classList.contains('probe') ? 80 : 0)
+      return { width, height: 16, top: 0, left: 0, right: width, bottom: 16, x: 0, y: 0, toJSON: () => ({}) }
+    })
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /** A press where the pointer is, on the scale's axis — 1000 px wide, so a pixel is a tenth of a unit. */
+  function press(wrapper: ReturnType<typeof mountChart>, type: string, clientX: number): void {
+    wrapper.find('.plot').element.dispatchEvent(new MouseEvent(type, { button: 0, clientX, bubbles: true }))
+  }
+
+  async function framed(window: { from: number, to: number }) {
+    stubWidths(1000)
+    const wrapper = mountChart([lane('a', [[0, 10], [10, 20], [20, 30], [60, 70]])], 0, 100, { window, windowLabel: 'frame' })
+    await flushPromises()
+    return wrapper
+  }
+
+  it('draws no frame where none is asked for', () => {
+    expect(mountChart([lane('a', [[0, 50]])]).find('[data-window]').exists()).toBe(false)
+  })
+
+  it('frames the stretch asked for, over the plot', async () => {
+    const wrapper = await framed({ from: 20, to: 40 })
+    const style = wrapper.find('[data-window]').attributes('style') ?? ''
+    expect(style).toContain('left: 20%')
+    expect(style).toContain('width: 20%')
+    expect(wrapper.find('[data-window]').attributes('aria-label')).toBe('frame')
+  })
+
+  it('centres the frame where a press lands outside it, keeping its length', async () => {
+    const wrapper = await framed({ from: 20, to: 40 })
+    press(wrapper, 'pointerdown', 700)
+    expect(wrapper.emitted('update:window')![0]).toEqual([{ from: 60, to: 80 }])
+  })
+
+  it('slides the frame back at the end of the scale rather than shrinking it', async () => {
+    const wrapper = await framed({ from: 20, to: 40 })
+    press(wrapper, 'pointerdown', 990)
+    expect(wrapper.emitted('update:window')![0]).toEqual([{ from: 80, to: 100 }])
+  })
+
+  it('moves an edge where a press takes it, and the whole where a press lands inside', async () => {
+    const wrapper = await framed({ from: 20, to: 40 })
+    press(wrapper, 'pointerdown', 200)
+    press(wrapper, 'pointermove', 100)
+    press(wrapper, 'pointerup', 100)
+    expect(wrapper.emitted('update:window')![0]).toEqual([{ from: 10, to: 40 }])
+
+    press(wrapper, 'pointerdown', 300)
+    press(wrapper, 'pointermove', 500)
+    expect(wrapper.emitted('update:window')![1]).toEqual([{ from: 40, to: 60 }])
+  })
+
+  it('steps the frame with the arrow keys, a tenth of its length or, with Shift, the whole', async () => {
+    const wrapper = await framed({ from: 20, to: 40 })
+    await wrapper.find('[data-window]').trigger('keydown', { key: 'ArrowRight' })
+    await wrapper.find('[data-window]').trigger('keydown', { key: 'ArrowLeft', shiftKey: true })
+    await wrapper.find('[data-window]').trigger('keydown', { key: 'End' })
+    expect(wrapper.emitted('update:window')).toEqual([[{ from: 22, to: 42 }], [{ from: 0, to: 20 }], [{ from: 80, to: 100 }]])
+  })
+
+  it('says when a lane is too dense to set its spans apart, and how wide its plot is', async () => {
+    stubWidths(100)
+    const wrapper = mountChart([lane('a', Array.from({ length: 50 }, (_, at) => [at * 2, at * 2 + 2] as [number, number]))])
+    await flushPromises()
+    expect(wrapper.emitted('dense')!.at(-1)).toEqual([true])
+    expect(wrapper.emitted('measured')!.at(-1)).toEqual([100])
+  })
+})

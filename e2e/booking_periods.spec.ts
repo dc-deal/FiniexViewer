@@ -98,8 +98,50 @@ test('a lane too dense for its rings draws its periods edge to edge, on an axis 
   await expect(timeline.locator('.dense-note')).toBeVisible()
   const ring = await timeline.locator('.lane.dense .span').first().evaluate(node => getComputedStyle(node).outlineStyle)
   expect(ring).toBe('none')
-  // the calendar's own marks, word for word: a quarter's start, and New Year naming its year
-  await expect(timeline.locator('.tick')).toHaveText(['2026', 'Apr'])
+  // the calendar's own marks, word for word: a quarter's start, and New Year naming its year — the
+  // overview's, the stretch it frames being drawn again beneath it (viewer#48)
+  await expect(timeline.locator('.timeline').first().locator('.tick')).toHaveText(['2026', 'Apr'])
+})
+
+/**
+ * A year of daily periods (viewer#48): the overview frames a stretch and a second timeline draws it
+ * with its periods apart; a preset sets the frame's length, a press beside it moves it there, and it
+ * is kept for the run across a reload.
+ */
+test('a long timeline frames a stretch and draws it apart beneath, moved by a press and kept', async ({ page }) => {
+  await page.route('**/api/v1/reports/runs/*/booking-periods', route => route.fulfill({ json: dailyPeriods(365) }))
+  await openWith(page, '/', { run: FIXTURE_RUN })
+  const trigger = page.locator('.panel-trigger', { hasText: 'Booking periods' })
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click()
+  const timeline = page.locator('[data-panel="booking-periods"] .booking-timeline')
+  const overview = timeline.locator('.timeline').nth(0)
+  const detail = timeline.locator('.timeline').nth(1)
+
+  await expect(overview.locator('[data-window]')).toBeVisible()
+  await expect(overview.locator('.lane.dense')).toHaveCount(1)
+  await expect(detail.locator('.lane.dense')).toHaveCount(0)
+  // a year is as long as the run, so it is not offered
+  await expect(timeline.locator('[data-preset]')).toHaveText(['Quarter', 'Month', 'Week'])
+
+  await timeline.locator('[data-preset="week"]').click()
+  await expect(timeline.locator('[data-preset="week"]')).toHaveClass(/active/)
+  const spans = await detail.locator('.lane').first().locator('.span').count()
+  expect(spans).toBeGreaterThanOrEqual(7)
+  expect(spans).toBeLessThanOrEqual(8)
+
+  // a press beside the frame, near the end of the axis: the frame stands there now
+  const axis = (await overview.locator('.axis').boundingBox())!
+  await page.mouse.click(axis.x + axis.width * 0.9, axis.y + axis.height - 4)
+  const leftOf = () => overview.locator('[data-window]').evaluate(node => parseFloat((node as HTMLElement).style.left))
+  expect(await leftOf()).toBeGreaterThan(80)
+
+  // kept for this run once the drag has paused, and found again after a reload
+  const kept = await leftOf()
+  await page.waitForTimeout(600)
+  await page.reload()
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click()
+  await expect(overview.locator('[data-window]')).toBeVisible()
+  expect(Math.abs((await leftOf()) - kept)).toBeLessThan(0.5)
 })
 
 /**

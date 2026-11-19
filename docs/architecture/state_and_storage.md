@@ -55,7 +55,10 @@ has when it attaches; the bundle's reset and the dock's leave it alone. A panel 
 through `use_panel_view`: `PanelHost` names the panel it draws, `PanelViewScope` names a section in
 the column, and `useViewExpanded(fold)` is a writable boolean — without a host it lives for one
 mount, as it did before anything was kept. Added under version 1: an entry written before it reads as
-nothing kept, so no version had to change.
+nothing kept, so no version had to change. A long booking-period timeline's frame is kept the same way
+since 2026-11-19 (viewer#48): `periodWindow` — `{ scope, from, to }`, bound like the rows to the run
+or deployment it was set for, read back only as a forward stretch of finite stamps, and left out of a
+named layout.
 
 **A chart's drawing layers are part of its view** (viewer#41): `layers` under the chart's dock id,
 written by the Layers panel through `use_chart_layers` and read by the chart's store — the order

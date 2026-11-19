@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import TimelineChart from '@/components/base/TimelineChart.vue'
 import { useOpenInContext } from '@/composables/use_open_in_context'
+import { useViewWindow } from '@/composables/use_panel_view'
 import { rowKey } from '@/api/list_key'
 import { periodFigures, periodTitle, type PeriodRow } from '@/components/runs/booking_period_card'
+import {
+  clampWindow, offeredPresets, openingPreset, presetIn, presetOf, type WindowPreset,
+} from '@/components/runs/booking_period_window'
 import { duration, polarity, utcInstant } from '@/components/runs/report_format'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 import type { LaneOrder } from '@/types/settings_types'
-import type { TimelineLane, TimelineSpan } from '@/types/timeline_types'
+import type { TimelineLane, TimelineSpan, TimeWindow } from '@/types/timeline_types'
 import { plural, t } from '@/translate'
 
 /**
@@ -48,6 +52,8 @@ const props = defineProps<{
    * the same order — two orders one above the other means the reader finds every row twice.
    */
   order: LaneOrder
+  /** The run or deployment on show: the window a long timeline frames is kept for it alone; without one, for this mount. */
+  scopeId?: string | null
 }>()
 
 const emit = defineEmits<{ 'update:order': [LaneOrder] }>()
@@ -187,19 +193,23 @@ const scaleNote = computed(() => {
  * Seconds are gone deliberately: at a step of an hour or a day they are always `00`, and the whole
  * instant is still on the row itself and in the table below.
  */
-function axisFormat(value: number): string {
-  const at = new Date(value)
-  const midnight = at.getUTCHours() === 0 && at.getUTCMinutes() === 0
-  const day = `${String(at.getUTCDate()).padStart(2, '0')} ${MONTHS[at.getUTCMonth()]}`
-  const clock = `${String(at.getUTCHours()).padStart(2, '0')}:`
-    + `${String(at.getUTCMinutes()).padStart(2, '0')}Z`
-  if (withinOneDay.value) return clock
-  if (!midnight) return value === scope.value.from || value === scope.value.to ? `${day} ${clock}` : clock
-  if (at.getUTCDate() !== 1) return day
-  // New Year names its year where the scale crosses one — the mark is where it turns over
-  if (at.getUTCMonth() !== 0 || years.value.length < 2) return MONTHS[at.getUTCMonth()]!
-  return String(at.getUTCFullYear())
+function formatOn(bounds: TimeWindow, oneDay: boolean, spansYears: boolean): (value: number) => string {
+  return value => {
+    const at = new Date(value)
+    const midnight = at.getUTCHours() === 0 && at.getUTCMinutes() === 0
+    const day = `${String(at.getUTCDate()).padStart(2, '0')} ${MONTHS[at.getUTCMonth()]}`
+    const clock = `${String(at.getUTCHours()).padStart(2, '0')}:`
+      + `${String(at.getUTCMinutes()).padStart(2, '0')}Z`
+    if (oneDay) return clock
+    if (!midnight) return value === bounds.from || value === bounds.to ? `${day} ${clock}` : clock
+    if (at.getUTCDate() !== 1) return day
+    // New Year names its year where the scale crosses one — the mark is where it turns over
+    if (at.getUTCMonth() !== 0 || !spansYears) return MONTHS[at.getUTCMonth()]!
+    return String(at.getUTCFullYear())
+  }
 }
+
+const axisFormat = computed(() => formatOn(scope.value, withinOneDay.value, years.value.length > 1))
 
 const MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -275,21 +285,129 @@ function rangeLabel(from: number, to: number): string {
   }
   return `${start} → ${end}`
 }
+
+/**
+ * A LONG timeline frames a stretch and draws it again beneath, apart (viewer#48): overview and
+ * detail, the way a long trace is read. Only where the overview cannot set two periods apart — a
+ * timeline that fits keeps its one chart, as before. The chart says when it is too dense, and how
+ * wide its plot is, once the browser has measured it.
+ */
+const overviewDense = ref(false)
+const plotWidth = ref(0)
+
+const scale = computed<TimeWindow>(() => ({ from: scope.value.from, to: scope.value.to }))
+const presets = computed(() => offeredPresets(scale.value))
+
+/** The pixels a period needs beside its neighbour to stand apart: the chart's ring takes six. */
+const APART_PX = 8
+
+/**
+ * The window kept for the run or deployment on show, and the one a drag is moving now: a drag
+ * changes what is framed at once and what is kept after a pause, so a stored arrangement is not
+ * rewritten for every pixel. Another scope starts from what is kept for it.
+ */
+const kept = useViewWindow(() => props.scopeId ?? null)
+const moving = ref<TimeWindow | null>(null)
+let keeping: ReturnType<typeof setTimeout> | undefined
+onUnmounted(() => clearTimeout(keeping))
+
+// another run or deployment: what a drag was moving belonged to the one before
+watch(() => props.scopeId, () => {
+  clearTimeout(keeping)
+  moving.value = null
+})
+
+/** What is framed: the window asked for, kept inside the scale — else the longest preset whose periods stand apart. */
+const framed = computed<TimeWindow | null>(() => {
+  if (!overviewDense.value || !presets.value.length) return null
+  const asked = moving.value ?? kept.value
+  if (asked) return clampWindow(asked, scale.value)
+  const preset = openingPreset(scope.value.lanes.map(lane => lane.spans), scale.value, plotWidth.value, APART_PX)
+  return preset ? presetIn(preset, scale.value.from, scale.value) : null
+})
+
+function frameTo(next: TimeWindow): void {
+  moving.value = next
+  clearTimeout(keeping)
+  // what a drag moves stays what is framed: without a scope nothing is kept, and the frame must not jump back
+  keeping = setTimeout(() => { kept.value = next }, 400)
+}
+
+/** A preset around the middle of what is framed now. */
+function choose(preset: WindowPreset): void {
+  const now = framed.value
+  if (now) frameTo(presetIn(preset, (now.from + now.to) / 2, scale.value))
+}
+
+const chosenPreset = computed(() => framed.value ? presetOf(framed.value, scale.value) : null)
+
+const PRESET_WORDS: Record<WindowPreset, string> = {
+  year: t('Year'),
+  quarter: t('Quarter'),
+  month: t('Month'),
+  week: t('Week'),
+}
+
+/** Each lane's periods inside the frame — a lane with none stays, empty, so the lanes read alike above and below. */
+const detailLanes = computed<TimelineLane[]>(() => {
+  const at = framed.value
+  if (!at) return []
+  return scope.value.lanes.map(lane => ({
+    ...lane,
+    spans: lane.spans.filter(span => span.to > at.from && span.from < at.to),
+  }))
+})
+
+/** The calendar years a stretch touches. */
+function yearsIn(at: TimeWindow): number {
+  return new Date(at.to).getUTCFullYear() - new Date(at.from).getUTCFullYear() + 1
+}
+
+const detailFormat = computed(() => {
+  const at = framed.value ?? scale.value
+  return formatOn(at, utcDay(at.from) === utcDay(at.to), yearsIn(at) > 1)
+})
+
+/** The frame's name above its marks: the preset it is, else its two ends. */
+const detailName = computed(() => {
+  const at = framed.value
+  if (!at) return ''
+  const first = new Date(at.from)
+  const year = first.getUTCFullYear()
+  const preset = chosenPreset.value
+  if (preset === 'year') return String(year)
+  if (preset === 'quarter') return `Q${Math.floor(first.getUTCMonth() / 3) + 1} ${year}`
+  if (preset === 'month') return `${MONTHS[first.getUTCMonth()]} ${year}`
+  return rangeLabel(at.from, at.to)
+})
 </script>
 
 <template>
   <div v-if="scope.lanes.length" class="booking-timeline">
-    <!-- only where there is more than one lane to order -->
-    <div v-if="scope.lanes.length > 1" class="order-control">
-      <span class="order-label">{{ t('Order lanes by') }}</span>
-      <AppButton
-        :active="order === 'time'"
-        @click="emit('update:order', 'time')"
-      >{{ t('start time') }}</AppButton>
-      <AppButton
-        :active="order === 'name'"
-        @click="emit('update:order', 'name')"
-      >{{ t('name') }}</AppButton>
+    <div v-if="scope.lanes.length > 1 || framed" class="timeline-controls">
+      <!-- only where there is more than one lane to order -->
+      <div v-if="scope.lanes.length > 1" class="order-control">
+        <span class="order-label">{{ t('Order lanes by') }}</span>
+        <AppButton
+          :active="order === 'time'"
+          @click="emit('update:order', 'time')"
+        >{{ t('start time') }}</AppButton>
+        <AppButton
+          :active="order === 'name'"
+          @click="emit('update:order', 'name')"
+        >{{ t('name') }}</AppButton>
+      </div>
+      <!-- only where the overview frames a stretch: its length, by the calendar's own units -->
+      <div v-if="framed" class="order-control window-control">
+        <span class="order-label">{{ t('Drawn apart') }}</span>
+        <AppButton
+          v-for="preset in presets"
+          :key="preset"
+          :active="chosenPreset === preset"
+          :data-preset="preset"
+          @click="choose(preset)"
+        >{{ PRESET_WORDS[preset] }}</AppButton>
+      </div>
     </div>
 
     <TimelineChart
@@ -299,13 +417,40 @@ function rangeLabel(from: number, to: number): string {
       :format="axisFormat"
       :scale-label="sharedPart ? `${t('canonical clock')} · ${sharedPart}` : t('canonical clock')"
       :scale-note="scaleNote"
-      :dense-note="t('Too close to draw apart at this width — a sliver per period, named on its card.')"
+      :dense-note="framed
+        ? t('Too close to draw apart at this width — the stretch in the frame is drawn apart below.')
+        : t('Too close to draw apart at this width — a sliver per period, named on its card.')"
       natural-time
       :collapse-gaps-longer-than="longestSpan"
       :format-gap="gapLabel"
       :format-range="rangeLabel"
       :format-breaks="breaksLabel"
       :ticks="4"
+      :window="framed"
+      :window-label="t('The stretch drawn apart below')"
+      @update:window="frameTo"
+      @dense="overviewDense = $event"
+      @measured="plotWidth = $event"
+    />
+
+    <!-- the framed stretch again, its periods apart: the same lanes, the scale the frame's own -->
+    <TimelineChart
+      v-if="framed"
+      class="detail"
+      data-detail
+      :lanes="detailLanes"
+      :from="framed.from"
+      :to="framed.to"
+      :format="detailFormat"
+      :scale-label="detailName"
+      :scale-note="scaleNote"
+      :dense-note="t('Still too close to draw apart — a shorter stretch above draws them apart.')"
+      natural-time
+      :collapse-gaps-longer-than="longestSpan"
+      :format-gap="gapLabel"
+      :format-range="rangeLabel"
+      :format-breaks="breaksLabel"
+      :ticks="6"
     />
   </div>
 </template>
@@ -315,6 +460,14 @@ function rangeLabel(from: number, to: number): string {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+}
+
+/* the lane order and the frame's length on one line, the second giving way to a line of its own */
+.timeline-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-lg);
 }
 
 .order-control {

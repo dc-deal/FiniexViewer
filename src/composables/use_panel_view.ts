@@ -3,6 +3,7 @@ import type { InjectionKey, WritableComputedRef } from 'vue'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { VIEW_ROW_CAPS } from '@/types/arrangement_types'
 import type { StoredPanelView, ViewFold, ViewRowList } from '@/types/arrangement_types'
+import type { TimeWindow } from '@/types/timeline_types'
 
 /** How a panel's own view is read and kept — the host decides where, the panel only asks. */
 interface PanelViewChannel {
@@ -88,6 +89,30 @@ export function useViewRows(list: ViewRowList, scope: () => string | null): View
     set,
     toggle: key => set(key, !current().includes(key)),
   }
+}
+
+/**
+ * The stretch a long timeline shows in detail, for the run or deployment the panel shows (viewer#48)
+ * — the scope read at USE, from the panel's own model. Under any other scope it is none, and setting
+ * one replaces it; null removes it.
+ *
+ * @param scope The run or deployment the panel shows; where it names none, nothing is kept.
+ */
+export function useViewWindow(scope: () => string | null): WritableComputedRef<TimeWindow | null> {
+  const channel = inject(PANEL_VIEW, null) ?? ownView()
+  return computed({
+    get: () => {
+      const kept = channel.read().periodWindow
+      return kept && kept.scope === scope() ? { from: kept.from, to: kept.to } : null
+    },
+    set: window => {
+      const view = { ...channel.read() }
+      const run = scope()
+      if (window === null || run === null) delete view.periodWindow
+      else view.periodWindow = { scope: run, from: window.from, to: window.to }
+      channel.write(view)
+    },
+  })
 }
 
 function ownView(): PanelViewChannel {

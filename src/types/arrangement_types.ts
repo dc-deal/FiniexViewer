@@ -145,6 +145,15 @@ export interface StoredPanelView {
   looks?: PaneLooks
   /** A chart's panes whose legend shows its first line alone, the rest behind its fold, by name. */
   closedLegends?: string[]
+  /** The stretch a long booking-period timeline shows in detail, bound to the run or deployment on show (viewer#48). */
+  periodWindow?: StoredWindow
+}
+
+/** A stretch of a timeline in milliseconds, and the run or deployment it was set for. */
+export interface StoredWindow {
+  scope: string
+  from: number
+  to: number
 }
 
 /** Everything stored under the one versioned key. */

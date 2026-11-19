@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
-import { defineComponent, h } from 'vue'
-import { providePanelView, useViewExpanded, useViewRows } from '@/composables/use_panel_view'
+import { defineComponent, h, ref } from 'vue'
+import { providePanelView, useViewExpanded, useViewRows, useViewWindow } from '@/composables/use_panel_view'
 import { useArrangementStore } from '@/stores/arrangement_store'
 
 /** A panel that shows its period list or not, the way the booking periods do. */
@@ -108,5 +108,26 @@ describe('use_panel_view', () => {
       expect(rows.has('t1')).toBe(false)
       expect(useArrangementStore().panelViews).toEqual({})
     })
+  })
+
+  /** A long timeline's frame (viewer#48), bound to the run or deployment on show like the rows. */
+  it('keeps a timeline\'s window for the scope it was set for, and none under another', () => {
+    // reactive, as a panel's model is: the window is a computed, and it follows the scope it reads
+    const run = ref<string | null>('run_1')
+    let framed!: ReturnType<typeof useViewWindow>
+    const Inner = defineComponent({
+      setup() {
+        framed = useViewWindow(() => run.value)
+        return () => h('i')
+      },
+    })
+    mount(hosted('report-booking-periods', Inner))
+    framed.value = { from: 10, to: 20 }
+    expect(framed.value).toEqual({ from: 10, to: 20 })
+    expect(useArrangementStore().panelViews['report-booking-periods']?.periodWindow).toEqual({ scope: 'run_1', from: 10, to: 20 })
+    run.value = 'run_2'
+    expect(framed.value).toBeNull()
+    framed.value = null
+    expect(useArrangementStore().panelViews).toEqual({})
   })
 })

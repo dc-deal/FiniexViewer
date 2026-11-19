@@ -109,7 +109,10 @@ by its tab, the way a reader does.
   card on a keyboard focus — the capture books one period per unit, so the spec serves it with its
   first unit booked twice and the rest of the body unchanged. And a unit booked daily for two
   hundred days: its lane drawn edge to edge without the ring, said beneath the lanes, on an axis of
-  calendar marks — the ring is paint, which only a browser shows. And the period list, once opened,
+  calendar marks — the ring is paint, which only a browser shows. And a unit booked daily for a year
+  (viewer#48): the overview framing a stretch drawn apart beneath, a year not offered for a run no
+  longer than one, a week chosen drawing seven or eight periods, a click near the axis's end moving
+  the frame there, and the frame kept for the run across a real reload. And the period list, once opened,
   still open after a real reload and in the section opened as a panel of its own.
   And as a panel of its own the table reaches the bottom of it, the whole table scrolling with its
   headings sticky, while in the bundle's column its list keeps its cap — only a browser lays out.

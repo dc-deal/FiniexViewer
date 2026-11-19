@@ -54,6 +54,7 @@ const orderedPeriods = computed(() =>
       :periods="orderedPeriods"
       :key-fields="model.periods.key"
       :sessions="model.sessions"
+      :scope-id="model.periods.deployment_id"
     />
     <BookingPeriodTable
       v-if="orderedPeriods.length"

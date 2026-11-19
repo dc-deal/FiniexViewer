@@ -161,6 +161,7 @@ const otherCurrencies = computed(() =>
         v-model:order="laneOrder"
         :periods="orderedPeriods"
         :key-fields="model.keys.periods"
+        :scope-id="model.run_id"
       />
       <BookingPeriodTable
         v-model:open="periodsOpen"
