@@ -1,7 +1,7 @@
 {
-  "run_id": "20261116_142838_bfb973b6",
+  "run_id": "20261119_132524_da5ce071",
   "unit_name": "indicator_series_session",
-  "served_at": "2026-11-16T15:13:57.752002Z",
+  "served_at": "2026-11-19T15:14:11.415197Z",
   "window": {
     "from": "2026-01-25T02:00:00Z",
     "to": "2026-01-25T08:00:00.321000Z"
@@ -23,7 +23,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:19:57.550000Z",
-      "written_at": "2026-11-16T14:28:44.913446Z",
+      "written_at": "2026-11-19T13:25:31.343426Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:19:00Z",
       "ticks_processed": 1,
@@ -101,18 +101,18 @@
       "closed_bars": {},
       "order_id": null,
       "process_memory": {
-        "rss_bytes": 544374784,
-        "private_bytes": 469102592
+        "rss_bytes": 551829504,
+        "private_bytes": 478949376
       },
       "record_no": 1
     },
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:20:03.436000Z",
-      "written_at": "2026-11-16T14:28:44.921914Z",
+      "written_at": "2026-11-19T13:25:31.354915Z",
       "written_for": "bar_close",
       "cadence_slot": "2026-01-25T02:20:00Z",
-      "ticks_processed": 2,
+      "ticks_processed": 3,
       "symbol": "BTCUSD",
       "account_currency": "USD",
       "last_price": 89073.0,
@@ -152,7 +152,7 @@
           "obv_value": -17.368775559999996,
           "trend": "bullish",
           "has_volume": true,
-          "total_volume": 61.61926231999999,
+          "total_volume": 61.619335529999994,
           "bars_used": 21,
           "market_type": "crypto"
         },
@@ -194,7 +194,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:21:02.991000Z",
-      "written_at": "2026-11-16T14:28:44.932847Z",
+      "written_at": "2026-11-19T13:25:31.362618Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:21:00Z",
       "ticks_processed": 12,
@@ -277,7 +277,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:22:03.974000Z",
-      "written_at": "2026-11-16T14:28:44.938768Z",
+      "written_at": "2026-11-19T13:25:31.368648Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:22:00Z",
       "ticks_processed": 19,
@@ -360,7 +360,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:23:05.270000Z",
-      "written_at": "2026-11-16T14:28:44.961094Z",
+      "written_at": "2026-11-19T13:25:31.375635Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:23:00Z",
       "ticks_processed": 37,
@@ -443,7 +443,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:24:02.223000Z",
-      "written_at": "2026-11-16T14:28:44.964972Z",
+      "written_at": "2026-11-19T13:25:31.380480Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:24:00Z",
       "ticks_processed": 41,
@@ -526,7 +526,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:25:02.371000Z",
-      "written_at": "2026-11-16T14:28:44.973970Z",
+      "written_at": "2026-11-19T13:25:31.387491Z",
       "written_for": "bar_close",
       "cadence_slot": "2026-01-25T02:25:00Z",
       "ticks_processed": 49,
@@ -611,7 +611,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:26:00.712000Z",
-      "written_at": "2026-11-16T14:28:44.993420Z",
+      "written_at": "2026-11-19T13:25:31.400046Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:26:00Z",
       "ticks_processed": 67,
@@ -694,13 +694,13 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:27:15.415000Z",
-      "written_at": "2026-11-16T14:28:45.001947Z",
+      "written_at": "2026-11-19T13:25:31.407011Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:27:00Z",
-      "ticks_processed": 75,
+      "ticks_processed": 79,
       "symbol": "BTCUSD",
       "account_currency": "USD",
-      "last_price": 89056.8,
+      "last_price": 89051.1,
       "balance": 10000.0,
       "balances": {
         "USD": 10000.0,
@@ -717,48 +717,48 @@
       "reconcile_clean": null,
       "worker_outputs": {
         "rsi_fast": {
-          "rsi_value": 45.238038568251625,
+          "rsi_value": 44.44790929557873,
           "avg_gain": 10.361050071025836,
-          "avg_loss": 12.54235246132289,
+          "avg_loss": 12.949495318465539,
           "bars_used": 71
         },
         "bollinger_main": {
-          "upper": 89348.64236059369,
-          "middle": 89184.89000000001,
-          "lower": 89021.13763940634,
-          "position": 0.10889113434569904,
-          "std_dev": 81.87618029683539,
+          "upper": 89349.26541995574,
+          "middle": 89184.60500000001,
+          "lower": 89019.94458004428,
+          "position": 0.0946050664880616,
+          "std_dev": 82.33020997786811,
           "bars_used": 20,
-          "position_raw": 0.10889113434569904,
-          "width_pct": 0.00367219964264514,
-          "slope": -0.008671630716345951
+          "position_raw": 0.0946050664880616,
+          "width_pct": 0.003692574967523447,
+          "slope": -0.00948922637522762
         },
         "obv_volume": {
-          "obv_value": -18.200417439999992,
+          "obv_value": -18.200721189999992,
           "trend": "bullish",
           "has_volume": true,
-          "total_volume": 61.82192732,
+          "total_volume": 61.82223107,
           "bars_used": 21,
           "market_type": "crypto"
         },
         "macd_main": {
-          "macd": -19.78804377798224,
-          "signal": -26.978336975327057,
-          "histogram": 7.190293197344818,
-          "fast_ema": 89063.23884720106,
-          "slow_ema": 89083.02689097905,
+          "macd": -20.242744632676477,
+          "signal": -27.069277146265907,
+          "histogram": 6.826532513589431,
+          "fast_ema": 89062.36192412415,
+          "slow_ema": 89082.60466875683,
           "bars_used": 105.0
         },
         "tide_wave": {
-          "wave_rsi": 45.238038568251625,
-          "tide_histogram": -8.44622006681206,
-          "tide_slope": -0.039550147534384905
+          "wave_rsi": 44.44790929557873,
+          "tide_histogram": -8.809980750582,
+          "tide_slope": -0.4033108313043243
         },
         "trend_ema": {
           "direction": "down",
-          "slope": -0.16020164752641156,
-          "ma_value": 89179.7047561984,
-          "volatility_pct": 0.0009181032895395924,
+          "slope": -0.1659118338609641,
+          "ma_value": 89179.16189905554,
+          "volatility_pct": 0.0009232000864850024,
           "bars_used": 60
         }
       },
@@ -766,7 +766,7 @@
       "decision_outputs": {
         "confidence": 0.5,
         "reason": "No consensus signal",
-        "price": 89056.8,
+        "price": 89051.1,
         "timestamp": "2026-01-25T02:27:15.415000+00:00"
       },
       "closed_bars": {},
@@ -777,7 +777,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:28:02.008000Z",
-      "written_at": "2026-11-16T14:28:45.016339Z",
+      "written_at": "2026-11-19T13:25:31.418490Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:28:00Z",
       "ticks_processed": 91,
@@ -860,10 +860,10 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:29:03.518000Z",
-      "written_at": "2026-11-16T14:28:45.027639Z",
+      "written_at": "2026-11-19T13:25:31.435349Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:29:00Z",
-      "ticks_processed": 109,
+      "ticks_processed": 110,
       "symbol": "BTCUSD",
       "account_currency": "USD",
       "last_price": 89010.9,
@@ -900,10 +900,10 @@
           "slope": -0.01493165118314696
         },
         "obv_volume": {
-          "obv_value": -18.297258649999993,
+          "obv_value": -18.304362149999992,
           "trend": "bullish",
           "has_volume": true,
-          "total_volume": 61.918768529999994,
+          "total_volume": 61.92587203,
           "bars_used": 21,
           "market_type": "crypto"
         },
@@ -943,7 +943,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:30:00.843000Z",
-      "written_at": "2026-11-16T14:28:45.041860Z",
+      "written_at": "2026-11-19T13:25:31.450124Z",
       "written_for": "bar_close",
       "cadence_slot": "2026-01-25T02:30:00Z",
       "ticks_processed": 121,
@@ -1029,10 +1029,10 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:31:03.007000Z",
-      "written_at": "2026-11-16T14:28:45.052489Z",
+      "written_at": "2026-11-19T13:25:31.462220Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:31:00Z",
-      "ticks_processed": 133,
+      "ticks_processed": 135,
       "symbol": "BTCUSD",
       "account_currency": "USD",
       "last_price": 89010.9,
@@ -1072,7 +1072,7 @@
           "obv_value": -18.325211229999994,
           "trend": "bullish",
           "has_volume": true,
-          "total_volume": 61.65868746,
+          "total_volume": 61.65988445,
           "bars_used": 21,
           "market_type": "crypto"
         },
@@ -1112,7 +1112,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:32:17.484000Z",
-      "written_at": "2026-11-16T14:28:45.062401Z",
+      "written_at": "2026-11-19T13:25:31.468305Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:32:00Z",
       "ticks_processed": 148,
@@ -1195,7 +1195,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:33:02.171000Z",
-      "written_at": "2026-11-16T14:28:45.084957Z",
+      "written_at": "2026-11-19T13:25:31.481385Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:33:00Z",
       "ticks_processed": 169,
@@ -1278,7 +1278,7 @@
     {
       "record_kind": "frame",
       "frame_time": "2026-01-25T02:34:02.889000Z",
-      "written_at": "2026-11-16T14:28:45.093877Z",
+      "written_at": "2026-11-19T13:25:31.490947Z",
       "written_for": "cadence",
       "cadence_slot": "2026-01-25T02:34:00Z",
       "ticks_processed": 179,

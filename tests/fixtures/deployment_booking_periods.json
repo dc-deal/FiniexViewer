@@ -4,7 +4,7 @@
     "unit_name",
     "period_no"
   ],
-  "deployment_id": "deploy_20261116_142222_8135460c",
+  "deployment_id": "deploy_20261119_131940_8c8d9001",
   "periods": [
     {
       "unit_name": "demo_btcusd_bot",
@@ -32,7 +32,7 @@
       "account_max_dd_pct": 2.0104678492450327,
       "unrealized_pnl": -62.1912000000003,
       "open_position_count": 1,
-      "run_id": "20261116_142222_706a593f"
+      "run_id": "20261119_131940_f5cfde87"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -43,24 +43,24 @@
       "currency": "USD",
       "trade_count": 2,
       "tick_count": 65748,
-      "net_pnl": 1.2142399999996911,
-      "total_fees": 245.50576,
-      "commission_cost": 245.50576,
+      "net_pnl": 1.8889599999999973,
+      "total_fees": 245.51104000000004,
+      "commission_cost": 245.51104000000004,
       "swap_cost": 0.0,
-      "spread_cost": 0.680000000000291,
+      "spread_cost": -4.1,
       "modelled_spread_cost": 0.0,
       "win_rate": 0.5,
-      "profit_factor": 1.0402185549089962,
+      "profit_factor": 1.0632737718799903,
       "opening_equity": 9937.808799999999,
-      "final_equity": 10001.214240000001,
-      "min_equity": 9861.204160000001,
-      "max_equity": 10062.69416,
-      "max_drawdown": 197.05463999999847,
+      "final_equity": 10001.888959999997,
+      "min_equity": 9861.551519999997,
+      "max_equity": 10063.371519999997,
+      "max_drawdown": 196.70728000000236,
       "account_max_drawdown": 201.40000000000146,
       "account_max_dd_pct": 2.0104678492450327,
       "unrealized_pnl": 0.0,
       "open_position_count": 0,
-      "run_id": "20261116_142222_706a593f"
+      "run_id": "20261119_131940_f5cfde87"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -88,35 +88,35 @@
       "account_max_dd_pct": 2.0104678492450327,
       "unrealized_pnl": 0.0,
       "open_position_count": 0,
-      "run_id": "20261116_142313_1dd8c47a"
+      "run_id": "20261119_132027_6390ae12"
     },
     {
       "unit_name": "demo_btcusd_bot",
       "period_no": 4,
       "opened_at": "2026-02-03T00:00:00+00:00",
-      "closed_at": "2026-02-03T18:19:51.546000+00:00",
+      "closed_at": "2026-02-03T18:19:51.547000+00:00",
       "reason": "session_end",
       "currency": "USD",
       "trade_count": 1,
       "tick_count": 71164,
-      "net_pnl": -30.361600000001175,
-      "total_fees": 125.29160000000002,
-      "commission_cost": 125.29160000000002,
+      "net_pnl": -31.772800000001183,
+      "total_fees": 125.30280000000002,
+      "commission_cost": 125.30280000000002,
       "swap_cost": 0.0,
-      "spread_cost": -0.24999999999854483,
+      "spread_cost": -0.559999999999127,
       "modelled_spread_cost": 0.0,
       "win_rate": 0.0,
       "profit_factor": 0.0,
       "opening_equity": 10000.0,
-      "final_equity": 9536.298159999998,
-      "min_equity": 9523.168159999997,
-      "max_equity": 10045.60392,
+      "final_equity": 9534.886959999996,
+      "min_equity": 9521.756959999997,
+      "max_equity": 10044.19272,
       "max_drawdown": 522.4357600000021,
-      "account_max_drawdown": 539.5260000000017,
-      "account_max_dd_pct": 5.361645613206252,
+      "account_max_drawdown": 541.61456,
+      "account_max_dd_pct": 5.382038802041566,
       "unrealized_pnl": -433.34024000000034,
       "open_position_count": 1,
-      "run_id": "20261116_142313_1dd8c47a"
+      "run_id": "20261119_132027_6390ae12"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -140,11 +140,11 @@
       "min_equity": 9745.409919999998,
       "max_equity": 10142.55992,
       "max_drawdown": 254.59008000000176,
-      "account_max_drawdown": 539.5260000000017,
-      "account_max_dd_pct": 5.361645613206252,
+      "account_max_drawdown": 541.61456,
+      "account_max_dd_pct": 5.382038802041566,
       "unrealized_pnl": 25.08991999999941,
       "open_position_count": 1,
-      "run_id": "20261116_142411_1de95739"
+      "run_id": "20261119_132117_bddc437d"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -164,15 +164,15 @@
       "win_rate": 1.0,
       "profit_factor": null,
       "opening_equity": 10025.089919999999,
-      "final_equity": 9770.60656,
-      "min_equity": 9753.73656,
+      "final_equity": 9770.707359999999,
+      "min_equity": 9753.837359999998,
       "max_equity": 10124.80992,
-      "max_drawdown": 371.0733600000003,
-      "account_max_drawdown": 539.5260000000017,
-      "account_max_dd_pct": 5.361645613206252,
-      "unrealized_pnl": -281.5771199999991,
+      "max_drawdown": 370.972560000002,
+      "account_max_drawdown": 541.61456,
+      "account_max_dd_pct": 5.382038802041566,
+      "unrealized_pnl": -281.47631999999913,
       "open_position_count": 1,
-      "run_id": "20261116_142411_1de95739"
+      "run_id": "20261119_132117_bddc437d"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -196,17 +196,17 @@
       "min_equity": 10000.0,
       "max_equity": 10000.0,
       "max_drawdown": 0.0,
-      "account_max_drawdown": 539.5260000000017,
-      "account_max_dd_pct": 5.361645613206252,
+      "account_max_drawdown": 541.61456,
+      "account_max_dd_pct": 5.382038802041566,
       "unrealized_pnl": 0.0,
       "open_position_count": 0,
-      "run_id": "20261116_142512_09e7440e"
+      "run_id": "20261119_132204_227d214b"
     },
     {
       "unit_name": "demo_btcusd_bot",
       "period_no": 8,
       "opened_at": "2026-02-05T00:00:00+00:00",
-      "closed_at": "2026-02-05T11:24:40.122000+00:00",
+      "closed_at": "2026-02-05T11:24:40.140000+00:00",
       "reason": "session_end",
       "currency": "USD",
       "trade_count": 0,
@@ -224,11 +224,11 @@
       "min_equity": 9817.12304,
       "max_equity": 10000.573040000001,
       "max_drawdown": 183.45000000000073,
-      "account_max_drawdown": 539.5260000000017,
-      "account_max_dd_pct": 5.361645613206252,
+      "account_max_drawdown": 541.61456,
+      "account_max_dd_pct": 5.382038802041566,
       "unrealized_pnl": -182.8769599999997,
       "open_position_count": 1,
-      "run_id": "20261116_142512_09e7440e"
+      "run_id": "20261119_132204_227d214b"
     }
   ],
   "count": 8,

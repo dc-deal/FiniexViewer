@@ -394,6 +394,66 @@
       "description": "Out-of-sample results fall sharply below in-sample results: the strategy is likely fitted to the in-sample windows."
     },
     {
+      "check": "divergence_gate_code_unknown",
+      "title": "Code of a run unknown",
+      "description": "Which code the session or the backtest ran cannot be read, so their code paths cannot be held against each other."
+    },
+    {
+      "check": "divergence_gate_uncommitted",
+      "title": "Run on uncommitted code",
+      "description": "The session or the backtest ran a framework that is not exactly one commit, so nobody can say which code ran."
+    },
+    {
+      "check": "divergence_gate_sessions_disagree",
+      "title": "Sessions ran different code",
+      "description": "The sessions of the compared window ran different releases or commits, where one backtest can reproduce only one."
+    },
+    {
+      "check": "divergence_gate_commit_unreadable",
+      "title": "Commit not in this repository",
+      "description": "The framework commit a run names is not in this repository, so its code path cannot be read."
+    },
+    {
+      "check": "divergence_gate_code_path",
+      "title": "File of the backtest's path changed",
+      "description": "A file the backtest's code path reaches differs from the session's release in more than its docstrings, and the release does not declare that change."
+    },
+    {
+      "check": "divergence_gate_interpreter",
+      "title": "Pinned under another interpreter",
+      "description": "The release's declarations pin each changed file's syntax tree as one Python version parses it, and the report runs under another, so the code path is not judged."
+    },
+    {
+      "check": "divergence_gate_strategy",
+      "title": "Strategy code differs",
+      "description": "A decision logic or worker, or a repository it was loaded from, is different code in the session and in the backtest."
+    },
+    {
+      "check": "divergence_gate_strategy_config",
+      "title": "Strategy configuration differs",
+      "description": "The resolved strategy configuration holds a different value in the session and in the backtest."
+    },
+    {
+      "check": "divergence_gate_broker_config",
+      "title": "Broker configuration differs",
+      "description": "The session and the backtest did not trade under the same broker configuration — compared by what it trades with, its fetch and export stamps left out; documents that differ only in those stamps are named as advice and refuse nothing."
+    },
+    {
+      "check": "divergence_gate_window",
+      "title": "Window not read as measured",
+      "description": "A backtest scenario did not read the compared window from its start to its end, or ran to a tick limit instead."
+    },
+    {
+      "check": "divergence_gate_feature_beyond_venue",
+      "title": "Backtest allowed more than the venue",
+      "description": "The backtest allowed order features the venue does not hold, which the session could not have used."
+    },
+    {
+      "check": "divergence_gate_frames_missing",
+      "title": "Backtest recorded no state frames",
+      "description": "A backtest scenario recorded no state frames, so its decisions and positions cannot be held against the session's."
+    },
+    {
       "check": "certificate_expired",
       "title": "Release certificate expired",
       "description": "The newest certificate of a release gate is past its validity date, so the gate has to be run again before a release."

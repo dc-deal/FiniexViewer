@@ -1823,6 +1823,12 @@ export interface OrderEvent {
   event_time: string | null
   /** The machine's clock, LIVE ONLY - null in a backtest, which has to come out the same each run. */
   ts_init: string | null
+  /**
+   * The venue's own clock, where its answer gives a time (contract 58): today a live fill in full, at
+   * the time the venue closed the order. Null in a backtest, a mock session and a dry run, on every
+   * other event, and on a session recorded before the field existed.
+   */
+  ts_event: string | null
   initiator: string | null
   end_reason: string | null
   rejection_reason: string | null

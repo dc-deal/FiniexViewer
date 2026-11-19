@@ -76,6 +76,7 @@ export function step(overrides: Partial<OrderEvent> = {}): OrderEvent {
     in_flight_ms: null,
     event_time: '2026-10-08T10:36:27.000000+00:00',
     ts_init: null,
+    ts_event: null,
     initiator: null,
     end_reason: null,
     rejection_reason: null,

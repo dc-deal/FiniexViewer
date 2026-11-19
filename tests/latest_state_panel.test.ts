@@ -189,7 +189,7 @@ describe('LatestStatePanel', () => {
   it('lists the open positions and the resting orders, and says none where there are none', () => {
     const ended = mountPanel(answer(endedFixture))
     expect(ended.findAll('.holding')).toHaveLength(1)
-    expect(ended.find('.holding').text()).toContain('long 0.1 BTCUSD @ 88635.1')
+    expect(ended.find('.holding').text()).toContain('long 0.1 BTCUSD @ 88601.4')
 
     const none = mountPanel(answer(stoppedFixture))
     expect(none.findAll('.holding')).toHaveLength(0)
