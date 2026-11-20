@@ -30,6 +30,23 @@ npx vitest
 
 **`vitest.config.ts`** — extends `vite.config.ts` via `mergeConfig` so that the `@/` path alias, Vue plugin, and other Vite settings are inherited automatically. It adds the jsdom environment, the setup file `tests/setup.ts`, and `include` pinned to `tests/**/*.test.ts` — Vitest's default pattern is repository-wide and collected the Playwright specs the moment `e2e/` appeared.
 
+**The files already run side by side.** With no pool or worker setting in the configuration, Vitest
+runs the test files in parallel worker processes, about one per core. A full run is therefore
+already split into lanes, and adding more buys nothing.
+
+Measured 2026-11-20 in the dev container (16 cores):
+
+| What | Time |
+|---|---|
+| A full run, by the clock | 285 s |
+| `environment` (jsdom set up per file), summed over the workers | 1893 s |
+| `import` (each file's component tree), summed | 1680 s |
+| `tests` (the tests themselves), summed | 125 s |
+
+The parts add up to about thirteen workers busy for the whole run, so the machine is saturated.
+
+**What remains is jsdom.** Every file builds a DOM of its own and imports its tree; the tests themselves are a small part of the run. If the run must get faster, the lever is a file that asserts only logic. Such a file can declare `// @vitest-environment node` on its first line and skip the DOM. Not done yet, because the run stays well under the deadline of `scripts/run.sh`.
+
 ---
 
 ## Fixtures — captured, not hand-written
