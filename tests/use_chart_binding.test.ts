@@ -36,6 +36,8 @@ describe('useChartBinding', () => {
       start: '2025-09-17T00:00:00+00:00',
       end: '2026-10-09T20:56:00+00:00',
       timeframes: ['H1'],
+      origin_classes: 'production',
+      collected_since: null,
     })
     vi.mocked(apiClient.getBars).mockResolvedValue({ bars: [], truncated: false, priceBasis: '' })
   })

@@ -49,6 +49,8 @@ const COVERAGE: CoverageResponse = {
   start: '2025-09-21T00:00:00+00:00',
   end: '2026-10-09T20:56:00+00:00',
   timeframes: ['D1', 'H1', 'H4', 'M1', 'M10', 'M15', 'M30', 'M5'],
+  origin_classes: 'production',
+  collected_since: null,
 }
 
 const ANSWER: BarAnswer = {

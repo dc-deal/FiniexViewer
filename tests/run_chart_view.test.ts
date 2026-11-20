@@ -36,6 +36,7 @@ const trades = tradeFixture as unknown as TradeHistoryReport
 
 const COVERAGE: CoverageResponse = {
   start: '2025-09-21T00:00:00+00:00', end: '2026-10-09T20:56:00+00:00', timeframes: ['H1', 'M1', 'M5'],
+  origin_classes: 'production', collected_since: null,
 }
 
 /** One bar a minute over the fixture run's units, so every trade of theirs has a candle. */

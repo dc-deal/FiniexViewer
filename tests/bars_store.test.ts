@@ -29,6 +29,8 @@ const COVERAGE = {
   start: '2024-01-01T00:00:00',
   end: '2024-12-31T00:00:00',
   timeframes: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1'],
+  origin_classes: 'production',
+  collected_since: null,
 }
 
 const TARGET_BARS = 300
@@ -88,6 +90,8 @@ describe('useBarsStore', () => {
       start: '2024-01-01T00:00:00',
       end: '2024-12-31T00:00:00',
       timeframes: ['H1'],
+      origin_classes: 'production',
+      collected_since: null,
     })
     const store = useBarsStore()
     const selection = useSelectionStore()

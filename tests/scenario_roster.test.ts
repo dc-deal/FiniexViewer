@@ -68,6 +68,7 @@ function report(units: ScenarioRow[]): ScenarioDetailsReport {
       scenario_count: units.length,
       symbols: ['ETHUSD'],
       price_bases: 'order_driven',
+      origin_classes: 'production',
     }],
     keys: { units: ['name'], data_brokers: ['data_broker_type'] },
     scenario_count: units.length,

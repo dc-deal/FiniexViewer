@@ -109,6 +109,8 @@ export interface ScenarioDataBroker {
   scenario_count: number
   symbols: string[]
   price_bases: string
+  // whose data that broker's scenarios read, de-duplicated over them and comma-joined (contract 60)
+  origin_classes: string
 }
 
 /** What makes one row of each list unique, one entry per list — contract 9. */

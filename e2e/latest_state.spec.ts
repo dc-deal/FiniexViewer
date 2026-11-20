@@ -91,7 +91,10 @@ test('the frame on show stands on the run chart and moves with each step', async
     json: { ...(fixture('run_config_live.json') as object), run_id: STATE_FRAME_RUNS.ended },
   }))
   await page.route(/\/symbols\/[^/]+\/coverage/, route => route.fulfill({
-    json: { start: '2026-01-25T02:00:00+00:00', end: '2026-01-25T08:00:00+00:00', timeframes: ['M1'] },
+    json: {
+      start: '2026-01-25T02:00:00+00:00', end: '2026-01-25T08:00:00+00:00', timeframes: ['M1'],
+      origin_classes: 'production', collected_since: null,
+    },
   }))
   await page.route(/\/symbols\/[^/]+\/bars/, route => route.fulfill({ json: bars }))
   await page.setViewportSize({ width: 1800, height: 900 })

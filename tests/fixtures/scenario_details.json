@@ -1,5 +1,5 @@
 {
-  "run_id": "20261120_105646_e9c1844a",
+  "run_id": "20261120_115937_2d9329b1",
   "units": [
     {
       "name": "EURGBP_refusals_01",
@@ -14,7 +14,7 @@
       "account_currency": "EUR",
       "account_currency_explicit": false,
       "status": "success",
-      "execution_time_ms": 518.7818330014125,
+      "execution_time_ms": 675.6626240094192,
       "ticks_processed": 1883,
       "algo_passes": 1882,
       "ghost_passes": 0,
@@ -45,7 +45,7 @@
       "account_currency": "EUR",
       "account_currency_explicit": false,
       "status": "success",
-      "execution_time_ms": 607.7706689975457,
+      "execution_time_ms": 891.0923560033552,
       "ticks_processed": 2445,
       "algo_passes": 2442,
       "ghost_passes": 0,
@@ -83,7 +83,7 @@
       "account_currency": "USD",
       "account_currency_explicit": true,
       "status": "success",
-      "execution_time_ms": 2214.9879839998903,
+      "execution_time_ms": 4019.7555759950774,
       "ticks_processed": 20000,
       "algo_passes": 13060,
       "ghost_passes": 0,
@@ -145,7 +145,7 @@
       "account_currency": "EUR",
       "account_currency_explicit": false,
       "status": "success",
-      "execution_time_ms": 554.6943319932325,
+      "execution_time_ms": 806.0813870106358,
       "ticks_processed": 2445,
       "algo_passes": 2442,
       "ghost_passes": 0,
@@ -176,7 +176,7 @@
       "account_currency": "EUR",
       "account_currency_explicit": false,
       "status": "success",
-      "execution_time_ms": 493.3523500076262,
+      "execution_time_ms": 658.9881649997551,
       "ticks_processed": 1883,
       "algo_passes": 1882,
       "ghost_passes": 0,
@@ -203,7 +203,8 @@
       "symbols": [
         "ETHUSD"
       ],
-      "price_bases": "order_driven"
+      "price_bases": "order_driven",
+      "origin_classes": "production"
     },
     {
       "data_broker_type": "mt5",
@@ -212,7 +213,8 @@
       "symbols": [
         "EURGBP"
       ],
-      "price_bases": "quote_driven"
+      "price_bases": "quote_driven",
+      "origin_classes": "production"
     }
   ],
   "keys": {

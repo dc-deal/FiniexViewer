@@ -2,6 +2,18 @@ export interface CoverageResponse {
   start: string       // ISO-8601 UTC
   end: string         // ISO-8601 UTC
   timeframes: string[]
+  /**
+   * Whose data the bars were rendered from, over every timeframe (contract 60): `external` for a
+   * venue's published history, `production` and `development` for our own collection. Comma-joined
+   * like every other `origin_classes`, never split; empty where the bars predate the origin stamp.
+   */
+  origin_classes: string
+  /**
+   * Where our own collection takes over from a venue's published history, ISO-8601 UTC (contract 60).
+   * A bar opening before it was rendered from the venue's record. Null where the bars hold no
+   * external history before collected data — measured 2026-11-20: every MT5 symbol here.
+   */
+  collected_since: string | null
 }
 
 export interface ApiBar {

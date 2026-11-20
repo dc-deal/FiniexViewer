@@ -88,7 +88,10 @@ BASE = 'http://localhost:5173/api/v1'
 #
 # Re-pinned 2026-11-20 to the catalog produced again under contract 59, how a run's data was converted
 # and stamped, the id FiniexTestingIDE named; no figure moved.
-RUN = '20261120_105646_e9c1844a'
+#
+# Re-pinned the same day to the catalog produced again under contract 60, whose data the archive holds,
+# the id FiniexTestingIDE named; no figure moved.
+RUN = '20261120_115937_2d9329b1'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -126,7 +129,8 @@ LIVE_RUN = '20261007_152959_0275a107'
 # as before; 23.04 -> 22.30 USD net over the same 4 trades, as FiniexTestingIDE named.
 #
 # Re-pinned 2026-11-20 to the production under contract 59: the main history, as before; no figure moved.
-DEPLOY = 'deploy_20261120_110708_c2c3f71a'
+# Re-pinned the same day to the production under contract 60: the main history, as before; no figure moved.
+DEPLOY = 'deploy_20261120_124318_829bc0cd'
 
 # The sweep the ranking fixtures come from: a stored search of several combinations, every one of
 # them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get
@@ -154,7 +158,10 @@ DEPLOY = 'deploy_20261120_110708_c2c3f71a'
 #
 # Re-pinned 2026-11-20 to the production under contract 59, the id FiniexTestingIDE named; no figure
 # moved, and its combinations name the server clock rules their tick files were converted with.
-SWEEP = 'sweep_20261120_111602_c1a36fc6'
+#
+# Re-pinned the same day to the production under contract 60, the id FiniexTestingIDE named; no figure
+# moved.
+SWEEP = 'sweep_20261120_130008_eda73566'
 
 # The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
 # than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs
@@ -175,8 +182,9 @@ DIRTY_RUN = '20261012_205715_c3b41fff'
 # FiniexTestingIDE named; a session, so no figure moved.
 # Re-pinned 2026-11-19 to its production under contract 58, the session's timeline, the id
 # FiniexTestingIDE named; its figures unchanged, as they said.
-# Re-pinned 2026-11-20 to its production under contract 59, the id FiniexTestingIDE named.
-STATE_ENDED_RUN = '20261120_111255_49d7186d'
+# Re-pinned 2026-11-20 to its production under contract 59, the id FiniexTestingIDE named, and the same
+# day under 60.
+STATE_ENDED_RUN = '20261120_125159_3006c365'
 STATE_STOPPED_RUN = '20261022_123713_e059d354'
 
 # What a drawing worker records over time (contract 55): the fixture catalog's
@@ -185,8 +193,9 @@ STATE_STOPPED_RUN = '20261022_123713_e059d354'
 # Re-pinned 2026-11-16 to its production under contract 56, and the same day under 57, the id
 # FiniexTestingIDE named.
 # Re-pinned 2026-11-19 to its production under contract 58, the id FiniexTestingIDE named.
-# Re-pinned 2026-11-20 to its production under contract 59, the id FiniexTestingIDE named.
-SERIES_RUN = '20261120_111337_1515d142'
+# Re-pinned 2026-11-20 to its production under contract 59, the id FiniexTestingIDE named, and the same
+# day under 60.
+SERIES_RUN = '20261120_125326_6d2742f9'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),

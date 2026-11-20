@@ -132,7 +132,10 @@ describe('api_client', () => {
 
   describe('getCoverage', () => {
     it('calls correct endpoint and returns coverage response', async () => {
-      const coverage = { start: '2024-01-01', end: '2024-12-31', timeframes: ['H1', 'M30'] }
+      const coverage = {
+        start: '2024-01-01', end: '2024-12-31', timeframes: ['H1', 'M30'],
+        origin_classes: 'external,production', collected_since: '2024-06-01T00:00:00+00:00',
+      }
       mockGet.mockResolvedValue({ data: coverage })
       const result = await getCoverage('kraken_spot', 'BTCUSD')
       expect(result).toEqual(coverage)

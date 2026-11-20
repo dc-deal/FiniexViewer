@@ -528,6 +528,7 @@ async function stepFrames(page: Page, width: number, label: string): Promise<voi
   await page.route(/\/symbols\/[^/]+\/coverage/, route => route.fulfill({
     json: {
       start: new Date(opened * 1000).toISOString(), end: new Date((opened + 500 * 60) * 1000).toISOString(), timeframes: ['M1'],
+      origin_classes: 'production', collected_since: null,
     },
   }))
   await page.route(/\/symbols\/[^/]+\/bars/, route => route.fulfill({ json: bars }))

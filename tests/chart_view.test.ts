@@ -29,6 +29,7 @@ describe('ChartView', () => {
   it('hands the chart the price format of its market, once the symbols list is there', async () => {
     vi.mocked(apiClient.getCoverage).mockResolvedValue({
       start: '2024-01-01T00:00:00', end: '2024-12-31T00:00:00', timeframes: ['H1'],
+      origin_classes: 'production', collected_since: null,
     })
     vi.mocked(apiClient.getBars).mockResolvedValue({
       bars: [{ t: 1704067200, o: 1, h: 1, l: 1, c: 1, v: 1, tc: 1 }], truncated: false, priceBasis: '',
