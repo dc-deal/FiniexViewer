@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 import AppButton from '@/components/base/AppButton.vue'
 import { fittingCount } from '@/components/base/overflow_fit'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { t } from '@/translate'
 
 /**
@@ -116,7 +117,7 @@ watch(() => hidden.value.length, length => emit('overflow', length), { immediate
           >
             +{{ hidden.length }}
             <span v-if="picked !== undefined" class="overflow-badge">{{ picked || '' }}</span>
-            <span class="overflow-caret">▾</span>
+            <span class="overflow-caret"><AppIcon name="nav-menu" /></span>
           </AppButton>
         </DropdownMenuTrigger>
         <DropdownMenuPortal>

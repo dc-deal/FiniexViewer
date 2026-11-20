@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import ScopeMark from '@/components/base/ScopeMark.vue'
@@ -456,16 +455,11 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
 <template>
   <div class="trade-history">
     <p v-if="hidden" class="notice">
-      <span class="mark">⚠</span>
+      <span class="mark"><AppIcon name="status-warning" /></span>
       {{ t('Showing the first') }} {{ rowCap }} {{ t('of') }} {{ total }}
       {{ t('trades — the remainder are not drawn, which is not the same as not there') }}
     </p>
 
-    <!-- what the card's slippage is measured against, and where the links go: the one explanation
-         pattern, never a browser tooltip -->
-    <HintLine v-if="selected.length" id="trade-slippage" />
-    <HintLine v-if="selected.length && link.canJumpTo('orders')" id="position-link" />
-    <HintLine v-if="symbols.offered.value" id="symbol-filter" />
     <!-- only where the rows trade two symbols or more: with one there is nothing to choose -->
     <FacetBar
       v-if="symbols.offered.value"
@@ -511,7 +505,7 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
              leave it spanning tracks the grid no longer has. The count and the costs ride inside the
              name — they are a note ABOUT the group, never values of a column. -->
         <span class="group-name">
-          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+          <span v-if="marker" class="record-marker" aria-hidden="true"><AppIcon :name="marker" /></span>
           {{ group.key }}
           <span class="group-meta">
             <!-- one string: a `v-for` over text drops the space between its iterations -->
@@ -533,7 +527,7 @@ function fillCard(fill: FillRow, tick: number | null): FigureCard {
         <span :data-rank="3" class="trade-position">
           <!-- the fills opened with no glyph at all until 2026-10-08, so nothing said the row
                could be opened. The LIST decides the shape; this only places it. -->
-          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+          <span v-if="marker" class="record-marker" aria-hidden="true"><AppIcon :name="marker" /></span>
           <!-- a link only where there is an Orders panel to land in -->
           <JumpLink
             v-if="link.canJumpTo('orders')"

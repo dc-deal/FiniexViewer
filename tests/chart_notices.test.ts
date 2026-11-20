@@ -37,12 +37,14 @@ describe('ChartNotices', () => {
   /** Read a stretch at a time, the series can stop short of the bars: said with its glyph and the instant. */
   it('says why the series could not be read, with the glyph of an error', () => {
     const wrapper = mount(ChartNotices, { props: { offer: null, seriesError: 'The indicator series could not be read: network down' } })
-    expect(wrapper.find('.chart-notice.series-error').text()).toBe('✖ The indicator series could not be read: network down')
+    expect(wrapper.find('.chart-notice.series-error').text()).toBe('The indicator series could not be read: network down')
+    expect(wrapper.find('.chart-notice.series-error').find('[data-icon="status-error"]').exists()).toBe(true)
   })
 
   it('says where the series stop, where a read took its pages', () => {
     const at = Date.parse('2026-10-25T20:40:03Z') / 1000
     const wrapper = mount(ChartNotices, { props: { offer: null, seriesCutAt: at } })
-    expect(wrapper.find('.chart-notice.series-cut').text()).toBe('⚠ Series read up to 2026-10-25 20:40:03Z')
+    expect(wrapper.find('.chart-notice.series-cut').text()).toBe('Series read up to 2026-10-25 20:40:03Z')
+    expect(wrapper.find('.chart-notice.series-cut').find('[data-icon="status-warning"]').exists()).toBe(true)
   })
 })

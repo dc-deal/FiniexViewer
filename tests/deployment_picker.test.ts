@@ -400,8 +400,9 @@ describe('DeploymentPicker, what is running now', () => {
   it('marks the deployment with a recording session, and names the session in the card', () => {
     useRunsStore().runs = [run({})]
     const wrapper = mountPicker([deployment()])
-    expect(wrapper.findAll('.deployment-recording').map(mark => mark.text())).toEqual(['●', 'recording'])
-    expect(cardRows(wrapper)['Now']).toBe('● recording · run_live')
+    expect(wrapper.findAll('.deployment-recording').map(mark => mark.text())).toEqual(['', 'recording'])
+    expect(wrapper.find('.deployment-recording').find('[data-icon="status-recording"]').exists()).toBe(true)
+    expect(cardRows(wrapper)['Now']).toBe('recording · run_live')
   })
 
   it.each([

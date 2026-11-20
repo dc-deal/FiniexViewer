@@ -4,8 +4,9 @@ import { storeToRefs } from 'pinia'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
-import HintLine from '@/components/base/HintLine.vue'
+import HelpInfo from '@/components/base/HelpInfo.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { useDockStore } from '@/stores/dock_store'
 import { useNamedLayoutsStore } from '@/stores/named_layouts_store'
 import { LAYOUT_WIDTH_RANGE, useSettingsStore } from '@/stores/settings_store'
@@ -130,7 +131,7 @@ function suggestedOrder(): void {
 
 <template>
   <div class="layouts-settings">
-    <HintLine id="layouts" />
+    <HelpInfo id="layouts" class="settings-help" />
     <div class="layouts-body">
       <div class="layouts-list">
         <RecordList
@@ -142,7 +143,7 @@ function suggestedOrder(): void {
         >
           <template #default="{ row }">
             <span class="layout-row" :data-layout="row.id" :data-loaded="row.id === loaded?.id">
-              <span class="layout-check" aria-hidden="true">{{ row.id === loaded?.id ? '✓' : '' }}</span>
+              <span class="layout-check" aria-hidden="true"><AppIcon v-if="row.id === loaded?.id" name="status-checked" /></span>
               <span class="layout-name">{{ row.name }}</span>
               <span v-if="row.shipped" class="layout-word">{{ t('shipped') }}</span>
             </span>
@@ -150,8 +151,8 @@ function suggestedOrder(): void {
         </RecordList>
         <AppButton data-action="new-layout" @click="picked = NEW">+ {{ t('Save this window as …') }}</AppButton>
         <div class="layouts-files">
-          <AppButton data-action="export" @click="exportAll()">⬇️ {{ t('Export all …') }}</AppButton>
-          <AppButton data-action="import" @click="importInput?.click()">⬆️ {{ t('Import …') }}</AppButton>
+          <AppButton data-action="export" @click="exportAll()"><AppIcon name="action-export" /> {{ t('Export all …') }}</AppButton>
+          <AppButton data-action="import" @click="importInput?.click()"><AppIcon name="action-import" /> {{ t('Import …') }}</AppButton>
         </div>
         <p v-if="notice" class="layout-notice">{{ notice }}</p>
         <input ref="importInput" class="import-input" type="file" accept="application/json" @change="onImportPicked">
@@ -168,7 +169,7 @@ function suggestedOrder(): void {
             :readonly="!isNew && !own"
           >
         </label>
-        <p v-if="problem && (name || !isNew)" class="layout-problem">⚠ {{ problem }}</p>
+        <p v-if="problem && (name || !isNew)" class="layout-problem"><AppIcon name="status-warning" /> {{ problem }}</p>
         <div class="layout-actions">
           <AppButton v-if="isNew" type="submit" data-action="confirm-name" :disabled="problem !== null">
             {{ t('Save') }}
@@ -220,7 +221,7 @@ function suggestedOrder(): void {
           />
         </div>
       </div>
-      <HintLine id="layout-by-run" />
+      <HelpInfo id="layout-by-run" class="settings-help" />
     </div>
 
     <!-- the window's width choosing the loaded layout's size: on unless the reader switches it off -->
@@ -259,7 +260,7 @@ function suggestedOrder(): void {
           >
         </label>
       </div>
-      <HintLine id="size-by-window" />
+      <HelpInfo id="size-by-window" class="settings-help" />
     </div>
 
     <!-- where the docked panels stand without a layout: one way back, beside the layouts -->
@@ -268,7 +269,7 @@ function suggestedOrder(): void {
       <AppButton data-action="reset-dock" @click="suggestedOrder()">
         {{ t('Back to the suggested order') }}
       </AppButton>
-      <HintLine id="suggested-order" />
+      <HelpInfo id="suggested-order" class="settings-help" />
     </div>
   </div>
 </template>

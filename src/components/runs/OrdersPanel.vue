@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import ScopeMark from '@/components/base/ScopeMark.vue'
@@ -473,7 +472,6 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
 
 <template>
   <div class="orders-panel">
-    <HintLine v-if="symbols.offered.value" id="symbol-filter" />
     <!-- only where the rows trade two symbols or more: with one there is nothing to choose -->
     <FacetBar
       v-if="symbols.offered.value"
@@ -503,8 +501,6 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
         {{ t('close all') }}
       </button>
     </p>
-    <!-- said where there is something to explain: a run with no trade history draws no link -->
-    <HintLine v-if="link.canJumpTo('trade-history')" id="position-link" />
     <RecordList
       class="order-list"
       :rows="shown"
@@ -527,7 +523,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
       -->
       <template #outer="{ group, marker }">
         <span class="group-name" :title="group.key">
-          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+          <span v-if="marker" class="record-marker" aria-hidden="true"><AppIcon :name="marker" /></span>
           {{ group.key }}
           <span class="group-meta">
             <!--
@@ -588,7 +584,7 @@ function shapeOf(order: OrderHistoryRow | undefined): string {
       -->
       <template #group="{ group, marker }">
         <span class="position-name" :title="group.key">
-          <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+          <span v-if="marker" class="record-marker" aria-hidden="true"><AppIcon :name="marker" /></span>
           <!-- a LINK only where there is somewhere to go: a position that produced no trade, and
                a run that serves no trade history, both draw the id as the plain text it is -->
           <JumpLink

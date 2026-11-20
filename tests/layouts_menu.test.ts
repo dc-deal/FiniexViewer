@@ -50,7 +50,7 @@ describe('LayoutsMenu', () => {
     await openMenu()
     expect(entry('[data-layout="backtests"]').textContent).toContain('shipped')
     expect(entry('[data-layout="deploys"]').dataset['loaded']).toBe('true')
-    expect(entry('[data-layout="deploys"] .menu-check').textContent).toBe('✓')
+    expect(entry('[data-layout="deploys"] .menu-check').querySelector('[data-icon="status-checked"]')).not.toBeNull()
     expect(entry('[data-layout="backtests"] .menu-check').textContent).toBe('')
   })
 
@@ -94,7 +94,8 @@ describe('LayoutsMenu', () => {
     store.offer('deploys')
     await flushPromises()
     const offer = mounted!.find('[data-action="layout-offer"]')
-    expect(offer.text()).toBe('⇄ Deploys')
+    expect(offer.text()).toBe('Deploys')
+    expect(offer.find('[data-icon="action-switch-layout"]').exists()).toBe(true)
     await offer.trigger('click')
     expect(restore).toHaveBeenCalledTimes(2)
     expect(store.loaded?.id).toBe('deploys')

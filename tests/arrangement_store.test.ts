@@ -186,6 +186,25 @@ describe('useArrangementStore', () => {
       })
     })
 
+    /** A long timeline's frame (viewer#48): kept with its scope, and none where it is no forward stretch. */
+    it('keeps a timeline\'s window across a reload, and drops one without its scope or running backwards', async () => {
+      const arrangement = useArrangementStore()
+      arrangement.setPanelView('report-booking-periods', { periodWindow: { scope: 'run-1', from: 10, to: 20 } })
+      await nextTick()
+      const raw = stored()
+      raw['panelViews'] = {
+        ...(raw['panelViews'] as object),
+        deployments: { periodWindow: { from: 10, to: 20 } },
+        'run-chart': { periodWindow: { scope: 'run-2', from: 20, to: 10 } },
+      }
+      store(raw)
+
+      setActivePinia(createPinia())
+      expect(useArrangementStore().panelViews).toEqual({
+        'report-booking-periods': { periodWindow: { scope: 'run-1', from: 10, to: 20 } },
+      })
+    })
+
     /** Only what differs from a default is kept, so a view set back to it leaves no entry behind. */
     it('removes an entry left with nothing in it', async () => {
       const arrangement = useArrangementStore()

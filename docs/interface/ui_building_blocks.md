@@ -68,7 +68,9 @@ Everything in `src/components/base/` unless the third column names another place
 
 | Building block | What it is for | Lives in | Described in |
 |---|---|---|---|
-| `HintLine` | one short explanation beside the control it is about, dismissible and bannable | base | [Figures and Words on Screen](figures_and_words_on_screen.md) |
+| `HelpInfo` | an ⓘ beside what it explains: a help card with its name and first sentence while the pointer rests on it, the whole text at a click | base | [Figures and Words on Screen](figures_and_words_on_screen.md) |
+| `HelpTip` | the same help card on a control itself, adding no element — for rows of controls in a narrow panel | base | [Figures and Words on Screen](figures_and_words_on_screen.md) |
+| `EmptyNote` | why an area is empty, said in that area as a fixed sentence | base | [Figures and Words on Screen](figures_and_words_on_screen.md) |
 | `LoadingLine` | a section on its way: a line that moves, and the word beside it | base | — |
 | `AppSpinner` | a wait where no line fits — a panel whose content is not there yet | base | — |
 | `AppDialog` | what is set or read and then closed: a title, the content, one way out | base | [State and Storage](../architecture/state_and_storage.md) |

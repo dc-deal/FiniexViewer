@@ -82,7 +82,10 @@ BASE = 'http://localhost:5173/api/v1'
 # Re-pinned the same day to the catalog under contract 57, the backtest's timeline, the id
 # FiniexTestingIDE named: EUR net P&L 3.74 -> 3.95, USD -23.30 -> -23.27, its drawdown 43.30 -> 43.21 —
 # a fill at its due time instead of the next tick.
-RUN = '20261116_142142_83ec622d'
+#
+# Re-pinned 2026-11-19 to the catalog produced again under contract 58, the session's timeline, the id
+# FiniexTestingIDE named; a backtest, so no figure moved.
+RUN = '20261119_131838_dec84207'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -115,7 +118,10 @@ LIVE_RUN = '20261007_152959_0275a107'
 #
 # Re-pinned 2026-11-16 to the production under contract 56, and the same day under 57: the main
 # history, as before; sessions are not driven by the backtest's timeline, and no figure moved.
-DEPLOY = 'deploy_20261116_142222_8135460c'
+#
+# Re-pinned 2026-11-19 to the production under contract 58, the session's timeline: the main history,
+# as before; 23.04 -> 22.30 USD net over the same 4 trades, as FiniexTestingIDE named.
+DEPLOY = 'deploy_20261119_131940_8c8d9001'
 
 # The sweep the ranking fixtures come from: a stored search of several combinations, every one of
 # them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get
@@ -137,7 +143,10 @@ DEPLOY = 'deploy_20261116_142222_8135460c'
 # Re-pinned the same day to the production under contract 57, the id FiniexTestingIDE named: all nine
 # combinations moved with a fill at its due time — sl_mult 0.8 · tp_mult 1.5 459 -> 555 trades — and
 # sl_mult 1.5 · tp_mult 1.5 is still the best in USD, at -43.14.
-SWEEP = 'sweep_20261116_143053_3ac3fc68'
+#
+# Re-pinned 2026-11-19 to the production under contract 58, the id FiniexTestingIDE named; backtests,
+# so no figure moved.
+SWEEP = 'sweep_20261119_132759_34cd7344'
 
 # The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
 # than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs
@@ -156,7 +165,9 @@ DIRTY_RUN = '20261012_205715_c3b41fff'
 # FiniexTestingIDE named; the same session, 344 frames, no indicator series.
 # Re-pinned 2026-11-16 to its production under contract 56, and the same day under 57, the id
 # FiniexTestingIDE named; a session, so no figure moved.
-STATE_ENDED_RUN = '20261116_142757_38677227'
+# Re-pinned 2026-11-19 to its production under contract 58, the session's timeline, the id
+# FiniexTestingIDE named; its figures unchanged, as they said.
+STATE_ENDED_RUN = '20261119_132436_2141b7ed'
 STATE_STOPPED_RUN = '20261022_123713_e059d354'
 
 # What a drawing worker records over time (contract 55): the fixture catalog's
@@ -164,7 +175,8 @@ STATE_STOPPED_RUN = '20261022_123713_e059d354'
 # the candles and in panes of their own, one worker on two timeframes - beside its state frames.
 # Re-pinned 2026-11-16 to its production under contract 56, and the same day under 57, the id
 # FiniexTestingIDE named.
-SERIES_RUN = '20261116_142838_bfb973b6'
+# Re-pinned 2026-11-19 to its production under contract 58, the id FiniexTestingIDE named.
+SERIES_RUN = '20261119_132524_da5ce071'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),

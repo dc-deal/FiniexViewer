@@ -342,7 +342,7 @@ describe('ConfigPanel', () => {
     })
     const notice = wrapper.find('.notice.moved')
     expect(notice.exists()).toBe(true)
-    expect(notice.text()).toContain('⚠')
+    expect(notice.find('[data-icon="status-warning"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('w2')
     expect(wrapper.text()).toContain('strategy_config')
   })

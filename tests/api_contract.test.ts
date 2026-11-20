@@ -254,11 +254,11 @@ describe('api contract', () => {
   })
 
   /**
-   * Contract 56: a run row counts its units as its warnings-errors outcome does, and a sweep row names
-   * the head of what its own route ranks — the same run in the same currency, so a list can show a
-   * sweep as its best combination without asking for each sweep.
+   * Contract 56: a run row and a sweep's combination count their units as the run's warnings-errors
+   * outcome does, and a sweep row names the head of what its own route ranks — the same run in the
+   * same currency, so a list can show a sweep as its best combination without asking for each sweep.
    */
-  it('counts a run\'s units on its row, and names a sweep\'s best combination as its ranking does', () => {
+  it('counts a run\'s units on its row and its combination, and names a sweep\'s best combination as its ranking does', () => {
     const typed: SweepList = sweepsList
     expect(typed.best_combinations_key).toEqual(['currency'])
     const row = typed.sweeps.find(sweep => sweep.sweep_id === (sweepDetail as SweepDetail).sweep_id)!
@@ -270,6 +270,11 @@ describe('api contract', () => {
     const counted = (runsList as RunListResponse).runs.filter(run => run.total_units !== null)
     expect(counted.length).toBeGreaterThan(0)
     for (const run of counted) expect(run.failed_count! + run.succeeded_count!).toBe(run.total_units)
+    const combinations = detail.combinations.filter(combination => combination.total_units !== null)
+    expect(combinations.length).toBeGreaterThan(0)
+    for (const combination of combinations) {
+      expect(combination.failed_count! + combination.succeeded_count!).toBe(combination.total_units)
+    }
   })
 
   /** The ranking used an objective, and the response says which: the sweep's own, or the fallback it names. */

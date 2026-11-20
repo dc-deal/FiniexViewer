@@ -157,7 +157,7 @@ Panels ▾
 
 **The quick bar beside a group's tabs** holds the few options of the panel in FRONT of that group
 (`QuickBar`, from the kind's `quickBar`): for the free chart its broker, symbol and timeframe, for
-the run chart its unit and timeframe and `≡ Layers` — marked while the Layers panel is open — as compact selects (`AppSelect` with `compact`) — the value is what shows, the name while nothing is chosen, and
+the run chart its unit and timeframe and the *Layers* button — marked while the Layers panel is open — as compact selects (`AppSelect` with `compact`) — the value is what shows, the name while nothing is chosen, and
 each carries its name for a screen reader. A panel without options leaves the bar empty, and two
 groups side by side each speak for their own front panel.
 
@@ -173,8 +173,10 @@ as the tab is — while the timeframe's never does: cut, `M1(` named no timefram
 as wide as its widest option, so the timeframe offers its placeholder only while none is chosen;
 the word stood wider than any timeframe and pushed the button out (2026-10-29). In a header
 under 32rem — the run chart's at its first width beside an 1800 px window is 457 px — the button
-shows `≡` alone and a tab's subtitle shortens to 10ch. The header is a size container
-(`dock-header`) for exactly that. Until then the bar's floor was its full width: the tab took the
+shows its icon alone and a tab's subtitle shortens to 10ch; under 28rem the link button gives way,
+and the ⓘ beside the options with it — at the README's width the mark had cut the unit to `E…`
+(2026-11-19). A bar of the ⓘ alone keeps it. The header is a size container (`dock-header`) for
+exactly that. Until then the bar's floor was its full width: the tab took the
 whole shortfall and left for the overflow menu, and `≡ Layers` stood past the group's edge.
 
 **A group clips and is never scrolled.** dockview writes `overflow: hidden` on a group, which still

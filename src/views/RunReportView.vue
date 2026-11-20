@@ -12,7 +12,7 @@ import { noReportReason, startedAt } from '@/components/runs/report_format'
 import PanelColumn from '@/components/panels/PanelColumn.vue'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
-import HintLine from '@/components/base/HintLine.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { t } from '@/translate'
 
 /*
@@ -173,7 +173,7 @@ const missingSections = computed(() => {
         <p v-if="!selectedRun.has_reports" class="notice">{{ noReportReason(selectedRun) }}</p>
         <!-- one line per REASON, never one per absent section -->
         <p v-for="missing in missingSections" :key="missing.cause" class="notice absent">
-          <span class="mark">ⓘ</span>
+          <span class="mark"><AppIcon name="action-info" /></span>
           <span>
             <strong>{{ missing.sections.join(' · ') }}</strong>
             <template v-if="missing.detail"> — {{ missing.detail }}</template>
@@ -188,11 +188,6 @@ const missingSections = computed(() => {
         <p v-for="(message, section) in errorLines" :key="section" class="notice failed">
           {{ message }}
         </p>
-        <!-- how a section comes out of the column, and how it goes back; what the bundle's tab
-             offers behind ⋯; and how a panel docks along a whole edge of the dock, which nothing
-             on screen shows until a tab is dragged — one box, dismissed at once -->
-        <!-- an empty bundle says the same as the first hint and more, so that one stands down -->
-        <HintLine :id="emptied ? ['bundle-commands', 'dock-edges', 'panel-maximize'] : ['open-as-panel', 'bundle-commands', 'dock-edges', 'panel-maximize']" />
         <p v-if="emptied" class="notice empty-bundle">
           {{ everySectionOut
             ? t("Every section stands as a panel of its own or is hidden — “Back into the bundle” on a panel's tab brings it back here, the Panels menu shows a hidden one.")

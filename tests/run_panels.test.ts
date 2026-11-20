@@ -883,8 +883,8 @@ describe('RunHeaderPanel', () => {
     })
     await wrapper.find('.jump-link').trigger('click')
     expect(way.opened).toEqual([{ what: 'deployment', id: 'deploy_20260922_121648' }])
-    // what it opens stands in a hint, never on a browser tooltip
-    expect(wrapper.text()).toContain("the deployment's history")
+    // what it opens stands behind the header's ⓘ, never on a browser tooltip
+    expect(wrapper.find('[data-help]').attributes('data-help-ids')).toContain('run-membership')
     expect(wrapper.find('.jump-link').attributes('title')).toBeUndefined()
   })
 
@@ -909,7 +909,7 @@ describe('RunHeaderPanel', () => {
     })
     await wrapper.find('.jump-link').trigger('click')
     expect(way.opened).toEqual([{ what: 'sweep', id: 'sweep_20260830_154907' }])
-    expect(wrapper.text()).toContain("the sweep's ranking")
+    expect(wrapper.find('[data-help]').attributes('data-help-ids')).toContain('run-membership')
   })
 
   /**
@@ -982,8 +982,9 @@ describe('RunHeaderPanel', () => {
       props: { model: headerModel({}, header({ features_beyond_venue: ['stop_loss', 'take_profit'] })) },
     })
     expect(beyond.text()).toContain('Beyond the venue')
-    expect(beyond.find('.flagged').text()).toBe('⚠ stop_loss · take_profit')
-    expect(beyond.text()).toContain('do not predict a session on that venue')
+    expect(beyond.find('.flagged').text()).toBe('stop_loss · take_profit')
+    expect(beyond.find('.flagged').find('[data-icon="status-warning"]').exists()).toBe(true)
+    expect(beyond.find('[data-help]').attributes('data-help-ids')).toContain('beyond-the-venue')
   })
 
   /**
@@ -1007,10 +1008,10 @@ describe('RunHeaderPanel', () => {
     })
     expect(first.text()).toContain('Declared first start')
     expect(first.find('.flagged').exists()).toBe(false)
-    // what it means stands in a hint, never on a browser tooltip
-    expect(first.text()).toContain('without a carry-over to continue')
+    // what it means stands behind the header's ⓘ, never on a browser tooltip
+    expect(first.find('[data-help]').attributes('data-help-ids')).toContain('first-start')
     expect(first.find('dd[title]').exists()).toBe(false)
-    expect(quiet.text()).not.toContain('without a carry-over to continue')
+    expect(quiet.find('[data-help-ids*="first-start"]').exists()).toBe(false)
   })
 
   /**

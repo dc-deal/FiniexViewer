@@ -3,7 +3,7 @@
 How the reader arranges a chart's drawing layers — shows, hides, dims and orders them. What each
 layer draws, and the one host that draws them, is in [Chart Drawings and Layers](chart_drawings_and_layers.md).
 
-A panel of its own (kind `layers`), opened from the chart's quick bar (`≡ Layers`) as a narrow split
+A panel of its own (kind `layers`), opened from the chart's quick bar (the *Layers* button) as a narrow split
 to the right of the chart it arranges, at any width of the dock: as a tab it would hide that chart.
 It works on the chart LAST IN FRONT (`dock.lastChart`) — focus, not a selection, so no link key
 carries it, the way VS Code's Outline follows the editor in front; its tab card says *Follows — the
@@ -14,10 +14,9 @@ layer* in their glossary.
 ```
 Run chart · ETHUSD_aug_sep
 ▾ PRICE PANE                                       ← a pane's group, folded or open
-⠿ (━●) ▸ Trades                                ◐
-⠿ (━●) ▾ Entry–exit line     pick a position   ◐ 40%
-           💡 what it draws and what its option does      ← a hint, dismissible
-           (━●) every position                            ← the option, plain
+⠿ (━●) ▸ Trades                                ◐   ← its name: a help card at rest
+⠿ (━●) ▾ Entry–exit line       pick a position ◐ 40%
+    ⓘ      (━●) every position                      ← the option, plain; the whole text behind ⓘ
 ⠿ (●━) ▸ Levels                                ◐   ← switched off: the row grey
   (━●) ▸ Candles                               ◐   ← fixed: no grip, never moved
 ▾ VOLUME PANE

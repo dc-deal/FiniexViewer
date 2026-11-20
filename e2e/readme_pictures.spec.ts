@@ -15,7 +15,7 @@ import { showPanel, FIXTURES_SHOWN, SEEDED } from './arrangement_seed'
  *
  * Every picture is taken in ONE arrangement, `readme_arrangement.json` — three columns, every
  * bundle closed and its members standing as panels of their own — laid out 1920 wide in its own
- * proportions, the dark theme, every hint put away: the whole window once, then cut-outs of the
+ * proportions, the dark theme: the whole window once, then cut-outs of the
  * panels a highlight is about, with their tabs in front.
  *
  * Nothing private reaches a picture. The lists are narrowed to public runs — the deployments to the
@@ -27,30 +27,16 @@ import { showPanel, FIXTURES_SHOWN, SEEDED } from './arrangement_seed'
 const OUT = '/app/docs/images'
 const RUN = '20261007_145935_5f9186f8'
 const UNIT = 'EURUSD_blocks_09'
-const SESSION = '20261116_142757_38677227'
-const DEPLOYMENT = 'deploy_20261116_142222_8135460c'
+const SESSION = '20261119_132436_2141b7ed'
+const DEPLOYMENT = 'deploy_20261119_131940_8c8d9001'
 // a session of that deployment, so the panels beside it show the bot's run
-const DEPLOYMENT_SESSION = '20261116_142411_1de95739'
-const SWEEP = 'sweep_20261116_143053_3ac3fc68'
+const DEPLOYMENT_SESSION = '20261119_132117_bddc437d'
+const SWEEP = 'sweep_20261119_132759_34cd7344'
 // the arrangement the pictures are taken in, stored with the size it was arranged at
 const ARRANGEMENT = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'readme_arrangement.json'), 'utf-8'))
 const HIDDEN = (process.env['PICTURES_HIDE'] ?? '').split(',').map(word => word.trim().toLowerCase()).filter(Boolean)
-const HINTS = [
-  'scenario-pick', 'quick-bar', 'open-as-panel', 'bundle-commands', 'dock-edges', 'facet-bar', 'activities',
-  'deployment-sessions', 'sweeps', 'layers', 'layer-trades', 'layer-entry-exit', 'layer-levels', 'layer-candles',
-  'layer-volume', 'layer-state-frame', 'layer-empty-levels', 'layer-empty-entry-exit', 'layer-empty-trades',
-  'layer-empty-state-frame', 'chart-marks',
-  'trade-slippage', 'position-link', 'beyond-the-venue', 'first-start', 'run-membership',
-  'chart-panes', 'layer-periods', 'layer-empty-periods', 'layer-refusals', 'venue-account', 'bundle-places',
-  'layer-indicator', 'layer-empty-indicator', 'run-families', 'panel-maximize', 'layer-workers',
-  'layer-resting-orders', 'layer-empty-resting-orders', 'symbol-filter',
-  'servers', 'layouts', 'layout-by-run', 'size-by-window', 'suggested-order',
-]
 
 async function prepare(page: Page): Promise<void> {
-  await page.addInitScript(banned => {
-    window.localStorage.setItem('hints.v1', JSON.stringify({ version: 1, banned }))
-  }, HINTS)
   await page.setViewportSize({ width: 1920, height: 1000 })
 }
 

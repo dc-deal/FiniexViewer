@@ -25,7 +25,7 @@ function step(seq: number, eventType: string, fields: Partial<OrderEvent> = {}):
     position_id: 'pos_1', action: 'open', order_type: 'limit', symbol: 'BTCUSD', direction: 'long',
     client_order_id: null, broker_ref: null, previous_broker_ref: null, trade_id: null, lots: 0.1, cum_lots: null,
     fill_price: null, limit_price: 100, trigger_price: null, fee: null, fee_currency: null, fee_source: null,
-    submission_mid: null, submission_time_msc: null, in_flight_ms: null, event_time: minute(seq), ts_init: null,
+    submission_mid: null, submission_time_msc: null, in_flight_ms: null, event_time: minute(seq), ts_init: null, ts_event: null,
     initiator: null, end_reason: null, rejection_reason: null, venue_reason: null, message: null, lost_request: null,
     ...fields,
   }

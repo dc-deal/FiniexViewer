@@ -169,7 +169,7 @@ screen, 2026-10-19). A toggle that drew a frame only while on changed its width,
 beside it moved at every click; a hint whose dismissals stood beside its text squeezed the text to
 one word a line in a 240 px panel. So a glyph or a value that changes gets a fixed width (a
 `min-width` in `ch`); an off state is said by the knob and by greying the row, never by taking a
-frame away; and a box's actions wrap below its text before the text is squeezed (`HintLine`).
+frame away; and a box's actions wrap below its text before the text is squeezed.
 
 ## Icons — `AppIcon` and the registry
 
@@ -194,11 +194,26 @@ shape a panel takes, `kind-*` a panel kind — named after the panel's id — `s
 on two meanings that share a drawing, on a name outside the scheme, and on a panel whose icon is
 not `kind-<its id>`. It reads the source as text: a name in quotes of either kind counts, and the
 registry is left out by what it says rather than by its path, so moving the file cannot silence
-the check. Today the registry holds the eleven panel kinds, which replaced the emoji in the panel
-headers and in the section bar the Panels menu has since replaced; an emoji kept its own colours, so
-that bar greyed it out for a hidden panel, and a line icon in the element's colour needs only the
-fading. The app's other glyphs
-follow in a sweep of their own.
+the check. The panel kinds came first, replacing the emoji in the panel headers; an emoji kept its
+own colours, so a bar greyed it out for a hidden panel, and a line icon in the element's colour
+needs only the fading.
+
+**No glyph stands in for an icon since 2026-11-19** (viewer#44). Every symbol that carried a
+meaning — a status (`⚠ ✖ ✓ ● ■`), a disclosure (`▸ ▾`), a menu's caret, a control (`✕ ⚙ 📌 ≡ ⠿ ◐`),
+the frame player's buttons, the theme and the settings' emoji — is an icon of the registry, and a
+status keeps its word beside it. A disclosure has two meanings drawn alike in shape and apart in
+fill: `status-collapsed` / `status-expanded` (a filled caret) for what a click opens or folds, and
+`nav-submenu` / `nav-menu` (a chevron) for a menu and its submenus. What stays text, on purpose:
+
+- typography in running text — `→`, a menu path such as *Panels ▸ Activities*, the tree lines
+  `└ ─ ↳` in a list
+- marks drawn on the chart's canvas (`− × ± ↑ ↓`), where no component can stand
+- an option of a native `<select>`, which carries text only — the run chart's timeframe list keeps
+  its `●` before the number of workers served on that timeframe
+
+A list hands its disclosure to its caller as an icon name (`RecordList`'s `marker`), and a value in
+a card's warning role draws `status-warning` before itself (`FigureCardBody`), so no caller writes
+the glyph into the text.
 
 **The browser tab carries the same library's `chart-candle`** (`public/favicon.svg`), in the two
 accent values chosen by the browser's own colour scheme — a favicon cannot read the app's tokens.

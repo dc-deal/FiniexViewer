@@ -36,3 +36,12 @@ export interface TimelineLane {
   open?: () => void
   spans: TimelineSpan[]
 }
+
+/**
+ * A stretch of the caller's scale: the window a timeline frames and draws again in detail
+ * (viewer#48). On a scale of time, milliseconds.
+ */
+export interface TimeWindow {
+  from: number
+  to: number
+}

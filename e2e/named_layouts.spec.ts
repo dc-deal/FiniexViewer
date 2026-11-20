@@ -136,7 +136,7 @@ test('each size of a layout is a placement of its own, and a change goes into it
 test('the layout a backtest maps to is offered beside the menu, and loaded at a click', async ({ page }) => {
   await loadLayout(page, 'deploys')
   const offer = page.locator('[data-action="layout-offer"]')
-  await expect(offer).toHaveText('⇄ Backtests')
+  await expect(offer).toHaveText('Backtests')
   await expect(page.locator('[data-panel-kind="report-executive"]')).toHaveCount(0)
 
   await offer.click()

@@ -3,6 +3,7 @@ import { computed, onMounted, watch } from 'vue'
 import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSelect from '@/components/base/AppSelect.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import StateFrameBody from '@/components/runs/StateFrameBody.vue'
 import { utcInstant } from '@/components/runs/report_format'
 import { useFramePlayer } from '@/composables/use_frame_player'
@@ -67,8 +68,8 @@ function onKey(event: KeyboardEvent): void {
 <template>
   <div v-if="span && view" class="player" :data-frame="number">
     <div class="transport">
-      <AppButton size="compact" variant="quiet" glyph :disabled="busy || atFirst" :title="t('The first frame')" data-action="first" @click="player.first(unit)">⏮</AppButton>
-      <AppButton size="compact" variant="quiet" glyph :disabled="busy || atFirst" :title="t('One frame back')" data-action="back" @click="player.step(unit, -1)">◀</AppButton>
+      <AppButton size="compact" variant="quiet" glyph :disabled="busy || atFirst" :title="t('The first frame')" data-action="first" @click="player.first(unit)"><AppIcon name="action-first" /></AppButton>
+      <AppButton size="compact" variant="quiet" glyph :disabled="busy || atFirst" :title="t('One frame back')" data-action="back" @click="player.step(unit, -1)"><AppIcon name="action-back" /></AppButton>
       <AppButton
         size="compact"
         variant="quiet"
@@ -78,9 +79,9 @@ function onKey(event: KeyboardEvent): void {
         data-action="play"
         @click="player.toggle(unit)"
       >
-        {{ view.playing ? '❚❚' : '▶' }}
+        <AppIcon :name="view.playing ? 'action-pause' : 'action-play'" />
       </AppButton>
-      <AppButton size="compact" variant="quiet" glyph :disabled="busy || atNewest" :title="t('One frame on')" data-action="on" @click="player.step(unit, 1)">▶|</AppButton>
+      <AppButton size="compact" variant="quiet" glyph :disabled="busy || atNewest" :title="t('One frame on')" data-action="on" @click="player.step(unit, 1)"><AppIcon name="action-on" /></AppButton>
       <AppButton
         size="compact"
         variant="quiet"
@@ -91,7 +92,7 @@ function onKey(event: KeyboardEvent): void {
         data-action="newest"
         @click="player.latest(unit)"
       >
-        ⏭
+        <AppIcon name="action-newest" />
       </AppButton>
       <AppSelect
         compact

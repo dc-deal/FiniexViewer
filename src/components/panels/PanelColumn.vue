@@ -5,6 +5,7 @@ import { VueDraggable } from 'vue-draggable-plus'
 import { useDockStore } from '@/stores/dock_store'
 import { useLayoutStore, pinnedBoundary } from '@/stores/layout_store'
 import { bundleMembers, memberKindId } from '@/bundle_members'
+import { helpFor } from '@/panel_help'
 import AccordionPanel from '@/components/panels/AccordionPanel.vue'
 import PanelViewScope from '@/components/panels/PanelViewScope.vue'
 import LoadingLine from '@/components/base/LoadingLine.vue'
@@ -111,6 +112,7 @@ const order = computed({
       :pinned="panel.state.pinned"
       :locked="panel.state.locked"
       :reset-on="panel.model"
+      :help="helpFor(memberKindId(bundle, panel.state.id))"
       @update:open="value => layoutStore.setOpen(panel.state.id, value, bundle)"
       @toggle-pin="layoutStore.togglePin(panel.state.id, bundle)"
       @toggle-lock="layoutStore.toggleLock(panel.state.id, bundle)"

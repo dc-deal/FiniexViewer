@@ -7,6 +7,7 @@ import {
 } from 'reka-ui'
 import AboutDialog from '@/components/AboutDialog.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { useSettingsStore } from '@/stores/settings_store'
 import { t } from '@/translate'
 
@@ -18,8 +19,8 @@ const aboutOpen = ref(false)
 
 /** The entry names the theme it switches TO, so the symbol and the word say the same thing. */
 const themeSwitch = computed(() => settings.value.theme === 'dark'
-  ? { icon: '☀️', label: t('Light theme') }
-  : { icon: '🌙', label: t('Dark theme') })
+  ? { icon: 'status-light' as const, label: t('Light theme') }
+  : { icon: 'status-dark' as const, label: t('Dark theme') })
 
 </script>
 
@@ -27,15 +28,15 @@ const themeSwitch = computed(() => settings.value.theme === 'dark'
   <div class="top-menu">
     <DropdownMenuRoot>
       <DropdownMenuTrigger class="menu-trigger" :title="t('Menu')" :aria-label="t('Menu')">
-        ☰
+        <AppIcon name="action-menu" />
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
           <DropdownMenuItem class="menu-item" @select="settingsOpen = true">
-            ⚙️ {{ t('Settings…') }}
+            <AppIcon name="action-settings" /> {{ t('Settings…') }}
           </DropdownMenuItem>
           <DropdownMenuItem class="menu-item" @select="settingsStore.toggleTheme()">
-            {{ themeSwitch.icon }} {{ themeSwitch.label }}
+            <AppIcon :name="themeSwitch.icon" /> {{ themeSwitch.label }}
           </DropdownMenuItem>
           <DropdownMenuSeparator class="menu-separator" />
           <DropdownMenuItem class="menu-item" data-action="about" @select="aboutOpen = true">

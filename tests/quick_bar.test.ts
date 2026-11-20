@@ -28,8 +28,10 @@ describe('QuickBar', () => {
     expect(wrapper.find('select[aria-label="Broker"]').exists()).toBe(true)
   })
 
-  it('offers nothing for a panel that has no options, or where the group shows none', async () => {
-    expect(mount(QuickBar, { props: { kindId: 'deployments' } }).html()).not.toContain('quick-bar')
+  it('offers nothing for a panel that has neither options nor an explanation, or where the group shows none', async () => {
+    expect(mount(QuickBar, { props: { kindId: 'deployment-periods' } }).html()).not.toContain('quick-bar')
+    // a panel without options still has its ⓘ beside the tabs (viewer#24)
+    expect(mount(QuickBar, { props: { kindId: 'deployments' } }).find('[data-help]').exists()).toBe(true)
     expect(mount(QuickBar, { props: { kindId: null } }).html()).not.toContain('quick-bar')
     expect(mount(QuickBar, { props: { kindId: 'retired' } }).html()).not.toContain('quick-bar')
   })

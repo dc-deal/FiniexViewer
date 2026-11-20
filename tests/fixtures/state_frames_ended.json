@@ -2,21 +2,21 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-11-16T15:12:27.853657Z",
+  "served_at": "2026-11-19T15:12:43.713738Z",
   "units": [
     {
       "unit_name": "state_frames_test",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
-      "written_at": "2026-11-16T14:28:06.355938Z",
-      "age_s": 2661.497719,
+      "written_at": "2026-11-19T13:24:45.176752Z",
+      "age_s": 6478.536986,
       "recording": "ended",
       "truncated_tail": false,
       "first_frame": {
-        "written_at": "2026-11-16T14:28:04.015131Z",
+        "written_at": "2026-11-19T13:24:43.670115Z",
         "process_memory": {
-          "rss_bytes": 463470592,
-          "private_bytes": 387133440
+          "rss_bytes": 545202176,
+          "private_bytes": 472662016
         }
       },
       "outcome": {
@@ -43,29 +43,29 @@
       "frame": {
         "record_kind": "frame",
         "frame_time": "2026-01-25T08:00:00.320000Z",
-        "written_at": "2026-11-16T14:28:06.355938Z",
+        "written_at": "2026-11-19T13:24:45.176752Z",
         "written_for": "shutdown",
         "cadence_slot": null,
         "ticks_processed": 5980,
         "symbol": "BTCUSD",
         "account_currency": "USD",
         "last_price": 88513.1,
-        "balance": 1065.5819200000005,
+        "balance": 1068.9788800000006,
         "balances": {
-          "USD": 1065.5819200000005,
+          "USD": 1068.9788800000006,
           "BTC": 0.1
         },
-        "equity": 9916.891920000002,
-        "unrealized_pnl": -83.10808000000002,
+        "equity": 9920.288880000002,
+        "unrealized_pnl": -79.71111999999883,
         "open_positions": [
           {
             "position_id": "pos_btcusd_1",
             "direction": "long",
             "lots": 0.1,
-            "entry_price": 88635.1,
-            "entry_time": "2026-01-25T06:12:02.867000+00:00",
+            "entry_price": 88601.4,
+            "entry_time": "2026-01-25T06:12:05.345000+00:00",
             "last_price": 88513.1,
-            "unrealized_pnl": -83.10808000000002,
+            "unrealized_pnl": -79.71111999999883,
             "valued": true,
             "stop_loss": null,
             "take_profit": null
@@ -114,8 +114,8 @@
         "closed_bars": {},
         "order_id": null,
         "process_memory": {
-          "rss_bytes": 463470592,
-          "private_bytes": 387133440
+          "rss_bytes": 545202176,
+          "private_bytes": 472670208
         }
       }
     }

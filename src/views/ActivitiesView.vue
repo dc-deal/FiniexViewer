@@ -4,7 +4,6 @@ import { storeToRefs } from 'pinia'
 import AppIcon from '@/components/base/AppIcon.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
@@ -193,7 +192,6 @@ const unreadable = computed(() => activities.value?.unreadable_activity_ids.leng
 
 <template>
   <div class="activities-view">
-    <HintLine id="activities" />
 
     <!-- notices only where something is off: a list that is fine says nothing about itself -->
     <p v-if="activitiesError" class="notice error-msg">

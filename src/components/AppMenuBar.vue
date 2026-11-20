@@ -7,7 +7,6 @@ import {
 } from 'reka-ui'
 import NarrowingStatement from '@/components/NarrowingStatement.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import LayoutsMenu from '@/components/LayoutsMenu.vue'
 import TopMenu from '@/components/TopMenu.vue'
 import { useRankedBar } from '@/composables/use_ranked_bar'
@@ -133,7 +132,7 @@ useRankedBar(bar)
 
     <DropdownMenuRoot>
       <DropdownMenuTrigger class="menu-bar-trigger" data-rank="4">
-        <AppIcon name="action-panels" class="bar-icon" /><span class="bar-word">{{ t('Panels') }}</span> ▾
+        <AppIcon name="action-panels" class="bar-icon" /><span class="bar-word">{{ t('Panels') }}</span> <AppIcon name="nav-menu" />
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="menu-content" :side-offset="4" align="start">
@@ -143,7 +142,7 @@ useRankedBar(bar)
                 <span class="menu-check" aria-hidden="true" />
                 <AppIcon :name="entry.icon" />
                 <span class="menu-label">{{ entry.title }}</span>
-                <span class="menu-sub-arrow" aria-hidden="true">▸</span>
+                <span class="menu-sub-arrow" aria-hidden="true"><AppIcon name="nav-submenu" /></span>
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuSubContent class="menu-content" :side-offset="2">
@@ -156,7 +155,7 @@ useRankedBar(bar)
                     @update:model-value="toggleKind(kind)"
                     @select="stayOpen"
                   >
-                    <span class="menu-check" aria-hidden="true">{{ isOpen(kind) ? '✓' : '' }}</span>
+                    <span class="menu-check" aria-hidden="true"><AppIcon v-if="isOpen(kind)" name="status-checked" /></span>
                     <AppIcon :name="kind.icon" />
                     <span class="menu-label">{{ kind.menuTitle ?? kind.title }}</span>
                   </DropdownMenuCheckboxItem>
@@ -174,7 +173,7 @@ useRankedBar(bar)
                       @update:model-value="toggleSection(state, membersOf(entry.id)!.bundle)"
                       @select="stayOpen"
                     >
-                      <span class="menu-check" aria-hidden="true">{{ sectionShown(state, membersOf(entry.id)!.bundle) ? '✓' : '' }}</span>
+                      <span class="menu-check" aria-hidden="true"><AppIcon v-if="sectionShown(state, membersOf(entry.id)!.bundle)" name="status-checked" /></span>
                       <AppIcon :name="state.section.icon" />
                       <span class="menu-label">{{ t(state.section.title) }}</span>
                       <span class="menu-place">
@@ -182,7 +181,6 @@ useRankedBar(bar)
                         <AppIcon v-if="state.place === 'panel'" name="action-open-panel" />
                       </span>
                     </DropdownMenuCheckboxItem>
-                    <HintLine id="bundle-places" class="menu-hint" />
                   </template>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
@@ -195,7 +193,7 @@ useRankedBar(bar)
               @update:model-value="toggleKind(entry.kind)"
               @select="stayOpen"
             >
-              <span class="menu-check" aria-hidden="true">{{ isOpen(entry.kind) ? '✓' : '' }}</span>
+              <span class="menu-check" aria-hidden="true"><AppIcon v-if="isOpen(entry.kind)" name="status-checked" /></span>
               <AppIcon :name="entry.kind.icon" />
               <span class="menu-label">{{ entry.kind.menuTitle ?? entry.kind.title }}</span>
             </DropdownMenuCheckboxItem>
@@ -262,13 +260,6 @@ useRankedBar(bar)
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   white-space: nowrap;
-}
-
-/* as wide as the rows it explains, never wider: a line of its length would stretch the whole menu */
-.menu-hint {
-  width: 0;
-  min-width: 100%;
-  margin-top: var(--space-xs);
 }
 
 /* the run's doing: the section does not exist, so the entry cannot be switched */

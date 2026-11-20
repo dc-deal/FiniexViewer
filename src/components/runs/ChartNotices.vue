@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { utcInstant } from '@/components/runs/report_format'
 import type { TimeframeOffer } from '@/types/run_chart_types'
 import { t } from '@/translate'
@@ -38,7 +39,7 @@ const emit = defineEmits<{
     <!-- one sentence, the value after it: pieces of a sentence around a value cannot be reordered
          by a later translation -->
     <p v-if="offer" class="chart-notice offer">
-      <span class="notice-glyph" aria-hidden="true">▦</span>
+      <span class="notice-glyph" aria-hidden="true"><AppIcon name="status-dense" /></span>
       {{ t('Candles whose marks a finer timeframe draws apart') }}: {{ offer.apart }}
       <AppButton
         variant="quiet"
@@ -49,7 +50,7 @@ const emit = defineEmits<{
       >{{ offer.timeframe }}</AppButton>
     </p>
     <p v-if="seriesOffer" class="chart-notice series-offer">
-      <span class="notice-glyph" aria-hidden="true">∿</span>
+      <span class="notice-glyph" aria-hidden="true"><AppIcon name="status-series" /></span>
       {{ t('Series this timeframe cannot draw') }}: {{ seriesOffer.apart }}
       <AppButton
         variant="quiet"
@@ -61,16 +62,16 @@ const emit = defineEmits<{
     </p>
     <!-- a limit to weigh before trusting what is drawn: the glyph and the word, the colour only beside them -->
     <p v-if="seriesCutAt" class="chart-notice series-cut">
-      <span class="notice-glyph" aria-hidden="true">⚠</span>
+      <span class="notice-glyph" aria-hidden="true"><AppIcon name="status-warning" /></span>
       {{ t('Series read up to') }} {{ utcInstant(new Date(seriesCutAt * 1000).toISOString()) }}
     </p>
     <!-- the data or the request is wrong: the error's glyph and its words -->
     <p v-if="seriesError" class="chart-notice series-error">
-      <span class="notice-glyph" aria-hidden="true">✖</span>
+      <span class="notice-glyph" aria-hidden="true"><AppIcon name="status-error" /></span>
       {{ seriesError }}
     </p>
     <p v-if="ordersError" class="chart-notice orders-error">
-      <span class="notice-glyph" aria-hidden="true">✖</span>
+      <span class="notice-glyph" aria-hidden="true"><AppIcon name="status-error" /></span>
       {{ ordersError }}
     </p>
   </div>

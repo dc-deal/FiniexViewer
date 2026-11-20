@@ -47,7 +47,7 @@ function loadAsItStands(id: string): void {
 <template>
   <DropdownMenuRoot v-model:open="menuOpen">
     <DropdownMenuTrigger class="menu-bar-trigger layouts-trigger" data-rank="3">
-      <AppIcon name="action-layouts" class="bar-icon" /><span class="bar-word">{{ t('Layouts') }}</span> ▾
+      <AppIcon name="action-layouts" class="bar-icon" /><span class="bar-word">{{ t('Layouts') }}</span> <AppIcon name="nav-menu" />
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent class="menu-content layouts-menu" :side-offset="4" align="start">
@@ -58,10 +58,10 @@ function loadAsItStands(id: string): void {
             :data-loaded="layout.id === loaded?.id"
             @click="loadAsItStands(layout.id)"
           >
-            <span class="menu-check" aria-hidden="true">{{ layout.id === loaded?.id ? '✓' : '' }}</span>
+            <span class="menu-check" aria-hidden="true"><AppIcon v-if="layout.id === loaded?.id" name="status-checked" /></span>
             <span class="menu-label">{{ layout.name }}</span>
             <span v-if="layout.shipped" class="layout-word">{{ t('shipped') }}</span>
-            <span class="menu-sub-arrow" aria-hidden="true">▸</span>
+            <span class="menu-sub-arrow" aria-hidden="true"><AppIcon name="nav-submenu" /></span>
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent class="menu-content layout-sizes" :side-offset="2" :data-sizes-of="layout.id">
@@ -73,7 +73,7 @@ function loadAsItStands(id: string): void {
                 :data-loaded="layout.id === loaded?.id && size === loadedSize"
                 @select="store.load(layout.id, size)"
               >
-                <span class="menu-check" aria-hidden="true">{{ layout.id === loaded?.id && size === loadedSize ? '✓' : '' }}</span>
+                <span class="menu-check" aria-hidden="true"><AppIcon v-if="layout.id === loaded?.id && size === loadedSize" name="status-checked" /></span>
                 <span class="menu-label">{{ SIZE_NAMES[size] }}</span>
               </DropdownMenuItem>
             </DropdownMenuSubContent>
@@ -82,14 +82,14 @@ function loadAsItStands(id: string): void {
         <DropdownMenuSeparator class="menu-separator" />
         <DropdownMenuItem class="menu-item" data-action="manage-layouts" @select="settingsOpen = true">
           <span class="menu-check" aria-hidden="true" />
-          <span class="menu-label">⚙️ {{ t('Manage layouts…') }}</span>
+          <span class="menu-label"><AppIcon name="action-settings" /> {{ t('Manage layouts…') }}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
 
   <!-- the layout the chosen run maps to, one click away where another is loaded; short of room the
-       ⇄ stands alone, its name kept for a screen reader -->
+       icon stands alone, its name kept for a screen reader -->
   <AppButton
     v-if="offered"
     class="layout-offer"
@@ -99,7 +99,7 @@ function loadAsItStands(id: string): void {
     :data-layout="offered.id"
     @click="store.load(offered.id)"
   >
-    ⇄ <span class="bar-word">{{ offered.name }}</span>
+    <AppIcon name="action-switch-layout" /> <span class="bar-word">{{ offered.name }}</span>
   </AppButton>
 
   <SettingsDialog v-model:open="settingsOpen" tab="layouts" />

@@ -49,7 +49,8 @@ answer; this one is per run.
 
 **How many units of how many succeeded — contract 56, asked for by this repo.** The row counts its
 units (`total_units`, `failed_count`, `succeeded_count`, as the run's warnings-errors outcome counts
-them), and the `Outcome` cell shows that count beside the grade's glyph: `✓ 6/6`, `⚠ 5/6`, `✖ 0/2`
+them), and the `Outcome` cell shows that count beside the grade's icon (`status-success`,
+`status-warning`, `status-error`), drawn here as `✓ 6/6`, `⚠ 5/6`, `✖ 0/2`
 (operator, 2026-11-13: *"eigentlich will man nur wissen wieviel von wieviel green sind"*). Each grade
 has a FORM of its own — ✓ success, ⚠ finished_with_errors, ✖ failed or crashed — so a warning and an
 error are told apart without their colour, and the grade's word stands in the row's card with the

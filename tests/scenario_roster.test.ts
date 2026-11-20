@@ -462,21 +462,11 @@ describe('ScenarioRosterPanel', () => {
     })
 
     /**
-     * A control nobody recognises as a control does not exist — this row was built to look like
-     * running text and the first reader to see it could not tell that clicking did anything.
+     * A pick changes what is MARKED, never what stands where: a line naming the choice moved the
+     * whole list under the pointer; the choice is said once, in the menu bar.
      */
-    it('says what a click does, while nothing is picked', () => {
-      const { wrapper } = mountWithSelection()
-      expect(wrapper.find('.hint-line').text()).toContain('Click a scenario')
-    })
-
-    /**
-     * A pick changes what is MARKED, never what stands where. Swapping the hint for a line naming the
-     * choice moved the whole list under the pointer; the choice is said once, in the menu bar.
-     */
-    it('keeps the hint once something is picked, and marks the choice on its rows only', () => {
+    it('marks the choice on its rows only once something is picked', () => {
       const { wrapper } = mountWithSelection(MIXED, ['eth_a'])
-      expect(wrapper.find('.hint-line').text()).toContain('Click a scenario')
       expect(wrapper.findAll('.record-row.picked')).toHaveLength(1)
       expect(wrapper.text()).not.toContain('scenario chosen')
     })

@@ -280,7 +280,7 @@ export function sweepCard(sweep: SweepRow, detail: SweepDetail | undefined): Fig
       { label: t('Combinations'), value: `${sweep.run_count} · ${sweep.ok_count} ${t('usable')}` },
       { label: t('Ranked by'), value: rankedBy(sweep, detail).sentence },
       ...best,
-      ...sweepNotices(sweep, detail).map(notice => ({ label: notice.word, value: `⚠ ${notice.sentence}`, tone: 'warning' })),
+      ...sweepNotices(sweep, detail).map(notice => ({ label: notice.word, value: notice.sentence, tone: 'warning' })),
     ],
   }
 }
@@ -374,7 +374,7 @@ export function combinationCard(row: CombinationRow): FigureCard {
   if (combination.features_beyond_venue) {
     details.push({
       label: t('Beyond the venue'),
-      value: `⚠ ${featureWords(combination.features_beyond_venue).join(' · ')}`,
+      value: featureWords(combination.features_beyond_venue).join(' · '),
       tone: 'warning',
     })
   }

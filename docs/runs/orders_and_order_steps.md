@@ -96,6 +96,13 @@ stamp is `event_time` and says when THIS ROW's event happened — the fill on `e
 on `rejected`, the expiry on `expired`; it was `execution_time` until contract 20 and was renamed
 because that name means a DURATION everywhere else in the API.
 
+**In an AutoTrader session, every time is an arrival** (contract 58): `event_time`, a frame's
+instant, a trade's entry and exit say when a tick or the venue's answer reached the session, no
+longer the venue's stamp of the tick, so a live session's times move by the feed's delay; a session
+recorded before 58 carries the venue's stamps. The venue's own time of a step is `ts_event` on an
+order step — today only a live fill in full, null in a backtest, a mock session and a dry run. It is
+mirrored and not drawn: none of the captured runs carries one.
+
 **The orders RESTING at data end are shown in the heading and are NOT added to the funnel.** In a
 backtest the simulation records every such order as `expired` in the same step and deliberately
 leaves it in the active lists — one order, two views of one instant, and it is already a row below.

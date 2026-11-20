@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import AppButton from '@/components/base/AppButton.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
 import { t } from '@/translate'
@@ -43,7 +44,7 @@ const statement = computed(() =>
 
 <template>
   <p v-if="focused" class="narrowed-head">
-    <span class="mark" aria-hidden="true">⌖</span>
+    <span class="mark" aria-hidden="true"><AppIcon name="status-focus" /></span>
     <span class="narrowed-text" :title="statement" data-shortens>{{ statement }}</span>
     <AppButton variant="quiet" @click="runsStore.clearUnits()">
       {{ t('Show all') }}

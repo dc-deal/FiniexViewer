@@ -2,11 +2,13 @@
 import { onUnmounted, ref, watch } from 'vue'
 import FigureBlock from '@/components/base/FigureBlock.vue'
 import RuleHeading from '@/components/base/RuleHeading.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import StateFramePlayer from '@/components/runs/StateFramePlayer.vue'
 import { bytes, duration, utcInstant } from '@/components/runs/report_format'
 import { t } from '@/translate'
 import type { Figure } from '@/types/figure_types'
 import type { ProcessMemory, StateFrameUnit, StateFramesLatest } from '@/types/api/state_frame_types'
+import type { IconName } from '@/types/icon_types'
 
 /**
  * How a session stands while it runs — the check-in on its latest state frame, since every report
@@ -43,7 +45,7 @@ const clock = setInterval(() => { now.value = Date.now() }, 1000)
 onUnmounted(() => clearInterval(clock))
 
 interface Status {
-  glyph: string
+  icon: IconName | null
   words: string
   role: string
 }
@@ -62,28 +64,28 @@ function writtenAgo(unit: StateFrameUnit): string {
 function statusOf(unit: StateFrameUnit): Status {
   if (unit.recording === 'current') {
     return {
-      glyph: '●',
+      icon: 'status-recording',
       words: `${t('recording')} · ${writtenAgo(unit)} · ${t('cadence')} ${unit.cadence_timeframe}`,
       role: 'current',
     }
   }
   if (unit.recording === 'stopped') {
     return {
-      glyph: '⚠',
+      icon: 'status-warning',
       words: `${t('recording stopped')} · ${t('the last frame')} ${writtenAgo(unit)} — `
         + t('the session hangs or its process died; Panels ▸ Activities tells which'),
       role: 'stopped',
     }
   }
-  if (unit.recording === 'ended') return { glyph: '■', words: endedWords(unit), role: 'ended' }
+  if (unit.recording === 'ended') return { icon: 'status-ended', words: endedWords(unit), role: 'ended' }
   if (unit.recording === null) {
     return {
-      glyph: '◌',
+      icon: 'status-replay',
       words: t('replaying recorded data — the age of a frame says nothing about whether it runs'),
       role: 'replay',
     }
   }
-  return { glyph: '', words: unit.recording, role: '' }
+  return { icon: null, words: unit.recording, role: '' }
 }
 
 /**
@@ -139,7 +141,7 @@ function memoryOf(unit: StateFrameUnit): Figure[] {
       <RuleHeading v-if="model.units.length > 1" class="unit-name">{{ unit.unit_name }}</RuleHeading>
 
       <p class="status" :class="statusOf(unit).role">
-        <span class="glyph">{{ statusOf(unit).glyph }}</span> {{ statusOf(unit).words }}
+        <span class="glyph"><AppIcon v-if="statusOf(unit).icon" :name="statusOf(unit).icon!" /></span> {{ statusOf(unit).words }}
       </p>
       <!-- the session's OWN clock, said as a time and named as that clock; the machine's is the age above -->
       <p class="as-of">

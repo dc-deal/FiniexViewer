@@ -84,6 +84,41 @@ first to last. An END of the axis is where the periods stop rather than a round 
 scale of several days it carries its day; and *All times on* one day is said only where the scale
 stays inside that calendar day, not merely inside 24 hours.
 
+**A timeline too long to set its periods apart frames a stretch and draws it again beneath** (viewer#48,
+2026-11-19) — overview and detail, the way a long trace is read in a profiler or a range navigator.
+The overview stays what it was; where it cannot set two periods apart (the edge-to-edge lane above),
+it carries a FRAME in the link role, and a second timeline beneath draws the framed stretch with its
+periods apart, each with its ring and its card:
+
+```
+Drawn apart  [Quarter] [Month] [Week]
+overview  ETHUSD_blocks_01 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░
+                           2021 Feb ┃══ Apr ════┃ Jun   Aug   Oct   Dec    ← the frame
+Q2 2021   ETHUSD_blocks_01 ▕▓▏▕▓▏▕░▏▕▓▏▕▓▏▕▓▏▕░▏▕▓▏ …
+```
+
+- **Only where it is needed.** A run of thirty daily periods, or of a hundred at 800 px, keeps one
+  timeline: the frame appears only while the overview draws a lane edge to edge, measured on the
+  panel's own width, so a panel dragged narrow can bring it.
+- **Moved where the pointer is** (`base/TimelineChart.vue`, its `window`): a press beside the frame
+  centres it there, keeping its length; a drag moves it; its edges set its length; the arrow keys step
+  it a tenth, with Shift its whole length. The chart asks for every change, always inside the scale —
+  a frame pushed past an end slides back rather than shrinking.
+- **Its length by the calendar** (`runs/booking_period_window.ts`): *Year · Quarter · Month · Week*,
+  each the unit around the frame's middle — a quarter from January, April, July or October, a week
+  from Monday — cut at the run's edges, and offered only where shorter than the run: a frame as long
+  as the whole would draw it twice. The detail's scale is named by its preset (`Q2 2021`, `Jun 2021`)
+  and by its two ends where it was dragged free.
+- **The first frame** is the longest preset whose busiest lane gives each period 8 px from the run's
+  start — the 6 px a ring takes and two to spare: on the year-long run in the archive, at 800 px, the
+  first quarter.
+- **Kept for the run or deployment on show** (`periodWindow` in the panel's view, through
+  `useViewWindow`), after a pause in a drag rather than at every pixel; another scope starts from its
+  own. A named layout carries no frame, as it carries no rows of a run.
+
+The run's Booking Periods and a deployment's draw the same component, so both have it; nothing over
+several periods is figured for the frame — the *closing* stays FiniexTestingIDE's to serve (#46).
+
 **The table under the chart carries EVERY field a period has, and stays a table.** It once showed
 eleven of the fifteen the hover card shows, so the list meant to make periods comparable carried
 less than the thing that describes one. The two answer different questions — *what about this one*

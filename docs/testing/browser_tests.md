@@ -51,6 +51,11 @@ by its tab, the way a reader does.
   scenario leaves the executive panel's box and the row under the pointer exactly where they were —
   and a section still on its way keeping its panel standing with a loading line, the route held back
   on purpose.
+- `help_cards.spec.ts` holds the explanations' forms (viewer#24): the ⓘ beside the tabs showing a help
+  card with its name after a real rest of the pointer, the whole text of every explanation of the place
+  at a click, closed by Escape; a section of the bundle carrying its ⓘ in its header; no hint line
+  left in the layout; and a layer explaining itself on its name, with no ⓘ in its row and the whole
+  text behind an ⓘ under its lever when opened, on the line of the first option.
 - `settings_dialog.spec.ts` holds the settings dialog to ONE size whatever the tab, measured per
   tab, and to a frame that stays inside a small window with its content scrolling, and the account
   standing in the status bar with no tab for it in the settings.
@@ -109,7 +114,10 @@ by its tab, the way a reader does.
   card on a keyboard focus — the capture books one period per unit, so the spec serves it with its
   first unit booked twice and the rest of the body unchanged. And a unit booked daily for two
   hundred days: its lane drawn edge to edge without the ring, said beneath the lanes, on an axis of
-  calendar marks — the ring is paint, which only a browser shows. And the period list, once opened,
+  calendar marks — the ring is paint, which only a browser shows. And a unit booked daily for a year
+  (viewer#48): the overview framing a stretch drawn apart beneath, a year not offered for a run no
+  longer than one, a week chosen drawing seven or eight periods, a click near the axis's end moving
+  the frame there, and the frame kept for the run across a real reload. And the period list, once opened,
   still open after a real reload and in the section opened as a panel of its own.
   And as a panel of its own the table reaches the bottom of it, the whole table scrolling with its
   headings sticky, while in the bundle's column its list keeps its cap — only a browser lays out.
@@ -118,8 +126,8 @@ by its tab, the way a reader does.
   position marked in the list; the Panels menu opening it on the first unit with trades; the opening
   of a position the run ended with still open marked, though it has no trade; its stretch of time
   kept through its panel given the whole dock and back; marks that would cover
-  each other drawn as one when zoomed out and split again when zoomed in, none lost; the hint above
-  the chart leaving the whole chart inside its panel; the field study's resting orders drawn on its
+  each other drawn as one when zoomed out and split again when zoomed in, none lost; the whole chart
+  inside its panel, its time axis in view; the field study's resting orders drawn on its
   market's candles, from its own configuration; a link opening the run chart on its timeframe at its
   moment with the address clean after and a reload keeping the stored state, and a link loading the
   layout its run maps to where the layout by run switches (viewer#60); the levels of the position looked at painted
@@ -249,7 +257,7 @@ transform pulled it back on screen but not in layout, so a panel offered 67 px o
 nothing. Both are geometry, so jsdom cannot see either. `view_heights.spec.ts` holds that **a list
 caps its height against its VIEW, not the window**: the run list ends inside a view given half the
 window's height, keeps at least a row in a very short one, and reaches the bottom of its panel
-with the hint dismissed — a fixed reserve for the hint once left 144 px empty below the last row. Its first version ran at full height
+— a fixed reserve for the hint line that stood above it once left 144 px empty below the last row. Its first version ran at full height
 and stayed green with the size container removed — the budget around the list holds more slack
 than the gap between window and view — so the view is now shrunk, and both tests were seen to fail
 once with the container, and once with the floor, taken away. `performance.spec.ts` is excluded from the
@@ -283,7 +291,7 @@ frame after it: since the dock lays out in proportion, every panel on show is la
 2026-10-29): at every release, and whenever a view they show changes visibly. Against the LIVE API
 and from runs the backend's fixture catalogue keeps, in ONE arrangement — `readme_arrangement.json`,
 three columns with every bundle closed and its members standing apart — laid out 1920 wide in its
-own proportions, the dark theme, every hint put away: the whole window once, then the dock group a
+own proportions, the dark theme: the whole window once, then the dock group a
 highlight is about. Nothing private reaches a picture: the lists are narrowed to public runs, and
 `PICTURES_HIDE`, a comma list of words given at the call and never written into the repository,
 fails the run wherever one of them stands in the window's text. The session's picture fails the

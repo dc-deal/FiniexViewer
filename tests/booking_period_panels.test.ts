@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
+import { setActivePinia, createPinia } from 'pinia'
+import { defineComponent, h, nextTick } from 'vue'
 import BookingPeriodsPanel from '@/components/runs/BookingPeriodsPanel.vue'
 import { provideFillsPanel } from '@/composables/use_fills_panel'
 import { provideTestSelection } from './scenario_selection_harness'
@@ -8,6 +9,9 @@ import { provideTestOpenInContext } from './open_in_context_harness'
 import type { TestOpenInContext } from './open_in_context_harness'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
+import TimelineChart from '@/components/base/TimelineChart.vue'
+import { providePanelView } from '@/composables/use_panel_view'
+import { useArrangementStore } from '@/stores/arrangement_store'
 import type { BookingPeriodRow, BookingPeriodsReport } from '@/types/api/report_types'
 import type { DeploymentSessionRow } from '@/types/api/deployment_types'
 
@@ -160,7 +164,7 @@ describe('BookingPeriodsPanel — the reconciliation', () => {
     const wrapper = mountPanel(report({ reconciles: null, run_net_pnl: null, run_total_trades: null }))
     expect(wrapper.text()).toContain('Not checked')
     expect(wrapper.find('.verdict').classes()).not.toContain('agrees')
-    expect(wrapper.find('.verdict-mark').text()).not.toBe('✓')
+    expect(wrapper.find('.verdict-mark [data-icon]').attributes('data-icon')).toBe('status-unchecked')
   })
 
   it('makes an unrun check as loud as a failed one', () => {
@@ -893,3 +897,91 @@ describe('BookingPeriodTimeline — a long scale', () => {
     expect(inside.find('.axis').attributes('title')).toContain('All times on 2021-03-01')
   })
 })
+
+/**
+ * A long timeline (viewer#48): where the overview cannot set its periods apart it frames a stretch
+ * and draws it again beneath. The overview says when it is dense and how wide it is; jsdom lays out
+ * nothing, so the test says it for the chart.
+ */
+describe('BookingPeriodTimeline — a long timeline drawn apart', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const START = Date.parse('2021-01-01T00:00:00Z')
+  const stamp = (at: number) => new Date(at).toISOString().replace('.000Z', '+00:00')
+
+  /**
+   * Four months of daily periods in one unit — the year-long run's shape, short enough that jsdom draws
+   * a card per period in time.
+   */
+  const DAILY = Array.from({ length: 120 }, (_, day) => period({
+    unit_name: 'ETHUSD_blocks_01',
+    period_no: day + 1,
+    opened_at: stamp(START + day * DAY),
+    closed_at: stamp(START + (day + 1) * DAY - 1000),
+  }))
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  async function dense(wrapper: ReturnType<typeof mount>, width = 800): Promise<void> {
+    const overview = wrapper.findAllComponents(TimelineChart)[0]!
+    overview.vm.$emit('measured', width)
+    overview.vm.$emit('dense', true)
+    await nextTick()
+  }
+
+  it('keeps one timeline where the overview sets its periods apart', () => {
+    const wrapper = mount(BookingPeriodTimeline, { props: { periods: DAILY, keyFields: ['unit_name', 'period_no'], order: 'time' } })
+    expect(wrapper.findAllComponents(TimelineChart)).toHaveLength(1)
+    expect(wrapper.find('[data-preset]').exists()).toBe(false)
+  })
+
+  it('frames the longest preset whose periods stand apart, and draws them again beneath', async () => {
+    const wrapper = mount(BookingPeriodTimeline, { props: { periods: DAILY, keyFields: ['unit_name', 'period_no'], order: 'time' } })
+    await dense(wrapper, 300)
+    const charts = wrapper.findAllComponents(TimelineChart)
+    expect(charts).toHaveLength(2)
+    // a quarter's 90 days at 8 px take 720 px, January's 31 take 248: at 300 px, the first month
+    expect(charts[0]!.props('window')).toEqual({ from: START, to: Date.parse('2021-02-01T00:00:00Z') })
+    expect(charts[1]!.props('lanes')[0].spans).toHaveLength(31)
+    expect(charts[1]!.props('scaleLabel')).toBe('Jan 2021')
+    // a year is longer than the run: not offered
+    expect(wrapper.findAll('[data-preset]').map(button => button.attributes('data-preset'))).toEqual(['quarter', 'month', 'week'])
+    expect(wrapper.find('[data-preset="month"]').classes()).toContain('active')
+  })
+
+  it('follows where the overview moves the frame, and a preset sets its length around its middle', async () => {
+    const wrapper = mount(BookingPeriodTimeline, { props: { periods: DAILY, keyFields: ['unit_name', 'period_no'], order: 'time' } })
+    await dense(wrapper, 300)
+    const moved = { from: Date.parse('2021-02-03T00:00:00Z'), to: Date.parse('2021-03-20T00:00:00Z') }
+    wrapper.findAllComponents(TimelineChart)[0]!.vm.$emit('update:window', moved)
+    await nextTick()
+    expect(wrapper.findAllComponents(TimelineChart)[0]!.props('window')).toEqual(moved)
+    expect(wrapper.find('[data-preset].active').exists()).toBe(false)
+
+    await wrapper.find('[data-preset="month"]').trigger('click')
+    // the middle of 3 February – 20 March is in February
+    expect(wrapper.findAllComponents(TimelineChart)[0]!.props('window'))
+      .toEqual({ from: Date.parse('2021-02-01T00:00:00Z'), to: Date.parse('2021-03-01T00:00:00Z') })
+    expect(wrapper.findAllComponents(TimelineChart)[1]!.props('scaleLabel')).toBe('Feb 2021')
+  })
+
+  it('keeps the frame for the run on show, after a pause, and only for it', async () => {
+    vi.useFakeTimers()
+    setActivePinia(createPinia())
+    const Host = defineComponent({
+      setup() {
+        providePanelView('report-booking-periods')
+        return () => h(BookingPeriodTimeline, { periods: DAILY, keyFields: ['unit_name', 'period_no'], order: 'time', scopeId: 'run-1' })
+      },
+    })
+    const wrapper = mount(Host)
+    await dense(wrapper, 300)
+    const moved = { from: Date.parse('2021-02-01T00:00:00Z'), to: Date.parse('2021-03-01T00:00:00Z') }
+    wrapper.findAllComponents(TimelineChart)[0]!.vm.$emit('update:window', moved)
+    expect(useArrangementStore().panelViews['report-booking-periods']?.periodWindow).toBeUndefined()
+    vi.advanceTimersByTime(400)
+    expect(useArrangementStore().panelViews['report-booking-periods']?.periodWindow).toEqual({ scope: 'run-1', ...moved })
+  })
+})
+

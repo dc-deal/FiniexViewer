@@ -105,21 +105,15 @@ describe('RunChartView', () => {
     expect(wrapper.find('.chart-notice.orders-error').text()).toContain('The order steps could not be read')
   })
 
-  /** What the shapes mean, said once over the chart — and dismissible, like every hint. */
-  it('explains the shapes of its marks in a hint line', async () => {
-    chooseFixtureRun()
-    const wrapper = await mountView()
-    expect(wrapper.text()).toContain('↑↓ a position opened')
-  })
-
   /**
    * The controls on a pane are the chart's own for its heights, and the layer's own lever for what it
    * draws: the eye on the volume's pane hides the volume layer, as its row in the Layers panel does.
    */
-  it('hands the controls of a pane to the layers and the panes of the chart, and explains them', async () => {
+  it('hands the controls of a pane to the layers and the panes of the chart', async () => {
     chooseFixtureRun()
     const wrapper = await mountView()
-    expect(wrapper.text()).toContain('Drag the line between two panes')
+    // what the marks and the panes mean stands behind the ⓘ beside the tabs (viewer#24), not over the chart
+    expect(wrapper.find('.hint-line').exists()).toBe(false)
     const chart = wrapper.findComponent(CandleChart)
     chart.vm.$emit('paneShown', 'volume', false)
     chart.vm.$emit('paneShown', 'price', false)
@@ -292,7 +286,7 @@ describe('RunChartQuickBar', () => {
     await flushPromises()
     const copied = readLink(new URL(writeText.mock.calls[0]![0] as string).search)!
     expect(copied).toMatchObject({ run: RUN, units: [chart.unit!.name], chart: { timeframe: 'M5', at: Date.parse('2026-10-07T15:30:00Z') / 1000 } })
-    expect(button.text()).toBe('✓')
+    expect(button.find('[data-icon="status-checked"]').exists()).toBe(true)
   })
 
   /** A select is as wide as its widest option: the word stood wider than any timeframe. */

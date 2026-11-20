@@ -7,9 +7,9 @@ import { recordingOf } from '@/components/runs/recording_mark'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { deploymentCard, idleGap } from '@/components/deployments/deployment_card'
 import { useFacetState } from '@/composables/use_facet_state'
 import { rowKey } from '@/api/list_key'
@@ -172,8 +172,8 @@ function cardOf(row: DeploymentRow) {
   }
   const session = recordingSession(row)
   if (session) {
-    const { glyph, word } = recordingOf('current')
-    details.unshift({ label: t('Now'), value: `${glyph} ${word} · ${session}` })
+    const { word } = recordingOf('current')
+    details.unshift({ label: t('Now'), value: `${word} · ${session}` })
   }
   return { ...card, details }
 }
@@ -203,7 +203,6 @@ function pick(row: DeploymentRow): void {
     </div>
 
     <template v-else>
-      <HintLine id="facet-bar" />
       <FacetBar
         v-model:selection="selection"
         v-model:search="search"
@@ -235,7 +234,7 @@ function pick(row: DeploymentRow): void {
         <template #default="{ row }">
           <span :data-rank="1" class="deployment-when">{{ startedAt(row.last_started) || t('no date') }}</span>
           <span :data-rank="1" class="deployment-id" :title="row.deployment_id">
-            <span v-if="recordingSession(row)" class="deployment-recording" @click.stop="openRecording(row)">{{ recordingOf('current').glyph }}</span>
+            <span v-if="recordingSession(row)" class="deployment-recording" @click.stop="openRecording(row)"><AppIcon :name="recordingOf('current').icon!" /></span>
             {{ row.deployment_id }}
           </span>
           <span :data-rank="1" class="deployment-bot" :title="row.bot">{{ row.bot }}</span>

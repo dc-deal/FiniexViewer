@@ -5,10 +5,10 @@ import { useRunsStore } from '@/stores/runs_store'
 import { recordingOf } from '@/components/runs/recording_mark'
 import AppButton from '@/components/base/AppButton.vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import AppSpinner from '@/components/base/AppSpinner.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { useFacetState } from '@/composables/use_facet_state'
 import { useOpenInContext } from '@/composables/use_open_in_context'
 import type { FacetDefinition, SortDefinition } from '@/types/facet_types'
@@ -16,6 +16,7 @@ import type { ListColumn, ListGroup } from '@/types/list_types'
 import type { Figure, FigureCard } from '@/types/figure_types'
 import { amount, bytes, marketSpan, shortHash, sortInstant, startedAt, utcInstant } from '@/components/runs/report_format'
 import type { RunInfo, RunResult } from '@/types/api/report_types'
+import type { IconName } from '@/types/icon_types'
 import { plural, t } from '@/translate'
 
 /**
@@ -529,11 +530,11 @@ function toggleFamily(key: string): void {
  * are inseparable under red-green colour blindness in the light theme. The grade is the backend's
  * word; one it adds later reads as the cross.
  */
-const OUTCOME_GLYPH: Record<string, string> = {
-  success: '✓',
-  finished_with_errors: '⚠',
-  failed: '✖',
-  crashed: '✖',
+const OUTCOME_ICON: Record<string, IconName> = {
+  success: 'status-success',
+  finished_with_errors: 'status-warning',
+  failed: 'status-error',
+  crashed: 'status-error',
 }
 
 /** How many of a run's units succeeded, as its row counts them (contract 56) — none where it does not. */
@@ -634,8 +635,6 @@ function choose(runId: string): void {
     </div>
 
     <template v-else>
-      <HintLine id="facet-bar" />
-      <HintLine id="run-families" />
       <FacetBar
         v-model:selection="selection"
         v-model:search="search"
@@ -688,7 +687,7 @@ function choose(runId: string): void {
                read from its column, so the heading gives way with the rows and no number is kept
                twice; the row's cells below stay the place that pairs a column with its field -->
           <span :data-rank="columns[0]!.rank" class="family-meta">
-            <span v-if="marker" class="record-marker" aria-hidden="true">{{ marker }}</span>
+            <span v-if="marker" class="record-marker" aria-hidden="true"><AppIcon :name="marker" /></span>
             {{ group.rows.length }}
           </span>
           <span :data-rank="columns[1]!.rank" class="run-when">{{ startedAt(newestOf(group)?.start_time ?? '') || t('no date') }}</span>
@@ -700,7 +699,7 @@ function choose(runId: string): void {
         <!-- the button that folds a family's earlier runs, beside its newest one: the glyph and how
              many it opens, no word — `▸ 4 earlier` left a narrow list `t…` of the set's name
              (operator, on screen 2026-11-13); the hint says what it opens -->
-        <template #fold="{ marker, count }">{{ marker }} {{ count }}</template>
+        <template #fold="{ marker, count }"><AppIcon v-if="marker" :name="marker" /> {{ count }}</template>
         <!-- A logs-only run is chosen like any other: the view says what it is, and the store asks
              for nothing. A row that cannot be clicked is the look of a broken control. -->
         <!-- the rank on every cell is the one its own column declares: the list owns the tracks and
@@ -732,11 +731,11 @@ function choose(runId: string): void {
                  (contract 56; operator, 2026-11-13: "wieviel von wieviel green sind 3/3"), else the
                  grade's word. The word stands in the row's card either way -->
             <template v-if="run.run_outcome">
-              {{ OUTCOME_GLYPH[run.run_outcome] ?? '✖' }} {{ unitsOf(run) ?? run.run_outcome }}
+              <AppIcon :name="OUTCOME_ICON[run.run_outcome] ?? 'status-error'" /> {{ unitsOf(run) ?? run.run_outcome }}
             </template>
             <!-- no grade yet: a session recording its state frames says how that stands -->
             <template v-else-if="run.recording">
-              {{ recordingOf(run.recording).glyph }} {{ recordingOf(run.recording).word }}
+              <AppIcon v-if="recordingOf(run.recording).icon" :name="recordingOf(run.recording).icon!" /> {{ recordingOf(run.recording).word }}
             </template>
           </span>
           <!-- one line per account currency, and the two cells iterate the same list, so the
@@ -755,8 +754,8 @@ function choose(runId: string): void {
           </span>
           <!-- one slot, present or not: a mark on some rows and not others moved the column -->
           <span :data-rank="3" class="run-counts">
-            <span v-if="run.error_count" class="run-mark error">✖ {{ run.error_count }}</span>
-            <span v-if="run.warning_count" class="run-mark warned">⚠ {{ run.warning_count }}</span>
+            <span v-if="run.error_count" class="run-mark error"><AppIcon name="status-error" /> {{ run.error_count }}</span>
+            <span v-if="run.warning_count" class="run-mark warned"><AppIcon name="status-warning" /> {{ run.warning_count }}</span>
           </span>
           <!-- one cell, however many marks: two spans of their own would push the id column to a
                different place on every row, which is what made the list look ragged -->

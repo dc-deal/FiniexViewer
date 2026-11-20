@@ -89,7 +89,8 @@ Where `headOf` answers null the group keeps a heading of its own.
 
 **ONE disclosure glyph, and the list decides it.** Two panels wrote `group.open ? '▾' : '▸'` by
 hand, a third opened its fills with no glyph at all, and the operator could not find the disclosure
-on screen (2026-10-08). The glyph now travels as a slot prop — `marker` — exactly as a row's does:
+on screen (2026-10-08). The glyph now travels as a slot prop — `marker`, the name of an icon since
+2026-11-19 (`status-collapsed` or `status-expanded`, `''` where nothing opens), drawn with `AppIcon` — exactly as a row's does:
 the list decides the SHAPE and the STATE, the caller decides which cell it sits in, because the
 caller owns the cells. The intermediate form, where the list drew its own glyph beside the slot,
 cost its own defect: a position heading carried TWO triangles, and the unit test read the first of

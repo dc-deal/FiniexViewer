@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import HintLine from '@/components/base/HintLine.vue'
 import RuleHeading from '@/components/base/RuleHeading.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { utcInstant, venueFigure } from '@/components/runs/report_format'
 import {
   accountOf, assetsOf, balanceOf, missingReads, partOf, readSummary, readsOf, reasonOf, reconciliationNotices,
@@ -44,7 +44,6 @@ const units = computed(() => unitNames(props.model).map(name => {
 
 <template>
   <div class="venue-account">
-    <HintLine id="venue-account" />
     <section v-for="unit in units" :key="unit.name" class="unit" :data-unit="unit.name">
       <RuleHeading v-if="units.length > 1" class="unit-name">{{ unit.name }}</RuleHeading>
 
@@ -74,7 +73,7 @@ const units = computed(() => unitNames(props.model).map(name => {
       <p v-for="sentence in unit.missing" :key="sentence" class="missing">{{ sentence }}</p>
       <!-- a status travels with its glyph and its word -->
       <p v-for="notice in unit.notices" :key="notice.text" class="notice" :class="notice.tone">
-        <template v-if="notice.tone === 'warning'">⚠ </template>{{ notice.text }}
+        <template v-if="notice.tone === 'warning'"><AppIcon name="status-warning" /> </template>{{ notice.text }}
       </p>
       <p v-if="model.reads?.truncated_tail" class="missing">
         {{ t('Its last line was being written, so the list ends before it') }}
@@ -87,7 +86,7 @@ const units = computed(() => unitNames(props.model).map(name => {
             <span class="seq">seq {{ read.seq }}</span>
             <span class="when">{{ utcInstant(read.event_time) }}</span>
             <span class="reason">{{ reasonOf(read) }}</span>
-            <span class="summary" :class="{ divergent: read.reconcile_state === 'divergent' }">{{ readSummary(read) }}</span>
+            <span class="summary" :class="{ divergent: read.reconcile_state === 'divergent' }"><template v-if="read.reconcile_state === 'divergent'"><AppIcon name="status-warning" /> </template>{{ readSummary(read) }}</span>
           </template>
         </div>
       </details>

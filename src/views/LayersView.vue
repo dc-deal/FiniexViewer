@@ -5,7 +5,10 @@ import { VueDraggable } from 'vue-draggable-plus'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
-import HintLine from '@/components/base/HintLine.vue'
+import EmptyNote from '@/components/base/EmptyNote.vue'
+import HelpInfo from '@/components/base/HelpInfo.vue'
+import HelpTip from '@/components/base/HelpTip.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { holdsValues, plotSample, seriesTitle } from '@/components/indicator_drawing'
 import { strategyOf } from '@/components/runs/config_shape'
 import VisibilityEye from '@/components/VisibilityEye.vue'
@@ -17,7 +20,6 @@ import type { LayerGroupKey } from '@/layer_groups'
 import { layerDefinition } from '@/layer_registry'
 import { panelKind } from '@/panel_kinds'
 import { useDockStore } from '@/stores/dock_store'
-import { useHintsStore } from '@/stores/hints_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useRunReportsStore } from '@/stores/run_reports_store'
 import { useRunsStore } from '@/stores/runs_store'
@@ -69,7 +71,7 @@ const empty = computed(() => {
  * for all of them, where the panel's empty space is: in the row the reason was cut to a letter in a
  * narrow panel and lived only on hover (operator, on screen 2026-10-27: the line and the levels "did
  * nothing"), and a line under a row would push the rows below it the moment a position is chosen.
- * Hints, so a reader who knows it dismisses or bans them like any other (operator, 2026-10-27).
+ * Fixed sentences, the empty area saying why it is empty (viewer#24, operator 2026-11-19).
  */
 const emptyHints = computed(() => [
   ...rows.value.flatMap(row => empty.value.has(row.id) ? layerDefinition(row.id).emptyHintId ?? [] : []),
@@ -313,16 +315,13 @@ function toggleServed(layer: IndicatorLayer): void {
   openedServed.value = next
 }
 
-const hints = useHintsStore()
-
 /**
- * Whether a row has anything to open onto: an option, the candles' forms, or its hint not yet put
- * away. A layer with neither of the first two — the booking periods — opened onto nothing once its
- * hint was dismissed (operator, on screen 2026-10-29) — then it shows no marker, and a click opens nothing.
+ * Whether a row has anything to open onto: an option or the candles' forms. A layer with neither — the
+ * booking periods — shows no marker, and a click opens nothing; what it draws is behind its ⓘ.
  */
 function openable(row: LayerState): boolean {
   const definition = layerDefinition(row.id)
-  return Boolean(definition.option || definition.forms) || hints.isVisible(definition.hintId)
+  return Boolean(definition.option || definition.forms)
 }
 
 function toggle(row: LayerState): void {
@@ -335,8 +334,6 @@ function toggle(row: LayerState): void {
 
 <template>
   <div class="layers-view">
-    <HintLine id="layers" />
-    <HintLine v-if="served.length" id="layer-workers" />
     <p v-if="!chartName" class="hint">{{ t('Open the run chart to arrange what it draws') }}</p>
     <template v-else>
       <p class="chart-name" :data-chart="lastChart">{{ chartName }}</p>
@@ -351,7 +348,7 @@ function toggle(row: LayerState): void {
             data-action="fold-pane"
             @click="toggleFold(group.pane)"
           >
-            <span class="layer-marker" aria-hidden="true">{{ isOpen(group.pane) ? '▾' : '▸' }}</span>
+            <span class="layer-marker" aria-hidden="true"><AppIcon :name="isOpen(group.pane) ? 'status-expanded' : 'status-collapsed'" /></span>
             <span>{{ group.title }}</span>
           </button>
           <VisibilityEye
@@ -375,7 +372,7 @@ function toggle(row: LayerState): void {
             data-action="fold-framework"
             @click="toggleSource(group.pane, 'framework')"
           >
-            <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, 'framework') ? '▾' : '▸' }}</span>
+            <span class="layer-marker" aria-hidden="true"><AppIcon :name="sourceOpen(group.pane, 'framework') ? 'status-expanded' : 'status-collapsed'" /></span>
             <span>{{ t('Framework') }}</span>
           </button>
           <VisibilityEye
@@ -414,7 +411,7 @@ function toggle(row: LayerState): void {
         >
           <div class="layer-row">
             <!-- a fixed layer keeps the grip's room, so every row's controls stand in one column -->
-            <span class="layer-grip" aria-hidden="true">{{ layerDefinition(row.id).fixed ? '' : '⠿' }}</span>
+            <span class="layer-grip" aria-hidden="true"><AppIcon v-if="!layerDefinition(row.id).fixed" name="action-drag" /></span>
             <AppSwitch
               compact
               :model-value="row.shown"
@@ -422,18 +419,21 @@ function toggle(row: LayerState): void {
               data-action="show"
               @update:model-value="on => show(row.id, on)"
             />
-            <button
-              type="button"
-              class="layer-head"
-              :class="{ inert: !openable(row) }"
-              :aria-expanded="openable(row) ? opened.has(row.id) : undefined"
-              data-action="open"
-              @click="toggle(row)"
-            >
-              <span class="layer-marker" aria-hidden="true">{{ openable(row) ? opened.has(row.id) ? '▾' : '▸' : '' }}</span>
-              <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
-              <span class="layer-summary">{{ summary(row) }}</span>
-            </button>
+            <!-- what it draws on the name itself: a mark in every row cut the names in a narrow panel -->
+            <HelpTip :id="layerDefinition(row.id).hintId">
+              <button
+                type="button"
+                class="layer-head"
+                :class="{ inert: !openable(row) }"
+                :aria-expanded="openable(row) ? opened.has(row.id) : undefined"
+                data-action="open"
+                @click="toggle(row)"
+              >
+                <span class="layer-marker" aria-hidden="true"><AppIcon v-if="openable(row)" :name="opened.has(row.id) ? 'status-expanded' : 'status-collapsed'" /></span>
+                <span class="layer-title">{{ layerDefinition(row.id).title }}</span>
+                <span class="layer-summary">{{ summary(row) }}</span>
+              </button>
+            </HelpTip>
             <AppSlider
               :model-value="row.opacity"
               :min="LAYER_OPACITY_MIN"
@@ -445,9 +445,9 @@ function toggle(row: LayerState): void {
             />
           </div>
           <div v-if="openable(row) && opened.has(row.id)" class="layer-options">
-            <!-- what it draws and what its option does, in one hint: the options below stand plain,
-                 the way an editor's do, and a reader who knows them dismisses it (operator, 2026-10-28) -->
-            <HintLine :id="layerDefinition(row.id).hintId" />
+            <!-- what it draws and what its option does, whole, behind its ⓘ: the options below stand
+                 plain, the way an editor's do -->
+            <HelpInfo :id="layerDefinition(row.id).hintId" />
             <AppSwitch
               v-if="layerDefinition(row.id).option"
               compact
@@ -506,7 +506,7 @@ function toggle(row: LayerState): void {
             data-action="fold-workers"
             @click="toggleSource(group.pane, 'workers')"
           >
-            <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, 'workers') ? '▾' : '▸' }}</span>
+            <span class="layer-marker" aria-hidden="true"><AppIcon :name="sourceOpen(group.pane, 'workers') ? 'status-expanded' : 'status-collapsed'" /></span>
             <span>{{ t('Workers') }}</span>
           </button>
           <VisibilityEye
@@ -527,7 +527,7 @@ function toggle(row: LayerState): void {
               data-action="fold-worker"
               @click="toggleSource(group.pane, `worker:${source.worker}`)"
             >
-              <span class="layer-marker" aria-hidden="true">{{ sourceOpen(group.pane, `worker:${source.worker}`) ? '▾' : '▸' }}</span>
+              <span class="layer-marker" aria-hidden="true"><AppIcon :name="sourceOpen(group.pane, `worker:${source.worker}`) ? 'status-expanded' : 'status-collapsed'" /></span>
               <span>{{ source.worker }}</span>
             </button>
             <VisibilityEye
@@ -563,20 +563,22 @@ function toggle(row: LayerState): void {
                   data-action="show"
                   @update:model-value="on => showServed(layer.entry.layer as ServedLayerId, on)"
                 />
-                <button
-                  type="button"
-                  class="layer-head"
-                  :aria-expanded="openedServed.has(layer.entry.layer)"
-                  data-action="open"
-                  @click="toggleServed(layer)"
-                >
-                  <span class="layer-marker" aria-hidden="true">{{ openedServed.has(layer.entry.layer) ? '▾' : '▸' }}</span>
-                  <!-- the timeframe the worker was served, in a column of its own: head information,
-                       never cut by a long name (operator, 2026-11-14) — the series' own, as served -->
-                  <span class="layer-timeframe">{{ layer.entry.timeframe }}</span>
-                  <span class="layer-title">{{ seriesTitle(layer.entry) }}</span>
-                  <span class="layer-summary">{{ servedSummary(layer) }}</span>
-                </button>
+                <HelpTip id="layer-indicator">
+                  <button
+                    type="button"
+                    class="layer-head"
+                    :aria-expanded="openedServed.has(layer.entry.layer)"
+                    data-action="open"
+                    @click="toggleServed(layer)"
+                  >
+                    <span class="layer-marker" aria-hidden="true"><AppIcon :name="openedServed.has(layer.entry.layer) ? 'status-expanded' : 'status-collapsed'" /></span>
+                    <!-- the timeframe the worker was served, in a column of its own: head information,
+                         never cut by a long name (operator, 2026-11-14) — the series' own, as served -->
+                    <span class="layer-timeframe">{{ layer.entry.timeframe }}</span>
+                    <span class="layer-title">{{ seriesTitle(layer.entry) }}</span>
+                    <span class="layer-summary">{{ servedSummary(layer) }}</span>
+                  </button>
+                </HelpTip>
                 <AppSlider
                   :model-value="layer.opacity"
                   :min="LAYER_OPACITY_MIN"
@@ -588,7 +590,7 @@ function toggle(row: LayerState): void {
                 />
               </div>
               <div v-if="openedServed.has(layer.entry.layer)" class="layer-options">
-                <HintLine id="layer-indicator" />
+                <HelpInfo id="layer-indicator" />
                 <!-- what drew it, and each of its lines with its look: a label and its value, as the
                      app's figure lines are -->
                 <p class="layer-fact" data-fact="worker">
@@ -652,7 +654,7 @@ function toggle(row: LayerState): void {
         </div>
         </div>
       </section>
-      <HintLine v-if="emptyHints.length" :id="emptyHints" />
+      <EmptyNote v-if="emptyHints.length" :id="emptyHints" />
     </template>
   </div>
 </template>
@@ -929,6 +931,7 @@ function toggle(row: LayerState): void {
 
 /* the opened part is a boundary in the list, raised rather than coloured, as a group heading is */
 .layer-options {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -936,6 +939,14 @@ function toggle(row: LayerState): void {
   padding: var(--space-xs) var(--space-sm) var(--space-xs) calc(var(--space-xs) + 1em + 22px + 3 * var(--space-xs) + 1em);
   border-top: 1px solid var(--color-border);
   background-color: var(--color-bg-elevated);
+}
+
+/* the ⓘ of the whole explanation in the room the options are indented by, under the row's lever: a
+   column of its own narrowed the options until their labels broke, a line of its own cost height */
+.layer-options > :deep(.help-info) {
+  position: absolute;
+  top: var(--space-xs);
+  left: calc(2 * var(--space-xs) + 1em);
 }
 
 .option-line {

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import FacetBar from '@/components/base/FacetBar.vue'
-import HintLine from '@/components/base/HintLine.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
 import RecordList from '@/components/base/RecordList.vue'
 import { applyFacets, sortRows } from '@/components/base/facet_filter'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { useFacetState } from '@/composables/use_facet_state'
 import { useFillsPanel } from '@/composables/use_fills_panel'
 import { usePositionLink } from '@/composables/use_position_link'
@@ -416,7 +416,7 @@ function isPicked(name: string): boolean {
          narrowed list would otherwise hide the very rows a reader most needs to see. One quiet line:
          a bordered box pointing elsewhere outweighed what it said (operator, 2026-11-12) -->
     <p v-if="failed" class="roster-notice">
-      <span class="mark">⚠</span>
+      <span class="mark"><AppIcon name="status-warning" /></span>
       <span>{{ failed }} {{ t('of') }} {{ roster.scenario_count }} {{ t('produced nothing') }} ·</span>
       <span>{{ t('why:') }}</span>
       <JumpLink v-if="link.canJumpTo(WARNINGS)" data-action="to-warnings" @click="link.showSection(WARNINGS)">
@@ -424,12 +424,6 @@ function isPicked(name: string): boolean {
       </JumpLink>
       <span v-else>{{ t('Warnings & errors') }}</span>
     </p>
-
-    <!-- What a click does, and it STAYS once something is picked: swapping it for a line that
-         named the choice moved the whole list under the pointer — by a pixel with the hint showing,
-         by a line once it was dismissed (2026-10-14). The choice is marked on its rows here, and said
-         once in the menu bar, with the way back to the whole run. -->
-    <HintLine id="scenario-pick" />
 
     <FacetBar
       v-model:selection="selection"
@@ -510,13 +504,13 @@ function isPicked(name: string): boolean {
           </template>
         </span>
         <span :data-rank="1" class="roster-state" :class="row.status">
-          {{ row.status === 'failed' ? '✖' : '✓' }} {{ row.status }}
+          <AppIcon :name="row.status === 'failed' ? 'status-error' : 'status-success'" /> {{ row.status }}
           <!-- a warning scoped to THIS unit; a run-wide one belongs to its own panel -->
           <span
             v-if="warnedUnits.get(row.name)"
             class="roster-mark warned"
             :title="t('This scenario carries a warning of its own')"
-          >⚠ {{ warnedUnits.get(row.name) }}</span>
+          ><AppIcon name="status-warning" /> {{ warnedUnits.get(row.name) }}</span>
         </span>
       </template>
 

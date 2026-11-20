@@ -197,7 +197,7 @@ export function reasonOf(read: BrokerTruthRow): string {
 /** What a read held, in a line: the account's size for a start or an end, the verdict for a comparison. */
 export function readSummary(read: BrokerTruthRow): string {
   if (read.read_reason === 'reconcile') {
-    if (read.reconcile_state === 'divergent') return `⚠ ${t('divergent')} · ${divergenceWords(read.divergence)}`
+    if (read.reconcile_state === 'divergent') return `${t('divergent')} · ${divergenceWords(read.divergence)}`
     return read.reconcile_state ?? ''
   }
   const orders = read.venue_orders === null

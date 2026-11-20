@@ -99,7 +99,8 @@ describe('SweepsView', () => {
     await flushPromises()
     expect(useContextStore().main.sweep.id).toBe(ID)
     expect(wrapper.findAll('.sweep-list .run-id').map(cell => cell.text())).toEqual(DETAIL.combinations.map(row => row.run_id))
-    expect(places(wrapper)[0]).toBe('1 ★')
+    expect(places(wrapper)[0]).toBe('1')
+    expect(wrapper.find('.sweep-list .place [data-icon="status-best"]').exists()).toBe(true)
   })
 
   it('brings back the sweep the link names, open', async () => {

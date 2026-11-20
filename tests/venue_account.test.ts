@@ -132,7 +132,7 @@ describe('venue account, every read', () => {
       ...READS[0]!, read_reason: 'reconcile', reconcile_state: 'divergent',
       divergence: { ...NO_DIVERGENCE, ghost_orders: ['O00001-00000-000000'] }, venue_balances: null,
     }
-    expect(readSummary(divergent)).toBe('⚠ divergent · ghost orders O00001-00000-000000')
+    expect(readSummary(divergent)).toBe('divergent · ghost orders O00001-00000-000000')
     expect(readSummary({ ...READS[0]!, venue_balances: null, unread_parts: ['venue_balances'] })).toContain('balances not read')
   })
 })
@@ -167,7 +167,7 @@ describe('VenueAccountPanel', () => {
     const off = model()
     off.account!.units[0]!.reconciliation = { enabled: false, cycles_compared: null, cycles_skipped: null, divergences_seen: null }
     const notice = mount(VenueAccountPanel, { props: { model: off } }).find('.notice.warning')
-    expect(notice.text()).toContain('⚠')
+    expect(notice.find('[data-icon="status-warning"]').exists()).toBe(true)
     expect(notice.text()).toContain('switched off')
   })
 })

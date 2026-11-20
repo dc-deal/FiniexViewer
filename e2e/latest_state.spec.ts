@@ -48,7 +48,7 @@ test('an ended session plays its frames over time', async ({ page }) => {
   await expect(where).toContainText('frame 1 of 3')
   await section.locator('[data-action="play"]').click()
   await expect(where).toContainText('frame 3 of 3')
-  await expect(section.locator('[data-action="play"]')).toHaveText('▶')
+  await expect(section.locator('[data-action="play"] [data-icon="action-play"]')).toBeVisible()
 })
 
 test('a session whose frames over time are not recorded shows its latest alone', async ({ page }) => {

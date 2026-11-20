@@ -5,9 +5,7 @@ import TopMenu from '@/components/TopMenu.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
-import { useHintsStore } from '@/stores/hints_store'
 import { useSettingsStore } from '@/stores/settings_store'
-import { hintIds } from '@/hint_registry'
 import { DEFAULT_SETTINGS } from '@/types/settings_types'
 
 // Held so it can be unmounted: both the menu and the dialog portal their content out of the
@@ -131,26 +129,9 @@ describe('SettingsDialog', () => {
       store.setTheme('light')
       mountDialog()
       await flushPromises()
-      panel('.app-button:not(.hints-reset)')?.click()
+      panel('.app-button')?.click()
       await flushPromises()
       expect(store.settings).toEqual(DEFAULT_SETTINGS)
-    })
-
-    /**
-     * A banned hint has no other way back — the control that banned it disappeared with it, so
-     * without this the reader's only route is clearing site data.
-     */
-    it('brings back a hint that was banned for good', async () => {
-      const hints = useHintsStore()
-      const id = hintIds()[0] as string
-      hints.ban(id)
-      expect(hints.isVisible(id)).toBe(false)
-
-      mountDialog()
-      await flushPromises()
-      panel('.hints-reset')?.click()
-      await flushPromises()
-      expect(hints.isVisible(id)).toBe(true)
     })
   })
 

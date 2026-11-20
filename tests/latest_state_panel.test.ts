@@ -28,11 +28,13 @@ describe('LatestStatePanel', () => {
   /** The route's own verdict, with its glyph and its word; the colour only reinforces. */
   it('says how the session records, in a line of its own', () => {
     const live = mountPanel(answer(stoppedFixture, { recording: 'current', age_s: 21 }))
-    expect(live.find('.status').text()).toContain('● recording · written 21 s ago · cadence M1')
+    expect(live.find('.status').text()).toContain('recording · written 21 s ago · cadence M1')
+    expect(live.find('.status').find('[data-icon="status-recording"]').exists()).toBe(true)
     expect(live.find('.status').classes()).toContain('current')
 
     const stopped = mountPanel(answer(stoppedFixture))
-    expect(stopped.find('.status').text()).toContain('⚠ recording stopped')
+    expect(stopped.find('.status').text()).toContain('recording stopped')
+    expect(stopped.find('.status').find('[data-icon="status-warning"]').exists()).toBe(true)
     expect(stopped.find('.status').text()).toContain('Panels ▸ Activities')
 
     const replay = mountPanel(answer(endedFixture, { recording: null, outcome: null }))
@@ -80,7 +82,8 @@ describe('LatestStatePanel', () => {
    */
   it('folds the last frame of a closed session behind its outcome and its memory', () => {
     const wrapper = mountPanel(answer(endedFixture))
-    expect(wrapper.find('.status').text()).toContain('■ ended · success · shutdown normal')
+    expect(wrapper.find('.status').text()).toContain('ended · success · shutdown normal')
+    expect(wrapper.find('.status').find('[data-icon="status-ended"]').exists()).toBe(true)
     expect(wrapper.find('details.frame').exists()).toBe(true)
     expect(wrapper.find('details.frame summary').text()).toContain('the state its report sections describe')
     expect(wrapper.find('.memory').text()).toContain('First frame')
@@ -186,7 +189,7 @@ describe('LatestStatePanel', () => {
   it('lists the open positions and the resting orders, and says none where there are none', () => {
     const ended = mountPanel(answer(endedFixture))
     expect(ended.findAll('.holding')).toHaveLength(1)
-    expect(ended.find('.holding').text()).toContain('long 0.1 BTCUSD @ 88635.1')
+    expect(ended.find('.holding').text()).toContain('long 0.1 BTCUSD @ 88601.4')
 
     const none = mountPanel(answer(stoppedFixture))
     expect(none.findAll('.holding')).toHaveLength(0)

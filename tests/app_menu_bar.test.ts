@@ -150,13 +150,6 @@ describe('AppMenuBar', () => {
     expect(hidden).toEqual([])
   })
 
-  /** The rows explained once, where they are read: dismissible and bannable, like every hint. */
-  it('explains the places of the sections in a hint below them', async () => {
-    await openRunsSubmenu()
-    const hint = document.querySelector('.menu-hint')!
-    expect(hint.textContent).toContain('A section in a closed bundle is on show nowhere')
-  })
-
   it('hides a shown section and shows a hidden one again', async () => {
     useLayoutStore().hide('config')
     const dock = useDockStore()
@@ -222,8 +215,9 @@ describe('AppMenuBar', () => {
    * order stays in the settings: it is no layout.
    */
   it('offers the Layouts menu right after the Panels menu', () => {
-    const menus = mounted!.findAll('.menu-bar-trigger').map(node => node.text())
-    expect(menus.slice(0, 2)).toEqual(['Panels ▾', 'Layouts ▾'])
+    const menus = mounted!.findAll('.menu-bar-trigger').slice(0, 2)
+    expect(menus.map(node => node.text())).toEqual(['Panels', 'Layouts'])
+    expect(menus.map(node => node.find('[data-icon="nav-menu"]').exists())).toEqual([true, true])
   })
 
   /**

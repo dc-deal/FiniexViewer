@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import BookingPeriodTimeline from '@/components/runs/BookingPeriodTimeline.vue'
 import BookingPeriodTable from '@/components/runs/BookingPeriodTable.vue'
 import ScopeMark from '@/components/base/ScopeMark.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { amount } from '@/components/runs/report_format'
 import { orderPeriods } from '@/components/runs/period_order'
 import { useDisplaySettings } from '@/composables/use_display_settings'
@@ -11,6 +12,7 @@ import { useViewExpanded } from '@/composables/use_panel_view'
 import { useScenarioSelection, showsUnit } from '@/composables/use_scenario_selection'
 import type { LaneOrder } from '@/types/settings_types'
 import type { BookingPeriodsReport } from '@/types/api/report_types'
+import type { IconName } from '@/types/icon_types'
 import { plural, t } from '@/translate'
 
 const props = defineProps<{
@@ -19,7 +21,7 @@ const props = defineProps<{
 
 interface Verdict {
   tone: string
-  mark: string
+  icon: IconName
   text: string
 }
 
@@ -35,13 +37,13 @@ const verdict = computed<Verdict>(() => {
   if (props.model.reconciles === false) {
     return {
       tone: 'disagrees',
-      mark: '✖',
+      icon: 'status-error',
       text: t('Records are missing — the periods do not account for what the run counted'),
     }
   }
   return {
     tone: 'unchecked',
-    mark: '?',
+    icon: 'status-unchecked',
     text: t('Not checked — the run reports no figure in this currency'),
   }
 })
@@ -121,7 +123,7 @@ const otherCurrencies = computed(() =>
       reader wants once, and three lines of prose on every run is three lines of noise.
     -->
     <div v-if="model.reconciles !== true" class="verdict" :class="verdict.tone" :title="t('This compares completeness, not arithmetic: both figures descend from one value, so a wrong P&L moves them together and the check stays green.')">
-      <span class="verdict-mark">{{ verdict.mark }}</span>
+      <span class="verdict-mark"><AppIcon :name="verdict.icon" /></span>
       <div class="verdict-body">
         <p class="verdict-text">
           <!-- a mark in the headline rather than a line of its own: a narrowing moves nothing -->
@@ -159,6 +161,7 @@ const otherCurrencies = computed(() =>
         v-model:order="laneOrder"
         :periods="orderedPeriods"
         :key-fields="model.keys.periods"
+        :scope-id="model.run_id"
       />
       <BookingPeriodTable
         v-model:open="periodsOpen"

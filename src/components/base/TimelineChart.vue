@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import JumpLink from '@/components/base/JumpLink.vue'
-import type { TimelineLane } from '@/types/timeline_types'
+import type { TimelineLane, TimeWindow } from '@/types/timeline_types'
 
 /**
  * Spans on a shared horizontal scale, one lane per row, with the axis on top.
@@ -67,6 +67,15 @@ const props = withDefaults(defineProps<{
   naturalTime?: boolean
   /** Width of the lane-label column, in rem. */
   labelWidth?: number
+  /**
+   * A stretch of the scale FRAMED over the lanes, which the reader moves (viewer#48): a click centres
+   * it where the pointer is, a drag moves it, its edges set its length, the arrow keys step it.
+   * Every change is asked for through `update:window`, always inside the scale; the caller decides
+   * what the frame stands for and draws it again elsewhere. Absent or null, nothing is framed.
+   */
+  window?: TimeWindow | null
+  /** The frame's name for a screen reader — the caller's words, the chart knowing none. */
+  windowLabel?: string
 }>(), {
   ticks: 5,
   naturalTime: false,
@@ -78,7 +87,17 @@ const props = withDefaults(defineProps<{
   formatGap: (length: number) => String(length),
   formatRange: undefined,
   formatBreaks: undefined,
+  window: null,
+  windowLabel: '',
 })
+
+const emit = defineEmits<{
+  'update:window': [TimeWindow]
+  /** Whether any lane draws its spans edge to edge, too close to set apart — known once measured. */
+  dense: [boolean]
+  /** The plot's width in pixels, once the browser has laid it out and whenever it changes. */
+  measured: [number]
+}>()
 
 interface Segment {
   from: number
@@ -485,80 +504,211 @@ const drawn = computed(() =>
 
 /** Edge to edge, two spans of one colour read as one span, and only a sentence can say they are not. */
 const anyDense = computed(() => drawn.value.some(lane => lane.dense))
+
+watch(anyDense, dense => emit('dense', dense), { immediate: true })
+watch(axisPx, width => { if (width > 0) emit('measured', width) })
+
+/** The inverse of `offset`: the scale's value at a share of the plot; inside a removed stretch, where the next piece starts. */
+function valueAt(percent: number): number {
+  for (const segment of axis.value.segments) {
+    if (percent <= segment.at + segment.width) {
+      if (percent < segment.at) return segment.from
+      const inside = segment.width > 0 ? (percent - segment.at) / segment.width : 0
+      return segment.from + inside * (segment.to - segment.from)
+    }
+  }
+  return props.to
+}
+
+/** Where the frame stands on the plot, in percent — nothing where none is asked for. */
+const frame = computed(() => {
+  if (!props.window) return null
+  const left = offset(props.window.from)
+  return { left, width: Math.max(0, offset(props.window.to) - left) }
+})
+
+/** How close to an edge of the frame, in pixels, a press takes that edge rather than the whole. */
+const EDGE_PX = 6
+
+/** The shortest frame the edges can make: a two-hundredth of the scale, never a line of no length. */
+const shortest = computed(() => length.value / 200)
+
+/** A drag in progress: the whole frame, held where it was grabbed, or one of its edges. */
+type Drag = { mode: 'move', grab: number } | { mode: 'from' } | { mode: 'to' }
+const drag = ref<Drag | null>(null)
+
+/** A share of the plot from a pointer's position; null where the plot is not laid out. */
+function percentAt(clientX: number): number | null {
+  const box = axisElement.value?.getBoundingClientRect()
+  if (!box || box.width <= 0) return null
+  return ((clientX - box.left) / box.width) * 100
+}
+
+/** Asks for a frame of the same length kept inside the scale — slid back at an edge, never shrunk. */
+function askFor(window: TimeWindow): void {
+  const span = window.to - window.from
+  if (span >= length.value) return emit('update:window', { from: props.from, to: props.to })
+  if (window.from < props.from) return emit('update:window', { from: props.from, to: props.from + span })
+  if (window.to > props.to) return emit('update:window', { from: props.to - span, to: props.to })
+  emit('update:window', { from: window.from, to: window.to })
+}
+
+function onPointerDown(event: PointerEvent): void {
+  if (!props.window || !frame.value || event.button !== 0) return
+  const percent = percentAt(event.clientX)
+  // the lane labels and anything left of the plot are not the scale
+  if (percent === null || percent < 0 || percent > 100) return
+  const edge = (EDGE_PX / axisPx.value) * 100
+  const value = valueAt(percent)
+  const { left, width } = frame.value
+  if (Math.abs(percent - left) <= edge) drag.value = { mode: 'from' }
+  else if (Math.abs(percent - (left + width)) <= edge) drag.value = { mode: 'to' }
+  else if (percent > left && percent < left + width) drag.value = { mode: 'move', grab: value - props.window.from }
+  else {
+    // outside the frame: centred where the pointer is, keeping its length — and held, so a drag goes on
+    const span = props.window.to - props.window.from
+    askFor({ from: value - span / 2, to: value + span / 2 })
+    drag.value = { mode: 'move', grab: span / 2 }
+  }
+  const plot = event.currentTarget as HTMLElement
+  plot.setPointerCapture?.(event.pointerId)
+  event.preventDefault()
+}
+
+function onPointerMove(event: PointerEvent): void {
+  const held = drag.value
+  if (!held || !props.window) return
+  const percent = percentAt(event.clientX)
+  if (percent === null) return
+  const value = valueAt(Math.min(100, Math.max(0, percent)))
+  const { from, to } = props.window
+  if (held.mode === 'move') askFor({ from: value - held.grab, to: value - held.grab + (to - from) })
+  else if (held.mode === 'from') askFor({ from: Math.min(value, to - shortest.value), to })
+  else askFor({ from, to: Math.max(value, from + shortest.value) })
+}
+
+function onPointerUp(): void {
+  drag.value = null
+}
+
+/** The arrow keys step the frame a tenth of its length, with Shift its whole length; Home and End go to the ends. */
+function onFrameKey(event: KeyboardEvent): void {
+  if (!props.window) return
+  const span = props.window.to - props.window.from
+  const step = event.shiftKey ? span : span / 10
+  const moves: Record<string, number> = {
+    ArrowLeft: -step,
+    ArrowRight: step,
+    Home: props.from - props.window.from,
+    End: props.to - props.window.to,
+  }
+  const by = moves[event.key]
+  if (by === undefined) return
+  event.preventDefault()
+  askFor({ from: props.window.from + by, to: props.window.to + by })
+}
 </script>
 
 <template>
   <div v-if="drawn.length" class="timeline" :style="{ '--label-width': `${labelWidth}rem` }">
-    <div class="axis-row">
-      <span class="axis-spacer" :title="scaleNote">{{ scaleLabel }}</span>
-      <div :ref="observeAxis" class="axis" :title="scaleNote">
-        <!-- ten characters in the labels' own font, never seen: what one character takes -->
-        <span ref="probe" class="probe" aria-hidden="true">0000000000</span>
-        <span
-          v-for="tick in placedTicks"
-          :key="`tick-${tick.at}`"
-          class="tick"
-          :class="[tick.edge, `row-${tick.row}`]"
-          :style="{ left: `${tick.labelAt ?? tick.at}%` }"
-        >{{ tick.label }}</span>
-        <!-- the pointer belongs to the MARK, not to the label, so it is placed and centred
-             independently — a staggered label otherwise leaves the reader guessing which one -->
-        <span
-          v-for="tick in placedTicks"
-          :key="`stem-${tick.at}`"
-          class="stem"
-          :class="`row-${tick.row}`"
-          :style="{ left: `${tick.at}%` }"
-        />
-        <!-- the removal is NAMED, which is the only thing that makes a broken axis honest. Where
-             there are too many to name individually, one caption says how much was removed in
-             total — summarised, never silently dropped -->
-        <template v-if="!crowded">
+    <!-- the axis and the lanes in one box, so a frame stands over both and a press anywhere on the
+         plot reaches it -->
+    <div
+      class="plot"
+      :class="{ framed: frame, dragging: drag }"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="onPointerUp"
+      @pointercancel="onPointerUp"
+    >
+      <div class="axis-row">
+        <span class="axis-spacer" :title="scaleNote">{{ scaleLabel }}</span>
+        <div :ref="observeAxis" class="axis" :title="scaleNote">
+          <!-- ten characters in the labels' own font, never seen: what one character takes -->
+          <span ref="probe" class="probe" aria-hidden="true">0000000000</span>
+          <span
+            v-for="tick in placedTicks"
+            :key="`tick-${tick.at}`"
+            class="tick"
+            :class="[tick.edge, `row-${tick.row}`]"
+            :style="{ left: `${tick.labelAt ?? tick.at}%` }"
+          >{{ tick.label }}</span>
+          <!-- the pointer belongs to the MARK, not to the label, so it is placed and centred
+               independently — a staggered label otherwise leaves the reader guessing which one -->
+          <span
+            v-for="tick in placedTicks"
+            :key="`stem-${tick.at}`"
+            class="stem"
+            :class="`row-${tick.row}`"
+            :style="{ left: `${tick.at}%` }"
+          />
+          <!-- the removal is NAMED, which is the only thing that makes a broken axis honest. Where
+               there are too many to name individually, one caption says how much was removed in
+               total — summarised, never silently dropped -->
+          <template v-if="!crowded">
+            <span
+              v-for="gap in axis.breaks"
+              :key="`gaplabel-${gap.at}`"
+              class="gap-label"
+              :style="{ left: `${gap.at + gap.width / 2}%` }"
+            >{{ formatGap(gap.length) }}</span>
+          </template>
+          <span v-else class="gap-label summary" :style="{ left: '50%' }">
+            {{ formatBreaks
+              ? formatBreaks(axis.breaks.length, removedTotal)
+              : `${axis.breaks.length} / ${formatGap(removedTotal)}` }}
+          </span>
+        </div>
+      </div>
+
+      <div v-for="lane in drawn" :key="lane.id" class="lane-row">
+        <!-- the label column keeps its width, its small font and its clip; the jump inside it takes
+             that font and shortens itself, the way it does in a table cell -->
+        <span class="lane-label" :title="lane.label">
+          <JumpLink v-if="lane.open" @click="lane.open?.()">{{ lane.label }}</JumpLink>
+          <template v-else>{{ lane.label }}</template>
+        </span>
+        <div class="lane" :class="{ dense: lane.dense }">
           <span
             v-for="gap in axis.breaks"
-            :key="`gaplabel-${gap.at}`"
-            class="gap-label"
-            :style="{ left: `${gap.at + gap.width / 2}%` }"
-          >{{ formatGap(gap.length) }}</span>
-        </template>
-        <span v-else class="gap-label summary" :style="{ left: '50%' }">
-          {{ formatBreaks
-            ? formatBreaks(axis.breaks.length, removedTotal)
-            : `${axis.breaks.length} / ${formatGap(removedTotal)}` }}
-        </span>
-      </div>
-    </div>
-
-    <div v-for="lane in drawn" :key="lane.id" class="lane-row">
-      <!-- the label column keeps its width, its small font and its clip; the jump inside it takes
-           that font and shortens itself, the way it does in a table cell -->
-      <span class="lane-label" :title="lane.label">
-        <JumpLink v-if="lane.open" @click="lane.open?.()">{{ lane.label }}</JumpLink>
-        <template v-else>{{ lane.label }}</template>
-      </span>
-      <div class="lane" :class="{ dense: lane.dense }">
-        <span
-          v-for="gap in axis.breaks"
-          :key="`gap-${gap.at}`"
-          class="gap"
-          :style="{ left: `${gap.at}%`, width: `${gap.width}%` }"
-          :title="formatGap(gap.length)"
-        />
-        <HoverCard
-          v-for="bar in lane.bars"
-          :key="bar.id"
-          :title="bar.title"
-          :details="bar.details"
-        >
-          <div
-            class="span"
-            :class="bar.tone"
-            :style="{ left: `${bar.left}%`, width: `${bar.width}%` }"
-            tabindex="0"
+            :key="`gap-${gap.at}`"
+            class="gap"
+            :style="{ left: `${gap.at}%`, width: `${gap.width}%` }"
+            :title="formatGap(gap.length)"
+          />
+          <HoverCard
+            v-for="bar in lane.bars"
+            :key="bar.id"
+            :title="bar.title"
+            :details="bar.details"
           >
-            <span v-if="bar.caption" class="span-label">{{ bar.caption }}</span>
-          </div>
-        </HoverCard>
+            <div
+              class="span"
+              :class="bar.tone"
+              :style="{ left: `${bar.left}%`, width: `${bar.width}%` }"
+              tabindex="0"
+            >
+              <span v-if="bar.caption" class="span-label">{{ bar.caption }}</span>
+            </div>
+          </HoverCard>
+        </div>
+      </div>
+
+      <!-- the frame takes no press itself, so the spans beneath it keep their cards; the plot decides
+           by where a press lands whether it takes the frame, an edge or a new place -->
+      <div v-if="frame" class="window-track">
+        <div
+          class="window"
+          data-window
+          :style="{ left: `${frame.left}%`, width: `${frame.width}%` }"
+          tabindex="0"
+          role="group"
+          :aria-label="windowLabel || undefined"
+          @keydown="onFrameKey"
+        >
+          <span class="window-edge from" />
+          <span class="window-edge to" />
+        </div>
       </div>
     </div>
 
@@ -573,6 +723,56 @@ const anyDense = computed(() => drawn.value.some(lane => lane.dense))
   flex-direction: column;
   gap: var(--space-xs);
 }
+
+/* the rows the frame stands over, spaced as the timeline spaces them */
+.plot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* a press on a framed plot moves the frame: the hand says so, and holds while a drag goes on */
+.plot.framed { cursor: pointer; touch-action: none; }
+.plot.dragging { cursor: grabbing; }
+
+/* over the plot's column only, never over the lane labels */
+.window-track {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--label-width) + var(--space-sm));
+  right: 0;
+  pointer-events: none;
+}
+
+/* interactive, so in the link role: an edge in the accent and a wash of it, the spans showing through */
+.window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.window:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* the edges take the press, a little wider than they are drawn */
+.window-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  pointer-events: auto;
+  cursor: ew-resize;
+}
+
+.window-edge.from { left: -4px; }
+.window-edge.to { right: -4px; }
 
 .axis-row,
 .lane-row {

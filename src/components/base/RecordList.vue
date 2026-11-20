@@ -4,6 +4,7 @@ import AppButton from '@/components/base/AppButton.vue'
 import HoverCard from '@/components/base/HoverCard.vue'
 import type { FigureCard } from '@/types/figure_types'
 import type { ListBand, ListColumn, ListGroup } from '@/types/list_types'
+import type { IconName } from '@/types/icon_types'
 
 /**
  * A list read as a TABLE and clicked as a list: aligned columns, sticky headings, one button per
@@ -193,21 +194,21 @@ defineSlots<{
    * disclosure glyph where the row opens children, and '' where it does not. `head` is the group a
    * row stands at the head of (`headOf`), where it does: its fold button stands over its cells.
    */
-  default: (props: { row: T, marker: string, head?: ListGroup<T> }) => unknown
+  default: (props: { row: T, marker: IconName | '', head?: ListGroup<T> }) => unknown
   /** The words on the button that folds a head's earlier rows: `▸ 4 earlier`. */
-  fold?: (props: { group: ListGroup<T>, marker: string, count: number }) => unknown
+  fold?: (props: { group: ListGroup<T>, marker: IconName | '', count: number }) => unknown
   /** The spanning second line, drawn only where `hasDetail` says so. */
   detail?: (props: { row: T }) => unknown
   /** The spanning line BEFORE a row, drawn only where `hasLead` says so. */
   lead?: (props: { row: T }) => unknown
   /** The group heading's cells, in column order. Drawn only where `groupBy` is given. */
-  group?: (props: { group: ListGroup<T>, marker: string }) => unknown
+  group?: (props: { group: ListGroup<T>, marker: IconName | '' }) => unknown
   /** A row's child records, spanning every track. Drawn only where `showsChildren` says so. */
   children?: (props: { row: T }) => unknown
   /** A GROUP's child records. Drawn only where `showsGroupChildren` says so. */
   groupChildren?: (props: { group: ListGroup<T> }) => unknown
   /** The OUTER heading's cells. Drawn only where `outerBy` is given. */
-  outer?: (props: { group: ListGroup<T>, marker: string }) => unknown
+  outer?: (props: { group: ListGroup<T>, marker: IconName | '' }) => unknown
 }>()
 
 /**
@@ -406,14 +407,14 @@ function headAttrs(row: T): Record<string, unknown> {
   return { ...attrs, class: [...classes.slice(0, 2), { ...(classes[2] as object), grouped: false }] }
 }
 
-function markerFor(row: T): string {
+function markerFor(row: T): IconName | '' {
   if (!props.showsChildren || !isControl(row)) return ''
   return glyph(props.showsChildren(row))
 }
 
 /** The one shape, in one place. '' where nothing opens, so a caller can draw it unconditionally. */
-function glyph(open: boolean): string {
-  return open ? '▾' : '▸'
+function glyph(open: boolean): IconName {
+  return open ? 'status-expanded' : 'status-collapsed'
 }
 
 /**

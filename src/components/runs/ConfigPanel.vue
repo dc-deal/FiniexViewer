@@ -4,6 +4,7 @@ import AppButton from '@/components/base/AppButton.vue'
 import JsonTree from '@/components/base/JsonTree.vue'
 import PathLabel from '@/components/base/PathLabel.vue'
 import RecordList from '@/components/base/RecordList.vue'
+import AppIcon from '@/components/base/AppIcon.vue'
 import { configChanges, scenarioCount, scenarioOverrides, strategyOf, workersOf } from '@/components/runs/config_shape'
 import type { ConfigChange } from '@/components/runs/config_shape'
 import { useConfigComparison } from '@/composables/use_config_comparison'
@@ -130,7 +131,7 @@ function shown(value: unknown): string {
          to is the backend's cascade, and computing it would be a second implementation of a rule
          we do not own — one of whose three layers is not even in this document. -->
     <p v-if="overrides.length" class="notice moved">
-      <span class="mark">⚠</span>
+      <span class="mark"><AppIcon name="status-warning" /></span>
       {{ overrides.length }} {{ t('of') }} {{ scenarios }}
       {{ t('scenarios carry their own configuration — the block below is the base they start from, not what those scenarios ran with') }}
     </p>

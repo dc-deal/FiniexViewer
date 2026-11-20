@@ -262,7 +262,8 @@ describe('RunPicker', () => {
       // CLOSED to begin with: the fold is the point, and a list that opens expanded folded nothing
       const fold = wrapper.find('[data-action="fold"]')
       expect(fold.attributes('aria-expanded')).toBe('false')
-      expect(fold.text()).toBe('▸ 1')
+      expect(fold.text()).toBe('1')
+      expect(fold.find('[data-icon="status-collapsed"]').exists()).toBe(true)
 
       await fold.trigger('click')
       expect(rowIds(wrapper)).toEqual(['late', 'early'])
@@ -327,7 +328,8 @@ describe('RunPicker', () => {
       const heading = wrapper.find('.record-group')
       expect(heading.find('.run-when').text()).toContain('Sep 25')
       expect(heading.text()).not.toContain('Sep 24')
-      expect(heading.find('.family-meta').text()).toBe('▸ 2')
+      expect(heading.find('.family-meta').text()).toBe('2')
+      expect(heading.find('.family-meta').find('[data-icon="status-collapsed"]').exists()).toBe(true)
     })
 
     /**
@@ -838,13 +840,17 @@ describe('RunPicker', () => {
       ])
       const outcomeOf = (id: string) => rowFor(wrapper, id).find('.run-outcome')
 
-      expect(outcomeOf('live').text()).toBe('● recording')
+      expect(outcomeOf('live').text()).toBe('recording')
+      expect(outcomeOf('live').find('[data-icon="status-recording"]').exists()).toBe(true)
       expect(outcomeOf('live').classes()).toContain('recording-current')
-      expect(outcomeOf('hung').text()).toBe('⚠ recording stopped')
+      expect(outcomeOf('hung').text()).toBe('recording stopped')
+      expect(outcomeOf('hung').find('[data-icon="status-warning"]').exists()).toBe(true)
       expect(outcomeOf('hung').classes()).toContain('recording-stopped')
       expect(outcomeOf('hung').attributes('title')).toContain('Activities')
-      expect(outcomeOf('closing').text()).toBe('■ ended')
-      expect(outcomeOf('graded').text()).toBe('✓ success')
+      expect(outcomeOf('closing').text()).toBe('ended')
+      expect(outcomeOf('closing').find('[data-icon="status-ended"]').exists()).toBe(true)
+      expect(outcomeOf('graded').text()).toBe('success')
+      expect(outcomeOf('graded').find('[data-icon="status-success"]').exists()).toBe(true)
 
       await wrapper.findAll('.facet-trigger')
         .find(node => node.text().includes('Outcome'))!
@@ -869,10 +875,13 @@ describe('RunPicker', () => {
         run({ run_id: 'before', run_outcome: 'success' }),
       ])
       const outcomeOf = (id: string) => rowFor(wrapper, id).find('.run-outcome').text()
-      expect(outcomeOf('whole')).toBe('✓ 6/6')
-      expect(outcomeOf('part')).toBe('⚠ 5/6')
-      expect(outcomeOf('none')).toBe('✖ 0/2')
-      expect(outcomeOf('before')).toBe('✓ success')
+      const iconOf = (id: string) => rowFor(wrapper, id).find('.run-outcome [data-icon]').attributes('data-icon')
+      expect(outcomeOf('whole')).toBe('6/6')
+      expect(outcomeOf('part')).toBe('5/6')
+      expect(outcomeOf('none')).toBe('0/2')
+      expect(outcomeOf('before')).toBe('success')
+      expect(['whole', 'part', 'none', 'before'].map(iconOf))
+        .toEqual(['status-success', 'status-warning', 'status-error', 'status-success'])
       const card = wrapper.findAllComponents(HoverCard).map(hover => (hover.props('details') ?? []) as Figure[])
         .find(details => details.some(figure => figure.value === 'finished_with_errors'))!
       const values = Object.fromEntries(card.map(figure => [figure.label, figure.value]))

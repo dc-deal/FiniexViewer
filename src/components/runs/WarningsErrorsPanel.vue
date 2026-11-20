@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { UnitErrorRow, WarningRow, WarningsErrorsReport } from '@/types/api/report_types'
+import type { IconName } from '@/types/icon_types'
 import { utcInstant } from '@/components/runs/report_format'
 import { rowKey } from '@/api/list_key'
 import { useCheckTitles } from '@/composables/use_check_titles'
@@ -82,10 +83,10 @@ const quiet = computed(() =>
   props.model.outcome.run_outcome === 'success' && props.model.outcome.failed_count === 0
 )
 
-const outcomeMark = computed(() => {
-  if (props.model.outcome.run_outcome === 'failed') return '✖'
-  if (props.model.outcome.run_outcome === 'success') return '✓'
-  return ''
+const outcomeIcon = computed<IconName | null>(() => {
+  if (props.model.outcome.run_outcome === 'failed') return 'status-error'
+  if (props.model.outcome.run_outcome === 'success') return 'status-success'
+  return null
 })
 
 /**
@@ -115,7 +116,7 @@ function hasDetail(row: UnitErrorRow): boolean {
     <div class="outcome" :class="[model.outcome.run_outcome, { quiet }]">
       <ScopeMark v-if="narrowed" :title="t('The outcome counts every scenario the run attempted')" />
       <span v-if="outcomeRecorded" class="outcome-verdict">
-        {{ outcomeMark }} {{ model.outcome.run_outcome }}
+        <AppIcon v-if="outcomeIcon" :name="outcomeIcon" /> {{ model.outcome.run_outcome }}
       </span>
       <span v-else class="outcome-absent">{{ t('no outcome recorded') }}</span>
       <!-- `0 / 8 units failed` put "8 units failed" side by side and read as exactly that. The

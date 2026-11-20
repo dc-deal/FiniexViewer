@@ -189,13 +189,10 @@ export interface SweepCombination {
   broker_config_id: string
   // the ticks its booking periods applied, summed; null on a row written before
   period_tick_count: number | null
-  /**
-   * The run's unit counts, as on the run list (contract 56); null where not recorded. Their documents
-   * name `succeeded_count` here as well, but the route does not serve it (measured 2026-11-16 on the
-   * catalog's sweep) — mirrored as served, and asked.
-   */
+  // the run's unit counts, as on the run list (contract 56); null where not recorded
   total_units: number | null
   failed_count: number | null
+  succeeded_count: number | null
   /**
    * What the run's accounts in this currency held at its end and started with, each summed over its
    * accounts (contract 56) — so a combination of several scenarios has an end equity where

@@ -62,6 +62,8 @@ function stretchesOf(steps: OrderEvent[]): Stretch[] {
       if (!open) continue
       close(step)
       if (step.event_type === 'triggered') triggered = true
+      // a `modified` step carries the order's NEW limit or trigger, and the steps after it the same —
+      // measured 2026-11-16 on run 20261116_143059_c6c7e202, unit EURUSD_sweep_w1: 1.16953, then 1.16914
       // a stop without a limit fills at the market once reached: it rests no longer
       const at = waitsAt(step, triggered)
       if (at) open = { ...at, from: step, to: null, moved: step }

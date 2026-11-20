@@ -6,7 +6,6 @@ import LayersView from '@/views/LayersView.vue'
 import { providePanelView } from '@/composables/use_panel_view'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
-import { useHintsStore } from '@/stores/hints_store'
 import { useRunChartStore } from '@/stores/run_chart_store'
 import { useIndicatorSeriesStore } from '@/stores/indicator_series_store'
 import { useContextStore } from '@/stores/context_store'
@@ -103,7 +102,7 @@ describe('LayersView', () => {
     // no bars loaded: no price basis stated, so it counts ticks
     expect(volume.find('.layer-summary').text()).toBe('ticks per bar')
     await volume.find('[data-action="open"]').trigger('click')
-    expect(row(wrapper, 'volume').find('.hint-line').text()).toContain('What traded in each bar')
+    expect(row(wrapper, 'volume').find('[data-help]').attributes('data-help-ids')).toBe('layer-volume')
     expect(row(wrapper, 'volume').find('[data-action="forms"]').exists()).toBe(false)
     // its own pane by default: switched off, it is kept, and the volume goes into the pane of the candles
     await row(wrapper, 'volume').find('[data-action="option"]').trigger('click')
@@ -158,12 +157,14 @@ describe('LayersView', () => {
    * 2026-10-28). The levels and the line each offer every position, and each keeps its own:
    * switching one leaves the other as it was — and the closed row does not repeat the switch.
    */
-  it('opens a row to its hint and its plain option, and switches the option there', async () => {
+  it('opens a row to its plain option, its explanation behind its mark, and switches the option there', async () => {
     const wrapper = mountOn('run-chart')
     expect(wrapper.find('.layer-options').exists()).toBe(false)
     await row(wrapper, 'levels').find('[data-action="open"]').trigger('click')
     expect(row(wrapper, 'levels').find('[data-action="open"]').attributes('aria-expanded')).toBe('true')
-    expect(row(wrapper, 'levels').find('.layer-options .hint-line').text()).toContain('The stop loss and take profit')
+    // the whole text behind the ⓘ of the opened row, and no mark in the row itself to cut its name
+    expect(row(wrapper, 'levels').find('.layer-options [data-help]').attributes('data-help-ids')).toBe('layer-levels')
+    expect(row(wrapper, 'levels').find('.layer-row [data-help]').exists()).toBe(false)
     expect(row(wrapper, 'levels').find('[data-action="front"]').exists()).toBe(false)
     await row(wrapper, 'levels').find('[data-action="option"]').trigger('click')
     expect(useArrangementStore().panelViews['run-chart']?.layers).toEqual({ options: { 'every-position': true } })
@@ -187,11 +188,11 @@ describe('LayersView', () => {
     expect(summary.text()).toBe('pick a position')
     expect(row(wrapper, 'trades').find('.layer-summary').text()).toBe('none in view')
     expect(row(wrapper, 'state-frame').find('.layer-summary').text()).toBe('no frame on show')
-    // why stands in the hint below, the one pattern an explanation takes — never in a browser tooltip
+    // why stands below the list, the empty area saying why it is empty — never in a browser tooltip
     expect(summary.attributes('title')).toBeUndefined()
-    // and below the list, in full, front first, as hints in one box: a narrow panel cuts the row's
+    // and below the list, in full, front first, as fixed sentences: a narrow panel cuts the row's
     // word to a letter
-    const below = () => wrapper.findAll('.hint-line').at(-1)!.text()
+    const below = () => wrapper.findAll('.empty-note').map(note => note.text()).join(' ')
     expect(below()).toContain('The entry–exit line is drawn for the position looked at')
     expect(below().indexOf('The trades')).toBeLessThan(below().indexOf('The levels'))
     await row(wrapper, 'levels').find('[data-action="show"]').trigger('click')
@@ -206,26 +207,24 @@ describe('LayersView', () => {
   /** Dragged by its grip, never a fixed layer: the candles and the volume keep their places at the back. */
   it('offers a grip on every movable layer and none on a fixed one', () => {
     const wrapper = mountOn('run-chart')
-    expect(row(wrapper, 'trades').find('.layer-grip').text()).toBe('⠿')
+    expect(row(wrapper, 'trades').find('.layer-grip').find('[data-icon="action-drag"]').exists()).toBe(true)
     expect(row(wrapper, 'candles').find('.layer-grip').text()).toBe('')
     expect(row(wrapper, 'volume').find('.layer-grip').text()).toBe('')
   })
 
-  /** With no bars the chart says so itself: no layer is said to draw nothing, and no hint stands below. */
+  /** With no bars the chart says so itself: no layer is said to draw nothing, and nothing stands below. */
   it('says nothing of a layer drawing nothing while the chart has no bars at all', () => {
     const wrapper = mountOn('run-chart')
     expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
-    expect(wrapper.findAll('.hint-line')).toHaveLength(1)
+    expect(wrapper.findAll('.empty-note')).toHaveLength(0)
   })
 
   /**
    * A row opens only onto something (operator, on screen 2026-10-29): the booking periods have no
-   * option and no forms, so once their hint is put away they show no marker and a click opens
-   * nothing. A layer with an option still opens onto it.
+   * option and no forms, so they show no marker and a click opens nothing; what they draw is behind
+   * their mark. A layer with an option still opens onto it.
    */
   it('opens a row with nothing left to show onto nothing at all', async () => {
-    useHintsStore().ban('layer-periods')
-    useHintsStore().ban('layer-trades')
     const wrapper = mountOn('run-chart')
     expect(row(wrapper, 'periods').find('.layer-marker').text()).toBe('')
     expect(row(wrapper, 'periods').find('[data-action="open"]').attributes('aria-expanded')).toBeUndefined()
@@ -446,17 +445,16 @@ describe('LayersView', () => {
       expect(wrapper.text()).toContain('A worker\'s series stands on its own timeframe and every finer one')
     })
 
-    /** A worker's row opens onto the hint that says what it is while it stands, and onto its worker and plots always. */
-    it('opens a worker\'s row onto the hint that says what it is, and onto its facts once that is put away', async () => {
+    /** What a worker's row is stands behind the mark of its opened row, beside its worker and plots. */
+    it('explains a worker\'s row behind its mark, and opens onto its facts', async () => {
       const wrapper = mountWithSeries()
       const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
       await row(wrapper, onCandles).find('[data-action="open"]').trigger('click')
-      expect(row(wrapper, onCandles).find('.layer-options').text()).toContain('What a worker of the strategy computed')
-      useHintsStore().ban('layer-indicator')
-      await wrapper.vm.$nextTick()
+      expect(row(wrapper, onCandles).find('.layer-options [data-help]').attributes('data-help-ids')).toBe('layer-indicator')
+      expect(row(wrapper, onCandles).find('.layer-row [data-help]').exists()).toBe(false)
       expect(row(wrapper, onCandles).find('.layer-options').text()).not.toContain('What a worker of the strategy computed')
       expect(row(wrapper, onCandles).find('[data-fact="plots"]').exists()).toBe(true)
-      expect(row(wrapper, onCandles).find('.layer-marker').text()).toBe('▾')
+      expect(row(wrapper, onCandles).find('.layer-marker').find('[data-icon="status-expanded"]').exists()).toBe(true)
     })
 
     /**

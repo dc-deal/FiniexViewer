@@ -44,7 +44,7 @@ const name = computed(() => (current.value ? serverName(current.value) : t('Serv
     <DropdownMenuRoot>
       <DropdownMenuTrigger class="menu-bar-trigger server-trigger">
         <AppIcon name="status-server" />
-        <span class="server-name" data-shortens>{{ name }}</span> ▾
+        <span class="server-name" data-shortens>{{ name }}</span> <AppIcon name="nav-menu" />
       </DropdownMenuTrigger>
       <DropdownMenuPortal>
         <DropdownMenuContent class="menu-content" :side-offset="4" align="end">
@@ -56,12 +56,12 @@ const name = computed(() => (current.value ? serverName(current.value) : t('Serv
             :data-active="server.id === store.activeId"
             @select="store.switchTo(server.id)"
           >
-            <span class="server-check" aria-hidden="true">{{ server.id === store.activeId ? '✓' : '' }}</span>
+            <span class="server-check" aria-hidden="true"><AppIcon v-if="server.id === store.activeId" name="status-checked" /></span>
             {{ serverName(server) }}
           </DropdownMenuItem>
           <DropdownMenuSeparator class="menu-separator" />
           <DropdownMenuItem class="menu-item" data-action="manage-servers" @select="settingsOpen = true">
-            ⚙️ {{ t('Manage servers…') }}
+            <AppIcon name="action-settings" /> {{ t('Manage servers…') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>

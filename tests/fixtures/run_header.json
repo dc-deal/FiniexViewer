@@ -1,6 +1,6 @@
 {
-  "run_id": "20261116_142142_83ec622d",
-  "start_time": "2026-11-16T14:21:42.132995Z",
+  "run_id": "20261119_131838_dec84207",
+  "start_time": "2026-11-19T13:18:38.996509Z",
   "run_type": "simulation",
   "run_name": "report_coverage_reference",
   "parent_id": null,
@@ -9,7 +9,7 @@
   "config_id": "76988fb0d45da74a48c37ae0ce3a72daa54f66aa6f2c75f6a9d22d9a4e2dc4fe",
   "rendered_config_id": "75010d575640b77af6bde00394c5761a0ef88d701ee26a0c4f19d09650419d7c",
   "app_version": "1.5.0",
-  "git_commit": "b2e06c41",
+  "git_commit": "3704161b",
   "reporting": "expected",
   "origin": {
     "channel": "cli",
@@ -24,7 +24,7 @@
     "framework": {
       "root": ".",
       "in_repository": true,
-      "commit": "b2e06c41",
+      "commit": "3704161b",
       "branch": "dev-1-6-0",
       "dirty": false,
       "uncommitted_count": 0,
@@ -69,7 +69,7 @@
         "role": "decision",
         "name": "CORE/test_probes/multi_position_probe",
         "type": "CORE/test_probes/multi_position_probe",
-        "version": "0.0.0",
+        "version": "1.0.0",
         "source_path": "python/framework/decision_logic/core/test_probes/multi_position_probe.py",
         "repository": ".",
         "package_digest": null
@@ -121,5 +121,5 @@
   ],
   "run_purpose": "fixture",
   "features_beyond_venue": [],
-  "report_contract": 57
+  "report_contract": 58
 }

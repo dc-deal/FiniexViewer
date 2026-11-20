@@ -9,7 +9,7 @@ import type { LinkContext, PositionRef } from '@/types/context_types'
 import { isLayerGroupKey } from '@/layer_groups'
 import { VIEW_FOLDS, VIEW_ROW_CAPS } from '@/types/arrangement_types'
 import type {
-  DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredLayers, StoredPanelView, StoredRows, StoredRunChart,
+  DockPlace, StoredArrangement, StoredChart, StoredFacets, StoredLayers, StoredPanelView, StoredRows, StoredRunChart, StoredWindow,
   StoredServedLayers, ViewFold, ViewRowList,
 } from '@/types/arrangement_types'
 import { CHART_LAYER_IDS } from '@/types/chart_drawing_types'
@@ -212,6 +212,15 @@ function readPaneWeights(value: unknown): PaneWeights | undefined {
   return Object.keys(weights).length ? weights : undefined
 }
 
+/** A timeline's window: none without the scope it was set for, or where it is no forward stretch of finite stamps. */
+function readWindow(value: unknown): StoredWindow | undefined {
+  const stored = record(value)
+  const scope = text(stored['scope'])
+  const [from, to] = [stored['from'], stored['to']]
+  if (!scope || typeof from !== 'number' || typeof to !== 'number') return undefined
+  return Number.isFinite(from) && Number.isFinite(to) && from < to ? { scope, from, to } : undefined
+}
+
 /** Each panel's view, field by field: a name this build does not know is never copied, an empty entry is none. */
 export function readPanelViews(value: unknown): Record<string, StoredPanelView> {
   const views: Record<string, StoredPanelView> = {}
@@ -232,6 +241,8 @@ export function readPanelViews(value: unknown): Record<string, StoredPanelView> 
     const closed = record(stored)['closedLegends']
     const legends = Array.isArray(closed) ? [...new Set(closed.filter(isPaneName))].slice(-KEPT_LEGENDS) : []
     if (legends.length) view.closedLegends = legends
+    const periodWindow = readWindow(record(stored)['periodWindow'])
+    if (periodWindow) view.periodWindow = periodWindow
     if (Object.keys(view).length) views[id] = view
   }
   return views
@@ -438,6 +449,7 @@ export const useArrangementStore = defineStore('arrangement', () => {
     if (view.maximized) kept.maximized = view.maximized
     if (view.looks && Object.keys(view.looks).length) kept.looks = view.looks
     if (view.closedLegends?.length) kept.closedLegends = view.closedLegends
+    if (view.periodWindow) kept.periodWindow = view.periodWindow
     const next = { ...panelViews.value }
     if (Object.keys(kept).length) next[panel] = kept
     else delete next[panel]

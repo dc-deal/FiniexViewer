@@ -55,7 +55,10 @@ has when it attaches; the bundle's reset and the dock's leave it alone. A panel 
 through `use_panel_view`: `PanelHost` names the panel it draws, `PanelViewScope` names a section in
 the column, and `useViewExpanded(fold)` is a writable boolean — without a host it lives for one
 mount, as it did before anything was kept. Added under version 1: an entry written before it reads as
-nothing kept, so no version had to change.
+nothing kept, so no version had to change. A long booking-period timeline's frame is kept the same way
+since 2026-11-19 (viewer#48): `periodWindow` — `{ scope, from, to }`, bound like the rows to the run
+or deployment it was set for, read back only as a forward stretch of finite stamps, and left out of a
+named layout.
 
 **A chart's drawing layers are part of its view** (viewer#41): `layers` under the chart's dock id,
 written by the Layers panel through `use_chart_layers` and read by the chart's store — the order
@@ -83,14 +86,13 @@ step stream again.
 and the column's `layout.v1` alike, which is what makes a second window the way to compare two runs.
 A tab reads its own `sessionStorage` entry. A NEW tab has none: it adopts the last one any tab saved
 and keeps it as its own, so another tab's later write never reaches it, not even on a reload. Every
-write goes to both — the tab's own, and `localStorage` as the start of the next new tab. Settings,
-banned hints and the named layouts are the reader's, not the tab's, and stay in `localStorage`
-alone; a hint merely dismissed is stored nowhere and returns next visit.
+write goes to both — the tab's own, and `localStorage` as the start of the next new tab. The
+settings and the named layouts are the reader's, not the tab's, and stay in `localStorage` alone.
 
 **What is the reader's follows another window** (since 2026-11-03). Each window read it once and
 wrote it whole, so the last window to write took back what another had just changed. The browser
-tells every window but the writer, and `onSharedWrite` in `src/tab_storage.ts` makes the settings,
-the banned hints and the named layouts read it again. The named layouts also read the stored list
+tells every window but the writer, and `onSharedWrite` in `src/tab_storage.ts` makes the settings
+and the named layouts read it again. The named layouts also read the stored list
 before every write, so a layout saved in another window is never lost — see
 [Named Layouts](../interface/named_layouts.md), which holds the dock, the places, the views no run is
 bound to and the bundles' columns under a name, in three sizes, and which layout a tab loaded as
@@ -136,7 +138,7 @@ http://localhost:5173/?server=default&run=<run id>&units=<unit>&position=<scenar
 - **Copied on demand** from the run chart's quick bar (the link button): this window's server, the run, the
   scenarios in focus — or the unit on show where none is — the marked position, the timeframe and the
   bar in the middle of the stretch on show. What came of it stands at the button: ✓, or ✕ where the
-  clipboard refused. What it does is said by the quick bar's hint, with ≡ Layers. In a narrow chart the button gives way, after the word *Layers*: the unit's name is what the bar is read for.
+  clipboard refused. What it does stands behind the quick bar's ⓘ, with the Layers button. In a narrow chart the button gives way, after the word *Layers* and with the ⓘ: the unit's name is what the bar is read for.
 - **Applied once, as a pick** (`use_link_from_address.ts`, at the app root after the layout by run).
   The parameters leave the address at once, so a reload shows the stored state. Once the run index is
   there, the run, the scenarios and the position are chosen through the stores' actions, and

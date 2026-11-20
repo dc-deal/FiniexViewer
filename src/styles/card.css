@@ -71,3 +71,44 @@
 .card-arrow {
   fill: var(--color-border-overlay);
 }
+
+/*
+ * The HELP card (viewer#24): a name and a sentence while the pointer rests on an ⓘ, the whole text at
+ * a click. The same overlay surface as a data card, but an edge in the link role down its left side,
+ * so a sentence of help is never taken for a row of figures.
+ */
+.help-card {
+  /* above a dialog: the settings explain themselves with it too */
+  z-index: calc(var(--z-dialog) + 1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-width: min(30rem, calc(100vw - 2rem));
+  max-height: min(70vh, 28rem);
+  overflow-y: auto;
+  padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border-overlay);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 4px;
+  background-color: var(--color-bg-overlay);
+  box-shadow: var(--shadow-overlay);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+/* the name by its form — upper case, as the figure blocks' labels — never by a larger size */
+.help-card .help-name {
+  font-family: monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.help-card .help-text {
+  margin: 0;
+}
+
+.help-popover .help-entry + .help-entry {
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--color-border);
+}
