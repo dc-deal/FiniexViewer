@@ -74,7 +74,8 @@ starts with the first group.
 | [Test Tiers and Quality Gates](testing/test_tiers.md) | What each tier proves (type-check, unit suite, browser suite, a person's smoke sweep), which commands gate CI, and the deadline for long container runs |
 | [Unit Tests](testing/unit_tests.md) | Setting up and writing Vitest tests: commands, configuration, captured fixtures, mocks and stubs, Pinia and async patterns, and the steps for adding a test |
 | [Unit Test Catalogue](testing/unit_test_catalogue.md) | Every unit test file and what its suite asserts |
-| [Browser Tests](testing/browser_tests.md) | The Playwright tier in `e2e/`: what each spec proves that jsdom cannot, how specs seed storage and replay fixtures, and how the runner reaches a browser |
+| [Browser Tests](testing/browser_tests.md) | The Playwright tier in `e2e/`: how specs seed storage and replay fixtures, the README's pictures, and how the runner reaches a browser |
+| [Browser Test Catalogue](testing/browser_test_catalogue.md) | Every browser spec and what it proves that jsdom cannot |
 
 ## Releases
 

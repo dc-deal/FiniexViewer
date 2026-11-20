@@ -902,8 +902,11 @@ describe('BookingPeriodTimeline — a long scale', () => {
  * A long timeline (viewer#48): where the overview cannot set its periods apart it frames a stretch
  * and draws it again beneath. The overview says when it is dense and how wide it is; jsdom lays out
  * nothing, so the test says it for the chart.
+ *
+ * Each test draws a hundred and twenty periods twice: about 2 s alone, and past the default 5 s
+ * twice in the full suite on 2026-11-20 with the workers running side by side.
  */
-describe('BookingPeriodTimeline — a long timeline drawn apart', () => {
+describe('BookingPeriodTimeline — a long timeline drawn apart', { timeout: 20_000 }, () => {
   const DAY = 24 * 60 * 60 * 1000
   const START = Date.parse('2021-01-01T00:00:00Z')
   const stamp = (at: number) => new Date(at).toISOString().replace('.000Z', '+00:00')
