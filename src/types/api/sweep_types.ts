@@ -177,7 +177,14 @@ export interface SweepCombination {
   origin_evidence_grades: string
   price_bases: string
   input_files: number | null
+  // since contract 59 the files whose origin no stamp attests, whatever their class; a row with
+  // `logic_version` 21 or older counted every file that was not production data its producer stamped
   unstamped_input_files: number | null
+  // the server clock rules its tick files' times were converted with, comma-joined (`UTC+0h`), and the
+  // bar timeframes whose warmup reached into a venue's published history (contract 59); empty where
+  // none, and on a row written before
+  server_clock_rules: string
+  external_warmup_timeframes: string
   // when a prune removed the run's records; empty while it did not — then the figures cannot be checked
   records_pruned_at: string
   /**

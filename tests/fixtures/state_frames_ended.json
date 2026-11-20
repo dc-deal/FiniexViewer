@@ -2,21 +2,21 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-11-19T15:12:43.713738Z",
+  "served_at": "2026-11-20T11:59:47.177190Z",
   "units": [
     {
       "unit_name": "state_frames_test",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
-      "written_at": "2026-11-19T13:24:45.176752Z",
-      "age_s": 6478.536986,
+      "written_at": "2026-11-20T11:13:03.580405Z",
+      "age_s": 2803.596785,
       "recording": "ended",
       "truncated_tail": false,
       "first_frame": {
-        "written_at": "2026-11-19T13:24:43.670115Z",
+        "written_at": "2026-11-20T11:13:02.098383Z",
         "process_memory": {
-          "rss_bytes": 545202176,
-          "private_bytes": 472662016
+          "rss_bytes": 376000512,
+          "private_bytes": 302362624
         }
       },
       "outcome": {
@@ -31,7 +31,7 @@
         "operator_interrupted": false,
         "refused_at_first_tick": false,
         "error_count": 0,
-        "warning_count": 0,
+        "warning_count": 3,
         "log_warning_count": 0,
         "succeeded_count": 1,
         "success_rate_pct": 100.0,
@@ -43,7 +43,7 @@
       "frame": {
         "record_kind": "frame",
         "frame_time": "2026-01-25T08:00:00.320000Z",
-        "written_at": "2026-11-19T13:24:45.176752Z",
+        "written_at": "2026-11-20T11:13:03.580405Z",
         "written_for": "shutdown",
         "cadence_slot": null,
         "ticks_processed": 5980,
@@ -114,8 +114,8 @@
         "closed_bars": {},
         "order_id": null,
         "process_memory": {
-          "rss_bytes": 545202176,
-          "private_bytes": 472670208
+          "rss_bytes": 376000512,
+          "private_bytes": 302370816
         }
       }
     }

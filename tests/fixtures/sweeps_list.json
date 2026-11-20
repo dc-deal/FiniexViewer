@@ -7,6 +7,34 @@
   ],
   "sweeps": [
     {
+      "sweep_id": "sweep_20261120_111602_c1a36fc6",
+      "started": "2026-11-20T11:16:07.843958Z",
+      "duration_s": 927.333544,
+      "run_count": 9,
+      "ok_count": 9,
+      "error_count": 0,
+      "decision_logic_type": "CORE/trend_channel_reference",
+      "decision_version": "1.7.0",
+      "base_config": "trend_channel_reference_sweep_base",
+      "symbols": [
+        "EURUSD"
+      ],
+      "objective": "net_pnl",
+      "maximize": true,
+      "features_beyond_venue": "",
+      "best_combinations": [
+        {
+          "currency": "USD",
+          "run_id": "20261120_112808_4d59eb00",
+          "objective_value": -43.1400000000056,
+          "sweep_params": {
+            "decision_logic_config.sl_mult": 1.5,
+            "decision_logic_config.tp_mult": 1.5
+          }
+        }
+      ]
+    },
+    {
       "sweep_id": "sweep_20261119_132759_34cd7344",
       "started": "2026-11-19T13:28:06.308776Z",
       "duration_s": 612.304494,
@@ -455,5 +483,5 @@
       ]
     }
   ],
-  "count": 16
+  "count": 17
 }
