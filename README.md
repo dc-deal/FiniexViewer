@@ -1,10 +1,10 @@
 # FiniexViewer
 
-> **Version:** v0.7.0 Pre-Alpha Showcase
-> **Status:** v0.7.0 — the run chart stacks panes: the volume in a pane of its own, a legend and
-> controls in each pane, the heights kept with the layout; a time lane of booking periods and refused
-> orders; a status bar below the panels, both bars giving room by rank. 1845 unit tests and a browser
-> suite.
+> **Version:** v0.8.0 Pre-Alpha Showcase
+> **Status:** v0.8.0 — the run chart draws a strategy's worker series in their panes and the orders
+> that rested at a price, and a view is shared as a link to a moment; help where the pointer rests
+> instead of hint lines; icons for every glyph that means something; a year of booking periods read
+> as overview and detail. 1990 unit tests and a browser suite.
 
 A web-based viewer companion for **[FiniexTestingIDE](https://github.com/dc-deal/FiniexTestingIDE)**.
 
@@ -25,9 +25,10 @@ kept across a reload.
 The run report is a bundle whose sections open as panels of their own — here every one stands apart,
 arranged in three columns. One scenario in focus narrows every list, and the run chart draws that
 scenario's trades where they opened and closed, the stop loss, the take profit and the entry–exit
-line of the position looked at, its booking periods and refused orders in a lane along the bottom, and
-the volume in a pane of its own below — each pane with its legend, as tall as you drag it. The Layers
-panel shows, fades and orders what the chart draws, grouped by pane.
+line of the position looked at, the orders that rested at a price, its booking periods and refused
+orders in a lane along the bottom, the volume and every series a strategy's workers computed in the
+panes they name — each pane with its legend, as tall as you drag it. The Layers panel shows, fades and
+orders what the chart draws, grouped by pane and source.
 
 ### A live bot across its restarts
 
@@ -68,8 +69,13 @@ objective it declared, and one click makes a combination the run on show.
   set or time; a sweep's combinations and a deployment's sessions fold under one heading.
 - **What runs on the machine** — the Activities panel lists what FiniexTestingIDE is running, each
   beneath the one it runs inside, with the memory it holds.
+- **A link to a moment** — copied from the run chart, it opens the same run, scenario, position and
+  stretch of time, and the layout by run switches as set.
+- **A year of booking periods** — where a long run's timeline cannot set two periods apart, a frame on
+  it draws the stretch it holds period by period beneath.
 - **A warning says where it came from** — headed by the title of the validation check that decided it.
-- **Every control explains itself** in a hint that can be dismissed, in a dark and a light theme.
+- **Help where the pointer rests** — an ⓘ shows a name and a sentence, a click the whole text, and an
+  empty area says why it is empty; in a dark and a light theme.
 
 ---
 
