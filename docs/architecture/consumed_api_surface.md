@@ -130,6 +130,14 @@ a newer backend fails locally instead of a field quietly turning `null` in produ
 The header is READ as well: the menu bar marks a server stamped with another contract than the one
 the viewer mirrors ([Menu Bar Status](../interface/menu_bar_status.md)).
 
+**A busy store index is asked once more** (contract 61). A route that reads a store index — the run
+list, deployments, sweeps and the others — waits a few seconds for another process writing it, and
+answers `503 store_index_busy` with `Retry-After` when the index did not come free. The client waits
+the seconds named there, 5 s by their errors document and never more than 30, and asks once more;
+the server already waited before it answered, so a second refusal is not asked again. It reaches
+the page as the server's `detail`, which is written for a reader, never as a status code
+(`src/api/store_index_busy.ts`).
+
 The report plane is model-fed on the backend: one canonical model per section, derived once and rendered identically to console, CSV and API. The API is the same object serialized, not a separate projection that can drift.
 
 Six consequences the frontend is built around:

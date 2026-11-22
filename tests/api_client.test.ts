@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // vi.hoisted ensures mockGet is initialized before the hoisted vi.mock factory runs
 const mockGet = vi.hoisted(() => vi.fn())
+const mockRequest = vi.hoisted(() => vi.fn())
 
 // the response interceptor the client registers once, at import — kept to feed it answers by hand
 type Handler = (value: unknown) => unknown
@@ -11,6 +12,7 @@ vi.mock('axios', () => ({
   default: {
     create: vi.fn(() => ({
       get: mockGet,
+      request: mockRequest,
       interceptors: {
         response: {
           use: (answer: Handler, refusal: Handler) => {
@@ -58,6 +60,7 @@ import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
+import { StoreIndexBusyError } from '@/api/store_index_busy'
 
 // Captured from the running backend rather than hand-written: a mock built by hand becomes a
 // second mirror of the contract, and the two drift apart without anything saying so.
@@ -95,6 +98,44 @@ describe('api_client', () => {
     await expect(stampHandlers.refusal!({ response: { headers: { 'x-api-contract': '43' } } })).rejects.toBeTruthy()
     stampHandlers.answer!({ headers: {} })
     expect(seen).toEqual([41, 42, 43])
+  })
+
+  /**
+   * Contract 61: a store index another process is writing answers 503 `store_index_busy` with
+   * `Retry-After`. The client asks once more after that wait, and a second refusal reaches the page
+   * as the server's own sentence.
+   */
+  describe('a busy store index', () => {
+    const detail = 'The run ledger index is being written by another process and did not come free in time; try again in a few seconds'
+    const busy = (config: object) => ({
+      config,
+      response: { status: 503, data: { error: 'store_index_busy', detail }, headers: { 'retry-after': '5' }, config },
+    })
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      mockRequest.mockReset()
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('asks once more after the wait the answer names', async () => {
+      mockRequest.mockResolvedValue({ data: 'second answer' })
+      const repeat = stampHandlers.refusal!(busy({ url: '/reports/runs' }))
+      await vi.advanceTimersByTimeAsync(4_999)
+      expect(mockRequest).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(repeat).resolves.toEqual({ data: 'second answer' })
+      expect(mockRequest).toHaveBeenCalledWith({ url: '/reports/runs', askedAgainWhenBusy: true })
+    })
+
+    it('shows the sentence of the server when the repeat is refused as well', async () => {
+      const second = stampHandlers.refusal!(busy({ url: '/reports/runs', askedAgainWhenBusy: true }))
+      await expect(second).rejects.toBeInstanceOf(StoreIndexBusyError)
+      await expect(second).rejects.toThrow(detail)
+      expect(mockRequest).not.toHaveBeenCalled()
+    })
   })
 
   describe('getTimeframes', () => {

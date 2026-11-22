@@ -4,6 +4,7 @@ import { ArtifactUnreadableError } from '@/api/artifact_unreadable_error'
 import { noConnectionFrom } from '@/api/no_connection_error'
 import { RunIdMismatchError } from '@/api/run_id_mismatch_error'
 import { RunNotFoundError } from '@/api/run_not_found_error'
+import { busyRepeatDelay, storeIndexBusyFrom } from '@/api/store_index_busy'
 import { SurfaceForbiddenError } from '@/api/surface_forbidden_error'
 import type { BrokerList, SymbolList } from '@/types/api/broker_types'
 import type { ServerHealth } from '@/types/api/health_types'
@@ -74,9 +75,15 @@ http.interceptors.response.use(
     noteStamp(response.headers)
     return response
   },
-  (error: unknown) => {
+  async (error: unknown) => {
     if (axios.isAxiosError(error)) noteStamp(error.response?.headers)
-    return Promise.reject(noConnectionFrom(error) ?? error)
+    // contract 61: a store index another process is writing answers 503 with when to ask again
+    const wait = busyRepeatDelay(error)
+    if (wait !== null && axios.isAxiosError(error) && error.config) {
+      await new Promise(resolve => setTimeout(resolve, wait * 1000))
+      return http.request({ ...error.config, askedAgainWhenBusy: true })
+    }
+    return Promise.reject(noConnectionFrom(error) ?? storeIndexBusyFrom(error) ?? error)
   },
 )
 
