@@ -105,6 +105,8 @@ const EXPECTED_KEYS = {
   // one row per unit of the run; a session is one
   stateFrameUnits: ['unit_name'],
   validationChecks: ['check'],
+  // one row per filesystem under a session's stores (contract 64); several stores share one row
+  machineDisks: ['stores'],
   // a unit's timeline: one row per stream it records over time
   recordedStreams: ['stream_kind', 'stream_name'],
   // a frame's place in its stream — two frames can share an instant
@@ -798,5 +800,19 @@ describe('api contract', () => {
     expect(typed.memory.warn_at_pct).toBeLessThan(typed.memory.critical_at_pct)
     if (typed.pressure_level === 'ok') expect(typed.pressure_reasons).toEqual([])
     else expect(typed.pressure_reasons.length).toBeGreaterThan(0)
+  })
+
+  /**
+   * The room under a session's records (contract 64). A row is named by its stores and never by a
+   * path, so the stores are what make it unique, and no filesystem has more room left than it holds.
+   */
+  it('the disks under the stores are keyed by their stores, each with its room', () => {
+    const typed: MachineResources = machineResources
+    expect(typed.keys.disks).toEqual(EXPECTED_KEYS.machineDisks)
+    expect(typed.disks.length).toBeGreaterThan(0)
+    for (const disk of typed.disks) {
+      expect(disk.stores.length).toBeGreaterThan(0)
+      expect(disk.free_bytes).toBeLessThanOrEqual(disk.total_bytes)
+    }
   })
 })

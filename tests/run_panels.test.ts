@@ -794,6 +794,7 @@ describe('RunHeaderPanel', () => {
       origin: {
         channel: 'cli', client: 'console', principal: 'operator',
         host: 'h_x29og8', allow_dirty: false, first_start: false, accept_composite_change: null,
+        book_closed_externally: [],
       },
       code_identity: null,
       ticks_from: 'archive',
@@ -957,7 +958,7 @@ describe('RunHeaderPanel', () => {
       props: { model: headerModel({}, header({
         origin: {
           channel: 'cli', client: 'console', principal: 'operator', host: 'h',
-          allow_dirty: true, first_start: false, accept_composite_change: null,
+          allow_dirty: true, first_start: false, accept_composite_change: null, book_closed_externally: [],
         },
       })) },
     })
@@ -1002,7 +1003,7 @@ describe('RunHeaderPanel', () => {
       props: { model: headerModel({}, header({
         origin: {
           channel: 'cli', client: 'console', principal: 'operator', host: 'h',
-          allow_dirty: false, first_start: true, accept_composite_change: null,
+          allow_dirty: false, first_start: true, accept_composite_change: null, book_closed_externally: [],
         },
       })) },
     })
@@ -1030,6 +1031,7 @@ describe('RunHeaderPanel', () => {
         origin: {
           channel: 'cli', client: 'console', principal: 'operator', host: 'h',
           allow_dirty: false, first_start: false, accept_composite_change: 'b1fc487a',
+          book_closed_externally: [],
         },
       })) },
     })

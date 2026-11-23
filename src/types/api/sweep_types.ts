@@ -187,6 +187,9 @@ export interface SweepCombination {
   external_warmup_timeframes: string
   // when a prune removed the run's records; empty while it did not — then the figures cannot be checked
   records_pruned_at: string
+  // a session's start that found its account's declared exclusivity false (contract 62); null on
+  // every backtest, which meets no venue at its start, and on a row with `logic_version` 22 or older
+  exclusivity_violated_at: string | null
   /**
    * What the combination ran with (contract 40): the run-config store's ids of its rendered scenario
    * set and of its broker configuration, comma-joined where it traded under several. Empty on a row

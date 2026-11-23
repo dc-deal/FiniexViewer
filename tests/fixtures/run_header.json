@@ -18,7 +18,8 @@
     "host": "h_x29og8",
     "allow_dirty": false,
     "first_start": false,
-    "accept_composite_change": null
+    "accept_composite_change": null,
+    "book_closed_externally": []
   },
   "code_identity": {
     "framework": {

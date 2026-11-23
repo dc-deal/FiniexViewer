@@ -167,6 +167,13 @@ export interface DeploymentSessionRow {
   // marks above: a session can have one without the other. Empty when nothing moved, and on a session
   // recorded before this contract, which draws no change in either direction.
   code_changes: SessionCodeChange[]
+  /**
+   * The session's start, ISO-8601 UTC, where that start found the account's declared exclusivity
+   * false (contract 62): orders of another owner on its instrument, so it held its entries or an
+   * operator had accepted them at an earlier start. Its money figures stand, but their denominator is
+   * not provably the bot's own. Null where the start found nothing, and on a session recorded before.
+   */
+  exclusivity_violated_at: string | null
 }
 
 /**

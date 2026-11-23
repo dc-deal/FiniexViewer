@@ -44,6 +44,26 @@ export interface MachineResources {
   pressure_level: string
   /** One sentence per reason, written for a person and shown as it comes. Empty at `ok`. */
   pressure_reasons: string[]
+  /** The room under an AutoTrader session's records (contract 64), one row per filesystem. */
+  disks: MachineDisk[]
+  /** What makes a row unique: `{ disks: ['stores'] }`. */
+  keys: { disks: string[] }
+}
+
+/**
+ * One filesystem that holds a store an AutoTrader session writes into, named by those stores and never
+ * by a path (contract 64). Several stores usually share one filesystem, so they share a row. A session
+ * warns its operator below its warning floor and refuses to start below a lower one; this only shows
+ * the numbers.
+ */
+export interface MachineDisk {
+  /** Store ids of the store catalog — `runs`, `run_ledger`, `session_state` …; their vocabulary. */
+  stores: string[]
+  /** The room a process that is not root may still use. */
+  free_bytes: number
+  total_bytes: number
+  /** Null for a filesystem that reports no size. */
+  free_pct: number | null
 }
 
 /**

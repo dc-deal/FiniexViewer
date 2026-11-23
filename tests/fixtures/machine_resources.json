@@ -1,19 +1,49 @@
 {
-  "measured_at": "2026-11-22T10:54:40.918313+00:00",
+  "measured_at": "2026-11-23T09:14:13.751894+00:00",
   "cpu": {
     "count": 16.0,
     "count_source": "machine",
-    "used_pct": 17.1,
-    "window_s": 121.52
+    "used_pct": 56.7,
+    "window_s": 130.05
   },
   "memory": {
     "limit_bytes": 50514264064,
-    "used_bytes": 7497764864,
-    "used_pct": 14.8,
+    "used_bytes": 8130777088,
+    "used_pct": 16.1,
     "limit_source": "machine",
     "warn_at_pct": 80.0,
     "critical_at_pct": 90.0
   },
   "pressure_level": "ok",
-  "pressure_reasons": []
+  "pressure_reasons": [],
+  "disks": [
+    {
+      "stores": [
+        "activities"
+      ],
+      "free_bytes": 906363609088,
+      "total_bytes": 1081101176832,
+      "free_pct": 83.8
+    },
+    {
+      "stores": [
+        "broker_runtime",
+        "cold_start_state",
+        "global_log",
+        "run_configs",
+        "run_ledger",
+        "run_patches",
+        "runs",
+        "session_state"
+      ],
+      "free_bytes": 299537412096,
+      "total_bytes": 1022844989440,
+      "free_pct": 29.3
+    }
+  ],
+  "keys": {
+    "disks": [
+      "stores"
+    ]
+  }
 }

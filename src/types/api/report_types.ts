@@ -94,6 +94,11 @@ export interface RunOrigin {
    * Null where the flag was not given, on a backtest, and before.
    */
   accept_composite_change: string | null
+  /**
+   * Contract 63: the position notes a start was told were closed outside the bot, as typed; empty when
+   * none. Not proof that it booked anything — the trades with `close_reason: closed_externally` are.
+   */
+  book_closed_externally: string[]
 }
 
 /**
@@ -1095,6 +1100,12 @@ export interface TradeRow {
   duration_s: number
   // '' where the close was not attributed — an absence, never rendered as a state
   close_reason: string
+  /**
+   * Whether the bot saw the exit (contract 63). False only for `close_reason: closed_externally`, a
+   * holding an operator sold outside the bot: booked at the entry price, so its exit price, gross P&L
+   * and fees are not measurements. True on every other trade and on every older row.
+   */
+  exit_observed: boolean
   gross_pnl: number
   total_fees: number
   net_pnl: number
@@ -1217,6 +1228,9 @@ export interface TradeAnalytics {
   sl_closes: number
   tp_closes: number
   scenario_end_closes: number
+  // the `closed_externally` trades (contract 63); `manual_closes` is every trade the other four do
+  // not name, so since 63 it no longer counts them
+  external_closes: number
   manual_closes: number
   avg_gross_pnl: number
   avg_fees: number
@@ -1692,11 +1706,12 @@ export interface OrderHistoryRow {
   // who asked: `strategy` · `framework` · `venue`. A framework close is a guard or a session end,
   // not a decision the bot made, and reading the two alike credits the strategy with neither.
   initiator: string | null
-  // why the row ended as it did, beside the status that says WHAT it ended as
+  // why the row ended as it did, beside the status that says WHAT it ended as; contract 62 added
+  // `entries_held`, a resting entry the framework cancelled when a session began to hold its entries
   end_reason: string | null
   // a whole sentence of the backend's, on a refused row and nowhere else. Contract 23 added
   // `unaccounted_order` and `position_not_found`, and dropped `broker_unreachable` and
-  // `unresolved_write`.
+  // `unresolved_write`; contract 62 added `entries_held`, a new entry refused during such a hold.
   rejection_reason: string | null
   rejection_message: string | null
   // the order event this row was booked with — its `seq` in order-events (contract 44); null on a
