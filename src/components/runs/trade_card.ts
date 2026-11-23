@@ -17,7 +17,19 @@ function opened(trade: TradeRow, tick: number | null): Figure {
   return { label: t('Opened'), value: `${utcInstant(trade.entry_time)} @ ${priceAt(trade.entry_price, tick)}` }
 }
 
+/**
+ * A holding sold outside the bot (contract 63) is booked at its entry price with `exit_observed: false`:
+ * the bot never saw that exit, so its price is not printed as one, and the card says why — the gross
+ * P&L and the fees beside it are not measurements either (their trade-history document).
+ */
 function closed(trade: TradeRow, tick: number | null): Figure {
+  if (!trade.exit_observed) {
+    return {
+      label: t('Closed'),
+      value: `${utcInstant(trade.exit_time)} · ${t('outside the bot, exit not observed')}`,
+      tone: 'warning',
+    }
+  }
   return { label: t('Closed'), value: `${utcInstant(trade.exit_time)} @ ${priceAt(trade.exit_price, tick)}` }
 }
 

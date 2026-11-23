@@ -96,6 +96,12 @@ misreports something:
   differs from the session before: its word, how it moved (`change_direction`) and the message of the
   commit that made the difference, which shows at once when a commit did not matter. The two commits are
   in the card. It is apart from the marks below: a session can have one without the other.
+- **A start that found the account shared stands on the same line, as a warning.**
+  `exclusivity_violated_at` (contract 62) is set where a session's start found orders of another owner
+  on an account declared exclusive: the session held its entries, or an operator had accepted those
+  orders at an earlier start. Its figures stand, but the capital behind them is not provably the bot's
+  own, so the line says *Orders of another owner at its start* in the warning role with its glyph, and
+  the card gives the time it was found. Null on a start that found nothing and on an older session.
 - `strategy_changed` / `operation_changed` / `orders_to_changed` render as a line BETWEEN two rows,
   the words on a dashed rule half a row high. A badge at the end of a row reads as a property of
   that session, which is the wrong reading — the flag marks a boundary.

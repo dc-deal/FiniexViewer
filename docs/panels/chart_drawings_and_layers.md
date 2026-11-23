@@ -110,6 +110,11 @@ switches the levels off in the Layers panel.
   (contract 37 or a later one). Until then nothing is drawn for the time before the exit.
 - **Past the last bar of a window the route cut** nothing is drawn: a level known only past it has
   no candle to stand at.
+- **An exit the bot did not see is not drawn.** A holding sold outside the bot is booked with
+  `close_reason: closed_externally` and `exit_observed: false` (contract 63), at its entry price: no
+  candle and no price of that exit is in the bot's record. So it has no exit mark, no line and no
+  levels at an exit; its opening still stands, and its card in the trade list says *outside the bot,
+  exit not observed* where a price would stand.
 
 ## The Layers panel
 

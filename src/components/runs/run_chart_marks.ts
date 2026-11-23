@@ -128,6 +128,9 @@ export function exitMarks(
 ): ChartMark[] {
   const marks: ChartMark[] = []
   for (const trade of trades) {
+    // a holding sold outside the bot (contract 63): no candle is where that exit happened, so it has
+    // no mark — the trade list and its card say how it ended
+    if (!trade.exit_observed) continue
     const at = seconds(trade.exit_time)
     const time = barOf(barTimes, at)
     if (time === null) continue

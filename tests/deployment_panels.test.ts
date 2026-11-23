@@ -175,6 +175,41 @@ describe('SessionsTable', () => {
     })
   })
 
+  /**
+   * A start that found orders of another owner on an account declared exclusive (contract 62): the
+   * figures stand, but they are to be weighed — a warning on the line above the session, with its
+   * glyph and its words, and the time it was found in its card.
+   */
+  describe('a start that found the account shared', () => {
+    const shared = '2026-11-22T08:00:00+00:00'
+
+    it('says so above the session, as a warning with its glyph', () => {
+      const lead = mountSessions([session({ exclusivity_violated_at: shared })]).find('.record-lead')
+      expect(lead.exists()).toBe(true)
+      const words = lead.find('.session-shared')
+      expect(words.text()).toBe('Orders of another owner at its start')
+      expect(words.find('.app-icon').exists()).toBe(true)
+    })
+
+    it('gives the time it was found and what it means for the figures in its card', () => {
+      const card = mountSessions([session({ exclusivity_violated_at: shared })])
+        .find('.record-lead').findComponent(HoverCard).props('details')!
+      expect(card).toEqual([
+        { label: 'Found at', value: '2026-11-22 08:00:00Z' },
+        { label: 'Figures', value: 'They stand, but the account also held orders of another owner' },
+      ])
+    })
+
+    it('stands beside a change mark on the same line, parted by a dot', () => {
+      const lead = mountSessions([session({ strategy_changed: true, exclusivity_violated_at: shared })]).find('.record-lead')
+      expect(lead.text()).toMatch(/Strategy changed from here[\s\S]*·[\s\S]*Orders of another owner at its start/)
+    })
+
+    it('draws nothing where the start found nothing', () => {
+      expect(mountSessions([session({ exclusivity_violated_at: null })]).find('.session-shared').exists()).toBe(false)
+    })
+  })
+
   it('places the change mark before the session that starts the new stand', () => {
     const wrapper = mountSessions([
       session({ index: 1, run_id: 'run_a' }),

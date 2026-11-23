@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   SERVED_BAR_MAX, barOf, barsPerMark, executedOpenings, exitMarks, focusTime, gatherMarks, openingMarks, timeframeOffer,
 } from '@/components/runs/run_chart_marks'
+import { exitCard } from '@/components/runs/trade_card'
 import type {
   OpenPosition, OrderHistoryReport, OrderHistoryRow, PortfolioReport, TradeHistoryReport, TradeRow,
 } from '@/types/api/report_types'
@@ -208,6 +209,21 @@ describe('run_chart_marks', () => {
       const [first, last] = exitMarks([rung, fired], KEY, BARS, null)
       expect(first!.card.details.map(pair => pair.label)).not.toContain('Own level')
       expect(last!.card.details).toContainEqual({ label: 'Own level', value: 'stop loss 0.86' })
+    })
+
+    /**
+     * A holding sold outside the bot (contract 63) is booked at its entry price, and the bot never saw
+     * that exit: no candle is where it happened, so it has no mark, and its card says so rather than
+     * printing the entry price as the price it closed at.
+     */
+    it('marks no exit the bot did not see, and its card names none at a price', () => {
+      const sold = trade({ ...long, close_reason: 'closed_externally', exit_observed: false, exit_price: long.entry_price })
+      expect(exitMarks([sold, long], KEY, BARS, null)).toHaveLength(1)
+      const card = exitCard(sold, 0.00001)
+      expect(card.details).toContainEqual({
+        label: 'Closed', value: '2025-10-31 05:02:10Z · outside the bot, exit not observed', tone: 'warning',
+      })
+      expect(card.details).toContainEqual({ label: 'Closed by', value: 'closed_externally' })
     })
   })
 

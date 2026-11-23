@@ -71,10 +71,21 @@ const columns: ListColumn[] = [
   { label: t('Max DD'), width: 'minmax(0, 16fr)', figure: true, rank: 2 },
 ]
 
-/** Whether anything changed at the boundary before a session. */
+/** Whether anything changed at the boundary before a session, or its start found the account shared. */
 function hasBoundary(session: DeploymentSessionRow): boolean {
   return session.strategy_changed || session.operation_changed || session.orders_to_changed
-    || session.code_changes.length > 0
+    || session.code_changes.length > 0 || session.exclusivity_violated_at !== null
+}
+
+/**
+ * What a start that found the account's declared exclusivity false means for the row (contract 62,
+ * their `deployments` document): the figures stand, but orders of another owner sat on the account.
+ */
+function exclusivityCard(session: DeploymentSessionRow): Figure[] {
+  return [
+    { label: t('Found at'), value: utcInstant(session.exclusivity_violated_at ?? '') },
+    { label: t('Figures'), value: t('They stand, but the account also held orders of another owner') },
+  ]
 }
 
 function configurationClause(session: DeploymentSessionRow): string {
@@ -221,6 +232,19 @@ function gap(session: DeploymentSessionRow): string {
           <span class="boundary-words" tabindex="0">{{ codeClause(change) }}</span>
         </HoverCard>
       </template>
+      <!-- the start found orders of another owner on an account declared exclusive (contract 62): a
+           fact to weigh before trusting the figures below, so the warning role with its glyph -->
+      <template v-if="session.exclusivity_violated_at">
+        <span
+          v-if="configurationClause(session) || session.orders_to_changed || session.code_changes.length > 0"
+          aria-hidden="true"
+        >·</span>
+        <HoverCard :details="exclusivityCard(session)">
+          <span class="boundary-words session-shared" tabindex="0">
+            <AppIcon name="status-warning" /> {{ t('Orders of another owner at its start') }}
+          </span>
+        </HoverCard>
+      </template>
     </template>
 
     <template #default="{ row: session }">
@@ -290,6 +314,11 @@ function gap(session: DeploymentSessionRow): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* a warning on the boundary line, not a boundary: the line stays dashed in its own role */
+.sessions-list :deep(.record-lead) .session-shared {
+  color: var(--color-warning);
 }
 
 .sessions-list :deep(.record-lead) > .boundary-links {

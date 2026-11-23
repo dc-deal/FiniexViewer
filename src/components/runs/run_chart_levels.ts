@@ -79,6 +79,9 @@ export function positionLevels(
 ): SegmentDrawing[] {
   const segments: SegmentDrawing[] = []
   for (const trade of trades) {
+    // a holding sold outside the bot (contract 63): its exit is in no record of the bot, so no candle
+    // of it carries the levels
+    if (!trade.exit_observed) continue
     // an exit past the cut has no candle to stand at
     const at = barIn(barTimes, seconds(trade.exit_time), cutAt)
     if (at === null) continue
@@ -130,6 +133,8 @@ export function entryExitLines(
 ): LineDrawing[] {
   const lines: LineDrawing[] = []
   for (const trade of trades) {
+    // an exit the bot did not see (contract 63) has no candle and no price to draw the line to
+    if (!trade.exit_observed) continue
     const from = barIn(barTimes, seconds(trade.entry_time), cutAt)
     const to = barIn(barTimes, seconds(trade.exit_time), cutAt)
     if (from === null || to === null || from === to) continue

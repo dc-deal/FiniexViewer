@@ -189,4 +189,14 @@ describe('run_chart_levels', () => {
       expect(entryExitLines([quick], KEY, BARS, null)).toEqual([])
     })
   })
+
+  /**
+   * A holding sold outside the bot (contract 63) is booked at its entry price, and the bot never saw
+   * that exit: no candle and no price of it is in the bot's record, so nothing is drawn to it.
+   */
+  it('draws neither a line nor the levels to an exit the bot did not see', () => {
+    const sold = trade({ close_reason: 'closed_externally', exit_observed: false, exit_price: 1.1, stop_loss: 1.05 })
+    expect(entryExitLines([sold], KEY, BARS, null)).toEqual([])
+    expect(positionLevels([sold], KEY, [], 'pos_1', BARS, null)).toEqual([])
+  })
 })
