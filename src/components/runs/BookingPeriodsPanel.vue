@@ -239,7 +239,9 @@ const otherCurrencies = computed(() =>
 .booking-periods.filling {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* less the spacer its section keeps above the content (ReportSection.vue), or the section runs
+     over by it and scrolls itself beside the table — as the scenario list did until 2026-11-25 */
+  height: calc(100% - var(--space-md));
 }
 
 .booking-periods.filling > * {

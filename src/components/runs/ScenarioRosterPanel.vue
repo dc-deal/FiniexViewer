@@ -548,7 +548,10 @@ function isPicked(name: string): boolean {
 .scenario-roster.filling {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* the panel's room less the spacer its section keeps above the content (ReportSection.vue): at
+     100 % the section ran over by that spacer and scrolled itself beside the list, two scrollbars
+     where one scrolled anything (operator, on screen 2026-11-25) */
+  height: calc(100% - var(--space-md));
 }
 
 .scenario-roster.filling > * {

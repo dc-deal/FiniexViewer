@@ -189,7 +189,10 @@ test('as a panel of its own the period table reaches the bottom of its panel', a
   // the last thing in the panel: the table, or the note on other currencies the capture's run has
   const last = (await section.locator('.booking-periods > *').last().boundingBox())!
   const sectionBox = (await section.boundingBox())!
-  expect(sectionBox.y + sectionBox.height - inset - (last.y + last.height)).toBeLessThanOrEqual(1)
+  // on the edge from either side, and the section itself does not scroll: ending past it, the panel
+  // carried a second scrollbar beside the table's (on screen 2026-11-25, the scenario list)
+  expect(Math.abs(sectionBox.y + sectionBox.height - inset - (last.y + last.height))).toBeLessThanOrEqual(1)
+  expect(await section.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
 
   // the whole table scrolls now, and its column headings stay at the top of it
   await table.evaluate(element => { element.scrollTop = 400 })

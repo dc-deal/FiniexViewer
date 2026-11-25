@@ -201,5 +201,8 @@ test('as a panel of its own the scenario list reaches the bottom of its panel', 
   })
   const listBox = (await list.boundingBox())!
   const sectionBox = (await section.boundingBox())!
-  expect(sectionBox.y + sectionBox.height - inset - (listBox.y + listBox.height)).toBeLessThanOrEqual(1)
+  // on the edge from either side: a list ending past it made the section scroll itself beside the
+  // list, a second scrollbar that moved nothing but the spacer (on screen 2026-11-25)
+  expect(Math.abs(sectionBox.y + sectionBox.height - inset - (listBox.y + listBox.height))).toBeLessThanOrEqual(1)
+  expect(await section.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
 })
