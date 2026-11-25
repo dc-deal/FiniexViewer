@@ -52,10 +52,13 @@ test('a layer explains itself on its name, its row keeps the width, and the whol
   // a mark in every row cut the names to four letters in a narrow panel (2026-11-19)
   await expect(levels.locator('.layer-row [data-help]')).toHaveCount(0)
 
+  // no position is looked at, so the levels draw nothing: the card on the name says why, under the
+  // layer's own name — the reasons stood in a box below the list until 2026-11-25
   await levels.locator('[data-action="open"]').hover()
-  const card = page.locator('[data-help-tip="layer-levels"]')
+  const card = page.locator('[data-help-tip="layer-empty-levels"]')
   await expect(card).toBeVisible()
   await expect(card.locator('.help-name')).toHaveText('Levels')
+  await expect(page.locator('[data-panel-kind="layers"] .empty-note')).toHaveCount(0)
 
   // opened: the ⓘ in the room the options are indented by, under the row's lever and on the line of
   // the first option — no column of its own to narrow them, no line of its own to cost height

@@ -149,7 +149,7 @@ series: one entry per layer, the pages merged, the frames left behind
   instance as served.
 - **A worker's row** shows, hides and fades its layer like ours and is never moved: it stands where
   the run recorded it. It opens onto the hint that says what a worker's series is. Where the chart's
-  timeframe cannot draw it, its row says which can, and a hint below the list says why; where its
+  timeframe cannot draw it, its row says which can, and its name's help card says why; where its
   series holds no value at all in the stretch read — a setup that never formed — it says
   `no values in view`.
 - **A worker's pane folds** like ours; the fold is kept with the panel's view for the run, since

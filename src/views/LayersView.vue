@@ -5,7 +5,6 @@ import { VueDraggable } from 'vue-draggable-plus'
 import AppButton from '@/components/base/AppButton.vue'
 import AppSlider from '@/components/base/AppSlider.vue'
 import AppSwitch from '@/components/base/AppSwitch.vue'
-import EmptyNote from '@/components/base/EmptyNote.vue'
 import HelpInfo from '@/components/base/HelpInfo.vue'
 import HelpTip from '@/components/base/HelpTip.vue'
 import AppIcon from '@/components/base/AppIcon.vue'
@@ -67,16 +66,30 @@ const empty = computed(() => {
 })
 
 /**
- * Why each shown layer draws nothing, in the order of the list — said below it as hints, one box
- * for all of them, where the panel's empty space is: in the row the reason was cut to a letter in a
- * narrow panel and lived only on hover (operator, on screen 2026-10-27: the line and the levels "did
- * nothing"), and a line under a row would push the rows below it the moment a position is chosen.
- * Fixed sentences, the empty area saying why it is empty (viewer#24, operator 2026-11-19).
+ * Why a shown layer draws nothing, on the layer itself: its name's help card says the reason instead
+ * of what it draws, and its ⓘ, where the row opens, holds both whole. The reasons stood below the list
+ * once, one box for every empty layer, and read as text belonging to no layer — and could not be put
+ * away (operator, on screen 2026-11-25). A layer has no empty area of its own to say it in: the chart
+ * it draws on is not empty. The row's short word still says it where it fits.
  */
-const emptyHints = computed(() => [
-  ...rows.value.flatMap(row => empty.value.has(row.id) ? layerDefinition(row.id).emptyHintId ?? [] : []),
-  ...(served.value.some(layer => layer.shown && !layer.drawable) ? ['layer-empty-indicator'] : []),
-])
+function tipId(row: LayerState): string {
+  const definition = layerDefinition(row.id)
+  return empty.value.has(row.id) && definition.emptyHintId ? definition.emptyHintId : definition.hintId
+}
+
+function infoIds(row: LayerState): string[] {
+  const definition = layerDefinition(row.id)
+  return empty.value.has(row.id) && definition.emptyHintId ? [definition.emptyHintId, definition.hintId] : [definition.hintId]
+}
+
+/** A worker's series the same way: shown, and served on a timeframe it cannot be drawn at. */
+function servedTipId(layer: IndicatorLayer): string {
+  return layer.shown && !layer.drawable ? 'layer-empty-indicator' : 'layer-indicator'
+}
+
+function servedInfoIds(layer: IndicatorLayer): string[] {
+  return layer.shown && !layer.drawable ? ['layer-empty-indicator', 'layer-indicator'] : ['layer-indicator']
+}
 
 /** Each pane's name in the list, as a heading above its layers. */
 const PANE_TITLES: Record<ChartPaneId, string> = { price: t('Price pane'), volume: t('Volume pane') }
@@ -420,7 +433,7 @@ function toggle(row: LayerState): void {
               @update:model-value="on => show(row.id, on)"
             />
             <!-- what it draws on the name itself: a mark in every row cut the names in a narrow panel -->
-            <HelpTip :id="layerDefinition(row.id).hintId">
+            <HelpTip :id="tipId(row)">
               <button
                 type="button"
                 class="layer-head"
@@ -447,7 +460,7 @@ function toggle(row: LayerState): void {
           <div v-if="openable(row) && opened.has(row.id)" class="layer-options">
             <!-- what it draws and what its option does, whole, behind its ⓘ: the options below stand
                  plain, the way an editor's do -->
-            <HelpInfo :id="layerDefinition(row.id).hintId" />
+            <HelpInfo :id="infoIds(row)" />
             <AppSwitch
               v-if="layerDefinition(row.id).option"
               compact
@@ -563,7 +576,7 @@ function toggle(row: LayerState): void {
                   data-action="show"
                   @update:model-value="on => showServed(layer.entry.layer as ServedLayerId, on)"
                 />
-                <HelpTip id="layer-indicator">
+                <HelpTip :id="servedTipId(layer)">
                   <button
                     type="button"
                     class="layer-head"
@@ -590,7 +603,7 @@ function toggle(row: LayerState): void {
                 />
               </div>
               <div v-if="openedServed.has(layer.entry.layer)" class="layer-options">
-                <HelpInfo id="layer-indicator" />
+                <HelpInfo :id="servedInfoIds(layer)" />
                 <!-- what drew it, and each of its lines with its look: a label and its value, as the
                      app's figure lines are -->
                 <p class="layer-fact" data-fact="worker">
@@ -654,7 +667,6 @@ function toggle(row: LayerState): void {
         </div>
         </div>
       </section>
-      <EmptyNote v-if="emptyHints.length" :id="emptyHints" />
     </template>
   </div>
 </template>

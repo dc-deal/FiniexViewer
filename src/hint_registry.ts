@@ -149,7 +149,8 @@ const HINTS: HintDefinition[] = [
     name: t('Volume'),
     text: t('What traded in each bar — or how many ticks it held, where the venue prints no trades. In a pane of its own below the candles, on its own scale: drag the line between them to share the height differently, and the chart keeps it. Frame and Background set its pane apart. Its option off, it stands in the lowest fifth of the pane of the candles, behind them.'),
   },
-  // why a layer that is shown draws nothing — shown below the Layers list only while it does
+  // why a layer that is shown draws nothing — on the layer's name in the Layers panel, and behind its ⓘ,
+  // only while it does
   {
     id: 'layer-empty-levels',
     name: t('Levels'),

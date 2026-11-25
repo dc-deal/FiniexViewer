@@ -3,6 +3,8 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import LayersView from '@/views/LayersView.vue'
+import HelpInfo from '@/components/base/HelpInfo.vue'
+import HelpTip from '@/components/base/HelpTip.vue'
 import { providePanelView } from '@/composables/use_panel_view'
 import { useArrangementStore } from '@/stores/arrangement_store'
 import { useDockStore } from '@/stores/dock_store'
@@ -177,7 +179,9 @@ describe('LayersView', () => {
 
   /**
    * A lever that changes nothing on screen looked broken: the row says what the layer waits for — the
-   * reader's next step where there is one (operator, 2026-10-28) — and the hint below says why.
+   * reader's next step where there is one (operator, 2026-10-28) — and the layer's own help says why:
+   * its name's card, and its ⓘ where the row opens. Below the list stands nothing (operator, on screen
+   * 2026-11-25: one box of reasons read as text belonging to no layer).
    */
   it('says what a shown layer that draws nothing waits for, and says nothing of a hidden one', async () => {
     // a window of bars, and no trade, no position looked at: the drawing layers have nothing to draw.
@@ -188,16 +192,21 @@ describe('LayersView', () => {
     expect(summary.text()).toBe('pick a position')
     expect(row(wrapper, 'trades').find('.layer-summary').text()).toBe('none in view')
     expect(row(wrapper, 'state-frame').find('.layer-summary').text()).toBe('no frame on show')
-    // why stands below the list, the empty area saying why it is empty — never in a browser tooltip
+    // never in a browser tooltip
     expect(summary.attributes('title')).toBeUndefined()
-    // and below the list, in full, front first, as fixed sentences: a narrow panel cuts the row's
-    // word to a letter
-    const below = () => wrapper.findAll('.empty-note').map(note => note.text()).join(' ')
-    expect(below()).toContain('The entry–exit line is drawn for the position looked at')
-    expect(below().indexOf('The trades')).toBeLessThan(below().indexOf('The levels'))
+    // why, on the layer's own name — on a row that opens onto nothing as well
+    const tip = (layer: string) => row(wrapper, layer).findComponent(HelpTip).props('id')
+    expect(tip('levels')).toBe('layer-empty-levels')
+    expect(tip('trades')).toBe('layer-empty-trades')
+    expect(tip('state-frame')).toBe('layer-empty-state-frame')
+    // and whole behind the ⓘ of a row that opens, the reason first and what it draws after it
+    await row(wrapper, 'trades').find('[data-action="open"]').trigger('click')
+    expect(row(wrapper, 'trades').findComponent(HelpInfo).props('id')).toEqual(['layer-empty-trades', 'layer-trades'])
+    expect(wrapper.find('.empty-note').exists()).toBe(false)
+    // hidden, it waits for nothing and its card says what it draws again
     await row(wrapper, 'levels').find('[data-action="show"]').trigger('click')
     expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
-    expect(below()).not.toContain('The levels are drawn')
+    expect(tip('levels')).toBe('layer-levels')
     // every position asked for, no position is waited for: there is simply none in view
     await row(wrapper, 'entry-exit').find('[data-action="open"]').trigger('click')
     await row(wrapper, 'entry-exit').find('[data-action="option"]').trigger('click')
@@ -212,11 +221,11 @@ describe('LayersView', () => {
     expect(row(wrapper, 'volume').find('.layer-grip').text()).toBe('')
   })
 
-  /** With no bars the chart says so itself: no layer is said to draw nothing, and nothing stands below. */
+  /** With no bars the chart says so itself: no layer is said to draw nothing, and its card says what it draws. */
   it('says nothing of a layer drawing nothing while the chart has no bars at all', () => {
     const wrapper = mountOn('run-chart')
     expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
-    expect(wrapper.findAll('.empty-note')).toHaveLength(0)
+    expect(row(wrapper, 'levels').findComponent(HelpTip).props('id')).toBe('layer-levels')
   })
 
   /**
@@ -437,12 +446,13 @@ describe('LayersView', () => {
     })
 
     /** With no timeframe on show — here no market is covered — no series can be drawn: each row says which can. */
-    it('says where the timeframe on show cannot draw a worker\'s layer, and why below the list', () => {
+    it('says where the timeframe on show cannot draw a worker\'s layer, and why on its name', () => {
       const wrapper = mountWithSeries()
       const rsi = row(wrapper, 'worker:rsi_fast')
       expect(rsi.attributes('data-drawable')).toBe('false')
       expect(rsi.find('.layer-summary').text()).toBe('M5 and finer')
-      expect(wrapper.text()).toContain('A worker\'s series stands on its own timeframe and every finer one')
+      expect(rsi.findComponent(HelpTip).props('id')).toBe('layer-empty-indicator')
+      expect(wrapper.find('.empty-note').exists()).toBe(false)
     })
 
     /** What a worker's row is stands behind the mark of its opened row, beside its worker and plots. */
@@ -450,7 +460,9 @@ describe('LayersView', () => {
       const wrapper = mountWithSeries()
       const onCandles = SERIES.find(entry => entry.pane === 'price')!.layer
       await row(wrapper, onCandles).find('[data-action="open"]').trigger('click')
-      expect(row(wrapper, onCandles).find('.layer-options [data-help]').attributes('data-help-ids')).toBe('layer-indicator')
+      // no timeframe on show can draw it here, so why comes first and what a worker's row is after it
+      expect(row(wrapper, onCandles).find('.layer-options [data-help]').attributes('data-help-ids'))
+        .toBe('layer-empty-indicator layer-indicator')
       expect(row(wrapper, onCandles).find('.layer-row [data-help]').exists()).toBe(false)
       expect(row(wrapper, onCandles).find('.layer-options').text()).not.toContain('What a worker of the strategy computed')
       expect(row(wrapper, onCandles).find('[data-fact="plots"]').exists()).toBe(true)

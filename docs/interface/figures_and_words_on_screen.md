@@ -135,7 +135,8 @@ the ⓘ, pointer resting          the ⓘ, a click                    an empty a
   round the control, it adds no element. For a row of controls in a narrow panel, where a mark in
   every row would take the width its words need.
 - **`base/EmptyNote.vue`** — why an area is empty, said in that area as a fixed sentence, gone once
-  there is something to show and never put away: the Layers panel's reasons a layer draws nothing.
+  there is something to show and never put away. Its one user, the Layers panel's reasons a layer
+  draws nothing, moved onto each layer's help on 2026-11-25: a layer has no empty area of its own.
 - **Where an ⓘ stands** is data, `panel_help.ts`: a panel kind names its explanations, and the ⓘ
   stands beside the tabs while that panel is in front (`QuickBar`) and in the header of a section in
   its bundle (`AccordionPanel`) — the same for a section as a panel of its own and in the column. A

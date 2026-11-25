@@ -93,11 +93,12 @@ Run chart · ETHUSD_aug_sep
   the moment they would not fit. With no position chosen the levers of the line and the levels
   changed nothing on screen and looked broken (2026-10-19); *nothing to draw* said so, and not what
   to do.
-- **Why a shown layer draws nothing stands below the list** as hints, one box for every such layer
-  — a narrow panel cut the row's word to a letter and kept the reason on hover, and the levers still
-  looked broken (2026-10-27). Hints of the shared register (`layer-empty-*`, named on each layer as
-  `emptyHintId`). Below the list their coming and going moves no row, and the panel holds its
-  scrollbar's track free (`scrollbar-gutter: stable`), so one appearing moves none either.
+- **Why a shown layer draws nothing stands on the layer itself.** Its name's help card says the
+  reason instead of what it draws, and its ⓘ, where the row opens, holds both whole, the reason first.
+  Hints of the shared register (`layer-empty-*`, named on each layer as `emptyHintId`). They stood
+  below the list as one box for every such layer from 2026-10-27, and read as text belonging to no
+  layer, which could not be put away (operator, on screen 2026-11-25). A layer has no empty area of
+  its own to say it in: the chart it draws on is not empty.
 - **Compact as the app's lists** (operator, 2026-10-28): a row is as tall as a list row (25 px), the
   surface under the pointer spans the whole row, and the lever is the compact one (`AppSwitch`
   `compact`), so it does not outweigh ◐ beside it.

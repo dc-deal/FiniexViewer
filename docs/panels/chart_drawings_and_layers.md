@@ -181,8 +181,8 @@ on show (`run_chart_lane.ts`).
   covered it).
 - **Before the first bar and past the bars loaded** nothing is drawn; a period that opened before
   the first bar starts at it.
-- **An empty layer**: the periods say *none in view* and why below the list; the refusals say *none
-  in view* and give no hint box, since a unit nothing was refused to is where everything is fine.
+- **An empty layer**: the periods say *none in view* and why on their name's help card; the refusals
+  say *none in view* and give no reason, since a unit nothing was refused to is where everything is fine.
 - **Not drawn yet:** the orders RESTING at a price over time — the limit or stop of a pending order —
   which needs the order events placed by time and a word from FiniexTestingIDE on how a pending order
   is spanned; and the kinds testingide#379 will name.
