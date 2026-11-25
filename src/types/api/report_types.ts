@@ -641,6 +641,27 @@ export interface WarningsErrorsReport {
 }
 
 /**
+ * One drawdown period of an account (contracts 66 and 67): from the first value below the running
+ * peak until the account is back at or above it, so two rows never describe one fall. The peak is
+ * raised by every tick. Served on a portfolio unit, a deployment row and a deployment session.
+ */
+export interface DrawdownPeriod {
+  rank: number
+  peak: number
+  // a magnitude below the peak, and the same as a share of it — ALREADY a percentage
+  depth: number
+  depth_pct: number
+  started_at: string
+  trough_at: string
+  // null while the period was still open when the unit ended
+  recovered_at: string | null
+  // seconds from its start to its trough, and to its recovery; null where an instant is unknown, and
+  // `duration_s` while the period is open, since its end is on no record (contract 67)
+  to_trough_s: number | null
+  duration_s: number | null
+}
+
+/**
  * One unit inside a run — a scenario in a backtest, the single profile in a session. This is
  * the breakdown `run-summary` cannot show: its currency rows are already summed over all units.
  */
@@ -672,6 +693,14 @@ export interface PortfolioUnitRow {
   drawdown_started_at: string
   drawdown_carried_from: string
   drawdown_restarts: number
+  /**
+   * The five deepest drawdown periods of the unit's account (contract 66), deepest first by their
+   * share of the peak; rank 1 is the one `account_max_dd_pct` measures. Empty where the account never
+   * fell below its peak, and on a row with `logic_version` 23 or older. Keyed by
+   * `account_drawdown_periods_key`, `["rank"]`.
+   */
+  account_drawdown_periods: DrawdownPeriod[]
+  account_drawdown_periods_key: string[]
   /**
    * TWO fee figures, and they are different populations rather than a rounding apart.
    *
@@ -1365,6 +1394,14 @@ export interface BrokerUnit {
   // whether the run's fills carry the venue's own fee — false in a backtest and in a dry run. Null
   // on an older record
   venue_fee_expected: boolean | null
+  /**
+   * How the venue decides a resting order (contract 68), which the backtest and a dry run simulate:
+   * which price fires a stop, `last` (Kraken) or `bid_ask` (MT5, a sell stop on the bid), and what
+   * proves a resting limit filled, `public_trade` (Kraken) or `quote` (MT5). MT5's two are provisional
+   * on their side until measured. Their vocabulary; null on a row recorded before.
+   */
+  stop_trigger_basis: string | null
+  limit_fill_evidence: string | null
 }
 
 /** Response type for GET /api/v1/reports/runs/{run_id}/broker */
@@ -1711,7 +1748,8 @@ export interface OrderHistoryRow {
   end_reason: string | null
   // a whole sentence of the backend's, on a refused row and nowhere else. Contract 23 added
   // `unaccounted_order` and `position_not_found`, and dropped `broker_unreachable` and
-  // `unresolved_write`; contract 62 added `entries_held`, a new entry refused during such a hold.
+  // `unresolved_write`; contract 62 added `entries_held`, a new entry refused during such a hold,
+  // which since contract 65 also holds while the session cannot write its record of orders and trades.
   rejection_reason: string | null
   rejection_message: string | null
   // the order event this row was booked with — its `seq` in order-events (contract 44); null on a

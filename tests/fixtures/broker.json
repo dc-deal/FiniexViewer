@@ -36,6 +36,8 @@
       ],
       "fee_report": "not_reported",
       "venue_fee_expected": false,
+      "stop_trigger_basis": null,
+      "limit_fill_evidence": null,
       "scenario_count": 4
     },
     {
@@ -70,6 +72,8 @@
       ],
       "fee_report": "status_answer",
       "venue_fee_expected": false,
+      "stop_trigger_basis": null,
+      "limit_fill_evidence": null,
       "scenario_count": 1
     }
   ],

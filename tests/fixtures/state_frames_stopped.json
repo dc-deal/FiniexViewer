@@ -2,14 +2,14 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-11-23T09:13:25.441866Z",
+  "served_at": "2026-11-25T10:56:35.222755Z",
   "units": [
     {
       "unit_name": "spot_venue_day_boundary",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
       "written_at": "2026-10-22T12:37:25.711505Z",
-      "age_s": 2752559.730361,
+      "age_s": 2931549.51125,
       "recording": "stopped",
       "truncated_tail": false,
       "first_frame": {
@@ -36,6 +36,7 @@
           "USD": 23.1705
         },
         "equity": 62.89033676535,
+        "account_drawdown_pct": null,
         "unrealized_pnl": 0.0,
         "open_positions": [],
         "active_orders": [],

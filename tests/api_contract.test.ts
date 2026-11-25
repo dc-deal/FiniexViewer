@@ -94,6 +94,9 @@ const EXPECTED_KEYS = {
   // the portfolio's two lists — one row per scenario, one per account currency. `units` is what
   // the roster joins on, which is why it is a documented foreign key rather than a guess.
   portfolioUnits: ['name'],
+  // an account's five deepest drawdown periods, on a portfolio unit, a deployment row and a session
+  // (contracts 66 and 67): one fall is one row, ranked deepest first
+  drawdownPeriods: ['rank'],
   portfolioAggregates: ['currency'],
   // the run summary's two: its per-currency KPIs, and the units it declared and produced nothing for
   summaryCurrencies: ['currency'],
@@ -247,6 +250,23 @@ describe('api contract', () => {
     const typed: DeploymentDetail = deploymentDetail
     expect(typed.sessions.length).toBeGreaterThan(0)
     expect(typed.key).toEqual(EXPECTED_KEYS.sessions)
+  })
+
+  /**
+   * The drawdown periods (contracts 66 and 67) declare their key on every row that can list them. The
+   * captures predate their recording, so the lists are empty or null here; the key is what holds.
+   */
+  it('every row that can list drawdown periods declares them keyed by rank', () => {
+    const units: PortfolioReport = portfolio
+    const list: DeploymentListResponse = deploymentsList
+    const detail: DeploymentDetail = deploymentDetail
+    const declared = [
+      ...units.units.map(unit => unit.account_drawdown_periods_key),
+      ...list.deployments.map(row => row.account_drawdown_periods_key),
+      ...detail.sessions.map(session => session.account_drawdown_periods_key),
+    ]
+    expect(declared.length).toBeGreaterThan(0)
+    for (const key of declared) expect(key).toEqual(EXPECTED_KEYS.drawdownPeriods)
   })
 
   it('the sweep list is keyed by the sweep', () => {

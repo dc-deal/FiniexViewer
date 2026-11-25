@@ -26,7 +26,12 @@
       "orders_to": "simulated",
       "orders_to_changed": false,
       "exclusivity_violated_at": null,
-      "code_changes": []
+      "code_changes": [],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "index": 2,
@@ -48,7 +53,12 @@
       "orders_to": "simulated",
       "orders_to_changed": false,
       "exclusivity_violated_at": null,
-      "code_changes": []
+      "code_changes": [],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "index": 3,
@@ -70,7 +80,12 @@
       "orders_to": "simulated",
       "orders_to_changed": false,
       "exclusivity_violated_at": null,
-      "code_changes": []
+      "code_changes": [],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "index": 4,
@@ -92,7 +107,12 @@
       "orders_to": "simulated",
       "orders_to_changed": false,
       "exclusivity_violated_at": null,
-      "code_changes": []
+      "code_changes": [],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "index": 1,
@@ -114,7 +134,12 @@
       "orders_to": "simulated",
       "orders_to_changed": false,
       "exclusivity_violated_at": null,
-      "code_changes": []
+      "code_changes": [],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     }
   ],
   "count": 5,

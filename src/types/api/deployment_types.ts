@@ -1,4 +1,4 @@
-import type { BookingPeriodRow } from '@/types/api/report_types'
+import type { BookingPeriodRow, DrawdownPeriod } from '@/types/api/report_types'
 
 /**
  * One row of GET /api/v1/deployments — one entry per (deployment x account currency), which the
@@ -46,6 +46,15 @@ export interface DeploymentRow {
   // null where no drawdown was measured (contract 40)
   max_drawdown: number | null
   max_drawdown_pct: number | null
+  /**
+   * The deployment's five deepest drawdown periods in this currency (contract 67), those of its newest
+   * session that recorded them, and when their curve began. Rank 1 can be shallower than
+   * `max_drawdown` where a session began a curve of its own. Null where nothing recorded them; an
+   * empty list is a curve that never fell. Keyed by `account_drawdown_periods_key`, `["rank"]`.
+   */
+  account_drawdown_periods: DrawdownPeriod[] | null
+  account_drawdown_periods_key: string[]
+  drawdown_started_at: string | null
   // null where no idle stretch exists at all — a deployment of one session has nothing between
   // its sessions. An absence, and 0 would claim a measured stretch of no length.
   longest_gap_hours: number | null
@@ -135,6 +144,11 @@ export interface DeploymentSessionRow {
   // null where no drawdown was measured (contract 40)
   max_drawdown: number | null
   max_drawdown_pct: number | null
+  // this session's own five deepest drawdown periods at its last seal, keyed by `rank`, and when their
+  // curve began (contract 67); null where nothing recorded them, an empty list a curve that never fell
+  account_drawdown_periods: DrawdownPeriod[] | null
+  account_drawdown_periods_key: string[]
+  drawdown_started_at: string | null
   currency: string | null
   /**
    * Whether its figures exist (contract 50), their vocabulary: `booked`; `failed`, it failed before it

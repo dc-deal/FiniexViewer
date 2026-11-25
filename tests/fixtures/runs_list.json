@@ -7,6 +7,616 @@
   ],
   "runs": [
     {
+      "run_id": "20261125_100530_496f7c2a",
+      "group": "simulation",
+      "name": "touch_and_turn_eurusd",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-25T10:05:30.091054+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "d0d56537316dc0744671cb20cb7a495536c6540023b4510ba7815df7834dad57",
+      "app_version": "1.5.0",
+      "git_commit": "aa81f3c8",
+      "config_snapshot": "touch_and_turn_eurusd.json",
+      "reporting": "expected",
+      "size_bytes": 22334166,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_2025-10-17",
+          "start_date": "2025-10-17T13:00:00+00:00",
+          "end_date": "2025-10-17T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-20",
+          "start_date": "2025-10-20T13:00:00+00:00",
+          "end_date": "2025-10-20T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-21",
+          "start_date": "2025-10-21T13:00:00+00:00",
+          "end_date": "2025-10-21T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-22",
+          "start_date": "2025-10-22T13:00:00+00:00",
+          "end_date": "2025-10-22T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-23",
+          "start_date": "2025-10-23T13:00:00+00:00",
+          "end_date": "2025-10-23T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-24",
+          "start_date": "2025-10-24T13:00:00+00:00",
+          "end_date": "2025-10-24T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-27",
+          "start_date": "2025-10-27T13:00:00+00:00",
+          "end_date": "2025-10-27T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-28",
+          "start_date": "2025-10-28T13:00:00+00:00",
+          "end_date": "2025-10-28T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-29",
+          "start_date": "2025-10-29T13:00:00+00:00",
+          "end_date": "2025-10-29T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-30",
+          "start_date": "2025-10-30T13:00:00+00:00",
+          "end_date": "2025-10-30T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-10-31",
+          "start_date": "2025-10-31T13:00:00+00:00",
+          "end_date": "2025-10-31T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-03",
+          "start_date": "2025-11-03T13:00:00+00:00",
+          "end_date": "2025-11-03T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-04",
+          "start_date": "2025-11-04T13:00:00+00:00",
+          "end_date": "2025-11-04T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-05",
+          "start_date": "2025-11-05T13:00:00+00:00",
+          "end_date": "2025-11-05T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-06",
+          "start_date": "2025-11-06T13:00:00+00:00",
+          "end_date": "2025-11-06T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-07",
+          "start_date": "2025-11-07T13:00:00+00:00",
+          "end_date": "2025-11-07T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-10",
+          "start_date": "2025-11-10T13:00:00+00:00",
+          "end_date": "2025-11-10T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-11",
+          "start_date": "2025-11-11T13:00:00+00:00",
+          "end_date": "2025-11-11T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-14",
+          "start_date": "2025-11-14T13:00:00+00:00",
+          "end_date": "2025-11-14T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-17",
+          "start_date": "2025-11-17T13:00:00+00:00",
+          "end_date": "2025-11-17T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-19",
+          "start_date": "2025-11-19T13:00:00+00:00",
+          "end_date": "2025-11-19T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-20",
+          "start_date": "2025-11-20T13:00:00+00:00",
+          "end_date": "2025-11-20T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-21",
+          "start_date": "2025-11-21T13:00:00+00:00",
+          "end_date": "2025-11-21T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-24",
+          "start_date": "2025-11-24T13:00:00+00:00",
+          "end_date": "2025-11-24T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-25",
+          "start_date": "2025-11-25T13:00:00+00:00",
+          "end_date": "2025-11-25T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-26",
+          "start_date": "2025-11-26T13:00:00+00:00",
+          "end_date": "2025-11-26T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-27",
+          "start_date": "2025-11-27T13:00:00+00:00",
+          "end_date": "2025-11-27T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-11-28",
+          "start_date": "2025-11-28T13:00:00+00:00",
+          "end_date": "2025-11-28T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-01",
+          "start_date": "2025-12-01T13:00:00+00:00",
+          "end_date": "2025-12-01T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-02",
+          "start_date": "2025-12-02T13:00:00+00:00",
+          "end_date": "2025-12-02T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-03",
+          "start_date": "2025-12-03T13:00:00+00:00",
+          "end_date": "2025-12-03T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-04",
+          "start_date": "2025-12-04T13:00:00+00:00",
+          "end_date": "2025-12-04T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-05",
+          "start_date": "2025-12-05T13:00:00+00:00",
+          "end_date": "2025-12-05T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-08",
+          "start_date": "2025-12-08T13:00:00+00:00",
+          "end_date": "2025-12-08T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-09",
+          "start_date": "2025-12-09T13:00:00+00:00",
+          "end_date": "2025-12-09T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-10",
+          "start_date": "2025-12-10T13:00:00+00:00",
+          "end_date": "2025-12-10T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-11",
+          "start_date": "2025-12-11T13:00:00+00:00",
+          "end_date": "2025-12-11T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-12",
+          "start_date": "2025-12-12T13:00:00+00:00",
+          "end_date": "2025-12-12T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-15",
+          "start_date": "2025-12-15T13:00:00+00:00",
+          "end_date": "2025-12-15T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-16",
+          "start_date": "2025-12-16T13:00:00+00:00",
+          "end_date": "2025-12-16T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-17",
+          "start_date": "2025-12-17T13:00:00+00:00",
+          "end_date": "2025-12-17T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-18",
+          "start_date": "2025-12-18T13:00:00+00:00",
+          "end_date": "2025-12-18T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-19",
+          "start_date": "2025-12-19T13:00:00+00:00",
+          "end_date": "2025-12-19T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-22",
+          "start_date": "2025-12-22T13:00:00+00:00",
+          "end_date": "2025-12-22T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-23",
+          "start_date": "2025-12-23T13:00:00+00:00",
+          "end_date": "2025-12-23T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-26",
+          "start_date": "2025-12-26T13:00:00+00:00",
+          "end_date": "2025-12-26T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-29",
+          "start_date": "2025-12-29T13:00:00+00:00",
+          "end_date": "2025-12-29T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2025-12-30",
+          "start_date": "2025-12-30T13:00:00+00:00",
+          "end_date": "2025-12-30T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-02",
+          "start_date": "2026-01-02T13:00:00+00:00",
+          "end_date": "2026-01-02T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-05",
+          "start_date": "2026-01-05T13:00:00+00:00",
+          "end_date": "2026-01-05T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-06",
+          "start_date": "2026-01-06T13:00:00+00:00",
+          "end_date": "2026-01-06T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-07",
+          "start_date": "2026-01-07T13:00:00+00:00",
+          "end_date": "2026-01-07T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-08",
+          "start_date": "2026-01-08T13:00:00+00:00",
+          "end_date": "2026-01-08T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-09",
+          "start_date": "2026-01-09T13:00:00+00:00",
+          "end_date": "2026-01-09T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-12",
+          "start_date": "2026-01-12T13:00:00+00:00",
+          "end_date": "2026-01-12T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-13",
+          "start_date": "2026-01-13T13:00:00+00:00",
+          "end_date": "2026-01-13T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-14",
+          "start_date": "2026-01-14T13:00:00+00:00",
+          "end_date": "2026-01-14T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-15",
+          "start_date": "2026-01-15T13:00:00+00:00",
+          "end_date": "2026-01-15T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-16",
+          "start_date": "2026-01-16T13:00:00+00:00",
+          "end_date": "2026-01-16T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-19",
+          "start_date": "2026-01-19T13:00:00+00:00",
+          "end_date": "2026-01-19T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-20",
+          "start_date": "2026-01-20T13:00:00+00:00",
+          "end_date": "2026-01-20T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-21",
+          "start_date": "2026-01-21T13:00:00+00:00",
+          "end_date": "2026-01-21T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-22",
+          "start_date": "2026-01-22T13:00:00+00:00",
+          "end_date": "2026-01-22T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-23",
+          "start_date": "2026-01-23T13:00:00+00:00",
+          "end_date": "2026-01-23T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-26",
+          "start_date": "2026-01-26T13:00:00+00:00",
+          "end_date": "2026-01-26T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-27",
+          "start_date": "2026-01-27T13:00:00+00:00",
+          "end_date": "2026-01-27T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-28",
+          "start_date": "2026-01-28T13:00:00+00:00",
+          "end_date": "2026-01-28T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-29",
+          "start_date": "2026-01-29T13:00:00+00:00",
+          "end_date": "2026-01-29T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-01-30",
+          "start_date": "2026-01-30T13:00:00+00:00",
+          "end_date": "2026-01-30T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-02",
+          "start_date": "2026-02-02T13:00:00+00:00",
+          "end_date": "2026-02-02T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-03",
+          "start_date": "2026-02-03T13:00:00+00:00",
+          "end_date": "2026-02-03T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-04",
+          "start_date": "2026-02-04T13:00:00+00:00",
+          "end_date": "2026-02-04T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-05",
+          "start_date": "2026-02-05T13:00:00+00:00",
+          "end_date": "2026-02-05T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-06",
+          "start_date": "2026-02-06T13:00:00+00:00",
+          "end_date": "2026-02-06T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-09",
+          "start_date": "2026-02-09T13:00:00+00:00",
+          "end_date": "2026-02-09T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-10",
+          "start_date": "2026-02-10T13:00:00+00:00",
+          "end_date": "2026-02-10T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-11",
+          "start_date": "2026-02-11T13:00:00+00:00",
+          "end_date": "2026-02-11T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-12",
+          "start_date": "2026-02-12T13:00:00+00:00",
+          "end_date": "2026-02-12T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-13",
+          "start_date": "2026-02-13T13:00:00+00:00",
+          "end_date": "2026-02-13T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-16",
+          "start_date": "2026-02-16T13:00:00+00:00",
+          "end_date": "2026-02-16T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-17",
+          "start_date": "2026-02-17T13:00:00+00:00",
+          "end_date": "2026-02-17T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-18",
+          "start_date": "2026-02-18T13:00:00+00:00",
+          "end_date": "2026-02-18T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-19",
+          "start_date": "2026-02-19T13:00:00+00:00",
+          "end_date": "2026-02-19T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-20",
+          "start_date": "2026-02-20T13:00:00+00:00",
+          "end_date": "2026-02-20T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-23",
+          "start_date": "2026-02-23T13:00:00+00:00",
+          "end_date": "2026-02-23T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-24",
+          "start_date": "2026-02-24T13:00:00+00:00",
+          "end_date": "2026-02-24T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-25",
+          "start_date": "2026-02-25T13:00:00+00:00",
+          "end_date": "2026-02-25T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-26",
+          "start_date": "2026-02-26T13:00:00+00:00",
+          "end_date": "2026-02-26T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-02-27",
+          "start_date": "2026-02-27T13:00:00+00:00",
+          "end_date": "2026-02-27T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-03-02",
+          "start_date": "2026-03-02T13:00:00+00:00",
+          "end_date": "2026-03-02T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-03-03",
+          "start_date": "2026-03-03T13:00:00+00:00",
+          "end_date": "2026-03-03T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-03-04",
+          "start_date": "2026-03-04T13:00:00+00:00",
+          "end_date": "2026-03-04T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-03-05",
+          "start_date": "2026-03-05T13:00:00+00:00",
+          "end_date": "2026-03-05T17:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_2026-03-06",
+          "start_date": "2026-03-06T13:00:00+00:00",
+          "end_date": "2026-03-06T17:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.12999999999974143,
+          "total_trades": 15
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 5,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 5538524.371999999,
+      "total_units": 94,
+      "failed_count": 0,
+      "succeeded_count": 94,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261125_095707_2a7047fa",
+      "group": "simulation",
+      "name": "BTCUSD_SANDBOX",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [],
+      "recording": null,
+      "start_time": "2026-11-25T09:57:07.548151+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "24aef0d9401474604664f5a14e4b14a5357b6b21ee5d632b22a61666a7aa00f5",
+      "app_version": "1.5.0",
+      "git_commit": "aa81f3c8",
+      "config_snapshot": "BTCUSD_sandbox.json",
+      "reporting": "expected",
+      "size_bytes": 83868,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "BTCUSD_blocks_02_TEST",
+          "start_date": "2026-01-25T16:00:00+00:00",
+          "end_date": "2026-01-26T00:00:00+00:00"
+        },
+        {
+          "unit_name": "BTCUSD_blocks_03",
+          "start_date": "2026-01-26T16:00:00+00:00",
+          "end_date": "2026-01-27T00:00:00+00:00"
+        }
+      ],
+      "run_purpose": "regular",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": null,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 8,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 8133.442,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
       "run_id": "20261120_131607_12223156",
       "group": "simulation",
       "name": "trend_channel_reference_sweep_base__sweep_20261120_130008_eda73566_c008",
@@ -16730,5 +17340,5 @@
       "has_reports": true
     }
   ],
-  "count": 214
+  "count": 216
 }

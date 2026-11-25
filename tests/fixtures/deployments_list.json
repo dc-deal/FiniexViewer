@@ -23,7 +23,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261120_124318_829bc0cd",
@@ -44,7 +49,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261120_120139_272d6153",
@@ -65,7 +75,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261120_111148_4a8c0e07",
@@ -86,7 +101,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261120_110708_c2c3f71a",
@@ -107,7 +127,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261119_132327_901b7544",
@@ -128,7 +153,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261119_131940_8c8d9001",
@@ -149,7 +179,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261116_142639_e47b6935",
@@ -170,7 +205,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261116_142222_8135460c",
@@ -191,7 +231,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261116_123633_148cf10c",
@@ -212,7 +257,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261116_123329_5b6890eb",
@@ -233,7 +283,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261110_150107_11c4d414",
@@ -254,7 +309,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261110_145808_6b55f50f",
@@ -275,7 +335,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261110_145544_d00f336f",
@@ -296,7 +361,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261110_145159_0865927b",
@@ -317,7 +387,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261110_143353_e86892de",
@@ -338,7 +413,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261109_170933_0301befb",
@@ -359,7 +439,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261109_170634_ee56285c",
@@ -380,7 +465,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261109_150217_7420d5c3",
@@ -401,7 +491,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261109_145825_a420e005",
@@ -422,7 +517,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261109_142736_57a176d3",
@@ -443,7 +543,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261109_142313_49e2a513",
@@ -464,7 +569,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261108_143729_3e53af15",
@@ -485,7 +595,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261108_143439_214aa9fc",
@@ -506,7 +621,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261105_142641_8aec6c6d",
@@ -527,7 +647,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261105_142310_5229d02f",
@@ -548,7 +673,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261022_123713_aa33e0b5",
@@ -569,7 +699,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261012_205953",
@@ -590,7 +725,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261012_205734",
@@ -611,7 +751,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261012_075342",
@@ -632,7 +777,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261012_074850",
@@ -653,7 +803,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261011_171150",
@@ -674,7 +829,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261011_170815",
@@ -695,7 +855,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261008_233012",
@@ -716,7 +881,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261008_232700",
@@ -737,7 +907,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261008_222953",
@@ -758,7 +933,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261008_222638",
@@ -779,7 +959,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261008_110623",
@@ -800,7 +985,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261008_110304",
@@ -821,7 +1011,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     },
     {
       "deployment_id": "deploy_20261007_150506",
@@ -842,7 +1037,12 @@
       "code_summary": null,
       "orders_to": [
         "simulated"
-      ]
+      ],
+      "account_drawdown_periods": null,
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": null
     }
   ],
   "count": 40

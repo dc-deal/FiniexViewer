@@ -50,6 +50,14 @@ export interface StateFrame {
   /** The same rows the pending orders serve. */
   active_orders: PendingOrderRow[]
   safety_blocked: boolean | null
+  /**
+   * Two drawdowns, two questions (their `state-frames` document). `account_drawdown_pct` is how far
+   * `equity` lies below the account's per-tick running peak, in percent of it — the curve the drawdown
+   * periods are measured against (contract 67); null without equity and on an older frame.
+   * `safety_drawdown_pct` is the circuit breaker's reading against its own baseline. The two differ
+   * by design and are never subtracted.
+   */
+  account_drawdown_pct: number | null
   safety_drawdown_pct: number | null
   market_stale: boolean | null
   feed_stale: boolean | null

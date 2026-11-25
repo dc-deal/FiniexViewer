@@ -25,6 +25,10 @@ const BASE: DeploymentRow = {
   net_pnl: -107.407375,
   max_drawdown: 597.3631312500002,
   max_drawdown_pct: 5.969935821483836,
+  // null where nothing recorded them (contract 67) — a session recorded before
+  account_drawdown_periods: null,
+  account_drawdown_periods_key: ['rank'],
+  drawdown_started_at: null,
   // null where no idle stretch EXISTS — one session has nothing between its sessions
   longest_gap_hours: null,
   changed: false,

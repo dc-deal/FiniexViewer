@@ -1,7 +1,7 @@
 {
   "run_id": "20261120_125159_3006c365",
   "unit_name": "state_frames_test",
-  "served_at": "2026-11-23T09:14:46.690977Z",
+  "served_at": "2026-11-25T10:57:52.890780Z",
   "window": {
     "from": "2026-01-25T02:19:57.550000Z",
     "to": "2026-01-25T08:00:00.321000Z"
@@ -36,6 +36,7 @@
         "BTC": 0.0
       },
       "equity": 10000.0,
+      "account_drawdown_pct": null,
       "unrealized_pnl": 0.0,
       "open_positions": [],
       "active_orders": [],
@@ -102,6 +103,7 @@
         "BTC": 0.0
       },
       "equity": 10000.0,
+      "account_drawdown_pct": null,
       "unrealized_pnl": 0.0,
       "open_positions": [],
       "active_orders": [],
@@ -167,6 +169,7 @@
         "BTC": 0.0
       },
       "equity": 10000.0,
+      "account_drawdown_pct": null,
       "unrealized_pnl": 0.0,
       "open_positions": [],
       "active_orders": [],

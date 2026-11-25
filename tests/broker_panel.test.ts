@@ -41,6 +41,9 @@ const MARGIN: BrokerUnit = {
   scenario_count: 2,
   fee_report: null,
   venue_fee_expected: null,
+  // the venue's rule for a resting order (contract 68), measured on MetaQuotes' terms
+  stop_trigger_basis: 'bid_ask',
+  limit_fill_evidence: 'quote',
   symbols: [{
     symbol: 'GBPUSD',
     volume_min: 0.01,

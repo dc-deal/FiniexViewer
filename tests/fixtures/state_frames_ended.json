@@ -2,14 +2,14 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-11-23T09:13:23.338555Z",
+  "served_at": "2026-11-25T10:56:33.111181Z",
   "units": [
     {
       "unit_name": "state_frames_test",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
       "written_at": "2026-11-20T12:52:13.393276Z",
-      "age_s": 246069.945279,
+      "age_s": 425059.717905,
       "recording": "ended",
       "truncated_tail": false,
       "first_frame": {
@@ -56,6 +56,7 @@
           "BTC": 0.1
         },
         "equity": 9920.288880000002,
+        "account_drawdown_pct": null,
         "unrealized_pnl": -79.71111999999883,
         "open_positions": [
           {
