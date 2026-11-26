@@ -3,7 +3,6 @@ import { defineComponent, h } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import HelpInfo from '@/components/base/HelpInfo.vue'
 import HelpTip from '@/components/base/HelpTip.vue'
-import EmptyNote from '@/components/base/EmptyNote.vue'
 import AccordionPanel from '@/components/panels/AccordionPanel.vue'
 import QuickBar from '@/components/dock/QuickBar.vue'
 import { firstSentence, hintById, hintIds } from '@/hint_registry'
@@ -69,13 +68,6 @@ describe('explanations', () => {
     expect(alone(plain)).toBe(1)
     expect(plain.find('.control').attributes('data-state')).toBeUndefined()
     plain.unmount()
-  })
-
-  it('says why an area is empty in fixed sentences, one for each reason', () => {
-    const wrapper = mount(EmptyNote, { props: { id: ['layer-empty-trades', 'no-such-hint', 'layer-empty-levels'] } })
-    expect(wrapper.findAll('.empty-note').map(note => note.attributes('data-empty-note')))
-      .toEqual(['layer-empty-trades', 'layer-empty-levels'])
-    expect(wrapper.text()).toContain(hintById('layer-empty-trades')!.text)
   })
 
   it('offers only registered explanations, and only for panels that exist', () => {

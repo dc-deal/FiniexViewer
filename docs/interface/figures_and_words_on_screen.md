@@ -118,8 +118,8 @@ does now:
 ```
 the ⓘ, pointer resting          the ⓘ, a click                    an empty area
 ┌─────────────────────────┐     ┌───────────────────────────┐     ┌──────────────────────────┐
-│ LAYERS                  │     │ LAYERS                    │     │ No order of the unit on   │
-│ Front layer first: drag │     │ Front layer first: drag … │     │ show rested at a price …  │
+│ LAYERS                  │     │ LAYERS                    │     │ No scenario matches       │
+│ Front layer first: drag │     │ Front layer first: drag … │     │                           │
 │ a layer by its grip …   │     │ ───────────────────────── │     └──────────────────────────┘
 └─────────────────────────┘     │ WORKERS’ LAYERS           │
                                 │ The eye beside a group …  │
@@ -134,9 +134,11 @@ the ⓘ, pointer resting          the ⓘ, a click                    an empty a
 - **`base/HelpTip.vue`** — the same help card on a control itself, with no mark of its own: wrapped
   round the control, it adds no element. For a row of controls in a narrow panel, where a mark in
   every row would take the width its words need.
-- **`base/EmptyNote.vue`** — why an area is empty, said in that area as a fixed sentence, gone once
-  there is something to show and never put away. Its one user, the Layers panel's reasons a layer
-  draws nothing, moved onto each layer's help on 2026-11-25: a layer has no empty area of its own.
+- **An empty area** says why in a fixed sentence of its own, gone once there is something to show
+  and never put away. A thing with no empty area of its own says it on its help instead: a chart
+  layer that draws nothing gives the reason on its name's help card and in its ⓘ, since its chart is
+  not empty (operator, 2026-11-25; the box below the Layers list it replaced read as text belonging
+  to no layer).
 - **Where an ⓘ stands** is data, `panel_help.ts`: a panel kind names its explanations, and the ⓘ
   stands beside the tabs while that panel is in front (`QuickBar`) and in the header of a section in
   its bundle (`AccordionPanel`) — the same for a section as a panel of its own and in the column. A

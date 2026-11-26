@@ -202,7 +202,6 @@ describe('LayersView', () => {
     // and whole behind the ⓘ of a row that opens, the reason first and what it draws after it
     await row(wrapper, 'trades').find('[data-action="open"]').trigger('click')
     expect(row(wrapper, 'trades').findComponent(HelpInfo).props('id')).toEqual(['layer-empty-trades', 'layer-trades'])
-    expect(wrapper.find('.empty-note').exists()).toBe(false)
     // hidden, it waits for nothing and its card says what it draws again
     await row(wrapper, 'levels').find('[data-action="show"]').trigger('click')
     expect(row(wrapper, 'levels').find('.layer-summary').text()).toBe('')
@@ -452,7 +451,6 @@ describe('LayersView', () => {
       expect(rsi.attributes('data-drawable')).toBe('false')
       expect(rsi.find('.layer-summary').text()).toBe('M5 and finer')
       expect(rsi.findComponent(HelpTip).props('id')).toBe('layer-empty-indicator')
-      expect(wrapper.find('.empty-note').exists()).toBe(false)
     })
 
     /** What a worker's row is stands behind the mark of its opened row, beside its worker and plots. */

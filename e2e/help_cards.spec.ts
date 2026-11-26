@@ -58,7 +58,6 @@ test('a layer explains itself on its name, its row keeps the width, and the whol
   const card = page.locator('[data-help-tip="layer-empty-levels"]')
   await expect(card).toBeVisible()
   await expect(card.locator('.help-name')).toHaveText('Levels')
-  await expect(page.locator('[data-panel-kind="layers"] .empty-note')).toHaveCount(0)
 
   // opened: the ⓘ in the room the options are indented by, under the row's lever and on the line of
   // the first option — no column of its own to narrow them, no line of its own to cost height
