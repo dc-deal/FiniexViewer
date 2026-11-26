@@ -267,7 +267,10 @@ const bandHeight = 'calc(var(--font-size-sm) * 1.4 + var(--space-xs))'
 /** A band with the span it keeps at each tier, since a rank changes how many columns it covers. */
 interface DrawnBand {
   label: string
-  /** `--s1` … `--s5`, the surviving column count per tier. The container query picks which. */
+  /**
+   * `--s1` … `--s5`, the surviving column count per tier, and `--d1` … `--d5`, whether the band is
+   * drawn there at all. The container query picks which.
+   */
   tiers: Record<string, string>
 }
 
@@ -302,21 +305,16 @@ const bandSpans = computed<DrawnBand[] | null>(() => {
     first += band.span
     const tiers: Record<string, string> = {}
     for (let tier = 1; tier <= TIERS; tier += 1) {
-      tiers[`--s${tier}`] = String(own.filter(column => (column.rank ?? 1) <= tier).length)
+      const kept = own.filter(column => (column.rank ?? 1) <= tier).length
+      tiers[`--s${tier}`] = String(kept)
+      // a band whose columns are all given up at a tier is given up with them: `span 0` is not a
+      // span, and a band left standing would sit over somebody else's column. Until 2026-11-26 one
+      // such band withdrew every band of the list, which held a period's net P&L out of the
+      // narrowest tier of the booking periods
+      tiers[`--d${tier}`] = kept ? 'block' : 'none'
     }
     return { label: band.label, tiers }
   })
-
-  // A band that loses every one of its columns cannot be drawn at all — `span 0` is not a span,
-  // and a band standing over somebody else's column is worse than no bands. Reported rather than
-  // patched to 1, because the caller's ranks are what need changing.
-  const empty = drawn.findIndex(band => Object.values(band.tiers).includes('0'))
-  if (empty >= 0) {
-    console.error(
-      `RecordList: band "${drawn[empty]!.label}" keeps no column at a narrow width — drawing none`
-    )
-    return null
-  }
   return drawn
 })
 
@@ -747,6 +745,7 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
 
   .record-list.ranked .record-bands > span {
     grid-column: span var(--s4);
+    display: var(--d4);
   }
 
   .record-list.ranked :deep([data-rank="5"]) {
@@ -762,6 +761,7 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   /* the bands with them: a span fixed at the widest tier reaches past the end of a narrowed grid */
   .record-list.ranked .record-bands > span {
     grid-column: span var(--s3);
+    display: var(--d3);
   }
 
   .record-list.ranked :deep([data-rank="4"]) {
@@ -777,6 +777,7 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   /* the bands with them: a span fixed at the widest tier reaches past the end of a narrowed grid */
   .record-list.ranked .record-bands > span {
     grid-column: span var(--s2);
+    display: var(--d2);
   }
 
   .record-list.ranked :deep([data-rank="3"]) {
@@ -792,6 +793,7 @@ const layout = computed<(ListGroup<T> & { groups: ListGroup<T>[] })[]>(() => {
   /* the bands with them: a span fixed at the widest tier reaches past the end of a narrowed grid */
   .record-list.ranked .record-bands > span {
     grid-column: span var(--s1);
+    display: var(--d1);
   }
 
   .record-list.ranked :deep([data-rank="2"]) {

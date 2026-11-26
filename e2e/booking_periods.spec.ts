@@ -203,6 +203,36 @@ test('as a panel of its own the period table reaches the bottom of its panel', a
 })
 
 /** A read-only row reachable by the keyboard: the card opens on focus, and a click does nothing. */
+/**
+ * What a period booked stands whole at every width, and the table never scrolls sideways. Net P&L
+ * had no floor while the floors beside it took every pixel: unseen in the bundle's column, and in a
+ * panel of about 36 rem cut to its first character, `1.62 USD` as `1.` (on screen 2026-11-26). The
+ * figure is asked for whole, not only for a column: a track of 12 px is a column too.
+ */
+for (const width of [620, 820, 1100, 1800]) {
+  test(`at ${width} px every net P&L of a period stands whole, and the table does not scroll sideways`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 })
+    await openPeriods(page)
+    const list = page.locator('[data-panel="booking-periods"] .periods-list')
+    await expect(list.locator('.record-row').first()).toBeVisible()
+    const measured = await list.evaluate(element => {
+      const cells = [...element.querySelectorAll<HTMLElement>('.record-row > span.figure-cell[data-rank="1"]')]
+      return {
+        listRem: element.clientWidth / parseFloat(getComputedStyle(document.documentElement).fontSize),
+        sideways: element.scrollWidth - element.clientWidth,
+        cells: cells.length,
+        cut: cells.filter(cell => cell.offsetWidth === 0 || cell.scrollWidth > cell.clientWidth + 1)
+          .map(cell => `${cell.textContent?.trim()} in ${cell.clientWidth} px`),
+      }
+    })
+    console.log(`${width} px: list ${measured.listRem.toFixed(1)} rem`)
+    expect(measured.cells).toBeGreaterThan(0)
+    expect(measured.cut, 'a net P&L cut or drawn in no width').toEqual([])
+    // two pixels of slack: a sub-pixel track width rounds up, which is not a scrollbar
+    expect(measured.sideways).toBeLessThanOrEqual(2)
+  })
+}
+
 test('a period row opens its card on a keyboard focus, and is no control', async ({ page }) => {
   await openPeriods(page)
   const row = page.locator('[data-panel="booking-periods"] .periods-list .record-row.readable:not(.unit-total)').first()

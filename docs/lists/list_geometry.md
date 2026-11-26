@@ -47,7 +47,7 @@ list declares:
 | `RunPicker` | 10 | 10 → 8 → 7 → 5 → 4 |
 | `TradeHistoryPanel` | 9 | 9 → 7 → 4 → 3 |
 | `ScenarioRosterPanel` | 15 | 15 → 11 → 8 → 5 → 3 |
-| `BookingPeriodTable` | 14–15 | 14 → 10 → 8 → 6 → 4 |
+| `BookingPeriodTable` | 14–15 | 14 → 10 → 8 → 5 → 3 |
 | `SessionsTable` | 6 | 6 → 4 → 2 |
 | `DeploymentPicker` | 9 | 9 → 7 → 5 → 3 |
 
@@ -55,7 +55,10 @@ What goes first is decided from the DATA where the data can decide it. The roste
 `currency` and `broker` carried the same value on all ten rows of a measurement, so they lead. The
 booking periods' `Win Rate` and `PF` read `n/a` on eight of ten drawn rows, because eight of those
 periods booked no trade at all — and `Opening` and `Equity band` describe the same account movement
-that `Final equity` closes, which is rank 1. The run list gives up its `Run id` early despite it
+that `Final equity` closes. That one is rank 2 since 2026-11-26: the narrowest tier keeps the
+unit, the opening and the period's `Net P&L`, each with a floor, since what a period booked is what
+the list is for. `Net P&L` had no floor before, and the floors beside it left it 0 px in a column of
+410 and cut it to its first character at about 36 rem. The run list gives up its `Run id` early despite it
 being the declared key: it renders as the timestamp part, the same instant `Started` spells out.
 
 Measured on the scenario roster at a 900 px window: twelve columns in a 620 px panel is 40 px each,
@@ -94,8 +97,9 @@ stood over the wrong columns. The arithmetic check above could not see it — it
 band carries all four of its spans on itself (`--s1` … `--s4`, the columns of its own that survive
 that tier) and the container query chooses one for every band at once. That is what makes it
 expressible in static CSS: the stem does not know how many bands a caller declares, but it does
-know which tier is in force. A band that keeps **no** column is reported and no bands are drawn —
-`span 0` is not a span, and patching it to one would put it over somebody else's column.
+know which tier is in force. A band that keeps **no** column at a tier is given up at that tier
+with its columns (`--d1` … `--d5`): `span 0` is not a span, and a band left standing would sit
+over somebody else's column. Until 2026-11-26 such a band withdrew every band of the list.
 
 The same arithmetic reaches a GROUP heading, which is why the trade history's is counted from the
 END: its name takes `1 / -2` and its net `-2 / -1`, so the heading holds at every tier. The three

@@ -579,12 +579,13 @@ describe('RecordList — the bands over the headings', () => {
   })
 
   /**
-   * A band that keeps NO column cannot be drawn — `span 0` is not a span — and patching it to one
-   * would put it over somebody else's column. Reported, because the caller's ranks need changing.
+   * A band that keeps NO column at a tier is given up at that tier, with its columns: `span 0` is not
+   * a span, and a band left standing would sit over somebody else's column. Until 2026-11-26 one
+   * such band withdrew every band of the list; the others stand now, and so does it where it keeps one.
    */
-  it('draws no bands where one would lose every column when narrow', () => {
-    const wrapper = mountList({
-      bands: [{ label: 'Goes entirely', span: 2 }, { label: 'Stays', span: 2 }],
+  it('gives a band up at the tiers where it keeps no column, and only there', () => {
+    const styles = bandStyles({
+      bands: [{ label: 'Goes when narrow', span: 2 }, { label: 'Stays', span: 2 }],
       columns: [
         { label: 'a', width: 'auto', rank: 4 },
         { label: 'b', width: 'auto', rank: 3 },
@@ -592,6 +593,11 @@ describe('RecordList — the bands over the headings', () => {
         { label: 'd', width: 'auto', rank: 1 },
       ],
     })
-    expect(wrapper.findAll('.record-bands')).toHaveLength(0)
+    expect(styles).toHaveLength(2)
+    expect(styles[0]).toContain('--d1: none')
+    expect(styles[0]).toContain('--d2: none')
+    expect(styles[0]).toContain('--d3: block')
+    expect(styles[0]).toContain('--d4: block')
+    for (const tier of [1, 2, 3, 4]) expect(styles[1]).toContain(`--d${tier}: block`)
   })
 })

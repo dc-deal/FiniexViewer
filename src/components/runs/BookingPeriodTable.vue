@@ -176,6 +176,11 @@ function costs(line: Parameters<typeof feeSplit>[0], currency: string): string {
  * The unit's floor is the one that gives: the four of rank 1 summed to 26rem with it at 8rem, and a
  * run bundle 493 px wide holds 410 px of list — the table scrolled sideways by six (measured
  * 2026-10-20). A long unit name is cut in the narrowest tier; its card says it whole.
+ *
+ * Rank 1 is the unit, the opening and the period's net P&L since 2026-11-26, each with a floor. Net
+ * P&L had none, and the floors beside it left it nothing: unseen in the bundle's column, cut to its
+ * first character in a panel of about 36 rem. `Final equity` moved to rank 2 and `Closed` to rank 3,
+ * so every tier's floors fit its width.
  */
 const columns = computed<ListColumn[]>(() => [
   { label: t('Unit'), width: 'minmax(7rem, 16fr)', rank: 1 },
@@ -193,10 +198,14 @@ const columns = computed<ListColumn[]>(() => [
     rank: 4,
   },
   { label: t('Opened'), width: 'minmax(10.5rem, 17fr)', rank: 1 },
-  { label: t('Closed'), width: 'minmax(10.5rem, 17fr)', rank: 2 },
+  // rank 3: in a narrow table the period's opening places it, and its close goes first
+  { label: t('Closed'), width: 'minmax(10.5rem, 17fr)', rank: 3 },
   { label: t('Reason'), width: 'minmax(0, 9fr)', rank: 4 },
   { label: t('Trades'), width: 'minmax(0, 7fr)', figure: true, rank: 2 },
-  { label: t('Net P&L'), width: 'minmax(0, 11fr)', figure: true, rank: 1 },
+  // A FLOOR: what the period booked is what this list is for. Without one the floors beside it took
+  // every pixel — 0 px in a column of 410, and at about 36 rem a few, which cut `1.62 USD` to `1.`
+  // (on screen 2026-11-26)
+  { label: t('Net P&L'), width: 'minmax(7rem, 11fr)', figure: true, rank: 1 },
   // 9fr, not 7: measured at 1920 px on the DEPLOYMENT view, where `showRun` adds a fifteenth
   // column and takes share from the rest, the heading needed 68 px of a 66 px track and
   // overflowed into `PF` beside it
@@ -206,11 +215,10 @@ const columns = computed<ListColumn[]>(() => [
   { label: t('Max DD'), width: 'minmax(0, 8fr)', figure: true, rank: 3 },
   { label: t('Opening'), width: 'minmax(0, 11fr)', figure: true, rank: 5 },
   { label: t('Equity band'), width: 'minmax(0, 20fr)', figure: true, rank: 5 },
-  // A FLOOR, alone among the figures here: where the account ENDED is why this list is rank 1
-  // at all, and the heading is twelve characters. Measured at 620 px it had 90 px of the 98
-  // it needs, so it truncated to `Final equi…` — legible, but this is the one it should not
-  // have to be.
-  { label: t('Final equity'), width: 'minmax(7.5rem, 11fr)', figure: true, rank: 1 },
+  // A FLOOR: the heading is twelve characters. Measured at 620 px it had 90 px of the 98 it needs,
+  // so it truncated to `Final equi…`. Rank 2 since 2026-11-26: in the narrowest tier the period's
+  // own result stands, and where the account ended joins it from 34 rem.
+  { label: t('Final equity'), width: 'minmax(7.5rem, 11fr)', figure: true, rank: 2 },
 ])
 
 /**
@@ -261,7 +269,7 @@ const bands = computed<ListBand[]>(() => [
           </span>
           <span :data-rank="4" class="figure-cell">{{ row.period_no }}</span>
           <span :data-rank="1">{{ utcInstant(row.opened_at) }}</span>
-          <span :data-rank="2">{{ utcInstant(row.closed_at) }}</span>
+          <span :data-rank="3">{{ utcInstant(row.closed_at) }}</span>
           <span :data-rank="4" class="text-cell">{{ row.reason }}</span>
           <span :data-rank="2" class="figure-cell">{{ row.trade_count }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.net_pnl)">
@@ -277,7 +285,7 @@ const bands = computed<ListBand[]>(() => [
           <span :data-rank="5" class="figure-cell band-cell">
             {{ band(row.min_equity, row.max_equity, row.currency) }}
           </span>
-          <span :data-rank="1" class="figure-cell">{{ orDash(row.final_equity, value => money(value, row.currency)) }}</span>
+          <span :data-rank="2" class="figure-cell">{{ orDash(row.final_equity, value => money(value, row.currency)) }}</span>
         </template>
         <!-- the unit's total, in the same columns: Max DD is the deepest SINGLE period, which is what
              the column shows (their booking-periods document); the account's own decline is in its
@@ -289,7 +297,7 @@ const bands = computed<ListBand[]>(() => [
           <span v-if="showRun" :data-rank="4" class="text-cell" />
           <span :data-rank="4" class="figure-cell" />
           <span :data-rank="1">{{ utcInstant(row.opened_at) }}</span>
-          <span :data-rank="2">{{ utcInstant(row.closed_at) }}</span>
+          <span :data-rank="3">{{ utcInstant(row.closed_at) }}</span>
           <span :data-rank="4" class="text-cell" />
           <span :data-rank="2" class="figure-cell">{{ row.trade_count }}</span>
           <span :data-rank="1" class="figure-cell" :class="signClass(row.net_pnl)">
@@ -307,7 +315,7 @@ const bands = computed<ListBand[]>(() => [
           <span :data-rank="5" class="figure-cell band-cell">
             {{ band(row.min_equity, row.max_equity, row.currency) }}
           </span>
-          <span :data-rank="1" class="figure-cell">{{ orDash(row.final_equity, value => money(value, row.currency)) }}</span>
+          <span :data-rank="2" class="figure-cell">{{ orDash(row.final_equity, value => money(value, row.currency)) }}</span>
         </template>
       </template>
     </RecordList>
