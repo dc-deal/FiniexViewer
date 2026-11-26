@@ -91,7 +91,10 @@ BASE = 'http://localhost:5173/api/v1'
 #
 # Re-pinned the same day to the catalog produced again under contract 60, whose data the archive holds,
 # the id FiniexTestingIDE named; no figure moved.
-RUN = '20261120_115937_2d9329b1'
+#
+# Re-pinned 2026-11-26 to the catalog produced again under contract 68, the id FiniexTestingIDE named:
+# no figure moved, and every unit now carries its five drawdown periods, one of them still open.
+RUN = '20261126_103719_e17e2a2c'
 
 # The AutoTrader configuration fixture, and nothing else. Chosen for the RICHEST shape of the two
 # served under `config`: a real-venue profile carries `dry_run`, `execution` and `safety` beside
@@ -130,7 +133,9 @@ LIVE_RUN = '20261007_152959_0275a107'
 #
 # Re-pinned 2026-11-20 to the production under contract 59: the main history, as before; no figure moved.
 # Re-pinned the same day to the production under contract 60: the main history, as before; no figure moved.
-DEPLOY = 'deploy_20261120_124318_829bc0cd'
+# Re-pinned 2026-11-26 to the production under contract 68: the main history, as before; no figure moved,
+# and every session with figures recorded its five drawdown periods.
+DEPLOY = 'deploy_20261126_103825_c40a57d3'
 
 # The sweep the ranking fixtures come from: a stored search of several combinations, every one of
 # them usable, ranked by an objective the sweep DECLARED — the case the Sweeps panel has to get
@@ -161,7 +166,10 @@ DEPLOY = 'deploy_20261120_124318_829bc0cd'
 #
 # Re-pinned the same day to the production under contract 60, the id FiniexTestingIDE named; no figure
 # moved.
-SWEEP = 'sweep_20261120_130008_eda73566'
+#
+# Re-pinned 2026-11-26 to the production under contract 68, the id FiniexTestingIDE named; no figure
+# moved.
+SWEEP = 'sweep_20261126_104659_beca7250'
 
 # The run header written from a tree with uncommitted changes, whose `changes` is a SAMPLE shorter
 # than its `uncommitted_count` - the case a panel gets wrong by counting the list. The catalog runs
@@ -184,7 +192,9 @@ DIRTY_RUN = '20261012_205715_c3b41fff'
 # FiniexTestingIDE named; its figures unchanged, as they said.
 # Re-pinned 2026-11-20 to its production under contract 59, the id FiniexTestingIDE named, and the same
 # day under 60.
-STATE_ENDED_RUN = '20261120_125159_3006c365'
+# Re-pinned 2026-11-26 to its production under contract 68, the id FiniexTestingIDE named: its frames
+# carry the account's drawdown, all but the first, which comes before the first valuation.
+STATE_ENDED_RUN = '20261126_104414_8d45141a'
 STATE_STOPPED_RUN = '20261022_123713_e059d354'
 
 # What a drawing worker records over time (contract 55): the fixture catalog's
@@ -195,7 +205,8 @@ STATE_STOPPED_RUN = '20261022_123713_e059d354'
 # Re-pinned 2026-11-19 to its production under contract 58, the id FiniexTestingIDE named.
 # Re-pinned 2026-11-20 to its production under contract 59, the id FiniexTestingIDE named, and the same
 # day under 60.
-SERIES_RUN = '20261120_125326_6d2742f9'
+# Re-pinned 2026-11-26 to its production under contract 68, the id FiniexTestingIDE named.
+SERIES_RUN = '20261126_104454_3fa284ed'
 
 TARGETS = [
     ('runs_list.json', 'reports/runs'),

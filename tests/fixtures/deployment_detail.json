@@ -4,12 +4,12 @@
     "currency"
   ],
   "code_changes_key": [],
-  "deployment_id": "deploy_20261120_124318_829bc0cd",
+  "deployment_id": "deploy_20261126_103825_c40a57d3",
   "sessions": [
     {
       "index": 1,
-      "run_id": "20261120_124318_2289cab8",
-      "started": "2026-11-20T12:43:18.884549Z",
+      "run_id": "20261126_103825_bc6c89b7",
+      "started": "2026-11-26T10:38:25.214590Z",
       "net_pnl": 1.8889599999999973,
       "max_drawdown": 201.40000000000146,
       "max_drawdown_pct": 2.0104678492450327,
@@ -17,8 +17,8 @@
       "booking_state": "booked",
       "bot": "demo_btcusd_bot",
       "bot_id": "demo-btc",
-      "ended": "2026-11-20T12:44:08.706676Z",
-      "ran_hours": 0.013839479722222223,
+      "ended": "2026-11-26T10:39:05.592512Z",
+      "ran_hours": 0.011216089444444443,
       "gap_hours": null,
       "gap_between_starts": false,
       "strategy_changed": false,
@@ -27,16 +27,72 @@
       "orders_to_changed": false,
       "exclusivity_violated_at": null,
       "code_changes": [],
-      "account_drawdown_periods": null,
+      "account_drawdown_periods": [
+        {
+          "rank": 1,
+          "peak": 10017.568800000001,
+          "depth": 201.40000000000146,
+          "depth_pct": 2.0104678492450327,
+          "started_at": "2026-02-01T22:13:30.620000+00:00",
+          "trough_at": "2026-02-01T23:11:28.325000+00:00",
+          "recovered_at": "2026-02-02T00:16:25.966000+00:00",
+          "to_trough_s": 3477.705,
+          "duration_s": 7375.346
+        },
+        {
+          "rank": 2,
+          "peak": 10058.2588,
+          "depth": 196.70728000000236,
+          "depth_pct": 1.955679247386261,
+          "started_at": "2026-02-02T00:38:44.787000+00:00",
+          "trough_at": "2026-02-02T05:37:03.320000+00:00",
+          "recovered_at": "2026-02-02T07:47:29.866000+00:00",
+          "to_trough_s": 17898.533,
+          "duration_s": 25725.079
+        },
+        {
+          "rank": 3,
+          "peak": 10013.7688,
+          "depth": 134.1800000000003,
+          "depth_pct": 1.339955042700809,
+          "started_at": "2026-02-01T20:40:25.259000+00:00",
+          "trough_at": "2026-02-01T21:56:28.840000+00:00",
+          "recovered_at": "2026-02-01T22:13:26.321000+00:00",
+          "to_trough_s": 4563.581,
+          "duration_s": 5581.062
+        },
+        {
+          "rank": 4,
+          "peak": 10000.0,
+          "depth": 62.391200000000026,
+          "depth_pct": 0.6239120000000002,
+          "started_at": "2026-02-01T20:32:50.539000+00:00",
+          "trough_at": "2026-02-01T20:33:38.992000+00:00",
+          "recovered_at": "2026-02-01T20:39:22.435000+00:00",
+          "to_trough_s": 48.453,
+          "duration_s": 391.896
+        },
+        {
+          "rank": 5,
+          "peak": 10063.371519999997,
+          "depth": 61.482560000000376,
+          "depth_pct": 0.6109538923193844,
+          "started_at": "2026-02-02T08:10:48.415000+00:00",
+          "trough_at": "2026-02-02T08:10:48.415000+00:00",
+          "recovered_at": null,
+          "to_trough_s": 0.0,
+          "duration_s": null
+        }
+      ],
       "account_drawdown_periods_key": [
         "rank"
       ],
-      "drawdown_started_at": null
+      "drawdown_started_at": "2026-02-01T18:00:00.055000+00:00"
     },
     {
       "index": 2,
-      "run_id": "20261120_124526_6590e184",
-      "started": "2026-11-20T12:45:26.445198Z",
+      "run_id": "20261126_103937_285bd6df",
+      "started": "2026-11-26T10:39:37.224414Z",
       "net_pnl": -31.772800000001183,
       "max_drawdown": 541.61456,
       "max_drawdown_pct": 5.382038802041566,
@@ -44,9 +100,9 @@
       "booking_state": "booked",
       "bot": "demo_btcusd_bot",
       "bot_id": "demo-btc",
-      "ended": "2026-11-20T12:46:23.645398Z",
-      "ran_hours": 0.015888944444444445,
-      "gap_hours": 0.021594033888888888,
+      "ended": "2026-11-26T10:40:18.878685Z",
+      "ran_hours": 0.011570630833333333,
+      "gap_hours": 0.008786639444444444,
       "gap_between_starts": false,
       "strategy_changed": false,
       "operation_changed": false,
@@ -54,16 +110,72 @@
       "orders_to_changed": false,
       "exclusivity_violated_at": null,
       "code_changes": [],
-      "account_drawdown_periods": null,
+      "account_drawdown_periods": [
+        {
+          "rank": 1,
+          "peak": 10063.371519999997,
+          "depth": 541.61456,
+          "depth_pct": 5.382038802041566,
+          "started_at": "2026-02-02T08:10:48.415000+00:00",
+          "trough_at": "2026-02-03T18:17:50.461000+00:00",
+          "recovered_at": null,
+          "to_trough_s": 122822.046,
+          "duration_s": null
+        },
+        {
+          "rank": 2,
+          "peak": 10017.568800000001,
+          "depth": 201.40000000000146,
+          "depth_pct": 2.0104678492450327,
+          "started_at": "2026-02-01T22:13:30.620000+00:00",
+          "trough_at": "2026-02-01T23:11:28.325000+00:00",
+          "recovered_at": "2026-02-02T00:16:25.966000+00:00",
+          "to_trough_s": 3477.705,
+          "duration_s": 7375.346
+        },
+        {
+          "rank": 3,
+          "peak": 10058.2588,
+          "depth": 196.70728000000236,
+          "depth_pct": 1.955679247386261,
+          "started_at": "2026-02-02T00:38:44.787000+00:00",
+          "trough_at": "2026-02-02T05:37:03.320000+00:00",
+          "recovered_at": "2026-02-02T07:47:29.866000+00:00",
+          "to_trough_s": 17898.533,
+          "duration_s": 25725.079
+        },
+        {
+          "rank": 4,
+          "peak": 10013.7688,
+          "depth": 134.1800000000003,
+          "depth_pct": 1.339955042700809,
+          "started_at": "2026-02-01T20:40:25.259000+00:00",
+          "trough_at": "2026-02-01T21:56:28.840000+00:00",
+          "recovered_at": "2026-02-01T22:13:26.321000+00:00",
+          "to_trough_s": 4563.581,
+          "duration_s": 5581.062
+        },
+        {
+          "rank": 5,
+          "peak": 10000.0,
+          "depth": 62.391200000000026,
+          "depth_pct": 0.6239120000000002,
+          "started_at": "2026-02-01T20:32:50.539000+00:00",
+          "trough_at": "2026-02-01T20:33:38.992000+00:00",
+          "recovered_at": "2026-02-01T20:39:22.435000+00:00",
+          "to_trough_s": 48.453,
+          "duration_s": 391.896
+        }
+      ],
       "account_drawdown_periods_key": [
         "rank"
       ],
-      "drawdown_started_at": null
+      "drawdown_started_at": "2026-02-01T18:00:00.055000+00:00"
     },
     {
       "index": 3,
-      "run_id": "20261120_124648_595adb82",
-      "started": "2026-11-20T12:46:48.320155Z",
+      "run_id": "20261126_104042_23207043",
+      "started": "2026-11-26T10:40:42.972384Z",
       "net_pnl": 52.1836799999997,
       "max_drawdown": 541.61456,
       "max_drawdown_pct": 5.382038802041566,
@@ -71,9 +183,9 @@
       "booking_state": "booked",
       "bot": "demo_btcusd_bot",
       "bot_id": "demo-btc",
-      "ended": "2026-11-20T12:47:30.866584Z",
-      "ran_hours": 0.011818452500000002,
-      "gap_hours": 0.006854099166666666,
+      "ended": "2026-11-26T10:41:18.338581Z",
+      "ran_hours": 0.009823943611111111,
+      "gap_hours": 0.0066926941666666665,
       "gap_between_starts": false,
       "strategy_changed": true,
       "operation_changed": false,
@@ -81,16 +193,72 @@
       "orders_to_changed": false,
       "exclusivity_violated_at": null,
       "code_changes": [],
-      "account_drawdown_periods": null,
+      "account_drawdown_periods": [
+        {
+          "rank": 1,
+          "peak": 10063.371519999997,
+          "depth": 541.61456,
+          "depth_pct": 5.382038802041566,
+          "started_at": "2026-02-02T08:10:48.415000+00:00",
+          "trough_at": "2026-02-03T18:17:50.461000+00:00",
+          "recovered_at": "2026-02-03T20:31:29.874000+00:00",
+          "to_trough_s": 122822.046,
+          "duration_s": 130841.459
+        },
+        {
+          "rank": 2,
+          "peak": 10142.55992,
+          "depth": 388.722560000002,
+          "depth_pct": 3.8325882525326214,
+          "started_at": "2026-02-03T21:10:10.515000+00:00",
+          "trough_at": "2026-02-04T16:17:39.226000+00:00",
+          "recovered_at": null,
+          "to_trough_s": 68848.711,
+          "duration_s": null
+        },
+        {
+          "rank": 3,
+          "peak": 10017.568800000001,
+          "depth": 201.40000000000146,
+          "depth_pct": 2.0104678492450327,
+          "started_at": "2026-02-01T22:13:30.620000+00:00",
+          "trough_at": "2026-02-01T23:11:28.325000+00:00",
+          "recovered_at": "2026-02-02T00:16:25.966000+00:00",
+          "to_trough_s": 3477.705,
+          "duration_s": 7375.346
+        },
+        {
+          "rank": 4,
+          "peak": 10058.2588,
+          "depth": 196.70728000000236,
+          "depth_pct": 1.955679247386261,
+          "started_at": "2026-02-02T00:38:44.787000+00:00",
+          "trough_at": "2026-02-02T05:37:03.320000+00:00",
+          "recovered_at": "2026-02-02T07:47:29.866000+00:00",
+          "to_trough_s": 17898.533,
+          "duration_s": 25725.079
+        },
+        {
+          "rank": 5,
+          "peak": 10013.7688,
+          "depth": 134.1800000000003,
+          "depth_pct": 1.339955042700809,
+          "started_at": "2026-02-01T20:40:25.259000+00:00",
+          "trough_at": "2026-02-01T21:56:28.840000+00:00",
+          "recovered_at": "2026-02-01T22:13:26.321000+00:00",
+          "to_trough_s": 4563.581,
+          "duration_s": 5581.062
+        }
+      ],
       "account_drawdown_periods_key": [
         "rank"
       ],
-      "drawdown_started_at": null
+      "drawdown_started_at": "2026-02-01T18:00:00.055000+00:00"
     },
     {
       "index": 4,
-      "run_id": "20261120_124752_d5b2e1e3",
-      "started": "2026-11-20T12:47:52.603067Z",
+      "run_id": "20261126_104139_99912fd0",
+      "started": "2026-11-26T10:41:39.420093Z",
       "net_pnl": 0.0,
       "max_drawdown": 541.61456,
       "max_drawdown_pct": 5.382038802041566,
@@ -98,9 +266,9 @@
       "booking_state": "booked",
       "bot": "demo_btcusd_bot",
       "bot_id": "demo-btc",
-      "ended": "2026-11-20T12:48:53.826264Z",
-      "ran_hours": 0.01700644361111111,
-      "gap_hours": 0.0060379119444444445,
+      "ended": "2026-11-26T10:42:18.461474Z",
+      "ran_hours": 0.010844828055555556,
+      "gap_hours": 0.005855975555555556,
       "gap_between_starts": false,
       "strategy_changed": false,
       "operation_changed": true,
@@ -108,16 +276,72 @@
       "orders_to_changed": false,
       "exclusivity_violated_at": null,
       "code_changes": [],
-      "account_drawdown_periods": null,
+      "account_drawdown_periods": [
+        {
+          "rank": 1,
+          "peak": 10063.371519999997,
+          "depth": 541.61456,
+          "depth_pct": 5.382038802041566,
+          "started_at": "2026-02-02T08:10:48.415000+00:00",
+          "trough_at": "2026-02-03T18:17:50.461000+00:00",
+          "recovered_at": "2026-02-03T20:31:29.874000+00:00",
+          "to_trough_s": 122822.046,
+          "duration_s": 130841.459
+        },
+        {
+          "rank": 2,
+          "peak": 10142.55992,
+          "depth": 388.722560000002,
+          "depth_pct": 3.8325882525326214,
+          "started_at": "2026-02-03T21:10:10.515000+00:00",
+          "trough_at": "2026-02-04T16:17:39.226000+00:00",
+          "recovered_at": null,
+          "to_trough_s": 68848.711,
+          "duration_s": null
+        },
+        {
+          "rank": 3,
+          "peak": 10017.568800000001,
+          "depth": 201.40000000000146,
+          "depth_pct": 2.0104678492450327,
+          "started_at": "2026-02-01T22:13:30.620000+00:00",
+          "trough_at": "2026-02-01T23:11:28.325000+00:00",
+          "recovered_at": "2026-02-02T00:16:25.966000+00:00",
+          "to_trough_s": 3477.705,
+          "duration_s": 7375.346
+        },
+        {
+          "rank": 4,
+          "peak": 10058.2588,
+          "depth": 196.70728000000236,
+          "depth_pct": 1.955679247386261,
+          "started_at": "2026-02-02T00:38:44.787000+00:00",
+          "trough_at": "2026-02-02T05:37:03.320000+00:00",
+          "recovered_at": "2026-02-02T07:47:29.866000+00:00",
+          "to_trough_s": 17898.533,
+          "duration_s": 25725.079
+        },
+        {
+          "rank": 5,
+          "peak": 10013.7688,
+          "depth": 134.1800000000003,
+          "depth_pct": 1.339955042700809,
+          "started_at": "2026-02-01T20:40:25.259000+00:00",
+          "trough_at": "2026-02-01T21:56:28.840000+00:00",
+          "recovered_at": "2026-02-01T22:13:26.321000+00:00",
+          "to_trough_s": 4563.581,
+          "duration_s": 5581.062
+        }
+      ],
       "account_drawdown_periods_key": [
         "rank"
       ],
-      "drawdown_started_at": null
+      "drawdown_started_at": "2026-02-01T18:00:00.055000+00:00"
     },
     {
       "index": 1,
-      "run_id": "20261120_124929_583cbc12",
-      "started": "2026-11-20T12:49:29.467004Z",
+      "run_id": "20261126_104240_b4059f4b",
+      "started": "2026-11-26T10:42:40.927838Z",
       "net_pnl": null,
       "max_drawdown": null,
       "max_drawdown_pct": null,

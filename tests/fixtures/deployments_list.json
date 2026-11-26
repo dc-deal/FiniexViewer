@@ -5,6 +5,126 @@
   ],
   "deployments": [
     {
+      "deployment_id": "deploy_20261126_104312_7ebb6025",
+      "sessions": 1,
+      "sessions_without_figures": 0,
+      "sessions_failed": 0,
+      "first_started": "2026-11-26T10:43:12.566894Z",
+      "last_started": "2026-11-26T10:43:12.566894Z",
+      "net_pnl": 0.0,
+      "max_drawdown": 334.1393599999992,
+      "max_drawdown_pct": 3.341393599999992,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": null,
+      "changed": false,
+      "configuration_changed": false,
+      "code_summary": null,
+      "orders_to": [
+        "simulated"
+      ],
+      "account_drawdown_periods": [
+        {
+          "rank": 1,
+          "peak": 10000.0,
+          "depth": 334.1393599999992,
+          "depth_pct": 3.341393599999992,
+          "started_at": "2026-02-07T05:40:53.068000+00:00",
+          "trough_at": "2026-02-07T07:18:01.415000+00:00",
+          "recovered_at": null,
+          "to_trough_s": 5828.347,
+          "duration_s": null
+        }
+      ],
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": "2026-02-06T18:00:00.119000+00:00"
+    },
+    {
+      "deployment_id": "deploy_20261126_103825_c40a57d3",
+      "sessions": 4,
+      "sessions_without_figures": 1,
+      "sessions_failed": 0,
+      "first_started": "2026-11-26T10:38:25.214590Z",
+      "last_started": "2026-11-26T10:41:39.420093Z",
+      "net_pnl": 22.29983999999851,
+      "max_drawdown": 541.61456,
+      "max_drawdown_pct": 5.382038802041566,
+      "currency": "USD",
+      "bot": "demo_btcusd_bot",
+      "bot_id": "demo-btc",
+      "longest_gap_hours": 0.008786639444444444,
+      "changed": true,
+      "configuration_changed": true,
+      "code_summary": null,
+      "orders_to": [
+        "simulated"
+      ],
+      "account_drawdown_periods": [
+        {
+          "rank": 1,
+          "peak": 10063.371519999997,
+          "depth": 541.61456,
+          "depth_pct": 5.382038802041566,
+          "started_at": "2026-02-02T08:10:48.415000+00:00",
+          "trough_at": "2026-02-03T18:17:50.461000+00:00",
+          "recovered_at": "2026-02-03T20:31:29.874000+00:00",
+          "to_trough_s": 122822.046,
+          "duration_s": 130841.459
+        },
+        {
+          "rank": 2,
+          "peak": 10142.55992,
+          "depth": 388.722560000002,
+          "depth_pct": 3.8325882525326214,
+          "started_at": "2026-02-03T21:10:10.515000+00:00",
+          "trough_at": "2026-02-04T16:17:39.226000+00:00",
+          "recovered_at": null,
+          "to_trough_s": 68848.711,
+          "duration_s": null
+        },
+        {
+          "rank": 3,
+          "peak": 10017.568800000001,
+          "depth": 201.40000000000146,
+          "depth_pct": 2.0104678492450327,
+          "started_at": "2026-02-01T22:13:30.620000+00:00",
+          "trough_at": "2026-02-01T23:11:28.325000+00:00",
+          "recovered_at": "2026-02-02T00:16:25.966000+00:00",
+          "to_trough_s": 3477.705,
+          "duration_s": 7375.346
+        },
+        {
+          "rank": 4,
+          "peak": 10058.2588,
+          "depth": 196.70728000000236,
+          "depth_pct": 1.955679247386261,
+          "started_at": "2026-02-02T00:38:44.787000+00:00",
+          "trough_at": "2026-02-02T05:37:03.320000+00:00",
+          "recovered_at": "2026-02-02T07:47:29.866000+00:00",
+          "to_trough_s": 17898.533,
+          "duration_s": 25725.079
+        },
+        {
+          "rank": 5,
+          "peak": 10013.7688,
+          "depth": 134.1800000000003,
+          "depth_pct": 1.339955042700809,
+          "started_at": "2026-02-01T20:40:25.259000+00:00",
+          "trough_at": "2026-02-01T21:56:28.840000+00:00",
+          "recovered_at": "2026-02-01T22:13:26.321000+00:00",
+          "to_trough_s": 4563.581,
+          "duration_s": 5581.062
+        }
+      ],
+      "account_drawdown_periods_key": [
+        "rank"
+      ],
+      "drawdown_started_at": "2026-02-01T18:00:00.055000+00:00"
+    },
+    {
       "deployment_id": "deploy_20261120_125024_487e9290",
       "sessions": 1,
       "sessions_without_figures": 0,
@@ -1045,5 +1165,5 @@
       "drawdown_started_at": null
     }
   ],
-  "count": 40
+  "count": 42
 }

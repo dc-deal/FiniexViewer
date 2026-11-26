@@ -1,15 +1,15 @@
 {
-  "measured_at": "2026-11-25T10:57:21.764509+00:00",
+  "measured_at": "2026-11-26T12:23:50.807284+00:00",
   "cpu": {
     "count": 16.0,
     "count_source": "machine",
-    "used_pct": 9.0,
-    "window_s": 0.2
+    "used_pct": 10.8,
+    "window_s": 123.33
   },
   "memory": {
-    "limit_bytes": 50514259968,
-    "used_bytes": 9415057408,
-    "used_pct": 18.6,
+    "limit_bytes": 50514268160,
+    "used_bytes": 8473153536,
+    "used_pct": 16.8,
     "limit_source": "machine",
     "warn_at_pct": 80.0,
     "critical_at_pct": 90.0
@@ -21,9 +21,9 @@
       "stores": [
         "activities"
       ],
-      "free_bytes": 905714892800,
+      "free_bytes": 871956852736,
       "total_bytes": 1081101176832,
-      "free_pct": 83.8
+      "free_pct": 80.7
     },
     {
       "stores": [
@@ -36,9 +36,9 @@
         "runs",
         "session_state"
       ],
-      "free_bytes": 302373310464,
+      "free_bytes": 276554125312,
       "total_bytes": 1022844989440,
-      "free_pct": 29.6
+      "free_pct": 27.0
     }
   ],
   "keys": {

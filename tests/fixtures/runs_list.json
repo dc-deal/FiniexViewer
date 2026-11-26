@@ -7,6 +7,1549 @@
   ],
   "runs": [
     {
+      "run_id": "20261126_105639_819d0e4e",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261126_104659_beca7250_c008",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:56:39.722744+00:00",
+      "parent_id": "sweep_20261126_104659_beca7250",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 337059,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -53.14000000000672,
+          "total_trades": 20
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_105511_2738cec4",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261126_104659_beca7250_c007",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:55:11.257346+00:00",
+      "parent_id": "sweep_20261126_104659_beca7250",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 337009,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -56.99000000000641,
+          "total_trades": 20
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_105408_106ff851",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261126_104659_beca7250_c006",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:54:08.741923+00:00",
+      "parent_id": "sweep_20261126_104659_beca7250",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 307994,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -43.1400000000056,
+          "total_trades": 16
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_105306_bffc65e8",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261126_104659_beca7250_c005",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:53:06.324187+00:00",
+      "parent_id": "sweep_20261126_104659_beca7250",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 780841,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -244.19000000001154,
+          "total_trades": 59
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_105202_b2f39862",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261126_104659_beca7250_c004",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:52:02.310025+00:00",
+      "parent_id": "sweep_20261126_104659_beca7250",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 780840,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -239.49000000001183,
+          "total_trades": 59
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_105053_dfc63c9f",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261126_104659_beca7250_c003",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:50:53.379033+00:00",
+      "parent_id": "sweep_20261126_104659_beca7250",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 780979,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -234.19000000001375,
+          "total_trades": 59
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104935_0f7bc166",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261126_104659_beca7250_c002",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:49:35.894071+00:00",
+      "parent_id": "sweep_20261126_104659_beca7250",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 6722994,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -3171.890000000025,
+          "total_trades": 555
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104819_ae44305d",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261126_104659_beca7250_c001",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:48:19.815731+00:00",
+      "parent_id": "sweep_20261126_104659_beca7250",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 6723006,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -3171.890000000025,
+          "total_trades": 555
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104705_564369c5",
+      "group": "simulation",
+      "name": "trend_channel_reference_sweep_base__sweep_20261126_104659_beca7250_c000",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:47:05.803996+00:00",
+      "parent_id": "sweep_20261126_104659_beca7250",
+      "parent_kind": "sweep",
+      "config_id": "4245d41250e8c34396efa0c4b141cd4df6acdf3e1ece87b9a2ca32ac4cce53c5",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "trend_channel_reference_sweep_base.json",
+      "reporting": "expected",
+      "size_bytes": 6723103,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURUSD_sweep_w1",
+          "start_date": "2026-01-05T01:00:00+00:00",
+          "end_date": "2026-01-09T21:00:00+00:00"
+        },
+        {
+          "unit_name": "EURUSD_sweep_w2",
+          "start_date": "2026-02-02T01:00:00+00:00",
+          "end_date": "2026-02-06T21:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "sweep",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -3161.590000000026,
+          "total_trades": 555
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 835201.829,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104627_549c9ec2",
+      "group": "simulation",
+      "name": "signal_feed_disturbance_reference",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:46:27.545726+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "c6f540a543f858a18d9ccc70dfdb2b2dafe6bb1cb6357d5fc285e90d772a58fa",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "signal_feed_disturbance_reference.json",
+      "reporting": "expected",
+      "size_bytes": 142154,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "BTCUSD_signal_feed_disturbed",
+          "start_date": "2026-08-11T00:00:00+00:00",
+          "end_date": "2026-08-14T20:00:00+00:00"
+        },
+        {
+          "unit_name": "GBPUSD_signal_feed_disturbed",
+          "start_date": "2026-08-11T00:00:00+00:00",
+          "end_date": "2026-08-14T20:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -1.7439389081585233,
+          "total_trades": 2
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 6,
+      "log_warning_count": 7,
+      "tick_timespan_seconds": 56245.206,
+      "total_units": 2,
+      "failed_count": 0,
+      "succeeded_count": 2,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104610_0aaec9c2",
+      "group": "autotrader",
+      "name": "partial_close_lifecycle",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-26T10:46:10.885843+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "ea9755ae7beedbcbd00a852ddc2b35c8f1974be3bd46143d0870de99722d8eb3",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "partial_close_lifecycle.json",
+      "reporting": "expected",
+      "size_bytes": 240222,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "partial_close_lifecycle",
+          "start_date": "2025-09-18T05:58:34+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "JPY",
+          "net_pnl": -189.99999999996928,
+          "total_trades": 4
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 2,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 7372.549,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104535_20e4d277",
+      "group": "autotrader",
+      "name": "tp_triggered_test",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-26T10:45:35.192821+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "a7f4acec5d29d59ede55555e134680e4a6df578e08c9888ad8628fc46772450d",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "tp_triggered_test.json",
+      "reporting": "expected",
+      "size_bytes": 119993,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "tp_triggered_test",
+          "start_date": "2026-01-25T04:19:46+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -1.3506624000000087,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 4019.998,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104454_3fa284ed",
+      "group": "autotrader",
+      "name": "indicator_series_session",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "indicator_series_bollinger_main.jsonl",
+        "indicator_series_macd_main.jsonl",
+        "indicator_series_obv_volume.jsonl",
+        "indicator_series_rsi_fast.jsonl",
+        "indicator_series_tide_wave.jsonl",
+        "indicator_series_trend_ema.jsonl",
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-26T10:44:54.897417+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "3df184d6a049521c9c0380623f8f2543e2817977b99c6ff0cfe6f242bb621f76",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "indicator_series_session.json",
+      "reporting": "expected",
+      "size_bytes": 773983,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "indicator_series_session",
+          "start_date": "2026-01-25T02:19:46+00:00",
+          "end_date": "2026-01-25T08:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 4,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 20402.77,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104414_8d45141a",
+      "group": "autotrader",
+      "name": "state_frames_test",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-26T10:44:14.613553+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "04b025ee328e8a31a7f47654acc5f5979b02ea4b268d646c3e3a4b426f6baa29",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "state_frames_test.json",
+      "reporting": "expected",
+      "size_bytes": 547391,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "state_frames_test",
+          "start_date": "2026-01-25T02:19:46+00:00",
+          "end_date": "2026-01-25T08:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 20402.77,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104312_b0a9fdd6",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-26T10:43:12.566894+00:00",
+      "parent_id": "deploy_20261126_104312_7ebb6025",
+      "parent_kind": "deployment",
+      "config_id": "03297e1327bbd4f9b11b3bf62b5bff485dc858a1e46497572d9fd45917bef6ba",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "demo_btcusd_bot_s6.json",
+      "reporting": "expected",
+      "size_bytes": 1833091,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-06T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 87570.084,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104240_b4059f4b",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:42:40.927838+00:00",
+      "parent_id": "deploy_20261126_103825_c40a57d3",
+      "parent_kind": "deployment",
+      "config_id": "4bc7464fa238e696b707aaf3616d0046a431eb1385c03aab080b83fd7f31a51b",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "demo_btcusd_bot_s5.json",
+      "reporting": "expected",
+      "size_bytes": 0,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-05T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": null,
+      "run_outcome": null,
+      "error_count": null,
+      "warning_count": null,
+      "log_warning_count": null,
+      "tick_timespan_seconds": null,
+      "total_units": null,
+      "failed_count": null,
+      "succeeded_count": null,
+      "has_reports": false
+    },
+    {
+      "run_id": "20261126_104139_99912fd0",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-26T10:41:39.420093+00:00",
+      "parent_id": "deploy_20261126_103825_c40a57d3",
+      "parent_kind": "deployment",
+      "config_id": "df1f470df85dc5f2260995aa2c6058a370461cacc591749b15af37fe553bec9f",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "demo_btcusd_bot_s4.json",
+      "reporting": "expected",
+      "size_bytes": 1191868,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-04T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 0.0,
+          "total_trades": 0
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 2,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 62680.037,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_104042_23207043",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-26T10:40:42.972384+00:00",
+      "parent_id": "deploy_20261126_103825_c40a57d3",
+      "parent_kind": "deployment",
+      "config_id": "2a4da01f02c304f05d27805497fdda1e0c881b91d8f2a150818e74981746d5e7",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "demo_btcusd_bot_s3.json",
+      "reporting": "expected",
+      "size_bytes": 1561775,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-03T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 52.1836799999997,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 80445.679,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_103937_285bd6df",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-26T10:39:37.224414+00:00",
+      "parent_id": "deploy_20261126_103825_c40a57d3",
+      "parent_kind": "deployment",
+      "config_id": "05240f6822a68bc8024cfaa915ce3aa0c00e6b9dabc2baf50de12123a37a8992",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "demo_btcusd_bot_s2.json",
+      "reporting": "expected",
+      "size_bytes": 1871248,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-02T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": -31.772800000001183,
+          "total_trades": 1
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 87591.504,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_103825_bc6c89b7",
+      "group": "autotrader",
+      "name": "demo_btcusd_bot",
+      "artifacts": [
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "run_summary.json",
+        "safety.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "venue_account.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl",
+        "state_frames.jsonl"
+      ],
+      "recording": "ended",
+      "start_time": "2026-11-26T10:38:25.214590+00:00",
+      "parent_id": "deploy_20261126_103825_c40a57d3",
+      "parent_kind": "deployment",
+      "config_id": "f0cca77614c9fa5a5e59314af2aec9b2d4b4285e151e04b4feb2381556b6534f",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "demo_btcusd_bot_s1.json",
+      "reporting": "expected",
+      "size_bytes": 1481389,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "demo_btcusd_bot",
+          "start_date": "2026-02-01T18:00:00+00:00",
+          "end_date": null
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "USD",
+          "net_pnl": 1.8889599999999973,
+          "total_trades": 2
+        }
+      ],
+      "run_outcome": "success",
+      "error_count": 0,
+      "warning_count": 3,
+      "log_warning_count": 0,
+      "tick_timespan_seconds": 75641.721,
+      "total_units": 1,
+      "failed_count": 0,
+      "succeeded_count": 1,
+      "has_reports": true
+    },
+    {
+      "run_id": "20261126_103719_e17e2a2c",
+      "group": "simulation",
+      "name": "report_coverage_reference",
+      "artifacts": [
+        "aggregated_portfolio.json",
+        "booking_periods.json",
+        "broker.json",
+        "execution_stats.csv",
+        "execution_stats.json",
+        "feed_stability.json",
+        "order_history.csv",
+        "order_history.json",
+        "pending_orders.json",
+        "portfolio.json",
+        "profiling.json",
+        "run_meta.json",
+        "run_summary.json",
+        "scenario_details.json",
+        "signal.json",
+        "trade_history.csv",
+        "trade_history.json",
+        "warnings_errors.json",
+        "worker_decision.json"
+      ],
+      "stream_files": [
+        "order_events.jsonl"
+      ],
+      "recording": null,
+      "start_time": "2026-11-26T10:37:19.390770+00:00",
+      "parent_id": null,
+      "parent_kind": null,
+      "config_id": "76988fb0d45da74a48c37ae0ce3a72daa54f66aa6f2c75f6a9d22d9a4e2dc4fe",
+      "app_version": "1.5.0",
+      "git_commit": "f0d6eea3",
+      "config_snapshot": "report_coverage_reference.json",
+      "reporting": "expected",
+      "size_bytes": 879020,
+      "ticks_from": "archive",
+      "orders_to": "simulated",
+      "data_windows": [
+        {
+          "unit_name": "EURGBP_refusals_01",
+          "start_date": "2025-10-31T05:00:00+00:00",
+          "end_date": "2025-10-31T06:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_refusals_02",
+          "start_date": "2025-10-10T06:00:00+00:00",
+          "end_date": "2025-10-10T07:00:00+00:00"
+        },
+        {
+          "unit_name": "ETHUSD_spot_two_balances",
+          "start_date": "2026-02-10T10:00:00+00:00",
+          "end_date": "2026-02-10T20:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_before_the_archive",
+          "start_date": "2024-01-10T10:00:00+00:00",
+          "end_date": "2024-01-10T11:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_left_open",
+          "start_date": "2025-10-10T06:00:00+00:00",
+          "end_date": "2025-10-10T07:00:00+00:00"
+        },
+        {
+          "unit_name": "EURGBP_partial_close",
+          "start_date": "2025-10-31T05:00:00+00:00",
+          "end_date": "2025-10-31T06:00:00+00:00"
+        }
+      ],
+      "run_purpose": "fixture",
+      "report_contract": 68,
+      "origin_channel": "cli",
+      "origin_client": "console",
+      "origin_principal": "operator",
+      "origin_host": "h_x29og8",
+      "fixture_superseded": false,
+      "results": [
+        {
+          "currency": "EUR",
+          "net_pnl": 3.9459902164100105,
+          "total_trades": 8
+        },
+        {
+          "currency": "USD",
+          "net_pnl": -23.271064756024305,
+          "total_trades": 10
+        }
+      ],
+      "run_outcome": "failed",
+      "error_count": 0,
+      "warning_count": 6,
+      "log_warning_count": 39,
+      "tick_timespan_seconds": 72133.049,
+      "total_units": 6,
+      "failed_count": 1,
+      "succeeded_count": 5,
+      "has_reports": true
+    },
+    {
       "run_id": "20261125_100530_496f7c2a",
       "group": "simulation",
       "name": "touch_and_turn_eurusd",
@@ -674,7 +2217,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -750,7 +2293,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -826,7 +2369,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -902,7 +2445,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -978,7 +2521,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1054,7 +2597,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1130,7 +2673,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1206,7 +2749,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1282,7 +2825,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1358,7 +2901,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1428,7 +2971,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "JPY",
@@ -1498,7 +3041,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1574,7 +3117,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1644,7 +3187,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1714,7 +3257,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1766,7 +3309,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": null,
       "run_outcome": null,
       "error_count": null,
@@ -1830,7 +3373,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1900,7 +3443,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -1970,7 +3513,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -2040,7 +3583,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "USD",
@@ -2459,7 +4002,7 @@
       "origin_client": "console",
       "origin_principal": "operator",
       "origin_host": "h_x29og8",
-      "fixture_superseded": false,
+      "fixture_superseded": true,
       "results": [
         {
           "currency": "EUR",
@@ -17340,5 +18883,5 @@
       "has_reports": true
     }
   ],
-  "count": 216
+  "count": 237
 }

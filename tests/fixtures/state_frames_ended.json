@@ -2,21 +2,21 @@
   "key": [
     "unit_name"
   ],
-  "served_at": "2026-11-25T10:56:33.111181Z",
+  "served_at": "2026-11-26T12:23:01.981457Z",
   "units": [
     {
       "unit_name": "state_frames_test",
       "cadence_timeframe": "M1",
       "cadence_s": 60.0,
-      "written_at": "2026-11-20T12:52:13.393276Z",
-      "age_s": 425059.717905,
+      "written_at": "2026-11-26T10:44:22.610530Z",
+      "age_s": 5919.370927,
       "recording": "ended",
       "truncated_tail": false,
       "first_frame": {
-        "written_at": "2026-11-20T12:52:10.065343Z",
+        "written_at": "2026-11-26T10:44:21.095596Z",
         "process_memory": {
-          "rss_bytes": 376598528,
-          "private_bytes": 304750592
+          "rss_bytes": 558555136,
+          "private_bytes": 485003264
         }
       },
       "outcome": {
@@ -43,7 +43,7 @@
       "frame": {
         "record_kind": "frame",
         "frame_time": "2026-01-25T08:00:00.320000Z",
-        "written_at": "2026-11-20T12:52:13.393276Z",
+        "written_at": "2026-11-26T10:44:22.610530Z",
         "written_for": "shutdown",
         "cadence_slot": null,
         "ticks_processed": 5980,
@@ -56,7 +56,7 @@
           "BTC": 0.1
         },
         "equity": 9920.288880000002,
-        "account_drawdown_pct": null,
+        "account_drawdown_pct": 0.7971111999999811,
         "unrealized_pnl": -79.71111999999883,
         "open_positions": [
           {
@@ -115,8 +115,8 @@
         "closed_bars": {},
         "order_id": null,
         "process_memory": {
-          "rss_bytes": 376598528,
-          "private_bytes": 304750592
+          "rss_bytes": 558555136,
+          "private_bytes": 484999168
         }
       }
     }

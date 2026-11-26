@@ -269,6 +269,29 @@ describe('api contract', () => {
     for (const key of declared) expect(key).toEqual(EXPECTED_KEYS.drawdownPeriods)
   })
 
+  /**
+   * The capture holds the hard cases of the drawdown periods (contracts 66 and 67), so a re-capture of
+   * a run that never fell cannot leave the suite green and testing nothing: periods recovered and one
+   * still open, the open one with no duration, deepest first, and rank 1 the period the unit's
+   * `account_max_dd_pct` measures. A session with figures recorded its five as well.
+   */
+  it('the captured run holds drawdown periods recovered and open, deepest first', () => {
+    const units: PortfolioReport = portfolio
+    const periods = units.units.flatMap(unit => unit.account_drawdown_periods)
+    expect(periods.some(period => period.recovered_at !== null)).toBe(true)
+    const open = periods.filter(period => period.recovered_at === null)
+    expect(open.length).toBeGreaterThan(0)
+    for (const period of open) expect(period.duration_s).toBeNull()
+    for (const unit of units.units) {
+      const shares = unit.account_drawdown_periods.map(period => period.depth_pct)
+      expect(shares).toEqual([...shares].sort((a, b) => b - a))
+      expect(unit.account_drawdown_periods.map(period => period.rank)).toEqual(shares.map((_, index) => index + 1))
+      if (shares.length) expect(shares[0]).toBe(unit.account_max_dd_pct)
+    }
+    const detail: DeploymentDetail = deploymentDetail
+    expect(detail.sessions.some(session => (session.account_drawdown_periods ?? []).length > 0)).toBe(true)
+  })
+
   it('the sweep list is keyed by the sweep', () => {
     const typed: SweepList = sweepsList
     expect(typed.sweeps.length).toBeGreaterThan(0)

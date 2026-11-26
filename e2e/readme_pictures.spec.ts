@@ -27,11 +27,11 @@ import { showPanel, FIXTURES_SHOWN, SEEDED } from './arrangement_seed'
 const OUT = '/app/docs/images'
 const RUN = '20261007_145935_5f9186f8'
 const UNIT = 'EURUSD_blocks_09'
-const SESSION = '20261120_125159_3006c365'
-const DEPLOYMENT = 'deploy_20261120_124318_829bc0cd'
+const SESSION = '20261126_104414_8d45141a'
+const DEPLOYMENT = 'deploy_20261126_103825_c40a57d3'
 // a session of that deployment, so the panels beside it show the bot's run
-const DEPLOYMENT_SESSION = '20261120_124648_595adb82'
-const SWEEP = 'sweep_20261120_130008_eda73566'
+const DEPLOYMENT_SESSION = '20261126_104042_23207043'
+const SWEEP = 'sweep_20261126_104659_beca7250'
 // the arrangement the pictures are taken in, stored with the size it was arranged at
 const ARRANGEMENT = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'readme_arrangement.json'), 'utf-8'))
 const HIDDEN = (process.env['PICTURES_HIDE'] ?? '').split(',').map(word => word.trim().toLowerCase()).filter(Boolean)

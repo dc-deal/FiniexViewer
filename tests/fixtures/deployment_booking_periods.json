@@ -4,7 +4,7 @@
     "unit_name",
     "period_no"
   ],
-  "deployment_id": "deploy_20261120_124318_829bc0cd",
+  "deployment_id": "deploy_20261126_103825_c40a57d3",
   "periods": [
     {
       "unit_name": "demo_btcusd_bot",
@@ -32,7 +32,7 @@
       "account_max_dd_pct": 2.0104678492450327,
       "unrealized_pnl": -62.1912000000003,
       "open_position_count": 1,
-      "run_id": "20261120_124318_2289cab8"
+      "run_id": "20261126_103825_bc6c89b7"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -60,7 +60,7 @@
       "account_max_dd_pct": 2.0104678492450327,
       "unrealized_pnl": 0.0,
       "open_position_count": 0,
-      "run_id": "20261120_124318_2289cab8"
+      "run_id": "20261126_103825_bc6c89b7"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -88,7 +88,7 @@
       "account_max_dd_pct": 2.0104678492450327,
       "unrealized_pnl": 0.0,
       "open_position_count": 0,
-      "run_id": "20261120_124526_6590e184"
+      "run_id": "20261126_103937_285bd6df"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -116,7 +116,7 @@
       "account_max_dd_pct": 5.382038802041566,
       "unrealized_pnl": -433.34024000000034,
       "open_position_count": 1,
-      "run_id": "20261120_124526_6590e184"
+      "run_id": "20261126_103937_285bd6df"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -144,7 +144,7 @@
       "account_max_dd_pct": 5.382038802041566,
       "unrealized_pnl": 25.08991999999941,
       "open_position_count": 1,
-      "run_id": "20261120_124648_595adb82"
+      "run_id": "20261126_104042_23207043"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -172,7 +172,7 @@
       "account_max_dd_pct": 5.382038802041566,
       "unrealized_pnl": -281.47631999999913,
       "open_position_count": 1,
-      "run_id": "20261120_124648_595adb82"
+      "run_id": "20261126_104042_23207043"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -200,7 +200,7 @@
       "account_max_dd_pct": 5.382038802041566,
       "unrealized_pnl": 0.0,
       "open_position_count": 0,
-      "run_id": "20261120_124752_d5b2e1e3"
+      "run_id": "20261126_104139_99912fd0"
     },
     {
       "unit_name": "demo_btcusd_bot",
@@ -228,7 +228,7 @@
       "account_max_dd_pct": 5.382038802041566,
       "unrealized_pnl": -182.8769599999997,
       "open_position_count": 1,
-      "run_id": "20261120_124752_d5b2e1e3"
+      "run_id": "20261126_104139_99912fd0"
     }
   ],
   "count": 8,
